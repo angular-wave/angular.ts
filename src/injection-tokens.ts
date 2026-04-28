@@ -91,6 +91,10 @@ export const _workerProvider = "$workerProvider" as const;
 export const _wasmProvider = "$wasmProvider" as const;
 export const _controllerProvider = "$controllerProvider" as const;
 
+/**
+ * Runtime token registry. Prefer importing individual token constants in source
+ * files; use this aggregate only when configuring the runtime token map.
+ */
 export const $injectTokens = {
   _angular,
   _attrs,

@@ -10,9 +10,10 @@ import type { AnnotatedFactory } from "../../interface.ts";
 import { annotate, isClass } from "./di.ts";
 import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
-import { providerSuffix } from "./injector.ts";
 
 const $injectorMinErr = minErr(_injector);
+
+export const providerSuffix = "Provider";
 
 type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
 

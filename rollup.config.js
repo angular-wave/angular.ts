@@ -16,6 +16,18 @@ const pkg = JSON.parse(
 
 const baseInput = ".build/index.js";
 
+function hasRuntimeModuleCode(filePath) {
+  const code = readFileSync(filePath, "utf-8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[#@] sourceMappingURL=.*$/gm, "")
+    .replace(/^\s*\/\/.*$/gm, "")
+    .replace(/^\s*["']use strict["'];?\s*$/gm, "")
+    .replace(/^\s*export\s*\{\s*\};?\s*$/gm, "")
+    .trim();
+
+  return code.length > 0;
+}
+
 function collectModuleInputs(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const absolutePath = path.join(dir, entry.name);
@@ -40,7 +52,9 @@ function collectModuleInputs(dir) {
       .resolve(__dirname, ".build", relativePath)
       .replace(/\.ts$/, ".js");
 
-    return existsSync(buildPath) ? buildPath : [];
+    return existsSync(buildPath) && hasRuntimeModuleCode(buildPath)
+      ? buildPath
+      : [];
   });
 }
 

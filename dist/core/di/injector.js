@@ -1,0 +1,263 @@
+import { _injector, _cookie } from '../../injection-tokens.js';
+import { assert, isArray, isString, isFunction, assertArgFn, isInstanceOf, assertNotHasOwnProperty, minErr, isObject, entries, isUndefined, isNullOrUndefined } from '../../shared/utils.js';
+import { ProviderInjector, InjectorService, providerSuffix } from './internal-injector.js';
+import { createPersistentProxy } from '../../services/storage/storage.js';
+import { validateArray } from '../../shared/validate.js';
+
+const $injectorMinErr = minErr(_injector);
+/**
+ *
+ * @param {Array<String|Function>} modulesToLoad
+ * @param {boolean} [strictDi]
+ * @returns {InjectorService}
+ */
+function createInjector(modulesToLoad, strictDi = false) {
+    assert(isArray(modulesToLoad), "modules required");
+    const loadedModules = new Map();
+    const providerCache = {
+        $provide: {
+            provider: supportObject(provider),
+            factory: supportObject(factory),
+            service: supportObject(service),
+            value: supportObject(value),
+            constant: supportObject(constant),
+            store,
+            decorator,
+        },
+    };
+    const providerInjector = (providerCache.$injector = new ProviderInjector(providerCache, strictDi));
+    const protoInstanceInjector = new InjectorService(providerInjector, strictDi);
+    providerCache.$injectorProvider = {
+        // $injectionProvider return instance injector
+        $get: () => protoInstanceInjector,
+    };
+    let instanceInjector = protoInstanceInjector;
+    const runBlocks = loadModules(modulesToLoad);
+    instanceInjector = protoInstanceInjector.get(_injector);
+    runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
+    instanceInjector.loadNewModules = (mods) => loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+    return instanceInjector;
+    ////////////////////////////////////
+    // $provide methods
+    ////////////////////////////////////
+    /**
+     * Registers a provider.
+     */
+    function provider(name, providerDefinition) {
+        assertNotHasOwnProperty(name, "service");
+        let newProvider;
+        if (isFunction(providerDefinition) || isArray(providerDefinition)) {
+            newProvider = providerInjector.instantiate(providerDefinition);
+        }
+        else {
+            newProvider = providerDefinition;
+        }
+        if (!newProvider.$get) {
+            throw $injectorMinErr("pget", "Provider '{0}' must define $get factory method.", name);
+        }
+        providerCache[name + providerSuffix] = newProvider;
+        return newProvider;
+    }
+    /**
+     * Registers a factory.
+     */
+    function factory(name, factoryFn) {
+        return provider(name, {
+            $get() {
+                const result = instanceInjector.invoke(factoryFn, this);
+                if (isUndefined(result)) {
+                    throw $injectorMinErr("undef", "Provider '{0}' must return a value from $get factory method.", name);
+                }
+                return result;
+            },
+        });
+    }
+    /**
+     * Registers a service constructor.
+     * @param {string} name
+     * @param {Function} constructor
+     * @returns {ServiceProvider}
+     */
+    function service(name, constructor) {
+        return factory(name, [
+            _injector,
+            ($injector) => $injector.instantiate(constructor),
+        ]);
+    }
+    /**
+     * Register a fixed value as a service.
+     * @param {String} name
+     * @param {any} val
+     * @returns {ng.ServiceProvider}
+     */
+    function value(name, val) {
+        return (providerCache[name + providerSuffix] = { $get: () => val });
+    }
+    /**
+     * Register a constant value (available during config).
+     */
+    function constant(name, constantValue) {
+        assertNotHasOwnProperty(name, "constant");
+        providerInjector._cache[name] = constantValue;
+        protoInstanceInjector._cache[name] = constantValue;
+    }
+    /**
+     * Register a decorator function to modify or replace an existing service.
+     * @param serviceName - The name of the service to decorate.
+     * @param decorFn - A function that takes `$delegate` and returns a decorated service.
+     */
+    function decorator(serviceName, decorFn) {
+        const origProvider = providerInjector.get(serviceName + providerSuffix);
+        const origGet = origProvider.$get;
+        origProvider.$get = function () {
+            const origInstance = instanceInjector.invoke(origGet, origProvider);
+            return instanceInjector.invoke(decorFn, null, {
+                $delegate: origInstance,
+            });
+        };
+    }
+    /**
+     * Registers a service persisted in a storage
+     *
+     * @param name - Service name
+     * @param ctor - Constructor for the service
+     * @param type - Type of storage to be instantiated
+     */
+    function store(name, ctor, type, backendOrConfig) {
+        return provider(name, {
+            $get: ($injector) => {
+                switch (type) {
+                    case "session": {
+                        const instance = $injector.instantiate(ctor);
+                        return createPersistentProxy(instance, name, sessionStorage);
+                    }
+                    case "local": {
+                        const instance = $injector.instantiate(ctor);
+                        return createPersistentProxy(instance, name, localStorage);
+                    }
+                    case "cookie": {
+                        const instance = $injector.instantiate(ctor);
+                        const $cookie = $injector.get(_cookie);
+                        const serialize = backendOrConfig?.serialize ?? JSON.stringify;
+                        const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
+                        const cookieOpts = backendOrConfig?.cookie ?? {};
+                        return createPersistentProxy(instance, name, {
+                            getItem(key) {
+                                const raw = $cookie.get(key);
+                                return isNullOrUndefined(raw) ? null : raw;
+                            },
+                            setItem(k, v) {
+                                $cookie.put(k, v, cookieOpts);
+                            },
+                            removeItem(k) {
+                                $cookie.remove(k, cookieOpts);
+                            },
+                        }, {
+                            serialize,
+                            deserialize,
+                        });
+                    }
+                    case "custom": {
+                        const instance = $injector.instantiate(ctor);
+                        let backend = localStorage;
+                        let serialize = JSON.stringify;
+                        let deserialize = JSON.parse;
+                        if (backendOrConfig) {
+                            if (isFunction(backendOrConfig.getItem)) {
+                                // raw Storage object
+                                backend = backendOrConfig;
+                            }
+                            else if (isObject(backendOrConfig)) {
+                                backend =
+                                    backendOrConfig.backend || localStorage;
+                                const { serialize: configSerialize, deserialize: configDeserialize, } = backendOrConfig;
+                                if (configSerialize)
+                                    serialize = configSerialize;
+                                if (configDeserialize)
+                                    deserialize = configDeserialize;
+                            }
+                        }
+                        else {
+                            // fallback default
+                            backend = localStorage;
+                        }
+                        return createPersistentProxy(instance, name, backend, {
+                            serialize,
+                            deserialize,
+                        });
+                    }
+                }
+                return undefined;
+            },
+        });
+    }
+    /**
+     * Loads and instantiates AngularJS modules with proper type handling.
+     *
+     * @param {Array<string | Function | ng.AnnotatedFactory<any>>} modules - Modules to load
+     * @returns {Array<any>} - Array of run block results
+     */
+    function loadModules(modules) {
+        validateArray(modules, "modules");
+        let moduleRunBlocks = [];
+        modules.forEach((module) => {
+            const moduleKey = isArray(module)
+                ? module[module.length - 1]
+                : module;
+            if (loadedModules.get(moduleKey))
+                return;
+            loadedModules.set(moduleKey, true);
+            try {
+                if (isString(module)) {
+                    const moduleFn = window.angular.module(module);
+                    instanceInjector._modules[module] = moduleFn;
+                    moduleRunBlocks = moduleRunBlocks
+                        .concat(loadModules(moduleFn._requires))
+                        .concat(moduleFn._runBlocks);
+                    const invokeQueue = moduleFn._invokeQueue.concat(moduleFn._configBlocks);
+                    invokeQueue.forEach((invokeArgs) => {
+                        const providerInstance = providerInjector.get(invokeArgs[0]);
+                        providerInstance[invokeArgs[1]].apply(providerInstance, invokeArgs[2]);
+                    });
+                }
+                else if (isFunction(module)) {
+                    moduleRunBlocks.push(providerInjector.invoke(module));
+                }
+                else if (isArray(module)) {
+                    moduleRunBlocks.push(providerInjector.invoke(module));
+                }
+                else {
+                    assertArgFn(module, "module");
+                }
+            }
+            catch (err) {
+                // If module is array, fallback to last element for error message
+                const moduleName = isArray(module) ? module[module.length - 1] : module;
+                throw $injectorMinErr("modulerr", "Failed to instantiate module {0} due to:\n{1}", moduleName, isInstanceOf(err, Error) ? err.stack || err.message : String(err));
+            }
+        });
+        return moduleRunBlocks;
+    }
+}
+/**
+ * Wraps a delegate function to support object-style arguments.
+ *
+ * @template V
+ * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
+ * @returns {(key: string | Record<string, V>, value?: V) => any}
+ */
+function supportObject(delegate) {
+    return function (key, value) {
+        if (isObject(key)) {
+            entries(key).forEach(([k, v]) => {
+                delegate(k, v);
+            });
+            return undefined;
+        }
+        else {
+            return delegate(key, value);
+        }
+    };
+}
+
+export { createInjector };

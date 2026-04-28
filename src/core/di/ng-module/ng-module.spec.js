@@ -1,5 +1,17 @@
 import { NgModule } from "./ng-module.js";
-import { $injectTokens as $t } from "../../../injection-tokens.ts";
+import {
+  _animateProvider,
+  _compileProvider,
+  _controllerProvider,
+  _filterProvider,
+  _injector,
+  _provide,
+  _rest,
+  _sse,
+  _wasm,
+  _websocket,
+  _worker,
+} from "../../../injection-tokens.ts";
 
 describe("NgModule", () => {
   /** @type {NgModule} */
@@ -29,7 +41,7 @@ describe("NgModule", () => {
     // when contants are registered
     ngModule.constant("aConstant", 42);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "constant",
       ["aConstant", 42],
     ]);
@@ -37,12 +49,12 @@ describe("NgModule", () => {
     // then they are prepended to invocation queue
     ngModule.constant("bConstant", 24);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "constant",
       ["bConstant", 24],
     ]);
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._provide,
+      _provide,
       "constant",
       ["aConstant", 42],
     ]);
@@ -52,7 +64,7 @@ describe("NgModule", () => {
     // when value are registered
     ngModule.value("aValue", 42);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "value",
       ["aValue", 42],
     ]);
@@ -60,12 +72,12 @@ describe("NgModule", () => {
     // then are pushed to invocation queue
     ngModule.value("bValue", 24);
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._provide,
+      _provide,
       "value",
       ["bValue", 24],
     ]);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "value",
       ["aValue", 42],
     ]);
@@ -83,20 +95,20 @@ describe("NgModule", () => {
     ngModule.config(fn2);
 
     // then they are appended to config queue
-    expect(ngModule._configBlocks[0]).toEqual([$t._injector, "invoke", [fn1]]);
-    expect(ngModule._configBlocks[1]).toEqual([$t._injector, "invoke", [fn2]]);
+    expect(ngModule._configBlocks[0]).toEqual([_injector, "invoke", [fn1]]);
+    expect(ngModule._configBlocks[1]).toEqual([_injector, "invoke", [fn2]]);
   });
 
   it("can store components", () => {
     ngModule.component("aComponent", a).component("bComponent", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._compileProvider,
+      _compileProvider,
       "component",
       ["aComponent", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._compileProvider,
+      _compileProvider,
       "component",
       ["bComponent", b],
     ]);
@@ -106,13 +118,13 @@ describe("NgModule", () => {
   it("can store factories", () => {
     ngModule.factory("aFactory", a).factory("bFactory", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "factory",
       ["aFactory", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._provide,
+      _provide,
       "factory",
       ["bFactory", b],
     ]);
@@ -121,13 +133,13 @@ describe("NgModule", () => {
   it("can store services", () => {
     ngModule.service("aService", a).service("bService", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "service",
       ["aService", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._provide,
+      _provide,
       "service",
       ["bService", b],
     ]);
@@ -149,7 +161,7 @@ describe("NgModule", () => {
 
     ngModule.store("aStore", model, "custom", { backend });
 
-    expect(ngModule._invokeQueue[0][0]).toBe($t._provide);
+    expect(ngModule._invokeQueue[0][0]).toBe(_provide);
     expect(ngModule._invokeQueue[0][1]).toBe("store");
     expect(ngModule._invokeQueue[0][2][0]).toBe("aStore");
     expect(ngModule._invokeQueue[0][2][1]()).toBe(model);
@@ -166,11 +178,11 @@ describe("NgModule", () => {
       .websocket("chat", "wss://chat.example.com", ["json"]);
 
     expect(ngModule._invokeQueue.map((item) => item[0])).toEqual([
-      $t._provide,
-      $t._provide,
-      $t._provide,
-      $t._provide,
-      $t._provide,
+      _provide,
+      _provide,
+      _provide,
+      _provide,
+      _provide,
     ]);
     expect(ngModule._invokeQueue.map((item) => item[1])).toEqual([
       "factory",
@@ -187,24 +199,24 @@ describe("NgModule", () => {
       "chat",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][1][0])).toEqual([
-      $t._rest,
-      $t._worker,
-      $t._wasm,
-      $t._sse,
-      $t._websocket,
+      _rest,
+      _worker,
+      _wasm,
+      _sse,
+      _websocket,
     ]);
   });
 
   it("can store providers", () => {
     ngModule.provider("aProvider", a).provider("bProvider", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._provide,
+      _provide,
       "provider",
       ["aProvider", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._provide,
+      _provide,
       "provider",
       ["bProvider", b],
     ]);
@@ -213,13 +225,13 @@ describe("NgModule", () => {
   it("can store decorators", () => {
     ngModule.decorator("aDecorator", a).decorator("bDecorator", b);
     expect(ngModule._configBlocks[0]).toEqual([
-      $t._provide,
+      _provide,
       "decorator",
       ["aDecorator", a],
     ]);
 
     expect(ngModule._configBlocks[1]).toEqual([
-      $t._provide,
+      _provide,
       "decorator",
       ["bDecorator", b],
     ]);
@@ -228,13 +240,13 @@ describe("NgModule", () => {
   it("can store directives", () => {
     ngModule.directive("aDirective", a).directive("bDirective", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._compileProvider,
+      _compileProvider,
       "directive",
       ["aDirective", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._compileProvider,
+      _compileProvider,
       "directive",
       ["bDirective", b],
     ]);
@@ -243,13 +255,13 @@ describe("NgModule", () => {
   it("can store animations", () => {
     ngModule.animation("aAnimation", a).animation("bAnimation", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._animateProvider,
+      _animateProvider,
       "register",
       ["aAnimation", a],
     ]);
 
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._animateProvider,
+      _animateProvider,
       "register",
       ["bAnimation", b],
     ]);
@@ -258,12 +270,12 @@ describe("NgModule", () => {
   it("can store filters", () => {
     ngModule.filter("aFilter", cf).filter("bFilter", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._filterProvider,
+      _filterProvider,
       "register",
       ["aFilter", cf],
     ]);
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._filterProvider,
+      _filterProvider,
       "register",
       ["bFilter", b],
     ]);
@@ -272,12 +284,12 @@ describe("NgModule", () => {
   it("can store controllers", () => {
     ngModule.controller("aController", a).controller("bController", b);
     expect(ngModule._invokeQueue[0]).toEqual([
-      $t._controllerProvider,
+      _controllerProvider,
       "register",
       ["aController", a],
     ]);
     expect(ngModule._invokeQueue[1]).toEqual([
-      $t._controllerProvider,
+      _controllerProvider,
       "register",
       ["bController", b],
     ]);

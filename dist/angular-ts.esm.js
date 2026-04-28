@@ -1,4 +1,186 @@
-/* Version: 0.26.0 - April 26, 2026 17:56:48 */
+/* Version: 0.26.0 - April 29, 2026 00:52:41 */
+/**
+ * Canonical token names for the built-in injectables exposed by the core `ng`
+ * module.
+ *
+ * These constants keep runtime registration, JSDoc, and ambient type surfaces
+ * aligned around one source of truth for both service and provider names.
+ */
+const _angular = "$angular";
+const _attrs = "$attrs";
+const _scope = "$scope";
+const _element = "$element";
+const _animateCssDriver = "$$animateCssDriver";
+const _animateJs = "$$animateJs";
+const _animateJsDriver = "$$animateJsDriver";
+const _animateQueue = "$$animateQueue";
+const _animation = "$$animation";
+const _taskTrackerFactory = "$$taskTrackerFactory";
+const _anchorScroll = "$anchorScroll";
+const _animate = "$animate";
+const _animateCss = "$animateCss";
+const _aria = "$aria";
+const _compile = "$compile";
+const _cookie = "$cookie";
+const _controller = "$controller";
+const _document = "$document";
+const _eventBus = "$eventBus";
+const _exceptionHandler = "$exceptionHandler";
+const _filter = "$filter";
+const _http = "$http";
+const _httpParamSerializer = "$httpParamSerializer";
+const _interpolate = "$interpolate";
+const _location = "$location";
+const _log = "$log";
+const _parse = "$parse";
+const _rest = "$rest";
+const _rootScope = "$rootScope";
+const _rootElement = "$rootElement";
+const _router = "$$r";
+const _sce = "$sce";
+const _sceDelegate = "$sceDelegate";
+const _state = "$state";
+const _stateRegistry = "$stateRegistry";
+const _sse = "$sse";
+const _templateCache = "$templateCache";
+const _templateFactory = "$templateFactory";
+const _templateRequest = "$templateRequest";
+const _transitions = "$transitions";
+const _urlConfig = "$urlConfig";
+const _url = "$url";
+const _view = "$view";
+const _window = "$window";
+const _websocket = "$websocket";
+const _worker = "$worker";
+const _wasm = "$wasm";
+const _provide = "$provide";
+const _injector = "$injector";
+const _angularProvider = "$angularProvider";
+const _anchorScrollProvider = "$anchorScrollProvider";
+const _animateCssProvider = "$animateCssProvider";
+const _ariaProvider = "$ariaProvider";
+const _compileProvider = "$compileProvider";
+const _animateProvider = "$animateProvider";
+const _cookieProvider = "$cookieProvider";
+const _eventBusProvider = "$eventBusProvider";
+const _exceptionHandlerProvider = "$exceptionHandlerProvider";
+const _filterProvider = "$filterProvider";
+const _httpProvider = "$httpProvider";
+const _httpParamSerializerProvider = "$httpParamSerializerProvider";
+const _interpolateProvider = "$interpolateProvider";
+const _locationProvider = "$locationProvider";
+const _logProvider = "$logProvider";
+const _parseProvider = "$parseProvider";
+const _restProvider = "$restProvider";
+const _rootScopeProvider = "$rootScopeProvider";
+const _routerProvider = "$$rProvider";
+const _sceProvider = "$sceProvider";
+const _sceDelegateProvider = "$sceDelegateProvider";
+const _sseProvider = "$sseProvider";
+const _stateProvider = "$stateProvider";
+const _stateRegistryProvider = "$stateRegistryProvider";
+const _templateCacheProvider = "$templateCacheProvider";
+const _templateFactoryProvider = "$templateFactoryProvider";
+const _templateRequestProvider = "$templateRequestProvider";
+const _transitionsProvider = "$transitionsProvider";
+const _urlConfigProvider = "$urlConfigProvider";
+const _urlProvider = "$urlProvider";
+const _viewProvider = "$viewProvider";
+const _websocketProvider = "$websocketProvider";
+const _workerProvider = "$workerProvider";
+const _wasmProvider = "$wasmProvider";
+const _controllerProvider = "$controllerProvider";
+/**
+ * Runtime token registry. Prefer importing individual token constants in source
+ * files; use this aggregate only when configuring the runtime token map.
+ */
+const $injectTokens = {
+    _angular,
+    _attrs,
+    _scope,
+    _element,
+    _animateCssDriver,
+    _animateJs,
+    _animateJsDriver,
+    _animateQueue,
+    _animation,
+    _taskTrackerFactory,
+    _anchorScroll,
+    _animate,
+    _animateCss,
+    _aria,
+    _compile,
+    _cookie,
+    _controller,
+    _document,
+    _eventBus,
+    _exceptionHandler,
+    _filter,
+    _http,
+    _httpParamSerializer,
+    _interpolate,
+    _location,
+    _log,
+    _parse,
+    _rest,
+    _rootScope,
+    _rootElement,
+    _router,
+    _sce,
+    _sceDelegate,
+    _state,
+    _stateRegistry,
+    _sse,
+    _templateCache,
+    _templateFactory,
+    _templateRequest,
+    _transitions,
+    _urlConfig,
+    _url,
+    _view,
+    _window,
+    _websocket,
+    _worker,
+    _wasm,
+    _provide,
+    _injector,
+    _angularProvider,
+    _anchorScrollProvider,
+    _animateCssProvider,
+    _ariaProvider,
+    _compileProvider,
+    _animateProvider,
+    _cookieProvider,
+    _eventBusProvider,
+    _exceptionHandlerProvider,
+    _filterProvider,
+    _httpProvider,
+    _httpParamSerializerProvider,
+    _interpolateProvider,
+    _locationProvider,
+    _logProvider,
+    _parseProvider,
+    _restProvider,
+    _rootScopeProvider,
+    _routerProvider,
+    _sceProvider,
+    _sceDelegateProvider,
+    _sseProvider,
+    _stateProvider,
+    _stateRegistryProvider,
+    _templateCacheProvider,
+    _templateFactoryProvider,
+    _templateRequestProvider,
+    _transitionsProvider,
+    _urlConfigProvider,
+    _urlProvider,
+    _viewProvider,
+    _websocketProvider,
+    _workerProvider,
+    _wasmProvider,
+    _controllerProvider,
+};
+
 const VALID_CLASS = "ng-valid";
 const INVALID_CLASS = "ng-invalid";
 const PRISTINE_CLASS = "ng-pristine";
@@ -75,15 +257,14 @@ function isArrayLike(obj) {
     // arrays, strings and jQuery/jqLite objects are array like
     // * we have to check the existence of JQLite first as this method is called
     //   via the forEach method when constructing the JQLite object in the first place
-    if (isArray(obj) || obj instanceof Array || isString(obj))
+    if (isArray(obj) || isInstanceOf(obj, Array) || isString(obj))
         return true;
     const arrayLikeObj = obj;
     const len = arrayLikeObj.length;
     // NodeList objects (with `item` method) and
     // other objects with suitable length characteristics are array-like
     return (isNumber(len) &&
-        ((len >= 0 && len - 1 in arrayLikeObj) ||
-            typeof arrayLikeObj.item === "function"));
+        ((len >= 0 && len - 1 in arrayLikeObj) || isFunction(arrayLikeObj.item)));
 }
 /**
  * Determines if a reference is undefined.
@@ -110,9 +291,6 @@ function isDefined(value) {
 function isArray(array) {
     return Array.isArray(array);
 }
-/**
- * Returns whether a value is an instance of the provided constructor.
- */
 function isInstanceOf(val, type) {
     return val instanceof type;
 }
@@ -205,7 +383,7 @@ function isError(value) {
         case "[object DOMException]":
             return true;
         default:
-            return value instanceof Error;
+            return isInstanceOf(value, Error);
     }
 }
 /**
@@ -365,8 +543,8 @@ function isNumberNaN(num) {
 /**
  * Creates a new object that inherits from `parent` and extends it with `extra`.
  */
-function inherit$1(parent, extra) {
-    return extend(Object.create(parent), extra);
+function inherit(parent, extra) {
+    return extend(createObject(parent), extra);
 }
 /**
  * Returns whether an object defines its own `toString` implementation.
@@ -379,8 +557,17 @@ function hasCustomToString(obj) {
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  */
+const nodeNameCache = new WeakMap();
 function getNodeName$1(element) {
-    return lowercase(element.nodeName);
+    let nodeName = nodeNameCache.get(element);
+    if (nodeName === undefined) {
+        const rawNodeName = element.nodeName;
+        if (!rawNodeName)
+            return undefined;
+        nodeName = rawNodeName.toLowerCase();
+        nodeNameCache.set(element, nodeName);
+    }
+    return nodeName;
 }
 /**
  * Returns whether an array-like collection contains a given value.
@@ -466,7 +653,7 @@ function simpleCompare(val1, val2) {
     </file>
   </example>
  */
-function equals$1(o1, o2) {
+function equals(o1, o2) {
     if (o1 === o2)
         return true;
     if (o1 === null || o2 === null)
@@ -485,7 +672,7 @@ function equals$1(o1, o2) {
         if (length !== o2.length)
             return false;
         for (let key = 0; key < length; key++) {
-            if (!equals$1(o1[key], o2[key]))
+            if (!equals(o1[key], o2[key]))
                 return false;
         }
         return true;
@@ -516,7 +703,7 @@ function equals$1(o1, o2) {
     for (const key in o1) {
         if (key.charAt(0) === "$" || isFunction(o1[key]))
             continue;
-        if (!equals$1(o1[key], o2[key]))
+        if (!equals(o1[key], o2[key]))
             return false;
         keySet[key] = true;
     }
@@ -534,6 +721,7 @@ function equals$1(o1, o2) {
  * throw error if the name given is hasOwnProperty
  * @param name the name to test
  * @param context the context in which the name is used, such as module or directive
+ * @throws AngularTS minErr when `name` would shadow `hasOwnProperty`.
  */
 function assertNotHasOwnProperty(name, context) {
     if (name === "hasOwnProperty") {
@@ -544,23 +732,22 @@ function assertNotHasOwnProperty(name, context) {
  * Converts a value to a display string using AngularTS serialization rules.
  */
 function stringify$1(value) {
-    if (isNull(value) || isUndefined(value)) {
+    if (isNullOrUndefined(value)) {
         return "";
     }
-    switch (typeof value) {
-        case "string":
-            break;
-        case "number":
-            value = `${value}`;
-            break;
-        default:
-            const objectValue = value;
-            if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-                value = objectValue.toString();
-            }
-            else {
-                value = toJson(value);
-            }
+    const type = typeof value;
+    if (type === "string") {
+        return value;
+    }
+    if (type === "number") {
+        return `${value}`;
+    }
+    const objectValue = value;
+    if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
+        value = objectValue.toString();
+    }
+    else {
+        value = toJson(value);
     }
     return value;
 }
@@ -581,9 +768,7 @@ function sliceArgs(args, startIndex) {
  */
 function toJsonReplacer(key, value) {
     let val = value;
-    if (typeof key === "string" &&
-        key.charAt(0) === "$" &&
-        key.charAt(1) === "$") {
+    if (isString(key) && key.charAt(0) === "$" && key.charAt(1) === "$") {
         val = undefined;
     }
     else if (isWindow(value)) {
@@ -750,6 +935,8 @@ function shallowCopy(src, dst) {
 }
 /**
  * Throws when the argument is false.
+ *
+ * @throws Error when `argument` is false.
  */
 function assert(argument, errorMsg = "Assertion failed") {
     if (!argument) {
@@ -758,6 +945,8 @@ function assert(argument, errorMsg = "Assertion failed") {
 }
 /**
  * Throws a typed AngularTS argument error when the argument is falsy.
+ *
+ * @throws AngularTS minErr when `arg` is falsy.
  */
 function assertArg(arg, name, reason) {
     if (!arg) {
@@ -767,6 +956,8 @@ function assertArg(arg, name, reason) {
 }
 /**
  * Asserts that a value is a function, optionally unwrapping array-annotation first.
+ *
+ * @throws AngularTS minErr when `arg` is not a function.
  */
 function assertArgFn(arg, name, acceptArrayAnnotation) {
     if (acceptArrayAnnotation && isArray(arg)) {
@@ -846,13 +1037,13 @@ function minErr(module) {
  *
  */
 function toDebugString(obj) {
-    if (typeof obj === "function") {
+    if (isFunction(obj)) {
         return obj.toString().replace(/ \{[\s\S]*$/, "");
     }
     if (isUndefined(obj)) {
         return "undefined";
     }
-    if (typeof obj !== "string") {
+    if (!isString(obj)) {
         const seen = [];
         const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
         return JSON.stringify(copyObj, (key, val) => {
@@ -878,7 +1069,7 @@ function toDebugString(obj) {
 function hashKey(obj) {
     const key = obj && obj._hashKey;
     if (key) {
-        if (typeof key === "function") {
+        if (isFunction(key)) {
             return obj._hashKey();
         }
         return key;
@@ -993,11 +1184,25 @@ function values(obj) {
     return Object.values(obj);
 }
 /**
+ * Converts an array-like or iterable value into an array.
+ */
+function arrayFrom(value) {
+    return Array.from(value);
+}
+/**
  * Returns the object's own enumerable entries.
  */
 function entries(obj) {
     return Object.entries(obj);
 }
+/**
+ * Assigns own enumerable properties from sources to a target object.
+ */
+const { assign } = Object;
+/**
+ * Creates a new object with the specified prototype.
+ */
+const createObject = Object.create;
 /**
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
@@ -1089,7 +1294,7 @@ async function instantiateWasm(src, imports = {}) {
  * Returns whether a function is an arrow function.
  */
 function isArrowFunction(fn) {
-    return typeof fn === "function" && !fn.prototype;
+    return isFunction(fn) && !fn.prototype;
 }
 /**
  * Creates an object with no prototype.
@@ -1100,101 +1305,8 @@ function isArrowFunction(fn) {
  *
  */
 function nullObject() {
-    return Object.create(null);
+    return createObject(null);
 }
-
-/**
- * Canonical token names for the built-in injectables exposed by the core `ng`
- * module.
- *
- * These constants keep runtime registration, JSDoc, and ambient type surfaces
- * aligned around one source of truth for both service and provider names.
- */
-const $injectTokens = {
-    _angular: "$angular",
-    _attrs: "$attrs",
-    _scope: "$scope",
-    _element: "$element",
-    _animateCssDriver: "$$animateCssDriver",
-    _animateJs: "$$animateJs",
-    _animateJsDriver: "$$animateJsDriver",
-    _animateQueue: "$$animateQueue",
-    _animation: "$$animation",
-    _taskTrackerFactory: "$$taskTrackerFactory",
-    _anchorScroll: "$anchorScroll",
-    _animate: "$animate",
-    _animateCss: "$animateCss",
-    _aria: "$aria",
-    _compile: "$compile",
-    _cookie: "$cookie",
-    _controller: "$controller",
-    _document: "$document",
-    _eventBus: "$eventBus",
-    _exceptionHandler: "$exceptionHandler",
-    _filter: "$filter",
-    _http: "$http",
-    _httpParamSerializer: "$httpParamSerializer",
-    _interpolate: "$interpolate",
-    _location: "$location",
-    _log: "$log",
-    _parse: "$parse",
-    _rest: "$rest",
-    _rootScope: "$rootScope",
-    _rootElement: "$rootElement",
-    _router: "$router",
-    _sce: "$sce",
-    _sceDelegate: "$sceDelegate",
-    _state: "$state",
-    _stateRegistry: "$stateRegistry",
-    _sse: "$sse",
-    _sanitizeUri: "$$sanitizeUri",
-    _sanitizeUriProvider: "$$sanitizeUriProvider",
-    _templateCache: "$templateCache",
-    _templateFactory: "$templateFactory",
-    _templateRequest: "$templateRequest",
-    _transitions: "$transitions",
-    _urlConfig: "$urlConfig",
-    _url: "$url",
-    _view: "$view",
-    _window: "$window",
-    _websocket: "$websocket",
-    // provide literals
-    _provide: "$provide",
-    _injector: "$injector",
-    _angularProvider: "$angularProvider",
-    _anchorScrollProvider: "$anchorScrollProvider",
-    _animateCssProvider: "$animateCssProvider",
-    _ariaProvider: "$ariaProvider",
-    _compileProvider: "$compileProvider",
-    _animateProvider: "$animateProvider",
-    _cookieProvider: "$cookieProvider",
-    _eventBusProvider: "$eventBusProvider",
-    _exceptionHandlerProvider: "$exceptionHandlerProvider",
-    _filterProvider: "$filterProvider",
-    _httpProvider: "$httpProvider",
-    _httpParamSerializerProvider: "$httpParamSerializerProvider",
-    _interpolateProvider: "$interpolateProvider",
-    _locationProvider: "$locationProvider",
-    _logProvider: "$logProvider",
-    _parseProvider: "$parseProvider",
-    _restProvider: "$restProvider",
-    _rootScopeProvider: "$rootScopeProvider",
-    _routerProvider: "$routerProvider",
-    _sceProvider: "$sceProvider",
-    _sceDelegateProvider: "$sceDelegateProvider",
-    _sseProvider: "$sseProvider",
-    _stateProvider: "$stateProvider",
-    _stateRegistryProvider: "$stateRegistryProvider",
-    _templateCacheProvider: "$templateCacheProvider",
-    _templateFactoryProvider: "$templateFactoryProvider",
-    _templateRequestProvider: "$templateRequestProvider",
-    _transitionsProvider: "$transitionsProvider",
-    _urlConfigProvider: "$urlConfigProvider",
-    _urlProvider: "$urlProvider",
-    _viewProvider: "$viewProvider",
-    _websocketProvider: "$websocketProvider",
-    _controllerProvider: "$controllerProvider",
-};
 
 /**
  * Key for storing isolate scope data attached to an element.
@@ -1206,7 +1318,7 @@ let expandoCache = new WeakMap();
 /**
  * Key for storing scope data attached to an element.
  */
-const SCOPE_KEY = $injectTokens._scope;
+const SCOPE_KEY = _scope;
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 /**
@@ -1255,6 +1367,9 @@ function kebabToCamel(name) {
  */
 function snakeToCamel(name) {
     return name.replace(UNDERSCORE_LOWERCASE_REGEXP, fnCamelCaseReplace);
+}
+function createDocumentFragment() {
+    return document.createDocumentFragment();
 }
 /**
  * Removes expando-backed data from an element.
@@ -1318,13 +1433,15 @@ function elementAcceptsData(node) {
 }
 /** Deallocates cached data for an element and its descendant tree. */
 function dealoc(element, onlyDescendants = false) {
-    if (!element || typeof element !== "object" || element instanceof Comment) {
+    if (!element ||
+        typeof element !== "object" ||
+        isInstanceOf(element, Comment)) {
         return;
     }
     if (isArray(element) ||
-        element instanceof NodeList ||
-        element instanceof HTMLCollection) {
-        const nodes = Array.from(element);
+        isInstanceOf(element, NodeList) ||
+        isInstanceOf(element, HTMLCollection)) {
+        const nodes = arrayFrom(element);
         for (let i = 0; i < nodes.length; i++) {
             dealoc(nodes[i], onlyDescendants);
         }
@@ -1385,13 +1502,13 @@ function getOrSetCacheData(element, key, value) {
     const expandoStore = getExpando(element, !isSimpleGetter);
     if (!expandoStore)
         return undefined;
-    if (isSimpleSetter && typeof key === "string") {
+    if (isSimpleSetter && isString(key)) {
         expandoStore[kebabToCamel(key)] = value;
     }
     else if (massGetter) {
         return expandoStore;
     }
-    else if (isSimpleGetter && typeof key === "string") {
+    else if (isSimpleGetter && isString(key)) {
         return expandoStore[kebabToCamel(key)];
     }
     else if (key && typeof key === "object") {
@@ -1544,14 +1661,15 @@ const parser = new DOMParser();
  */
 function startingTag(elementOrStr) {
     let clone;
-    if (typeof elementOrStr === "string") {
+    if (isString(elementOrStr)) {
         const doc = parser.parseFromString(elementOrStr, "text/html");
         const { firstChild } = doc.body;
         if (!firstChild)
             return ""; // empty string for empty input
         clone = firstChild.cloneNode(true);
     }
-    else if (elementOrStr instanceof Element || elementOrStr instanceof Node) {
+    else if (isInstanceOf(elementOrStr, Element) ||
+        isInstanceOf(elementOrStr, Node)) {
         clone = elementOrStr.cloneNode(true);
     }
     else {
@@ -1637,7 +1755,7 @@ function cleanElementData(nodes) {
 }
 /** Returns the nearest injector service found while walking up the element tree. */
 function getInjector(element) {
-    return getInheritedData(element, $injectTokens._injector);
+    return getInheritedData(element, _injector);
 }
 /**
  * Parses an HTML string into a detached `DocumentFragment`.
@@ -1714,7 +1832,7 @@ function animatedomInsert(element, parent, after) {
     const originalVisibility = element.style.visibility;
     const originalPosition = element.style.position;
     const originalPointerEvents = element.style.pointerEvents;
-    Object.assign(element.style, {
+    assign(element.style, {
         visibility: "hidden",
         position: "absolute",
         pointerEvents: "none",
@@ -1753,7 +1871,7 @@ function extractElementNode(element) {
     return undefined;
 }
 
-const $injectorMinErr$3 = minErr($injectTokens._injector);
+const $injectorMinErr$3 = minErr(_injector);
 const ARROW_ARG = /^([^(]+?)=>/;
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
 const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
@@ -1799,9 +1917,8 @@ function annotate(fn, strictDi = false, name) {
     return inject;
 }
 
-const $injectorMinErr$2 = minErr($injectTokens._injector);
-const providerSuffix$1 = "Provider";
-const INSTANTIATING = true;
+const $injectorMinErr$2 = minErr(_injector);
+const providerSuffix = "Provider";
 class AbstractInjector {
     /**
      * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
@@ -1820,13 +1937,13 @@ class AbstractInjector {
      */
     get(serviceName) {
         if (hasOwn(this._cache, serviceName)) {
-            if (this._cache[serviceName] === INSTANTIATING) {
+            if (this._cache[serviceName] === true) {
                 throw $injectorMinErr$2("cdep", "Circular dependency found: {0}", `${serviceName} <- ${this._path.join(" <- ")}`);
             }
             return this._cache[serviceName];
         }
         this._path.unshift(serviceName);
-        this._cache[serviceName] = INSTANTIATING;
+        this._cache[serviceName] = true;
         try {
             this._cache[serviceName] = this._factory(serviceName);
         }
@@ -1849,9 +1966,9 @@ class AbstractInjector {
     _injectionArgs(fn, locals, serviceName) {
         const args = [];
         const $inject = annotate(fn, this.strictDi, serviceName);
-        for (let i = 0, { length } = $inject; i < length; i++) {
+        for (let i = 0; i < $inject.length; i++) {
             const key = $inject[i];
-            if (typeof key !== "string") {
+            if (!isString(key)) {
                 throw $injectorMinErr$2("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
             }
             args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
@@ -1868,7 +1985,7 @@ class AbstractInjector {
      * @returns {*}
      */
     invoke(fn, self, locals, serviceName) {
-        if (typeof locals === "string") {
+        if (isString(locals)) {
             serviceName = locals;
             locals = undefined;
         }
@@ -1958,9 +2075,7 @@ class InjectorService extends AbstractInjector {
         this.loadNewModules = () => {
             /* empty */
         };
-        /** @private @type {ProviderInjector} */
         this._providerInjector = providerInjector;
-        /** @private @type {Object.<string, ng.NgModule>} */
         this._modules = providerInjector._modules;
     }
     /**
@@ -1969,7 +2084,7 @@ class InjectorService extends AbstractInjector {
      */
     /** @internal */
     _factory(serviceName) {
-        const provider = this._providerInjector.get(serviceName + providerSuffix$1);
+        const provider = this._providerInjector.get(serviceName + providerSuffix);
         return this.invoke(provider.$get, provider, undefined, serviceName);
     }
     /**
@@ -1978,7 +2093,7 @@ class InjectorService extends AbstractInjector {
      * @returns {boolean}
      */
     has(name) {
-        const hasProvider = hasOwn(this._providerInjector._cache, name + providerSuffix$1);
+        const hasProvider = hasOwn(this._providerInjector._cache, name + providerSuffix);
         const hasCache = hasOwn(this._cache, name);
         return hasProvider || hasCache;
     }
@@ -1997,7 +2112,7 @@ function createPersistentProxy(target, key, storage, options = {}) {
     // Restore saved state
     const saved = storage.getItem(key);
     if (saved) {
-        Object.assign(target, deserialize(saved));
+        assign(target, deserialize(saved));
     }
     return new Proxy(target, {
         set(obj, prop, value) {
@@ -2033,7 +2148,7 @@ function isInjectable(val) {
 function isPromise(obj) {
     return (obj !== null &&
         typeof obj === "object" &&
-        typeof obj.then === "function");
+        isFunction(obj.then));
 }
 
 const BADARG = "badarg";
@@ -2075,8 +2190,7 @@ function validateIsString(arg, name) {
     return validate(isString, arg, name);
 }
 
-const $injectorMinErr$1 = minErr($injectTokens._injector);
-const providerSuffix = "Provider";
+const $injectorMinErr$1 = minErr(_injector);
 /**
  *
  * @param {Array<String|Function>} modulesToLoad
@@ -2085,9 +2199,7 @@ const providerSuffix = "Provider";
  */
 function createInjector(modulesToLoad, strictDi = false) {
     assert(isArray(modulesToLoad), "modules required");
-    /** @type {Map<String|Function, boolean>} */
-    const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
-    /** @type {ng.ProviderCache} */
+    const loadedModules = new Map();
     const providerCache = {
         $provide: {
             provider: supportObject(provider),
@@ -2107,7 +2219,7 @@ function createInjector(modulesToLoad, strictDi = false) {
     };
     let instanceInjector = protoInstanceInjector;
     const runBlocks = loadModules(modulesToLoad);
-    instanceInjector = protoInstanceInjector.get($injectTokens._injector);
+    instanceInjector = protoInstanceInjector.get(_injector);
     runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
     instanceInjector.loadNewModules = (mods) => loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
     return instanceInjector;
@@ -2154,7 +2266,7 @@ function createInjector(modulesToLoad, strictDi = false) {
      */
     function service(name, constructor) {
         return factory(name, [
-            $injectTokens._injector,
+            _injector,
             ($injector) => $injector.instantiate(constructor),
         ]);
     }
@@ -2211,7 +2323,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                     }
                     case "cookie": {
                         const instance = $injector.instantiate(ctor);
-                        const $cookie = $injector.get($injectTokens._cookie);
+                        const $cookie = $injector.get(_cookie);
                         const serialize = backendOrConfig?.serialize ?? JSON.stringify;
                         const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
                         const cookieOpts = backendOrConfig?.cookie ?? {};
@@ -2226,6 +2338,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                             removeItem(k) {
                                 $cookie.remove(k, cookieOpts);
                             },
+                        }, {
                             serialize,
                             deserialize,
                         });
@@ -2236,7 +2349,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                         let serialize = JSON.stringify;
                         let deserialize = JSON.parse;
                         if (backendOrConfig) {
-                            if (typeof backendOrConfig.getItem === "function") {
+                            if (isFunction(backendOrConfig.getItem)) {
                                 // raw Storage object
                                 backend = backendOrConfig;
                             }
@@ -2274,9 +2387,7 @@ function createInjector(modulesToLoad, strictDi = false) {
         validateArray(modules, "modules");
         let moduleRunBlocks = [];
         modules.forEach((module) => {
-            // Determine a key suitable for Map: string | Function
-            /** @type {string | Function} */
-            const moduleKey = Array.isArray(module)
+            const moduleKey = isArray(module)
                 ? module[module.length - 1]
                 : module;
             if (loadedModules.get(moduleKey))
@@ -2299,8 +2410,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                     moduleRunBlocks.push(providerInjector.invoke(module));
                 }
                 else if (isArray(module)) {
-                    moduleRunBlocks.push(providerInjector.invoke(
-                    /** @type {Function | ng.AnnotatedFactory<any>} */ module));
+                    moduleRunBlocks.push(providerInjector.invoke(module));
                 }
                 else {
                     assertArgFn(module, "module");
@@ -2336,1461 +2446,6 @@ function supportObject(delegate) {
     };
 }
 
-const originUrl = urlResolve(window.location.href);
-/** Resolves a string URL into its parsed browser components. */
-function urlResolve(url) {
-    if (!isString(url))
-        return url;
-    const urlParsingNode = new URL(url, window.location.href);
-    const hostname = urlParsingNode.hostname.includes(":")
-        ? `[${urlParsingNode.hostname}]`
-        : urlParsingNode.hostname;
-    return {
-        href: urlParsingNode.href,
-        protocol: urlParsingNode.protocol,
-        host: urlParsingNode.host,
-        search: urlParsingNode.search
-            ? urlParsingNode.search.replace(/^\?/, "")
-            : "",
-        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
-        hostname,
-        port: urlParsingNode.port,
-        pathname: urlParsingNode.pathname.charAt(0) === "/"
-            ? urlParsingNode.pathname
-            : `/${urlParsingNode.pathname}`,
-    };
-}
-/**
- * Parse a request URL and determine whether this is a same-origin request as the application
- * document.
- *
- * @param requestUrl - The URL of the request as a string that will be resolved or a
- *     parsed URL object.
- * @returns Whether the request is for the same origin as the application document.
- */
-function urlIsSameOrigin(requestUrl) {
-    return urlsAreSameOrigin(requestUrl, originUrl);
-}
-/**
- * Parse a request URL and determine whether it is same-origin as the current document base URL.
- *
- * Note: The base URL is usually the same as the document location (`location.href`) but can
- * be overriden by using the `<base>` tag.
- *
- * @param requestUrl - The URL of the request as a string that will be resolved or a
- *     parsed URL object.
- * @returns Whether the URL is same-origin as the document base URL.
- */
-function urlIsSameOriginAsBaseUrl(requestUrl) {
-    return urlsAreSameOrigin(requestUrl, document.baseURI);
-}
-/**
- * Create a function that can check a URL's origin against a list of allowed/trusted origins.
- * The current location's origin is implicitly trusted.
- *
- * @param trustedOriginUrls - A list of URLs (strings), whose origins are trusted.
- *
- * @returns A function that receives a URL (string or parsed URL object) and returns
- *     whether it is of an allowed origin.
- */
-function urlIsAllowedOriginFactory(trustedOriginUrls) {
-    const parsedAllowedOriginUrls = [originUrl].concat(trustedOriginUrls.map(urlResolve));
-    /**
-     * Check whether the specified URL (string or parsed URL object) has an origin that is allowed
-     * based on a list of trusted-origin URLs. The current location's origin is implicitly
-     * trusted.
-     *
-     * @param requestUrl - The URL to be checked (provided as a string that will be
-     *     resolved or a parsed URL object).
-     *
-     * @returns Whether the specified URL is of an allowed origin.
-     */
-    return function urlIsAllowedOrigin(requestUrl) {
-        const parsedUrl = urlResolve(requestUrl);
-        return parsedAllowedOriginUrls.some(urlsAreSameOrigin.bind(null, parsedUrl));
-    };
-}
-/**
- * Determine if two URLs share the same origin.
- *
- * @param url1 - First URL to compare as a string or a normalized URL in the form of
- *     a dictionary object returned by `urlResolve()`.
- * @param url2 - Second URL to compare as a string or a normalized URL in the form
- *     of a dictionary object returned by `urlResolve()`.
- *
- * @returns True if both URLs have the same origin, and false otherwise.
- */
-function urlsAreSameOrigin(url1, url2) {
-    url1 = urlResolve(url1);
-    url2 = urlResolve(url2);
-    return url1.protocol === url2.protocol && url1.host === url2.host;
-}
-/**
- * Removes a trailing hash ('#') from the given URL if it exists.
- */
-function trimEmptyHash(url) {
-    return url.replace(/#$/, "");
-}
-
-const APPLICATION_JSON = "application/json";
-function withResolvers$1() {
-    let resolve;
-    let reject;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-    });
-    return { promise, resolve: resolve, reject: reject };
-}
-/**
- * @internal
- */
-const Http = {
-    _OK: 200,
-    _MultipleChoices: 300,
-    _BadRequest: 400,
-    _NotFound: 404,
-    _ErrorMax: 599,
-};
-const CONTENT_TYPE_APPLICATION_JSON = {
-    "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
-};
-const JSON_START = /^\[|^\{(?!\{)/;
-const JSON_ENDS = {
-    "[": /]$/,
-    "{": /}$/,
-};
-const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
-const $httpMinErr = minErr("$http");
-/** Serializes a request param value into a transport-safe primitive. */
-function serializeValue(v) {
-    if (isObject(v)) {
-        const jsonValue = isDate(v) ? v.toISOString() : toJson(v);
-        return jsonValue ?? "";
-    }
-    return v;
-}
-/**
- * Default params serializer that converts objects to strings
- * according to the following rules:
- *
- * * `{'foo': 'bar'}` results in `foo=bar`
- * * `{'foo': Date.now()}` results in `foo=2015-04-01T09%3A50%3A49.262Z` (`toISOString()` and encoded representation of a Date object)
- * * `{'foo': ['bar', 'baz']}` results in `foo=bar&foo=baz` (repeated key for each array element)
- * * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object)
- *
- * Note that serializer will sort the request parameters alphabetically.
- */
-function HttpParamSerializerProvider() {
-    /**
-     * Returns the runtime query-parameter serializer.
-     */
-    this.$get = () => {
-        return (params) => {
-            if (!params)
-                return "";
-            const parts = [];
-            keys(params)
-                .sort()
-                .forEach((key) => {
-                const value = params[key];
-                if (isNullOrUndefined(value) || isFunction(value))
-                    return;
-                if (isArray(value)) {
-                    value.forEach((v) => {
-                        if (isNullOrUndefined(v) || isFunction(v))
-                            return;
-                        const serializedValue = serializeValue(v);
-                        parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`);
-                    });
-                }
-                else {
-                    const sanitizedValue = value;
-                    parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`);
-                }
-            });
-            return parts.join("&");
-        };
-    };
-}
-/** Applies the default response transform, including JSON parsing. */
-function defaultHttpResponseTransform(data, headers) {
-    if (isString(data)) {
-        // Strip json vulnerability protection prefix and trim whitespace
-        const tempData = data.replace(JSON_PROTECTION_PREFIX, "").trim();
-        if (tempData) {
-            const contentType = headers("Content-Type");
-            const hasJsonContentType = contentType && contentType.indexOf(APPLICATION_JSON) === 0;
-            if (hasJsonContentType || isJsonLike(tempData)) {
-                try {
-                    data = fromJson(tempData);
-                }
-                catch (err) {
-                    if (!hasJsonContentType) {
-                        return data;
-                    }
-                    throw $httpMinErr("baddata", 'Data must be a valid JSON object. Received: "{0}". ' +
-                        'Parse error: "{1}"', data, err);
-                }
-            }
-        }
-    }
-    return data;
-}
-/** Returns `true` when a string looks like a JSON payload. */
-function isJsonLike(str) {
-    const jsonStart = str.match(JSON_START);
-    return !!jsonStart && JSON_ENDS[jsonStart[0]].test(str);
-}
-/**
- * Parses headers into a key-value object.
- *
- * @param headers - Raw headers as a string.
- * @returns A normalized header map keyed by lowercase header name.
- */
-function parseHeaders(headers) {
-    const parsed = nullObject();
-    let i;
-    /** Adds a parsed header entry to the result map. */
-    function fillInParsed(key, val) {
-        if (key) {
-            parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
-        }
-    }
-    if (isString(headers)) {
-        headers.split("\n").forEach(
-        /** @param line */
-        (line) => {
-            i = line.indexOf(":");
-            fillInParsed(line.substring(0, i).trim().toLowerCase(), trim(line.substring(i + 1)));
-        });
-    }
-    else if (isObject(headers)) {
-        entries(headers).forEach(([headerKey, headerVal]) => {
-            fillInParsed(headerKey.toLowerCase(), trim(headerVal));
-        });
-    }
-    return parsed;
-}
-/**
- * Creates a function that provides access to parsed headers.
- *
- * Headers are lazy parsed when first requested.
- * @see parseHeaders
- *
- * @param headers - Headers to provide access to.
- * @returns A getter function that, when called with:
- *
- *   - an argument, returns a single header value (empty string if missing)
- *   - no arguments, returns an object containing all headers.
- */
-function headersGetter(headers) {
-    let headersObj;
-    const getter = ((name) => {
-        if (!headersObj)
-            headersObj = parseHeaders(headers);
-        if (name) {
-            const value = headersObj[name.toLowerCase()];
-            return value ?? "";
-        }
-        return headersObj;
-    });
-    return getter;
-}
-/**
- * Applies one or more transform functions to request or response data.
- *
- * @param data - Data to transform.
- * @param headers - HTTP headers getter function.
- * @param status - HTTP status code of the response.
- * @param [fns] - Function or an array of functions.
- * @returns The transformed value after all configured transforms run.
- */
-function transformData(data, headers, status, fns) {
-    if (isFunction(fns)) {
-        return fns(data, headers, status);
-    }
-    if (isArray(fns)) {
-        fns.forEach((fn) => {
-            data = fn(data, headers, status);
-        });
-    }
-    return data;
-}
-/** Returns `true` when an HTTP status is in the success range. */
-function isSuccess(status) {
-    return status >= Http._OK && status < Http._MultipleChoices;
-}
-/** Configures the default behavior of the {@link ng.$http $http} service. */
-function HttpProvider() {
-    /**
-     * Default values applied to all {@link ng.$http $http} requests unless a request overrides them.
-     *
-     * This includes cache behavior, default headers, request/response transforms, XSRF names,
-     * credentials defaults, and parameter serialization.
-     */
-    const defaults = (this.defaults = {
-        // transform incoming response data
-        transformResponse: [defaultHttpResponseTransform],
-        // transform outgoing request data
-        transformRequest: [
-            function (data) {
-                return isObject(data) &&
-                    !isFile(data) &&
-                    !isBlob(data) &&
-                    !isFormData(data)
-                    ? toJson(data)
-                    : data;
-            },
-        ],
-        // default headers
-        headers: {
-            common: {
-                Accept: "application/json, text/plain, */*",
-            },
-            post: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
-            put: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
-            patch: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
-        },
-        xsrfCookieName: "XSRF-TOKEN",
-        xsrfHeaderName: "X-XSRF-TOKEN",
-        paramSerializer: $injectTokens._httpParamSerializer,
-    });
-    let useApplyAsync = false;
-    /**
-     * Configure $http service to combine processing of multiple http responses received at around
-     * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
-     * significant performance improvement for bigger applications that make many HTTP requests
-     * concurrently (common during application bootstrap).
-     *
-     * Defaults to false. If no value is specified, returns the current configured value.
-     *
-     * @param value - If true, completed requests schedule a deferred apply on the next tick,
-     *   allowing nearby responses to share the same digest cycle.
-     *
-     * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
-     */
-    this.useApplyAsync = function (value) {
-        if (isDefined(value)) {
-            useApplyAsync = !!value;
-            return this;
-        }
-        return useApplyAsync;
-    };
-    /**
-     * Array containing service factories for all synchronous or asynchronous {@link ng.$http $http}
-     * pre-processing of request or postprocessing of responses.
-     *
-     * These service factories are ordered by request, i.e. they are applied in the same order as the
-     * array, on request, but reverse order, on response.
-     *
-     * {@link ng.$http#interceptors Interceptors detailed info}
-     */
-    this.interceptors = [];
-    /**
-     * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-     * {@link ng.$http#security-considerations Security Considerations} sections for more details on
-     * XSRF.
-     *
-     * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
-     * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
-     * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
-     * `https:`, the port number can be omitted when using the default ports (80 and 443 respectively).
-     * Examples: `http://example.com`, `https://api.example.com:9876`
-     *
-     * <div class="alert alert-warning">
-     *   It is not possible to trust specific URLs/paths. The `path`, `query` and `fragment` parts
-     *   of a URL will be ignored. For example, `https://foo.com/path/bar?query=baz#fragment` will be
-     *   treated as `https://foo.com`, meaning that **all** requests to URLs starting with
-     *   `https://foo.com/` will include the XSRF token.
-     * </div>
-     *
-     * @example
-     *
-     * ```js
-     * // App served from `https://example.com/`.
-     * angular.
-     *   module('xsrfTrustedOriginsExample', []).
-     *   config(['$httpProvider', function($httpProvider) {
-     *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
-     *   }]).
-     *   run(['$http', function($http) {
-     *     // The XSRF token will be sent.
-     *     $http.get('https://api.example.com/preferences').then(...);
-     *
-     *     // The XSRF token will NOT be sent.
-     *     $http.get('https://stats.example.com/activity').then(...);
-     *   }]);
-     * ```
-     *
-     */
-    this.xsrfTrustedOrigins = [];
-    const that = this;
-    this.$get = [
-        $injectTokens._injector,
-        $injectTokens._sce,
-        $injectTokens._cookie,
-        /** Creates the runtime `$http` service. */
-        function ($injector, $sce, $cookie) {
-            const defaultCache = new Map();
-            /**
-             * Resolves the configured default param serializer to a callable function.
-             */
-            defaults.paramSerializer = isString(defaults.paramSerializer)
-                ? $injector.get(defaults.paramSerializer)
-                : defaults.paramSerializer;
-            /**
-             * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
-             * The reversal lets request interceptors wrap the server request in the expected order.
-             */
-            const reversedInterceptors = [];
-            that.interceptors.forEach((interceptorFactory) => {
-                reversedInterceptors.unshift(isString(interceptorFactory)
-                    ? $injector.get(interceptorFactory)
-                    : $injector.invoke(interceptorFactory));
-            });
-            /**
-             * Creates the origin check used for XSRF header inclusion.
-             */
-            const urlIsAllowedOrigin = urlIsAllowedOriginFactory(that.xsrfTrustedOrigins);
-            /**
-             * Issues an HTTP request using the provider defaults and configured interceptors.
-             */
-            const $http = function (requestConfig) {
-                if (!isObject(requestConfig)) {
-                    throw minErr("$http")("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
-                }
-                if (!isString($sce.valueOf(requestConfig.url))) {
-                    throw minErr("$http")("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
-                }
-                const config = extend({
-                    method: "get",
-                    transformRequest: defaults.transformRequest,
-                    transformResponse: defaults.transformResponse,
-                    paramSerializer: defaults.paramSerializer,
-                }, requestConfig);
-                config.headers = mergeHeaders(requestConfig);
-                config.method = uppercase(config.method);
-                config.paramSerializer = isString(config.paramSerializer)
-                    ? $injector.get(config.paramSerializer)
-                    : config.paramSerializer;
-                const requestInterceptors = [];
-                const responseInterceptors = [];
-                let promise = Promise.resolve(config);
-                // apply interceptors
-                reversedInterceptors.forEach((interceptor) => {
-                    if (interceptor.request || interceptor.requestError) {
-                        requestInterceptors.unshift(interceptor.request, interceptor.requestError);
-                    }
-                    if (interceptor.response || interceptor.responseError) {
-                        responseInterceptors.push(interceptor.response, interceptor.responseError);
-                    }
-                });
-                promise = chainInterceptors(promise, requestInterceptors);
-                promise = promise.then(serverRequest);
-                promise = chainInterceptors(promise, responseInterceptors);
-                return promise;
-                /** Applies a list of interceptor success/error pairs to a promise chain. */
-                function chainInterceptors(promiseParam, interceptors) {
-                    for (let i = 0, ii = interceptors.length; i < ii;) {
-                        const thenFn = interceptors[i++];
-                        const rejectFn = interceptors[i++];
-                        promiseParam = promiseParam.then(thenFn, rejectFn);
-                    }
-                    interceptors.length = 0;
-                    return promiseParam;
-                }
-                /** Resolves any header factory functions against the current request configuration. */
-                function executeHeaderFns(headers, configParam) {
-                    let headerContent;
-                    const processedHeaders = {};
-                    entries(headers).forEach(([header, headerFn]) => {
-                        if (isFunction(headerFn)) {
-                            headerContent = headerFn(configParam);
-                            if (!isNullOrUndefined(headerContent)) {
-                                processedHeaders[header] = headerContent;
-                            }
-                        }
-                        else {
-                            processedHeaders[header] = headerFn;
-                        }
-                    });
-                    return processedHeaders;
-                }
-                /** Merges provider defaults with request-specific headers for a single request. */
-                function mergeHeaders(configParam) {
-                    let defHeaders = (defaults.headers || {});
-                    const reqHeaders = extend({}, configParam.headers || {});
-                    defHeaders = extend({}, defHeaders.common || {}, defHeaders[lowercase(configParam.method)] || {});
-                    keys(defHeaders).forEach((defHeaderName) => {
-                        const lowercaseDefHeaderName = lowercase(defHeaderName);
-                        const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
-                            return lowercase(reqHeaderName) === lowercaseDefHeaderName;
-                        });
-                        if (!hasMatchingHeader) {
-                            reqHeaders[defHeaderName] = defHeaders[defHeaderName];
-                        }
-                    });
-                    // execute if header value is a function for merged headers
-                    return executeHeaderFns(reqHeaders, shallowCopy(configParam));
-                }
-                /** Executes the request pipeline and attaches response transforms. */
-                function serverRequest(configParam) {
-                    const headers = configParam.headers || {};
-                    configParam.headers = headers;
-                    const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest || []);
-                    // strip content-type if data is undefined
-                    if (isUndefined(reqData)) {
-                        keys(headers).forEach((header) => {
-                            if (lowercase(header) === "content-type") {
-                                delete headers[header];
-                            }
-                        });
-                    }
-                    const providerDefaults = defaults;
-                    if (isUndefined(configParam.withCredentials) &&
-                        !isUndefined(providerDefaults.withCredentials)) {
-                        configParam.withCredentials = providerDefaults.withCredentials;
-                    }
-                    // send request
-                    return sendReq(configParam, reqData).then(transformResponse, transformResponse);
-                }
-                /** Applies response transforms and rejects responses outside the success range. */
-                function transformResponse(response) {
-                    const httpResponse = response;
-                    // make a copy since the response must be cacheable
-                    const resp = extend({}, httpResponse);
-                    resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse || []);
-                    return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
-                }
-            };
-            $http.pendingRequests = [];
-            createShortMethods("get", "delete", "head");
-            createShortMethodsWithData("post", "put", "patch");
-            /**
-             * Exposes the runtime equivalent of `$httpProvider.defaults`.
-             * It allows configuration of default headers, `withCredentials`, and request/response transforms.
-             *
-             * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
-             */
-            $http.defaults = defaults;
-            return $http;
-            /** Generates shorthand methods for requests that do not send a request body. */
-            function createShortMethods(...names) {
-                names.forEach((name) => {
-                    $http[name] = function (url, config) {
-                        return $http(extend({}, config || {}, {
-                            method: name,
-                            url,
-                        }));
-                    };
-                });
-            }
-            /** Generates shorthand methods for requests that send a request body. */
-            function createShortMethodsWithData(...names) {
-                names.forEach((name) => {
-                    $http[name] = function (url, data, config) {
-                        return $http(extend({}, config || {}, {
-                            method: name,
-                            url,
-                            data,
-                        }));
-                    };
-                });
-            }
-            /** Sends the request through the low-level HTTP backend and cache layer. */
-            function sendReq(config, reqData) {
-                const { promise, resolve, reject } = withResolvers$1();
-                let cache;
-                let cachedResp;
-                const reqHeaders = config.headers || {};
-                config.headers = reqHeaders;
-                let { url } = config;
-                if (!isString(url)) {
-                    // If it is not a string then the URL must be a $sce trusted object
-                    url = $sce.valueOf(url);
-                }
-                const paramSerializer = config.paramSerializer;
-                url = buildUrl(url, paramSerializer(config.params));
-                $http.pendingRequests.push(config);
-                promise.then(removePendingReq, removePendingReq);
-                if ((config.cache || defaults.cache) &&
-                    config.cache !== false &&
-                    config.method === "GET") {
-                    const providerDefaults = defaults;
-                    cache = isObject(config.cache)
-                        ? config.cache
-                        : isObject(providerDefaults.cache)
-                            ? providerDefaults.cache
-                            : defaultCache;
-                }
-                if (cache) {
-                    cachedResp = cache.get(url);
-                    if (isDefined(cachedResp)) {
-                        if (isPromiseLike(cachedResp)) {
-                            // cached request has already been sent, but there is no response yet
-                            cachedResp.then(resolvePromiseWithResult, resolvePromiseWithResult);
-                        }
-                        else {
-                            // serving from cache
-                            if (isArray(cachedResp)) {
-                                resolvePromise(cachedResp[1], cachedResp[0], shallowCopy(cachedResp[2]), cachedResp[3], cachedResp[4]);
-                            }
-                            else {
-                                resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
-                            }
-                        }
-                    }
-                    else {
-                        // put the promise for the non-transformed response into cache as a placeholder
-                        cache.set(url, promise);
-                    }
-                }
-                // if we won't have the response in cache, set the xsrf headers and
-                // send the request to the backend
-                if (isUndefined(cachedResp)) {
-                    const xsrfCookieName = config.xsrfCookieName || defaults.xsrfCookieName;
-                    const xsrfValue = xsrfCookieName && urlIsAllowedOrigin(config.url)
-                        ? $cookie.getAll()[xsrfCookieName]
-                        : undefined;
-                    if (xsrfValue) {
-                        const xsrfHeaderName = config.xsrfHeaderName || defaults.xsrfHeaderName;
-                        if (xsrfHeaderName) {
-                            reqHeaders[xsrfHeaderName] = xsrfValue;
-                        }
-                    }
-                    http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createApplyHandlers(config.eventHandlers), createApplyHandlers(config.uploadEventHandlers));
-                }
-                return promise;
-                /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
-                function createApplyHandlers(eventHandlers) {
-                    if (eventHandlers) {
-                        const applyHandlers = {};
-                        entries(eventHandlers).forEach(([key, eventHandler]) => {
-                            applyHandlers[key] = function (event) {
-                                if (useApplyAsync) {
-                                    setTimeout(() => callEventHandler());
-                                }
-                                else {
-                                    callEventHandler();
-                                }
-                                function callEventHandler() {
-                                    if (typeof eventHandler === "function") {
-                                        eventHandler(event);
-                                    }
-                                    else if (eventHandler &&
-                                        typeof eventHandler === "object" &&
-                                        "handleEvent" in eventHandler) {
-                                        eventHandler.handleEvent(event);
-                                    }
-                                }
-                            };
-                        });
-                        return applyHandlers;
-                    }
-                    else {
-                        return {};
-                    }
-                }
-                /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
-                function done(status, response, headersString, statusText, xhrStatus) {
-                    if (cache) {
-                        if (isSuccess(status)) {
-                            cache.set(url, [
-                                status,
-                                response,
-                                parseHeaders(headersString || ""),
-                                statusText,
-                                xhrStatus,
-                            ]);
-                        }
-                        else {
-                            // remove promise from the cache
-                            cache.delete(url);
-                        }
-                    }
-                    function resolveHttpPromise() {
-                        resolvePromise(response, status, headersString, statusText, xhrStatus);
-                    }
-                    if (useApplyAsync) {
-                        setTimeout(resolveHttpPromise);
-                    }
-                    else {
-                        resolveHttpPromise();
-                    }
-                }
-                /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
-                function resolvePromise(response, status, headers, statusText, xhrStatus) {
-                    // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
-                    status = status >= -1 ? status : 0;
-                    (isSuccess(status) ? resolve : reject)({
-                        data: response,
-                        status,
-                        headers: headersGetter(headers ?? ""),
-                        config,
-                        statusText,
-                        xhrStatus,
-                    });
-                }
-                /** Settles the raw `$http` promise from a cached or intercepted response object. */
-                function resolvePromiseWithResult(result) {
-                    resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.xhrStatus);
-                }
-                /** Removes the finished request config from `$http.pendingRequests`. */
-                function removePendingReq() {
-                    const idx = $http.pendingRequests.indexOf(config);
-                    if (idx !== -1)
-                        $http.pendingRequests.splice(idx, 1);
-                }
-            }
-            /** Appends a serialized query string to a URL when request parameters are present. */
-            function buildUrl(url, serializedParams) {
-                if (serializedParams.length > 0) {
-                    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
-                }
-                return url;
-            }
-        },
-    ];
-}
-/**
- * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
- *
- * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
- * @param [url] - The request URL. Defaults to the current page URL.
- * @param [post] - Optional request body.
- * @param [callback] - Completion callback invoked when the request settles.
- * @param [headers] - Request headers to apply before sending.
- * @param [timeout] - Timeout in milliseconds or a cancellable promise.
- * @param [withCredentials] - Whether to send credentials with the request.
- * @param [responseType] - The expected XHR response type.
- * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
- * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
- */
-function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
-    url = url || trimEmptyHash(window.location.href);
-    const xhr = new XMLHttpRequest();
-    let abortedByTimeout = false;
-    let timeoutId;
-    xhr.open(method, url, true);
-    if (headers) {
-        for (const [key, value] of entries(headers)) {
-            if (isDefined(value)) {
-                xhr.setRequestHeader(key, value);
-            }
-        }
-    }
-    xhr.onload = () => {
-        let status = xhr.status || 0;
-        const statusText = xhr.statusText || "";
-        if (status === 0) {
-            status = xhr.response
-                ? Http._OK
-                : new URL(url).protocol === "file:"
-                    ? Http._NotFound
-                    : 0;
-        }
-        completeRequest(status, xhr.response, xhr.getAllResponseHeaders(), statusText, "complete");
-    };
-    xhr.onerror = () => completeRequest(-1, null, null, "", "error");
-    xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
-    xhr.onabort = () => {
-        completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
-    };
-    if (eventHandlers) {
-        for (const [key, handler] of entries(eventHandlers)) {
-            xhr.addEventListener(key, handler);
-        }
-    }
-    if (uploadEventHandlers) {
-        for (const [key, handler] of entries(uploadEventHandlers)) {
-            xhr.upload.addEventListener(key, handler);
-        }
-    }
-    if (withCredentials) {
-        xhr.withCredentials = true;
-    }
-    if (responseType) {
-        try {
-            xhr.responseType = responseType;
-        }
-        catch (err) {
-            if (responseType !== "json")
-                throw err;
-        }
-    }
-    xhr.send(isUndefined(post) ? null : post);
-    if (typeof timeout === "number" && timeout > 0) {
-        timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
-    }
-    else if (isPromiseLike(timeout)) {
-        timeout.then(() => {
-            timeoutRequest("abort");
-        });
-    }
-    /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
-    function timeoutRequest(reason) {
-        abortedByTimeout = reason === "timeout";
-        if (xhr)
-            xhr.abort();
-    }
-    /**
-     * Finalizes the request, clears timeout state, and notifies the caller.
-     *
-     * @param status - HTTP status code or `-1` for network errors.
-     * @param response - Parsed or raw response payload from the server.
-     * @param headersString - Raw response headers as a string.
-     * @param statusText - HTTP status text returned by the server.
-     * @param xhrStatus - Final transport status reported for the request.
-     */
-    function completeRequest(status, response, headersString, statusText, xhrStatus) {
-        if (isDefined(timeoutId)) {
-            clearTimeout(timeoutId);
-        }
-        if (callback) {
-            callback(status, response, headersString, statusText, xhrStatus);
-        }
-    }
-}
-
-/**
- * Creates a resolver that instantiates `$animate` only when animation-aware code
- * actually needs it.
- */
-function createLazyAnimate($injector) {
-    let $animate;
-    return () => ($animate || ($animate = $injector.get($injectTokens._animate)));
-}
-/**
- * Returns `$animate` only for nodes that opt into animation handling.
- */
-function getAnimateForNode(getAnimate, node) {
-    return hasAnimate(node) ? getAnimate() : undefined;
-}
-
-/** Creates a directive factory wrapper for one HTTP method attribute. */
-function defineDirective(method, attrOverride) {
-    const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
-    const directive = createHttpDirective(method, attrName);
-    directive.$inject = [
-        $injectTokens._http,
-        $injectTokens._compile,
-        $injectTokens._log,
-        $injectTokens._parse,
-        $injectTokens._state,
-        $injectTokens._sse,
-        $injectTokens._injector,
-    ];
-    return directive;
-}
-const ngGetDirective = defineDirective("get");
-const ngDeleteDirective = defineDirective("delete");
-const ngPostDirective = defineDirective("post");
-const ngPutDirective = defineDirective("put");
-const ngSseDirective = defineDirective("get", "ngSse");
-/**
- * Selects DOM event to listen for based on the element type.
- *
- * @param element - The DOM element to inspect.
- * @returns The name of the event to listen for.
- */
-function getEventNameForElement(element) {
-    const tag = element.tagName.toLowerCase();
-    if (["input", "textarea", "select"].includes(tag)) {
-        return "change";
-    }
-    else if (tag === "form") {
-        return "submit";
-    }
-    return "click";
-}
-/** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
-function createHttpDirective(method, attrName) {
-    /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-    return function ($http, $compile, $log, $parse, $state, $sse, $injector) {
-        const getAnimate = createLazyAnimate($injector);
-        /** Collects form data from the element or its associated form. */
-        function collectFormData(element) {
-            let form = null;
-            const tag = element.tagName.toLowerCase();
-            if (tag === "form") {
-                form = element;
-            }
-            else if ("form" in element && element.form) {
-                const { form: associatedForm } = element;
-                form = associatedForm;
-            }
-            else if (element.hasAttribute("form")) {
-                const formId = element.getAttribute("form");
-                if (formId) {
-                    const maybeForm = document.getElementById(formId);
-                    if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
-                        form = maybeForm;
-                    }
-                }
-            }
-            if (!form) {
-                if ("name" in element &&
-                    typeof element.name === "string" &&
-                    element.name.length > 0) {
-                    if (isInstanceOf(element, HTMLInputElement) ||
-                        isInstanceOf(element, HTMLTextAreaElement) ||
-                        isInstanceOf(element, HTMLSelectElement)) {
-                        const key = element.name;
-                        const { value } = element;
-                        return { [key]: value };
-                    }
-                }
-                return {};
-            }
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-            return data;
-        }
-        return {
-            restrict: "A",
-            link(scope, element, attrs) {
-                const eventName = attrs.trigger || getEventNameForElement(element);
-                const tag = element.tagName.toLowerCase();
-                let content;
-                if (isDefined(attrs.latch)) {
-                    attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
-                }
-                let throttled = false;
-                let intervalId;
-                if (isDefined(attrs.interval)) {
-                    element.dispatchEvent(new Event(eventName));
-                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval) || 1000);
-                }
-                /**
-                 * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
-                 */
-                function handleSwapResponse(html, swap, scopeParam, attrsParam, elementParam) {
-                    let animationEnabled = false;
-                    if (attrsParam.animate) {
-                        animationEnabled = true;
-                    }
-                    const animate = animationEnabled ? getAnimate() : undefined;
-                    let nodes = [];
-                    if (!["textcontent", "delete", "none"].includes(swap)) {
-                        if (!html)
-                            return;
-                        const compiled = $compile(String(html))(scopeParam);
-                        nodes =
-                            compiled instanceof DocumentFragment
-                                ? Array.from(compiled.childNodes)
-                                : [compiled];
-                    }
-                    const targetSelector = attrsParam.target;
-                    const target = targetSelector
-                        ? document.querySelector(targetSelector)
-                        : elementParam;
-                    if (!target) {
-                        $log.warn(`${attrName}: target "${targetSelector}" not found`);
-                        return;
-                    }
-                    switch (swap) {
-                        case "outerHTML": {
-                            const parent = target.parentNode;
-                            if (!parent)
-                                return;
-                            // Build fragment for static replacement OR a list for animation
-                            const frag = document.createDocumentFragment();
-                            nodes.forEach((x) => frag.appendChild(x));
-                            if (!animationEnabled) {
-                                parent.replaceChild(frag, target);
-                                break;
-                            }
-                            const placeholder = document.createElement("span");
-                            placeholder.style.display = "none";
-                            parent.insertBefore(placeholder, target.nextSibling);
-                            animate.leave(target).done(() => {
-                                const insertedNodes = Array.from(frag.childNodes);
-                                // Insert each node in order
-                                for (const x of insertedNodes) {
-                                    if (x.nodeType === NodeType._ELEMENT_NODE) {
-                                        // Animate elements
-                                        animate.enter(x, parent, placeholder);
-                                    }
-                                    else {
-                                        // Insert text nodes statically
-                                        parent.insertBefore(x, placeholder);
-                                    }
-                                }
-                                content = insertedNodes;
-                                scopeParam.$flushQueue(); // flush once after all insertions
-                            });
-                            scopeParam.$flushQueue(); // flush leave animation
-                            break;
-                        }
-                        case "textContent":
-                            if (animationEnabled) {
-                                animate.leave(target).done(() => {
-                                    target.textContent = html;
-                                    animate.enter(target, target.parentNode);
-                                    scopeParam.$flushQueue();
-                                });
-                                scopeParam.$flushQueue();
-                            }
-                            else {
-                                target.textContent = html;
-                            }
-                            break;
-                        case "beforebegin": {
-                            const parent = target.parentNode;
-                            if (!parent)
-                                break;
-                            nodes.forEach((node) => {
-                                if (animationEnabled &&
-                                    node.nodeType === NodeType._ELEMENT_NODE) {
-                                    animate.enter(node, parent, target); // insert before target
-                                }
-                                else {
-                                    parent.insertBefore(node, target);
-                                }
-                            });
-                            if (animationEnabled)
-                                scopeParam.$flushQueue();
-                            break;
-                        }
-                        case "afterbegin": {
-                            const { firstChild } = target;
-                            [...nodes].reverse().forEach((node) => {
-                                if (animationEnabled &&
-                                    node.nodeType === NodeType._ELEMENT_NODE) {
-                                    animate.enter(node, target, firstChild); // insert before first child
-                                }
-                                else {
-                                    target.insertBefore(node, firstChild);
-                                }
-                            });
-                            if (animationEnabled)
-                                scopeParam.$flushQueue();
-                            break;
-                        }
-                        case "beforeend": {
-                            nodes.forEach((node) => {
-                                if (animationEnabled &&
-                                    node.nodeType === NodeType._ELEMENT_NODE) {
-                                    animate.enter(node, target); // append at end
-                                }
-                                else {
-                                    target.appendChild(node);
-                                }
-                            });
-                            if (animationEnabled)
-                                scopeParam.$flushQueue();
-                            break;
-                        }
-                        case "afterend": {
-                            const parent = target.parentNode;
-                            if (!parent)
-                                break;
-                            const { nextSibling } = target;
-                            [...nodes].reverse().forEach((node) => {
-                                if (animationEnabled &&
-                                    node.nodeType === NodeType._ELEMENT_NODE) {
-                                    animate.enter(node, parent, nextSibling); // insert after target
-                                }
-                                else {
-                                    parent.insertBefore(node, nextSibling);
-                                }
-                            });
-                            if (animationEnabled)
-                                scopeParam.$flushQueue();
-                            break;
-                        }
-                        case "delete":
-                            if (animationEnabled) {
-                                animate.leave(target).done(() => {
-                                    removeElement(target); // safety: actually remove in case $animate.leave didn't
-                                    scopeParam.$flushQueue();
-                                });
-                                scopeParam.$flushQueue();
-                            }
-                            else {
-                                removeElement(target);
-                            }
-                            break;
-                        case "none":
-                            break;
-                        case "innerHTML":
-                        default:
-                            if (animationEnabled) {
-                                if (content &&
-                                    !Array.isArray(content) &&
-                                    content.nodeType !== NodeType._TEXT_NODE) {
-                                    animate.leave(content).done(() => {
-                                        content = nodes[0];
-                                        animate.enter(nodes[0], target);
-                                        scopeParam.$flushQueue();
-                                    });
-                                    scopeParam.$flushQueue();
-                                }
-                                else {
-                                    content = nodes[0];
-                                    if (content &&
-                                        !Array.isArray(content) &&
-                                        content.nodeType === NodeType._TEXT_NODE) {
-                                        emptyElement(target);
-                                        target.replaceChildren(...nodes);
-                                    }
-                                    else {
-                                        animate.enter(nodes[0], target);
-                                        scopeParam.$flushQueue();
-                                    }
-                                }
-                            }
-                            else {
-                                emptyElement(target);
-                                target.replaceChildren(...nodes);
-                            }
-                            break;
-                    }
-                }
-                element.addEventListener(eventName, async (event) => {
-                    if (element.disabled)
-                        return;
-                    if (tag === "form")
-                        event.preventDefault();
-                    const swap = attrs.swap || "innerHTML";
-                    const url = attrs[attrName];
-                    if (!url) {
-                        $log.warn(`${attrName}: no URL specified`);
-                        return;
-                    }
-                    const handler = (res) => {
-                        if (isDefined(attrs.loading)) {
-                            attrs.$set("loading", false);
-                        }
-                        if (isDefined(attrs.loadingClass)) {
-                            attrs.$removeClass(attrs.loadingClass);
-                        }
-                        const html = res.data;
-                        if (Http._OK <= res.status &&
-                            res.status <= Http._MultipleChoices - 1) {
-                            if (isDefined(attrs.success)) {
-                                $parse(attrs.success)(scope, { $res: html });
-                            }
-                            if (isDefined(attrs.stateSuccess)) {
-                                $state.go(attrs.stateSuccess);
-                            }
-                        }
-                        else if (Http._BadRequest <= res.status &&
-                            res.status <= Http._ErrorMax) {
-                            if (isDefined(attrs.error)) {
-                                $parse(attrs.error)(scope, { $res: html });
-                            }
-                            if (isDefined(attrs.stateError)) {
-                                $state.go(attrs.stateError);
-                            }
-                        }
-                        if (isObject(html)) {
-                            if (attrs.target) {
-                                scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
-                            }
-                            else {
-                                scope.$merge(html);
-                            }
-                        }
-                        else if (isString(html)) {
-                            handleSwapResponse(html, swap, scope, attrs, element);
-                        }
-                    };
-                    if (isDefined(attrs.delay)) {
-                        await wait(parseInt(attrs.delay) | 0);
-                    }
-                    if (throttled)
-                        return;
-                    if (isDefined(attrs.throttle)) {
-                        throttled = true;
-                        attrs.$set("throttled", true);
-                        setTimeout(() => {
-                            attrs.$set("throttled", false);
-                            throttled = false;
-                        }, parseInt(attrs.throttle));
-                    }
-                    if (isDefined(attrs.loading)) {
-                        attrs.$set("loading", true);
-                    }
-                    if (isDefined(attrs.loadingClass)) {
-                        attrs.$addClass(attrs.loadingClass);
-                    }
-                    if (method === "post" || method === "put") {
-                        let data;
-                        const config = {};
-                        if (attrs.enctype) {
-                            config.headers = {
-                                "Content-Type": attrs.enctype,
-                            };
-                            data = toKeyValue(collectFormData(element));
-                        }
-                        else {
-                            data = collectFormData(element);
-                        }
-                        $http[method](url, data, config).then(handler).catch(handler);
-                    }
-                    else {
-                        if (method === "get" && attrs.ngSse) {
-                            const sseUrl = url;
-                            const config = {
-                                withCredentials: attrs.withCredentials === "true",
-                                transformMessage: (data) => {
-                                    try {
-                                        return JSON.parse(data);
-                                    }
-                                    catch {
-                                        return data;
-                                    }
-                                },
-                                onOpen: () => {
-                                    $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
-                                    if (isDefined(attrs.loading))
-                                        attrs.$set("loading", false);
-                                    if (isDefined(attrs.loadingClass))
-                                        attrs.$removeClass(attrs.loadingClass);
-                                },
-                                onMessage: (data) => {
-                                    const res = { status: 200, data };
-                                    handler(res);
-                                },
-                                onError: (err) => {
-                                    $log.error(`${attrName}: SSE error`, err);
-                                    const res = { status: 500, data: err };
-                                    handler(res);
-                                },
-                                onReconnect: (count) => {
-                                    $log.info(`ngSse: reconnected ${count} time(s)`);
-                                    if (attrs.onReconnect)
-                                        $parse(attrs.onReconnect)(scope, { $count: count });
-                                },
-                            };
-                            const source = $sse(sseUrl, config);
-                            scope.$on("$destroy", () => {
-                                $log.info(`${attrName}: closing SSE connection`);
-                                source.close();
-                            });
-                        }
-                        else {
-                            $http[method](url).then(handler).catch(handler);
-                        }
-                    }
-                });
-                if (intervalId) {
-                    scope.$on("$destroy", () => clearInterval(intervalId));
-                }
-                if (eventName === "load") {
-                    element.dispatchEvent(new Event("load"));
-                }
-            },
-        };
-    };
-}
-
-ngWorkerDirective.$inject = [$injectTokens._parse, $injectTokens._log, $injectTokens._exceptionHandler];
-/**
- * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
- */
-function ngWorkerDirective($parse, $log, $exceptionHandler) {
-    return {
-        restrict: "A",
-        link(scope, element, attrs) {
-            const workerName = attrs.ngWorker;
-            if (!workerName) {
-                $log.warn("ngWorker: missing worker name");
-                return;
-            }
-            const eventName = attrs.trigger || getEventNameForElement(element);
-            let throttled = false;
-            let intervalId;
-            if (isDefined(attrs.latch)) {
-                attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
-            }
-            if (isDefined(attrs.interval)) {
-                element.dispatchEvent(new Event(eventName));
-                intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval || "", 10) || 1000);
-            }
-            const worker = createWorkerConnection(workerName, {
-                logger: $log,
-                err: $exceptionHandler,
-                onMessage: (result) => {
-                    if (isDefined(attrs.dataOnResult)) {
-                        $parse(attrs.dataOnResult)(scope, { $result: result });
-                    }
-                    else {
-                        handleSwap(String(result), attrs.swap || "innerHTML", element);
-                    }
-                },
-                onError: (err) => {
-                    $log.error(`[ng-worker:${workerName}]`, err);
-                    if (isDefined(attrs.dataOnError)) {
-                        $parse(attrs.dataOnError)(scope, { $error: err });
-                    }
-                    else {
-                        element.textContent = "Error";
-                    }
-                },
-            });
-            element.addEventListener(eventName, async () => {
-                if (element.hasAttribute("disabled"))
-                    return;
-                if (isDefined(attrs.delay)) {
-                    await wait(parseInt(attrs.delay || "", 10) || 0);
-                }
-                if (throttled)
-                    return;
-                if (isDefined(attrs.throttle)) {
-                    throttled = true;
-                    attrs.$set("throttled", true);
-                    setTimeout(() => {
-                        attrs.$set("throttled", false);
-                        throttled = false;
-                    }, parseInt(attrs.throttle || "", 10));
-                }
-                let params;
-                try {
-                    params = attrs.params ? scope.$eval(attrs.params) : undefined;
-                }
-                catch (err) {
-                    $log.error("ngWorker: failed to evaluate data-params", err);
-                    params = undefined;
-                }
-                worker.post(params);
-            });
-            if (intervalId) {
-                scope.$on("$destroy", () => clearInterval(intervalId));
-            }
-            if (eventName === "load") {
-                element.dispatchEvent(new Event("load"));
-            }
-        },
-    };
-}
-/**
- * Swap result into DOM based on strategy
- */
-function handleSwap(result, swap, element) {
-    switch (swap) {
-        case "outerHTML": {
-            const parent = element.parentNode;
-            if (!parent)
-                return;
-            const temp = document.createElement("div");
-            temp.innerHTML = result;
-            if (temp.firstChild) {
-                parent.replaceChild(temp.firstChild, element);
-            }
-            break;
-        }
-        case "textContent":
-            element.textContent = result;
-            break;
-        case "beforebegin":
-            element.insertAdjacentHTML("beforebegin", result);
-            break;
-        case "afterbegin":
-            element.insertAdjacentHTML("afterbegin", result);
-            break;
-        case "beforeend":
-            element.insertAdjacentHTML("beforeend", result);
-            break;
-        case "afterend":
-            element.insertAdjacentHTML("afterend", result);
-            break;
-        case "innerHTML":
-        default:
-            element.innerHTML = result;
-            break;
-    }
-}
-/**
- * Creates a managed Web Worker connection.
- */
-function createWorkerConnection(scriptPath, config) {
-    if (!scriptPath)
-        throw new Error("Worker script path required");
-    const defaults = {
-        autoRestart: false,
-        autoTerminate: false,
-        onMessage() {
-            /* empty */
-        },
-        onError() {
-            /* empty */
-        },
-        transformMessage(data) {
-            if (typeof data !== "string") {
-                return data;
-            }
-            try {
-                return JSON.parse(data);
-            }
-            catch {
-                return data;
-            }
-        },
-        logger: (config?.logger || console),
-        err: (config?.err || (() => undefined)),
-    };
-    const cfg = Object.assign({}, defaults, config);
-    let worker = new Worker(scriptPath, { type: "module" });
-    let terminated = false;
-    const wire = (workerParam) => {
-        workerParam.onmessage = (event) => {
-            let { data } = event;
-            try {
-                data = cfg.transformMessage(data);
-            }
-            catch {
-                /* no-op */
-            }
-            cfg.onMessage(data, event);
-        };
-        workerParam.onerror = (err) => {
-            cfg.onError(err);
-            if (cfg.autoRestart) {
-                reconnect();
-            }
-        };
-    };
-    const reconnect = () => {
-        if (terminated)
-            return;
-        cfg.logger.info("Worker: restarting...");
-        worker.terminate();
-        worker = new Worker(scriptPath, { type: "module" });
-        wire(worker);
-    };
-    wire(worker);
-    return {
-        post(data) {
-            if (terminated) {
-                cfg.logger.warn("Worker already terminated");
-            }
-            try {
-                worker.postMessage(data);
-            }
-            catch (err) {
-                cfg.logger.log("Worker post failed", err);
-            }
-        },
-        terminate() {
-            terminated = true;
-            worker.terminate();
-        },
-        restart() {
-            if (terminated) {
-                cfg.logger.warn("Worker cannot restart after terminate");
-            }
-            reconnect();
-        },
-        config: cfg,
-    };
-}
-
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
@@ -3806,47 +2461,24 @@ class NgModule {
     constructor(name, requires, configFn) {
         validate(isString, name, "name");
         validate(isArray, requires, "requires");
-        /**
-         * @public
-         * Name of the current module.
-         * @type {string}
-         */
         this.name = name;
-        /**
-         * Array of module names that this module depends on.
-         * @ignore
-         * @type {string[]}
-         */
         this._requires = requires;
-        /**
-         * Holds a collection of tasks, required to instantiate an angular component
-         * @ignore
-         * @type {!Array<Array<*>>}
-         */
         this._invokeQueue = [];
-        /**
-         * @ignore
-         * @type {!Array<Array<*>>}
-         */
         this._configBlocks = [];
-        /** @ignore @type {!Array.<ng.Injectable<any>>} */
         this._runBlocks = [];
         if (configFn) {
             this.config(configFn);
         }
-        /** @ignore @type {!Array.<ng.Injectable<any>>} */
         this._services = [];
-        /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
-        this._restDefinitions = [];
     }
     /**
      * @param {string} name
-     * @param {any} object - Allows undefined
+     * @param {unknown} object - Allows undefined
      * @returns {NgModule}
      */
     value(name, object) {
         validate(isString, name, "name");
-        this._invokeQueue.push([$injectTokens._provide, "value", [name, object]]);
+        this._invokeQueue.push([_provide, "value", [name, object]]);
         return this;
     }
     /**
@@ -3857,21 +2489,21 @@ class NgModule {
     constant(name, object) {
         validate(isString, name, "name");
         validate(isDefined, object, "object");
-        this._invokeQueue.unshift([$injectTokens._provide, "constant", [name, object]]);
+        this._invokeQueue.unshift([_provide, "constant", [name, object]]);
         return this;
     }
     /**
      *
-     * @param {ng.Injectable<any>} configFn
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} configFn
      * @returns {NgModule}
      */
     config(configFn) {
         validate(isInjectable, configFn, "configFn");
-        this._configBlocks.push([$injectTokens._injector, "invoke", [configFn]]);
+        this._configBlocks.push([_injector, "invoke", [configFn]]);
         return this;
     }
     /**
-     * @param {ng.Injectable<any>} block
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} block
      * @returns {NgModule}
      */
     run(block) {
@@ -3887,64 +2519,64 @@ class NgModule {
     component(name, options) {
         validate(isString, name, "name");
         validate(isDefined, options, "object");
-        this._invokeQueue.push([$injectTokens._compileProvider, "component", [name, options]]);
+        this._invokeQueue.push([_compileProvider, "component", [name, options]]);
         return this;
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} providerFunction
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} providerFunction
      * @returns {NgModule}
      */
     factory(name, providerFunction) {
         validate(isString, name, "name");
         validateRequired(providerFunction, "providerFunction");
-        this._invokeQueue.push([$injectTokens._provide, "factory", [name, providerFunction]]);
+        this._invokeQueue.push([_provide, "factory", [name, providerFunction]]);
         return this;
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} serviceFunction
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} serviceFunction
      * @returns {NgModule}
      */
     service(name, serviceFunction) {
         validate(isString, name, "name");
         validateRequired(serviceFunction, "serviceFunction");
         this._services.push(name);
-        this._invokeQueue.push([$injectTokens._provide, "service", [name, serviceFunction]]);
+        this._invokeQueue.push([_provide, "service", [name, serviceFunction]]);
         return this;
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} providerType
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} providerType
      * @returns {NgModule}
      */
     provider(name, providerType) {
         validate(isString, name, "name");
         validateRequired(providerType, "providerType");
-        this._invokeQueue.push([$injectTokens._provide, "provider", [name, providerType]]);
+        this._invokeQueue.push([_provide, "provider", [name, providerType]]);
         return this;
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} decorFn
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} decorFn
      * @returns {NgModule}
      */
     decorator(name, decorFn) {
         validate(isString, name, "name");
         validateRequired(decorFn, "decorFn");
-        this._configBlocks.push([$injectTokens._provide, "decorator", [name, decorFn]]);
+        this._configBlocks.push([_provide, "decorator", [name, decorFn]]);
         return this;
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} directiveFactory
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} directiveFactory
      * @returns {NgModule}
      */
     directive(name, directiveFactory) {
         validate(isString, name, "name");
         validateRequired(directiveFactory, "directiveFactory");
         this._invokeQueue.push([
-            $injectTokens._compileProvider,
+            _compileProvider,
             "directive",
             [name, directiveFactory],
         ]);
@@ -3952,14 +2584,14 @@ class NgModule {
     }
     /**
      * @param {string} name
-     * @param {ng.Injectable<any>} animationFactory
+     * @param {ng.Injectable<(...args: unknown[]) => unknown>} animationFactory
      * @returns {NgModule}
      */
     animation(name, animationFactory) {
         validate(isString, name, "name");
         validateRequired(animationFactory, "animationFactory");
         this._invokeQueue.push([
-            $injectTokens._animateProvider,
+            _animateProvider,
             "register",
             [name, animationFactory],
         ]);
@@ -3973,7 +2605,7 @@ class NgModule {
     filter(name, filterFn) {
         validate(isString, name, "name");
         validate(isFunction, filterFn, `filterFn`);
-        this._invokeQueue.push([$injectTokens._filterProvider, "register", [name, filterFn]]);
+        this._invokeQueue.push([_filterProvider, "register", [name, filterFn]]);
         return this;
     }
     /**
@@ -3987,114 +2619,106 @@ class NgModule {
     controller(name, ctlFn) {
         validate(isString, name, "name");
         validateRequired(ctlFn, `fictlFnlterFn`);
-        this._invokeQueue.push([$injectTokens._controllerProvider, "register", [name, ctlFn]]);
+        this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
         return this;
     }
     /**
-     * Register a named WebAssembly module that will be instantiated via $provide.
+     * Register a named WebAssembly module as an injectable service.
      *
-     * @param {string} name - The injectable name used to access the instantiated WebAssembly module.
+     * The actual loading is delegated to the `$wasm` provider, so custom
+     * runtimes can decide whether WebAssembly support is included.
      *
+     * @param {string} name - Injectable name used to access the module exports.
      * @param {string} src - URL of the `.wasm` file to fetch and instantiate.
+     * @param {WebAssembly.Imports} [imports] - WebAssembly import object.
+     * @param {WasmOptions} [opts] - WebAssembly provider options.
      *
-     * @param {Object<string, any>} [imports] WebAssembly import object, passed to `WebAssembly.instantiate` or  `WebAssembly.instantiateStreaming`.
-     *
-     * @param {Object<string, any>} [opts] - Configuration object.
-     *
-     *   Supported keys:
-     *   - **raw**: `boolean`
-     *       - `false` (default): the injectable resolves to `instance.exports`
-     *         (ideal for plain WASM modules).
-     *       - `true`: the injectable resolves to the full instantiation result:
-     *         `{ instance, exports, module }`
-     *         (required for runtimes such as Go, Emscripten, wasm-bindgen, etc).
+     * Supported keys:
+     * - **raw**: `boolean`
+     *   - `false` (default): the injectable resolves to `instance.exports`.
+     *   - `true`: the injectable resolves to `{ instance, exports, module }`.
      *
      * @returns {NgModule}
      */
     wasm(name, src, imports = {}, opts = {}) {
         validate(isString, name, "name");
         validate(isString, src, "src");
-        const raw = !!opts.raw;
         this._invokeQueue.push([
-            $injectTokens._provide,
-            "provider",
-            [
-                name,
-                class {
-                    $get() {
-                        return instantiateWasm(src, imports).then((result) => raw ? result : result.exports);
-                    }
-                },
-            ],
+            _provide,
+            "factory",
+            [name, [_wasm, ($wasm) => $wasm(src, imports, opts)]],
         ]);
         return this;
     }
     /**
-     * Register a named worker that will be instantiated via $provide.
+     * Register a named Web Worker connection as an injectable service.
      *
-     * @param {string} name
-     * @param {string | URL} scriptPath
-     * @param {ng.WorkerConfig} [config]
+     * The actual connection is delegated to the `$worker` provider, so worker
+     * support remains provider-driven instead of directive-driven.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string | URL} scriptPath - Worker script URL.
+     * @param {WorkerConfig} [config] - Worker connection options.
      * @returns {NgModule}
      */
-    worker(name, scriptPath, config) {
+    worker(name, scriptPath, config = {}) {
         validate(isString, name, "name");
-        validate(isString, scriptPath, "scriptPath");
+        validateRequired(scriptPath, "scriptPath");
         this._invokeQueue.push([
-            $injectTokens._provide,
-            "provider",
+            _provide,
+            "factory",
             [
                 name,
-                class {
-                    constructor() {
-                        this.$get = () => createWorkerConnection(scriptPath, config);
-                    }
-                },
+                [_worker, ($worker) => $worker(scriptPath, config)],
             ],
         ]);
         return this;
     }
     /**
-     * @param {string} name
-     * @param {Function|Object} ctor - A regular function, an arrow function or an object
-     * @param {ng.StorageType} type
-     * @param {ng.StorageBackend} [backendOrConfig]
+     * Register a persistent object store as an injectable service.
+     *
+     * Store construction is delegated to `$provide.store`, which creates the
+     * service through the injector and persists it through the selected backend.
+     *
+     * @param {string} name - Service name.
+     * @param {Function|Object} ctor - Constructor, factory, or object to persist.
+     * @param {ng.StorageType} type - Storage backend type.
+     * @param {StorageLike & PersistentStoreConfig} [backendOrConfig] - Custom backend or persistence options.
      * @returns {NgModule}
      */
     store(name, ctor, type, backendOrConfig) {
         validate(isString, name, "name");
         validateRequired(ctor, "ctor");
         this._invokeQueue.push([
-            $injectTokens._provide,
+            _provide,
             "store",
             [name, isObject(ctor) ? () => ctor : ctor, type, backendOrConfig],
         ]);
         return this;
     }
     /**
+     * Register a REST resource as an injectable service.
+     *
+     * The resource factory is delegated to the `$rest` provider, keeping REST
+     * support configurable by custom runtimes.
+     *
      * @template T, ID
-     * Register a REST resource during module configuration.
-     * @param {string} name - Service name
-     * @param {string} url - Base URL or URI template
-     * @param {ng.EntityClass<T>} entityClass - Optional constructor for mapping JSON
-     * @param {Object=} options - Optional RestService options (interceptors, etc)
+     * @param {string} name - Service name.
+     * @param {string} url - Base URL or URI template.
+     * @param {ng.EntityClass<T>} [entityClass] - Optional constructor for mapping JSON.
+     * @param {RestOptions} [options] - Optional RestService options.
      * @returns {NgModule}
      */
     rest(name, url, entityClass, options = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
-        validate(isFunction, entityClass, "entityClass");
-        /** @type {ng.RestDefinition<T>} */
-        const def = { name, url, entityClass, options };
-        this._restDefinitions.push(def);
-        // push provider/factory to invokeQueue
         this._invokeQueue.push([
-            $injectTokens._provide,
+            _provide,
             "factory",
             [
                 name,
                 [
-                    $injectTokens._rest,
+                    _rest,
                     ($rest) => $rest(url, entityClass, options),
                 ],
             ],
@@ -4102,48 +2726,464 @@ class NgModule {
         return this;
     }
     /**
-     * Register a pre-configured SSE connection during module configuration.
+     * Register a pre-configured SSE connection as an injectable service.
      *
-     * @param {string} name - Injectable name
-     * @param {string} url - SSE endpoint
-     * @param {ng.SseConfig} [options] - Optional SSE config
+     * The connection is created by `$sse` when the named service is requested.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string} url - SSE endpoint.
+     * @param {SseConfig} [config] - SSE connection options.
      * @returns {NgModule}
      */
-    sse(name, url, options = {}) {
+    sse(name, url, config = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
         this._invokeQueue.push([
-            $injectTokens._provide,
+            _provide,
             "factory",
-            [name, [$injectTokens._sse, ($sse) => $sse(url, options)]],
+            [name, [_sse, ($sse) => $sse(url, config)]],
         ]);
         return this;
     }
     /**
-     * Register a pre-configured WebSocket connection during module configuration.
+     * Register a pre-configured WebSocket connection as an injectable service.
      *
-     * @param {string} name - Injectable name
-     * @param {string} url - WebSocket endpoint
-     * @param {string[]} [protocols] - Optional subprotocols
-     * @param {ng.WebSocketConfig} [options] - Optional WebSocket configuration
+     * The connection is created by `$websocket` when the named service is
+     * requested.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string} url - WebSocket endpoint.
+     * @param {string[]} [protocols] - Optional subprotocols.
+     * @param {WebSocketConfig} [config] - WebSocket connection options.
      * @returns {NgModule}
      */
-    websocket(name, url, protocols = [], options = {}) {
+    websocket(name, url, protocols = [], config = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
         this._invokeQueue.push([
-            $injectTokens._provide,
+            _provide,
             "factory",
             [
                 name,
                 [
-                    $injectTokens._websocket,
-                    ($ws) => $ws(url, protocols, options),
+                    _websocket,
+                    ($websocket) => $websocket(url, protocols, config),
                 ],
             ],
         ]);
         return this;
     }
+}
+
+const ngMinErr = minErr("ng");
+const $injectorMinErr = minErr("$injector");
+const rootScopeCleanupByElement = new WeakMap();
+const moduleRegistry = {};
+let builtinNgModuleRegistrar;
+let runtimeInjectionTokens;
+/**
+ * Configures how the runtime registers the default built-in `ng` module.
+ *
+ * The browser entrypoint installs the full registrar. Custom runtime entrypoints
+ * intentionally skip this so they can assemble smaller builds.
+ */
+function configureBuiltinRuntime(registrar) {
+    builtinNgModuleRegistrar = registrar;
+}
+function configureRuntimeInjectionTokens(tokens) {
+    runtimeInjectionTokens = tokens;
+}
+/**
+ * Main Angular runtime entry point.
+ *
+ * It owns module registration, application bootstrap, injector access,
+ * and the lightweight event-based invocation helpers exposed on `window.angular`.
+ */
+class AngularRuntime extends EventTarget {
+    /**
+     * Creates the Angular runtime singleton or a sub-application instance.
+     *
+     * @param subapp when `true`, skips assigning the instance to `window.angular`
+     */
+    constructor(options = false) {
+        super();
+        /** Sub-application instances created when multiple `ng-app` roots are initialized. */
+        this.subapps = [];
+        /** @internal */
+        this._bootsrappedModules = [];
+        /** AngularTS version string replaced at build time. */
+        this.version = "0.26.0";
+        /** Retrieve the controller instance cached on a compiled DOM element. */
+        this.getController = getController;
+        /** Retrieve the injector cached on a bootstrapped DOM element. */
+        this.getInjector = getInjector;
+        /** Retrieve the scope cached on a compiled DOM element. */
+        this.getScope = getScope;
+        /** Global framework error-handling configuration. */
+        this.errorHandlingConfig = errorHandlingConfig;
+        /** Public injection token names keyed by token value. */
+        this.$t = {};
+        const runtimeOptions = normalizeRuntimeOptions(options);
+        this._subapp = runtimeOptions.subapp;
+        if (runtimeInjectionTokens) {
+            values(runtimeInjectionTokens).forEach((token) => {
+                this.$t[token] = token;
+            });
+        }
+        if (runtimeOptions.attachToWindow) {
+            window.angular = this;
+        }
+        if (runtimeOptions.registerBuiltins) {
+            this.registerNgModule();
+        }
+    }
+    /**
+     * Registers the configured built-in `ng` module for this runtime instance.
+     */
+    registerNgModule() {
+        if (!builtinNgModuleRegistrar) {
+            throw ngMinErr("nobuiltins", "Built-in AngularTS modules are not configured for this runtime. Import the full runtime entrypoint or construct with registerBuiltins: false.");
+        }
+        return builtinNgModuleRegistrar(this);
+    }
+    /**
+     * The `angular.module` is a global place for creating, registering and retrieving AngularTS
+     * modules.
+     * All modules (AngularTS core or 3rd party) that should be available to an application must be
+     * registered using this mechanism.
+     *
+     * Passing one argument retrieves an existing ng.NgModule,
+     * whereas passing more than one argument creates a new ng.NgModule
+     *
+     * # Module
+     *
+     * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
+     * `angular.module` is used to configure the auto.$injector `$injector`.
+     *
+     * ```js
+     * // Create a new module
+     * let myModule = angular.module('myModule', []);
+     *
+     * // register a new service
+     * myModule.value('appName', 'MyCoolApp');
+     *
+     * // configure existing services inside initialization blocks.
+     * myModule.config(['$locationProvider', function($locationProvider) {
+     *   // Configure existing providers
+     *   $locationProvider.hashPrefix('!');
+     * }]);
+     * ```
+     *
+     * Then you can create an injector and load your modules like this:
+     *
+     * ```js
+     * let injector = angular.injector(['ng', 'myModule'])
+     * ```
+     *
+     * However it's more likely that you'll use the `ng-app` directive or
+     * `bootstrap()` to simplify this process.
+     *
+     * @param name The name of the module to create or retrieve.
+     * @param requires If specified then new module is being created. If
+     * unspecified then the module is being retrieved for further configuration.
+     * @param configFn Optional configuration function for the module that gets
+     * passed to `NgModule.config()`.
+     * @returns A newly registered module.
+     */
+    module(name, requires, configFn) {
+        assertNotHasOwnProperty(name, "module");
+        if (requires && hasOwn(moduleRegistry, name)) {
+            moduleRegistry[name] = null;
+        }
+        return ensure(moduleRegistry, name, () => {
+            if (!requires) {
+                throw $injectorMinErr("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
+            }
+            return new NgModule(name, requires, configFn);
+        });
+    }
+    /**
+     * Dispatches an invocation event to either an injectable service or a named scope.
+     *
+     * The event `type` identifies the target and the payload contains the expression
+     * to evaluate against that target.
+     */
+    dispatchEvent(event) {
+        const customEvent = event;
+        const $parse = this.$injector.get(_parse);
+        const injectable = customEvent.type;
+        const target = this.$injector.has(injectable)
+            ? this.$injector.get(injectable)
+            : this.getScopeByName(injectable);
+        if (!target) {
+            const { detail } = customEvent;
+            if (isInvocationDetail(detail) && detail._reply) {
+                detail._reply.reject(new Error(`No target found for "${injectable}"`));
+            }
+            return false;
+        }
+        const { detail } = customEvent;
+        const expr = isString(detail)
+            ? detail
+            : isInvocationDetail(detail)
+                ? detail.expr
+                : "";
+        try {
+            const result = $parse(expr)(target);
+            if (isInvocationDetail(detail) && detail._reply) {
+                Promise.resolve(result).then(detail._reply.resolve, detail._reply.reject);
+            }
+        }
+        catch (err) {
+            if (isInvocationDetail(detail) && detail._reply) {
+                detail._reply.reject(err);
+            }
+        }
+        return true;
+    }
+    /**
+     * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
+     */
+    emit(input) {
+        const { type, expr } = this.splitInvocation(input);
+        this.dispatchEvent(new CustomEvent(type, { detail: expr }));
+    }
+    /**
+     * Await result. Accepts a single string: `"<target>.<expression>"`
+     */
+    call(input) {
+        const { type, expr } = this.splitInvocation(input);
+        return new Promise((resolve, reject) => {
+            const ok = this.dispatchEvent(new CustomEvent(type, {
+                detail: { expr, __reply: { resolve, reject } },
+            }));
+            if (!ok) {
+                reject(new Error(`Dispatch failed for "${type}"`));
+            }
+        });
+    }
+    /**
+     * Use this function to manually start up AngularTS application.
+     *
+     * AngularTS will detect if it has been loaded into the browser more than once and only allow the
+     * first loaded script to be bootstrapped and will report a warning to the browser console for
+     * each of the subsequent scripts. This prevents strange results in applications, where otherwise
+     * multiple instances of AngularTS try to work on the DOM.
+     *
+     * **Note:** Do not bootstrap the app on an element with a directive that uses
+     * transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this
+     * misplaces the app root element and injector, causing animations to stop
+     * working and making the injector inaccessible from outside the app.
+     *
+     * ```html
+     * <!doctype html>
+     * <html>
+     * <body>
+     * <div ng-controller="WelcomeController">
+     *   {{greeting}}
+     * </div>
+     *
+     * <script src="angular.js"></script>
+     * <script>
+     *   let app = angular.module('demo', [])
+     *   .controller('WelcomeController', function($scope) {
+     *       $scope.greeting = 'Welcome!';
+     *   });
+     *   angular.bootstrap(document, ['demo']);
+     * </script>
+     * </body>
+     * </html>
+     * ```
+     *
+     * @param element DOM element which is the root of AngularTS application.
+     * @param modules an array of modules to load into the application.
+     *     Each item in the array should be the name of a predefined module or a (DI annotated)
+     *     function that will be invoked by the injector as a `config` block.
+     *     See `angular.module()`.
+     * `config` controls bootstrap behavior such as `strictDi`.
+     * @returns The created injector instance for this application.
+     */
+    bootstrap(element, modules, config = { strictDi: false }) {
+        if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
+            rootScopeCleanupByElement.get(element)?.();
+        }
+        if ((isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
+            getInjector(element)) {
+            throw ngMinErr("btstrpd", "App already bootstrapped");
+        }
+        if (isArray(modules)) {
+            this._bootsrappedModules = modules;
+        }
+        this._bootsrappedModules.unshift([
+            "$provide",
+            ($provide) => {
+                $provide.value(_rootElement, element);
+            },
+        ]);
+        this._bootsrappedModules.unshift("ng");
+        const injector = createInjector(this._bootsrappedModules, config.strictDi);
+        injector.invoke([
+            _rootScope,
+            _rootElement,
+            _compile,
+            _injector,
+            (scope, el, compile, $injector) => {
+                this.$rootScope = scope;
+                this.$injector = $injector;
+                const rootElement = el;
+                rootScopeCleanupByElement.set(rootElement, () => {
+                    const existingScope = getScope(rootElement);
+                    if (existingScope?.$handler && !existingScope.$handler._destroyed) {
+                        existingScope.$destroy();
+                    }
+                    else if (scope.$handler && !scope.$handler._destroyed) {
+                        scope.$destroy();
+                    }
+                    if (rootScopeCleanupByElement.get(rootElement)) {
+                        rootScopeCleanupByElement.delete(rootElement);
+                    }
+                });
+                setCacheData(el, _injector, $injector);
+                const compileFn = compile(el);
+                compileFn(scope);
+                if (!hasOwn($injector, "strictDi")) {
+                    try {
+                        $injector.invoke(() => {
+                            /* empty */
+                        });
+                    }
+                    catch (error) {
+                        const errorStr = isInstanceOf(error, Error)
+                            ? error.toString()
+                            : String(error);
+                        $injector.strictDi = !!/strict mode/.exec(errorStr);
+                    }
+                }
+                scope.$on("$destroy", () => {
+                    if (rootScopeCleanupByElement.get(rootElement)) {
+                        rootScopeCleanupByElement.delete(rootElement);
+                    }
+                });
+            },
+        ]);
+        return injector;
+    }
+    /**
+     * Create a standalone injector without bootstrapping the DOM.
+     *
+     * @param modules - Module names or config functions to load.
+     * @param strictDi - Require explicit dependency annotations.
+     * @returns The created injector.
+     */
+    injector(modules, strictDi) {
+        this.$injector = createInjector(modules, strictDi);
+        return this.$injector;
+    }
+    /**
+     * Find `ng-app` roots under the provided element and bootstrap them.
+     *
+     * The first root uses this instance. Additional roots are bootstrapped as
+     * sub-applications and stored in {@link subapps}.
+     *
+     * @param element - Root element or document to scan.
+     */
+    init(element) {
+        const appElements = [];
+        let multimode = false;
+        ngAttrPrefixes.forEach((prefix) => {
+            const name = `${prefix}app`;
+            let candidates;
+            if (element.nodeType === 1 &&
+                element.hasAttribute(name)) {
+                candidates = [element];
+            }
+            else {
+                candidates = element.querySelectorAll(`[${name}]`);
+            }
+            candidates.forEach((el) => {
+                appElements.push({
+                    _element: el,
+                    _module: el.getAttribute(name),
+                });
+            });
+        });
+        appElements.forEach((app) => {
+            const strictDi = app._element.hasAttribute("strict-di") ||
+                app._element.hasAttribute("data-strict-di");
+            if (multimode) {
+                const RuntimeCtor = this.constructor;
+                const submodule = new RuntimeCtor(true);
+                this.subapps.push(submodule);
+                submodule.bootstrap(app._element, app._module ? [app._module] : [], {
+                    strictDi,
+                });
+            }
+            else {
+                this.bootstrap(app._element, app._module ? [app._module] : [], {
+                    strictDi,
+                });
+            }
+            multimode = true;
+        });
+    }
+    /**
+     * Find a scope by its registered `$scopename`.
+     *
+     * @param name - Scope name to search for.
+     * @returns The matching scope proxy, or `undefined`.
+     */
+    getScopeByName(name) {
+        validateIsString(name, "name");
+        const $rootScope = this.$injector.get(_rootScope);
+        const scope = $rootScope.$searchByName(name);
+        return scope ? scope.$proxy : undefined;
+    }
+    /**
+     * Splits `"target.expression"` into the dispatch target and parse expression.
+     */
+    splitInvocation(input) {
+        if (!isString(input)) {
+            throw new TypeError("Invocation must be a string.");
+        }
+        const trimmed = input.trim();
+        const parts = trimmed.split(".");
+        if (parts.length < 2) {
+            throw new Error(`Invalid invocation "${input}". Expected "<target>.<expression>".`);
+        }
+        const type = String(parts.shift()).trim();
+        const expr = parts.join(".").trim();
+        if (!type || !expr) {
+            throw new Error(`Invalid invocation "${input}". Expected "<target>.<expression>".`);
+        }
+        return { type, expr };
+    }
+}
+/**
+ * Returns the existing module instance for `name` or creates it via `factory`.
+ */
+function ensure(obj, name, factory) {
+    return obj[name] || (obj[name] = factory());
+}
+function normalizeRuntimeOptions(options) {
+    if (typeof options === "boolean") {
+        return {
+            subapp: options,
+            attachToWindow: !options,
+            registerBuiltins: true,
+        };
+    }
+    const subapp = options.subapp ?? false;
+    return {
+        subapp,
+        attachToWindow: options.attachToWindow ?? !subapp,
+        registerBuiltins: options.registerBuiltins ?? true,
+    };
+}
+/**
+ * Narrows a custom event payload to the internal invocation shape.
+ */
+function isInvocationDetail(value) {
+    return isObject(value) && isString(value.expr);
 }
 
 const ADD_CLASS_SUFFIX = "-add";
@@ -4179,8 +3219,8 @@ function pendClasses(classes, fix, isPrefix) {
  * Removes comment nodes from a node or node list, returning only element nodes.
  */
 function stripCommentsFromElement(element) {
-    if (element instanceof NodeList) {
-        return Array.from(element).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
+    if (isInstanceOf(element, NodeList)) {
+        return arrayFrom(element).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
     }
     else if (element.nodeType === NodeType._ELEMENT_NODE) {
         return element;
@@ -4238,7 +3278,7 @@ function applyAnimationStyles(element, options) {
  */
 function applyAnimationFromStyles(element, options) {
     if (options && options.from) {
-        Object.assign(element.style, options.from);
+        assign(element.style, options.from);
         options.from = undefined;
     }
 }
@@ -4253,7 +3293,7 @@ function applyAnimationFromStyles(element, options) {
  */
 function applyAnimationToStyles(element, options) {
     if (options && options.to) {
-        Object.assign(element.style, options.to);
+        assign(element.style, options.to);
         options.to = undefined;
     }
 }
@@ -4276,7 +3316,7 @@ function mergeAnimationDetails(element, oldAnimation, newAnimation) {
         delete newOptions.preparationClasses;
     }
     // Merge other properties except addClass/removeClass
-    Object.assign(target, newOptions);
+    assign(target, newOptions);
     // Combine addClass / removeClass
     const addList = `${target.addClass || ""} ${newOptions.addClass || ""}`
         .trim()
@@ -4365,7 +3405,7 @@ function concatWithSpace(a, b) {
     return [a, b].filter(Boolean).join(" ");
 }
 
-$$AnimateChildrenDirective.$inject = [$injectTokens._interpolate];
+$$AnimateChildrenDirective.$inject = [_interpolate];
 /** Propagates `ng-animate-children` state to the element cache for animation lookups. */
 function $$AnimateChildrenDirective($interpolate) {
     return {
@@ -4627,7 +3667,7 @@ AnimateCssDriverProvider.$inject = ["$$animationProvider"];
  * Registers the CSS animation driver with the animation provider.
  */
 function AnimateCssDriverProvider($$animationProvider) {
-    $$animationProvider._drivers.push($injectTokens._animateCssDriver);
+    $$animationProvider._drivers.push(_animateCssDriver);
     /**
      * Returns whether an element is attached inside a document fragment.
      */
@@ -4638,8 +3678,8 @@ function AnimateCssDriverProvider($$animationProvider) {
      * Creates the runtime CSS animation driver factory.
      */
     this.$get = [
-        $injectTokens._animateCss,
-        $injectTokens._rootElement,
+        _animateCss,
+        _rootElement,
         /**
          * Builds animation runners backed by `$animateCss`.
          */
@@ -4876,9 +3916,9 @@ AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 /** Registers the JS animation driver with the animation provider. */
 function AnimateJsDriverProvider($$animationProvider) {
     const animationProvider = $$animationProvider;
-    animationProvider._drivers.push($injectTokens._animateJsDriver);
+    animationProvider._drivers.push(_animateJsDriver);
     this.$get = [
-        $injectTokens._animateJs,
+        _animateJs,
         /** Creates the runtime driver factory around `$$animateJs`. */
         function ($$animateJs) {
             function initDriverFn(animationDetails) {
@@ -4928,13 +3968,13 @@ function AnimateJsDriverProvider($$animationProvider) {
     ];
 }
 
-AnimateJsProvider.$inject = [$injectTokens._animateProvider];
+AnimateJsProvider.$inject = [_animateProvider];
 /**
  * Registers the JavaScript animation driver with the animation provider.
  */
 function AnimateJsProvider($animateProvider) {
     this.$get = [
-        $injectTokens._injector,
+        _injector,
         /**
          * Creates the runtime JavaScript animation driver.
          */
@@ -5106,7 +4146,7 @@ function AnimateJsProvider($animateProvider) {
                                         args = [elementParam, done];
                                 }
                                 const value = animationFn.apply(ani, args);
-                                if (value instanceof AnimateRunner)
+                                if (isInstanceOf(value, AnimateRunner))
                                     value.done(done);
                             }
                             else
@@ -5134,7 +4174,7 @@ function AnimateJsProvider($animateProvider) {
     ];
 }
 
-ngAnimateSwapDirective.$inject = [$injectTokens._animate];
+ngAnimateSwapDirective.$inject = [_animate];
 /** Swaps a transcluded block with enter/leave animations as the watched value changes. */
 function ngAnimateSwapDirective($animate) {
     return {
@@ -5156,7 +4196,7 @@ function ngAnimateSwapDirective($animate) {
                 }
                 if (value && $transclude) {
                     $transclude((clone, childScope) => {
-                        if (clone instanceof Element) {
+                        if (isInstanceOf(clone, Element)) {
                             previousElement = clone;
                             previousScope = childScope;
                             $animate.enter(clone, null, $element);
@@ -5182,7 +4222,7 @@ const $animateMinErr = minErr("$animate");
 function prepareAnimateOptions(options) {
     return isObject(options) ? options : {};
 }
-AnimateProvider.$inject = [$injectTokens._provide];
+AnimateProvider.$inject = [_provide];
 /** @param $provide */
 function AnimateProvider($provide) {
     const provider = this;
@@ -5288,7 +4328,7 @@ function AnimateProvider($provide) {
      */
     this.classNameFilter = function (expression) {
         if (arguments.length === 1) {
-            classNameFilter = expression instanceof RegExp ? expression : null;
+            classNameFilter = isInstanceOf(expression, RegExp) ? expression : null;
             if (classNameFilter) {
                 const reservedRegex = new RegExp(`[(\\s|\\/)]${NG_ANIMATE_CLASSNAME}[(\\s|\\/)]`);
                 if (reservedRegex.test(classNameFilter.toString())) {
@@ -5300,7 +4340,7 @@ function AnimateProvider($provide) {
         return classNameFilter;
     };
     this.$get = [
-        $injectTokens._animateQueue,
+        _animateQueue,
         /**
          * Creates the runtime `$animate` service facade.
          */
@@ -5791,8 +4831,8 @@ class AnimationProvider {
         /** @internal */
         this._drivers = [];
         this.$get = [
-            $injectTokens._rootScope,
-            $injectTokens._injector,
+            _rootScope,
+            _injector,
             /** Creates the runtime animation service. */
             ($rootScope, $injector) => {
                 return this._createAnimationService($rootScope, $injector, this._drivers);
@@ -5862,7 +4902,8 @@ class AnimationProvider {
                 let remainingLevelEntries = queue.length;
                 let nextLevelEntries = 0;
                 let row = [];
-                for (let j = 0; j < queue.length; j++) {
+                let j = 0;
+                while (j < queue.length) {
                     const entry = queue[j];
                     if (remainingLevelEntries <= 0) {
                         remainingLevelEntries = nextLevelEntries;
@@ -5876,6 +4917,7 @@ class AnimationProvider {
                         queue.push(childEntry);
                     });
                     remainingLevelEntries--;
+                    j++;
                 }
                 if (row.length) {
                     result.push(row);
@@ -6101,7 +5143,7 @@ class AnimationProvider {
             }
             /** Normalizes class input into a space-delimited string. */
             function normalizeClassValue(value) {
-                if (Array.isArray(value))
+                if (isArray(value))
                     return value.join(" ");
                 return value || "";
             }
@@ -6170,7 +5212,7 @@ class AnimationProvider {
                 applyAnimationStyles(elementParam, options);
                 options.domOperation?.();
                 if (tempClasses) {
-                    const classList = Array.isArray(tempClasses)
+                    const classList = isArray(tempClasses)
                         ? tempClasses
                         : tempClasses.split(" ");
                     classList.forEach((cls) => elementParam.classList.remove(cls));
@@ -6181,7 +5223,7 @@ class AnimationProvider {
     }
 }
 
-const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
+const ANIMATE_TIMER_KEY = _animateCss;
 const ONE_SECOND = 1000;
 const SAFE_FAST_FORWARD_DURATION_VALUE = 9999;
 const ELAPSED_TIME_MAX_DECIMAL_PLACES = 3;
@@ -6325,7 +5367,7 @@ function AnimateCssProvider() {
                     timings = {
                         transitionDuration: Number(computed.transitionDuration || 0),
                         transitionDelay: Number(computed.transitionDelay || 0),
-                        transitionProperty: typeof computed.transitionProperty === "string"
+                        transitionProperty: isString(computed.transitionProperty)
                             ? computed.transitionProperty
                             : "",
                         animationDuration: Number(computed.animationDuration || 0),
@@ -6975,7 +6017,7 @@ function blockTransitions(node, duration) {
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
-AnimateQueueProvider.$inject = [$injectTokens._animateProvider];
+AnimateQueueProvider.$inject = [_animateProvider];
 /**
  * @param {any} $animateProvider
  * @constructor
@@ -7043,25 +6085,15 @@ function AnimateQueueProvider($animateProvider) {
         const b = (animation.removeClass || "").length > 0;
         return and ? a && b : a || b;
     }
-    rules.join.push((/** @type {AnimationOptions} */ newAnimation) => !newAnimation.structural && hasAnimationClasses(newAnimation));
-    rules.skip.push((/** @type {AnimationOptions} */ newAnimation) => !newAnimation.structural && !hasAnimationClasses(newAnimation));
-    rules.skip.push((
-    /** @type {AnimationOptions} */ newAnimation, 
-    /** @type {AnimationOptions} */ currentAnimation) => currentAnimation.event === "leave" && !!newAnimation.structural);
-    rules.skip.push((
-    /** @type {AnimationOptions} */ newAnimation, 
-    /** @type {AnimationOptions} */ currentAnimation) => !!currentAnimation.structural &&
+    rules.join.push((newAnimation) => !newAnimation.structural && hasAnimationClasses(newAnimation));
+    rules.skip.push((newAnimation) => !newAnimation.structural && !hasAnimationClasses(newAnimation));
+    rules.skip.push((newAnimation, currentAnimation) => currentAnimation.event === "leave" && !!newAnimation.structural);
+    rules.skip.push((newAnimation, currentAnimation) => !!currentAnimation.structural &&
         currentAnimation.state === RUNNING_STATE &&
         !newAnimation.structural);
-    rules.cancel.push((
-    /** @type {AnimationOptions} */ newAnimation, 
-    /** @type {AnimationOptions} */ currentAnimation) => !!currentAnimation.structural && !!newAnimation.structural);
-    rules.cancel.push((
-    /** @type {AnimationOptions} */ newAnimation, 
-    /** @type {AnimationOptions} */ currentAnimation) => currentAnimation.state === RUNNING_STATE && !!newAnimation.structural);
-    rules.cancel.push((
-    /** @type {AnimationOptions} */ newAnimation, 
-    /** @type {AnimationOptions} */ currentAnimation) => {
+    rules.cancel.push((newAnimation, currentAnimation) => !!currentAnimation.structural && !!newAnimation.structural);
+    rules.cancel.push((newAnimation, currentAnimation) => currentAnimation.state === RUNNING_STATE && !!newAnimation.structural);
+    rules.cancel.push((newAnimation, currentAnimation) => {
         if (currentAnimation.structural)
             return false;
         const nA = newAnimation.addClass;
@@ -7076,9 +6108,9 @@ function AnimateQueueProvider($animateProvider) {
             !!hasMatchingClasses(nR || "", cA || ""));
     });
     this.$get = [
-        $injectTokens._rootScope,
-        $injectTokens._injector,
-        $injectTokens._animation,
+        _rootScope,
+        _injector,
+        _animation,
         /**
          * @param {ng.RootScopeService} $rootScope
          * @param {ng.InjectorService} $injector
@@ -7173,11 +6205,10 @@ function AnimateQueueProvider($animateProvider) {
                     $animate.off(node);
                 }
             }
-            /** @type {AnimateQueueService} */
             const $animate = {
                 on(event, container, callback) {
                     const node = extractElementNode(container);
-                    if (!node || !(node instanceof Element) || !callback)
+                    if (!node || !isInstanceOf(node, Element) || !callback)
                         return;
                     callbackRegistry[event] = callbackRegistry[event] || [];
                     callbackRegistry[event].push({
@@ -7286,7 +6317,6 @@ function AnimateQueueProvider($animateProvider) {
                 if (isStructural) {
                     closeChildAnimations(node);
                 }
-                /** @type {AnimationOptions} */
                 const newAnimation = {
                     structural: isStructural,
                     element,
@@ -7551,35 +6581,36 @@ class NodeRef {
         this._node = undefined;
         this._element = undefined;
         this._nodes = [];
+        this._nodeList = undefined;
         this._isList = false;
         // Handle HTML string
         if (isString(element)) {
             const res = createElementFromHTML(element);
             switch (true) {
-                case res instanceof Element:
+                case isInstanceOf(res, Element):
                     this.element = res;
                     break;
-                case res instanceof Node:
+                case isInstanceOf(res, Node):
                     this.node = res;
                     break;
             }
         }
         // Handle NodeList
-        else if (element instanceof NodeList) {
+        else if (isInstanceOf(element, NodeList)) {
             if (element.length === 1) {
                 this.node = element[0];
             }
             else {
-                this._nodes = Array.from(element);
+                this._nodeList = element;
                 this._isList = true;
             }
         }
         // Handle single Element
-        else if (element instanceof Element) {
+        else if (isInstanceOf(element, Element)) {
             this.element = element;
         }
         // Handle single Node
-        else if (element instanceof Node) {
+        else if (isInstanceOf(element, Node)) {
             this._node = element;
         }
         // Handle array of elements
@@ -7604,6 +6635,7 @@ class NodeRef {
         this._element = el;
         this._node = undefined;
         this._nodes = [];
+        this._nodeList = undefined;
         this._isList = false;
     }
     /** @returns The wrapped node. */
@@ -7613,6 +6645,7 @@ class NodeRef {
     /** @param node The node to wrap. */
     set node(node) {
         this._node = node;
+        this._nodeList = undefined;
         if (node.nodeType === NodeType._ELEMENT_NODE) {
             this._element = node;
         }
@@ -7623,14 +6656,19 @@ class NodeRef {
     /** @param nodes The node collection to wrap. */
     set nodes(nodes) {
         this._nodes = nodes;
+        this._nodeList = undefined;
         this._isList = true;
     }
     /** @returns The wrapped node collection. */
     get nodes() {
+        if (this._nodeList)
+            return arrayFrom(this._nodeList);
         return this._nodes;
     }
     /** @returns A live node list view of the wrapped nodes. */
     get nodelist() {
+        if (this._nodeList)
+            return this._nodeList;
         if (this._nodes.length === 0)
             return [];
         if (this._nodes[0].parentElement)
@@ -7639,14 +6677,15 @@ class NodeRef {
     }
     /** @returns A detached fragment containing the wrapped node list. */
     get fragment() {
-        const fragment = document.createDocumentFragment();
-        this._nodes.forEach((el) => fragment.appendChild(el));
+        const fragment = createDocumentFragment();
+        this._collection().forEach((el) => fragment.appendChild(el));
         return fragment;
     }
     /** @returns The wrapped DOM value. */
     get dom() {
         if (this._isList) {
-            return this._nodes.length > 0 && !this._nodes[0].parentElement
+            const firstNode = this._getIndex(0);
+            return firstNode && !firstNode.parentElement
                 ? this.fragment
                 : this.nodelist;
         }
@@ -7655,13 +6694,13 @@ class NodeRef {
     }
     /** @returns The number of wrapped nodes. */
     get size() {
-        return this._isList ? this._nodes.length : 1;
+        return this._isList ? this._nodeList?.length || this._nodes.length : 1;
     }
     /** @returns The first wrapped node or element. */
     /** @internal */
     _getAny() {
         if (this._isList) {
-            return this._nodes[0];
+            return (this._nodeList?.[0] || this._nodes[0]);
         }
         else {
             return (this._element || this._node);
@@ -7671,7 +6710,7 @@ class NodeRef {
     /** @internal */
     _getAll() {
         if (this._isList) {
-            return this._nodes;
+            return this.nodes;
         }
         else {
             return (this._element || this._node);
@@ -7681,7 +6720,7 @@ class NodeRef {
     /** @internal */
     _collection() {
         if (this._isList) {
-            return Array.from(this._nodes);
+            return this.nodes;
         }
         else {
             return [(this._element || this._node)];
@@ -7693,7 +6732,7 @@ class NodeRef {
     /** @internal */
     _getIndex(index) {
         if (this._isList) {
-            return this._nodes[index];
+            return (this._nodeList?.[index] || this._nodes[index]);
         }
         else {
             return this.node;
@@ -7705,6 +6744,10 @@ class NodeRef {
     /** @internal */
     _setIndex(index, node) {
         if (this._isList) {
+            if (this._nodeList) {
+                this._nodes = arrayFrom(this._nodeList);
+                this._nodeList = undefined;
+            }
             this._nodes[index] = node;
         }
         else {
@@ -7717,7 +6760,7 @@ class NodeRef {
     /** @internal */
     _clone() {
         const cloned = this._isList
-            ? this.nodes.map((el) => el.cloneNode(true))
+            ? this._collection().map((el) => el.cloneNode(true))
             : this.node.cloneNode(true);
         return new NodeRef(cloned);
     }
@@ -7730,6 +6773,7 @@ class NodeRef {
         this._node = undefined;
         this._element = undefined;
         this._nodes = [];
+        this._nodeList = undefined;
         this._isList = false;
     }
 }
@@ -7766,7 +6810,7 @@ class ControllerProvider {
     constructor() {
         this._controllers = new Map();
         this.$get = [
-            $injectTokens._injector,
+            _injector,
             ($injector) => {
                 return (expression, locals, later, ident) => {
                     let instance;
@@ -7790,7 +6834,7 @@ class ControllerProvider {
                     const injectable = expression;
                     const meta = unwrapController(injectable, constructorName);
                     if (later) {
-                        instance = Object.create(meta.prototype || null);
+                        instance = createObject(meta.prototype || null);
                         const exportName = constructorName || meta.name;
                         if (identifier) {
                             instance.$controllerIdentifier = identifier;
@@ -7963,7 +7007,7 @@ function getArrayMutationIndex(property) {
     if (typeof property === "number") {
         return Number.isInteger(property) && property >= 0 ? property : undefined;
     }
-    if (typeof property !== "string" || property === "length") {
+    if (!isString(property) || property === "length") {
         return undefined;
     }
     const numericProperty = Number(property);
@@ -8059,8 +7103,8 @@ function getArrayMutationMeta(value) {
 class RootScopeProvider {
     constructor() {
         this.$get = [
-            $injectTokens._exceptionHandler,
-            $injectTokens._parse,
+            _exceptionHandler,
+            _parse,
             /** Initializes the shared parse and exception services for root scope behavior. */
             (exceptionHandler, parse) => {
                 $exceptionHandler = exceptionHandler;
@@ -8314,7 +7358,7 @@ function isNonScope(target) {
     for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
         try {
             const ctor = nonScopeConstructors[i];
-            if (objectTarget instanceof ctor) {
+            if (isInstanceOf(objectTarget, ctor)) {
                 nonScopeCache.add(objectTarget);
                 return true;
             }
@@ -8366,6 +7410,7 @@ class Scope {
         this._arrayOwnerListenersScheduled = false;
         this.$scopename = undefined;
         this._ownedForeignListeners = [];
+        this._ownedWatchers = [];
         this._listenerScheduler = context?._listenerScheduler ?? {
             _queue: [],
             _index: 0,
@@ -8731,7 +7776,7 @@ class Scope {
             hasOwn(this._propertyMap, property)) {
             return this._propertyMap[property];
         }
-        const targetProp = typeof property === "string" ? target[property] : target[property];
+        const targetProp = isString(property) ? target[property] : target[property];
         if (isProxy(targetProp)) {
             this.$proxy = targetProp;
         }
@@ -8745,7 +7790,7 @@ class Scope {
             this._propertyMap.$proxy = proxy;
         }
         if (isArray(target) &&
-            typeof property === "string" &&
+            isString(property) &&
             arrayMutationMethods.has(property)) {
             let wrappers = this._arrayMutationWrappers.get(target);
             if (!wrappers) {
@@ -8967,7 +8012,7 @@ class Scope {
     }
     /** @internal Queues listener notification for the next microtask, optionally filtering the list first. */
     _scheduleListener(listeners, filterOrTarget) {
-        const filter = typeof filterOrTarget === "function"
+        const filter = isFunction(filterOrTarget)
             ? filterOrTarget
             : undefined;
         const target = filter ? this.$target : (filterOrTarget ?? this.$target);
@@ -8986,6 +8031,7 @@ class Scope {
      * @param [listenerFn] - A function to execute when changes are detected on watched context.
      * @param [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @returns A function to deregister the watcher, or undefined if no listener function is provided.
+     * @throws Error when `watchProp` is not a string expression.
      */
     $watch(watchProp, listenerFn, lazy = false) {
         assert(isString(watchProp), "Watched property required");
@@ -9126,7 +8172,6 @@ class Scope {
                 if (watchProp !== key) {
                     // Handle nested expression call
                     listener._watchProp = watchProp;
-                    listener._invokeWatchFn = $parse(`${watchProp}()`);
                     listener._watchParentFn = $parse(getWatchParentExpression(watchProp));
                     const potentialProxy = listener._watchParentFn(listener._originalTarget);
                     const foreignKey = key;
@@ -9268,7 +8313,7 @@ class Scope {
             child = childInstance;
         }
         else {
-            child = Object.create(this.$target);
+            child = createObject(this.$target);
         }
         const proxy = new Proxy(child, new Scope(this));
         this._children.push(proxy);
@@ -9277,7 +8322,7 @@ class Scope {
     }
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
     $newIsolate(instance) {
-        const child = instance ? Object.create(instance) : nullObject();
+        const child = instance ? createObject(instance) : nullObject();
         const proxy = new Proxy(child, new Scope(this, this.$root));
         this._children.push(proxy);
         this._childIndices.set(proxy, this._children.length - 1);
@@ -9285,7 +8330,7 @@ class Scope {
     }
     /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
     $transcluded(parentInstance) {
-        const child = Object.create(this.$target);
+        const child = createObject(this.$target);
         const proxy = new Proxy(child, new Scope(this, parentInstance));
         this._children.push(proxy);
         this._childIndices.set(proxy, this._children.length - 1);
@@ -9293,12 +8338,28 @@ class Scope {
     }
     /** @internal Registers a listener under a watched key on this scope. */
     _registerKey(key, listener) {
+        this._ownedWatchers.push({
+            _key: key,
+            _id: listener._id,
+        });
         const listeners = this._watchers.get(key);
         if (listeners) {
             listeners.push(listener);
             return;
         }
         this._watchers.set(key, [listener]);
+    }
+    /** @internal Removes a tracked local watcher registration record. */
+    _untrackOwnedWatcher(key, id) {
+        const refs = this._ownedWatchers;
+        for (let i = 0; i < refs.length; i++) {
+            const ref = refs[i];
+            if (ref._key === key && ref._id === id) {
+                refs[i] = refs[refs.length - 1];
+                refs.length--;
+                return;
+            }
+        }
     }
     /** @internal Registers a listener under a watched key owned by a foreign proxied scope. */
     _registerForeignKey(key, listener) {
@@ -9330,7 +8391,7 @@ class Scope {
         }
     }
     /** @internal Removes a listener by id from the local watcher map. */
-    _deregisterKey(key, id) {
+    _deregisterKey(key, id, untrack = true) {
         const listenerList = this._watchers.get(key);
         if (!listenerList) {
             return false;
@@ -9347,6 +8408,8 @@ class Scope {
                     listenerList[i] = listenerList[len - 1];
                     listenerList.length = len - 1;
                 }
+                if (untrack)
+                    this._untrackOwnedWatcher(key, id);
                 return true;
             }
         }
@@ -9553,18 +8616,12 @@ class Scope {
             return;
         this.$broadcast("$destroy");
         const scopeId = this.$id;
-        for (const [key, val] of this._watchers) {
-            // Reverse iterate with swap-pop for O(n) instead of O(n²)
-            for (let i = val.length - 1; i >= 0; i--) {
-                if (val[i]._scopeId === scopeId) {
-                    val[i] = val[val.length - 1];
-                    val.length--;
-                }
-            }
-            if (val.length === 0) {
-                this._watchers.delete(key);
-            }
+        const ownedWatchers = this._ownedWatchers;
+        for (let i = 0, l = ownedWatchers.length; i < l; i++) {
+            const ref = ownedWatchers[i];
+            this._deregisterKey(ref._key, ref._id, false);
         }
+        ownedWatchers.length = 0;
         for (let i = 0; i < this._ownedForeignListeners.length; i++) {
             const ref = this._ownedForeignListeners[i];
             ref._handler._deregisterForeignKey(ref._key, ref._id);
@@ -9649,15 +8706,18 @@ class Scope {
     }
     /** @internal Resolves the watched value and notifies a single listener. */
     _notifyListener(listener, target) {
-        const { _originalTarget, _listenerFn, _watchFn, _invokeWatchFn } = listener;
+        const { _originalTarget, _listenerFn, _watchFn } = listener;
         try {
             let newVal = _watchFn(_originalTarget);
             if (isUndefined(newVal) && target !== _originalTarget) {
                 newVal = _watchFn(target);
             }
             if (isFunction(newVal)) {
-                newVal = _invokeWatchFn
-                    ? _invokeWatchFn(_originalTarget)
+                if (!listener._invokeWatchFn && listener._watchProp) {
+                    listener._invokeWatchFn = $parse(`${listener._watchProp}()`);
+                }
+                newVal = listener._invokeWatchFn
+                    ? listener._invokeWatchFn(_originalTarget)
                     : newVal(_originalTarget);
             }
             else if (!isArray(newVal)) {
@@ -9756,7 +8816,6 @@ function collectChildIds(child) {
     return ids;
 }
 
-const $sceMinErr = minErr("$sce");
 const SCE_CONTEXTS = {
     // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
     _HTML: "html",
@@ -9771,619 +8830,44 @@ const SCE_CONTEXTS = {
     // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
     _RESOURCE_URL: "resourceUrl",
 };
-// Copied from:
-// http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
-// Prereq: s is a string.
-/**
- * Escapes a string so it can be embedded safely inside a regular expression.
- */
-function escapeForRegexp(str) {
-    return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
-}
-/**
- * Adjusts a matcher string or `RegExp` into the normalized SCE matcher form.
- */
-function adjustMatcher(matcher) {
-    if (matcher === "self") {
-        return matcher;
-    }
-    if (isString(matcher)) {
-        // Strings match exactly except for 2 wildcards - '*' and '**'.
-        // '*' matches any character except those from the set ':/.?&'.
-        // '**' matches any character (like .* in a RegExp).
-        // More than 2 *'s raises an error as it's ill defined.
-        if (matcher.indexOf("***") > -1) {
-            throw $sceMinErr("iwcard", "Illegal sequence *** in string matcher.  String: {0}", matcher);
-        }
-        matcher = escapeForRegexp(matcher)
-            .replace(/\\\*\\\*/g, ".*")
-            .replace(/\\\*/g, "[^:/.?&;]*");
-        return new RegExp(`^${matcher}$`);
-    }
-    if (isRegExp(matcher)) {
-        // The only other type of matcher allowed is a Regexp.
-        // Match entire URL / disallow partial matches.
-        // Flags are reset (i.e. no global, ignoreCase or multiline)
-        return new RegExp(`^${matcher.source}$`);
-    }
-    throw $sceMinErr("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
-}
-/**
- * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict
- * Contextual Escaping (SCE)} services to AngularTS.
- *
- * For an overview of this service and the functionality it provides in AngularTS, see the main
- * page for {@link ng.$sce SCE}. The current page is targeted for developers who need to alter how
- * SCE works in their application, which shouldn't be needed in most cases.
- *
- * <div class="alert alert-danger">
- * AngularTS strongly relies on contextual escaping for the security of bindings: disabling or
- * modifying this might cause cross site scripting (XSS) vulnerabilities. For libraries owners,
- * changes to this service will also influence users, so be extra careful and document your changes.
- * </div>
- *
- * Typically, you would configure or override the {@link ng.$sceDelegate $sceDelegate} instead of
- * the `$sce` service to customize the way Strict Contextual Escaping works in AngularTS.  This is
- * because, while the `$sce` provides numerous shorthand methods, etc., you really only need to
- * override 3 core functions (`trustAs`, `getTrusted` and `valueOf`) to replace the way things
- * work because `$sce` delegates to `$sceDelegate` for these operations.
- *
- * Refer {@link ng.$sceDelegateProvider $sceDelegateProvider} to configure this service.
- *
- * The default instance of `$sceDelegate` should work out of the box with little pain.  While you
- * can override it completely to change the behavior of `$sce`, the common case would
- * involve configuring the {@link ng.$sceDelegateProvider $sceDelegateProvider} instead by setting
- * your own trusted and banned resource lists for trusting URLs used for loading AngularTS resources
- * such as templates.  Refer {@link ng.$sceDelegateProvider#trustedResourceUrlList
- * $sceDelegateProvider.trustedResourceUrlList} and {@link
- * ng.$sceDelegateProvider#bannedResourceUrlList $sceDelegateProvider.bannedResourceUrlList}
- */
-/**
- *
- * The `$sceDelegateProvider` provider allows developers to configure the {@link ng.$sceDelegate
- * $sceDelegate service}, used as a delegate for {@link ng.$sce Strict Contextual Escaping (SCE)}.
- *
- * The `$sceDelegateProvider` allows one to get/set the `trustedResourceUrlList` and
- * `bannedResourceUrlList` used to ensure that the URLs used for sourcing AngularTS templates and
- * other script-running URLs are safe (all places that use the `$sce.RESOURCE_URL` context). See
- * {@link ng.$sceDelegateProvider#trustedResourceUrlList
- * $sceDelegateProvider.trustedResourceUrlList} and
- * {@link ng.$sceDelegateProvider#bannedResourceUrlList $sceDelegateProvider.bannedResourceUrlList},
- *
- * For the general details about this service in AngularTS, read the main page for {@link ng.$sce
- * Strict Contextual Escaping (SCE)}.
- *
- * **Example**:  Consider the following case. <a name="example"></a>
- *
- * - your app is hosted at url `http://myapp.example.com/`
- * - but some of your templates are hosted on other domains you control such as
- *   `http://srv01.assets.example.com/`, `http://srv02.assets.example.com/`, etc.
- * - and you have an open redirect at `http://myapp.example.com/clickThru?...`.
- *
- * Here is what a secure configuration for this scenario might look like:
- *
- * ```
- *  angular.module('myApp', []).config(function($sceDelegateProvider) {
- *    $sceDelegateProvider.trustedResourceUrlList([
- *      // Allow same origin resource loads.
- *      'self',
- *      // Allow loading from our assets domain.  Notice the difference between * and **.
- *      'http://srv*.assets.example.com/**'
- *    ]);
- *
- *    // The banned resource URL list overrides the trusted resource URL list so the open redirect
- *    // here is blocked.
- *    $sceDelegateProvider.bannedResourceUrlList([
- *      'http://myapp.example.com/clickThru**'
- *    ]);
- *  });
- * ```
- * Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require
- * you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates
- * requested by {@link ng.$templateRequest $templateRequest} that are present in
- * {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism
- * to populate your templates in that cache at config time, then it is a good idea to remove 'self'
- * from the trusted resource URL lsit. This helps to mitigate the security impact of certain types
- * of issues, like for instance attacker-controlled `ng-includes`.
- */
-class SceDelegateProvider {
-    constructor() {
-        // Resource URLs can also be trusted by policy.
-        let trustedResourceUrlList = ["self"];
-        let bannedResourceUrlList = [];
-        /**
-         *
-         * @param value When provided, replaces the trustedResourceUrlList with
-         *     the value provided.  This must be an array or null.  A snapshot of this array is used so
-         *     further changes to the array are ignored.
-         *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-         *     allowed in this array.
-         *
-         * @returns The currently set trusted resource URL array.
-         *
-         *
-         * Sets/Gets the list trusted of resource URLs.
-         *
-         * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
-         * allowing only same origin resource requests.
-         *
-         * <div class="alert alert-warning">
-         * **Note:** the default `trustedResourceUrlList` of 'self' is not recommended if your app shares
-         * its origin with other apps! It is a good idea to limit it to only your application's directory.
-         * </div>
-         */
-        this.trustedResourceUrlList = function (value) {
-            if (arguments.length) {
-                const list = value || [];
-                trustedResourceUrlList = list.map(adjustMatcher);
-            }
-            return trustedResourceUrlList;
-        };
-        /**
-         *
-         * @param value When provided, replaces the `bannedResourceUrlList` with
-         *     the value provided. This must be an array or null. A snapshot of this array is used so
-         *     further changes to the array are ignored.</p><p>
-         *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-         *     allowed in this array.</p><p>
-         *     The typical usage for the `bannedResourceUrlList` is to **block
-         *     [open redirects](http://cwe.mitre.org/data/definitions/601.html)** served by your domain as
-         *     these would otherwise be trusted but actually return content from the redirected domain.
-         *     </p><p>
-         *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
-         *     the final say.
-         *
-         * @returns The currently set `bannedResourceUrlList` array.
-         *
-         *
-         * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
-         *
-         * The **default value** when no trusted resource URL list has been explicitly set is the empty
-         * array (i.e. there is no `bannedResourceUrlList`.)
-         */
-        this.bannedResourceUrlList = function (value) {
-            if (arguments.length) {
-                const list = value || [];
-                bannedResourceUrlList = list.map(adjustMatcher);
-            }
-            return bannedResourceUrlList;
-        };
-        this.$get = [
-            $injectTokens._injector,
-            $injectTokens._sanitizeUri,
-            $injectTokens._exceptionHandler,
-            /**
-             * Creates the `$sceDelegate` service using the configured policies and sanitizers.
-             */
-            function ($injector, $$sanitizeUri, $exceptionHandler) {
-                let htmlSanitizer = function () {
-                    $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
-                };
-                if ($injector.has("$sanitize")) {
-                    htmlSanitizer = $injector.get("$sanitize");
-                }
-                /**
-                 * Tests whether a parsed URL matches one SCE allow/deny matcher.
-                 */
-                function matchUrl(matcher, parsedUrl) {
-                    if (matcher === "self") {
-                        return (urlIsSameOrigin(parsedUrl) || urlIsSameOriginAsBaseUrl(parsedUrl));
-                    }
-                    // definitely a regex.  See adjustMatchers()
-                    return !!matcher.exec(parsedUrl.href);
-                }
-                /**
-                 * Returns whether a resource URL is permitted by the current policy lists.
-                 */
-                function isResourceUrlAllowedByPolicy(url) {
-                    const parsedUrl = urlResolve(url.toString());
-                    let i;
-                    let j;
-                    let allowed = false;
-                    // Ensure that at least one item from the trusted resource URL list allows this url.
-                    for (i = 0, j = trustedResourceUrlList.length; i < j; i++) {
-                        if (matchUrl(trustedResourceUrlList[i], parsedUrl)) {
-                            allowed = true;
-                            break;
-                        }
-                    }
-                    if (allowed) {
-                        // Ensure that no item from the banned resource URL list has blocked this url.
-                        for (i = 0, j = bannedResourceUrlList.length; i < j; i++) {
-                            if (matchUrl(bannedResourceUrlList[i], parsedUrl)) {
-                                allowed = false;
-                                break;
-                            }
-                        }
-                    }
-                    return allowed;
-                }
-                /**
-                 * Creates one trusted-value holder constructor for a specific SCE context.
-                 */
-                function generateHolderType(Base) {
-                    /** @param trustedValue */
-                    const holderType = function TrustedValueHolderType(trustedValue = "") {
-                        this._unwrapTrustedValue = function () {
-                            return trustedValue;
-                        };
-                    };
-                    if (Base) {
-                        holderType.prototype = new Base();
-                    }
-                    holderType.prototype.valueOf =
-                        function sceValueOf() {
-                            return this._unwrapTrustedValue();
-                        };
-                    holderType.prototype.toString =
-                        function sceToString() {
-                            return this._unwrapTrustedValue().toString();
-                        };
-                    return holderType;
-                }
-                const trustedValueHolderBase = generateHolderType();
-                const byType = {};
-                byType[SCE_CONTEXTS._HTML] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS._MEDIA_URL] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS._URL] = generateHolderType(byType[SCE_CONTEXTS._MEDIA_URL]);
-                byType[SCE_CONTEXTS._RESOURCE_URL] = generateHolderType(byType[SCE_CONTEXTS._URL]);
-                /**
-                 * Returns a trusted representation of the parameter for the specified context. This trusted
-                 * object will later on be used as-is, without any security check, by bindings or directives
-                 * that require this security context.
-                 * For instance, marking a string as trusted for the `$sce.HTML` context will entirely bypass
-                 * the potential `$sanitize` call in corresponding `$sce.HTML` bindings or directives, such as
-                 * `ng-bind-html`. Note that in most cases you won't need to call this function: if you have the
-                 * sanitizer loaded, passing the value itself will render all the HTML that does not pose a
-                 * security risk.
-                 *
-                 * See {@link ng.$sceDelegate#getTrusted getTrusted} for the function that will consume those
-                 * trusted values, and {@link ng.$sce $sce} for general documentation about strict contextual
-                 * escaping.
-                 *
-                 * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-                 *     `$sce.RESOURCE_URL` or `$sce.HTML`.
-                 *
-                 * @param trustedValue The value that should be considered trusted.
-                 * @returns A trusted representation of value, that can be used in the given context.
-                 */
-                function trustAs(type, trustedValue) {
-                    const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
-                    if (!Constructor) {
-                        $exceptionHandler($sceMinErr("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
-                        return undefined;
-                    }
-                    if (trustedValue === null ||
-                        isUndefined(trustedValue) ||
-                        trustedValue === "") {
-                        return trustedValue;
-                    }
-                    // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
-                    // mutable objects, we ensure here that the value passed in is actually a string.
-                    if (typeof trustedValue !== "string") {
-                        $exceptionHandler($sceMinErr("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
-                        return undefined;
-                    }
-                    const tst = new Constructor(trustedValue);
-                    return tst;
-                }
-                /**
-                 * If the passed parameter had been returned by a prior call to {@link ng.$sceDelegate#trustAs
-                 * `$sceDelegate.trustAs`}, returns the value that had been passed to {@link
-                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}.
-                 *
-                 * If the passed parameter is not a value that had been returned by {@link
-                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}, it must be returned as-is.
-                 *
-                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}
-                 *     call or anything else.
-                 * @returns The `value` that was originally provided to {@link ng.$sceDelegate#trustAs
-                 *     `$sceDelegate.trustAs`} if `value` is the result of such a call.  Otherwise, returns
-                 *     `value` unchanged.
-                 */
-                function valueOf(maybeTrusted) {
-                    if (maybeTrusted instanceof trustedValueHolderBase) {
-                        return maybeTrusted._unwrapTrustedValue();
-                    }
-                    return maybeTrusted;
-                }
-                /**
-                 *
-                 * Given an object and a security context in which to assign it, returns a value that's safe to
-                 * use in this context, which was represented by the parameter. To do so, this function either
-                 * unwraps the safe type it has been given (for instance, a {@link ng.$sceDelegate#trustAs
-                 * `$sceDelegate.trustAs`} result), or it might try to sanitize the value given, depending on
-                 * the context and sanitizer availablility.
-                 *
-                 * The contexts that can be sanitized are $sce.MEDIA_URL, $sce.URL and $sce.HTML. The first two are available
-                 * by default, and the third one relies on the `$sanitize` service (which may be loaded through
-                 * the `ngSanitize` module). Furthermore, for $sce.RESOURCE_URL context, a plain string may be
-                 * accepted if the resource url policy defined by {@link ng.$sceDelegateProvider#trustedResourceUrlList
-                 * `$sceDelegateProvider.trustedResourceUrlList`} and {@link ng.$sceDelegateProvider#bannedResourceUrlList
-                 * `$sceDelegateProvider.bannedResourceUrlList`} accepts that resource.
-                 *
-                 * This function will throw if the safe type isn't appropriate for this context, or if the
-                 * value given cannot be accepted in the context (which might be caused by sanitization not
-                 * being available, or the value not being recognized as safe).
-                 *
-                 * <div class="alert alert-danger">
-                 * Disabling auto-escaping is extremely dangerous, it usually creates a Cross Site Scripting
-                 * (XSS) vulnerability in your application.
-                 * </div>
-                 *
-                 * @param type The context in which this value is to be used (such as `$sce.HTML`).
-                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs
-                 *     `$sceDelegate.trustAs`} call, or anything else (which will not be considered trusted.)
-                 * @returns A version of the value that's safe to use in the given context, or throws an
-                 *     exception if this is impossible.
-                 */
-                function getTrusted(type, maybeTrusted) {
-                    if (maybeTrusted === null ||
-                        isUndefined(maybeTrusted) ||
-                        maybeTrusted === "") {
-                        return maybeTrusted;
-                    }
-                    const constructor = hasOwn(byType, type) ? byType[type] : null;
-                    // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
-                    // as-is.
-                    if (constructor && maybeTrusted instanceof constructor) {
-                        return maybeTrusted._unwrapTrustedValue();
-                    }
-                    // If maybeTrusted is a trusted class instance but not of the correct trusted type
-                    // then unwrap it and allow it to pass through to the rest of the checks
-                    if (isFunction(maybeTrusted._unwrapTrustedValue)) {
-                        maybeTrusted = maybeTrusted._unwrapTrustedValue();
-                    }
-                    // If we get here, then we will either sanitize the value or throw an exception.
-                    if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
-                        // we attempt to sanitize non-resource URLs
-                        return $$sanitizeUri(maybeTrusted.toString(), type === SCE_CONTEXTS._MEDIA_URL);
-                    }
-                    if (type === SCE_CONTEXTS._RESOURCE_URL) {
-                        if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
-                            return maybeTrusted;
-                        }
-                        $exceptionHandler($sceMinErr("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", maybeTrusted.toString()));
-                        return undefined;
-                    }
-                    else if (type === SCE_CONTEXTS._HTML) {
-                        // htmlSanitizer throws its own error when no sanitizer is available.
-                        return htmlSanitizer();
-                    }
-                    // Default error when the $sce service has no way to make the input safe.
-                    return $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
-                }
-                return { trustAs, getTrusted, valueOf };
-            },
-        ];
-    }
-}
-function SceProvider() {
-    let enabled = true;
-    /**
-     * @param value If provided, then enables/disables SCE application-wide.
-     * @returns True if SCE is enabled, false otherwise.
-     *
-     *
-     * Enables/disables SCE and returns the current value.
-     */
-    this.enabled = function (value) {
-        if (arguments.length) {
-            enabled = !!value;
-        }
-        return enabled;
-    };
-    this.$get = [
-        $injectTokens._parse,
-        $injectTokens._sceDelegate,
-        /**
-         * Creates the runtime `$sce` service.
-         */
-        ($parse, $sceDelegate) => {
-            const sce = {};
-            /**
-             * @returns True if SCE is enabled, false otherwise.  If you want to set the value, you
-             *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
-             *
-             *
-             * Returns a boolean indicating if SCE is enabled.
-             */
-            sce.isEnabled = function () {
-                return enabled;
-            };
-            sce.trustAs = $sceDelegate.trustAs;
-            sce.getTrusted = $sceDelegate.getTrusted;
-            sce.valueOf = $sceDelegate.valueOf;
-            if (!enabled) {
-                /**
-                 * Disables trust enforcement when SCE is configured off.
-                 */
-                sce.trustAs = sce.getTrusted = function (type, value) {
-                    return value;
-                };
-                sce.valueOf = (v) => v;
-            }
-            /**
-             * Converts AngularTS {@link guide/expression expression} into a function.  This is like {@link
-             * ng.$parse $parse} and is identical when the expression is a literal constant.  Otherwise, it
-             * wraps the expression in a call to {@link ng.$sce#getTrusted $sce.getTrusted(*type*,
-             * *result*)}
-             *
-             * @param type The SCE context in which this result will be used.
-             * @param expr String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            sce.parseAs = (type, expr) => {
-                const parsed = $parse(expr);
-                if (parsed._literal && parsed._constant) {
-                    return parsed;
-                }
-                return $parse(expr, (value) => sce.getTrusted(type, value));
-            };
-            /**
-             * Delegates to {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}. As such, returns a
-             * wrapped object that represents your value, and the trust you have in its safety for the given
-             * context. AngularTS can then use that value as-is in bindings of the specified secure context.
-             * This is used in bindings for `ng-bind-html`, `ng-include`, and most `src` attribute
-             * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
-             *
-             * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-             *     `$sce.RESOURCE_URL` or `$sce.HTML`.
-             *
-             * @param value The value that that should be considered trusted.
-             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-             *     in the context you specified.
-             */
-            /**
-             * Shorthand method.  `$sce.trustAsHtml(value)` →
-             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.HTML, value)`}
-             *
-             * @param value The value to mark as trusted for `$sce.HTML` context.
-             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-             *     in `$sce.HTML` context (like `ng-bind-html`).
-             */
-            /**
-             * Shorthand method.  `$sce.trustAsUrl(value)` →
-             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.URL, value)`}
-             *
-             * @param value The value to mark as trusted for `$sce.URL` context.
-             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-             *     in `$sce.URL` context. That context is currently unused, so there are almost no reasons
-             *     to use this function so far.
-             */
-            /**
-             * Shorthand method.  `$sce.trustAsResourceUrl(value)` →
-             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.RESOURCE_URL, value)`}
-             *
-             * @param value The value to mark as trusted for `$sce.RESOURCE_URL` context.
-             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-             *     in `$sce.RESOURCE_URL` context (template URLs in `ng-include`, most `src` attribute
-             *     bindings, ...)
-             */
-            /**
-             * Delegates to {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted`}.  As such,
-             * takes any input, and either returns a value that's safe to use in the specified context,
-             * or throws an exception. This function is aware of trusted values created by the `trustAs`
-             * function and its shorthands, and when contexts are appropriate, returns the unwrapped value
-             * as-is. Finally, this function can also throw when there is no way to turn `maybeTrusted` in a
-             * safe value (e.g., no sanitization is available or possible.)
-             *
-             * @param type The context in which this value is to be used.
-             * @param maybeTrusted The result of a prior {@link ng.$sce#trustAs
-             *     `$sce.trustAs`} call, or anything else (which will not be considered trusted.)
-             * @returns A version of the value that's safe to use in the given context, or throws an
-             *     exception if this is impossible.
-             */
-            /**
-             * Shorthand method.  `$sce.getTrustedHtml(value)` →
-             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.HTML, value)`}
-             *
-             * @param value The value to pass to `$sce.getTrusted`.
-             * @returns The return value of `$sce.getTrusted($sce.HTML, value)`
-             */
-            /**
-             * Shorthand method.  `$sce.getTrustedUrl(value)` →
-             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
-             *
-             * @param value The value to pass to `$sce.getTrusted`.
-             * @returns The return value of `$sce.getTrusted($sce.URL, value)`
-             */
-            /**
-             * Shorthand method.  `$sce.getTrustedResourceUrl(value)` →
-             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.RESOURCE_URL, value)`}
-             *
-             * @param value The value to pass to `$sceDelegate.getTrusted`.
-             * @returns The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
-             */
-            /**
-             * Shorthand method.  `$sce.parseAsHtml(expression string)` →
-             *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
-             *
-             * @param expression String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            /**
-             * Shorthand method.  `$sce.parseAsUrl(value)` →
-             *     {@link ng.$sceparseAs `$sce.parseAs($sce.URL, value)`}
-             *
-             * @param expression String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            /**
-             * Shorthand method.  `$sce.parseAsResourceUrl(value)` →
-             *     {@link ng.$sceparseAs `$sce.parseAs($sce.RESOURCE_URL, value)`}
-             *
-             * @param expression String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            /**
-             * Shorthand method.  `$sce.parseAsJs(value)` →
-             *     {@link ng.$sceparseAs `$sce.parseAs($sce.JS, value)`}
-             *
-             * @param expression String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            // Shorthand delegations.
-            const parse = sce.parseAs;
-            const { getTrusted } = sce;
-            const { trustAs } = sce;
-            entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
-                const lName = name.replace(/^_/, "").toLowerCase();
-                /** @param expr */
-                sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
-                    return parse(enumValue, expr);
-                };
-                /** @param value */
-                sce[snakeToCamel(`get_trusted_${lName}`)] = function (value) {
-                    return getTrusted(enumValue, value);
-                };
-                /** @param value */
-                sce[snakeToCamel(`trust_as_${lName}`)] = function (value) {
-                    return trustAs(enumValue, value);
-                };
-            });
-            return sce;
-        },
-    ];
-}
 
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
  */
-const ngEventDirectives = {};
-"blur change click copy cut dblclick focus input keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove"
-    .split(" ")
-    .forEach((eventName) => {
-    const directiveName = directiveNormalize(`ng-${eventName}`);
-    ngEventDirectives[directiveName] = [
-        $injectTokens._parse,
-        $injectTokens._exceptionHandler,
+const EVENT_NAMES = [
+    "blur",
+    "change",
+    "click",
+    "copy",
+    "cut",
+    "dblclick",
+    "focus",
+    "input",
+    "keydown",
+    "keyup",
+    "load",
+    "mousedown",
+    "mouseenter",
+    "mouseleave",
+    "mousemove",
+    "mouseout",
+    "mouseover",
+    "mouseup",
+    "paste",
+    "submit",
+    "touchstart",
+    "touchend",
+    "touchmove",
+];
+function directiveNameForEvent(eventName) {
+    return directiveNormalize(`ng-${eventName}`);
+}
+function createEventDirectiveFactory(eventName) {
+    const directiveName = directiveNameForEvent(eventName);
+    return [
+        _parse,
+        _exceptionHandler,
         /**
          * Creates the event directive factory for this DOM event name.
          */
@@ -10391,7 +8875,13 @@ const ngEventDirectives = {};
             return createEventDirective($parse, $exceptionHandler, directiveName, eventName);
         },
     ];
-});
+}
+createEventDirectiveFactory("click");
+const ngEventDirectives = EVENT_NAMES.reduce((directives, eventName) => {
+    directives[directiveNameForEvent(eventName)] =
+        createEventDirectiveFactory(eventName);
+    return directives;
+}, {});
 /**
  * Creates a directive that evaluates an expression when the element event fires.
  */
@@ -10439,6 +8929,21 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
     };
 }
 
+/**
+ * Creates a resolver that instantiates `$animate` only when animation-aware code
+ * actually needs it.
+ */
+function createLazyAnimate($injector) {
+    let $animate;
+    return () => ($animate || ($animate = $injector.get(_animate)));
+}
+/**
+ * Returns `$animate` only for nodes that opt into animation handling.
+ */
+function getAnimateForNode(getAnimate, node) {
+    return hasAnimate(node) ? getAnimate() : undefined;
+}
+
 const $compileMinErr$1 = minErr("$compile");
 const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
@@ -10459,7 +8964,7 @@ class Attributes {
          *
          * Also there is special case for Moz prefix starting with upper case letter.
          *
-         * For further information check out the guide on {@link guide/directive#matching-directives Matching Directives}
+         * Normalization follows the directive matching rules used by `$compile`.
          *
          * @param name Name to normalize
          */
@@ -10557,7 +9062,8 @@ class Attributes {
                 this.$attr[key] = attrName = snakeCase(key, "-");
             }
         }
-        const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
+        const elementNode = this._nodeRef?.node;
+        const nodeName = elementNode && getNodeName$1(elementNode);
         let maybeSanitizedValue;
         if (nodeName === "img" && key === "srcset") {
             this[key] = maybeSanitizedValue = this._sanitizeSrcset(value, "$set('srcset', value)");
@@ -10723,7 +9229,7 @@ function ngObserveDirective(source, prop) {
 
 const scopeOwnedNodeRefs = new WeakMap();
 function registerScopeOwnedNodeRef(scope, nodeRef) {
-    if (!scope || typeof scope.$on !== "function") {
+    if (!scope || !isFunction(scope.$on)) {
         return;
     }
     let ownedNodeRefs = scopeOwnedNodeRefs.get(scope);
@@ -10774,7 +9280,7 @@ const valueFn = (value) => () => value;
 const DirectiveSuffix = "Directive";
 class CompileProvider {
     /** Configures directive registration and compile-time provider behavior. */
-    constructor($provide, $sanitizeUriProvider) {
+    constructor($provide) {
         const provider = this;
         const hasDirectives = {};
         const bindingCache = nullObject();
@@ -10855,8 +9361,8 @@ class CompileProvider {
                 if (!hasOwn(hasDirectives, name)) {
                     hasDirectives[name] = [];
                     $provide.factory(name + DirectiveSuffix, [
-                        $injectTokens._injector,
-                        $injectTokens._exceptionHandler,
+                        _injector,
+                        _exceptionHandler,
                         /** Instantiates and normalizes the registered directive factories for one name. */
                         function ($injector, $exceptionHandler) {
                             const directives = [];
@@ -11002,53 +9508,10 @@ class CompileProvider {
                     }
                 }
             });
-            factory.$inject = [$injectTokens._injector];
+            factory.$inject = [_injector];
             return provider.directive(name, factory);
         };
         this.component = registerComponent;
-        /**
-         * Retrieves or overrides the default regular expression that is used for determining trusted safe
-         * urls during a[href] sanitization.
-         *
-         * The sanitization is a security measure aimed at preventing XSS attacks via html links.
-         *
-         * Any url about to be assigned to a[href] via data-binding is first normalized and turned into
-         * an absolute url. Afterwards, the url is matched against the `aHrefSanitizationTrustedUrlList`
-         * regular expression. If a match is found, the original url is written into the dom. Otherwise,
-         * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
-         *
-         * @param regexp - New regexp to trust urls with.
-         * @returns Current RegExp if called without value or self for
-         *    chaining otherwise.
-         */
-        this.aHrefSanitizationTrustedUrlList = function (regexp) {
-            if (isDefined(regexp)) {
-                $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
-            }
-            return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
-        };
-        /**
-         * Retrieves or overrides the default regular expression that is used for determining trusted safe
-         * urls during img[src] sanitization.
-         *
-         * The sanitization is a security measure aimed at prevent XSS attacks via html links.
-         *
-         * Any url about to be assigned to img[src] via data-binding is first normalized and turned into
-         * an absolute url. Afterwards, the url is matched against the `imgSrcSanitizationTrustedUrlList`
-         * regular expression. If a match is found, the original url is written into the dom. Otherwise,
-         * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
-         *
-         * @param regexp - New regexp to trust urls with.
-         * @returns Current RegExp if called without value or self for
-         *    chaining otherwise.
-         */
-        this.imgSrcSanitizationTrustedUrlList = function (regexp) {
-            if (isDefined(regexp)) {
-                $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
-                return undefined;
-            }
-            return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
-        };
         /**
          * @param enabled - Update the strictComponentBindingsEnabled state if provided,
          * otherwise return the current strictComponentBindingsEnabled state.
@@ -11161,13 +9624,13 @@ class CompileProvider {
             ]);
         })();
         this.$get = [
-            $injectTokens._injector,
-            $injectTokens._interpolate,
-            $injectTokens._exceptionHandler,
-            $injectTokens._templateRequest,
-            $injectTokens._parse,
-            $injectTokens._controller,
-            $injectTokens._sce,
+            _injector,
+            _interpolate,
+            _exceptionHandler,
+            _templateRequest,
+            _parse,
+            _controller,
+            _sce,
             /** Creates the runtime `$compile` service and its shared helper closures. */
             ($injector, $interpolate, $exceptionHandler, $templateRequest, $parse, $controller, $sce) => {
                 const onChangesQueueState = {
@@ -11306,7 +9769,6 @@ class CompileProvider {
                     if (!nodeRef) {
                         throw $compileMinErr("multilink", "This element has already been linked.");
                     }
-                    assertArg(scope, "scope");
                     if (state._previousCompileContext?._needsNewScope) {
                         // A parent directive did a replace and a directive on this element asked
                         // for transclusion, which caused us to lose a layer of element on which
@@ -11348,8 +9810,8 @@ class CompileProvider {
                     if (_transcludeControllers) {
                         const controllers = _transcludeControllers;
                         for (const controllerName in controllers) {
-                            assertArg($linkNode.element, "element");
-                            setCacheData($linkNode.element, `$${controllerName}Controller`, controllers[controllerName]._instance);
+                            const linkElement = $linkNode._element;
+                            setCacheData(linkElement, `$${controllerName}Controller`, controllers[controllerName]._instance);
                         }
                     }
                     if (cloneConnectFn) {
@@ -11365,7 +9827,6 @@ class CompileProvider {
                     return $linkNode._getAll();
                 }
                 function invokeCompositeLink(state, scope, nodeRef, _parentBoundTranscludeFn) {
-                    assertArg(nodeRef, "nodeRef");
                     const stableNodeList = buildStableNodeList(state, nodeRef);
                     linkCompositeNodes(state, stableNodeList, scope, _parentBoundTranscludeFn || null);
                 }
@@ -11431,15 +9892,21 @@ class CompileProvider {
                             }
                         }
                         else if (_childLinkFn) {
-                            const childNodesRef = new NodeRef(node.childNodes);
-                            try {
-                                _childLinkFn(scope, childNodesRef, _parentBoundTranscludeFn);
-                            }
-                            finally {
-                                childNodesRef._release();
-                            }
+                            _childLinkFn(scope, node.childNodes, _parentBoundTranscludeFn);
                         }
                     }
+                }
+                function isNodeRef(value) {
+                    return isInstanceOf(value, NodeRef);
+                }
+                function getCompileNodeListSize(nodes) {
+                    return isNodeRef(nodes) ? nodes.size : nodes.length;
+                }
+                function getCompileNodeAt(nodes, index) {
+                    return isNodeRef(nodes) ? nodes._getIndex(index) : nodes[index];
+                }
+                function ensureCompileNodeRef(nodes) {
+                    return isNodeRef(nodes) ? nodes : new NodeRef(nodes);
                 }
                 /**
                  * Compiles a `NodeRef` into a composite linking function.
@@ -11451,22 +9918,29 @@ class CompileProvider {
                     if (!nodeRefList)
                         return null;
                     const linkFnsList = []; // An array to hold node indices and their linkFns
+                    let nodeRefListContext = isNodeRef(nodeRefList) ? nodeRefList : null;
                     let nodeLinkFnFound;
                     let linkFnFound = false;
-                    for (let i = 0; i < nodeRefList.size; i++) {
+                    for (let i = 0, l = getCompileNodeListSize(nodeRefList); i < l; i++) {
+                        const compileNode = getCompileNodeAt(nodeRefList, i);
                         const attrs = new Attributes($injector, $exceptionHandler, $sce);
-                        const directives = collectDirectives(nodeRefList._getIndex(i), attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
+                        const directives = collectDirectives(compileNode, attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
                         let nodeLinkFnCtx;
                         if (directives.length) {
-                            nodeLinkFnCtx = applyDirectivesToNode(directives, nodeRefList?._getIndex(i), attrs, transcludeFn, null, [], [], Object.assign({}, previousCompileContext, {
+                            nodeRefListContext =
+                                nodeRefListContext || ensureCompileNodeRef(nodeRefList);
+                            nodeLinkFnCtx = applyDirectivesToNode(directives, compileNode, attrs, transcludeFn, null, [], [], assign({}, previousCompileContext, {
                                 _index: i,
-                                _parentNodeRef: nodeRefList,
-                                _ctxNodeRef: nodeRefList,
+                                _parentNodeRef: nodeRefListContext,
+                                _ctxNodeRef: nodeRefListContext,
                             }));
                         }
                         let childLinkFn;
                         const nodeLinkFn = nodeLinkFnCtx?._nodeLinkFn;
-                        const { childNodes } = nodeRefList._getIndex(i);
+                        const childParentNode = nodeRefListContext
+                            ? nodeRefListContext._getIndex(i)
+                            : compileNode;
+                        const { childNodes } = childParentNode;
                         if ((nodeLinkFn && nodeLinkFnCtx?._terminal) ||
                             !childNodes ||
                             !childNodes.length) {
@@ -11479,9 +9953,7 @@ class CompileProvider {
                                     ? nodeLinkFnCtx?._transclude
                                     : undefined
                                 : transcludeFn;
-                            // recursive call
-                            const childNodeRef = new NodeRef(childNodes);
-                            childLinkFn = compileNodes(childNodeRef, transcluded || undefined, undefined, undefined, undefined);
+                            childLinkFn = compileNodes(childNodes, transcluded || undefined, undefined, undefined, undefined);
                         }
                         if (nodeLinkFn || childLinkFn) {
                             linkFnsList.push({
@@ -11500,7 +9972,7 @@ class CompileProvider {
                     }
                     const compositeLinkState = {
                         _linkFnsList: linkFnsList,
-                        _nodeRefList: nodeRefList,
+                        _nodeRefList: nodeRefListContext,
                         _nodeLinkFnFound: nodeLinkFnFound,
                         _transcludeFn: transcludeFn,
                     };
@@ -11552,7 +10024,7 @@ class CompileProvider {
                     let nodeName;
                     switch (nodeType) {
                         case NodeType._ELEMENT_NODE /* Element */: {
-                            nodeName = node.nodeName.toLowerCase();
+                            nodeName = getNodeName$1(node);
                             if (ignoreDirective !== directiveNormalize(nodeName)) {
                                 // use the node name: <directive>
                                 addDirective(directives, directiveNormalize(nodeName), "E", maxPriority);
@@ -11695,6 +10167,12 @@ class CompileProvider {
                 }
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
+                    if (linkState._singleExpression) {
+                        scope.$watch(linkState._watchExpression, (value) => {
+                            applyTextInterpolationValue(node, stringify$1(value));
+                        });
+                        return;
+                    }
                     const bindingState = {
                         _linkState: linkState,
                         _scope: scope,
@@ -11717,6 +10195,11 @@ class CompileProvider {
                         const element = attr._element();
                         attr.$updateClass(value, element.classList.value);
                         return;
+                    }
+                    if ((linkState._trustedContext === SCE_CONTEXTS._URL ||
+                        linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
+                        !(isString(value) && value.startsWith("unsafe:"))) {
+                        value = $sce.getTrusted(linkState._trustedContext, value);
                     }
                     attr.$set(linkState._name, linkState._name === "srcset"
                         ? $sce.getTrustedMediaUrl(value)
@@ -11926,12 +10409,12 @@ class CompileProvider {
                             templateNodes = [];
                         }
                         else if (isString(content)) {
-                            templateNodes = Array.from(createNodelistFromHTML(content)).filter((node) => node.nodeType !== NodeType._COMMENT_NODE &&
+                            templateNodes = arrayFrom(createNodelistFromHTML(content)).filter((node) => node.nodeType !== NodeType._COMMENT_NODE &&
                                 node.nodeType !== NodeType._TEXT_NODE &&
                                 node.nodeType === NodeType._ELEMENT_NODE);
                         }
                         else {
-                            templateNodes = Array.from(wrapTemplate(delayedState._templateNamespace, trim(content))).filter((node) => node.nodeType === NodeType._ELEMENT_NODE);
+                            templateNodes = arrayFrom(wrapTemplate(delayedState._templateNamespace, trim(content))).filter((node) => node.nodeType === NodeType._ELEMENT_NODE);
                         }
                         compileNode = templateNodes[0];
                         if (templateNodes.length !== 1 ||
@@ -12171,13 +10654,7 @@ class CompileProvider {
                     if (childLinkFn &&
                         linkNode.childNodes &&
                         linkNode.childNodes.length) {
-                        const childNodesRef = new NodeRef(linkNode.childNodes);
-                        try {
-                            childLinkFn(scopeToChild, childNodesRef, boundTranscludeFn);
-                        }
-                        finally {
-                            childNodesRef._release();
-                        }
+                        childLinkFn(scopeToChild, linkNode.childNodes, boundTranscludeFn);
                     }
                     for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
                         const postLinkFn = nodeLinkState._postLinkFns[i];
@@ -12185,7 +10662,7 @@ class CompileProvider {
                             getControllers(postLinkFn._directiveName, postLinkFn._require, $element.node, elementControllers);
                         try {
                             if (postLinkFn._isolateScope && isolateScope) {
-                                deleteCacheData($element.element, $injectTokens._scope);
+                                deleteCacheData($element.element, _scope);
                                 setIsolateScope($element.element, isolateScope);
                             }
                             invokeLinkFnRecord(postLinkFn, isolateScope, scope, $element.node, attrs, controllers, transcludeFn);
@@ -12385,7 +10862,7 @@ class CompileProvider {
                                         if (slotName) {
                                             filledSlots[slotName] = true;
                                             slots[slotName] =
-                                                slots[slotName] || document.createDocumentFragment();
+                                                slots[slotName] || createDocumentFragment();
                                             slots[slotName].appendChild(node);
                                         }
                                         else {
@@ -12436,7 +10913,7 @@ class CompileProvider {
                                     $template = wrapTemplate(directive.templateNamespace, trim(directiveValue));
                                 }
                                 if (isString($template)) {
-                                    $template = Array.from(createNodelistFromHTML($template)).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
+                                    $template = arrayFrom(createNodelistFromHTML($template)).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
                                 }
                                 compileNode = $template[0];
                                 if ($template.length !== 1 ||
@@ -12651,7 +11128,7 @@ class CompileProvider {
                 /** Marks a directive list with inherited isolate/new-scope metadata. */
                 function markDirectiveScope(directives, isolateScope, newScope) {
                     for (let j = 0, jj = directives.length; j < jj; j++) {
-                        directives[j] = inherit$1(directives[j], {
+                        directives[j] = inherit(directives[j], {
                             _isolateScope: isolateScope,
                             _newScope: newScope,
                         });
@@ -12740,7 +11217,7 @@ class CompileProvider {
                 /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
                 function compileTemplateUrl(directives, $compileNode, tAttrs, $rootElement, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
                     const origAsyncDirective = directives.shift();
-                    const derivedSyncDirective = inherit$1(origAsyncDirective, {
+                    const derivedSyncDirective = inherit(origAsyncDirective, {
                         templateUrl: null,
                         transclude: null,
                         replace: null,
@@ -12794,9 +11271,16 @@ class CompileProvider {
                 function addTextInterpolateDirective(directives, text) {
                     const interpolateFn = $interpolate(text, true);
                     if (interpolateFn) {
+                        const { expressions } = interpolateFn;
+                        const watchExpression = buildInterpolationWatchExpression(expressions);
                         const linkState = {
                             _interpolateFn: interpolateFn,
-                            _watchExpression: buildInterpolationWatchExpression(interpolateFn.expressions),
+                            _watchExpression: watchExpression,
+                            _singleExpression: expressions.length === 1 &&
+                                text ===
+                                    $interpolate.startSymbol() +
+                                        watchExpression +
+                                        $interpolate.endSymbol(),
                         };
                         const directive = {
                             priority: 0,
@@ -13053,7 +11537,7 @@ class CompileProvider {
                                     const attr = attrsAny[attrName];
                                     parentGet = attr && $parse(attr);
                                     if (parentGet && parentGet._literal) {
-                                        compare = equals$1;
+                                        compare = equals;
                                     }
                                     else {
                                         compare = simpleCompare;
@@ -13156,7 +11640,7 @@ class CompileProvider {
         ];
     }
 }
-/* @ignore */ CompileProvider.$inject = [$injectTokens._provide, $injectTokens._sanitizeUriProvider];
+/* @ignore */ CompileProvider.$inject = [_provide];
 /** Validates a directive/component name before registration. */
 function assertValidDirectiveName(name) {
     const letter = name.charAt(0);
@@ -13176,7 +11660,7 @@ function getDirectiveRequire(directive) {
     const require = directive.require || (directive.controller && directive.name);
     if (!isArray(require) && isObject(require)) {
         const entryList = entries(require);
-        for (let i = 0, len = entryList.length; i < len; i++) {
+        for (let i = 0; i < entryList.length; i++) {
             const [key, value] = entryList[i];
             const match = value.match(REQUIRE_PREFIX_REGEXP);
             if (!match)
@@ -13219,27 +11703,26 @@ function detectNamespaceForChildElements(parentElement) {
 function buildStableNodeList(state, nodeRef) {
     let stableNodeList = [];
     if (state._nodeLinkFnFound) {
-        const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
+        const stableLength = isInstanceOf(nodeRef, NodeRef)
+            ? nodeRef.size
+            : nodeRef.length;
         stableNodeList = new Array(stableLength);
         for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
             const { _index: idx } = state._linkFnsList[i];
-            if (idx === 0) {
-                stableNodeList[idx] = nodeRef._isList
-                    ? nodeRef.nodes[idx]
-                    : nodeRef.node;
-            }
-            else if (state._nodeRefList?._getIndex(idx)) {
-                stableNodeList[idx] = nodeRef.nodes[idx];
-            }
+            stableNodeList[idx] = isInstanceOf(nodeRef, NodeRef)
+                ? nodeRef._getIndex(idx)
+                : nodeRef[idx];
         }
     }
-    else if (nodeRef._isList) {
-        for (let i = 0, l = nodeRef.nodes.length; i < l; i++) {
-            stableNodeList.push(nodeRef.nodes[i]);
+    else if (isInstanceOf(nodeRef, NodeRef)) {
+        for (let i = 0, l = nodeRef.size; i < l; i++) {
+            stableNodeList.push(nodeRef._getIndex(i));
         }
     }
     else {
-        stableNodeList.push(nodeRef.node);
+        for (let i = 0, l = nodeRef.length; i < l; i++) {
+            stableNodeList.push(nodeRef[i]);
+        }
     }
     return stableNodeList;
 }
@@ -13312,7 +11795,7 @@ function replaceWith(elementsToRemove, newNode, index) {
             parent.replaceChild(newNode, firstElementToRemove);
         }
     }
-    const fragment = document.createDocumentFragment();
+    const fragment = createDocumentFragment();
     elementsToRemove._collection().forEach((element) => {
         fragment.appendChild(element);
     });
@@ -13354,7 +11837,7 @@ function filterFilter() {
             default:
                 return array;
         }
-        return Array.from(array).filter(predicateFn);
+        return arrayFrom(array).filter(predicateFn);
     };
 }
 // Helper functions for `filterFilter`
@@ -13383,7 +11866,7 @@ function createPredicateFn(expression, comparator, anyPropertyKey = "$", matchAg
         typeof expression === "object" &&
         anyPropertyKey in expression;
     if (comparator === true) {
-        comparator = equals$1;
+        comparator = equals;
     }
     else if (!isFunction(comparator)) {
         comparator = function (actual, expected) {
@@ -13542,7 +12025,7 @@ function sliceFn(input, begin, end) {
     return [].slice.call(input, begin, end);
 }
 
-orderByFilter.$inject = [$injectTokens._parse];
+orderByFilter.$inject = [_parse];
 /** Registers the built-in stable ordering filter. */
 function orderByFilter($parse) {
     /**
@@ -13781,7 +12264,6 @@ function orderByFilter($parse) {
 const SUFFIX = "Filter";
 class FilterProvider {
     constructor($provide) {
-        assert(isDefined($provide));
         this._$provide = $provide;
         entries({
             filter: filterFilter,
@@ -13792,7 +12274,7 @@ class FilterProvider {
             this.register(key, value);
         });
         this.$get = [
-            $injectTokens._injector,
+            _injector,
             ($injector) => (name) => {
                 validateIsString(name, "name");
                 return $injector.get(name + SUFFIX);
@@ -13806,7 +12288,7 @@ class FilterProvider {
         return this;
     }
 }
-FilterProvider.$inject = [$injectTokens._provide];
+FilterProvider.$inject = [_provide];
 
 const $interpolateMinErr = minErr("$interpolate");
 function throwNoconcat(text) {
@@ -13822,8 +12304,8 @@ class InterpolateProvider {
         this.startSymbol = "{{";
         this.endSymbol = "}}";
         this.$get = [
-            $injectTokens._parse,
-            $injectTokens._sce,
+            _parse,
+            _sce,
             ($parse, $sce) => {
                 const provider = this;
                 const startSymbolLength = this.startSymbol.length;
@@ -13889,8 +12371,33 @@ class InterpolateProvider {
                     const interceptor = contextAllowsConcatenation && singleExpression
                         ? undefined
                         : parseStringifyInterceptor;
-                    const parseFns = expressions.map((expression) => $parse(expression, interceptor));
                     if (!mustHaveExpression || expressions.length > 0) {
+                        if (singleExpression) {
+                            const expression = expressions[0];
+                            const parseFn = $parse(expression);
+                            const watchProp = expression.trim();
+                            const compute = interceptor
+                                ? (context) => {
+                                    const value = parseFn(context);
+                                    return parseStringifyInterceptor(deProxy(isFunction(value) ? value() : value));
+                                }
+                                : (context) => parseFn(context);
+                            const fn = ((context, cb) => {
+                                try {
+                                    if (cb) {
+                                        context.$watch(watchProp, () => cb(compute(context)));
+                                    }
+                                    return compute(context);
+                                }
+                                catch (err) {
+                                    return interr(text, err);
+                                }
+                            });
+                            fn.exp = text;
+                            fn.expressions = expressions;
+                            return fn;
+                        }
+                        const parseFns = expressions.map((expression) => $parse(expression, interceptor));
                         const compute = (values) => {
                             for (let i = 0; i < expressions.length; i++) {
                                 if (allOrNothing && isUndefined(values[i])) {
@@ -14057,7 +12564,7 @@ class Lexer {
      */
     /** @internal */
     _isNumber(ch) {
-        return typeof ch === "string" && ch >= "0" && ch <= "9";
+        return isString(ch) && ch >= "0" && ch <= "9";
     }
     /**
      * Checks if a character is whitespace.
@@ -14262,7 +12769,7 @@ class ASTInterpreter {
         const assignable = assignableAST(decoratedNode);
         let assign;
         if (assignable) {
-            assign = /** @type {CompiledExpression} */ this._recurse(assignable);
+            assign = this._recurse(assignable);
         }
         const toWatch = getInputs(body);
         let inputs;
@@ -14286,7 +12793,7 @@ class ASTInterpreter {
                 /* empty */
             }
             : body.length === 1
-                ? /** @type {CompiledExpression} */ expressions[0]
+                ? expressions[0]
                 : function (scope, locals) {
                     let lastValue;
                     for (let i = 0; i < expressions.length; i++) {
@@ -14313,6 +12820,12 @@ class ASTInterpreter {
      */
     /** @internal */
     _recurse(ast, context, create) {
+        if (!context && !create) {
+            const path = getNonComputedPath(ast);
+            if (path) {
+                return this._path(path);
+            }
+        }
         let left;
         let right;
         const self = this;
@@ -14324,6 +12837,12 @@ class ASTInterpreter {
                 right = this._recurse(ast._argument);
                 return self[`unary${ast._operator}`](right, context);
             case ASTType._BinaryExpression:
+                if (!context) {
+                    const binaryPath = getPathBinary(ast);
+                    if (binaryPath) {
+                        return binaryPath;
+                    }
+                }
                 left = this._recurse(ast._left);
                 right = this._recurse(ast._right);
                 return self[`binary${ast._operator}`](left, right, context);
@@ -14357,6 +12876,28 @@ class ASTInterpreter {
                     right = this._$filter(ast._callee._name);
                 if (!ast._filter) {
                     right = this._recurse(ast._callee, true);
+                }
+                if (!ast._filter && args.length <= 1) {
+                    const arg = args[0];
+                    return args.length
+                        ? (scope, locals, assign) => {
+                            const runtimeScope = scope;
+                            const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                            let value;
+                            if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                                const res = arg(scope, locals, assign);
+                                value = rhs.value.call(rhs.context, isFunction(res) ? res() : res);
+                            }
+                            return context ? { value } : value;
+                        }
+                        : (scope, locals, assign) => {
+                            const runtimeScope = scope;
+                            const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                            const value = !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
+                                ? rhs.value.call(rhs.context)
+                                : undefined;
+                            return context ? { value } : value;
+                        };
                 }
                 return ast._filter
                     ? (scope, locals, assign) => {
@@ -14417,6 +12958,18 @@ class ASTInterpreter {
                 args = [];
                 const properties = (ast._properties ||
                     []);
+                if (!context && properties.length === 1 && !properties[0]._computed) {
+                    const property = properties[0];
+                    const key = property._key._type === ASTType._Identifier
+                        ? property._key._name
+                        : `${property._key._value}`;
+                    const value = self._recurse(property._value);
+                    return (scope, locals, assign) => {
+                        const object = {};
+                        object[key] = value(scope, locals, assign);
+                        return object;
+                    };
+                }
                 for (let i = 0, l = properties.length; i < l; i++) {
                     const property = properties[i];
                     if (property._computed) {
@@ -14459,7 +13012,7 @@ class ASTInterpreter {
                 // Must be assignable: Identifier or MemberExpression
                 // Reuse the "context mode" lvalue resolver that returns { context, name, value }
                 const ref = this._recurse(ast._argument, true, 1);
-                const op = /** @type {"++"|"--"} */ ast._operator;
+                const op = ast._operator;
                 const prefix = !!ast._prefix;
                 return (scope, locals, assign) => {
                     const lhs = ref(scope, locals, assign);
@@ -14778,13 +13331,17 @@ class ASTInterpreter {
             }
             let value = undefined;
             if (base) {
-                value = /** @type {Record<string, any>} */ deProxy(base)[name];
+                value = deProxy(base)[name];
             }
             if (context) {
                 return { context: base, name, value };
             }
             return value;
         };
+    }
+    /** @internal */
+    _path(path) {
+        return createPathGetter(path);
     }
     /**
      * Returns the value of a computed member expression.
@@ -14840,6 +13397,82 @@ class ASTInterpreter {
             return value;
         };
     }
+}
+function getNonComputedPath(ast) {
+    if (ast._type === ASTType._Identifier) {
+        return [ast._name];
+    }
+    if (ast._type !== ASTType._MemberExpression || ast._computed) {
+        return undefined;
+    }
+    const parentPath = getNonComputedPath(ast._object);
+    if (!parentPath) {
+        return undefined;
+    }
+    parentPath.push(ast._property._name);
+    return parentPath;
+}
+function getPathBase(head, scope, locals) {
+    const runtimeScope = scope;
+    const base = locals && head in locals
+        ? locals
+        : ((runtimeScope && runtimeScope.$proxy) ?? scope);
+    return base ? deProxy(base) : undefined;
+}
+function createPathGetter(path) {
+    const p0 = path[0];
+    switch (path.length) {
+        case 1:
+            return (scope, locals) => getPathBase(p0, scope, locals)?.[p0];
+        case 2: {
+            const p1 = path[1];
+            return (scope, locals) => {
+                const value = getPathBase(p0, scope, locals)?.[p0];
+                return isNullOrUndefined(value) ? undefined : value[p1];
+            };
+        }
+        case 3: {
+            const p1 = path[1];
+            const p2 = path[2];
+            return (scope, locals) => {
+                const value = getPathBase(p0, scope, locals)?.[p0];
+                if (isNullOrUndefined(value)) {
+                    return undefined;
+                }
+                const next = value[p1];
+                return isNullOrUndefined(next) ? undefined : next[p2];
+            };
+        }
+    }
+    return (scope, locals) => {
+        let value = getPathBase(p0, scope, locals)?.[p0];
+        for (let i = 1, l = path.length; i < l; i++) {
+            if (isNullOrUndefined(value)) {
+                return undefined;
+            }
+            value = value[path[i]];
+        }
+        return value;
+    };
+}
+function getPathBinary(ast) {
+    const operator = ast._operator;
+    if (operator !== "===" && operator !== "!==") {
+        return undefined;
+    }
+    const leftPath = getNonComputedPath(ast._left);
+    if (!leftPath) {
+        return undefined;
+    }
+    const rightPath = getNonComputedPath(ast._right);
+    if (!rightPath) {
+        return undefined;
+    }
+    const left = createPathGetter(leftPath);
+    const right = createPathGetter(rightPath);
+    return operator === "==="
+        ? (scope, locals) => left(scope, locals) === right(scope, locals)
+        : (scope, locals) => left(scope, locals) !== right(scope, locals);
 }
 /**
  * Decorates an AST node with constant, toWatch, and isPure metadata.
@@ -14923,7 +13556,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             return decoratedNode;
         case ASTType._MemberExpression:
             decoratedObject = findConstantAndWatchExpressions(ast._object, $filter, astIsPure);
-            if ( /** @type {ExpressionNode} */ast._computed) {
+            if (ast._computed) {
                 decoratedProperty = findConstantAndWatchExpressions(ast._property, $filter, astIsPure);
             }
             decoratedNode._constant =
@@ -15058,7 +13691,7 @@ function isPure(node, parentIsPure) {
     switch (node._type) {
         // Computed members might invoke a stateful toString()
         case ASTType._MemberExpression:
-            if ( /** @type {ExpressionNode} */node._computed) {
+            if (node._computed) {
                 return false;
             }
             break;
@@ -15067,7 +13700,7 @@ function isPure(node, parentIsPure) {
             return PURITY_ABSOLUTE;
         // The binary + operator can invoke a stateful toString().
         case ASTType._BinaryExpression:
-            return /** @type {ExpressionNode} */ node._operator !== "+"
+            return node._operator !== "+"
                 ? PURITY_ABSOLUTE
                 : false;
         // Functions / filters probably read state from within objects
@@ -15131,6 +13764,7 @@ class AST {
     /** @internal */
     _ast(text) {
         this._text = text;
+        this._index = 0;
         this._tokens = this._lexer._lex(text);
         const value = this._program();
         if (this._tokens.length > this._index) {
@@ -15266,7 +13900,7 @@ class AST {
         while ((token = this._expect("==", "!=", "===", "!=="))) {
             left = {
                 _type: ASTType._BinaryExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _left: left,
                 _right: this._relational(),
             };
@@ -15284,7 +13918,7 @@ class AST {
         while ((token = this._expect("<", ">", "<=", ">="))) {
             left = {
                 _type: ASTType._BinaryExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _left: left,
                 _right: this._additive(),
             };
@@ -15302,7 +13936,7 @@ class AST {
         while ((token = this._expect("+", "-"))) {
             left = {
                 _type: ASTType._BinaryExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _left: left,
                 _right: this._multiplicative(),
             };
@@ -15346,7 +13980,7 @@ class AST {
             }
             return {
                 _type: ASTType._UpdateExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _prefix: true,
                 _argument: argument,
             };
@@ -15355,7 +13989,7 @@ class AST {
         if ((token = this._expect("+", "-", "!"))) {
             return {
                 _type: ASTType._UnaryExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _prefix: true,
                 _argument: this._unary(),
             };
@@ -15378,7 +14012,7 @@ class AST {
             }
             expr = {
                 _type: ASTType._UpdateExpression,
-                _operator: /** @type {Token} */ token._text,
+                _operator: token._text,
                 _prefix: false,
                 _argument: expr,
             };
@@ -15692,14 +14326,19 @@ class ParseProvider {
     constructor() {
         const cache = nullObject();
         this.$get = [
-            $injectTokens._filter,
-            ($filter) => {
+            _injector,
+            ($injector) => {
+                let $filter;
+                const lazyFilter = (name) => {
+                    $filter ?? ($filter = $injector.get(_filter));
+                    return $filter(name);
+                };
+                const parser = new Parser(lexer, lazyFilter);
                 const $parse = (exp, interceptorFn) => {
                     validateRequired(exp, "exp");
                     const cacheKey = exp.trim();
                     let parsedExpression = cache[cacheKey];
                     if (!parsedExpression) {
-                        const parser = new Parser(lexer, $filter);
                         parsedExpression = parser._parse(cacheKey);
                         cache[cacheKey] = parsedExpression;
                     }
@@ -15726,47 +14365,6 @@ class ParseProvider {
             fn._decoratedNode = parsedExpression._decoratedNode;
             return fn;
         }
-    }
-}
-
-class SanitizeUriProvider {
-    constructor() {
-        this._aHrefSanitizationTrustedUrlList =
-            /^\s*(https?|s?ftp|mailto|tel|file):/;
-        this._imgSrcSanitizationTrustedUrlList =
-            /^\s*((https?|ftp|file|blob):|data:image\/)/;
-        this.$get = [
-            $injectTokens._window,
-            ($window) => {
-                return (uri, isMediaUrl) => {
-                    if (!uri) {
-                        return uri;
-                    }
-                    const regex = isMediaUrl
-                        ? this._imgSrcSanitizationTrustedUrlList
-                        : this._aHrefSanitizationTrustedUrlList;
-                    const normalizedVal = new URL(uri.trim(), $window.location.href).href;
-                    if (normalizedVal !== "" && !normalizedVal.match(regex)) {
-                        return `unsafe:${normalizedVal}`;
-                    }
-                    return uri;
-                };
-            },
-        ];
-    }
-    aHrefSanitizationTrustedUrlList(regexp) {
-        if (isDefined(regexp)) {
-            this._aHrefSanitizationTrustedUrlList = regexp;
-            return this;
-        }
-        return this._aHrefSanitizationTrustedUrlList;
-    }
-    imgSrcSanitizationTrustedUrlList(regexp) {
-        if (isDefined(regexp)) {
-            this._imgSrcSanitizationTrustedUrlList = regexp;
-            return this;
-        }
-        return this._imgSrcSanitizationTrustedUrlList;
     }
 }
 
@@ -15845,7 +14443,7 @@ function AriaProvider() {
         };
     };
 }
-ngDisabledAriaDirective.$inject = [$injectTokens._aria];
+ngDisabledAriaDirective.$inject = [_aria];
 /** Mirrors `ngDisabled` into `aria-disabled` when needed. */
 function ngDisabledAriaDirective($aria) {
     return {
@@ -15853,7 +14451,7 @@ function ngDisabledAriaDirective($aria) {
         link: $aria._watchExpr("ngDisabled", "aria-disabled", nativeAriaNodeNames, false),
     };
 }
-ngShowAriaDirective.$inject = [$injectTokens._aria];
+ngShowAriaDirective.$inject = [_aria];
 /** Mirrors `ngShow` into `aria-hidden` when needed. */
 function ngShowAriaDirective($aria) {
     return {
@@ -15875,7 +14473,7 @@ function ngMessagesAriaDirective() {
         },
     };
 }
-ngClickAriaDirective.$inject = [$injectTokens._aria, $injectTokens._parse];
+ngClickAriaDirective.$inject = [_aria, _parse];
 /** Adds keyboard and role accessibility behavior for `ngClick` on non-native controls. */
 function ngClickAriaDirective($aria, $parse) {
     return {
@@ -15918,7 +14516,7 @@ function ngClickAriaDirective($aria, $parse) {
         },
     };
 }
-ngRequiredAriaDirective.$inject = [$injectTokens._aria];
+ngRequiredAriaDirective.$inject = [_aria];
 /** Mirrors `ngRequired` into `aria-required` when needed. */
 function ngRequiredAriaDirective($aria) {
     return {
@@ -15926,7 +14524,7 @@ function ngRequiredAriaDirective($aria) {
         link: $aria._watchExpr("ngRequired", "aria-required", nativeAriaNodeNames, false),
     };
 }
-ngCheckedAriaDirective.$inject = [$injectTokens._aria];
+ngCheckedAriaDirective.$inject = [_aria];
 /** Mirrors `ngChecked` into `aria-checked` when needed. */
 function ngCheckedAriaDirective($aria) {
     return {
@@ -15934,7 +14532,7 @@ function ngCheckedAriaDirective($aria) {
         link: $aria._watchExpr("ngChecked", "aria-checked", nativeAriaNodeNames, false),
     };
 }
-ngValueAriaDirective.$inject = [$injectTokens._aria];
+ngValueAriaDirective.$inject = [_aria];
 /** Mirrors `ngValue` into `aria-checked` for non-native controls when needed. */
 function ngValueAriaDirective($aria) {
     return {
@@ -15942,7 +14540,7 @@ function ngValueAriaDirective($aria) {
         link: $aria._watchExpr("ngValue", "aria-checked", nativeAriaNodeNames, false),
     };
 }
-ngHideAriaDirective.$inject = [$injectTokens._aria];
+ngHideAriaDirective.$inject = [_aria];
 /** Mirrors `ngHide` into `aria-hidden` when needed. */
 function ngHideAriaDirective($aria) {
     return {
@@ -15950,7 +14548,7 @@ function ngHideAriaDirective($aria) {
         link: $aria._watchExpr("ngHide", "aria-hidden", [], false),
     };
 }
-ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
+ngReadonlyAriaDirective.$inject = [_aria];
 /** Mirrors `ngReadonly` into `aria-readonly` when needed. */
 function ngReadonlyAriaDirective($aria) {
     return {
@@ -15958,7 +14556,7 @@ function ngReadonlyAriaDirective($aria) {
         link: $aria._watchExpr("ngReadonly", "aria-readonly", nativeAriaNodeNames, false),
     };
 }
-ngModelAriaDirective.$inject = [$injectTokens._aria];
+ngModelAriaDirective.$inject = [_aria];
 /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
 function ngModelAriaDirective($aria) {
     /** Determines whether an ARIA attribute should be attached to an element. */
@@ -16072,7 +14670,7 @@ function ngModelAriaDirective($aria) {
         },
     };
 }
-ngDblclickAriaDirective.$inject = [$injectTokens._aria];
+ngDblclickAriaDirective.$inject = [_aria];
 /** Adds focusability for `ngDblclick` on non-native interactive controls. */
 function ngDblclickAriaDirective($aria) {
     return {
@@ -16146,15 +14744,43 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 ["src", "srcset", "href"].forEach((attrName) => {
     const normalized = directiveNormalize(`ng-${attrName}`);
     ngAttributeAliasDirectives[normalized] = [
-        $injectTokens._sce,
+        _sce,
         /** Creates the alias directive for interpolated URL-like attributes. */
         function ($sce) {
             return {
                 priority: 99, // it needs to run after the attributes are interpolated
-                link(_scope, _element, attr) {
+                link(_scope, element, attr) {
+                    const nodeName = getNodeName$1(element);
+                    if (attrName === "srcset") {
+                        const originalAttrName = attr.$attr[normalized];
+                        if (originalAttrName) {
+                            element.removeAttribute(originalAttrName);
+                        }
+                    }
+                    function sanitize(value) {
+                        if (isNullOrUndefined(value)) {
+                            return value;
+                        }
+                        const stringValue = String(value);
+                        if (stringValue.startsWith("unsafe:")) {
+                            return stringValue;
+                        }
+                        if (attrName === "src" &&
+                            ["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
+                                -1) {
+                            return $sce.getTrustedResourceUrl(stringValue);
+                        }
+                        if (attrName === "href" && nodeName !== "image") {
+                            return $sce.getTrustedUrl(stringValue);
+                        }
+                        return $sce.getTrustedMediaUrl(stringValue);
+                    }
                     // We need to sanitize the url at least once, in case it is a constant
                     // non-interpolated attribute.
-                    attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
+                    const initialValue = attr[normalized];
+                    if (initialValue && String(initialValue).indexOf("{{") === -1) {
+                        attr.$set(normalized, sanitize(initialValue));
+                    }
                     attr.$observe(normalized, (value) => {
                         if (!value) {
                             if (attrName === "href") {
@@ -16162,7 +14788,14 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             }
                             return;
                         }
-                        attr.$set(attrName, value);
+                        if (attrName === "href" ||
+                            (attrName === "src" &&
+                                ["img", "video", "audio", "source", "track"].indexOf(nodeName) !== -1)) {
+                            attr.$set(attrName, sanitize(value));
+                        }
+                        else {
+                            attr.$set(attrName, value);
+                        }
                     });
                 },
             };
@@ -16191,7 +14824,7 @@ function ngBindTemplateDirective() {
         },
     };
 }
-ngBindHtmlDirective.$inject = [$injectTokens._parse];
+ngBindHtmlDirective.$inject = [_parse];
 /** Binds trusted HTML into the element while still validating the expression. */
 function ngBindHtmlDirective($parse) {
     return {
@@ -16212,7 +14845,7 @@ function ngBindHtmlDirective($parse) {
     };
 }
 
-ngChannelDirective.$inject = [$injectTokens._eventBus];
+ngChannelDirective.$inject = [_eventBus];
 /**
  * Subscribes an element to a pub/sub channel.
  *
@@ -16248,7 +14881,7 @@ function classDirective() {
             let classCounts = getCacheData(element, "$classCounts");
             let oldClassString = "";
             if (!classCounts) {
-                // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+                // Use a null-prototype map to avoid Object.prototype key assumptions.
                 classCounts = nullObject();
                 setCacheData(element, "$classCounts", classCounts);
             }
@@ -16323,6 +14956,24 @@ function arrayDifference(tokens1, tokens2) {
         return [];
     if (!tokens2 || !tokens2.length)
         return tokens1;
+    if (tokens2.length === 1) {
+        const token = tokens2[0];
+        const out = [];
+        for (let i = 0; i < tokens1.length; i++) {
+            const x = tokens1[i];
+            if (x !== token)
+                out.push(x);
+        }
+        return out;
+    }
+    if (tokens1.length === 1) {
+        const token = tokens1[0];
+        for (let i = 0; i < tokens2.length; i++) {
+            if (tokens2[i] === token)
+                return [];
+        }
+        return tokens1;
+    }
     const set2 = new Set(tokens2);
     const out = [];
     for (let i = 0; i < tokens1.length; i++) {
@@ -16419,7 +15070,7 @@ function ngElDirective() {
                 return;
             const observer = new MutationObserver((mutations) => {
                 for (const mutation of mutations) {
-                    Array.from(mutation.removedNodes).forEach((removedNode) => {
+                    arrayFrom(mutation.removedNodes).forEach((removedNode) => {
                         if (removedNode === element) {
                             delete scope.$target[key];
                             observer.disconnect();
@@ -16872,11 +15523,11 @@ class FormController {
 }
 FormController.$nonscope = true;
 /* @ignore */ FormController.$inject = [
-    $injectTokens._element,
-    $injectTokens._attrs,
-    $injectTokens._scope,
-    $injectTokens._injector,
-    $injectTokens._interpolate,
+    _element,
+    _attrs,
+    _scope,
+    _injector,
+    _interpolate,
 ];
 /**
  * Helper directive that makes it possible to create control groups inside a
@@ -16967,7 +15618,7 @@ FormController.$nonscope = true;
  */
 const formDirectiveFactory = function (isNgForm) {
     return [
-        $injectTokens._parse,
+        _parse,
         /**
          * Builds the form/ngForm directive definition.
          */
@@ -17075,7 +15726,1235 @@ function cachedToggleClass(ctrl, className, switchValue) {
     }
 }
 
-ngIfDirective.$inject = [$injectTokens._injector];
+const originUrl = urlResolve(window.location.href);
+/** Resolves a string URL into its parsed browser components. */
+function urlResolve(url) {
+    if (!isString(url))
+        return url;
+    const urlParsingNode = new URL(url, window.location.href);
+    const hostname = urlParsingNode.hostname.includes(":")
+        ? `[${urlParsingNode.hostname}]`
+        : urlParsingNode.hostname;
+    return {
+        href: urlParsingNode.href,
+        protocol: urlParsingNode.protocol,
+        host: urlParsingNode.host,
+        search: urlParsingNode.search
+            ? urlParsingNode.search.replace(/^\?/, "")
+            : "",
+        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
+        hostname,
+        port: urlParsingNode.port,
+        pathname: urlParsingNode.pathname.charAt(0) === "/"
+            ? urlParsingNode.pathname
+            : `/${urlParsingNode.pathname}`,
+    };
+}
+/**
+ * Parse a request URL and determine whether this is a same-origin request as the application
+ * document.
+ *
+ * @param requestUrl - The URL of the request as a string that will be resolved or a
+ *     parsed URL object.
+ * @returns Whether the request is for the same origin as the application document.
+ */
+function urlIsSameOrigin(requestUrl) {
+    return urlsAreSameOrigin(requestUrl, originUrl);
+}
+/**
+ * Parse a request URL and determine whether it is same-origin as the current document base URL.
+ *
+ * Note: The base URL is usually the same as the document location (`location.href`) but can
+ * be overriden by using the `<base>` tag.
+ *
+ * @param requestUrl - The URL of the request as a string that will be resolved or a
+ *     parsed URL object.
+ * @returns Whether the URL is same-origin as the document base URL.
+ */
+function urlIsSameOriginAsBaseUrl(requestUrl) {
+    return urlsAreSameOrigin(requestUrl, document.baseURI);
+}
+/**
+ * Create a function that can check a URL's origin against a list of allowed/trusted origins.
+ * The current location's origin is implicitly trusted.
+ *
+ * @param trustedOriginUrls - A list of URLs (strings), whose origins are trusted.
+ *
+ * @returns A function that receives a URL (string or parsed URL object) and returns
+ *     whether it is of an allowed origin.
+ */
+function urlIsAllowedOriginFactory(trustedOriginUrls) {
+    const parsedAllowedOriginUrls = [originUrl].concat(trustedOriginUrls.map(urlResolve));
+    /**
+     * Check whether the specified URL (string or parsed URL object) has an origin that is allowed
+     * based on a list of trusted-origin URLs. The current location's origin is implicitly
+     * trusted.
+     *
+     * @param requestUrl - The URL to be checked (provided as a string that will be
+     *     resolved or a parsed URL object).
+     *
+     * @returns Whether the specified URL is of an allowed origin.
+     */
+    return function urlIsAllowedOrigin(requestUrl) {
+        const parsedUrl = urlResolve(requestUrl);
+        return parsedAllowedOriginUrls.some(urlsAreSameOrigin.bind(null, parsedUrl));
+    };
+}
+/**
+ * Determine if two URLs share the same origin.
+ *
+ * @param url1 - First URL to compare as a string or a normalized URL in the form of
+ *     a dictionary object returned by `urlResolve()`.
+ * @param url2 - Second URL to compare as a string or a normalized URL in the form
+ *     of a dictionary object returned by `urlResolve()`.
+ *
+ * @returns True if both URLs have the same origin, and false otherwise.
+ */
+function urlsAreSameOrigin(url1, url2) {
+    url1 = urlResolve(url1);
+    url2 = urlResolve(url2);
+    return url1.protocol === url2.protocol && url1.host === url2.host;
+}
+/**
+ * Removes a trailing hash ('#') from the given URL if it exists.
+ */
+function trimEmptyHash(url) {
+    return url.replace(/#$/, "");
+}
+
+const APPLICATION_JSON = "application/json";
+function withResolvers$1() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    return { promise, resolve: resolve, reject: reject };
+}
+/**
+ * @internal
+ */
+const Http = {
+    _OK: 200,
+    _MultipleChoices: 300,
+    _BadRequest: 400,
+    _NotFound: 404,
+    _ErrorMax: 599,
+};
+const CONTENT_TYPE_APPLICATION_JSON = {
+    "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
+};
+const JSON_START = /^\[|^\{(?!\{)/;
+const JSON_ENDS = {
+    "[": /]$/,
+    "{": /}$/,
+};
+const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
+const $httpMinErr = minErr("$http");
+/** Serializes a request param value into a transport-safe primitive. */
+function serializeValue(v) {
+    if (isObject(v)) {
+        const jsonValue = isDate(v) ? v.toISOString() : toJson(v);
+        return jsonValue ?? "";
+    }
+    return v;
+}
+/**
+ * Default params serializer that converts objects to strings
+ * according to the following rules:
+ *
+ * * `{'foo': 'bar'}` results in `foo=bar`
+ * * `{'foo': Date.now()}` results in `foo=2015-04-01T09%3A50%3A49.262Z` (`toISOString()` and encoded representation of a Date object)
+ * * `{'foo': ['bar', 'baz']}` results in `foo=bar&foo=baz` (repeated key for each array element)
+ * * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object)
+ *
+ * Note that serializer will sort the request parameters alphabetically.
+ */
+function HttpParamSerializerProvider() {
+    /**
+     * Returns the runtime query-parameter serializer.
+     */
+    this.$get = () => {
+        return (params) => {
+            if (!params)
+                return "";
+            const parts = [];
+            keys(params)
+                .sort()
+                .forEach((key) => {
+                const value = params[key];
+                if (isNullOrUndefined(value) || isFunction(value))
+                    return;
+                if (isArray(value)) {
+                    value.forEach((v) => {
+                        if (isNullOrUndefined(v) || isFunction(v))
+                            return;
+                        const serializedValue = serializeValue(v);
+                        parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`);
+                    });
+                }
+                else {
+                    const sanitizedValue = value;
+                    parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`);
+                }
+            });
+            return parts.join("&");
+        };
+    };
+}
+/** Applies the default response transform, including JSON parsing. */
+function defaultHttpResponseTransform(data, headers) {
+    if (isString(data)) {
+        // Strip json vulnerability protection prefix and trim whitespace
+        const tempData = data.replace(JSON_PROTECTION_PREFIX, "").trim();
+        if (tempData) {
+            const contentType = headers("Content-Type");
+            const hasJsonContentType = contentType && contentType.indexOf(APPLICATION_JSON) === 0;
+            if (hasJsonContentType || isJsonLike(tempData)) {
+                try {
+                    data = fromJson(tempData);
+                }
+                catch (err) {
+                    if (!hasJsonContentType) {
+                        return data;
+                    }
+                    throw $httpMinErr("baddata", 'Data must be a valid JSON object. Received: "{0}". ' +
+                        'Parse error: "{1}"', data, err);
+                }
+            }
+        }
+    }
+    return data;
+}
+/** Returns `true` when a string looks like a JSON payload. */
+function isJsonLike(str) {
+    const jsonStart = str.match(JSON_START);
+    return !!jsonStart && JSON_ENDS[jsonStart[0]].test(str);
+}
+/**
+ * Parses headers into a key-value object.
+ *
+ * @param headers - Raw headers as a string.
+ * @returns A normalized header map keyed by lowercase header name.
+ */
+function parseHeaders(headers) {
+    const parsed = nullObject();
+    let i;
+    /** Adds a parsed header entry to the result map. */
+    function fillInParsed(key, val) {
+        if (key) {
+            parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
+        }
+    }
+    if (isString(headers)) {
+        headers.split("\n").forEach(
+        /** @param line */
+        (line) => {
+            i = line.indexOf(":");
+            fillInParsed(line.substring(0, i).trim().toLowerCase(), trim(line.substring(i + 1)));
+        });
+    }
+    else if (isObject(headers)) {
+        entries(headers).forEach(([headerKey, headerVal]) => {
+            fillInParsed(headerKey.toLowerCase(), trim(headerVal));
+        });
+    }
+    return parsed;
+}
+/**
+ * Creates a function that provides access to parsed headers.
+ *
+ * Headers are lazy parsed when first requested.
+ * @see parseHeaders
+ *
+ * @param headers - Headers to provide access to.
+ * @returns A getter function that, when called with:
+ *
+ *   - an argument, returns a single header value (empty string if missing)
+ *   - no arguments, returns an object containing all headers.
+ */
+function headersGetter(headers) {
+    let headersObj;
+    const getter = ((name) => {
+        if (!headersObj)
+            headersObj = parseHeaders(headers);
+        if (name) {
+            const value = headersObj[name.toLowerCase()];
+            return value ?? "";
+        }
+        return headersObj;
+    });
+    return getter;
+}
+/**
+ * Applies one or more transform functions to request or response data.
+ *
+ * @param data - Data to transform.
+ * @param headers - HTTP headers getter function.
+ * @param status - HTTP status code of the response.
+ * @param [fns] - Function or an array of functions.
+ * @returns The transformed value after all configured transforms run.
+ */
+function transformData(data, headers, status, fns) {
+    if (isFunction(fns)) {
+        return fns(data, headers, status);
+    }
+    if (isArray(fns)) {
+        fns.forEach((fn) => {
+            data = fn(data, headers, status);
+        });
+    }
+    return data;
+}
+/** Returns `true` when an HTTP status is in the success range. */
+function isSuccess(status) {
+    return status >= Http._OK && status < Http._MultipleChoices;
+}
+/** Configures the default behavior of the `$http` service. */
+function HttpProvider() {
+    /**
+     * Default values applied to all `$http` requests unless a request overrides them.
+     *
+     * This includes cache behavior, default headers, request/response transforms, XSRF names,
+     * credentials defaults, and parameter serialization.
+     */
+    const defaults = (this.defaults = {
+        // transform incoming response data
+        transformResponse: [defaultHttpResponseTransform],
+        // transform outgoing request data
+        transformRequest: [
+            function (data) {
+                return isObject(data) &&
+                    !isFile(data) &&
+                    !isBlob(data) &&
+                    !isFormData(data)
+                    ? toJson(data)
+                    : data;
+            },
+        ],
+        // default headers
+        headers: {
+            common: {
+                Accept: "application/json, text/plain, */*",
+            },
+            post: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+            put: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+            patch: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+        },
+        xsrfCookieName: "XSRF-TOKEN",
+        xsrfHeaderName: "X-XSRF-TOKEN",
+        paramSerializer: _httpParamSerializer,
+    });
+    let useApplyAsync = false;
+    /**
+     * Configure $http service to combine processing of multiple http responses received at around
+     * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
+     * significant performance improvement for bigger applications that make many HTTP requests
+     * concurrently (common during application bootstrap).
+     *
+     * Defaults to false. If no value is specified, returns the current configured value.
+     *
+     * @param value - If true, completed requests schedule a deferred apply on the next tick,
+     *   allowing nearby responses to share the same digest cycle.
+     *
+     * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
+     */
+    this.useApplyAsync = function (value) {
+        if (isDefined(value)) {
+            useApplyAsync = !!value;
+            return this;
+        }
+        return useApplyAsync;
+    };
+    /**
+     * Array containing service factories for all synchronous or asynchronous `$http`
+     * pre-processing of request or postprocessing of responses.
+     *
+     * These service factories are ordered by request, i.e. they are applied in the same order as the
+     * array, on request, but reverse order, on response.
+     *
+     * See the `$http` service documentation for detailed interceptor behavior.
+     */
+    this.interceptors = [];
+    /**
+     * Array containing URLs whose origins are trusted to receive the XSRF token. See the
+     * See the `$http` service documentation for XSRF security considerations.
+     *
+     * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
+     * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
+     * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
+     * `https:`, the port number can be omitted when using the default ports (80 and 443 respectively).
+     * Examples: `http://example.com`, `https://api.example.com:9876`
+     *
+     * <div class="alert alert-warning">
+     *   It is not possible to trust specific URLs/paths. The `path`, `query` and `fragment` parts
+     *   of a URL will be ignored. For example, `https://foo.com/path/bar?query=baz#fragment` will be
+     *   treated as `https://foo.com`, meaning that **all** requests to URLs starting with
+     *   `https://foo.com/` will include the XSRF token.
+     * </div>
+     *
+     * @example
+     *
+     * ```js
+     * // App served from `https://example.com/`.
+     * angular.
+     *   module('xsrfTrustedOriginsExample', []).
+     *   config(['$httpProvider', function($httpProvider) {
+     *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
+     *   }]).
+     *   run(['$http', function($http) {
+     *     // The XSRF token will be sent.
+     *     $http.get('https://api.example.com/preferences').then(...);
+     *
+     *     // The XSRF token will NOT be sent.
+     *     $http.get('https://stats.example.com/activity').then(...);
+     *   }]);
+     * ```
+     *
+     */
+    this.xsrfTrustedOrigins = [];
+    const that = this;
+    this.$get = [
+        _injector,
+        _sce,
+        _cookie,
+        /** Creates the runtime `$http` service. */
+        function ($injector, $sce, $cookie) {
+            const defaultCache = new Map();
+            /**
+             * Resolves the configured default param serializer to a callable function.
+             */
+            defaults.paramSerializer = isString(defaults.paramSerializer)
+                ? $injector.get(defaults.paramSerializer)
+                : defaults.paramSerializer;
+            /**
+             * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
+             * The reversal lets request interceptors wrap the server request in the expected order.
+             */
+            const reversedInterceptors = [];
+            that.interceptors.forEach((interceptorFactory) => {
+                reversedInterceptors.unshift(isString(interceptorFactory)
+                    ? $injector.get(interceptorFactory)
+                    : $injector.invoke(interceptorFactory));
+            });
+            /**
+             * Creates the origin check used for XSRF header inclusion.
+             */
+            const urlIsAllowedOrigin = urlIsAllowedOriginFactory(that.xsrfTrustedOrigins);
+            /**
+             * Issues an HTTP request using the provider defaults and configured interceptors.
+             */
+            const $http = function (requestConfig) {
+                if (!isObject(requestConfig)) {
+                    throw minErr("$http")("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
+                }
+                if (!isString($sce.valueOf(requestConfig.url))) {
+                    throw minErr("$http")("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
+                }
+                const config = extend({
+                    method: "get",
+                    transformRequest: defaults.transformRequest,
+                    transformResponse: defaults.transformResponse,
+                    paramSerializer: defaults.paramSerializer,
+                }, requestConfig);
+                config.headers = mergeHeaders(requestConfig);
+                config.method = uppercase(config.method);
+                config.paramSerializer = isString(config.paramSerializer)
+                    ? $injector.get(config.paramSerializer)
+                    : config.paramSerializer;
+                const requestInterceptors = [];
+                const responseInterceptors = [];
+                let promise = Promise.resolve(config);
+                // apply interceptors
+                reversedInterceptors.forEach((interceptor) => {
+                    if (interceptor.request || interceptor.requestError) {
+                        requestInterceptors.unshift(interceptor.request, interceptor.requestError);
+                    }
+                    if (interceptor.response || interceptor.responseError) {
+                        responseInterceptors.push(interceptor.response, interceptor.responseError);
+                    }
+                });
+                promise = chainInterceptors(promise, requestInterceptors);
+                promise = promise.then(serverRequest);
+                promise = chainInterceptors(promise, responseInterceptors);
+                return promise;
+                /** Applies a list of interceptor success/error pairs to a promise chain. */
+                function chainInterceptors(promiseParam, interceptors) {
+                    for (let i = 0, ii = interceptors.length; i < ii;) {
+                        const thenFn = interceptors[i++];
+                        const rejectFn = interceptors[i++];
+                        promiseParam = promiseParam.then(thenFn, rejectFn);
+                    }
+                    interceptors.length = 0;
+                    return promiseParam;
+                }
+                /** Resolves any header factory functions against the current request configuration. */
+                function executeHeaderFns(headers, configParam) {
+                    let headerContent;
+                    const processedHeaders = {};
+                    entries(headers).forEach(([header, headerFn]) => {
+                        if (isFunction(headerFn)) {
+                            headerContent = headerFn(configParam);
+                            if (!isNullOrUndefined(headerContent)) {
+                                processedHeaders[header] = headerContent;
+                            }
+                        }
+                        else {
+                            processedHeaders[header] = headerFn;
+                        }
+                    });
+                    return processedHeaders;
+                }
+                /** Merges provider defaults with request-specific headers for a single request. */
+                function mergeHeaders(configParam) {
+                    let defHeaders = (defaults.headers || {});
+                    const reqHeaders = extend({}, configParam.headers || {});
+                    defHeaders = extend({}, defHeaders.common || {}, defHeaders[lowercase(configParam.method)] || {});
+                    keys(defHeaders).forEach((defHeaderName) => {
+                        const lowercaseDefHeaderName = lowercase(defHeaderName);
+                        const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
+                            return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+                        });
+                        if (!hasMatchingHeader) {
+                            reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+                        }
+                    });
+                    // execute if header value is a function for merged headers
+                    return executeHeaderFns(reqHeaders, shallowCopy(configParam));
+                }
+                /** Executes the request pipeline and attaches response transforms. */
+                function serverRequest(configParam) {
+                    const headers = configParam.headers || {};
+                    configParam.headers = headers;
+                    const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest || []);
+                    // strip content-type if data is undefined
+                    if (isUndefined(reqData)) {
+                        keys(headers).forEach((header) => {
+                            if (lowercase(header) === "content-type") {
+                                delete headers[header];
+                            }
+                        });
+                    }
+                    const providerDefaults = defaults;
+                    if (isUndefined(configParam.withCredentials) &&
+                        !isUndefined(providerDefaults.withCredentials)) {
+                        configParam.withCredentials = providerDefaults.withCredentials;
+                    }
+                    // send request
+                    return sendReq(configParam, reqData).then(transformResponse, transformResponse);
+                }
+                /** Applies response transforms and rejects responses outside the success range. */
+                function transformResponse(response) {
+                    const httpResponse = response;
+                    // make a copy since the response must be cacheable
+                    const resp = extend({}, httpResponse);
+                    resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse || []);
+                    return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+                }
+            };
+            $http.pendingRequests = [];
+            createShortMethods("get", "delete", "head");
+            createShortMethodsWithData("post", "put", "patch");
+            /**
+             * Exposes the runtime equivalent of `$httpProvider.defaults`.
+             * It allows configuration of default headers, `withCredentials`, and request/response transforms.
+             *
+             * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
+             */
+            $http.defaults = defaults;
+            return $http;
+            /** Generates shorthand methods for requests that do not send a request body. */
+            function createShortMethods(...names) {
+                names.forEach((name) => {
+                    $http[name] = function (url, config) {
+                        return $http(extend({}, config || {}, {
+                            method: name,
+                            url,
+                        }));
+                    };
+                });
+            }
+            /** Generates shorthand methods for requests that send a request body. */
+            function createShortMethodsWithData(...names) {
+                names.forEach((name) => {
+                    $http[name] = function (url, data, config) {
+                        return $http(extend({}, config || {}, {
+                            method: name,
+                            url,
+                            data,
+                        }));
+                    };
+                });
+            }
+            /** Sends the request through the low-level HTTP backend and cache layer. */
+            function sendReq(config, reqData) {
+                const { promise, resolve, reject } = withResolvers$1();
+                let cache;
+                let cachedResp;
+                const reqHeaders = config.headers || {};
+                config.headers = reqHeaders;
+                let { url } = config;
+                if (!isString(url)) {
+                    // If it is not a string then the URL must be a $sce trusted object
+                    url = $sce.valueOf(url);
+                }
+                const paramSerializer = config.paramSerializer;
+                url = buildUrl(url, paramSerializer(config.params));
+                $http.pendingRequests.push(config);
+                promise.then(removePendingReq, removePendingReq);
+                if ((config.cache || defaults.cache) &&
+                    config.cache !== false &&
+                    config.method === "GET") {
+                    const providerDefaults = defaults;
+                    cache = isObject(config.cache)
+                        ? config.cache
+                        : isObject(providerDefaults.cache)
+                            ? providerDefaults.cache
+                            : defaultCache;
+                }
+                if (cache) {
+                    cachedResp = cache.get(url);
+                    if (isDefined(cachedResp)) {
+                        if (isPromiseLike(cachedResp)) {
+                            // cached request has already been sent, but there is no response yet
+                            cachedResp.then(resolvePromiseWithResult, resolvePromiseWithResult);
+                        }
+                        else {
+                            // serving from cache
+                            if (isArray(cachedResp)) {
+                                resolvePromise(cachedResp[1], cachedResp[0], shallowCopy(cachedResp[2]), cachedResp[3], cachedResp[4]);
+                            }
+                            else {
+                                resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
+                            }
+                        }
+                    }
+                    else {
+                        // put the promise for the non-transformed response into cache as a placeholder
+                        cache.set(url, promise);
+                    }
+                }
+                // if we won't have the response in cache, set the xsrf headers and
+                // send the request to the backend
+                if (isUndefined(cachedResp)) {
+                    const xsrfCookieName = config.xsrfCookieName || defaults.xsrfCookieName;
+                    const xsrfValue = xsrfCookieName && urlIsAllowedOrigin(config.url)
+                        ? $cookie.getAll()[xsrfCookieName]
+                        : undefined;
+                    if (xsrfValue) {
+                        const xsrfHeaderName = config.xsrfHeaderName || defaults.xsrfHeaderName;
+                        if (xsrfHeaderName) {
+                            reqHeaders[xsrfHeaderName] = xsrfValue;
+                        }
+                    }
+                    http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createApplyHandlers(config.eventHandlers), createApplyHandlers(config.uploadEventHandlers));
+                }
+                return promise;
+                /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
+                function createApplyHandlers(eventHandlers) {
+                    if (eventHandlers) {
+                        const applyHandlers = {};
+                        entries(eventHandlers).forEach(([key, eventHandler]) => {
+                            applyHandlers[key] = function (event) {
+                                if (useApplyAsync) {
+                                    setTimeout(() => callEventHandler());
+                                }
+                                else {
+                                    callEventHandler();
+                                }
+                                function callEventHandler() {
+                                    if (isFunction(eventHandler)) {
+                                        eventHandler(event);
+                                    }
+                                    else if (eventHandler &&
+                                        typeof eventHandler === "object" &&
+                                        "handleEvent" in eventHandler) {
+                                        eventHandler.handleEvent(event);
+                                    }
+                                }
+                            };
+                        });
+                        return applyHandlers;
+                    }
+                    else {
+                        return {};
+                    }
+                }
+                /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
+                function done(status, response, headersString, statusText, xhrStatus) {
+                    if (cache) {
+                        if (isSuccess(status)) {
+                            cache.set(url, [
+                                status,
+                                response,
+                                parseHeaders(headersString || ""),
+                                statusText,
+                                xhrStatus,
+                            ]);
+                        }
+                        else {
+                            // remove promise from the cache
+                            cache.delete(url);
+                        }
+                    }
+                    function resolveHttpPromise() {
+                        resolvePromise(response, status, headersString, statusText, xhrStatus);
+                    }
+                    if (useApplyAsync) {
+                        setTimeout(resolveHttpPromise);
+                    }
+                    else {
+                        resolveHttpPromise();
+                    }
+                }
+                /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
+                function resolvePromise(response, status, headers, statusText, xhrStatus) {
+                    // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
+                    status = status >= -1 ? status : 0;
+                    (isSuccess(status) ? resolve : reject)({
+                        data: response,
+                        status,
+                        headers: headersGetter(headers ?? ""),
+                        config,
+                        statusText,
+                        xhrStatus,
+                    });
+                }
+                /** Settles the raw `$http` promise from a cached or intercepted response object. */
+                function resolvePromiseWithResult(result) {
+                    resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.xhrStatus);
+                }
+                /** Removes the finished request config from `$http.pendingRequests`. */
+                function removePendingReq() {
+                    const idx = $http.pendingRequests.indexOf(config);
+                    if (idx !== -1)
+                        $http.pendingRequests.splice(idx, 1);
+                }
+            }
+            /** Appends a serialized query string to a URL when request parameters are present. */
+            function buildUrl(url, serializedParams) {
+                if (serializedParams.length > 0) {
+                    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+                }
+                return url;
+            }
+        },
+    ];
+}
+/**
+ * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
+ *
+ * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
+ * @param [url] - The request URL. Defaults to the current page URL.
+ * @param [post] - Optional request body.
+ * @param [callback] - Completion callback invoked when the request settles.
+ * @param [headers] - Request headers to apply before sending.
+ * @param [timeout] - Timeout in milliseconds or a cancellable promise.
+ * @param [withCredentials] - Whether to send credentials with the request.
+ * @param [responseType] - The expected XHR response type.
+ * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
+ * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
+ */
+function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
+    url = url || trimEmptyHash(window.location.href);
+    const xhr = new XMLHttpRequest();
+    let abortedByTimeout = false;
+    let timeoutId;
+    xhr.open(method, url, true);
+    if (headers) {
+        for (const [key, value] of entries(headers)) {
+            if (isDefined(value)) {
+                xhr.setRequestHeader(key, value);
+            }
+        }
+    }
+    xhr.onload = () => {
+        let status = xhr.status || 0;
+        const statusText = xhr.statusText || "";
+        if (status === 0) {
+            status = xhr.response
+                ? Http._OK
+                : new URL(url).protocol === "file:"
+                    ? Http._NotFound
+                    : 0;
+        }
+        completeRequest(status, xhr.response, xhr.getAllResponseHeaders(), statusText, "complete");
+    };
+    xhr.onerror = () => completeRequest(-1, null, null, "", "error");
+    xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
+    xhr.onabort = () => {
+        completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
+    };
+    if (eventHandlers) {
+        for (const [key, handler] of entries(eventHandlers)) {
+            xhr.addEventListener(key, handler);
+        }
+    }
+    if (uploadEventHandlers) {
+        for (const [key, handler] of entries(uploadEventHandlers)) {
+            xhr.upload.addEventListener(key, handler);
+        }
+    }
+    if (withCredentials) {
+        xhr.withCredentials = true;
+    }
+    if (responseType) {
+        try {
+            xhr.responseType = responseType;
+        }
+        catch (err) {
+            if (responseType !== "json")
+                throw err;
+        }
+    }
+    xhr.send(isUndefined(post) ? null : post);
+    if (typeof timeout === "number" && timeout > 0) {
+        timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
+    }
+    else if (isPromiseLike(timeout)) {
+        timeout.then(() => {
+            timeoutRequest("abort");
+        });
+    }
+    /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
+    function timeoutRequest(reason) {
+        abortedByTimeout = reason === "timeout";
+        if (xhr)
+            xhr.abort();
+    }
+    /**
+     * Finalizes the request, clears timeout state, and notifies the caller.
+     *
+     * @param status - HTTP status code or `-1` for network errors.
+     * @param response - Parsed or raw response payload from the server.
+     * @param headersString - Raw response headers as a string.
+     * @param statusText - HTTP status text returned by the server.
+     * @param xhrStatus - Final transport status reported for the request.
+     */
+    function completeRequest(status, response, headersString, statusText, xhrStatus) {
+        if (isDefined(timeoutId)) {
+            clearTimeout(timeoutId);
+        }
+        if (callback) {
+            callback(status, response, headersString, statusText, xhrStatus);
+        }
+    }
+}
+
+/**
+ * Selects the default DOM event for directive helpers that submit or react to
+ * common form elements.
+ */
+function getEventNameForElement(element) {
+    const tag = element.tagName.toLowerCase();
+    if (["input", "textarea", "select"].includes(tag)) {
+        return "change";
+    }
+    else if (tag === "form") {
+        return "submit";
+    }
+    return "click";
+}
+
+/** Creates a directive factory wrapper for one HTTP method attribute. */
+function defineDirective(method, attrOverride) {
+    const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
+    const directive = createHttpDirective(method, attrName);
+    directive.$inject = [_http, _compile, _log, _parse, _state, _sse, _injector];
+    return directive;
+}
+const ngGetDirective = defineDirective("get");
+const ngDeleteDirective = defineDirective("delete");
+const ngPostDirective = defineDirective("post");
+const ngPutDirective = defineDirective("put");
+const ngSseDirective = defineDirective("get", "ngSse");
+/** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
+function createHttpDirective(method, attrName) {
+    /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
+    return function ($http, $compile, $log, $parse, $state, $sse, $injector) {
+        const getAnimate = createLazyAnimate($injector);
+        /** Collects form data from the element or its associated form. */
+        function collectFormData(element) {
+            let form = null;
+            const tag = element.tagName.toLowerCase();
+            if (tag === "form") {
+                form = element;
+            }
+            else if ("form" in element && element.form) {
+                const { form: associatedForm } = element;
+                form = associatedForm;
+            }
+            else if (element.hasAttribute("form")) {
+                const formId = element.getAttribute("form");
+                if (formId) {
+                    const maybeForm = document.getElementById(formId);
+                    if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
+                        form = maybeForm;
+                    }
+                }
+            }
+            if (!form) {
+                if ("name" in element &&
+                    isString(element.name) &&
+                    element.name.length > 0) {
+                    if (isInstanceOf(element, HTMLInputElement) ||
+                        isInstanceOf(element, HTMLTextAreaElement) ||
+                        isInstanceOf(element, HTMLSelectElement)) {
+                        const key = element.name;
+                        const { value } = element;
+                        return { [key]: value };
+                    }
+                }
+                return {};
+            }
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            return data;
+        }
+        return {
+            restrict: "A",
+            link(scope, element, attrs) {
+                const eventName = attrs.trigger || getEventNameForElement(element);
+                const tag = element.tagName.toLowerCase();
+                let content;
+                if (isDefined(attrs.latch)) {
+                    attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
+                }
+                let throttled = false;
+                let intervalId;
+                if (isDefined(attrs.interval)) {
+                    element.dispatchEvent(new Event(eventName));
+                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval) || 1000);
+                }
+                /**
+                 * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
+                 */
+                function handleSwapResponse(html, swap, scopeParam, attrsParam, elementParam) {
+                    let animationEnabled = false;
+                    if (attrsParam.animate) {
+                        animationEnabled = true;
+                    }
+                    const animate = animationEnabled ? getAnimate() : undefined;
+                    let nodes = [];
+                    if (!["textcontent", "delete", "none"].includes(swap)) {
+                        if (!html)
+                            return;
+                        const compiled = $compile(String(html))(scopeParam);
+                        nodes = isInstanceOf(compiled, DocumentFragment)
+                            ? arrayFrom(compiled.childNodes)
+                            : [compiled];
+                    }
+                    const targetSelector = attrsParam.target;
+                    const target = targetSelector
+                        ? document.querySelector(targetSelector)
+                        : elementParam;
+                    if (!target) {
+                        $log.warn(`${attrName}: target "${targetSelector}" not found`);
+                        return;
+                    }
+                    switch (swap) {
+                        case "outerHTML": {
+                            const parent = target.parentNode;
+                            if (!parent)
+                                return;
+                            // Build fragment for static replacement OR a list for animation
+                            const frag = createDocumentFragment();
+                            nodes.forEach((x) => frag.appendChild(x));
+                            if (!animationEnabled) {
+                                parent.replaceChild(frag, target);
+                                break;
+                            }
+                            const placeholder = document.createElement("span");
+                            placeholder.style.display = "none";
+                            parent.insertBefore(placeholder, target.nextSibling);
+                            animate.leave(target).done(() => {
+                                const insertedNodes = arrayFrom(frag.childNodes);
+                                // Insert each node in order
+                                for (const x of insertedNodes) {
+                                    if (x.nodeType === NodeType._ELEMENT_NODE) {
+                                        // Animate elements
+                                        animate.enter(x, parent, placeholder);
+                                    }
+                                    else {
+                                        // Insert text nodes statically
+                                        parent.insertBefore(x, placeholder);
+                                    }
+                                }
+                                content = insertedNodes;
+                                scopeParam.$flushQueue(); // flush once after all insertions
+                            });
+                            scopeParam.$flushQueue(); // flush leave animation
+                            break;
+                        }
+                        case "textContent":
+                            if (animationEnabled) {
+                                animate.leave(target).done(() => {
+                                    target.textContent = html;
+                                    animate.enter(target, target.parentNode);
+                                    scopeParam.$flushQueue();
+                                });
+                                scopeParam.$flushQueue();
+                            }
+                            else {
+                                target.textContent = html;
+                            }
+                            break;
+                        case "beforebegin": {
+                            const parent = target.parentNode;
+                            if (!parent)
+                                break;
+                            nodes.forEach((node) => {
+                                if (animationEnabled &&
+                                    node.nodeType === NodeType._ELEMENT_NODE) {
+                                    animate.enter(node, parent, target); // insert before target
+                                }
+                                else {
+                                    parent.insertBefore(node, target);
+                                }
+                            });
+                            if (animationEnabled)
+                                scopeParam.$flushQueue();
+                            break;
+                        }
+                        case "afterbegin": {
+                            const { firstChild } = target;
+                            [...nodes].reverse().forEach((node) => {
+                                if (animationEnabled &&
+                                    node.nodeType === NodeType._ELEMENT_NODE) {
+                                    animate.enter(node, target, firstChild); // insert before first child
+                                }
+                                else {
+                                    target.insertBefore(node, firstChild);
+                                }
+                            });
+                            if (animationEnabled)
+                                scopeParam.$flushQueue();
+                            break;
+                        }
+                        case "beforeend": {
+                            nodes.forEach((node) => {
+                                if (animationEnabled &&
+                                    node.nodeType === NodeType._ELEMENT_NODE) {
+                                    animate.enter(node, target); // append at end
+                                }
+                                else {
+                                    target.appendChild(node);
+                                }
+                            });
+                            if (animationEnabled)
+                                scopeParam.$flushQueue();
+                            break;
+                        }
+                        case "afterend": {
+                            const parent = target.parentNode;
+                            if (!parent)
+                                break;
+                            const { nextSibling } = target;
+                            [...nodes].reverse().forEach((node) => {
+                                if (animationEnabled &&
+                                    node.nodeType === NodeType._ELEMENT_NODE) {
+                                    animate.enter(node, parent, nextSibling); // insert after target
+                                }
+                                else {
+                                    parent.insertBefore(node, nextSibling);
+                                }
+                            });
+                            if (animationEnabled)
+                                scopeParam.$flushQueue();
+                            break;
+                        }
+                        case "delete":
+                            if (animationEnabled) {
+                                animate.leave(target).done(() => {
+                                    removeElement(target); // safety: actually remove in case $animate.leave didn't
+                                    scopeParam.$flushQueue();
+                                });
+                                scopeParam.$flushQueue();
+                            }
+                            else {
+                                removeElement(target);
+                            }
+                            break;
+                        case "none":
+                            break;
+                        case "innerHTML":
+                        default:
+                            if (animationEnabled) {
+                                if (content &&
+                                    !isArray(content) &&
+                                    content.nodeType !== NodeType._TEXT_NODE) {
+                                    animate.leave(content).done(() => {
+                                        content = nodes[0];
+                                        animate.enter(nodes[0], target);
+                                        scopeParam.$flushQueue();
+                                    });
+                                    scopeParam.$flushQueue();
+                                }
+                                else {
+                                    content = nodes[0];
+                                    if (content &&
+                                        !isArray(content) &&
+                                        content.nodeType === NodeType._TEXT_NODE) {
+                                        emptyElement(target);
+                                        target.replaceChildren(...nodes);
+                                    }
+                                    else {
+                                        animate.enter(nodes[0], target);
+                                        scopeParam.$flushQueue();
+                                    }
+                                }
+                            }
+                            else {
+                                emptyElement(target);
+                                target.replaceChildren(...nodes);
+                            }
+                            break;
+                    }
+                }
+                element.addEventListener(eventName, async (event) => {
+                    if (element.disabled)
+                        return;
+                    if (tag === "form")
+                        event.preventDefault();
+                    const swap = attrs.swap || "innerHTML";
+                    const url = attrs[attrName];
+                    if (!url) {
+                        $log.warn(`${attrName}: no URL specified`);
+                        return;
+                    }
+                    const handler = (res) => {
+                        if (isDefined(attrs.loading)) {
+                            attrs.$set("loading", false);
+                        }
+                        if (isDefined(attrs.loadingClass)) {
+                            attrs.$removeClass(attrs.loadingClass);
+                        }
+                        const html = res.data;
+                        if (Http._OK <= res.status &&
+                            res.status <= Http._MultipleChoices - 1) {
+                            if (isDefined(attrs.success)) {
+                                $parse(attrs.success)(scope, { $res: html });
+                            }
+                            if (isDefined(attrs.stateSuccess)) {
+                                $state.go(attrs.stateSuccess);
+                            }
+                        }
+                        else if (Http._BadRequest <= res.status &&
+                            res.status <= Http._ErrorMax) {
+                            if (isDefined(attrs.error)) {
+                                $parse(attrs.error)(scope, { $res: html });
+                            }
+                            if (isDefined(attrs.stateError)) {
+                                $state.go(attrs.stateError);
+                            }
+                        }
+                        if (isObject(html)) {
+                            if (attrs.target) {
+                                scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
+                            }
+                            else {
+                                scope.$merge(html);
+                            }
+                        }
+                        else if (isString(html)) {
+                            handleSwapResponse(html, swap, scope, attrs, element);
+                        }
+                    };
+                    if (isDefined(attrs.delay)) {
+                        await wait(parseInt(attrs.delay) | 0);
+                    }
+                    if (throttled)
+                        return;
+                    if (isDefined(attrs.throttle)) {
+                        throttled = true;
+                        attrs.$set("throttled", true);
+                        setTimeout(() => {
+                            attrs.$set("throttled", false);
+                            throttled = false;
+                        }, parseInt(attrs.throttle));
+                    }
+                    if (isDefined(attrs.loading)) {
+                        attrs.$set("loading", true);
+                    }
+                    if (isDefined(attrs.loadingClass)) {
+                        attrs.$addClass(attrs.loadingClass);
+                    }
+                    if (method === "post" || method === "put") {
+                        let data;
+                        const config = {};
+                        if (attrs.enctype) {
+                            config.headers = {
+                                "Content-Type": attrs.enctype,
+                            };
+                            data = toKeyValue(collectFormData(element));
+                        }
+                        else {
+                            data = collectFormData(element);
+                        }
+                        $http[method](url, data, config).then(handler).catch(handler);
+                    }
+                    else {
+                        if (method === "get" && attrs.ngSse) {
+                            const sseUrl = url;
+                            const config = {
+                                withCredentials: attrs.withCredentials === "true",
+                                transformMessage: (data) => {
+                                    try {
+                                        return JSON.parse(data);
+                                    }
+                                    catch {
+                                        return data;
+                                    }
+                                },
+                                onOpen: () => {
+                                    $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
+                                    if (isDefined(attrs.loading))
+                                        attrs.$set("loading", false);
+                                    if (isDefined(attrs.loadingClass))
+                                        attrs.$removeClass(attrs.loadingClass);
+                                },
+                                onMessage: (data) => {
+                                    const res = { status: 200, data };
+                                    handler(res);
+                                },
+                                onError: (err) => {
+                                    $log.error(`${attrName}: SSE error`, err);
+                                    const res = { status: 500, data: err };
+                                    handler(res);
+                                },
+                                onReconnect: (count) => {
+                                    $log.info(`ngSse: reconnected ${count} time(s)`);
+                                    if (attrs.onReconnect)
+                                        $parse(attrs.onReconnect)(scope, { $count: count });
+                                },
+                            };
+                            const source = $sse(sseUrl, config);
+                            scope.$on("$destroy", () => {
+                                $log.info(`${attrName}: closing SSE connection`);
+                                source.close();
+                            });
+                        }
+                        else {
+                            $http[method](url).then(handler).catch(handler);
+                        }
+                    }
+                });
+                if (intervalId) {
+                    scope.$on("$destroy", () => clearInterval(intervalId));
+                }
+                if (eventName === "load") {
+                    element.dispatchEvent(new Event("load"));
+                }
+            },
+        };
+    };
+}
+
+ngIfDirective.$inject = [_injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
 function ngIfDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
@@ -17143,10 +17022,10 @@ function ngIfDirective($injector) {
 }
 
 ngIncludeDirective.$inject = [
-    $injectTokens._templateRequest,
-    $injectTokens._anchorScroll,
-    $injectTokens._injector,
-    $injectTokens._exceptionHandler,
+    _templateRequest,
+    _anchorScroll,
+    _injector,
+    _exceptionHandler,
 ];
 /**
  * Loads external template content, transcludes it, and swaps it into the DOM.
@@ -17248,7 +17127,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                                 cleanupLastIncludeContent();
                                 scope.$emit("$includeContentError", src);
                             }
-                            $exceptionHandler(err instanceof Error ? err : new Error(String(err)));
+                            $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
                         });
                     }
                     else {
@@ -17265,7 +17144,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
 // We need this directive so that the element content is already filled when
 // the link function of another directive on the same element as ngInclude
 // is called.
-ngIncludeFillContentDirective.$inject = [$injectTokens._compile];
+ngIncludeFillContentDirective.$inject = [_compile];
 /**
  * Fills the `ngInclude` element with the resolved template content and compiles it.
  */
@@ -17297,7 +17176,7 @@ class NgModelOptionsController {
     }
 }
 NgModelOptionsController.$nonscope = true;
-NgModelOptionsController.$inject = [$injectTokens._attrs, $injectTokens._scope];
+NgModelOptionsController.$inject = [_attrs, _scope];
 /**
  * A container for the options set by the {@link ngModelOptions} directive
  */
@@ -17310,7 +17189,7 @@ class ModelOptions {
     }
     createChild(options = {}) {
         let inheritAll = false;
-        const mergedOptions = Object.assign({}, options);
+        const mergedOptions = assign({}, options);
         entries(mergedOptions).forEach(([key, option]) => {
             if (option === "$inherit") {
                 if (key === "*") {
@@ -17323,7 +17202,7 @@ class ModelOptions {
                     }
                 }
             }
-            else if (key === "updateOn" && typeof option === "string") {
+            else if (key === "updateOn" && isString(option)) {
                 mergedOptions.updateOnDefault = false;
                 mergedOptions[key] = trim(option.replace(DEFAULT_REGEXP, () => {
                     mergedOptions.updateOnDefault = true;
@@ -18366,13 +18245,13 @@ class NgModelController {
 }
 /* @ignore */ NgModelController.$nonscope = true;
 /* @ignore */ NgModelController.$inject = [
-    $injectTokens._scope,
-    $injectTokens._exceptionHandler,
-    $injectTokens._attrs,
-    $injectTokens._element,
-    $injectTokens._parse,
-    $injectTokens._injector,
-    $injectTokens._interpolate,
+    _scope,
+    _exceptionHandler,
+    _attrs,
+    _element,
+    _parse,
+    _injector,
+    _interpolate,
 ];
 /**
  * Watches the bound model expression and refreshes the controller when it changes externally.
@@ -18419,7 +18298,7 @@ function ngModelDirective() {
             // Setup initial state of the control
             element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
             return {
-                pre: (scope, _element, attr, ctrls) => {
+                pre: (scope, _preElement, attr, ctrls) => {
                     const modelCtrl = ctrls[0];
                     const formCtrl = ctrls[1] || modelCtrl._parentForm;
                     const optionsCtrl = ctrls[2];
@@ -19080,10 +18959,10 @@ function checkboxInputType(scope, element, attr, ctrl, $parse) {
     ctrl.$isEmpty = function (value) {
         return value === false;
     };
-    ctrl.$formatters.push((value) => equals$1(value, trueValue));
+    ctrl.$formatters.push((value) => equals(value, trueValue));
     ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
 }
-inputDirective.$inject = [$injectTokens._parse];
+inputDirective.$inject = [_parse];
 /**
  * Builds the core input directive and delegates to the appropriate input-type handler.
  */
@@ -19170,7 +19049,7 @@ function ngInitDirective() {
     };
 }
 
-ngInjectDirective.$inject = [$injectTokens._log, $injectTokens._injector];
+ngInjectDirective.$inject = [_log, _injector];
 /**
  * Injects named services from `$injector` onto the current scope.
  */
@@ -19362,7 +19241,7 @@ class NgMessageCtrl {
         this.reRender();
     }
 }
-ngMessagesDirective.$inject = [$injectTokens._injector];
+ngMessagesDirective.$inject = [_injector];
 /**
  * Builds the root `ngMessages` directive.
  */
@@ -19387,10 +19266,7 @@ function isAttrTruthy(scope, attr) {
 function truthy(val) {
     return isString(val) ? val.length > 0 : !!val;
 }
-ngMessagesIncludeDirective.$inject = [
-    $injectTokens._templateRequest,
-    $injectTokens._compile,
-];
+ngMessagesIncludeDirective.$inject = [_templateRequest, _compile];
 /**
  * Builds the directive that inlines external message templates.
  */
@@ -19422,7 +19298,7 @@ const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(isDefault) {
-    ngMessageDirectiveFn.$inject = [$injectTokens._injector];
+    ngMessageDirectiveFn.$inject = [_injector];
     /**
      * Builds a concrete `ngMessage` directive definition.
      */
@@ -19559,7 +19435,7 @@ class OptionItem {
         this._disabled = disabled;
     }
 }
-ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
+ngOptionsDirective.$inject = [_compile, _parse];
 function ngOptionsDirective($compile, $parse) {
     function parseOptionsExpression(optionsExp, selectElement, scope) {
         const match = optionsExp.match(NG_OPTIONS_REGEXP);
@@ -19650,7 +19526,7 @@ function ngOptionsDirective($compile, $parse) {
         const providedEmptyOption = !!selectCtrl._emptyOption;
         let options;
         const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
-        const listFragment = document.createDocumentFragment();
+        const listFragment = createDocumentFragment();
         selectCtrl._generateUnknownOptionValue = () => "?";
         if (!multiple) {
             selectCtrl._writeValue = function writeNgOptionsValue(value) {
@@ -19798,7 +19674,7 @@ function ngOptionsDirective($compile, $parse) {
                 const nextValue = selectCtrl._readValue();
                 const isNotPrimitive = multiple;
                 if (isNotPrimitive
-                    ? !equals$1(previousValue, nextValue)
+                    ? !equals(previousValue, nextValue)
                     : previousValue !== nextValue) {
                     ngModelCtrl.$setViewValue(nextValue);
                     ngModelCtrl.$render();
@@ -20138,7 +20014,7 @@ class SelectController {
             const currentValue = this._readValue();
             const removeValue = oldVal ?? registeredValue;
             const shouldUpdateViewValue = (this._multiple &&
-                Array.isArray(currentValue) &&
+                isArray(currentValue) &&
                 currentValue.indexOf(removeValue) !== -1) ||
                 currentValue === removeValue;
             this._removeOption(removeValue);
@@ -20156,7 +20032,7 @@ class SelectController {
         });
     }
 }
-/* @ignore */ SelectController.$inject = [$injectTokens._element, $injectTokens._scope];
+/* @ignore */ SelectController.$inject = [_element, _scope];
 
 function selectDirective() {
     return {
@@ -20190,7 +20066,7 @@ function selectDirective() {
             selectCtrl._readValue = function () {
                 const array = [];
                 const options = selectElement.getElementsByTagName("option");
-                Array.from(options).forEach((option) => {
+                arrayFrom(options).forEach((option) => {
                     if (option.selected && !option.disabled) {
                         const val = option.value;
                         array.push(val in selectCtrl._selectValueMap
@@ -20202,7 +20078,7 @@ function selectDirective() {
             };
             selectCtrl._writeValue = function (value) {
                 const options = selectElement.getElementsByTagName("option");
-                Array.from(options).forEach((option) => {
+                arrayFrom(options).forEach((option) => {
                     const shouldBeSelected = !!value &&
                         (includes(value, option.value) ||
                             includes(value, selectCtrl._selectValueMap[option.value]));
@@ -20216,7 +20092,7 @@ function selectDirective() {
             let lastViewRef = NaN;
             _scope.$watch(attr.ngModel, () => {
                 if (lastViewRef === ngModelCtrl.$viewValue &&
-                    !equals$1(lastView, ngModelCtrl.$viewValue)) {
+                    !equals(lastView, ngModelCtrl.$viewValue)) {
                     lastView = shallowCopy(ngModelCtrl.$viewValue);
                     ngModelCtrl.$render();
                 }
@@ -20238,7 +20114,7 @@ function selectDirective() {
         selectCtrl._scheduleRender();
     }
 }
-optionDirective.$inject = [$injectTokens._interpolate];
+optionDirective.$inject = [_interpolate];
 function optionDirective($interpolate) {
     return {
         restrict: "E",
@@ -20274,7 +20150,7 @@ function optionDirective($interpolate) {
 }
 
 const ngRefMinErr = minErr("ngRef");
-ngRefDirective.$inject = [$injectTokens._parse];
+ngRefDirective.$inject = [_parse];
 function ngRefDirective($parse) {
     return {
         priority: -1,
@@ -20312,7 +20188,7 @@ function ngRefDirective($parse) {
 const NG_REMOVED = "$$NG_REMOVED";
 const ngRepeatMinErr = minErr("ngRepeat");
 const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
-ngRepeatDirective.$inject = [$injectTokens._injector];
+ngRepeatDirective.$inject = [_injector];
 function ngRepeatDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     const repeatPositionLocalKeys = [
@@ -20370,19 +20246,19 @@ function ngRepeatDirective($injector) {
         }
     }
     function getBlockStart(block) {
-        return Array.isArray(block._clone) ? block._clone[0] : block._clone;
+        return isArray(block._clone) ? block._clone[0] : block._clone;
     }
     function getBlockEnd(block) {
-        return Array.isArray(block._clone)
+        return isArray(block._clone)
             ? block._clone[block._clone.length - 1]
             : block._clone;
     }
     function normalizeCloneNodes(clone) {
-        if (clone instanceof DocumentFragment) {
-            return Array.from(clone.childNodes);
+        if (isInstanceOf(clone, DocumentFragment)) {
+            return arrayFrom(clone.childNodes);
         }
-        if (clone instanceof NodeList || Array.isArray(clone)) {
-            return Array.from(clone);
+        if (isInstanceOf(clone, NodeList) || isArray(clone)) {
+            return arrayFrom(clone);
         }
         return clone;
     }
@@ -20412,6 +20288,27 @@ function ngRepeatDirective($injector) {
             }
             node = nextNode;
         }
+    }
+    function removeNodeRangeFast(firstNode, lastNode) {
+        const parent = firstNode.parentNode;
+        if (!parent || lastNode.parentNode !== parent) {
+            removeNodeRange(firstNode, lastNode);
+            return;
+        }
+        const range = document.createRange();
+        range.setStartBefore(firstNode);
+        range.setEndAfter(lastNode);
+        const removedNodes = range.extractContents();
+        const descendants = removedNodes.querySelectorAll("*");
+        for (let i = 0; i < descendants.length; i++) {
+            removeElementData(descendants[i]);
+        }
+        let node = removedNodes.firstChild;
+        while (node) {
+            removeElementData(node);
+            node = node.nextSibling;
+        }
+        range.detach();
     }
     function trackByIdArrayFn(_$scope, _key, value) {
         return hashKey(value);
@@ -20445,26 +20342,15 @@ function ngRepeatDirective($injector) {
             lastBlockOrder.length !== nextBlockOrder.length) {
             return undefined;
         }
-        for (let index = 0; index < nextBlockOrder.length; index++) {
-            const block = nextBlockOrder[index];
-            if (!block._scope || !block._clone) {
-                return undefined;
-            }
-            if (index === leftIndex) {
-                if (block !== lastBlockOrder[rightIndex]) {
-                    return undefined;
-                }
-                continue;
-            }
-            if (index === rightIndex) {
-                if (block !== lastBlockOrder[leftIndex]) {
-                    return undefined;
-                }
-                continue;
-            }
-            if (block !== lastBlockOrder[index]) {
-                return undefined;
-            }
+        const leftBlock = nextBlockOrder[leftIndex];
+        const rightBlock = nextBlockOrder[rightIndex];
+        if (!leftBlock?._scope ||
+            !leftBlock._clone ||
+            !rightBlock?._scope ||
+            !rightBlock._clone ||
+            leftBlock !== lastBlockOrder[rightIndex] ||
+            rightBlock !== lastBlockOrder[leftIndex]) {
+            return undefined;
         }
         return [leftIndex, rightIndex];
     }
@@ -20560,7 +20446,7 @@ function ngRepeatDirective($injector) {
                         parentNode.insertBefore(nodes[0], afterNode.nextSibling);
                         return;
                     }
-                    const fragment = document.createDocumentFragment();
+                    const fragment = createDocumentFragment();
                     for (let i = 0; i < nodes.length; i++) {
                         fragment.appendChild(nodes[i]);
                     }
@@ -20583,10 +20469,10 @@ function ngRepeatDirective($injector) {
                     if (!anchorBeforeFirst) {
                         return false;
                     }
-                    const firstCloneNodes = Array.isArray(firstBlock._clone)
+                    const firstCloneNodes = isArray(firstBlock._clone)
                         ? firstBlock._clone
                         : [firstBlock._clone];
-                    const secondCloneNodes = Array.isArray(secondBlock._clone)
+                    const secondCloneNodes = isArray(secondBlock._clone)
                         ? secondBlock._clone
                         : [secondBlock._clone];
                     const firstNodes = getBlockNodes(firstCloneNodes);
@@ -20714,7 +20600,7 @@ function ngRepeatDirective($injector) {
                             for (let i = 0; i < lastBlockOrder.length; i++) {
                                 lastBlockOrder[i]._scope?.$destroy();
                             }
-                            removeNodeRange(firstNode, lastNode);
+                            removeNodeRangeFast(firstNode, lastNode);
                             lastBlockMap = nextBlockMap;
                             lastBlockOrder = nextBlockOrder;
                             return;
@@ -20731,7 +20617,7 @@ function ngRepeatDirective($injector) {
                             for (let removedIndex = tailDeleteRetainedLength; removedIndex < lastBlockOrder.length; removedIndex++) {
                                 lastBlockOrder[removedIndex]._scope?.$destroy();
                             }
-                            removeNodeRange(firstRemovedNode, lastRemovedNode);
+                            removeNodeRangeFast(firstRemovedNode, lastRemovedNode);
                             const retainedLastIndex = tailDeleteRetainedLength - 1;
                             const retainedLastBlock = nextBlockOrder[retainedLastIndex];
                             if (retainedLastBlock?._scope &&
@@ -20759,16 +20645,14 @@ function ngRepeatDirective($injector) {
                             for (let i = 0; i < lastBlockOrder.length; i++) {
                                 lastBlockOrder[i]._scope?.$destroy();
                             }
-                            removeNodeRange(firstNode, lastNode);
+                            removeNodeRangeFast(firstNode, lastNode);
                             lastBlockMap = nullObject();
                             lastBlockOrder = [];
                         }
                     }
                     for (const blockKey in lastBlockMap) {
                         block = lastBlockMap[blockKey];
-                        const blockNodes = getBlockNodes(Array.isArray(block._clone)
-                            ? block._clone
-                            : [block._clone]);
+                        const blockNodes = getBlockNodes(isArray(block._clone) ? block._clone : [block._clone]);
                         elementsToRemove = getBlockStart(block);
                         if (hasAnimate && elementsToRemove) {
                             getAnimate().leave(elementsToRemove);
@@ -20817,7 +20701,7 @@ function ngRepeatDirective($injector) {
                             if (!existingClone) {
                                 continue;
                             }
-                            const isExistingCloneArray = Array.isArray(existingClone);
+                            const isExistingCloneArray = isArray(existingClone);
                             const blockStart = isExistingCloneArray
                                 ? existingClone[0]
                                 : existingClone;
@@ -20848,7 +20732,7 @@ function ngRepeatDirective($injector) {
                         else {
                             $transclude?.((clone, scope) => {
                                 const normalizedClone = normalizeCloneNodes(clone);
-                                const cloneNodes = Array.isArray(normalizedClone)
+                                const cloneNodes = isArray(normalizedClone)
                                     ? normalizedClone
                                     : [normalizedClone];
                                 block._scope = scope;
@@ -20890,7 +20774,7 @@ function ngScopeDirective() {
     };
 }
 
-scriptDirective.$inject = [$injectTokens._templateCache];
+scriptDirective.$inject = [_templateCache];
 /**
  * Captures inline `text/ng-template` script contents into `$templateCache`.
  */
@@ -20907,7 +20791,7 @@ function scriptDirective($templateCache) {
     };
 }
 
-ngSetterDirective.$inject = [$injectTokens._parse, $injectTokens._log];
+ngSetterDirective.$inject = [_parse, _log];
 /**
  * Mirrors an element's HTML content into an assignable scope expression.
  */
@@ -20955,7 +20839,7 @@ function ngSetterDirective($parse, $log) {
 
 const NG_HIDE_CLASS = "ng-hide";
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
-ngShowDirective.$inject = [$injectTokens._injector];
+ngShowDirective.$inject = [_injector];
 /**
  * Removes the `ng-hide` class when the watched expression becomes truthy.
  */
@@ -20987,7 +20871,7 @@ function ngShowDirective($injector) {
         },
     };
 }
-ngHideDirective.$inject = [$injectTokens._injector];
+ngHideDirective.$inject = [_injector];
 /**
  * Adds the `ng-hide` class when the watched expression becomes truthy.
  */
@@ -21055,7 +20939,7 @@ class NgSwitchController {
         this._cases = {};
     }
 }
-ngSwitchDirective.$inject = [$injectTokens._injector];
+ngSwitchDirective.$inject = [_injector];
 /** Switches between transcluded case blocks and animates block entry/exit. */
 function ngSwitchDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
@@ -21189,7 +21073,7 @@ function ngSwitchDefaultDirective() {
 }
 
 const ngTranscludeMinErr = minErr("ngTransclude");
-ngTranscludeDirective.$inject = [$injectTokens._compile];
+ngTranscludeDirective.$inject = [_compile];
 function ngTranscludeDirective($compile) {
     return {
         compile: function ngTranscludeCompile(tElement) {
@@ -21219,7 +21103,7 @@ function ngTranscludeDirective($compile) {
                         if (transcludedScope &&
                             lastNode &&
                             "addEventListener" in lastNode &&
-                            typeof lastNode.addEventListener === "function") {
+                            isFunction(lastNode.addEventListener)) {
                             lastNode.addEventListener("$destroy", destroyScope, {
                                 once: true,
                             });
@@ -21242,11 +21126,11 @@ function ngTranscludeDirective($compile) {
                     if (!node) {
                         return [];
                     }
-                    if (node instanceof DocumentFragment) {
-                        return Array.from(node.childNodes);
+                    if (isInstanceOf(node, DocumentFragment)) {
+                        return arrayFrom(node.childNodes);
                     }
-                    return node instanceof NodeList || Array.isArray(node)
-                        ? Array.from(node)
+                    return isInstanceOf(node, NodeList) || isArray(node)
+                        ? arrayFrom(node)
                         : [node];
                 }
                 function hasRenderableContent(nodes) {
@@ -21288,7 +21172,7 @@ function ngTranscludeDirective($compile) {
  *
  */
 const requiredDirective = [
-    $injectTokens._parse,
+    _parse,
     /** Creates the `required` validator directive. */
     ($parse) => ({
         restrict: "A",
@@ -21358,7 +21242,7 @@ const requiredDirective = [
  * </div>
  */
 const patternDirective = [
-    $injectTokens._parse,
+    _parse,
     /** Creates the `pattern` validator directive. */
     ($parse) => ({
         restrict: "A",
@@ -21443,7 +21327,7 @@ const patternDirective = [
  *
  */
 const maxlengthDirective = [
-    $injectTokens._parse,
+    _parse,
     /** Creates the `maxlength` validator directive. */
     ($parse) => ({
         restrict: "A",
@@ -21503,7 +21387,7 @@ const maxlengthDirective = [
  *
  */
 const minlengthDirective = [
-    $injectTokens._parse,
+    _parse,
     /** Creates the `minlength` validator directive. */ ($parse) => ({
         restrict: "A",
         require: "?ngModel",
@@ -21528,11 +21412,11 @@ const minlengthDirective = [
 /** Parses a pattern attribute value into a `RegExp` instance. */
 function parsePatternAttr(input, patternExp, elm) {
     let regex = input;
-    if (typeof regex === "string") {
+    if (isString(regex)) {
         const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
         regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
     }
-    if (typeof regex.test !== "function") {
+    if (!isFunction(regex.test)) {
         throw minErr("ngPattern")("noregexp", "Expected {0} to be a RegExp but was {1}. Element: {2}", patternExp, regex, startingTag(elm));
     }
     return regex;
@@ -21573,7 +21457,7 @@ function ngViewportDirective() {
             if (parent) {
                 mutationObserver = new MutationObserver((mutations) => {
                     for (const mutation of mutations) {
-                        Array.from(mutation.removedNodes).forEach((removedNode) => {
+                        arrayFrom(mutation.removedNodes).forEach((removedNode) => {
                             if (removedNode === element) {
                                 observer.disconnect();
                                 if (mutationObserver) {
@@ -21606,67 +21490,224 @@ function ngWasmDirective() {
 }
 
 /**
- * Performs deep equality checks for plain objects, arrays, dates, and regexes.
+ * Creates a managed Web Worker connection.
  */
-function equals(o1, o2) {
-    if (o1 === o2)
-        return true;
-    if (o1 === null || o2 === null)
-        return false;
-    if (Number.isNaN(o1) && Number.isNaN(o2))
-        return true; // NaN === NaN
-    const t1 = typeof o1, t2 = typeof o2;
-    if (t1 !== t2 || t1 !== "object")
-        return false;
-    const tup = [o1, o2];
-    if (tup.every(isArray)) {
-        const arr1 = o1;
-        const arr2 = o2;
-        return _arraysEq(arr1, arr2);
+function createWorkerConnection(scriptPath, config) {
+    if (!scriptPath)
+        throw new Error("Worker script path required");
+    const defaults = {
+        autoRestart: false,
+        autoTerminate: false,
+        onMessage() {
+            /* empty */
+        },
+        onError() {
+            /* empty */
+        },
+        transformMessage(data) {
+            if (!isString(data)) {
+                return data;
+            }
+            try {
+                return JSON.parse(data);
+            }
+            catch {
+                return data;
+            }
+        },
+        logger: (config?.logger || console),
+        err: (config?.err || (() => undefined)),
+    };
+    const cfg = assign({}, defaults, config);
+    let worker = new Worker(scriptPath, { type: "module" });
+    let terminated = false;
+    const wire = (workerParam) => {
+        workerParam.onmessage = (event) => {
+            let { data } = event;
+            try {
+                data = cfg.transformMessage(data);
+            }
+            catch {
+                /* no-op */
+            }
+            cfg.onMessage(data, event);
+        };
+        workerParam.onerror = (err) => {
+            cfg.onError(err);
+            if (cfg.autoRestart) {
+                reconnect();
+            }
+        };
+    };
+    const reconnect = () => {
+        if (terminated)
+            return;
+        cfg.logger.info("Worker: restarting...");
+        worker.terminate();
+        worker = new Worker(scriptPath, { type: "module" });
+        wire(worker);
+    };
+    wire(worker);
+    return {
+        post(data) {
+            if (terminated) {
+                cfg.logger.warn("Worker already terminated");
+            }
+            try {
+                worker.postMessage(data);
+            }
+            catch (err) {
+                cfg.logger.log("Worker post failed", err);
+            }
+        },
+        terminate() {
+            terminated = true;
+            worker.terminate();
+        },
+        restart() {
+            if (terminated) {
+                cfg.logger.warn("Worker cannot restart after terminate");
+            }
+            reconnect();
+        },
+        config: cfg,
+    };
+}
+class WorkerProvider {
+    constructor() {
+        this.$get = [
+            _log,
+            _exceptionHandler,
+            (log, exceptionHandler) => {
+                return (scriptPath, config = {}) => createWorkerConnection(scriptPath, {
+                    ...config,
+                    logger: config.logger || log,
+                    err: config.err || exceptionHandler,
+                });
+            },
+        ];
     }
-    if (tup.every(isDate)) {
-        const date1 = o1;
-        const date2 = o2;
-        return date1.getTime() === date2.getTime();
-    }
-    if (tup.every(isRegExp)) {
-        const regExp1 = o1;
-        const regExp2 = o2;
-        return regExp1.toString() === regExp2.toString();
-    }
-    if (tup.every(isFunction))
-        return true; // meh
-    if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
-        return false;
-    }
-    const keyItems = {};
-    const obj1 = o1;
-    const obj2 = o2;
-    for (const key in obj1) {
-        if (!equals(obj1[key], obj2[key]))
-            return false;
-        keyItems[key] = true;
-    }
-    for (const key in obj2) {
-        if (!keyItems[key])
-            return false;
-    }
-    return true;
+}
+
+ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
+/**
+ * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+ */
+function ngWorkerDirective($parse, $log, $exceptionHandler) {
+    return {
+        restrict: "A",
+        link(scope, element, attrs) {
+            const workerName = attrs.ngWorker;
+            if (!workerName) {
+                $log.warn("ngWorker: missing worker name");
+                return;
+            }
+            const eventName = attrs.trigger || getEventNameForElement(element);
+            let throttled = false;
+            let intervalId;
+            if (isDefined(attrs.latch)) {
+                attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
+            }
+            if (isDefined(attrs.interval)) {
+                element.dispatchEvent(new Event(eventName));
+                intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval || "", 10) || 1000);
+            }
+            const worker = createWorkerConnection(workerName, {
+                logger: $log,
+                err: $exceptionHandler,
+                onMessage: (result) => {
+                    if (isDefined(attrs.dataOnResult)) {
+                        $parse(attrs.dataOnResult)(scope, { $result: result });
+                    }
+                    else {
+                        handleSwap(String(result), attrs.swap || "innerHTML", element);
+                    }
+                },
+                onError: (err) => {
+                    $log.error(`[ng-worker:${workerName}]`, err);
+                    if (isDefined(attrs.dataOnError)) {
+                        $parse(attrs.dataOnError)(scope, { $error: err });
+                    }
+                    else {
+                        element.textContent = "Error";
+                    }
+                },
+            });
+            element.addEventListener(eventName, async () => {
+                if (element.hasAttribute("disabled"))
+                    return;
+                if (isDefined(attrs.delay)) {
+                    await wait(parseInt(attrs.delay || "", 10) || 0);
+                }
+                if (throttled)
+                    return;
+                if (isDefined(attrs.throttle)) {
+                    throttled = true;
+                    attrs.$set("throttled", true);
+                    setTimeout(() => {
+                        attrs.$set("throttled", false);
+                        throttled = false;
+                    }, parseInt(attrs.throttle || "", 10));
+                }
+                let params;
+                try {
+                    params = attrs.params ? scope.$eval(attrs.params) : undefined;
+                }
+                catch (err) {
+                    $log.error("ngWorker: failed to evaluate data-params", err);
+                    params = undefined;
+                }
+                worker.post(params);
+            });
+            if (intervalId) {
+                scope.$on("$destroy", () => clearInterval(intervalId));
+            }
+            if (eventName === "load") {
+                element.dispatchEvent(new Event("load"));
+            }
+        },
+    };
 }
 /**
- * prototypal inheritance helper.
- * Creates a new object which has `parent` object as its prototype, and then copies the properties from `extra` onto it.
+ * Swap result into DOM based on strategy
  */
-function inherit(parent, extra) {
-    const newObj = Object.create(parent);
-    if (extra) {
-        Object.assign(newObj, extra);
+function handleSwap(result, swap, element) {
+    switch (swap) {
+        case "outerHTML": {
+            const parent = element.parentNode;
+            if (!parent)
+                return;
+            const temp = document.createElement("div");
+            temp.innerHTML = result;
+            if (temp.firstChild) {
+                parent.replaceChild(temp.firstChild, element);
+            }
+            break;
+        }
+        case "textContent":
+            element.textContent = result;
+            break;
+        case "beforebegin":
+            element.insertAdjacentHTML("beforebegin", result);
+            break;
+        case "afterbegin":
+            element.insertAdjacentHTML("afterbegin", result);
+            break;
+        case "beforeend":
+            element.insertAdjacentHTML("beforeend", result);
+            break;
+        case "afterend":
+            element.insertAdjacentHTML("afterend", result);
+            break;
+        case "innerHTML":
+        default:
+            element.innerHTML = result;
+            break;
     }
-    return newObj;
 }
+
 /**
- * Given an array, and an item, if the item is found in the array, it removes it (in-place).
- * The same array is returned.
+ * Given an array and an item, removes the item in-place when present.
  */
 function removeFrom(array, obj) {
     const i = array.indexOf(obj);
@@ -21675,416 +21716,34 @@ function removeFrom(array, obj) {
     return array;
 }
 /**
- * Applies a set of defaults to an options object.  The options object is filtered
- * to only those properties of the objects in the defaultsList.
- * Earlier objects in the defaultsList take precedence when applying defaults.
+ * Applies option defaults and only copies option keys known by the defaults.
+ * Earlier defaults take precedence over later defaults.
  */
 function defaults(opts, ...defaultsList) {
-    const defaultVals = Object.assign({}, ...defaultsList.reverse());
-    return Object.assign(defaultVals, pick((opts || {}), keys(defaultVals)));
-}
-/**
- * Return a copy of the object only containing the whitelisted properties.
- *
- * #### Example:
- * ```
- * var foo = { a: 1, b: 2, c: 3 };
- * var ab = pick(foo, ['a', 'b']); // { a: 1, b: 2 }
- * ```
- */
-function pick(obj, propNames) {
-    const objCopy = {};
-    for (const _prop in obj) {
-        if (propNames.indexOf(_prop) !== -1) {
-            objCopy[_prop] = obj[_prop];
-        }
-    }
-    return objCopy;
-}
-/**
- * Return a copy of the object omitting the blacklisted properties.
- * @example ```
-
-var foo = { a: 1, b: 2, c: 3 };
-var ab = omit(foo, ['a', 'b']); // { c: 3 }
-```
- */
-function omit(obj, propNames) {
-    return keys(obj)
-        .filter((x) => !propNames.includes(x))
-        .reduce((acc, key) => ((acc[key] = obj[key]), acc), {});
-}
-/**
- * Filters an array or an object's properties using a predicate.
- */
-function filter(collection, callback) {
-    const arr = isArray(collection);
-    const result = arr ? [] : {};
-    const accept = arr
-        ? (x) => result.push(x)
-        : (x, key) => (result[String(key)] = x);
-    entries(collection).forEach(([i, item]) => {
-        if (callback(item, i))
-            accept(item, i);
+    const defaultVals = assign({}, ...defaultsList.reverse());
+    opts = opts || {};
+    keys(defaultVals).forEach((key) => {
+        if (key in opts)
+            defaultVals[key] = opts[key];
     });
-    return result;
+    return defaultVals;
 }
 /**
- * Finds the first array element or object property value matching a predicate.
- */
-function find(collection, callback) {
-    let result;
-    entries(collection).forEach(([i, item]) => {
-        if (result)
-            return;
-        if (callback(item, i))
-            result = item;
-    });
-    return result;
-}
-/**
- * Maps over an array or object and returns a new collection
- * with the same shape.
- *
- * @template T
- * @template R
- */
-function map(collection, callback, target) {
-    target = target || (isArray(collection) ? [] : {});
-    entries(collection).forEach(([i, item]) => {
-        if (isArray(target)) {
-            // Convert string key to number safely
-            const index = Number(i);
-            target[index] = callback(item, index);
-        }
-        else {
-            target[i] = callback(item, i);
-        }
-    });
-    return target;
-}
-/**
- * Reduce function that returns true if all of the values are truthy.
- *
- * @example
- * ```
- *
- * let vals = [ 1, true, {}, "hello world"];
- * vals.reduce(allTrueR, true); // true
- *
- * vals.push(0);
- * vals.reduce(allTrueR, true); // false
- * ```
- */
-const allTrueR = (memo, elem) => memo && elem;
-/**
- * Reduce function that returns true if any of the values are truthy.
- *
- * @example
- * ```
- *
- * let vals = [ 0, null, undefined ];
- * vals.reduce(anyTrueR, true); // false
- *
- * vals.push("hello world");
- * vals.reduce(anyTrueR, true); // true
- * ```
- */
-const anyTrueR = (memo, elem) => memo || elem;
-/**
- * Reduce function which un-nests a single level of arrays
- *
- * @example
- * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
- * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double", "nested" ] ]
- */
-const unnestR = (memo, elem) => memo.concat(elem);
-/**
- * Reduce function that pushes an object to an array, then returns the array.
- * Mostly just for [[flattenR]] and [[uniqR]]
+ * Reduce helper that pushes an item to an array, then returns the array.
  */
 function pushR(arr, obj) {
     arr.push(obj);
     return arr;
 }
-/** Reduce function that filters out duplicates */
-const uniqR = (acc, token) => acc.includes(token) ? acc : pushR(acc, token);
 /**
- * Return a new array with a single level of arrays unnested.
- *
- * @example
- * ```
- *
- * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
- * unnest(input) // [ "a", "b", "c", "d", [ "double, "nested" ] ]
- * ```
- */
-const unnest = (arr) => arr.reduce(unnestR, []);
-/**
- * Given a .filter Predicate, builds a .filter Predicate which throws an error if any elements do not pass.
- * @example
- * ```
- *
- * let isNumber = (obj) => typeof(obj) === 'number';
- * let allNumbers = [ 1, 2, 3, 4, 5 ];
- * allNumbers.filter(assertPredicate(isNumber)); //OK
- *
- * let oneString = [ 1, 2, 3, 4, "5" ];
- * oneString.filter(assertPredicate(isNumber, "Not all numbers")); // throws Error(""Not all numbers"");
- * ```
- */
-const assertPredicate = assertFn;
-/**
- * Wraps a predicate and throws when an element does not satisfy it.
- */
-function assertFn(predicateOrMap, errMsg = "assert failure") {
-    return (obj) => {
-        const result = predicateOrMap(obj);
-        if (!result) {
-            throw new Error(errMsg);
-        }
-        return result;
-    };
-}
-/**
- * Given two or more parallel arrays, returns an array of tuples where
- * each tuple is composed of [ a[i], b[i], ... z[i] ]
- * @example ```
-
-let foo = [ 0, 2, 4, 6 ];
-let bar = [ 1, 3, 5, 7 ];
-let baz = [ 10, 30, 50, 70 ];
-arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
-arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
-```
- */
-function arrayTuples(...args) {
-    if (args.length === 0)
-        return [];
-    const maxArrayLen = args.reduce((min, arr) => Math.min(arr.length, min), Number.MAX_SAFE_INTEGER);
-    const result = [];
-    for (let i = 0; i < maxArrayLen; i++) {
-        // This is a hot function
-        // Unroll when there are 1-4 arguments
-        switch (args.length) {
-            case 1:
-                result.push([args[0][i]]);
-                break;
-            case 2:
-                result.push([args[0][i], args[1][i]]);
-                break;
-            case 3:
-                result.push([args[0][i], args[1][i], args[2][i]]);
-                break;
-            case 4:
-                result.push([args[0][i], args[1][i], args[2][i], args[3][i]]);
-                break;
-            default:
-                result.push(args.map((array) => array[i]));
-                break;
-        }
-    }
-    return result;
-}
-/**
- * Reduce function which builds an object from an array of [key, value] pairs.
- *
- * Each iteration sets the key/val pair on the memo object, then returns the memo for the next iteration.
- *
- * Each keyValueTuple should be an array with values [ key: string, value: any ]
- * @example ```
-
-    var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
-
-    var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
-    // pairsToObj == { fookey: "fooval", barkey: "barval" }
-
-    // Or, more simply:
-    var pairsToObj = pairs.reduce(applyPairs, {})
-    // pairsToObj == { fookey: "fooval", barkey: "barval" }
-```
- */
-function applyPairs(memo, keyValTuple) {
-    let key;
-    let value = undefined;
-    if (isArray(keyValTuple))
-        [key, value] = keyValTuple;
-    if (!isString(key))
-        throw new Error("invalid parameters to applyPairs");
-    memo[key] = value;
-    return memo;
-}
-/**
- * Returns the last element of an array, or undefined if the array is empty.
- * @template T
- * @param arr - The input array.
- * @returns The last element or undefined.
+ * Returns the last element of an array or string.
  */
 function tail(arr) {
     return arr.length > 0 ? arr[arr.length - 1] : undefined;
 }
-/**
- * shallow copy from src to dest
- */
-function copy(src, dest) {
-    const target = dest || {};
-    keys(target).forEach((key) => delete target[key]);
-    return Object.assign(target, src);
-}
-/**
- * Compares two arrays element-by-element using `equals`.
- */
-function _arraysEq(a1, a2) {
-    if (a1.length !== a2.length)
-        return false;
-    for (let i = 0; i < a1.length; i++) {
-        if (!equals(a1[i], a2[i]))
-            return false;
-    }
-    return true;
-}
-
-/**
- * Returns a new function for [Partial Application](https://en.wikipedia.org/wiki/Partial_application) of the original function.
- *
- * Given a function with N parameters, returns a new function that supports partial application.
- * The new function accepts anywhere from 1 to N parameters.  When that function is called with M parameters,
- * where M is less than N, it returns a new function that accepts the remaining parameters.  It continues to
- * accept more parameters until all N parameters have been supplied.
- *
- *
- * This contrived example uses a partially applied function as an predicate, which returns true
- * if an object is found in both arrays.
- * @example
- * ```
- * // returns true if an object is in both of the two arrays
- * function inBoth(array1, array2, object) {
- *   return array1.indexOf(object) !== -1 &&
- *          array2.indexOf(object) !== 1;
- * }
- * let obj1, obj2, obj3, obj4, obj5, obj6, obj7
- * let foos = [obj1, obj3]
- * let bars = [obj3, obj4, obj5]
- *
- * // A curried "copy" of inBoth
- * let curriedInBoth = curry(inBoth);
- * // Partially apply both the array1 and array2
- * let inFoosAndBars = curriedInBoth(foos, bars);
- *
- * // Supply the final argument; since all arguments are
- * // supplied, the original inBoth function is then called.
- * let obj1InBoth = inFoosAndBars(obj1); // false
- *
- * // Use the inFoosAndBars as a predicate.
- * // Filter, on each iteration, supplies the final argument
- * let allObjs = [ obj1, obj2, obj3, obj4, obj5, obj6, obj7 ];
- * let foundInBoth = allObjs.filter(inFoosAndBars); // [ obj3 ]
- *
- * ```
- *
- * Returns a curried version of the supplied function.
- */
-function curry(fn) {
-    const curried = (...args) => {
-        if (args.length >= fn.length) {
-            return fn(...args);
-        }
-        return (...nextArgs) => curried(...args, ...nextArgs);
-    };
-    return curried;
-}
-/**
- * Given a property name and a value, returns a function that returns a boolean based on whether
- * the passed object has a property that matches the value
- * let obj = { foo: 1, name: "blarg" };
- * let getName = propEq("name", "blarg");
- * getName(obj) === true
- */
-const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
-/**
- * Given a dotted property name, returns a function that returns a nested property from an object, or undefined
- * let obj = { id: 1, nestedObj: { foo: 1, name: "blarg" }, };
- * let getName = prop("nestedObj.name");
- * getName(obj) === "blarg"
- * let propNotFound = prop("this.property.doesnt.exist");
- * propNotFound(obj) === undefined
- */
-const parse = (path) => {
-    const parts = path.split(".");
-    return (obj) => parts.reduce((acc, key) => acc && acc[key], obj);
-};
-/**
- * Given a class constructor, returns a predicate function that checks
- * whether a given object is an instance of that class.
- *
- * @param ctor - The class constructor to check against.
- * @returns A predicate function that returns true if the object is of the given class.
- */
-function is(ctor) {
-    /**
-     * Checks if the provided object is an instance of the given constructor.
-     *
-     * @param obj - The object to test.
-     * @returns True if the object is an instance of the given class.
-     */
-    return function (obj) {
-        return ((obj !== null && obj !== undefined && obj.constructor === ctor) ||
-            obj instanceof ctor);
-    };
-}
-/**
- * Given a value, returns a function which returns that value.
- * @template T
- * @param value - The value to wrap in a function.
- * @returns A function that returns the given value.
- */
-const val = (value) => () => value;
-/**
- * Sorta like Pattern Matching (a functional programming conditional construct)
- *
- * See http://c2.com/cgi/wiki?PatternMatching
- *
- * This is a conditional construct which allows a series of predicates and output functions
- * to be checked and then applied.  Each predicate receives the input.  If the predicate
- * returns truthy, then its matching output function (mapping function) is provided with
- * the input and, then the result is returned.
- *
- * Each combination (2-tuple) of predicate + output function should be placed in an array
- * of size 2: [ predicate, mapFn ]
- *
- * These 2-tuples should be put in an outer array.
- * @example ```
-
-// Here's a 2-tuple where the first element is the isString predicate
-// and the second element is a function that returns a description of the input
-let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
-
-// Second tuple: predicate "isNumber", mapfn returns a description
-let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
-
-let third = [ (input) => input === null,  (input) => `Oh, null...` ];
-
-let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
-
-let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
-
-console.log(descriptionOf(undefined)); // 'notdefined'
-console.log(descriptionOf(55)); // '(55) That's a number!'
-console.log(descriptionOf("foo")); // 'Here's your string foo'
-```
- * `struct` is a 2D array of predicate/mapper tuples.
- */
-function pattern(struct) {
-    return function (item) {
-        for (let i = 0; i < struct.length; i++) {
-            if (struct[i][0](item))
-                return struct[i][1](item);
-        }
-        return undefined;
-    };
-}
 
 const noopDeregister = () => undefined;
+const uniqueStrings = (classes) => arrayFrom(new Set(classes));
 /**
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
@@ -22104,17 +21763,16 @@ function parseStateRef(ref) {
  */
 function stateContext(el) {
     const $ngView = getInheritedData(el, "$ngView");
-    const path = parse("$cfg.path")($ngView);
-    return path
-        ? tail(path).state.name
-        : undefined;
+    const path = $ngView?.$cfg
+        ?.path;
+    return path ? path[path.length - 1].state.name : undefined;
 }
 /**
  * Computes the current state-ref definition, href, and navigation options.
  */
 function processedDef($state, $element, def) {
     const ngState = def._ngState || $state.current?.name;
-    const ngStateOpts = Object.assign(defaultOpts($element, $state), def._ngStateOpts || {});
+    const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts || {});
     const href = $state.href(ngState, def._ngStateParams, ngStateOpts);
     return {
         _ngState: ngState,
@@ -22212,12 +21870,7 @@ function bindEvents(element, scope, hookFn, ngStateOpts) {
     });
 }
 // // TODO: SEPARATE THESE OUT
-StateRefDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._rootScope,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
-];
+StateRefDirective.$inject = [_state, _rootScope, _stateRegistry, _transitions];
 /**
  * Generates `ng-sref` links and keeps their href/state data in sync.
  */
@@ -22238,7 +21891,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
                 ? scope.$eval(attrs.ngSrefOpts)
                 : {};
             function update() {
-                rawDef._ngStateParams = Object.assign({}, ref._paramExpr && scope.$eval(ref._paramExpr));
+                rawDef._ngStateParams = assign({}, ref._paramExpr && scope.$eval(ref._paramExpr));
                 const def = getDef();
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
@@ -22252,10 +21905,10 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
             }
             if (ref._paramExpr) {
                 scope.$watch(ref._paramExpr, function (val) {
-                    rawDef._ngStateParams = Object.assign({}, val);
+                    rawDef._ngStateParams = assign({}, val);
                     update();
                 }, true);
-                rawDef._ngStateParams = Object.assign({}, scope.$eval(ref._paramExpr));
+                rawDef._ngStateParams = assign({}, scope.$eval(ref._paramExpr));
             }
             update();
             scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -22268,10 +21921,10 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
     };
 }
 StateRefDynamicDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._rootScope,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
+    _state,
+    _rootScope,
+    _stateRegistry,
+    _transitions,
 ];
 /**
  * Generates dynamic `ui-state` links whose target state is read from an expression.
@@ -22292,10 +21945,12 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
                 ngStateParams: "_ngStateParams",
                 ngStateOpts: "_ngStateOpts",
             };
-            const watchDeregFns = inputAttrs.reduce((acc, attr) => ((acc[attr] = () => {
-                /* empty */
-            }),
-                acc), {});
+            const watchDeregFns = {};
+            inputAttrs.forEach((attr) => {
+                watchDeregFns[attr] = () => {
+                    /* empty */
+                };
+            });
             function update() {
                 const def = getDef();
                 if (unlinkInfoFn) {
@@ -22334,16 +21989,16 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
     };
 }
 StateRefActiveDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._router,
-    $injectTokens._interpolate,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
+    _state,
+    _router,
+    _interpolate,
+    _stateRegistry,
+    _transitions,
 ];
 /**
  * Toggles active CSS classes based on the current router state.
  */
-function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, $transitions) {
+function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions) {
     return {
         restrict: "A",
         controller($scope, $element, $attrs) {
@@ -22385,8 +22040,8 @@ function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, 
                 });
             }
             $scope.$on("$destroy", setupEventListeners());
-            if ($router.transition) {
-                updateAfterTransition($router.transition);
+            if ($routerState._transition) {
+                updateAfterTransition($routerState._transition);
             }
             function setupEventListeners() {
                 const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
@@ -22444,24 +22099,90 @@ function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, 
                 const getClasses = (stateList) => stateList
                     .map((x) => x._activeClass)
                     .map(splitClasses)
-                    .reduce(unnestR, []);
-                const allClasses = getClasses(states)
-                    .concat(splitClasses(activeEqClass))
-                    .reduce(uniqR, []);
-                const fuzzyClasses = getClasses(states.filter((x) => $state.includes(x._state.name, x._params)));
-                const exactlyMatchesAny = !!states.filter((x) => $state.is(x._state.name, x._params)).length;
+                    .flat();
+                const allClasses = getClasses(states).concat(splitClasses(activeEqClass));
+                const fuzzyStates = [];
+                let exactlyMatchesAny = false;
+                states.forEach((state) => {
+                    if ($state.includes(state._state.name, state._params)) {
+                        fuzzyStates.push(state);
+                    }
+                    if ($state.is(state._state.name, state._params)) {
+                        exactlyMatchesAny = true;
+                    }
+                });
+                const fuzzyClasses = getClasses(fuzzyStates);
                 const exactClasses = exactlyMatchesAny
                     ? splitClasses(activeEqClass)
                     : [];
-                const addClasses = fuzzyClasses
-                    .concat(exactClasses)
-                    .reduce(uniqR, []);
-                const removeClasses = allClasses.filter((cls) => !addClasses.includes(cls));
-                addClasses.forEach((className) => $element.classList.add(className));
-                removeClasses.forEach((className) => $element.classList.remove(className));
+                const addClasses = uniqueStrings(fuzzyClasses.concat(exactClasses));
+                const removeClasses = [];
+                uniqueStrings(allClasses).forEach((cls) => {
+                    if (!addClasses.includes(cls)) {
+                        removeClasses.push(cls);
+                    }
+                });
+                addClasses.forEach((className) => {
+                    $element.classList.add(className);
+                });
+                removeClasses.forEach((className) => {
+                    $element.classList.remove(className);
+                });
             }
             update();
         },
+    };
+}
+
+/**
+ * Given a value, returns a function which returns that value.
+ * @template T
+ * @param value - The value to wrap in a function.
+ * @returns A function that returns the given value.
+ */
+const val = (value) => () => value;
+/**
+ * Sorta like Pattern Matching (a functional programming conditional construct)
+ *
+ * See http://c2.com/cgi/wiki?PatternMatching
+ *
+ * This is a conditional construct which allows a series of predicates and output functions
+ * to be checked and then applied.  Each predicate receives the input.  If the predicate
+ * returns truthy, then its matching output function (mapping function) is provided with
+ * the input and, then the result is returned.
+ *
+ * Each combination (2-tuple) of predicate + output function should be placed in an array
+ * of size 2: [ predicate, mapFn ]
+ *
+ * These 2-tuples should be put in an outer array.
+ * @example ```
+
+// Here's a 2-tuple where the first element is the isString predicate
+// and the second element is a function that returns a description of the input
+let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
+
+// Second tuple: predicate "isNumber", mapfn returns a description
+let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
+
+let third = [ (input) => input === null,  (input) => `Oh, null...` ];
+
+let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
+
+let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
+
+console.log(descriptionOf(undefined)); // 'notdefined'
+console.log(descriptionOf(55)); // '(55) That's a number!'
+console.log(descriptionOf("foo")); // 'Here's your string foo'
+```
+ * `struct` is a 2D array of predicate/mapper tuples.
+ */
+function pattern(struct) {
+    return function (item) {
+        for (let i = 0; i < struct.length; i++) {
+            if (struct[i][0](item))
+                return struct[i][1](item);
+        }
+        return undefined;
     };
 }
 
@@ -22509,9 +22230,7 @@ function fnToString(fn) {
 function stringify(value) {
     const seen = [];
     const isRejection = (obj) => {
-        return (obj &&
-            typeof obj.then === "function" &&
-            obj.constructor.name === "Rejection");
+        return obj && isFunction(obj.then) && obj.constructor.name === "Rejection";
     };
     const hasToString = (obj) => isObject(obj) &&
         !isArray(obj) &&
@@ -22634,8 +22353,8 @@ class TargetState {
     constructor(_stateRegistry, _identifier, _params, _options) {
         this._stateRegistry = _stateRegistry;
         this._identifier = _identifier;
-        this._params = Object.assign({}, _params || {});
-        this._options = Object.assign({}, _options || {});
+        this._params = assign({}, _params || {});
+        this._options = assign({}, _options || {});
         this._definition = _stateRegistry._matcher.find(_identifier, this._options.relative);
     }
     /** The name of the state this object targets */
@@ -22707,9 +22426,7 @@ class TargetState {
      * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
      */
     withParams(params, replace = false) {
-        const newParams = replace
-            ? params
-            : Object.assign({}, this._params, params);
+        const newParams = replace ? params : assign({}, this._params, params);
         return new TargetState(this._stateRegistry, this._identifier, newParams, this._options);
     }
     /**
@@ -22721,9 +22438,7 @@ class TargetState {
      * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
      */
     withOptions(options, replace = false) {
-        const newOpts = replace
-            ? options
-            : Object.assign({}, this._options, options);
+        const newOpts = replace ? options : assign({}, this._options, options);
         return new TargetState(this._stateRegistry, this._identifier, this._params, newOpts);
     }
 }
@@ -22759,7 +22474,7 @@ class ParamType {
     constructor(def) {
         this.pattern = /.*/;
         this.inherit = true;
-        Object.assign(this, def);
+        assign(this, def);
         this.name = undefined;
     }
     // consider these four methods to be "abstract methods" that should be overridden
@@ -22856,10 +22571,18 @@ function ArrayType(type, mode) {
             if (isArray(val) && val.length === 0)
                 return val;
             const arr = arrayWrap(val);
-            const result = map(arr, callback);
-            return allTruthyMode === true
-                ? filter(result, (x) => !x).length === 0
-                : arrayUnwrap(result);
+            const result = [];
+            for (let i = 0; i < arr.length; i++) {
+                result.push(callback(arr[i]));
+            }
+            if (allTruthyMode === true) {
+                for (let i = 0; i < result.length; i++) {
+                    if (!result[i])
+                        return false;
+                }
+                return true;
+            }
+            return arrayUnwrap(result);
         };
     }
     // Wraps type (.equals) functions to operate on each value of an array
@@ -22878,12 +22601,14 @@ function ArrayType(type, mode) {
             return true;
         };
     }
-    ["encode", "decode", "equals", "$normalize"].forEach((name) => {
+    const wrappedMethods = ["encode", "decode", "equals", "$normalize"];
+    for (let i = 0; i < wrappedMethods.length; i++) {
+        const name = wrappedMethods[i];
         const paramTypeFn = type[name].bind(type);
         const wrapperFn = name === "equals" ? arrayEqualsHandler : arrayHandler;
         this[name] = wrapperFn(paramTypeFn);
-    });
-    Object.assign(this, {
+    }
+    assign(this, {
         dynamic: type.dynamic,
         name: type.name,
         pattern: type.pattern,
@@ -22894,7 +22619,16 @@ function ArrayType(type, mode) {
     });
 }
 
-const isShorthand = (cfg) => ["value", "type", "squash", "array", "dynamic"].filter(Object.prototype.hasOwnProperty.bind(cfg || {})).length === 0;
+const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
+function isShorthand(cfg) {
+    const config = cfg || {};
+    for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
+        if (hasOwn(config, SHORTHAND_KEYS[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 /**
  * @enum {number}
  */
@@ -22910,10 +22644,10 @@ const DefType = {
  * @return {ParamDeclaration}
  */
 function getParamDeclaration(paramName, location, state) {
-    const dynamic = find([state.dynamic], isDefined);
+    const { dynamic } = state;
     const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
     const paramConfig = unwrapShorthand(state?.params?.[paramName]);
-    return Object.assign(defaultConfig, paramConfig);
+    return assign(defaultConfig, paramConfig);
 }
 /**
  * @param {ParamDeclaration} cfg
@@ -22926,7 +22660,7 @@ function unwrapShorthand(cfg) {
         return cfg.value;
     }
     const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
-    return Object.assign(cfg, { _fn });
+    return assign(cfg, { _fn });
 }
 /**
  * @param {ParamDeclaration} cfg
@@ -22941,7 +22675,7 @@ function getType(cfg, urlType, location, id, paramTypes) {
     if (cfg.type &&
         urlType &&
         urlType.name === "string" &&
-        typeof cfg.type === "string" &&
+        isString(cfg.type) &&
         paramTypes.type(cfg.type))
         return paramTypes.type(cfg.type);
     if (urlType)
@@ -22956,7 +22690,7 @@ function getType(cfg, urlType, location, id, paramTypes) {
                     : "string";
         return paramTypes.type(type);
     }
-    return cfg.type instanceof ParamType
+    return isInstanceOf(cfg.type, ParamType)
         ? cfg.type
         : paramTypes.type(cfg.type);
 }
@@ -22990,8 +22724,21 @@ function getReplace(config, arrayMode, isOptional, squash) {
     const replace = isArray(config.replace) ? config.replace : [];
     if (isString(squash))
         replace.push({ from: squash, to: undefined });
-    const configuredKeys = map(replace, (x) => x.from);
-    return filter(defaultPolicy, (item) => configuredKeys.indexOf(item.from) === -1).concat(replace);
+    const configuredKeys = [];
+    for (let i = 0; i < replace.length; i++) {
+        configuredKeys.push(replace[i].from);
+    }
+    const result = [];
+    for (let i = 0; i < defaultPolicy.length; i++) {
+        const item = defaultPolicy[i];
+        if (configuredKeys.indexOf(item.from) === -1) {
+            result.push(item);
+        }
+    }
+    for (let i = 0; i < replace.length; i++) {
+        result.push(replace[i]);
+    }
+    return result;
 }
 class Param {
     /**
@@ -23006,7 +22753,7 @@ class Param {
         const config = getParamDeclaration(id, location, state);
         type = getType(config, type, location, id, urlConfig.paramTypes);
         const arrayMode = getArrayMode();
-        type = /** @type {ParamType} */ arrayMode
+        type = arrayMode
             ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
             : type;
         const isOptional = config.value !== undefined || location === DefType._SEARCH;
@@ -23023,7 +22770,7 @@ class Param {
                 array: location === DefType._SEARCH ? "auto" : false,
             };
             const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
-            return Object.assign(arrayDefaults, arrayParamNomenclature, config).array;
+            return assign(arrayDefaults, arrayParamNomenclature, config).array;
         }
         this.isOptional = isOptional;
         this.type = type;
@@ -23123,7 +22870,14 @@ class Param {
      * @returns {Param[]} any Param objects whose values were different between values1 and values2
      */
     static changed(params, values1 = {}, values2 = {}) {
-        return params.filter((param) => !param.type.equals(values1[param.id], values2[param.id]));
+        const changed = [];
+        for (let i = 0; i < params.length; i++) {
+            const param = params[i];
+            if (!param.type.equals(values1[param.id], values2[param.id])) {
+                changed.push(param);
+            }
+        }
+        return changed;
     }
     /**
      * Checks if two param value objects are equal (for a set of [[Param]] objects)
@@ -23142,9 +22896,13 @@ class Param {
      * @return {boolean}
      */
     static validates(params, values = {}) {
-        return params
-            .map((param) => param.validates(values[param.id]))
-            .reduce(allTrueR, true);
+        for (let i = 0; i < params.length; i++) {
+            const param = params[i];
+            if (!param.validates(values[param.id])) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -23160,11 +22918,11 @@ class PathNode {
      * @param {PathNode | ng.StateObject | undefined} stateOrNode
      */
     constructor(stateOrNode) {
-        if (stateOrNode instanceof PathNode) {
+        if (isInstanceOf(stateOrNode, PathNode)) {
             const node = stateOrNode;
             this.state = node.state;
             this.paramSchema = node.paramSchema.slice();
-            this.paramValues = Object.assign({}, node.paramValues);
+            this.paramValues = assign({}, node.paramValues);
             this.resolvables = node.resolvables.slice();
             this._views = node._views && node._views.slice();
         }
@@ -23189,11 +22947,12 @@ class PathNode {
      * @returns {PathNode}
      */
     applyRawParams(params) {
-        const getParamVal = (paramDef) => [
-            paramDef.id,
-            paramDef.value(params[paramDef.id]),
-        ];
-        this.paramValues = this.paramSchema.reduce((memo, pDef) => applyPairs(memo, getParamVal(pDef)), {});
+        const paramValues = {};
+        for (let i = 0; i < this.paramSchema.length; i++) {
+            const paramDef = this.paramSchema[i];
+            paramValues[paramDef.id] = paramDef.value(params[paramDef.id]);
+        }
+        this.paramValues = paramValues;
         return this;
     }
     /**
@@ -23202,7 +22961,12 @@ class PathNode {
      * @returns {Param | undefined}
      */
     parameter(name) {
-        return find(this.paramSchema, propEq("id", name));
+        for (let i = 0; i < this.paramSchema.length; i++) {
+            const param = this.paramSchema[i];
+            if (param.id === name)
+                return param;
+        }
+        return undefined;
     }
     /**
      * @param {PathNode} node
@@ -23234,206 +22998,164 @@ class PathNode {
 }
 
 /**
- * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
+ * Converts a TargetState into the concrete path nodes used by a transition.
  */
-class PathUtils {
-    /**
-     * @param {TargetState} targetState
-     */
-    static buildPath(targetState) {
-        const toParams = targetState.params();
-        const stateObject = targetState.$state();
-        return (stateObject.path?.map((state) => new PathNode(state).applyRawParams(toParams)) || []);
+function buildPath(targetState) {
+    const toParams = targetState.params();
+    const stateObject = targetState.$state();
+    const states = stateObject.path || [];
+    const path = [];
+    for (let i = 0; i < states.length; i++) {
+        path.push(new PathNode(states[i]).applyRawParams(toParams));
     }
-    /**
-     * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
-     * @param {PathNode[]} fromPath
-     * @param {TargetState} targetState
-     */
-    static buildToPath(fromPath, targetState) {
-        const toPath = PathUtils.buildPath(targetState);
-        if (targetState.options().inherit) {
-            return PathUtils.inheritParams(fromPath, toPath, keys(targetState.params()));
+    return path;
+}
+/**
+ * Given a fromPath and a TargetState, builds a toPath.
+ */
+function buildToPath(fromPath, targetState) {
+    const toPath = buildPath(targetState);
+    if (targetState.options().inherit) {
+        return inheritParams(fromPath, toPath, keys(targetState.params()));
+    }
+    return toPath;
+}
+/**
+ * Creates ViewConfig objects and adds them to the nodes for the specified states.
+ */
+function applyViewConfigs($view, path, states) {
+    for (let i = 0; i < path.length; i++) {
+        const node = path[i];
+        if (!states.includes(node.state))
+            continue;
+        const viewDecls = values(node.state._views || {});
+        const viewSubPath = subPath(path, (x) => x === node);
+        if (!viewSubPath) {
+            node._views = [];
+            continue;
         }
-        return toPath;
-    }
-    /**
-     * Creates ViewConfig objects and adds to nodes.
-     *
-     * On each [[PathNode]], creates ViewConfig objects from the node state's built view declarations.
-     * @param {ViewService} $view
-     * @param {PathNode[]} path
-     * @param {StateObject[]} states
-     */
-    static applyViewConfigs($view, path, states) {
-        // Only apply the viewConfigs to the nodes for the given states
-        path
-            .filter((node) => states.includes(node.state))
-            .forEach((node) => {
-            const viewDecls = values(node.state._views || {});
-            const subPath = PathUtils.subPath(path, (x) => x === node);
-            if (!subPath) {
-                node._views = [];
-                return;
+        const viewConfigs = [];
+        for (let j = 0; j < viewDecls.length; j++) {
+            const viewConfig = $view._createViewConfig(viewSubPath, viewDecls[j]);
+            if (isArray(viewConfig)) {
+                viewConfigs.push(...viewConfig);
             }
-            const viewConfigs = viewDecls.map((view) => {
-                return $view._createViewConfig(subPath, view);
-            });
-            node._views = viewConfigs.reduce(unnestR, []);
-        });
-    }
-    /**
-     * Given a fromPath and a toPath, returns a new to path which inherits parameters from the fromPath
-     *
-     * For a parameter in a node to be inherited from the from path:
-     * - The toPath's node must have a matching node in the fromPath (by state).
-     * - The parameter name must not be found in the toKeys parameter array.
-     *
-     * Note: the keys provided in toKeys are intended to be those param keys explicitly specified by some
-     * caller, for instance, $state.transitionTo(..., toParams).  If a key was found in toParams,
-     * it is not inherited from the fromPath.
-     * @param {PathNode[]} fromPath
-     * @param {PathNode[]} toPath
-     * @param {string[]} [toKeys]
-     * @returns {PathNode[]}
-     */
-    static inheritParams(fromPath, toPath, toKeys = []) {
-        /**
-         * @param {PathNode[]} path
-         * @param {StateObject} state
-         * @returns {RawParams}
-         */
-        function nodeParamVals(path, state) {
-            const node = find(path, propEq("state", state));
-            return Object.assign({}, node && node.paramValues);
+            else {
+                viewConfigs.push(viewConfig);
+            }
         }
-        const noInherit = fromPath
-            .map((node) => node.paramSchema)
-            .reduce(unnestR, [])
-            .filter((param) => !param.inherit)
-            .map((param) => param.id);
-        /**
-         * Given an [[PathNode]] "toNode", return a new [[PathNode]] with param values inherited from the
-         * matching node in fromPath.  Only inherit keys that aren't found in "toKeys" from the node in "fromPath""
-         * @param {PathNode} toNode
-         * @return {PathNode}
-         */
-        function makeInheritedParamsNode(toNode) {
-            // All param values for the node (may include default key/vals, when key was not found in toParams)
-            let toParamVals = Object.assign({}, toNode && toNode.paramValues);
-            // limited to only those keys found in toParams
-            const incomingParamVals = pick(toParamVals, toKeys);
-            toParamVals = omit(toParamVals, toKeys);
-            const fromParamVals = omit(nodeParamVals(fromPath, toNode.state) || {}, noInherit);
-            // extend toParamVals with any fromParamVals, then override any of those those with incomingParamVals
-            const ownParamVals = Object.assign(toParamVals, fromParamVals, incomingParamVals);
-            return new PathNode(toNode.state).applyRawParams(ownParamVals);
+        node._views = viewConfigs;
+    }
+}
+/**
+ * Returns a new to path which inherits parameters from the from path.
+ */
+function inheritParams(fromPath, toPath, toKeys = []) {
+    const noInherit = [];
+    for (let i = 0; i < fromPath.length; i++) {
+        const { paramSchema } = fromPath[i];
+        for (let j = 0; j < paramSchema.length; j++) {
+            const param = paramSchema[j];
+            if (!param.inherit) {
+                noInherit.push(param.id);
+            }
         }
-        // The param keys specified by the incoming toParams
-        return toPath.map(makeInheritedParamsNode);
     }
-    /**
-     * Computes the tree changes (entering, exiting) between a fromPath and toPath.
-     * @param {PathNode[]} fromPath
-     * @param {PathNode[]} toPath
-     * @param {StateObject} reloadState
-     * @returns {TreeChanges}
-     */
-    static treeChanges(fromPath, toPath, reloadState) {
-        const max = Math.min(fromPath.length, toPath.length);
-        let keep = 0;
-        const nodesMatch = (node1, node2) => node1.equals(node2, PathUtils.nonDynamicParams);
-        while (keep < max &&
-            fromPath[keep].state !== reloadState &&
-            nodesMatch(fromPath[keep], toPath[keep])) {
-            keep++;
+    const inheritedPath = [];
+    for (let i = 0; i < toPath.length; i++) {
+        const toNode = toPath[i];
+        let fromParamVals = {};
+        for (let j = 0; j < fromPath.length; j++) {
+            const fromNode = fromPath[j];
+            if (fromNode.state === toNode.state) {
+                fromParamVals = assign({}, fromNode.paramValues);
+                break;
+            }
         }
-        /**
-         * Given a retained node, return a new node which uses the to node's param values
-         * @param {PathNode} retainedNode
-         * @param {number} idx
-         */
-        function applyToParams(retainedNode, idx) {
-            const cloned = retainedNode.clone();
-            cloned.paramValues = toPath[idx].paramValues;
-            return cloned;
+        for (let j = 0; j < noInherit.length; j++) {
+            delete fromParamVals[noInherit[j]];
         }
-        const from = fromPath;
-        const retained = from.slice(0, keep);
-        const exiting = from.slice(keep);
-        // Create a new retained path (with shallow copies of nodes) which have the params of the toPath mapped
-        const retainedWithToParams = retained.map(applyToParams);
-        const entering = toPath.slice(keep);
-        const to = retainedWithToParams.concat(entering);
-        return { from, to, retained, retainedWithToParams, exiting, entering };
+        const toParamVals = {};
+        const incomingParamVals = {};
+        const toNodeParamValues = toNode.paramValues;
+        for (const key in toNodeParamValues) {
+            if (toKeys.indexOf(key) === -1) {
+                toParamVals[key] = toNodeParamValues[key];
+            }
+            else {
+                incomingParamVals[key] = toNodeParamValues[key];
+            }
+        }
+        const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
+        inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
     }
-    /**
-     * Returns a new path which is: the subpath of the first path which matches the second path.
-     *
-     * The new path starts from root and contains any nodes that match the nodes in the second path.
-     * It stops before the first non-matching node.
-     *
-     * Nodes are compared using their state property and their parameter values.
-     * If a `paramsFn` is provided, only the [[Param]] returned by the function will be considered when comparing nodes.
-     *
-     * @param {PathNode[]} pathA the first path
-     * @param {PathNode[]} pathB the second path
-     * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
-     *
-     * @returns {PathNode[]} an array of PathNodes from the first path which match the nodes in the second path
-     */
-    static matching(pathA, pathB, paramsFn) {
-        let done = false;
-        const tuples = arrayTuples(pathA, pathB);
-        return tuples.reduce((matching, [nodeA, nodeB]) => {
-            done = done || !nodeA.equals(nodeB, paramsFn);
-            return done ? matching : matching.concat(nodeA);
-        }, []);
+    return inheritedPath;
+}
+/**
+ * Computes the tree changes between a fromPath and toPath.
+ */
+function treeChanges(fromPath, toPath, reloadState) {
+    const max = Math.min(fromPath.length, toPath.length);
+    let keep = 0;
+    const nodesMatch = (node1, node2) => node1.equals(node2, nonDynamicParams);
+    while (keep < max &&
+        fromPath[keep].state !== reloadState &&
+        nodesMatch(fromPath[keep], toPath[keep])) {
+        keep++;
     }
-    /**
-     * Returns true if two paths are identical.
-     *
-     * @param {PathNode[]} pathA
-     * @param {PathNode[]} pathB
-     * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
-     * @returns true if the the states and parameter values for both paths are identical
-     */
-    static equals(pathA, pathB, paramsFn) {
-        return (pathA.length === pathB.length &&
-            PathUtils.matching(pathA, pathB, paramsFn).length === pathA.length);
+    function applyToParams(retainedNode, idx) {
+        const cloned = retainedNode.clone();
+        cloned.paramValues = toPath[idx].paramValues;
+        return cloned;
     }
-    /**
-     * Return a subpath of a path, which stops at the first matching node
-     *
-     * Given an array of nodes, returns a subset of the array starting from the first node,
-     * stopping when the first node matches the predicate.
-     * @param {PathNode[]} path a path of [[PathNode]]s
-     * @param {Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
-     * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
-     */
-    static subPath(path, predicate) {
-        const node = find(path, predicate);
-        if (!node)
-            return undefined;
-        const elementIdx = path.indexOf(node);
-        return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
+    const from = fromPath;
+    const retained = from.slice(0, keep);
+    const exiting = from.slice(keep);
+    const retainedWithToParams = [];
+    for (let i = 0; i < retained.length; i++) {
+        retainedWithToParams.push(applyToParams(retained[i], i));
     }
-    /**
-     * @param {PathNode} node
-     * @return {Param[]}
-     */
-    static nonDynamicParams(node) {
-        return node.state
-            .parameters({ inherit: false })
-            .filter((param) => !param.dynamic);
+    const entering = toPath.slice(keep);
+    const to = retainedWithToParams.concat(entering);
+    return { from, to, retained, retainedWithToParams, exiting, entering };
+}
+/**
+ * Returns the path prefix whose nodes match both paths.
+ */
+function matching(pathA, pathB, paramsFn) {
+    const matchingPath = [];
+    const max = Math.min(pathA.length, pathB.length);
+    for (let i = 0; i < max; i++) {
+        const nodeA = pathA[i];
+        const nodeB = pathB[i];
+        if (!nodeA.equals(nodeB, paramsFn))
+            break;
+        matchingPath.push(nodeA);
     }
-    /**
-     * Gets the raw parameter values from a path
-     * @param {PathNode[]} path
-     */
-    static paramValues(path) {
-        return path.reduce((acc, node) => Object.assign(acc, node.paramValues), {});
+    return matchingPath;
+}
+/**
+ * Return a subpath of a path which stops at the first matching node.
+ */
+function subPath(path, predicate) {
+    let elementIdx = -1;
+    for (let i = 0; i < path.length; i++) {
+        if (predicate(path[i])) {
+            elementIdx = i;
+            break;
+        }
     }
+    return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
+}
+function nonDynamicParams(node) {
+    const params = node.state.parameters({ inherit: false });
+    const nonDynamic = [];
+    for (let i = 0; i < params.length; i++) {
+        const param = params[i];
+        if (!param.dynamic)
+            nonDynamic.push(param);
+    }
+    return nonDynamic;
 }
 /** Given a PathNode[], create an TargetState
  * @param {StateRegistryProvider} registry
@@ -23444,9 +23166,14 @@ function makeTargetState(registry, path) {
     const tailNode = path.at(-1);
     if (!tailNode)
         throw new Error("Cannot create TargetState from an empty path");
-    return new TargetState(registry, tailNode.state, path
-        .map((x) => x.paramValues)
-        .reduce((acc, obj) => ({ ...acc, ...obj }), {}), {});
+    return new TargetState(registry, tailNode.state, pathToParams(path), {});
+}
+function pathToParams(path) {
+    const params = {};
+    for (let i = 0; i < path.length; i++) {
+        assign(params, path[i].paramValues);
+    }
+    return params;
 }
 
 /**
@@ -23463,6 +23190,9 @@ function makeTargetState(registry, path) {
  * and in-flight promise so router state resolution stays idempotent.
  */
 class Resolvable {
+    /**
+     * @throws Error when a resolve function is provided without a token.
+     */
     constructor(arg1, resolveFn, deps, eager, data) {
         this.token = undefined;
         this.resolveFn = undefined;
@@ -23471,8 +23201,8 @@ class Resolvable {
         this.data = undefined;
         this.resolved = false;
         this.promise = undefined;
-        if (arg1 instanceof Resolvable) {
-            Object.assign(this, arg1);
+        if (isInstanceOf(arg1, Resolvable)) {
+            assign(this, arg1);
         }
         else if (isFunction(resolveFn)) {
             assert(!isNullOrUndefined(arg1), "token argument is required");
@@ -23528,7 +23258,7 @@ class Resolvable {
      * Returns a readable description of the resolvable and its dependencies.
      */
     toString() {
-        const deps = Array.isArray(this.deps) ? this.deps : [this.deps];
+        const deps = isArray(this.deps) ? this.deps : [this.deps];
         return `Resolvable(token: ${stringify(this.token)}, requires: [${deps.map(stringify)}])`;
     }
     /**
@@ -23593,8 +23323,8 @@ class ResolveContext {
      * Returns a child resolve context scoped to the specified state.
      */
     subContext(state) {
-        const subPath = PathUtils.subPath(this._path, (node) => node?.state.name === state.name);
-        return new ResolveContext((subPath || this._path), this._injector);
+        const contextPath = subPath(this._path, (node) => node?.state.name === state.name);
+        return new ResolveContext((contextPath || this._path), this._injector);
     }
     /**
      * Adds or replaces resolvables for a specific state in this path.
@@ -23615,7 +23345,7 @@ class ResolveContext {
         const keys = [];
         for (let i = 0; i < newResolvables.length; i++) {
             const resolvable = newResolvables[i];
-            const normalized = resolvable instanceof Resolvable
+            const normalized = isInstanceOf(resolvable, Resolvable)
                 ? resolvable
                 : new Resolvable(resolvable);
             resolvables.push(normalized);
@@ -23672,10 +23402,10 @@ class ResolveContext {
      */
     getDependencies(resolvable) {
         const node = this.findNode(resolvable);
-        const subPath = PathUtils.subPath(this._path, (x) => x === node) || this._path;
+        const dependencyPath = subPath(this._path, (x) => x === node) || this._path;
         const availableResolvables = [];
-        for (let i = 0; i < subPath.length; i++) {
-            const { resolvables } = subPath[i];
+        for (let i = 0; i < dependencyPath.length; i++) {
+            const { resolvables } = dependencyPath[i];
             for (let j = 0; j < resolvables.length; j++) {
                 const candidate = resolvables[j];
                 if (candidate !== resolvable) {
@@ -23688,9 +23418,7 @@ class ResolveContext {
             const candidate = availableResolvables[i];
             latestByToken.set(candidate.token, candidate);
         }
-        const deps = Array.isArray(resolvable.deps)
-            ? resolvable.deps
-            : [resolvable.deps];
+        const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
         const dependencies = [];
         for (let i = 0; i < deps.length; i++) {
             const token = deps[i];
@@ -23717,9 +23445,6 @@ class ResolveContext {
     }
 }
 
-/**
- * @type {Number}
- */
 let id$1 = 0;
 class ViewConfig {
     /**
@@ -23751,32 +23476,23 @@ class ViewConfig {
         const context = new ResolveContext(this.path, this.factory._injector);
         const params = {};
         for (let i = 0; i < this.path.length; i++) {
-            Object.assign(params, this.path[i].paramValues);
+            assign(params, this.path[i].paramValues);
         }
         const promises = [
             Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
-            Promise.resolve(this.getController(context)),
+            Promise.resolve(this.getController()),
         ];
         const results = await Promise.all(promises);
         this.controller = results[1];
-        Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+        assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
         return this;
     }
     /**
      * Gets the controller for a view configuration.
      * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
-     * @param {ResolveContext} context
      */
-    getController(context) {
-        const provider = this.viewDecl.controllerProvider;
-        if (!isInjectable(provider))
-            return this.viewDecl.controller;
-        const deps = annotate(provider);
-        const providerFn = isArray(provider)
-            ? provider[provider.length - 1]
-            : provider;
-        const resolvable = new Resolvable("", providerFn, deps);
-        return resolvable.get(context);
+    getController() {
+        return this.viewDecl.controller;
     }
     /**
      * Normalizes a view target from a `StateDeclaration.views` key.
@@ -23916,22 +23632,16 @@ function buildUrl(stateObject, $url, root) {
 function buildParams(state, paramFactory) {
     const urlParams = (state.url && state.url.parameters({ inherit: false })) || [];
     const params = {};
-    for (let i = 0; i < urlParams.length; i++) {
-        const param = urlParams[i];
+    urlParams.forEach((param) => {
         params[param.id] = param;
-    }
-    const urlParamIds = new Set();
-    for (let i = 0; i < urlParams.length; i++) {
-        urlParamIds.add(urlParams[i].id);
-    }
+    });
     const paramConfigs = state.params || {};
     const paramConfigKeys = keys(paramConfigs);
-    for (let i = 0; i < paramConfigKeys.length; i++) {
-        const id = paramConfigKeys[i];
-        if (!urlParamIds.has(id)) {
+    paramConfigKeys.forEach((id) => {
+        if (!hasOwn(params, id)) {
             params[id] = paramFactory.fromConfig(id, null, state.self);
         }
-    }
+    });
     return params;
 }
 function hasAnyViewKey(keyItems, obj) {
@@ -23953,13 +23663,8 @@ function viewsBuilder(state) {
         "notify",
         "async",
     ];
-    const ctrlKeys = [
-        "controller",
-        "controllerProvider",
-        "controllerAs",
-        "resolveAs",
-    ];
-    const compKeys = ["component", "bindings", "componentProvider"];
+    const ctrlKeys = ["controller", "controllerAs", "resolveAs"];
+    const compKeys = ["component", "bindings"];
     const nonCompKeys = tplKeys.concat(ctrlKeys);
     const allViewKeys = compKeys.concat(nonCompKeys);
     if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
@@ -23970,25 +23675,23 @@ function viewsBuilder(state) {
     }
     const views = {};
     const defaultViewConfig = {};
-    for (let i = 0; i < allViewKeys.length; i++) {
-        const key = allViewKeys[i];
+    allViewKeys.forEach((key) => {
         if (isDefined(state[key])) {
             defaultViewConfig[key] = state[key];
         }
-    }
+    });
     const viewsObject = (state.views || {
         $default: defaultViewConfig,
     });
     const viewEntries = entries(viewsObject);
-    for (let i = 0; i < viewEntries.length; i++) {
-        const [entryName, entryConfig] = viewEntries[i];
+    viewEntries.forEach(([entryName, entryConfig]) => {
         let name = entryName;
         let config = entryConfig;
         name = name || "$default";
         if (isString(config)) {
             config = { component: config };
         }
-        config = Object.assign({}, config);
+        config = assign({}, config);
         if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
             throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`);
         }
@@ -23999,7 +23702,7 @@ function viewsBuilder(state) {
         config.$ngViewName = normalized.ngViewName;
         config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
         views[name] = config;
-    }
+    });
     return views;
 }
 function getResolveLocals(ctx) {
@@ -24073,17 +23776,16 @@ function resolvablesBuilder(state, strictDi) {
     const decl = state.resolve;
     const resolvables = [];
     if (isArray(decl)) {
-        for (let i = 0; i < decl.length; i++) {
-            resolvables.push(literalToResolvable(decl[i]));
-        }
+        decl.forEach((literal) => {
+            resolvables.push(literalToResolvable(literal));
+        });
         return resolvables;
     }
     const resolveObj = decl || {};
     const resolveKeys = keys(resolveObj);
-    for (let i = 0; i < resolveKeys.length; i++) {
-        const token = resolveKeys[i];
+    resolveKeys.forEach((token) => {
         resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
-    }
+    });
     return resolvables;
 }
 /**
@@ -24116,7 +23818,7 @@ class StateBuilder {
             const $injector = this._$injector;
             const resolveContext = new ResolveContext(trans.treeChanges(pathname), $injector);
             const subContext = resolveContext.subContext(state._state());
-            const locals = Object.assign(getResolveLocals(subContext), {
+            const locals = assign(getResolveLocals(subContext), {
                 $state$: state,
                 $transition$: trans,
             });
@@ -24153,14 +23855,12 @@ class StateBuilder {
                     : null;
         state.params = buildParams(state, this._paramFactory);
         if (state.parent && state.parent.data) {
-            state.data = state.self.data = inherit(state.parent.data, state.data);
+            state.data = state.self.data = assign(createObject(state.parent.data), state.data);
         }
         state.path = state.parent
             ? (state.parent.path || []).concat(state)
             : [state];
-        state.includes = state.parent
-            ? Object.assign({}, state.parent.includes)
-            : {};
+        state.includes = state.parent ? assign({}, state.parent.includes) : {};
         state.includes[state.name] = true;
         state._views = viewsBuilder(state);
         return state;
@@ -24304,7 +24004,7 @@ class StateObject {
      * @param {StateDeclaration} config
      */
     constructor(config) {
-        Object.assign(this, config);
+        assign(this, config);
         this.self = config;
         this.name = config.name;
         config._state = () => this;
@@ -24335,7 +24035,7 @@ class StateObject {
      * @returns {string} Returns a dot-separated name of the state.
      */
     fqn() {
-        if (!this.parent || !(this.parent instanceof this.constructor))
+        if (!this.parent || !isInstanceOf(this.parent, this.constructor))
             return this.name;
         const name = this.parent.fqn();
         return name ? `${name}.${this.name}` : this.name;
@@ -24359,14 +24059,26 @@ class StateObject {
      * @returns {Param[]} the list of [[Param]] objects
      */
     parameters(opts) {
-        const params = defaults(opts, {
+        const params = assign({
             inherit: true,
             matchingKeys: null,
-        });
+        }, opts || {});
         const inherited = (params.inherit && this.parent && this.parent.parameters()) || [];
-        return inherited
-            .concat(values(this.params || {}))
-            .filter((param) => !params.matchingKeys || hasOwn(params.matchingKeys, param.id));
+        const ownParams = values(this.params || {});
+        const result = [];
+        for (let i = 0; i < inherited.length; i++) {
+            const param = inherited[i];
+            if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+                result.push(param);
+            }
+        }
+        for (let i = 0; i < ownParams.length; i++) {
+            const param = ownParams[i];
+            if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+                result.push(param);
+            }
+        }
+        return result;
     }
     /**
      * Returns a single [[Param]] that is owned by the state
@@ -24377,9 +24089,16 @@ class StateObject {
      * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
      */
     parameter(id, opts = {}) {
-        return ((this.url && this.url.parameter(id, opts)) ||
-            find(values(this.params || {}), propEq("id", id)) ||
-            (opts.inherit && this.parent && this.parent.parameter(id)));
+        const urlParam = this.url && this.url.parameter(id, opts);
+        if (urlParam)
+            return urlParam;
+        const ownParams = values(this.params || {});
+        for (let i = 0; i < ownParams.length; i++) {
+            const param = ownParams[i];
+            if (param.id === id)
+                return param;
+        }
+        return opts.inherit && this.parent ? this.parent.parameter(id) : undefined;
     }
     toString() {
         return this.fqn();
@@ -24388,13 +24107,13 @@ class StateObject {
 
 class StateQueueManager {
     /**
-     * @param {UrlRules} urlServiceRules
+     * @param {ng.UrlService} urlService
      * @param {StateStore} states
      * @param {StateBuilder} builder
      * @param {StateRegistryListener[]} listeners
      */
-    constructor(urlServiceRules, states, builder, listeners) {
-        this._urlServiceRules = urlServiceRules;
+    constructor(urlService, states, builder, listeners) {
+        this._urlService = urlService;
         this._states = states;
         this._builder = builder;
         this._listeners = listeners;
@@ -24471,8 +24190,7 @@ class StateQueueManager {
     _attachRoute(state) {
         if (!state.abstract &&
             state.url) {
-            const rulesApi = this._urlServiceRules;
-            rulesApi.rule(rulesApi._urlRuleFactory.create(state));
+            this._urlService._registerStateRoute(state);
         }
     }
 }
@@ -24484,15 +24202,9 @@ class StateQueueManager {
  *
  */
 class StateRegistryProvider {
-    /**
-     * @param {ng.UrlService} urlService
-     * @param {ng.StateService} stateService
-     * @param {ng.RouterService} globals
-     * @param {ng.ViewService} viewService
-     */
-    constructor(urlService, stateService, globals, viewService) {
+    constructor(urlService, routerState) {
         this.$get = [
-            $injectTokens._injector,
+            _injector,
             /**
              * @param {InjectorService} $injector
              * @returns {StateRegistryProvider}
@@ -24500,28 +24212,37 @@ class StateRegistryProvider {
             ($injector) => {
                 this._$injector = $injector;
                 this._builder._$injector = $injector;
+                this._annotateDeferredResolvables($injector.strictDi);
                 return this;
             },
         ];
         this._states = {};
-        stateService._stateRegistry = this; // <- circular wiring
         this._urlService = urlService;
-        this._urlServiceRules = urlService._rules;
         this._$injector = undefined;
         this._listeners = [];
         this._matcher = new StateMatcher(this._states);
         this._builder = new StateBuilder(this._matcher, urlService);
-        this._stateQueue = new StateQueueManager(this._urlServiceRules, this._states, this._builder, this._listeners);
+        this._stateQueue = new StateQueueManager(this._urlService, this._states, this._builder, this._listeners);
         this.registerRoot();
-        viewService._rootViewContext(this.root());
-        globals.$current = this.root();
-        globals.current = globals.$current.self;
+        routerState._currentState = this.root();
+        routerState._current = routerState._currentState.self;
+    }
+    /** @internal */
+    _annotateDeferredResolvables(strictDi) {
+        const states = this.getAll();
+        states.forEach((state) => {
+            const resolvables = state._state().resolvables || [];
+            resolvables.forEach((resolvable) => {
+                if (resolvable.deps === "deferred") {
+                    resolvable.deps = annotate(resolvable.resolveFn, strictDi);
+                }
+            });
+        });
     }
     /**
      * @private
      */
     registerRoot() {
-        /** @type {ng.StateDeclaration} */
         const rootStateDef = {
             name: "",
             url: "^",
@@ -24566,7 +24287,10 @@ class StateRegistryProvider {
     onStatesChanged(listener) {
         this._listeners.push(listener);
         return () => {
-            removeFrom(this._listeners, listener);
+            const index = this._listeners.indexOf(listener);
+            if (index !== -1) {
+                this._listeners.splice(index, 1);
+            }
         };
     }
     /**
@@ -24603,22 +24327,26 @@ class StateRegistryProvider {
      */
     /** @internal */
     _deregisterTree(state) {
-        const all = this.getAll().map((x) => x._state());
-        const getChildren = (states) => {
-            const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
-            return _children.length === 0
-                ? _children
-                : _children.concat(getChildren(_children));
-        };
-        const children = getChildren([state]);
+        const allDeclarations = this.getAll();
+        const all = [];
+        allDeclarations.forEach((declaration) => {
+            all.push(declaration._state());
+        });
+        const children = [];
+        const queue = [state];
+        for (let i = 0; i < queue.length; i++) {
+            const parent = queue[i];
+            for (let j = 0; j < all.length; j++) {
+                const candidate = all[j];
+                if (candidate.parent === parent) {
+                    children.push(candidate);
+                    queue.push(candidate);
+                }
+            }
+        }
         const deregistered = [state].concat(children).reverse();
         deregistered.forEach((_state) => {
-            const rulesApi = this._urlServiceRules;
-            // Remove URL rule
-            rulesApi
-                .rules()
-                .filter(propEq("state", _state))
-                .forEach((rule) => rulesApi.removeRule(rule));
+            this._urlService._removeStateRoute(_state);
             // Remove state from registry
             delete this._states[_state.name];
         });
@@ -24638,14 +24366,25 @@ class StateRegistryProvider {
         if (!state)
             throw new Error(`Can't deregister state; not found: ${stateOrName}`);
         const deregisteredStates = this._deregisterTree(state._state());
-        this._listeners.forEach((listener) => listener("deregistered", deregisteredStates.map((x) => x.self)));
+        const deregisteredDeclarations = [];
+        deregisteredStates.forEach((stateDeclaration) => {
+            deregisteredDeclarations.push(stateDeclaration.self);
+        });
+        this._listeners.forEach((listener) => {
+            listener("deregistered", deregisteredDeclarations);
+        });
         return deregisteredStates;
     }
     /**
      * @return {ng.BuiltStateDeclaration[]}
      */
     getAll() {
-        return keys(this._states).map((name) => this._states[name].self);
+        const stateNames = keys(this._states);
+        const states = [];
+        stateNames.forEach((name) => {
+            states.push(this._states[name].self);
+        });
+        return states;
     }
     /**
      *
@@ -24654,57 +24393,61 @@ class StateRegistryProvider {
      * @returns {StateDeclaration | StateDeclaration[] | null}
      */
     get(stateOrName, base) {
-        if (arguments.length === 0)
-            return keys(this._states).map((name) => this._states[name].self);
+        if (arguments.length === 0) {
+            const stateNames = keys(this._states);
+            const states = [];
+            stateNames.forEach((name) => {
+                states.push(this._states[name].self);
+            });
+            return states;
+        }
         const found = this._matcher.find(stateOrName, base);
         return (found && found.self) || null;
     }
 }
-/* @ignore */ StateRegistryProvider.$inject = [
-    $injectTokens._urlProvider,
-    $injectTokens._stateProvider,
-    $injectTokens._routerProvider,
-    $injectTokens._viewProvider,
-];
+/* @ignore */ StateRegistryProvider.$inject = [_urlProvider, _routerProvider];
 const getLocals = (ctx) => {
-    const tokens = ctx.getTokens().filter(isString);
-    const tuples = tokens.map((key) => {
-        const resolvable = ctx.getResolvable(key);
-        return [key, resolvable.data];
-    });
-    return tuples.reduce(applyPairs, {});
+    const tokens = ctx.getTokens();
+    const locals = {};
+    for (let i = 0; i < tokens.length; i++) {
+        const key = tokens[i];
+        if (isString(key)) {
+            locals[key] = ctx.getResolvable(key).data;
+        }
+    }
+    return locals;
 };
 
 function getFirstElementFromClone(clone) {
     if (!clone)
         return null;
-    if (clone instanceof HTMLElement) {
+    if (isInstanceOf(clone, HTMLElement)) {
         return clone;
     }
-    if (clone instanceof DocumentFragment) {
+    if (isInstanceOf(clone, DocumentFragment)) {
         const firstElement = clone.firstElementChild;
-        return firstElement instanceof HTMLElement ? firstElement : null;
+        return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
     }
-    if (clone instanceof NodeList || isArray(clone)) {
+    if (isInstanceOf(clone, NodeList) || isArray(clone)) {
         for (let i = 0, l = clone.length; i < l; i++) {
             const node = clone[i];
-            if (node instanceof HTMLElement) {
+            if (isInstanceOf(node, HTMLElement)) {
                 return node;
             }
         }
         return null;
     }
-    return clone instanceof Element ? clone : null;
+    return isInstanceOf(clone, Element) ? clone : null;
 }
 function getRootNodesFromClone(clone) {
     if (!clone) {
         return [];
     }
-    if (clone instanceof DocumentFragment) {
-        return Array.from(clone.childNodes);
+    if (isInstanceOf(clone, DocumentFragment)) {
+        return arrayFrom(clone.childNodes);
     }
-    return clone instanceof NodeList || isArray(clone)
-        ? Array.from(clone)
+    return isInstanceOf(clone, NodeList) || isArray(clone)
+        ? arrayFrom(clone)
         : [clone];
 }
 function withResolvers() {
@@ -24783,16 +24526,11 @@ const controllerLastParamsChangedTransition = new WeakMap();
  * });
  * ```
  */
-ViewDirective.$inject = [
-    $injectTokens._view,
-    $injectTokens._injector,
-    $injectTokens._anchorScroll,
-    $injectTokens._interpolate,
-];
+ViewDirective.$inject = [_view, _state, _injector, _anchorScroll, _interpolate];
 /**
  * Renders and updates the currently active view configuration.
  */
-function ViewDirective($view, $injector, $anchorScroll, $interpolate) {
+function ViewDirective($view, $state, $injector, $anchorScroll, $interpolate) {
     const getAnimate = createLazyAnimate($injector);
     function getRenderer() {
         return {
@@ -24836,7 +24574,7 @@ function ViewDirective($view, $injector, $anchorScroll, $interpolate) {
                 let currentScope = null;
                 let viewConfig;
                 let configUpdateVersion = 0;
-                const parentFqn = parse("$cfg.viewDecl.$context.name")(inherited) || inherited.$ngView.fqn;
+                const parentFqn = inherited.$cfg.viewDecl.$context.name || inherited.$ngView.fqn;
                 const activeNgView = {
                     id: directive.count++, // Global sequential ID for ng-view tags added to DOM
                     name, // ng-view name, retained internally for nested view matching
@@ -24844,17 +24582,15 @@ function ViewDirective($view, $injector, $anchorScroll, $interpolate) {
                     config: null, // The active ViewConfig loaded for this ng-view
                     configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
                     get creationContext() {
-                        // The context in which this ng-view "tag" was created
-                        const fromParentTagConfig = parse("$cfg.viewDecl.$context")(inherited);
                         // Inherit the parent view context for nested ng-view elements.
-                        const fromParentTag = parse("$ngView.creationContext")(inherited);
-                        return (fromParentTagConfig ||
+                        const fromParentTag = inherited.$ngView.creationContext;
+                        return (inherited.$cfg.viewDecl.$context ||
                             fromParentTag ||
                             rootData.$cfg.viewDecl.$context);
                     },
                 };
                 function configUpdatedCallback(config) {
-                    if (config && !(config instanceof ViewConfig))
+                    if (config && !isInstanceOf(config, ViewConfig))
                         return;
                     const updateVersion = ++configUpdateVersion;
                     if (!config) {
@@ -24958,18 +24694,11 @@ function ViewDirective($view, $injector, $anchorScroll, $interpolate) {
     };
     return directive;
 }
-ViewDirectiveFill.$inject = [
-    $injectTokens._compile,
-    $injectTokens._controller,
-    $injectTokens._transitions,
-    $injectTokens._injector,
-];
+ViewDirectiveFill.$inject = [_compile, _controller, _transitions, _injector];
 /**
  * Instantiates the active view template and wires its controller lifecycle.
  */
 function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
-    const getControllerAs = parse("viewDecl.controllerAs");
-    const getResolveAs = parse("viewDecl.resolveAs");
     return {
         priority: -400,
         compile(tElement) {
@@ -24993,15 +24722,15 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                 const link = $compile($element.contentDocument ||
                     $element.childNodes);
                 const { controller } = cfg;
-                const controllerAs = getControllerAs(cfg);
-                const resolveAs = getResolveAs(cfg);
+                const { controllerAs } = cfg.viewDecl;
+                const { resolveAs } = cfg.viewDecl;
                 const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
                 const targetScope = scope.$target;
                 if (resolveAs) {
                     targetScope[resolveAs] = locals;
                 }
                 if (controller) {
-                    const controllerInstance = $controller(controller, Object.assign({}, locals, { $scope: scope, $element }));
+                    const controllerInstance = $controller(controller, assign({}, locals, { $scope: scope, $element }));
                     if (controllerAs) {
                         targetScope[controllerAs] = controllerInstance;
                         if (resolveAs) {
@@ -25013,7 +24742,7 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                     // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
                     // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
                     setCacheData($element, "$ngControllerController", controllerInstance);
-                    Array.from($element.children).forEach((ell) => {
+                    arrayFrom($element.children).forEach((ell) => {
                         setCacheData(ell, "$ngControllerController", controllerInstance);
                     });
                     registerControllerCallbacks($transitions, controllerInstance, scope, cfg);
@@ -25022,14 +24751,14 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                 const componentName = cfg
                     .component;
                 const callbackConfig = cfg;
-                if (typeof componentName === "string") {
+                if (isString(componentName)) {
                     const kebobName = componentName
                         .replace(/([A-Z])/g, "-$1")
                         .replace(/^-/, "")
                         .toLowerCase();
                     const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
                     const getComponentController = () => {
-                        const candidates = Array.from($element.querySelectorAll("*"));
+                        const candidates = arrayFrom($element.querySelectorAll("*"));
                         const directiveEl = candidates.find((el) => el.tagName && tagRegexp.exec(el.tagName));
                         if (!directiveEl) {
                             return undefined;
@@ -25087,11 +24816,10 @@ function registerControllerCallbacks($transitions, controllerInstance, $scope, c
     registeredScopes.add($scope);
     // Call $onInit() ASAP
     const onInit = controllerInstance.$onInit;
-    if (isFunction(onInit) &&
-        !(cfg.viewDecl.component || cfg.viewDecl.componentProvider)) {
+    if (isFunction(onInit) && !cfg.viewDecl.component) {
         onInit();
     }
-    const viewState = tail(cfg.path).state.self;
+    const viewState = cfg.path[cfg.path.length - 1].state.self;
     const hookOptions = { bind: controllerInstance };
     // Add component-level hook for ngOnParamsChanged
     if (isFunction(controllerInstance.ngOnParamsChanged)) {
@@ -25116,32 +24844,40 @@ function registerControllerCallbacks($transitions, controllerInstance, $scope, c
             }
             const toParams = $transition$.params("to");
             const fromParams = $transition$.params("from");
-            const getNodeSchema = (node) => node.paramSchema;
             const treeChanges = $transition$ && $transition$.treeChanges;
-            const toNodes = isFunction(treeChanges)
+            const toNodes = (isFunction(treeChanges)
                 ? (treeChanges.call($transition$, "to") ?? [])
-                : [];
-            const fromNodes = isFunction(treeChanges)
+                : []);
+            const fromNodes = (isFunction(treeChanges)
                 ? (treeChanges.call($transition$, "from") ?? [])
-                : [];
-            const toSchema = toNodes
-                .map(getNodeSchema)
-                .reduce(unnestR, []);
-            const fromSchema = fromNodes
-                .map(getNodeSchema)
-                .reduce(unnestR, []);
+                : []);
+            const toSchema = [];
+            toNodes.forEach((node) => {
+                node.paramSchema.forEach((param) => {
+                    toSchema.push(param);
+                });
+            });
+            const fromSchema = [];
+            fromNodes.forEach((node) => {
+                node.paramSchema.forEach((param) => {
+                    fromSchema.push(param);
+                });
+            });
             // Find the to params that have different values than the from params
-            const changedToParams = toSchema.filter((param) => {
+            const changedToParams = [];
+            toSchema.forEach((param) => {
                 const idx = fromSchema.indexOf(param);
-                return (idx === -1 ||
-                    !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id]));
+                if (idx === -1 ||
+                    !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
+                    changedToParams.push(param);
+                }
             });
             // Only trigger callback if a to param has changed or is new
             if (changedToParams.length) {
-                const changedKeys = changedToParams.map((x) => x.id);
                 // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
                 const newValues = {};
-                changedKeys.forEach((key) => {
+                changedToParams.forEach((param) => {
+                    const key = param.id;
                     if (key in toParams)
                         newValues[key] = toParams[key];
                 });
@@ -25288,7 +25024,7 @@ class Queue {
 
 class StateParams {
     constructor(params = {}) {
-        Object.assign(this, params);
+        assign(this, params);
     }
     /**
      * Merges a set of parameters with all parameters inherited between the common parents of the
@@ -25301,13 +25037,11 @@ class StateParams {
     $inherit(newParams, $current, $to) {
         const parents = ancestors($current, $to);
         const inherited = {};
-        /** @type {string[]} */
         const inheritList = [];
         for (const parent of parents) {
             if (!parent || !parent.params)
                 continue;
             const parentParams = parent.params;
-            /** @type {string[]} */
             const parentParamsKeys = keys(parentParams);
             if (!parentParamsKeys.length)
                 continue;
@@ -25320,7 +25054,7 @@ class StateParams {
                 inherited[key] = this[key];
             }
         }
-        return Object.assign({}, inherited, newParams);
+        return assign({}, inherited, newParams);
     }
 }
 /**
@@ -25344,32 +25078,24 @@ function ancestors(first, second) {
 }
 
 /**
- * Mutable router globals shared across state, URL, and transition services.
+ * Mutable router state/config shared across state, URL, and transition services.
+ *
+ * @internal
  */
-class RouterProvider {
+class _RouterProvider {
     /**
      * Creates the shared mutable router globals container.
      */
     constructor() {
-        /**
-         * Returns the singleton router globals instance.
-         */
-        this.$get = [
-            $injectTokens._injector,
-            ($injector) => {
-                this._injector = $injector;
-                return this;
-            },
-        ];
-        this.params = new StateParams();
+        this._params = new StateParams();
         this._configuredRouting = false;
         this._lastStartedTransitionId = -1;
         this._transitionHistory = new Queue([], 1);
         this._successfulTransitions = new Queue([], 1);
         this._injector = undefined;
-        this.current = undefined;
-        this.$current = undefined;
-        this.transition = undefined;
+        this._current = undefined;
+        this._currentState = undefined;
+        this._transition = undefined;
     }
     /**
      * Marks that the app has configured URL-driven router behavior.
@@ -25384,6 +25110,12 @@ class RouterProvider {
     /** @internal */
     _hasConfiguredRouting() {
         return this._configuredRouting;
+    }
+    /**
+     * Returns the singleton router internals instance.
+     */
+    $get() {
+        return this;
     }
 }
 
@@ -25432,9 +25164,7 @@ class Rejection {
         return new Rejection(RejectType._ERROR, "The transition errored", detail);
     }
     static normalize(detail) {
-        return is(Rejection)(detail)
-            ? detail
-            : Rejection.errored(detail);
+        return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
     }
     toString() {
         const detailString = (data) => data &&
@@ -25452,7 +25182,7 @@ class Rejection {
     _toPromise() {
         const promise = Promise.reject(this);
         promise.catch(() => 0);
-        return Object.assign(promise, {
+        return assign(promise, {
             _transitionRejection: this,
         });
     }
@@ -25488,8 +25218,12 @@ class TransitionHook {
      * Runs hooks in sequence, waiting for each async hook before invoking the next.
      */
     static chain(hooks, waitFor) {
-        const createHookChainR = (prev, nextHook) => prev.then(() => nextHook.invokeHook());
-        return hooks.reduce(createHookChainR, waitFor || Promise.resolve());
+        let promise = waitFor || Promise.resolve();
+        for (let i = 0; i < hooks.length; i++) {
+            const hook = hooks[i];
+            promise = promise.then(() => hook.invokeHook());
+        }
+        return promise;
     }
     static invokeHooks(hooks, doneCallback) {
         for (let idx = 0; idx < hooks.length; idx++) {
@@ -25504,7 +25238,9 @@ class TransitionHook {
         return doneCallback();
     }
     static runAllHooks(hooks) {
-        hooks.forEach((hook) => hook.invokeHook());
+        for (let i = 0; i < hooks.length; i++) {
+            hooks[i].invokeHook();
+        }
     }
     /**
      * Creates one executable hook wrapper bound to a transition and state context.
@@ -25513,7 +25249,7 @@ class TransitionHook {
         this.transition = transition;
         this.stateContext = stateContext;
         this.registeredHook = registeredHook;
-        this.options = defaults(options, defaultOptions);
+        this.options = assign({}, defaultOptions, options);
         this._type = registeredHook._eventType;
         this.isSuperseded = () => this._type.hookPhase === TransitionHookPhase._RUN &&
             !this.options.transition?.isActive();
@@ -25572,7 +25308,7 @@ class TransitionHook {
         if (result === false) {
             return Rejection.aborted("Hook aborted transition")._toPromise();
         }
-        if (result instanceof TargetState) {
+        if (isInstanceOf(result, TargetState)) {
             return Rejection.redirected(result)._toPromise();
         }
         return undefined;
@@ -25660,32 +25396,53 @@ class RegisteredHook {
     _matchingNodes(nodes, criterion, transition) {
         if (criterion === true)
             return nodes;
-        const matching = nodes.filter((node) => matchState(node.state, criterion, transition));
+        const matching = [];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (matchState(node.state, criterion, transition)) {
+                matching.push(node);
+            }
+        }
         return matching.length ? matching : null;
     }
     /** @internal */
     _getDefaultMatchCriteria() {
-        return map(this.tranSvc._getPathTypes(), () => true);
+        const pathTypes = this.tranSvc._getPathTypes();
+        const criteria = {};
+        for (const key in pathTypes) {
+            criteria[key] = true;
+        }
+        return criteria;
     }
     /** @internal */
     _getMatchingNodes(treeChanges, transition) {
-        const criteria = Object.assign(this._getDefaultMatchCriteria(), this.matchCriteria);
-        return values(this.tranSvc._getPathTypes()).reduce((mn, pathType) => {
+        const criteria = assign(this._getDefaultMatchCriteria(), this.matchCriteria);
+        const pathTypes = values(this.tranSvc._getPathTypes());
+        const matchingNodes = {};
+        for (let i = 0; i < pathTypes.length; i++) {
+            const pathType = pathTypes[i];
             const isStateHook = pathType.scope === TransitionHookScope._STATE;
             const path = (treeChanges[pathType.name] || []);
-            const transitionNode = tail(path);
+            const transitionNode = path.length ? path[path.length - 1] : undefined;
             const nodes = isStateHook
                 ? path
                 : transitionNode
                     ? [transitionNode]
                     : [];
-            mn[pathType.name] = this._matchingNodes(nodes, criteria[pathType.name], transition);
-            return mn;
-        }, {});
+            matchingNodes[pathType.name] = this._matchingNodes(nodes, criteria[pathType.name], transition);
+        }
+        return matchingNodes;
     }
     matches(treeChanges, transition) {
         const matches = this._getMatchingNodes(treeChanges, transition);
-        const allMatched = values(matches).every((x) => x);
+        const matchedPaths = values(matches);
+        let allMatched = true;
+        for (let i = 0; i < matchedPaths.length; i++) {
+            if (!matchedPaths[i]) {
+                allMatched = false;
+                break;
+            }
+        }
         return allMatched ? matches : null;
     }
     deregister() {
@@ -25739,11 +25496,16 @@ class HookBuilder {
         this.transition = transition;
     }
     buildHooksForPhase(phase) {
-        return this.transition._transitionService
-            ._getEvents(phase)
-            .map((type) => this.buildHooks(type))
-            .reduce(unnestR, [])
-            .filter(Boolean);
+        const eventTypes = this.transition._transitionService._getEvents(phase);
+        const hooks = [];
+        for (let i = 0; i < eventTypes.length; i++) {
+            const builtHooks = this.buildHooks(eventTypes[i]);
+            for (let j = 0; j < builtHooks.length; j++) {
+                if (builtHooks[j])
+                    hooks.push(builtHooks[j]);
+            }
+        }
+        return hooks;
     }
     buildHooks(hookType) {
         const { transition } = this;
@@ -25755,11 +25517,13 @@ class HookBuilder {
             transition,
             current: () => transition.options().current?.() || undefined,
         };
-        const makeTransitionHooks = (item) => {
-            const { hook, matches } = item;
+        const hookTuples = [];
+        for (let i = 0; i < matchingHooks.length; i++) {
+            const { hook, matches } = matchingHooks[i];
             const matchingNodes = matches[hookType._criteriaMatchPath.name];
-            return matchingNodes.map((node) => {
-                const options = Object.assign({
+            for (let j = 0; j < matchingNodes.length; j++) {
+                const node = matchingNodes[j];
+                const options = assign({
                     bind: hook.bind,
                     hookType: hookType.name,
                     target: node,
@@ -25768,14 +25532,17 @@ class HookBuilder {
                     ? node.state.self
                     : null;
                 const transitionHook = new TransitionHook(transition, state, hook, options, this.transition._transitionService._exceptionHandler);
-                return { hook, node, transitionHook };
-            });
-        };
-        return matchingHooks
-            .map(makeTransitionHooks)
-            .reduce(unnestR, [])
-            .sort(tupleSort(hookType.reverseSort))
-            .map((tuple) => tuple.transitionHook);
+                hookTuples.push({ hook, node, transitionHook });
+            }
+        }
+        hookTuples.sort(hookType.reverseSort
+            ? sortByReverseNodeDepthThenPriority
+            : sortByNodeDepthThenPriority);
+        const hooks = [];
+        for (let i = 0; i < hookTuples.length; i++) {
+            hooks.push(hookTuples[i].transitionHook);
+        }
+        return hooks;
     }
     getMatchingHooks(hookType, treeChanges, transition) {
         const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
@@ -25783,30 +25550,39 @@ class HookBuilder {
         const registries = isCreate
             ? [$transitions]
             : [this.transition, $transitions];
-        return registries
-            .map((reg) => reg.getHooks(hookType.name))
-            .filter(assertPredicate(isArray, `broken event named: ${hookType.name}`))
-            .reduce(unnestR, [])
-            .map((hook) => ({
-            hook,
-            matches: hook.matches(treeChanges, transition),
-        }))
-            .filter((entry) => !!entry.matches);
+        const matchingHooks = [];
+        for (let i = 0; i < registries.length; i++) {
+            const hooks = registries[i].getHooks(hookType.name);
+            if (!isArray(hooks)) {
+                throw new Error(`broken event named: ${hookType.name}`);
+            }
+            for (let j = 0; j < hooks.length; j++) {
+                const hook = hooks[j];
+                const matches = hook.matches(treeChanges, transition);
+                if (matches) {
+                    matchingHooks.push({ hook, matches });
+                }
+            }
+        }
+        return matchingHooks;
     }
 }
 /**
  * Sorts hooks first by state depth, then by explicit hook priority.
  */
-function tupleSort(reverseDepthSort = false) {
-    return function nodeDepthThenPriority(left, right) {
-        const factor = reverseDepthSort ? -1 : 1;
-        const depthDelta = ((left.node.state.path || []).length -
-            (right.node.state.path || []).length) *
-            factor;
-        return depthDelta !== 0
-            ? depthDelta
-            : right.hook.priority - left.hook.priority;
-    };
+function compareHookTupleDepth(left, right, factor) {
+    const depthDelta = ((left.node.state.path || []).length -
+        (right.node.state.path || []).length) *
+        factor;
+    return depthDelta !== 0
+        ? depthDelta
+        : right.hook.priority - left.hook.priority;
+}
+function sortByNodeDepthThenPriority(left, right) {
+    return compareHookTupleDepth(left, right, 1);
+}
+function sortByReverseNodeDepthThenPriority(left, right) {
+    return compareHookTupleDepth(left, right, -1);
 }
 
 const REDIRECT_MAX = 20;
@@ -25837,12 +25613,11 @@ class Transition {
      *        encapsulates the "from state".
      * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
      * @param {TransitionService} transitionService
-     * @param {ng.RouterService} globals
+     * @param routerState
      */
-    constructor(fromPath, targetState, transitionService, globals) {
-        this._globals = globals;
+    constructor(fromPath, targetState, transitionService, routerState) {
+        this._routerState = routerState;
         this._transitionService = transitionService;
-        /** @type {DeferredPromise<any>} */
         this._deferred = createDeferredPromise();
         /**
          * This promise is resolved or rejected based on the outcome of the Transition.
@@ -25851,24 +25626,19 @@ class Transition {
          * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
          */
         this.promise = this._deferred.promise;
-        /** @type {RegisteredHooks} Holds the hook registration functions such as those passed to Transition.onStart() */
         this._registeredHooks = {};
-        /** @type {HookBuilder} */
         this._hookBuilder = new HookBuilder(this);
         /** Checks if this transition is currently active/running. */
-        /** @type {() => boolean} */
-        this.isActive = () => this._globals.transition === this;
+        this.isActive = () => this._routerState._transition === this;
         this._targetState = targetState;
         if (!targetState.valid()) {
             throw new Error(targetState.error());
         }
         // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
-        this._options = Object.assign({ current: val(this) }, targetState.options());
+        this._options = assign({ current: () => this }, targetState.options());
         this.$id = transitionService._transitionCount++;
-        const toPath = PathUtils.buildToPath(fromPath, targetState);
-        /** @type {TreeChanges} */
-        this._treeChanges = PathUtils.treeChanges(fromPath, 
-        /** @type {PathNode[]} */ toPath, this._options.reloadState);
+        const toPath = buildToPath(fromPath, targetState);
+        this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
         const onCreateHooks = this._hookBuilder.buildHooksForPhase(TransitionHookPhase._CREATE);
         TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
         this.applyViewConfigs();
@@ -25982,22 +25752,32 @@ class Transition {
         return eventType;
     }
     applyViewConfigs() {
-        const enteringStates = this._treeChanges.entering.map((node) => node.state);
-        PathUtils.applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
+        const enteringStates = [];
+        const { entering } = this._treeChanges;
+        for (let i = 0; i < entering.length; i++) {
+            enteringStates.push(entering[i].state);
+        }
+        applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
     }
     /**
      * @returns {StateObject} the internal from [State] object
      */
     $from() {
-        const fromNode = tail(this._treeChanges.from);
-        return /** @type {StateObject} */ fromNode?.state;
+        const fromPath = this._treeChanges.from;
+        const fromNode = fromPath.length
+            ? fromPath[fromPath.length - 1]
+            : undefined;
+        return fromNode?.state;
     }
     /**
      * @returns {StateObject} the internal to [State] object
      */
     $to() {
-        const toNode = tail(this._treeChanges.to);
-        return /** @type {StateObject} */ toNode?.state;
+        const toPath = this._treeChanges.to;
+        const toNode = toPath.length
+            ? toPath[toPath.length - 1]
+            : undefined;
+        return toNode?.state;
     }
     /**
      * Returns the "from state"
@@ -26035,9 +25815,11 @@ class Transition {
      */
     params(pathname = "to") {
         const path = (this._treeChanges[pathname] || []);
-        return Object.freeze(path
-            .map((x) => x.paramValues)
-            .reduce((acc, obj) => ({ ...acc, ...obj }), {}));
+        const params = {};
+        for (let i = 0; i < path.length; i++) {
+            assign(params, path[i].paramValues);
+        }
+        return Object.freeze(params);
     }
     /**
      * Gets all available resolve tokens (keys)
@@ -26070,7 +25852,7 @@ class Transition {
      * @returns an array of resolve tokens (keys)
      */
     getResolveTokens(pathname = "to") {
-        return new ResolveContext((this._treeChanges[pathname] || []), this._globals._injector).getTokens();
+        return new ResolveContext((this._treeChanges[pathname] || []), this._routerState._injector).getTokens();
     }
     /**
      * Dynamically adds a new [[Resolvable]] (i.e., [[StateDeclaration.resolve]]) to this transition.
@@ -26105,10 +25887,10 @@ class Transition {
         if (state === void 0) {
             state = "";
         }
-        resolvable = is(Resolvable)(resolvable)
+        resolvable = isInstanceOf(resolvable, Resolvable)
             ? resolvable
             : new Resolvable(resolvable);
-        const stateName = typeof state === "string" ? state : state.name;
+        const stateName = isString(state) ? state : state.name;
         const topath = this._treeChanges.to || [];
         let targetNode;
         for (let i = 0; i < topath.length; i++) {
@@ -26119,7 +25901,7 @@ class Transition {
             }
         }
         assert(!!targetNode, `targetNode not found ${stateName}`);
-        const resolveContext = new ResolveContext(topath, this._globals._injector);
+        const resolveContext = new ResolveContext(topath, this._routerState._injector);
         resolveContext.addResolvables([resolvable], targetNode.state);
     }
     /**
@@ -26186,7 +25968,7 @@ class Transition {
      * @returns an array of states that will be entered during this transition.
      */
     entering() {
-        return this._treeChanges.entering.map((node) => node.state.self);
+        return pathStates(this._treeChanges.entering);
     }
     /**
      * Gets the states being exited.
@@ -26194,7 +25976,9 @@ class Transition {
      * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
      */
     exiting() {
-        return this._treeChanges.exiting.map((node) => node.state.self).reverse();
+        const states = pathStates(this._treeChanges.exiting);
+        states.reverse();
+        return states;
     }
     /**
      * Gets the states being retained.
@@ -26203,7 +25987,7 @@ class Transition {
      *    exited during this Transition
      */
     retained() {
-        return this._treeChanges.retained.map((node) => node.state.self);
+        return pathStates(this._treeChanges.retained);
     }
     /**
      * Get the [[ViewConfig]]s associated with this Transition
@@ -26213,14 +25997,23 @@ class Transition {
      *
      * @param pathname the name of the path to fetch views for:
      *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-     * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
+     * @param state If provided, only returns the `ViewConfig`s for a single state in the path
      *
      * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
      */
     views(pathname = "entering", state) {
-        let path = (this._treeChanges[pathname] || []);
-        path = !state ? path : path.filter(propEq("state", state));
-        return path.map((x) => x._views || []).reduce(unnestR, []);
+        const path = (this._treeChanges[pathname] || []);
+        const viewConfigs = [];
+        for (let i = 0; i < path.length; i++) {
+            const node = path[i];
+            if (state && node.state !== state)
+                continue;
+            const views = node._views || [];
+            for (let j = 0; j < views.length; j++) {
+                viewConfigs.push(views[j]);
+            }
+        }
+        return viewConfigs;
     }
     /**
      * Return the transition's tree changes
@@ -26270,7 +26063,7 @@ class Transition {
             targetState.options().location !== false) {
             redirectOpts.location = "replace";
         }
-        const newOptions = Object.assign({}, this.options(), targetState.options(), redirectOpts);
+        const newOptions = assign({}, this.options(), targetState.options(), redirectOpts);
         targetState = targetState.withOptions(newOptions, true);
         const newTransition = this._transitionService.create(this._treeChanges.from, targetState);
         const originalEnteringNodes = this._treeChanges.entering;
@@ -26287,16 +26080,22 @@ class Transition {
         const nodeIsReloading = (reloadState) => (node) => {
             return reloadState && node.state.includes[reloadState.name];
         };
-        const params = /** @type {PathNode[]} */ PathUtils.matching(redirectEnteringNodes, originalEnteringNodes, PathUtils.nonDynamicParams);
+        const params = matching(redirectEnteringNodes, originalEnteringNodes, nonDynamicParams);
         // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
-        const matchingEnteringNodes = params.filter((x) => !nodeIsReloading(
-        /** @type {ng.StateObject} */ targetState.options().reloadState)(x));
-        // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
-        matchingEnteringNodes.forEach((node, idx) => {
-            if (originalEnteringNodes[idx]) {
-                node.resolvables = originalEnteringNodes[idx].resolvables;
+        const matchingEnteringNodes = [];
+        const isReloading = nodeIsReloading(targetState.options().reloadState);
+        for (let i = 0; i < params.length; i++) {
+            if (!isReloading(params[i])) {
+                matchingEnteringNodes.push(params[i]);
             }
-        });
+        }
+        // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
+        for (let i = 0; i < matchingEnteringNodes.length; i++) {
+            const node = matchingEnteringNodes[i];
+            if (originalEnteringNodes[i]) {
+                node.resolvables = originalEnteringNodes[i].resolvables;
+            }
+        }
         return newTransition;
     }
     /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
@@ -26313,18 +26112,23 @@ class Transition {
         if (tc.to.length !== tc.from.length)
             return undefined;
         // If the to/from paths are different
-        const pathsDiffer = arrayTuples(tc.to, tc.from)
-            .map((tuple) => tuple[0].state !== tuple[1].state)
-            .reduce(anyTrueR, false);
+        let pathsDiffer = false;
+        for (let i = 0; i < tc.to.length; i++) {
+            if (tc.to[i].state !== tc.from[i].state) {
+                pathsDiffer = true;
+                break;
+            }
+        }
         if (pathsDiffer)
             return undefined;
-        // Find any parameter values that differ
-        const nodeSchemas = tc.to.map((node) => node.paramSchema);
-        const [toValues, fromValues] = [tc.to, tc.from].map((path) => path.map((x) => x.paramValues));
-        const tuples = arrayTuples(nodeSchemas, toValues, fromValues);
-        return tuples
-            .map((tuple) => Param.changed(tuple[0], tuple[1], tuple[2]))
-            .reduce(unnestR, []);
+        const changes = [];
+        for (let i = 0; i < tc.to.length; i++) {
+            const nodeChanges = Param.changed(tc.to[i].paramSchema, tc.to[i].paramValues, tc.from[i].paramValues);
+            for (let j = 0; j < nodeChanges.length; j++) {
+                changes.push(nodeChanges[j]);
+            }
+        }
+        return changes;
     }
     /**
      * Returns true if the transition is dynamic.
@@ -26335,9 +26139,13 @@ class Transition {
      */
     dynamic() {
         const changes = this._changedParams();
-        return !changes
-            ? false
-            : changes.map((x) => x.dynamic).reduce(anyTrueR, false);
+        if (!changes)
+            return false;
+        for (let i = 0; i < changes.length; i++) {
+            if (changes[i].dynamic)
+                return true;
+        }
+        return false;
     }
     /**
      * Returns true if the transition is ignored.
@@ -26351,14 +26159,20 @@ class Transition {
     }
     /** @internal */
     _ignoredReason() {
-        const pending = this._globals.transition;
+        const pending = this._routerState._transition;
         const { reloadState } = this._options;
         const same = (pathA, pathB) => {
             if (pathA.length !== pathB.length)
                 return false;
-            const matching = PathUtils.matching(pathA, pathB);
-            return (pathA.length ===
-                /** @type {PathNode[]} */ matching.filter((node) => !reloadState || !node.state.includes[reloadState.name]).length);
+            const pathPrefix = matching(pathA, pathB);
+            let retainedCount = 0;
+            for (let i = 0; i < pathPrefix.length; i++) {
+                const node = pathPrefix[i];
+                if (!reloadState || !node.state.includes[reloadState.name]) {
+                    retainedCount++;
+                }
+            }
+            return pathA.length === retainedCount;
         };
         const newTC = this._treeChanges;
         const pendTC = pending && pending._treeChanges;
@@ -26389,16 +26203,18 @@ class Transition {
             this.success = true;
             this._deferred.resolve(this.to());
             const hooks = this._hookBuilder.buildHooksForPhase(TransitionHookPhase._SUCCESS);
-            hooks.forEach((hook) => {
-                hook.invokeHook();
-            });
+            for (let i = 0; i < hooks.length; i++) {
+                hooks[i].invokeHook();
+            }
         };
         const transitionError = (reason) => {
             this.success = false;
             this._deferred.reject(reason);
             this._error = reason;
             const hooks = getHooksFor(TransitionHookPhase._ERROR);
-            hooks.forEach((hook) => hook.invokeHook());
+            for (let i = 0; i < hooks.length; i++) {
+                hooks[i].invokeHook();
+            }
         };
         const runTransition = () => {
             // Wait to build the RUN hook chain until the BEFORE hooks are done
@@ -26408,10 +26224,10 @@ class Transition {
             return TransitionHook.invokeHooks(allRunHooks, () => resolved);
         };
         const startTransition = () => {
-            const { _globals } = this;
-            _globals._lastStartedTransitionId = this.$id;
-            _globals.transition = this;
-            _globals._transitionHistory._enqueue(this);
+            const { _routerState } = this;
+            _routerState._lastStartedTransitionId = this.$id;
+            _routerState._transition = this;
+            _routerState._transitionHistory._enqueue(this);
             return Promise.resolve();
         };
         const allBeforeHooks = getHooksFor(TransitionHookPhase._BEFORE);
@@ -26455,11 +26271,20 @@ class Transition {
         }
         const paramDefs = state.parameters();
         const values = this.params();
-        const invalidParams = paramDefs.filter((param) => !param.validates(values[param.id]));
+        const invalidParams = [];
+        for (let i = 0; i < paramDefs.length; i++) {
+            const param = paramDefs[i];
+            if (!param.validates(values[param.id])) {
+                invalidParams.push(param);
+            }
+        }
         if (invalidParams.length) {
-            const invalidValues = invalidParams
-                .map((param) => `[${param.id}:${stringify(values[param.id])}]`)
-                .join(", ");
+            const invalidValueParts = [];
+            for (let i = 0; i < invalidParams.length; i++) {
+                const param = invalidParams[i];
+                invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
+            }
+            const invalidValues = invalidValueParts.join(", ");
             const detail = `The following parameter values are not valid for state '${state.name}': ${invalidValues}`;
             return Rejection.invalid(detail);
         }
@@ -26475,15 +26300,36 @@ class Transition {
     toString() {
         const fromStateOrName = this.from();
         const toStateOrName = this.to();
-        const avoidEmptyHash = (params) => params["#"] !== null && params["#"] !== undefined
-            ? params
-            : omit(params, ["#"]);
+        const avoidEmptyHash = (params) => {
+            if (params["#"] !== null && params["#"] !== undefined) {
+                return params;
+            }
+            const cleanParams = {};
+            for (const key in params) {
+                if (key !== "#") {
+                    cleanParams[key] = params[key];
+                }
+            }
+            return cleanParams;
+        };
         // (X) means the to state is invalid.
-        const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(this._treeChanges.from
-            .map((x) => x.paramValues)
-            .reduce((acc, obj) => ({ ...acc, ...obj }), {}))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
+        const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
         return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
     }
+}
+function pathStates(path) {
+    const states = [];
+    for (let i = 0; i < path.length; i++) {
+        states.push(path[i].state.self);
+    }
+    return states;
+}
+function pathParams(path) {
+    const params = {};
+    for (let i = 0; i < path.length; i++) {
+        assign(params, path[i].paramValues);
+    }
+    return params;
 }
 Transition.diToken = Transition;
 
@@ -26507,22 +26353,34 @@ const TRANSITION_TOKENS = ["$transition$", Transition];
  * falls out of router history, preventing stale retention.
  */
 function treeChangesCleanup(trans) {
-    const nodes = values(trans.treeChanges())
-        .reduce(unnestR, [])
-        .reduce(uniqR, []);
-    const replaceTransitionWithNull = (resolve) => TRANSITION_TOKENS.includes(resolve.token)
-        ? Resolvable.fromData(resolve.token, null)
-        : resolve;
-    nodes.forEach((node) => {
-        node.resolvables = node.resolvables.map(replaceTransitionWithNull);
-    });
+    const paths = values(trans.treeChanges());
+    const nodes = [];
+    for (let i = 0; i < paths.length; i++) {
+        const path = paths[i];
+        for (let j = 0; j < path.length; j++) {
+            const node = path[j];
+            if (nodes.indexOf(node) === -1) {
+                nodes.push(node);
+            }
+        }
+    }
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const { resolvables } = node;
+        for (let j = 0; j < resolvables.length; j++) {
+            const resolve = resolvables[j];
+            if (TRANSITION_TOKENS.includes(resolve.token)) {
+                resolvables[j] = Resolvable.fromData(resolve.token, null);
+            }
+        }
+    }
 }
 
 function ignoredHook(trans) {
     const ignoredReason = trans._ignoredReason();
     if (!ignoredReason)
         return undefined;
-    const pending = trans._globals.transition;
+    const pending = trans._routerState._transition;
     if (ignoredReason === "SameAsCurrent" && pending) {
         pending.abort();
     }
@@ -26591,7 +26449,7 @@ const registerRedirectToHook = (transitionService, stateService) => {
         function handleResult(result) {
             if (!result)
                 return undefined;
-            if (result instanceof TargetState) {
+            if (isInstanceOf(result, TargetState)) {
                 return result;
             }
             if (isString(result)) {
@@ -26616,7 +26474,7 @@ const registerRedirectToHook = (transitionService, stateService) => {
  * Base priority for resolve-related transition hooks.
  */
 const RESOLVE_HOOK_PRIORITY = 1000;
-const eagerResolvePath = (trans) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
+const eagerResolvePath = (trans) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
     .resolvePath(true, trans)
     .then(() => {
     /* empty */
@@ -26627,19 +26485,22 @@ const registerEagerResolvePath = (transitionService) => transitionService.onStar
 /**
  * Resolves the entering state's lazy resolvables at `onEnter`.
  */
-const lazyResolveState = (trans, state) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
+const lazyResolveState = (trans, state) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
     .subContext(state._state())
     .resolvePath(false, trans)
     .then(() => {
     /* empty */
 });
-const registerLazyResolveState = (transitionService) => transitionService.onEnter({ entering: val(true) }, lazyResolveState, {
+function matchEnteringState() {
+    return true;
+}
+const registerLazyResolveState = (transitionService) => transitionService.onEnter({ entering: matchEnteringState }, lazyResolveState, {
     priority: RESOLVE_HOOK_PRIORITY,
 });
 /**
  * Resolves any remaining lazy resolvables before the transition finishes.
  */
-const resolveRemaining = (trans) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
+const resolveRemaining = (trans) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
     .resolvePath(false, trans)
     .then(() => {
     /* empty */
@@ -26716,40 +26577,37 @@ const defaultTransOpts = {
  * Central registry and factory for transition events, hooks, and transition instances.
  */
 class TransitionProvider {
-    constructor(globals, viewService, $exceptionHandler) {
-        /**
-         * Wires runtime services into the transition service and registers the
-         * hooks that depend on state/url/view services.
-         */
-        this.$get = [
-            $injectTokens._state,
-            $injectTokens._url,
-            $injectTokens._view,
-            (stateService, urlService, viewService) => {
-                this._deregisterHookFns.updateUrl = registerUpdateUrl(this, stateService, urlService);
-                this._deregisterHookFns.redirectTo = registerRedirectToHook(this, stateService);
-                this._deregisterHookFns.activateViews = registerActivateViews(this, viewService);
-                return this;
-            },
-        ];
+    constructor(routerState, $exceptionHandler) {
         this._transitionCount = 0;
         this._eventTypes = [];
         this._registeredHooks = {};
         this._criteriaPaths = {};
-        this._globals = globals;
-        this._view = viewService;
-        this._deregisterHookFns = {};
+        this._routerState = routerState;
         this._defineCorePaths();
         this._defineCoreEvents();
         this._registerCoreTransitionHooks();
         this._exceptionHandler = $exceptionHandler.handler;
-        globals._successfulTransitions._onEvict(treeChangesCleanup);
+        routerState._successfulTransitions._onEvict(treeChangesCleanup);
+    }
+    /**
+     * Wires runtime services into the transition service and registers the
+     * hooks that depend on state/url/view services.
+     */
+    $get() {
+        return this;
+    }
+    /** @internal */
+    _initRuntimeHooks(stateService, urlService, viewService) {
+        this._view = viewService;
+        registerUpdateUrl(this, stateService, urlService);
+        registerRedirectToHook(this, stateService);
+        registerActivateViews(this, viewService);
     }
     /**
      * Creates a new transition from the current path to a target state.
      */
     create(fromPath, targetState) {
-        return new Transition(fromPath, targetState, this, this._globals);
+        return new Transition(fromPath, targetState, this, this._routerState);
     }
     /**
      * Defines the built-in transition lifecycle events and their execution order.
@@ -26900,25 +26758,20 @@ class TransitionProvider {
      */
     /** @internal */
     _registerCoreTransitionHooks() {
-        const fns = this._deregisterHookFns;
-        fns.addCoreResolves = registerAddCoreResolvables(this);
-        fns.ignored = registerIgnoredTransitionHook(this);
-        fns.invalid = registerInvalidTransitionHook(this);
-        fns.onExit = registerOnExitHook(this);
-        fns.onRetain = registerOnRetainHook(this);
-        fns.onEnter = registerOnEnterHook(this);
-        fns.eagerResolve = registerEagerResolvePath(this);
-        fns.lazyResolve = registerLazyResolveState(this);
-        fns.resolveAll = registerResolveRemaining(this);
-        fns.loadViews = registerLoadEnteringViews(this);
-        fns.updateGlobals = registerUpdateGlobalState(this);
+        registerAddCoreResolvables(this);
+        registerIgnoredTransitionHook(this);
+        registerInvalidTransitionHook(this);
+        registerOnExitHook(this);
+        registerOnRetainHook(this);
+        registerOnEnterHook(this);
+        registerEagerResolvePath(this);
+        registerLazyResolveState(this);
+        registerResolveRemaining(this);
+        registerLoadEnteringViews(this);
+        registerUpdateGlobalState(this);
     }
 }
-TransitionProvider.$inject = [
-    $injectTokens._routerProvider,
-    $injectTokens._viewProvider,
-    $injectTokens._exceptionHandlerProvider,
-];
+TransitionProvider.$inject = [_routerProvider, _exceptionHandlerProvider];
 function registerUpdateUrl(transitionService, stateService, urlService) {
     const updateUrl = (transition) => {
         const options = transition.options();
@@ -26929,7 +26782,7 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
             const urlOptions = {
                 replace: options.location === "replace",
             };
-            urlService.push($state.$current.navigable.url, $state._globals.params, urlOptions);
+            urlService.push($state.$current.navigable.url, $state._routerState._params, urlOptions);
         }
         urlService.update(true);
     };
@@ -26937,17 +26790,21 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
 }
 function registerUpdateGlobalState(transitionService) {
     return transitionService._onCreate({}, (trans) => {
-        const globals = trans._globals;
+        const routerState = trans._routerState;
         const transitionSuccessful = () => {
             const current = trans.$to();
-            globals._successfulTransitions._enqueue(trans);
-            globals.$current = current;
-            globals.current = current?.self;
-            copy(trans.params(), globals.params);
+            routerState._successfulTransitions._enqueue(trans);
+            routerState._currentState = current;
+            routerState._current = current?.self;
+            const params = routerState._params;
+            for (const key in params) {
+                delete params[key];
+            }
+            assign(params, trans.params());
         };
         const clearCurrentTransition = () => {
-            if (globals.transition === trans) {
-                globals.transition = undefined;
+            if (routerState._transition === trans) {
+                routerState._transition = undefined;
             }
         };
         trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
@@ -26984,8 +26841,6 @@ const silentRejection = (error) => silenceUncaughtInPromise(Promise.reject(error
 class StateProvider {
     /** @internal */
     _getRegistry() {
-        if (!this._stateRegistry)
-            throw new Error("State registry is not initialized");
         return this._stateRegistry;
     }
     /** @internal */
@@ -27000,64 +26855,49 @@ class StateProvider {
      * @deprecated This is a passthrough through to [[Router.params]]
      */
     get params() {
-        return this._globals.params;
+        return this._routerState._params;
     }
     /**
      * The current [[StateDeclaration]]
      */
     get current() {
-        return this._globals.current;
+        return this._routerState._current;
     }
     /**
      * The current [[StateObject]] (an internal API)
      */
     get $current() {
-        return this._globals.$current;
+        return this._routerState._currentState;
     }
-    /**
-     *
-     * @param {ng.RouterProvider} globals
-     * @param {ng.TransitionProvider} transitionService
-     * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
-     */
-    constructor(globals, transitionService, exceptionHandlerProvider) {
+    constructor(stateRegistry, routerState, transitionService, exceptionHandlerProvider) {
         this.$get = [
-            $injectTokens._injector,
-            $injectTokens._url,
-            $injectTokens._view,
+            _injector,
+            _stateRegistry,
+            _url,
+            _view,
             /**
              * @param {ng.InjectorService} $injector
+             * @param {StateRegistryProvider} $stateRegistry
              * @param {ng.UrlService} $url
-             * @param {ng.ViewService} _viewService
+             * @param viewService
              * @returns {StateProvider}
              */
-            ($injector, $url, _viewService) => {
+            ($injector, $stateRegistry, $url, viewService) => {
+                this._stateRegistry = $stateRegistry;
                 this._urlService = $url;
+                $url._stateService = this;
+                this._transitionService._initRuntimeHooks(this, $url, viewService);
                 this._$injector = $injector;
+                this._routerState._injector = $injector;
                 return this;
             },
         ];
-        /**
-         * @type {ng.RouterProvider}
-         */
-        this._globals = globals;
-        /**
-         * @type {ng.TransitionProvider}
-         */
+        this._routerState = routerState;
         this._transitionService = transitionService;
-        /**
-         * @type {StateRegistryProvider | undefined}
-         */
-        this._stateRegistry = undefined;
-        /** @type {ng.UrlService | undefined } */
+        this._stateRegistry = stateRegistry;
         this._urlService = undefined;
-        /** @type {ng.InjectorService | undefined } */
         this._$injector = undefined;
-        /**
-         * @type {OnInvalidCallback[]}
-         */
         this._invalidCallbacks = [];
-        /** @type {ng.ExceptionHandlerService} */
         this._defaultErrorHandler = exceptionHandlerProvider.handler;
     }
     /**
@@ -27090,14 +26930,13 @@ class StateProvider {
      */
     _handleInvalidTargetState(fromPath, toState) {
         const fromState = makeTargetState(this._getRegistry(), fromPath);
-        const globals = this._globals;
-        const latestThing = () => globals._transitionHistory._peekTail();
+        const routerState = this._routerState;
+        const latestThing = () => routerState._transitionHistory._peekTail();
         const latest = latestThing();
-        /** @type {Queue<OnInvalidCallback>} */
         const callbackQueue = new Queue(this._invalidCallbacks.slice());
         const injector = this._$injector;
         const checkForRedirect = (result) => {
-            if (!(result instanceof TargetState)) {
+            if (!isInstanceOf(result, TargetState)) {
                 return undefined;
             }
             let target = result;
@@ -27151,7 +26990,10 @@ class StateProvider {
     onInvalid(callback) {
         this._invalidCallbacks.push(callback);
         return () => {
-            removeFrom(this._invalidCallbacks, callback);
+            const index = this._invalidCallbacks.indexOf(callback);
+            if (index !== -1) {
+                this._invalidCallbacks.splice(index, 1);
+            }
         };
     }
     /**
@@ -27199,10 +27041,10 @@ class StateProvider {
      * @returns A promise representing the state of the new transition. See [[StateService.go]]
      */
     reload(reloadState) {
-        const { current } = this._globals;
+        const current = this._routerState._current;
         if (!current)
             throw new Error("No current state");
-        return this.transitionTo(current, this._globals.params, {
+        return this.transitionTo(current, this._routerState._params, {
             reload: isDefined(reloadState) ? reloadState : true,
             inherit: false,
             notify: false,
@@ -27277,8 +27119,8 @@ class StateProvider {
         return new TargetState(this._getRegistry(), identifier, params, options);
     }
     getCurrentPath() {
-        const globals = this._globals;
-        const latestSuccess = globals._successfulTransitions._peekTail();
+        const routerState = this._routerState;
+        const latestSuccess = routerState._successfulTransitions._peekTail();
         const rootPath = () => [new PathNode(this._getRegistry().root())];
         return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
     }
@@ -27307,8 +27149,8 @@ class StateProvider {
      */
     transitionTo(to, toParams = {}, options = {}) {
         options = defaults(options, defaultTransOpts);
-        const getCurrent = () => this._globals.transition;
-        options = Object.assign(options, { current: getCurrent });
+        const getCurrent = () => this._routerState._transition;
+        options = assign(options, { current: getCurrent });
         const ref = this.target(to, toParams, options);
         const currentPath = this.getCurrentPath();
         if (!ref.exists())
@@ -27318,30 +27160,18 @@ class StateProvider {
         if (options.supercede === false && getCurrent()) {
             return Rejection.ignored("Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.")._toPromise();
         }
-        /**
-         * Special handling for Ignored, Aborted, and Redirected transitions
-         *
-         * The semantics for the transition.run() promise and the StateService.transitionTo()
-         * promise differ. For instance, the run() promise may be rejected because it was
-         * IGNORED, but the transitionTo() promise is resolved because from the user perspective
-         * no error occurred.  Likewise, the transition.run() promise may be rejected because of
-         * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
-         */
-        /** @typedef {(error: any) => Promise<any>} RejectionHandler */
-        /** @typedef {(trans: Transition) => RejectionHandler} RejectedTransitionHandler */
-        /** @type {RejectedTransitionHandler} */
         const rejectedTransitionHandler = (trans) => (error) => {
-            if (error instanceof Rejection) {
-                const isLatest = this._globals._lastStartedTransitionId <= trans.$id;
+            if (isInstanceOf(error, Rejection)) {
+                const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
                 if (error.type === RejectType._IGNORED) {
                     isLatest && this._getUrlService().update();
                     // Consider ignored `Transition.run()` as a successful `transitionTo`
-                    return Promise.resolve(this._globals.current);
+                    return Promise.resolve(this._routerState._current);
                 }
                 const { detail } = error;
                 if (error.type === RejectType._SUPERSEDED &&
                     error.redirected &&
-                    detail instanceof TargetState) {
+                    isInstanceOf(detail, TargetState)) {
                     // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
                     // by returning the promise for the new (redirect) `Transition.run()`.
                     const redirect = trans.redirect(detail);
@@ -27362,7 +27192,7 @@ class StateProvider {
             .catch(rejectedTransitionHandler(transition));
         silenceUncaughtInPromise(transitionToPromise); // issue #2676
         // Return a promise for the transition, which also has the transition object on it.
-        return Object.assign(transitionToPromise, { transition });
+        return assign(transitionToPromise, { transition });
     }
     /**
        * Checks if the current state *is* the provided state
@@ -27403,7 +27233,7 @@ class StateProvider {
         if (!params)
             return true;
         const schema = state.parameters({ inherit: true, matchingKeys: params });
-        return Param.equals(schema, Param.values(schema, params), this._globals.params);
+        return Param.equals(schema, Param.values(schema, params), this._routerState._params);
     }
     /**
        * Checks if the current state *includes* the provided state
@@ -27458,11 +27288,11 @@ class StateProvider {
             return false;
         if (!params)
             return true;
-        const schema = /** @type {ng.StateObject} */ state.parameters({
+        const schema = state.parameters({
             inherit: true,
             matchingKeys: params,
         });
-        return Param.equals(schema, Param.values(schema, params), this._globals.params);
+        return Param.equals(schema, Param.values(schema, params), this._routerState._params);
     }
     /**
      * Generates a URL for a state and parameters
@@ -27491,7 +27321,7 @@ class StateProvider {
         if (!isDefined(state))
             return null;
         if (options?.inherit)
-            params = this._globals.params.$inherit(params, this.$current, state);
+            params = this._routerState._params.$inherit(params, this.$current, state);
         const nav = state && options?.lossy ? state.navigable : state;
         if (!nav || isNullOrUndefined(nav.url)) {
             return null;
@@ -27539,9 +27369,10 @@ class StateProvider {
 }
 /* @ignore */
 StateProvider.$inject = [
-    $injectTokens._routerProvider,
-    $injectTokens._transitionsProvider,
-    $injectTokens._exceptionHandlerProvider,
+    _stateRegistryProvider,
+    _routerProvider,
+    _transitionsProvider,
+    _exceptionHandlerProvider,
 ];
 
 /**
@@ -27553,10 +27384,10 @@ class TemplateFactoryProvider {
          * Wires HTTP, template request, cache, and injector services into the factory.
          */
         this.$get = [
-            $injectTokens._http,
-            $injectTokens._templateCache,
-            $injectTokens._templateRequest,
-            $injectTokens._injector,
+            _http,
+            _templateCache,
+            _templateRequest,
+            _injector,
             ($http, $templateCache, $templateRequest, $injector) => {
                 this._templateRequest = $templateRequest;
                 this._http = $http;
@@ -27582,8 +27413,6 @@ class TemplateFactoryProvider {
                 return "templateProvider";
             if (isDefined(configParam.component))
                 return "component";
-            if (isDefined(configParam.componentProvider))
-                return "componentProvider";
             return "default";
         };
         switch (getConfigType(config)) {
@@ -27595,8 +27424,6 @@ class TemplateFactoryProvider {
                 return asTemplate(this.fromProvider(config.templateProvider, params, context));
             case "component":
                 return asComponent(config.component);
-            case "componentProvider":
-                return asComponent(this.fromComponentProvider(config.componentProvider, context));
             default:
                 return asTemplate(defaultTemplate);
         }
@@ -27620,17 +27447,8 @@ class TemplateFactoryProvider {
     fromProvider(provider, _params, context) {
         const deps = annotate(provider);
         const providerFn = isArray(provider)
-            ? tail(provider)
+            ? provider[provider.length - 1]
             : provider;
-        const resolvable = new Resolvable("", providerFn, deps);
-        return resolvable.get(context);
-    }
-    /**
-     * Resolves a component name from an injectable provider in resolve context.
-     */
-    fromComponentProvider(provider, context) {
-        const deps = annotate(provider);
-        const providerFn = (isArray(provider) ? tail(provider) : provider);
         const resolvable = new Resolvable("", providerFn, deps);
         return resolvable.get(context);
     }
@@ -27676,7 +27494,14 @@ function getComponentBindings($injector, name) {
     if (!cmpDefs || !cmpDefs.length) {
         throw new Error(`Unable to find component named '${name}'`);
     }
-    return cmpDefs.map(getBindings).reduce(unnestR, []);
+    const bindings = [];
+    cmpDefs.forEach((def) => {
+        const defBindings = getBindings(def);
+        defBindings.forEach((binding) => {
+            bindings.push(binding);
+        });
+    });
+    return bindings;
 }
 const getBindings = (def) => {
     if (isObject(def.bindToController)) {
@@ -27685,14 +27510,15 @@ const getBindings = (def) => {
     return scopeBindings(def.scope);
 };
 const scopeBindings = (bindingsObj) => {
-    const tuples = keys(bindingsObj || {}).map((key) => {
+    const bindingKeys = keys(bindingsObj || {});
+    const bindings = [];
+    bindingKeys.forEach((key) => {
         const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
-        return [key, match];
+        if (match) {
+            bindings.push({ name: match[2] || key, type: match[1] });
+        }
     });
-    const hasMatch = (tuple) => tuple[1] !== null;
-    return tuples
-        .filter(hasMatch)
-        .map(([key, match]) => ({ name: match[2] || key, type: match[1] }));
+    return bindings;
 };
 
 /**
@@ -27727,7 +27553,7 @@ class ParamTypes {
         this.$injector = $angular.$injector;
         this.enqueue = true;
         this.typeQueue = [];
-        this.defaultTypes = pick(ParamTypes.prototype, [
+        const defaultTypeNames = [
             "hash",
             "string",
             "query",
@@ -27737,10 +27563,16 @@ class ParamTypes {
             "date",
             "json",
             "any",
-        ]);
+        ];
+        this.defaultTypes = {};
+        const defaultParamTypes = {};
+        defaultTypeNames.forEach((name) => {
+            const definition = ParamTypes.prototype[name];
+            this.defaultTypes[name] = definition;
+            defaultParamTypes[name] = new ParamType(assign({ name }, definition));
+        });
         // Register default types. Store them in the prototype of this.types.
-        const makeType = (definition, name) => new ParamType(Object.assign({ name }, definition));
-        this.types = inherit(map(this.defaultTypes, makeType), {});
+        this.types = createObject(defaultParamTypes);
     }
     type(name, definition, definitionFn) {
         if (!isDefined(definition)) {
@@ -27751,7 +27583,7 @@ class ParamTypes {
         }
         if (hasOwn(this.types, name))
             throw new Error(`A type named '${name}' has already been defined.`);
-        this.types[ /** @type {string} */name] = new ParamType(Object.assign({ name }, definition));
+        this.types[name] = new ParamType(assign({ name }, definition));
         if (definitionFn) {
             this.typeQueue.push({ name, def: definitionFn });
             if (!this.enqueue && this._getInjector())
@@ -27769,7 +27601,7 @@ class ParamTypes {
             const type = this.typeQueue.shift();
             if (type.pattern)
                 throw new Error("You cannot override a type's .pattern at runtime.");
-            Object.assign(this.types[type.name], injector.invoke(type.def));
+            assign(this.types[type.name], injector.invoke(type.def));
         }
     }
     /** @internal */
@@ -27783,14 +27615,14 @@ function initDefaultTypes() {
         const defaultTypeBase = {
             encode: (val) => valToString(val),
             decode: (val) => valToString(val),
-            is: is(String),
+            is: (val) => isInstanceOf(val, String) || isString(val),
             pattern: /.*/,
             equals: (a, b) => a === b,
         };
-        return Object.assign({}, defaultTypeBase, def);
+        return assign({}, defaultTypeBase, def);
     };
     // Default Parameter Type Definitions
-    Object.assign(ParamTypes.prototype, {
+    assign(ParamTypes.prototype, {
         string: makeDefaultType({}),
         path: makeDefaultType({
             pattern: /[^/]*/,
@@ -27813,7 +27645,7 @@ function initDefaultTypes() {
         bool: makeDefaultType({
             encode: (val) => ((val && 1) || 0).toString(),
             decode: (val) => parseInt(val, 10) !== 0,
-            is: is(Boolean),
+            is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
             pattern: /[01]/,
         }),
         date: makeDefaultType({
@@ -27838,13 +27670,15 @@ function initDefaultTypes() {
                 const match = this.capture.exec(val);
                 return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
             },
-            is: (val) => val instanceof Date && !isNaN(val.valueOf()),
+            is: (val) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
             /**
              * @param {{ [x: string]: () => any; }} left
              * @param {{ [x: string]: () => any; }} right
              */
             equals(left, right) {
-                return ["getFullYear", "getMonth", "getDate"].reduce((acc, fn) => acc && left[fn]() === right[fn](), true);
+                return (left.getFullYear() === right.getFullYear() &&
+                    left.getMonth() === right.getMonth() &&
+                    left.getDate() === right.getDate());
             },
             pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
             capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
@@ -27852,7 +27686,7 @@ function initDefaultTypes() {
         json: makeDefaultType({
             encode: (x) => JSON.stringify(x),
             decode: (x) => JSON.parse(x),
-            is: is(Object),
+            is: (val) => isInstanceOf(val, Object),
             equals,
             pattern: /[^/]*/,
         }),
@@ -27898,7 +27732,6 @@ class UrlConfigProvider {
          * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
          *
          */
-        /** @type {ParamType} */
         const pathType = this.type("path");
         pathType.encode = (x) => !isNullOrUndefined(x)
             ? x
@@ -27975,12 +27808,11 @@ class UrlConfigProvider {
         if (!isDefined(definition)) {
             return this.paramTypes.type(name);
         }
-        this.paramTypes.type(name, 
-        /** @type {ParamTypeDefinition} */ definition, definitionFn);
+        this.paramTypes.type(name, definition, definitionFn);
         return this;
     }
 }
-UrlConfigProvider.$inject = [$injectTokens._angularProvider];
+UrlConfigProvider.$inject = [_angularProvider];
 
 /**
  * @param {any} str
@@ -28071,9 +27903,14 @@ class UrlMatcher {
     static pathSegmentsAndParams(matcher) {
         const staticSegments = matcher._segments;
         const pathParams = matcher._params.filter((path) => path.location === DefType._PATH);
-        return arrayTuples(staticSegments, [...pathParams, undefined])
-            .reduce(unnestR, [])
-            .filter((x) => x !== "" && isDefined(x));
+        const result = [];
+        for (let i = 0; i < staticSegments.length; i++) {
+            if (staticSegments[i] !== "")
+                result.push(staticSegments[i]);
+            if (isDefined(pathParams[i]))
+                result.push(pathParams[i]);
+        }
+        return result;
     }
     /**
      * @internal Given a matcher, return an array with the matcher's query params
@@ -28123,11 +27960,9 @@ class UrlMatcher {
         const segments = (matcher) => (matcher._cache.segments =
             matcher._cache.segments ||
                 (matcher._cache.path || [matcher])
-                    .map(UrlMatcher.pathSegmentsAndParams)
-                    .reduce(unnestR, [])
+                    .flatMap(UrlMatcher.pathSegmentsAndParams)
                     .reduce(joinNeighborsR, [])
-                    .map((x) => (isString(x) ? splitOnSlash(x) : x))
-                    .reduce(unnestR, []));
+                    .flatMap((x) => isString(x) ? splitOnSlash(x) : [x]));
         /**
          * Gets the sort weight for each segment of a UrlMatcher
          *
@@ -28136,14 +27971,14 @@ class UrlMatcher {
         const weights = (matcher) => (matcher._cache.weights =
             matcher._cache.weights ||
                 segments(matcher).map((segment) => {
-                    // Sort slashes first, then static strings, the Params
+                    // Sort slashes first, then static strings, then Params.
                     if (segment === "/")
                         return 1;
                     if (isString(segment))
                         return 2;
-                    if (segment instanceof Param)
+                    if (isInstanceOf(segment, Param))
                         return 3;
-                    return undefined;
+                    return 0;
                 }));
         /**
          * Pads shorter array in-place (mutates)
@@ -28157,10 +27992,9 @@ class UrlMatcher {
         };
         const weightsA = weights(a), weightsB = weights(b);
         padArrays(weightsA, weightsB, 0);
-        const _pairs = arrayTuples(weightsA, weightsB);
         let cmp;
-        for (let i = 0, l = _pairs.length; i < l; i++) {
-            cmp = _pairs[i][0] - _pairs[i][1];
+        for (let i = 0, l = weightsA.length; i < l; i++) {
+            cmp = weightsA[i] - weightsB[i];
             if (cmp !== 0)
                 return cmp;
         }
@@ -28174,7 +28008,7 @@ class UrlMatcher {
      */
     constructor(pattern, paramTypes, paramFactory, config) {
         this._cache = {
-            path: [/** @type {UrlMatcher} */ this],
+            path: [this],
         };
         this._children = [];
         this._params = [];
@@ -28204,8 +28038,11 @@ class UrlMatcher {
         const checkParamErrors = (id) => {
             if (!UrlMatcher.nameValidator.test(id))
                 throw new Error(`Invalid parameter name '${id}' in pattern '${pattern}'`);
-            if (find(this._params, propEq("id", id)))
-                throw new Error(`Duplicate parameter name '${id}' in pattern '${pattern}'`);
+            for (let i = 0; i < this._params.length; i++) {
+                if (this._params[i].id === id) {
+                    throw new Error(`Duplicate parameter name '${id}' in pattern '${pattern}'`);
+                }
+            }
         };
         // Split into static segments separated by path parameter placeholders.
         // The number of segments is always 1 more than the number of parameters.
@@ -28241,7 +28078,7 @@ class UrlMatcher {
             checkParamErrors(details.id);
             this._params.push(paramFactory.fromPath(details.id, details.type, config.state));
             this._segments.push(details.segment);
-            patterns.push([details.segment, tail(this._params)]);
+            patterns.push([details.segment, this._params[this._params.length - 1]]);
             last = placeholder.lastIndex;
         }
         segment = pattern.substring(last);
@@ -28327,7 +28164,7 @@ class UrlMatcher {
         const match = memoizeTo(this._cache, "pattern", () => {
             return new RegExp([
                 "^",
-                unnest(pathMatchers.map((x) => x._compiled)).join(""),
+                pathMatchers.flatMap((x) => x._compiled).join(""),
                 this.config.strict === false ? "/?" : "",
                 "$",
             ].join(""), this.config.caseInsensitive ? "i" : undefined);
@@ -28335,9 +28172,20 @@ class UrlMatcher {
         if (!match)
             return null;
         // options = defaults(options, { isolate: false });
-        const allParams = this.parameters(), pathParams = allParams.filter((param) => !param.isSearch()), searchParams = allParams.filter((param) => param.isSearch()), nPathSegments = pathMatchers
-            .map((urlm) => urlm._segments.length - 1)
-            .reduce((a, x) => a + x, 0), values = {};
+        const allParams = this.parameters(), pathParams = [], searchParams = [], values = {};
+        let nPathSegments = 0;
+        for (let i = 0; i < allParams.length; i++) {
+            const param = allParams[i];
+            if (param.isSearch()) {
+                searchParams.push(param);
+            }
+            else {
+                pathParams.push(param);
+            }
+        }
+        for (let i = 0; i < pathMatchers.length; i++) {
+            nPathSegments += pathMatchers[i]._segments.length - 1;
+        }
         if (nPathSegments !== match.length - 1)
             throw new Error(`Unbalanced capture group in route '${this.pattern}'`);
         /**
@@ -28347,7 +28195,7 @@ class UrlMatcher {
             const reverseString = (str) => str.split("").reverse().join("");
             const unquoteDashes = (str) => str.replace(/\\-/g, "-");
             const split = reverseString(paramVal).split(/-(?!\\)/);
-            const allReversed = map(split, reverseString);
+            const allReversed = split.map(reverseString);
             return allReversed.map(unquoteDashes).reverse();
         }
         for (let i = 0; i < nPathSegments; i++) {
@@ -28364,14 +28212,15 @@ class UrlMatcher {
                 value = decodePathArray(value);
             values[param.id] = this._getDecodedParamValue(value, param);
         }
-        searchParams.forEach((param) => {
+        for (let i = 0; i < searchParams.length; i++) {
+            const param = searchParams[i];
             let value = search[param.id];
             for (let j = 0; j < param.replace.length; j++) {
                 if (param.replace[j].from === value)
                     value = param.replace[j].to;
             }
             values[param.id] = this._getDecodedParamValue(value, param);
-        });
+        }
         if (hash)
             values["#"] = hash;
         return values;
@@ -28387,7 +28236,7 @@ class UrlMatcher {
     parameters(opts = {}) {
         if (opts.inherit === false)
             return this._params;
-        return unnest((this._cache.path || [this]).map((matcher) => matcher._params));
+        return (this._cache.path || [this]).flatMap((matcher) => matcher._params);
     }
     /**
      * @internal Returns a single parameter from this UrlMatcher by id
@@ -28417,13 +28266,17 @@ class UrlMatcher {
      * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
      */
     validates(params) {
-        const validParamVal = (param, val) => param.validates(val);
         params = params || {};
         // I'm not sure why this checks only the param keys passed in, and not all the params known to the matcher
-        const paramSchema = this.parameters().filter((paramDef) => hasOwn(params, paramDef.id));
-        return paramSchema
-            .map((paramDef) => validParamVal(paramDef, params[paramDef.id]))
-            .reduce(allTrueR, true);
+        const paramSchema = this.parameters();
+        for (let i = 0; i < paramSchema.length; i++) {
+            const paramDef = paramSchema[i];
+            if (hasOwn(params, paramDef.id) &&
+                !paramDef.validates(params[paramDef.id])) {
+                return false;
+            }
+        }
+        return true;
     }
     /**
      * Given a set of parameter values, creates a URL from this UrlMatcher.
@@ -28446,13 +28299,11 @@ class UrlMatcher {
         // Extract all the static segments and Params (processed as ParamDetails)
         // into an ordered array
         const pathSegmentsAndParams = urlMatchers
-            .map(UrlMatcher.pathSegmentsAndParams)
-            .reduce(unnestR, [])
+            .flatMap(UrlMatcher.pathSegmentsAndParams)
             .map((x) => (isString(x) ? x : getDetails(x)));
         // Extract the query params into a separate array
         const queryParams = urlMatchers
-            .map(UrlMatcher.queryParams)
-            .reduce(unnestR, [])
+            .flatMap(UrlMatcher.queryParams)
             .map(getDetails);
         const isInvalid = (param) => !isString(param) && param.isValid === false;
         if (pathSegmentsAndParams.concat(queryParams).filter(isInvalid).length) {
@@ -28475,7 +28326,6 @@ class UrlMatcher {
             return { param, value, isValid, isDefaultValue, squash, encoded };
         }
         // Build up the path-portion from the list of static segments and parameters
-        /** @type {string} */
         const pathString = pathSegmentsAndParams.reduce((acc, x) => {
             // The element is a static segment (a raw string); just append it
             if (isString(x))
@@ -28494,7 +28344,7 @@ class UrlMatcher {
                 return acc;
             // If this parameter value is an array, encode the value using encodeDashes
             if (isArray(encoded))
-                return acc + map(encoded, encodeDashes).join("-");
+                return acc + encoded.map(encodeDashes).join("-");
             // If the parameter type is "raw", then do not encodeURIComponent
             if (param.raw) {
                 return acc + encoded;
@@ -28505,7 +28355,7 @@ class UrlMatcher {
         // Build the query string by applying parameter values (array or regular)
         // then mapping to key=value, then flattening and joining using "&"
         const queryString = queryParams
-            .map((paramDetails) => {
+            .flatMap((paramDetails) => {
             const { param, squash, isDefaultValue } = paramDetails;
             let { encoded } = paramDetails;
             if (isNullOrUndefined(encoded) || (isDefaultValue && squash !== false))
@@ -28515,10 +28365,9 @@ class UrlMatcher {
             if (encoded.length === 0)
                 return undefined;
             if (!param.raw)
-                encoded = map(encoded, encodeURIComponent);
+                encoded = encoded.map(encodeURIComponent);
             return encoded.map((val) => `${param.id}=${val}`);
         })
-            .reduce(unnestR, [])
             .join("&");
         // Concat the pathstring with the queryString (if exists) and the hashString (if exists)
         return (pathString +
@@ -28533,532 +28382,6 @@ UrlMatcher.nameValidator = /^\w+([-.]+\w+)*(?:\[\])?$/;
 function encodeDashes(str) {
     // Replace dashes with encoded "\-"
     return encodeURIComponent(str).replace(/-/g, (char) => `%5C%${char.charCodeAt(0).toString(16).toUpperCase()}`);
-}
-
-/**
- * Creates a [[UrlRule]]
- *
- * Creates a [[UrlRule]] from a:
- *
- * - `string`
- * - [[UrlMatcher]]
- * - `RegExp`
- * - [[StateObject]]
- */
-const LOWEST = 0.000001;
-class UrlRuleFactory {
-    static isUrlRule(obj) {
-        return (!!obj &&
-            ["_type", "match", "handler"].every((key) => isDefined(obj[key])));
-    }
-    /**
-     * @param {ng.UrlService} urlService
-     * @param {ng.StateService} stateService
-     * @param {ng.RouterService} routerGlobals
-     */
-    constructor(urlService, stateService, routerGlobals) {
-        this.urlService = urlService;
-        this.stateService = stateService;
-        this.routerGlobals = routerGlobals;
-    }
-    /**
-     *
-     * @param {StateObject} what
-     * @param {*} [handler]
-     * @returns {UrlRule}
-     */
-    create(what, handler) {
-        const { isState, isStateDeclaration } = StateObject;
-        const isStateLike = (value) => isState(value) || isStateDeclaration(value);
-        const makeRule = pattern([
-            [isString, (_what) => makeRule(this.urlService.compile(_what))],
-            [
-                is(UrlMatcher),
-                (_what) => this.fromUrlMatcher(_what, handler),
-            ],
-            [
-                isStateLike,
-                (_what) => this.fromState(_what, this.stateService, this.routerGlobals),
-            ],
-            [is(RegExp), (_what) => this.fromRegExp(_what, handler)],
-            [
-                isFunction,
-                (_what) => new BaseUrlRule(_what, handler || ((x) => x)),
-            ],
-        ]);
-        const rule = makeRule(what);
-        if (!rule)
-            throw new Error("invalid 'what' in when()");
-        return rule;
-    }
-    /**
-     * A UrlRule which matches based on a UrlMatcher
-     *
-     * The `handler` may be either a `string`, a [[UrlRuleHandlerFn]] or another [[UrlMatcher]]
-     *
-     * ## Handler as a function
-     *
-     * If `handler` is a function, the function is invoked with:
-     *
-     * - matched parameter values ([[RawParams]] from [[UrlMatcher.exec]])
-     * - url: the current Url ([[UrlParts]])
-     * - router: the router object
-     *
-     * #### Example:
-     * ```js
-     * var urlMatcher = $umf.compile("/foo/:fooId/:barId");
-     * var rule = factory.fromUrlMatcher(urlMatcher, match => "/home/" + match.fooId + "/" + match.barId);
-     * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
-     * var result = rule.handler(match); // '/home/123/456'
-     * ```
-     *
-     * ## Handler as UrlMatcher
-     *
-     * If `handler` is a UrlMatcher, the handler matcher is used to create the new url.
-     * The `handler` UrlMatcher is formatted using the matched param from the first matcher.
-     * The url is replaced with the result.
-     *
-     * #### Example:
-     * ```js
-     * var urlMatcher = $umf.compile("/foo/:fooId/:barId");
-     * var handler = $umf.compile("/home/:fooId/:barId");
-     * var rule = factory.fromUrlMatcher(urlMatcher, handler);
-     * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
-     * var result = rule.handler(match); // '/home/123/456'
-     * ```
-     * @param {UrlMatcher} urlMatcher
-     * @param {string | UrlMatcher | UrlRuleHandlerFn} handler
-     * @returns {MatcherUrlRule}
-     */
-    fromUrlMatcher(urlMatcher, handler = (x) => x) {
-        let resolvedHandler;
-        if (isString(handler))
-            handler = this.urlService.compile(handler);
-        if (is(UrlMatcher)(handler)) {
-            const matcher = handler;
-            resolvedHandler = (match) => {
-                const url = matcher.format(match); // string | null
-                return isNull(url) ? undefined : url; // string | void
-            };
-        }
-        else {
-            resolvedHandler = handler;
-        }
-        /**
-         * @param {UrlParts} url
-         * @returns {RawParams | boolean | null}
-         */
-        function matchUrlParamters(url) {
-            const params = urlMatcher.exec(url.path, url.search, url.hash || "");
-            return params !== null && urlMatcher.validates(params) && params;
-        }
-        // Prioritize URLs, lowest to highest:
-        // - Some optional URL parameters, but none matched
-        // - No optional parameters in URL
-        // - Some optional parameters, some matched
-        // - Some optional parameters, all matched
-        /**
-         * @param {RawParams} params
-         * @returns {number}
-         */
-        function matchPriority(params) {
-            const optional = urlMatcher
-                .parameters()
-                .filter((param) => param.isOptional);
-            if (!optional.length)
-                return LOWEST;
-            const matched = optional.filter((param) => params[param.id]);
-            return matched.length / optional.length;
-        }
-        /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; _type: "URLMATCHER" }} */
-        const details = {
-            urlMatcher,
-            matchPriority,
-            _type: "URLMATCHER",
-        };
-        return Object.assign(new BaseUrlRule(matchUrlParamters, resolvedHandler), details);
-    }
-    /**
-     * A UrlRule which matches a state by its url
-     *
-     * #### Example:
-     * ```js
-     * var rule = factory.fromState($state.get('foo'), router);
-     * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
-     * var result = rule.handler(match);
-     * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
-     * ```
-     * @param {StateObject | StateDeclaration} stateOrDecl
-     * @param {StateProvider} stateService
-     * @param {RouterProvider} globals
-     * @returns {StateRule}
-     */
-    fromState(stateOrDecl, stateService, globals) {
-        const state = StateObject.isStateDeclaration(stateOrDecl)
-            ? stateOrDecl._state
-                ? stateOrDecl._state()
-                : undefined
-            : stateOrDecl;
-        if (!state)
-            throw new Error("State rule could not resolve state object");
-        if (!(state.url instanceof UrlMatcher))
-            throw new Error(`State '${state.name}' does not have a UrlMatcher`);
-        /**
-         * Handles match by transitioning to matched state
-         *
-         * First checks if the router should start a new transition.
-         * A new transition is not required if the current state's URL
-         * and the new URL are already identical
-         */
-        const handler = (match) => {
-            const $state = stateService;
-            const { current } = globals;
-            const currentHref = current ? $state.href(current, globals.params) : null;
-            if ($state.href(state, match) !== currentHref) {
-                $state.transitionTo(state, match, { inherit: true, source: "url" });
-            }
-        };
-        const details = {
-            state,
-            _type: "STATE",
-        };
-        return Object.assign(this.fromUrlMatcher(state.url, handler), details);
-    }
-    /**
-     * A UrlRule which matches based on a regular expression
-     *
-     * The `handler` may be either a [[UrlRuleHandlerFn]] or a string.
-     *
-     * ## Handler as a function
-     *
-     * If `handler` is a function, the function is invoked with:
-     *
-     * - regexp match array (from `regexp`)
-     * - url: the current Url ([[UrlParts]])
-     * - router: the router object
-     *
-     * #### Example:
-     * ```js
-     * var rule = factory.fromRegExp(/^\/foo\/(bar|baz)$/, match => "/home/" + match[1])
-     * var match = rule.match('/foo/bar'); // results in [ '/foo/bar', 'bar' ]
-     * var result = rule.handler(match); // '/home/bar'
-     * ```
-     *
-     * ## Handler as string
-     *
-     * If `handler` is a string, the url is *replaced by the string* when the Rule is invoked.
-     * The string is first interpolated using `string.replace()` style pattern.
-     *
-     * #### Example:
-     * ```js
-     * var rule = factory.fromRegExp(/^\/foo\/(bar|baz)$/, "/home/$1")
-     * var match = rule.match('/foo/bar'); // results in [ '/foo/bar', 'bar' ]
-     * var result = rule.handler(match); // '/home/bar'
-     * ```
-     * @param {RegExp} regexp
-     * @param {string | UrlRuleHandlerFn} handler
-     * @returns {RegExpRule}
-     */
-    fromRegExp(regexp, handler) {
-        if (regexp.global || regexp.sticky)
-            throw new Error("Rule RegExp must not be global or sticky");
-        /**
-         * If handler is a string, the url will be replaced by the string.
-         * If the string has any String.replace() style variables in it (like `$2`),
-         * they will be replaced by the captures from [[match]]
-         */
-        const redirectUrlTo = (match) => 
-        // Interpolates matched values into $1 $2, etc using a String.replace()-style pattern
-        handler.replace(/\$(\$|\d{1,2})/, (_, what) => match[what === "$" ? 0 : Number(what)]);
-        const _handler = isString(handler) ? redirectUrlTo : handler;
-        const matchParamsFromRegexp = (url) => regexp.exec(url.path);
-        const details = {
-            regexp,
-            _type: "REGEXP",
-        };
-        return Object.assign(new BaseUrlRule(matchParamsFromRegexp, _handler), details);
-    }
-}
-/**
- * A base rule which calls `match`
- *
- * The value from the `match` function is passed through to the `handler`.
- */
-class BaseUrlRule {
-    /**
-     * @param {UrlRuleMatchFn} match
-     * @param {UrlRuleHandlerFn} handler
-     */
-    constructor(match, handler) {
-        this.match = match;
-        this._type = "RAW";
-        this.$id = -1;
-        this._group = undefined;
-        this.handler = handler || ((x) => x);
-        this.priority = undefined;
-    }
-    /**
-     * This function should be overridden
-     * @param {*} [params]
-     * @returns {number}
-     */
-    matchPriority(params) {
-        assert(isUndefined(params));
-        return 0 - this.$id;
-    }
-}
-
-/**
- * @param {{ priority: any; }} a
- * @param {{ priority: any; }} b
- */
-function prioritySort(a, b) {
-    return (b.priority || 0) - (a.priority || 0);
-}
-const typeSort = (a, b) => {
-    const weights = {
-        STATE: 4,
-        URLMATCHER: 4,
-        REGEXP: 3,
-        RAW: 2,
-        OTHER: 1,
-    };
-    return (weights[a._type] || 0) - (weights[b._type] || 0);
-};
-const urlMatcherSort = (a, b) => !a.urlMatcher || !b.urlMatcher
-    ? 0
-    : UrlMatcher.compare(a.urlMatcher, b.urlMatcher);
-const idSort = (a, b) => {
-    // Identically sorted STATE and URLMATCHER best rule will be chosen by `matchPriority` after each rule matches the URL
-    const useMatchPriority = {
-        STATE: true,
-        URLMATCHER: true,
-    };
-    const equal = useMatchPriority[a._type] && useMatchPriority[b._type];
-    return equal ? 0 : (a.$id || 0) - (b.$id || 0);
-};
-/**
- * Default rule priority sorting function.
- *
- * Sorts rules by:
- *
- * - Explicit priority (set rule priority using [[UrlRules.when]])
- * - Rule type (STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1)
- * - `UrlMatcher` specificity ([[UrlMatcher.compare]]): works for STATE and URLMATCHER types to pick the most specific rule.
- * - Rule registration order (for rule types other than STATE and URLMATCHER)
- *   - Equally sorted State and UrlMatcher rules will each match the URL.
- *     Then, the *best* match is chosen based on how many parameter values were matched.
- * @param {UrlRule} a
- * @param {UrlRule} b
- */
-function defaultRuleSortFn(a, b) {
-    let cmp = prioritySort(a, b);
-    if (cmp !== 0)
-        return cmp;
-    cmp = typeSort(a, b);
-    if (cmp !== 0)
-        return cmp;
-    cmp = urlMatcherSort(a, b);
-    if (cmp !== 0)
-        return cmp;
-    return idSort(a, b);
-}
-/**
- * API for managing URL rules
- *
- * This API is used to create and manage URL rules.
- * URL rules are a mechanism to respond to specific URL patterns.
- *
- * The most commonly used methods are [[otherwise]] and [[when]].
- *
- * This API is found at `$url.rules`.
- */
-class UrlRules {
-    /** @param {UrlRuleFactory} urlRuleFactory */
-    constructor(urlRuleFactory, router) {
-        /** @internal */
-        this._sorted = false;
-        this._sortFn = defaultRuleSortFn;
-        /**
-         * @type {UrlRule[]}
-         */
-        this._rules = [];
-        this._id = 0;
-        this._urlRuleFactory = urlRuleFactory;
-        this._router = router;
-    }
-    /**
-     * Remove a rule previously registered
-     * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
-     */
-    removeRule(rule) {
-        removeFrom(this._rules, rule);
-    }
-    /**
-     * Manually adds a URL Rule.
-     *
-     * Usually, a url rule is added using [[StateDeclaration.url]] or [[when]].
-     * This api can be used directly for more control (to register a [[BaseUrlRule]], for example).
-     * Rules can be created using [[urlRuleFactory]], or created manually as simple objects.
-     *
-     * A rule should have a `match` function which returns truthy if the rule matched.
-     * It should also have a `handler` function which is invoked if the rule is the best match.
-     *
-     * @param {UrlRule} rule the rule to register
-     * @returns {() => void } a function that deregisters the rule
-     */
-    rule(rule) {
-        if (!UrlRuleFactory.isUrlRule(rule))
-            throw new Error("invalid rule");
-        rule.$id = this._id++;
-        rule.priority = rule.priority || 0;
-        this._rules.push(rule);
-        this._router._markConfiguredRouting();
-        this._sorted = false;
-        return () => this.removeRule(rule);
-    }
-    /**
-     * Gets all registered rules
-     *
-     * @returns {UrlRule[]} an array of all the registered rules
-     */
-    rules() {
-        this.ensureSorted();
-        return this._rules;
-    }
-    /**
-     * Defines URL Rule priorities
-     *
-     * More than one rule ([[UrlRule]]) might match a given URL.
-     * This `compareFn` is used to sort the rules by priority.
-     * Higher priority rules should sort earlier.
-     *
-     * The [[defaultRuleSortFn]] is used by default.
-     *
-     * You only need to call this function once.
-     * The `compareFn` will be used to sort the rules as each is registered.
-     *
-     * If called without any parameter, it will re-sort the rules.
-     *
-     * ---
-     *
-     * Url rules may come from multiple sources: states's urls ([[StateDeclaration.url]]), [[when]], and [[rule]].
-     * Each rule has a (user-provided) [[UrlRule.priority]], a [[UrlRule.type]], and a [[UrlRule.$id]]
-     * The `$id` is is the order in which the rule was registered.
-     *
-     * The sort function should use these data, or data found on a specific type
-     * of [[UrlRule]] (such as [[StateRule.state]]), to order the rules as desired.
-     *
-     * #### Example:
-     * This compare function prioritizes rules by the order in which the rules were registered.
-     * A rule registered earlier has higher priority.
-     *
-     * ```js
-     * function compareFn(a, b) {
-     *   return a.$id - b.$id;
-     * }
-     * ```
-     * @param {((a: UrlRule, b: UrlRule) => number) | undefined} [compareFn] a function that compares to [[UrlRule]] objects.
-     * The `compareFn` should abide by the `Array.sort` compare function rules.
-     * Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
-     * Return a positive number if `b` should be higher priority.
-     * Return `0` if the rules are identical.
-     * See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
-     * for details.
-     */
-    sort(compareFn) {
-        const sorted = this.stableSort(this._rules, (this._sortFn = compareFn || this._sortFn));
-        // precompute _sortGroup values and apply to each rule
-        let group = 0;
-        for (let i = 0; i < sorted.length; i++) {
-            sorted[i]._group = group;
-            if (i < sorted.length - 1 &&
-                this._sortFn(sorted[i], sorted[i + 1]) !== 0) {
-                group++;
-            }
-        }
-        this._rules = sorted;
-        this._sorted = true;
-    }
-    ensureSorted() {
-        this._sorted || this.sort();
-    }
-    /**
-     * @param {any[]} arr
-     * @param {(arg0: any, arg1: any) => any} compareFn
-     */
-    stableSort(arr, compareFn) {
-        const arrOfWrapper = arr.map((elem, idx) => ({ elem, idx }));
-        arrOfWrapper.sort((wrapperA, wrapperB) => {
-            const cmpDiff = compareFn(wrapperA.elem, wrapperB.elem);
-            return cmpDiff === 0 ? wrapperA.idx - wrapperB.idx : cmpDiff;
-        });
-        return arrOfWrapper.map((wrapper) => wrapper.elem);
-    }
-    /**
-     * Registers a `matcher` and `handler` for custom URLs handling.
-     *
-     * The `matcher` can be:
-     *
-     * - a [[UrlMatcher]]: See: [[UrlMatcherFactory.compile]]
-     * - a `string`: The string is compiled to a [[UrlMatcher]]
-     * - a `RegExp`: The regexp is used to match the url.
-     *
-     * The `handler` can be:
-     *
-     * - a string: The url is redirected to the value of the string.
-     * - a function: The url is redirected to the return value of the function.
-     *
-     * ---
-     *
-     * When the `handler` is a `string` and the `matcher` is a `UrlMatcher` (or string), the redirect
-     * string is interpolated with parameter values.
-     *
-     * #### Example:
-     * When the URL is `/foo/123` the rule will redirect to `/bar/123`.
-     * ```js
-     * .when("/foo/:param1", "/bar/:param1")
-     * ```
-     *
-     * ---
-     *
-     * When the `handler` is a string and the `matcher` is a `RegExp`, the redirect string is
-     * interpolated with capture groups from the RegExp.
-     *
-     * #### Example:
-     * When the URL is `/foo/123` the rule will redirect to `/bar/123`.
-     * ```js
-     * .when(new RegExp("^/foo/(.*)$"), "/bar/$1");
-     * ```
-     *
-     * ---
-     *
-     * When the handler is a function, it receives the matched value, the current URL, and the router object (See [[UrlRuleHandlerFn]]).
-     * The "matched value" differs based on the `matcher`.
-     * For [[UrlMatcher]]s, it will be the matched state params.
-     * For `RegExp`, it will be the match array from `regexp.exec()`.
-     *
-     * If the handler returns a string, the URL is redirected to the string.
-     *
-     * #### Example:
-     * When the URL is `/foo/123` the rule will redirect to `/bar/123`.
-     * ```js
-     * .when(new RegExp("^/foo/(.*)$"), match => "/bar/" + match[1]);
-     * ```
-     *
-     * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-     * @param {StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
-     * @param {any} handler The path to redirect to, or a function that returns the path.
-     * @param {{ priority: any; }} options `{ priority: number }`
-     * @return {UrlRule} the registered [[UrlRule]]
-     */
-    when(matcher, handler, options) {
-        const rule = this._urlRuleFactory.create(matcher, handler);
-        if (isDefined(options && options.priority))
-            rule.priority = options.priority;
-        this.rule(rule);
-        return rule;
-    }
 }
 
 class ParamFactory {
@@ -29094,6 +28417,7 @@ class ParamFactory {
     }
 }
 
+const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
 /**
  * API for URL management
  */
@@ -29109,16 +28433,17 @@ class UrlService {
         }
         return this.$location;
     }
-    /**
-     * @param {ng.LocationProvider} $locationProvider
-     * @param {StateProvider} stateProvider
-     * @param {RouterProvider} globals
-     * @param {UrlConfigProviderType} urlConfigProvider
-     */
-    constructor($locationProvider, stateProvider, globals, urlConfigProvider) {
+    /** @internal */
+    _getStateService() {
+        if (!this._stateService) {
+            throw new Error("UrlService state service is not initialized");
+        }
+        return this._stateService;
+    }
+    constructor($locationProvider, router, urlConfigProvider) {
         this.$get = [
-            $injectTokens._location,
-            $injectTokens._rootScope,
+            _location,
+            _rootScope,
             /**
              *
              * @param {ng.LocationService} $location
@@ -29137,33 +28462,11 @@ class UrlService {
             },
         ];
         this._locationProvider = $locationProvider;
-        this.stateService = stateProvider;
-        /**
-         * @type {UrlRuleFactory} Provides services related to the URL
-         * @ignore
-         */
-        this._urlRuleFactory = new UrlRuleFactory(this, stateProvider, globals);
-        /**
-         * The nested [[UrlRules]] API for managing URL rules and rewrites
-         * @ignore
-         * @type {UrlRules}
-         */
-        this._rules = new UrlRules(this._urlRuleFactory, globals);
-        /**
-         * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
-         * @ignore
-         * @type {UrlConfigProvider}
-         */
+        this._stateService = undefined;
+        this._stateRoutes = [];
+        this._markConfiguredRouting = () => router._markConfiguredRouting();
         this._config = urlConfigProvider;
-        /**
-         * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
-         * @ignore
-         */
         this._paramFactory = new ParamFactory(this._config);
-        /**
-         * @type {((evt: ng.ScopeEvent) => void)[]}
-         * @ignore
-         */
         this._urlListeners = [];
     }
     /**
@@ -29281,7 +28584,9 @@ class UrlService {
      */
     onChange(callback) {
         this._urlListeners.push(callback);
-        return () => removeFrom(this._urlListeners, callback);
+        return () => {
+            removeFrom(this._urlListeners, callback);
+        };
     }
     /**
      * Gets the current URL parts.
@@ -29302,7 +28607,7 @@ class UrlService {
     /**
      * Activates the best rule for the current URL
      *
-     * Checks the current URL for a matching [[UrlRule]], then invokes that rule's handler.
+     * Checks the current URL for a matching state URL, then activates that state.
      * This method is called internally any time the URL has changed.
      *
      * This effectively activates the state (or redirect, etc) which matches the current URL.
@@ -29322,30 +28627,33 @@ class UrlService {
     sync(evt) {
         if (evt && evt.defaultPrevented)
             return;
-        const { stateService } = this;
         const url = this.parts();
-        /**
-         * @type {*}
-         */
         const best = this.match(url);
-        const applyResult = pattern([
-            [isString, (newurl) => this.url(newurl)],
-            [
-                TargetState.isDef,
-                (def) => stateService.go(
-                /** @type {string} */ def.state, def.params, def.options),
-            ],
-            [
-                is(TargetState),
-                (target) => {
-                    const targetState = target.state();
-                    return targetState
-                        ? stateService.go(targetState, target.params(), target.options())
-                        : undefined;
-                },
-            ],
-        ]);
-        applyResult(best && best.rule.handler(best.match, url));
+        if (!best)
+            return;
+        this._transitionToStateRoute(best.state, best.match);
+    }
+    /** @internal */
+    _registerStateRoute(state) {
+        if (!this._stateRoutes.includes(state)) {
+            this._stateRoutes.push(state);
+            this._markConfiguredRouting();
+        }
+    }
+    /** @internal */
+    _removeStateRoute(state) {
+        removeFrom(this._stateRoutes, state);
+    }
+    /** @internal */
+    _transitionToStateRoute(state, params) {
+        const $state = this._stateService;
+        if (!$state)
+            return;
+        const { current } = $state;
+        const currentHref = current ? $state.href(current, $state.params) : null;
+        if ($state.href(state, params) !== currentHref) {
+            $state.transitionTo(state, params, { inherit: true, source: "url" });
+        }
     }
     /**
      * Starts or stops listening for URL changes
@@ -29381,36 +28689,29 @@ class UrlService {
         }
     }
     /**
-     * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
+     * Given a URL (as a [[UrlParts]] object), check all state routes and determine the best match.
      * Return the result as a [[MatchResult]].
      * @param {UrlParts} url
      * @returns {any}
      */
     match(url) {
-        url = Object.assign({ path: "", search: {}, hash: "" }, url);
-        const rules = this._rules.rules();
-        // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
-        /**
-         *
-         * @param {UrlRule} rule
-         */
-        const checkRule = (rule) => {
-            const match = rule.match(url);
-            return match && { match, rule, weight: rule.matchPriority(match) };
-        };
-        // The rules are pre-sorted.
-        // - Find the first matching rule.
-        // - Find any other matching rule that sorted *exactly the same*, according to `.sort()`.
-        // - Choose the rule with the highest match weight.
+        url = assign({ path: "", search: {}, hash: "" }, url);
         let best;
-        for (let i = 0; i < rules.length; i++) {
-            // Stop when there is a 'best' rule and the next rule sorts differently than it.
-            if (best && best.rule._group !== rules[i]._group)
-                break;
-            const current = checkRule(rules[i]);
-            // Pick the best MatchResult
-            best =
-                !best || (current && current.weight > best.weight) ? current : best;
+        for (let i = 0; i < this._stateRoutes.length; i++) {
+            const state = this._stateRoutes[i];
+            const urlMatcher = state.url;
+            if (!isInstanceOf(urlMatcher, UrlMatcher))
+                continue;
+            const match = urlMatcher.exec(url.path, url.search, url.hash || "");
+            if (match === null || !urlMatcher.validates(match))
+                continue;
+            const weight = stateRouteMatchPriority(urlMatcher, match);
+            if (!best ||
+                UrlMatcher.compare(urlMatcher, best.urlMatcher) < 0 ||
+                (UrlMatcher.compare(urlMatcher, best.urlMatcher) === 0 &&
+                    weight > best.weight)) {
+                best = { match, state, urlMatcher, weight };
+            }
         }
         return best;
     }
@@ -29424,7 +28725,7 @@ class UrlService {
         }
         if (this.url() === this.location)
             return;
-        this.url(/** @type {string} */ this.location, true);
+        this.url(this.location, true);
     }
     /**
      * Internal API.
@@ -29488,12 +28789,12 @@ class UrlService {
         const urlConfig = this._config;
         // backward-compatible support for config.params -> config.state.params
         const params = config && !config.state && config.params;
-        config = params ? Object.assign({ state: { params } }, config) : config;
+        config = params ? assign({ state: { params } }, config) : config;
         const globalConfig = {
             strict: urlConfig._isStrictMode,
             caseInsensitive: urlConfig._isCaseInsensitive,
         };
-        return new UrlMatcher(urlPattern, urlConfig.paramTypes, this._paramFactory, Object.assign(globalConfig, config));
+        return new UrlMatcher(urlPattern, urlConfig.paramTypes, this._paramFactory, assign(globalConfig, config));
     }
     /**
      * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
@@ -29515,11 +28816,21 @@ class UrlService {
     }
 }
 /* @ignore */ UrlService.$inject = [
-    $injectTokens._locationProvider,
-    $injectTokens._stateProvider,
-    $injectTokens._routerProvider,
-    $injectTokens._urlConfigProvider,
+    _locationProvider,
+    _routerProvider,
+    _urlConfigProvider,
 ];
+function stateRouteMatchPriority(urlMatcher, params) {
+    const optional = urlMatcher.parameters().filter((param) => param.isOptional);
+    if (!optional.length)
+        return EXACT_ROUTE_MATCH_PRIORITY;
+    let matched = 0;
+    for (let i = 0; i < optional.length; i++) {
+        if (params[optional[i].id])
+            matched++;
+    }
+    return matched / optional.length;
+}
 /**
  * @param {string} url
  * @param {boolean} isHtml5
@@ -29537,6 +28848,36 @@ function appendBasePath(url, isHtml5, absolute, baseHref) {
 }
 
 const FQN_MULTIPLIER = 10000;
+function contextDepth(context) {
+    let cursor = context;
+    let depth = 1;
+    while (cursor && cursor.parent) {
+        depth += 1;
+        cursor = cursor.parent;
+    }
+    return depth;
+}
+function ngViewDepth(cache, ngView) {
+    const cached = cache.get(ngView);
+    if (cached !== undefined)
+        return cached;
+    const computed = ngView.fqn.split(".").length * FQN_MULTIPLIER +
+        contextDepth(ngView.creationContext);
+    cache.set(ngView, computed);
+    return computed;
+}
+function viewConfigDepth(cache, config) {
+    const cached = cache.get(config);
+    if (cached !== undefined)
+        return cached;
+    let context = config.viewDecl.$context;
+    let count = 0;
+    while (++count && context.parent) {
+        context = context.parent;
+    }
+    cache.set(config, count);
+    return count;
+}
 /**
  * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
@@ -29550,9 +28891,11 @@ class ViewService {
          * Returns the singleton view service instance.
          */
         this.$get = [
-            $injectTokens._templateFactory,
-            ($templateFactory) => {
+            _templateFactory,
+            _router,
+            ($templateFactory, $routerState) => {
                 this._templateFactory = $templateFactory;
+                this._rootViewContext($routerState._currentState || null);
                 return this;
             },
         ];
@@ -29604,49 +28947,19 @@ class ViewService {
             const ngView = this._ngViews[i];
             ngViewsByFqn[ngView.fqn] = ngView;
         }
-        const contextDepth = (context) => {
-            let cursor = context;
-            let depth = 1;
-            while (cursor && cursor.parent) {
-                depth += 1;
-                cursor = cursor.parent;
-            }
-            return depth;
-        };
         const ngViewDepthCache = new Map();
-        const ngViewDepth = (ngView) => {
-            const cached = ngViewDepthCache.get(ngView);
-            if (cached !== undefined)
-                return cached;
-            const computed = ngView.fqn.split(".").length * FQN_MULTIPLIER +
-                contextDepth(ngView.creationContext);
-            ngViewDepthCache.set(ngView, computed);
-            return computed;
-        };
         const viewConfigDepthCache = new Map();
-        const viewConfigDepth = (config) => {
-            const cached = viewConfigDepthCache.get(config);
-            if (cached !== undefined)
-                return cached;
-            let context = config.viewDecl.$context;
-            let count = 0;
-            while (++count && context.parent) {
-                context = context.parent;
-            }
-            viewConfigDepthCache.set(config, count);
-            return count;
-        };
-        this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
+        this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
+            ngViewDepth(ngViewDepthCache, right));
         for (let i = 0; i < this._ngViews.length; i++) {
             const ngView = this._ngViews[i];
-            const matches = ViewService._matches(ngViewsByFqn, ngView);
             let selectedViewConfig = undefined;
             let bestDepth = Number.NEGATIVE_INFINITY;
             for (let j = 0; j < this._viewConfigs.length; j++) {
                 const candidate = this._viewConfigs[j];
-                if (!matches(candidate))
+                if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
                     continue;
-                const candidateDepth = viewConfigDepth(candidate);
+                const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
                 if (!selectedViewConfig || candidateDepth > bestDepth) {
                     selectedViewConfig = candidate;
                     bestDepth = candidateDepth;
@@ -29666,11 +28979,7 @@ class ViewService {
         ngViews.push(ngView);
         this._sync();
         return () => {
-            const idx = ngViews.indexOf(ngView);
-            if (idx === -1) {
-                return;
-            }
-            ngViews.splice(idx, 1);
+            removeFrom(ngViews, ngView);
             this._sync();
         };
     }
@@ -29679,33 +28988,31 @@ class ViewService {
      * a specific active `ng-view`.
      */
     /** @internal */
-    static _matches(ngViewsByFqn, ngView) {
-        const ngViewFqn = ngView.fqn;
+    static _matches(ngViewsByFqn, ngView, viewConfig) {
+        if (!viewConfig || !viewConfig.viewDecl)
+            return false;
         const ngViewContext = ngView.creationContext;
-        return (viewConfig) => {
-            if (!viewConfig || !viewConfig.viewDecl)
-                return false;
-            const vcName = viewConfig.viewDecl.$ngViewName || "$default";
-            const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
-            const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
-            if (normalizedTarget !== ngViewFqn)
-                return false;
-            const viewContext = viewConfig.viewDecl.$context;
-            if (!equals(viewContext, ngViewContext) &&
-                vcContext !== ngViewContext.name) {
-                return false;
-            }
-            const childViewFqn = `${normalizedTarget}.${ngView.name}`;
-            return !ngViewsByFqn[childViewFqn];
-        };
+        const { viewDecl } = viewConfig;
+        const vcName = viewDecl.$ngViewName || "$default";
+        const vcContext = viewDecl.$ngViewContextAnchor || "";
+        const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
+        if (normalizedTarget !== ngView.fqn)
+            return false;
+        const viewContext = viewDecl.$context;
+        if (viewContext.name !== ngViewContext.name &&
+            vcContext !== ngViewContext.name) {
+            return false;
+        }
+        const childViewFqn = `${normalizedTarget}.${ngView.name}`;
+        return !ngViewsByFqn[childViewFqn];
     }
 }
 
 class AnchorScrollProvider {
     constructor() {
         this.$get = [
-            $injectTokens._location,
-            $injectTokens._rootScope,
+            _location,
+            _rootScope,
             /** Creates the runtime anchor-scroll service. */
             ($location, $rootScope) => {
                 // Helper function to get first anchor from a NodeList
@@ -29727,7 +29034,7 @@ class AnchorScrollProvider {
                     if (isFunction(offset)) {
                         offset = offset();
                     }
-                    else if (offset instanceof Element) {
+                    else if (isInstanceOf(offset, Element)) {
                         const style = window.getComputedStyle(offset);
                         if (style.position !== "fixed") {
                             offset = 0;
@@ -29762,7 +29069,7 @@ class AnchorScrollProvider {
                 }
                 const scroll = (hashOrElement) => {
                     // Direct element scrolling
-                    if (hashOrElement instanceof HTMLElement) {
+                    if (isInstanceOf(hashOrElement, HTMLElement)) {
                         scrollTo(hashOrElement);
                         return;
                     }
@@ -29825,10 +29132,8 @@ class CookieProvider {
 }
 /**
  *
- * Provides high-level APIs for interacting with browser cookies:
- *  - Raw get/set/remove
- *  - JSON serialization helpers
- *  - Global defaults supplied by $cookiesProvider
+ * High-level API for reading, writing, serializing, and removing browser
+ * cookies through the injectable `$cookie` service.
  */
 class CookieService {
     /**
@@ -29840,6 +29145,8 @@ class CookieService {
     /**
      * Retrieves a raw cookie value.
      *
+     * @param key - Cookie name to read.
+     * @returns The decoded cookie value, or `null` when not set.
      * @throws {URIError} – If decodeURIComponent fails.
      */
     get(key) {
@@ -29851,6 +29158,8 @@ class CookieService {
      * Retrieves a cookie and deserializes its JSON content.
      *
      * @template T
+     * @param key - Cookie name to read.
+     * @returns The parsed value, or `null` when not set.
      * @throws {SyntaxError} if cookie JSON is invalid
      */
     getObject(key) {
@@ -29871,6 +29180,9 @@ class CookieService {
     /**
      * Sets a raw cookie value.
      *
+     * @param key - Cookie name to write.
+     * @param value - String value to write.
+     * @param options - Cookie attributes for this write.
      * @throws {URIError} if key or value cannot be encoded
      */
     put(key, value, options = {}) {
@@ -29886,6 +29198,9 @@ class CookieService {
     /**
      * Serializes an object as JSON and stores it as a cookie.
      *
+     * @param key - Cookie name to write.
+     * @param value - JSON-serializable value.
+     * @param options - Cookie attributes for this write.
      * @throws {TypeError} if Object cannot be converted to JSON
      */
     putObject(key, value, options) {
@@ -29897,6 +29212,8 @@ class CookieService {
     /**
      * Removes a cookie by setting an expired date.
      *
+     * @param key - Cookie name to remove.
+     * @param options - Cookie attributes that must match the existing cookie.
      */
     remove(key, options = {}) {
         validateIsString(key, "key");
@@ -29959,7 +29276,7 @@ function buildOptions(opts = {}) {
     // Expires
     if (!isNullOrUndefined(opts.expires)) {
         let expDate;
-        if (opts.expires instanceof Date) {
+        if (isInstanceOf(opts.expires, Date)) {
             expDate = opts.expires;
         }
         else if (isNumber(opts.expires) || isString(opts.expires)) {
@@ -30391,11 +29708,11 @@ class Location {
 class LocationProvider {
     constructor() {
         this.$get = [
-            $injectTokens._rootScope,
-            $injectTokens._rootElement,
-            $injectTokens._router,
-            $injectTokens._exceptionHandler,
-            ($rootScope, $rootElement, $router, $exceptionHandler) => {
+            _rootScope,
+            _rootElement,
+            _router,
+            _exceptionHandler,
+            ($rootScope, $rootElement, $routerConfig, $exceptionHandler) => {
                 const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
                 const initialUrl = trimEmptyHash(window.location.href);
                 let appBase;
@@ -30436,7 +29753,7 @@ class LocationProvider {
                     const { rewriteLinks } = this.html5ModeConf;
                     // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
                     // currently we open nice url link and redirect then
-                    if (!isLinkRewritingEnabled(rewriteLinks, this._rewriteLinksConfigured, $router) ||
+                    if (!isLinkRewritingEnabled(rewriteLinks, this._rewriteLinksConfigured, $routerConfig) ||
                         event.ctrlKey ||
                         event.metaKey ||
                         event.shiftKey ||
@@ -30464,7 +29781,7 @@ class LocationProvider {
                         // an animation.
                         absHref = new URL(absHref.animVal).href;
                     }
-                    if (typeof absHref !== "string" && "animVal" in absHref) {
+                    if (!isString(absHref) && "animVal" in absHref) {
                         absHref = new URL(absHref.animVal).href;
                     }
                     // Ignore when url is started with javascript: or mailto:
@@ -30515,7 +29832,7 @@ class LocationProvider {
                         return;
                     }
                     queueMicrotask(() => {
-                        if (destroyed || typeof $rootScope.$broadcast !== "function")
+                        if (destroyed || !isFunction($rootScope.$broadcast))
                             return;
                         const oldUrl = $location.absUrl;
                         const oldState = $location._state;
@@ -30549,7 +29866,7 @@ class LocationProvider {
                         if (initializing || urlOrStateChanged) {
                             initializing = false;
                             setTimeout(() => {
-                                if (destroyed || typeof $rootScope.$broadcast !== "function") {
+                                if (destroyed || !isFunction($rootScope.$broadcast)) {
                                     return;
                                 }
                                 newUrl = $location.absUrl;
@@ -30577,7 +29894,7 @@ class LocationProvider {
                 $rootScope.$on("$updateBrowser", updateBrowser);
                 return $location;
                 function afterLocationChange(oldUrl, oldState) {
-                    if (destroyed || typeof $rootScope.$broadcast !== "function")
+                    if (destroyed || !isFunction($rootScope.$broadcast))
                         return;
                     $rootScope.$broadcast("$locationChangeSuccess", $location.absUrl, oldUrl, $location._state, oldState);
                 }
@@ -30658,7 +29975,7 @@ class LocationProvider {
      */
     cacheState() {
         const currentState = history.state ?? null;
-        if (!equals$1(currentState, this.lastCachedState)) {
+        if (!equals(currentState, this.lastCachedState)) {
             this._cachedState = currentState;
             this.lastCachedState = currentState;
             this._lastHistoryState = currentState;
@@ -30992,8 +30309,11 @@ class LogProvider {
 
 let eventBusInstance;
 /**
- * Configurable provider for an injectable event bus
- * @extends {ng.ServiceProvider}
+ * Configurable provider for the application-wide {@link PubSub} event bus.
+ *
+ * The provider creates the singleton `$eventBus` service and also exposes it on
+ * the global Angular service for integrations that publish from outside
+ * dependency injection.
  */
 class PubSubProvider {
     constructor($exceptionHandler, angularProvider) {
@@ -31003,18 +30323,25 @@ class PubSubProvider {
         angularProvider.$get().$eventBus = this.eventBus;
     }
 }
-PubSubProvider.$inject = [
-    $injectTokens._exceptionHandlerProvider,
-    $injectTokens._angularProvider,
-];
+PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
 class PubSub {
+    /**
+     * Create a publish/subscribe event bus.
+     *
+     * Applications usually receive the singleton instance by injecting
+     * `$eventBus` instead of constructing this class directly.
+     *
+     * @param $exceptionHandler - Handler invoked when a subscriber throws.
+     */
     constructor($exceptionHandler) {
         this._topics = nullObject();
         this._disposed = false;
         this.$exceptionHandler = $exceptionHandler;
     }
     /**
-     * Set instance to initial state
+     * Reset the bus to its initial state without disposing it.
+     *
+     * All topics and listeners are removed, and the instance can be reused.
      */
     reset() {
         this._topics = nullObject();
@@ -31038,6 +30365,9 @@ class PubSub {
     }
     /**
      * Subscribe a function to a topic.
+     *
+     * The returned function removes only this listener registration.
+     *
      * @param topic - The topic to subscribe to.
      * @param fn - The callback function to invoke when published.
      * @param [context] - Optional `this` context for the callback.
@@ -31055,7 +30385,9 @@ class PubSub {
     }
     /**
      * Subscribe a function to a topic only once.
+     *
      * Listener is removed before the first invocation.
+     *
      * @param topic - The topic to subscribe to.
      * @param fn - The callback function.
      * @param [context] - Optional `this` context for the callback.
@@ -31100,6 +30432,9 @@ class PubSub {
     }
     /**
      * Get the number of subscribers for a topic.
+     *
+     * @param topic - Topic name to inspect.
+     * @returns The number of currently registered listeners.
      */
     getCount(topic) {
         const listeners = this._topics[topic];
@@ -31107,7 +30442,10 @@ class PubSub {
     }
     /**
      * Publish a value to a topic asynchronously.
+     *
      * All listeners are invoked in the order they were added.
+     * Delivery is scheduled with `queueMicrotask`.
+     *
      * @param topic - The topic to publish.
      * @param args - Arguments to pass to listeners.
      * @returns True if any listeners exist for this topic.
@@ -31147,7 +30485,7 @@ class PubSub {
  *
  */
 function expandUriTemplate(template, vars = {}) {
-    if (typeof template !== "string")
+    if (!isString(template))
         throw new TypeError("template must be a string");
     return template.replace(/\{([^}]+)\}/g, (_match, expression) => {
         return expandExpression(expression, vars);
@@ -31385,14 +30723,38 @@ function expandExpression(expression, vars) {
     return conf.prefix + expandedParts.join(conf.sep);
 }
 
+/**
+ * Typed REST resource client backed by {@link HttpService}.
+ *
+ * A `RestService` is usually created by injecting `$rest` and calling it with a
+ * base URL, optional {@link EntityClass}, and optional `$http` request defaults.
+ */
 class RestService {
-    constructor($http, baseUrl, entityClass, options = {}) {
-        assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
+    /**
+     * @throws Error when `baseUrl` is empty or not a string.
+     */
+    constructor($http, 
+    /** Base URL or RFC 6570 URI template for this resource. */
+    baseUrl, 
+    /** Optional mapper that converts raw JSON objects into entity instances. */
+    entityClass, 
+    /** Extra `$http` options merged into every request. */
+    options = {}) {
+        if (!isString(baseUrl) || baseUrl.length === 0) {
+            throw new Error("baseUrl required");
+        }
         this._$http = $http;
         this._baseUrl = baseUrl;
         this._entityClass = entityClass;
         this._options = options;
     }
+    /**
+     * Expand an RFC 6570 URI template with the provided parameters.
+     *
+     * @param template - URI template such as `/api/{org}/repos/{repo}`.
+     * @param params - Values used for URI template expansion.
+     * @returns The expanded URL.
+     */
     buildUrl(template, params) {
         return expandUriTemplate(template, params || {});
     }
@@ -31401,6 +30763,12 @@ class RestService {
             return data;
         return this._entityClass ? new this._entityClass(data) : data;
     }
+    /**
+     * Fetch a collection.
+     *
+     * Parameters are used for URI template expansion and are also forwarded to
+     * `$http` as query params. Non-array responses resolve to an empty array.
+     */
     async list(params = {}) {
         const url = this.buildUrl(this._baseUrl, params);
         const resp = await this.request("GET", url, null, params);
@@ -31408,19 +30776,45 @@ class RestService {
             return [];
         return resp.data.map((data) => this.mapEntity(data));
     }
+    /**
+     * Fetch one resource by ID.
+     *
+     * @param id - Resource identifier appended to the base URL.
+     * @param params - Additional URI template or query parameters.
+     * @returns The mapped entity, raw response value, or `null` when empty.
+     * @throws Error when `id` is null or undefined.
+     */
     async read(id, params = {}) {
-        assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+        if (isNullOrUndefined(id))
+            throw new Error(`badarg:id ${id}`);
         const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
         const resp = await this.request("GET", url, null, params);
         return this.mapEntity(resp.data) ?? null;
     }
+    /**
+     * Create a resource using `POST`.
+     *
+     * @param item - Request body to create.
+     * @returns The server representation, mapped through `entityClass` when set.
+     * @throws Error when `item` is null or undefined.
+     */
     async create(item) {
-        assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
+        if (isNullOrUndefined(item))
+            throw new Error(`badarg:item ${item}`);
         const resp = await this.request("POST", this._baseUrl, item);
         return this.mapEntity(resp.data);
     }
+    /**
+     * Update a resource using `PUT`.
+     *
+     * @param id - Resource identifier appended to the base URL.
+     * @param item - Request body to send.
+     * @returns The updated entity, raw value, or `null` when the request fails.
+     * @throws Error when `id` is null or undefined.
+     */
     async update(id, item) {
-        assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+        if (isNullOrUndefined(id))
+            throw new Error(`badarg:id ${id}`);
         const url = `${this._baseUrl}/${id}`;
         try {
             const resp = await this.request("PUT", url, item);
@@ -31430,8 +30824,16 @@ class RestService {
             return null;
         }
     }
+    /**
+     * Delete a resource by ID.
+     *
+     * @param id - Resource identifier appended to the base URL.
+     * @returns `true` when the request succeeds, otherwise `false`.
+     * @throws Error when `id` is null or undefined.
+     */
     async delete(id) {
-        assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+        if (isNullOrUndefined(id))
+            throw new Error(`badarg:id ${id}`);
         const url = `${this._baseUrl}/${id}`;
         try {
             await this.request("DELETE", url);
@@ -31456,7 +30858,7 @@ class RestProvider {
     constructor() {
         this._definitions = [];
         this.$get = [
-            $injectTokens._http,
+            _http,
             ($http) => {
                 const services = new Map();
                 const factory = (baseUrl, entityClass, options = {}) => new RestService($http, baseUrl, entityClass, options);
@@ -31467,9 +30869,685 @@ class RestProvider {
             },
         ];
     }
+    /**
+     * Register a REST resource definition during module configuration.
+     *
+     * Registered definitions are available to the `$rest` factory when the
+     * provider creates it.
+     */
     rest(name, url, entityClass, options = {}) {
         this._definitions.push({ name, url, entityClass, options });
     }
+}
+
+const $sceMinErr = minErr("$sce");
+const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST = /^\s*(https?|s?ftp|mailto|tel|file):/;
+const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST = /^\s*((https?|ftp|file|blob):|data:image\/)/;
+// Copied from:
+// http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
+// Prereq: s is a string.
+/**
+ * Escapes a string so it can be embedded safely inside a regular expression.
+ */
+function escapeForRegexp(str) {
+    return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
+}
+/**
+ * Adjusts a matcher string or `RegExp` into the normalized SCE matcher form.
+ */
+function adjustMatcher(matcher) {
+    if (matcher === "self") {
+        return matcher;
+    }
+    if (isString(matcher)) {
+        // Strings match exactly except for 2 wildcards - '*' and '**'.
+        // '*' matches any character except those from the set ':/.?&'.
+        // '**' matches any character (like .* in a RegExp).
+        // More than 2 *'s raises an error as it's ill defined.
+        if (matcher.indexOf("***") > -1) {
+            throw $sceMinErr("iwcard", "Illegal sequence *** in string matcher.  String: {0}", matcher);
+        }
+        matcher = escapeForRegexp(matcher)
+            .replace(/\\\*\\\*/g, ".*")
+            .replace(/\\\*/g, "[^:/.?&;]*");
+        return new RegExp(`^${matcher}$`);
+    }
+    if (isRegExp(matcher)) {
+        // The only other type of matcher allowed is a Regexp.
+        // Match entire URL / disallow partial matches.
+        // Flags are reset (i.e. no global, ignoreCase or multiline)
+        return new RegExp(`^${matcher.source}$`);
+    }
+    throw $sceMinErr("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
+}
+/**
+ * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict
+ * Contextual Escaping (SCE)} services to AngularTS.
+ *
+ * For an overview of this service and the functionality it provides in AngularTS, see the main
+ * page for {@link ng.$sce SCE}. The current page is targeted for developers who need to alter how
+ * SCE works in their application, which shouldn't be needed in most cases.
+ *
+ * <div class="alert alert-danger">
+ * AngularTS strongly relies on contextual escaping for the security of bindings: disabling or
+ * modifying this might cause cross site scripting (XSS) vulnerabilities. For libraries owners,
+ * changes to this service will also influence users, so be extra careful and document your changes.
+ * </div>
+ *
+ * Typically, you would configure or override the {@link ng.$sceDelegate $sceDelegate} instead of
+ * the `$sce` service to customize the way Strict Contextual Escaping works in AngularTS.  This is
+ * because, while the `$sce` provides numerous shorthand methods, etc., you really only need to
+ * override 3 core functions (`trustAs`, `getTrusted` and `valueOf`) to replace the way things
+ * work because `$sce` delegates to `$sceDelegate` for these operations.
+ *
+ * Refer {@link ng.$sceDelegateProvider $sceDelegateProvider} to configure this service.
+ *
+ * The default instance of `$sceDelegate` should work out of the box with little pain.  While you
+ * can override it completely to change the behavior of `$sce`, the common case would
+ * involve configuring the {@link ng.$sceDelegateProvider $sceDelegateProvider} instead by setting
+ * your own trusted and banned resource lists for trusting URLs used for loading AngularTS resources
+ * such as templates.  Refer {@link ng.$sceDelegateProvider#trustedResourceUrlList
+ * $sceDelegateProvider.trustedResourceUrlList} and {@link
+ * ng.$sceDelegateProvider#bannedResourceUrlList $sceDelegateProvider.bannedResourceUrlList}
+ */
+/**
+ *
+ * The `$sceDelegateProvider` provider allows developers to configure the {@link ng.$sceDelegate
+ * $sceDelegate service}, used as a delegate for {@link ng.$sce Strict Contextual Escaping (SCE)}.
+ *
+ * The `$sceDelegateProvider` allows one to get/set the `trustedResourceUrlList` and
+ * `bannedResourceUrlList` used to ensure that the URLs used for sourcing AngularTS templates and
+ * other script-running URLs are safe (all places that use the `$sce.RESOURCE_URL` context). See
+ * {@link ng.$sceDelegateProvider#trustedResourceUrlList
+ * $sceDelegateProvider.trustedResourceUrlList} and
+ * {@link ng.$sceDelegateProvider#bannedResourceUrlList $sceDelegateProvider.bannedResourceUrlList},
+ *
+ * For the general details about this service in AngularTS, read the main page for {@link ng.$sce
+ * Strict Contextual Escaping (SCE)}.
+ *
+ * **Example**:  Consider the following case. <a name="example"></a>
+ *
+ * - your app is hosted at url `http://myapp.example.com/`
+ * - but some of your templates are hosted on other domains you control such as
+ *   `http://srv01.assets.example.com/`, `http://srv02.assets.example.com/`, etc.
+ * - and you have an open redirect at `http://myapp.example.com/clickThru?...`.
+ *
+ * Here is what a secure configuration for this scenario might look like:
+ *
+ * ```
+ *  angular.module('myApp', []).config(function($sceDelegateProvider) {
+ *    $sceDelegateProvider.trustedResourceUrlList([
+ *      // Allow same origin resource loads.
+ *      'self',
+ *      // Allow loading from our assets domain.  Notice the difference between * and **.
+ *      'http://srv*.assets.example.com/**'
+ *    ]);
+ *
+ *    // The banned resource URL list overrides the trusted resource URL list so the open redirect
+ *    // here is blocked.
+ *    $sceDelegateProvider.bannedResourceUrlList([
+ *      'http://myapp.example.com/clickThru**'
+ *    ]);
+ *  });
+ * ```
+ * Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require
+ * you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates
+ * requested by {@link ng.$templateRequest $templateRequest} that are present in
+ * {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism
+ * to populate your templates in that cache at config time, then it is a good idea to remove 'self'
+ * from the trusted resource URL lsit. This helps to mitigate the security impact of certain types
+ * of issues, like for instance attacker-controlled `ng-includes`.
+ */
+class SceDelegateProvider {
+    constructor() {
+        // Resource URLs can also be trusted by policy.
+        let trustedResourceUrlList = ["self"];
+        let bannedResourceUrlList = [];
+        let aHrefSanitizationTrustedUrlList = DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST;
+        let imgSrcSanitizationTrustedUrlList = DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST;
+        /**
+         *
+         * @param value When provided, replaces the trustedResourceUrlList with
+         *     the value provided.  This must be an array or null.  A snapshot of this array is used so
+         *     further changes to the array are ignored.
+         *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
+         *     allowed in this array.
+         *
+         * @returns The currently set trusted resource URL array.
+         *
+         *
+         * Sets/Gets the list trusted of resource URLs.
+         *
+         * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
+         * allowing only same origin resource requests.
+         *
+         * <div class="alert alert-warning">
+         * **Note:** the default `trustedResourceUrlList` of 'self' is not recommended if your app shares
+         * its origin with other apps! It is a good idea to limit it to only your application's directory.
+         * </div>
+         */
+        this.trustedResourceUrlList = function (value) {
+            if (arguments.length) {
+                const list = value || [];
+                trustedResourceUrlList = list.map(adjustMatcher);
+            }
+            return trustedResourceUrlList;
+        };
+        /**
+         *
+         * @param value When provided, replaces the `bannedResourceUrlList` with
+         *     the value provided. This must be an array or null. A snapshot of this array is used so
+         *     further changes to the array are ignored.</p><p>
+         *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
+         *     allowed in this array.</p><p>
+         *     The typical usage for the `bannedResourceUrlList` is to **block
+         *     [open redirects](http://cwe.mitre.org/data/definitions/601.html)** served by your domain as
+         *     these would otherwise be trusted but actually return content from the redirected domain.
+         *     </p><p>
+         *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
+         *     the final say.
+         *
+         * @returns The currently set `bannedResourceUrlList` array.
+         *
+         *
+         * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
+         *
+         * The **default value** when no trusted resource URL list has been explicitly set is the empty
+         * array (i.e. there is no `bannedResourceUrlList`.)
+         */
+        this.bannedResourceUrlList = function (value) {
+            if (arguments.length) {
+                const list = value || [];
+                bannedResourceUrlList = list.map(adjustMatcher);
+            }
+            return bannedResourceUrlList;
+        };
+        /**
+         * Retrieves or overrides the default regular expression that is used for
+         * determining trusted safe urls during a[href] sanitization.
+         *
+         * The sanitization is a security measure aimed at preventing XSS attacks
+         * via html links.
+         *
+         * Any url about to be assigned to a[href] via data-binding is first
+         * normalized and turned into an absolute url. Afterwards, the url is
+         * matched against the `aHrefSanitizationTrustedUrlList` regular expression.
+         * If a match is found, the original url is written into the DOM. Otherwise,
+         * the absolute url is prefixed with `'unsafe:'` string and only then is it
+         * written into the DOM.
+         *
+         * @param regexp - New regexp to trust urls with.
+         * @returns Current RegExp if called without value or self for chaining
+         * otherwise.
+         */
+        this.aHrefSanitizationTrustedUrlList = function (regexp) {
+            if (isDefined(regexp)) {
+                aHrefSanitizationTrustedUrlList = regexp;
+                return this;
+            }
+            return aHrefSanitizationTrustedUrlList;
+        };
+        /**
+         * Retrieves or overrides the default regular expression that is used for
+         * determining trusted safe urls during media src sanitization.
+         *
+         * The sanitization is a security measure aimed at preventing XSS attacks
+         * via html links.
+         *
+         * Any url about to be assigned to img[src], srcset, or compatible media
+         * bindings via data-binding is first normalized and turned into an absolute
+         * url. Afterwards, the url is matched against the
+         * `imgSrcSanitizationTrustedUrlList` regular expression. If a match is
+         * found, the original url is written into the DOM. Otherwise, the absolute
+         * url is prefixed with `'unsafe:'` string and only then is it written into
+         * the DOM.
+         *
+         * @param regexp - New regexp to trust urls with.
+         * @returns Current RegExp if called without value or self for chaining
+         * otherwise.
+         */
+        this.imgSrcSanitizationTrustedUrlList = function (regexp) {
+            if (isDefined(regexp)) {
+                imgSrcSanitizationTrustedUrlList = regexp;
+                return this;
+            }
+            return imgSrcSanitizationTrustedUrlList;
+        };
+        this.$get = [
+            _injector,
+            _window,
+            _exceptionHandler,
+            /**
+             * Creates the `$sceDelegate` service using the configured policies and sanitizers.
+             */
+            function ($injector, $window, $exceptionHandler) {
+                let htmlSanitizer = function () {
+                    $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
+                };
+                if ($injector.has("$sanitize")) {
+                    htmlSanitizer = $injector.get("$sanitize");
+                }
+                /**
+                 * Tests whether a parsed URL matches one SCE allow/deny matcher.
+                 */
+                function matchUrl(matcher, parsedUrl) {
+                    if (matcher === "self") {
+                        return (urlIsSameOrigin(parsedUrl) || urlIsSameOriginAsBaseUrl(parsedUrl));
+                    }
+                    // definitely a regex.  See adjustMatchers()
+                    return !!matcher.exec(parsedUrl.href);
+                }
+                /**
+                 * Returns whether a resource URL is permitted by the current policy lists.
+                 */
+                function isResourceUrlAllowedByPolicy(url) {
+                    const parsedUrl = urlResolve(url.toString());
+                    let i;
+                    let j;
+                    let allowed = false;
+                    // Ensure that at least one item from the trusted resource URL list allows this url.
+                    for (i = 0, j = trustedResourceUrlList.length; i < j; i++) {
+                        if (matchUrl(trustedResourceUrlList[i], parsedUrl)) {
+                            allowed = true;
+                            break;
+                        }
+                    }
+                    if (allowed) {
+                        // Ensure that no item from the banned resource URL list has blocked this url.
+                        for (i = 0, j = bannedResourceUrlList.length; i < j; i++) {
+                            if (matchUrl(bannedResourceUrlList[i], parsedUrl)) {
+                                allowed = false;
+                                break;
+                            }
+                        }
+                    }
+                    return allowed;
+                }
+                function sanitizeUri(uri, isMediaUrl) {
+                    if (!uri) {
+                        return uri;
+                    }
+                    const regex = isMediaUrl
+                        ? imgSrcSanitizationTrustedUrlList
+                        : aHrefSanitizationTrustedUrlList;
+                    const normalizedVal = new URL(uri.trim(), $window.location.href).href;
+                    if (normalizedVal !== "" && !normalizedVal.match(regex)) {
+                        return `unsafe:${normalizedVal}`;
+                    }
+                    return uri;
+                }
+                /**
+                 * Creates one trusted-value holder constructor for a specific SCE context.
+                 */
+                function generateHolderType(Base) {
+                    /** @param trustedValue */
+                    const holderType = function TrustedValueHolderType(trustedValue = "") {
+                        this._unwrapTrustedValue = function () {
+                            return trustedValue;
+                        };
+                    };
+                    if (Base) {
+                        holderType.prototype = new Base();
+                    }
+                    holderType.prototype.valueOf =
+                        function sceValueOf() {
+                            return this._unwrapTrustedValue();
+                        };
+                    holderType.prototype.toString =
+                        function sceToString() {
+                            return this._unwrapTrustedValue().toString();
+                        };
+                    return holderType;
+                }
+                const trustedValueHolderBase = generateHolderType();
+                const byType = {};
+                byType[SCE_CONTEXTS._HTML] = generateHolderType(trustedValueHolderBase);
+                byType[SCE_CONTEXTS._MEDIA_URL] = generateHolderType(trustedValueHolderBase);
+                byType[SCE_CONTEXTS._URL] = generateHolderType(byType[SCE_CONTEXTS._MEDIA_URL]);
+                byType[SCE_CONTEXTS._RESOURCE_URL] = generateHolderType(byType[SCE_CONTEXTS._URL]);
+                /**
+                 * Returns a trusted representation of the parameter for the specified context. This trusted
+                 * object will later on be used as-is, without any security check, by bindings or directives
+                 * that require this security context.
+                 * For instance, marking a string as trusted for the `$sce.HTML` context will entirely bypass
+                 * the potential `$sanitize` call in corresponding `$sce.HTML` bindings or directives, such as
+                 * `ng-bind-html`. Note that in most cases you won't need to call this function: if you have the
+                 * sanitizer loaded, passing the value itself will render all the HTML that does not pose a
+                 * security risk.
+                 *
+                 * See {@link ng.$sceDelegate#getTrusted getTrusted} for the function that will consume those
+                 * trusted values, and {@link ng.$sce $sce} for general documentation about strict contextual
+                 * escaping.
+                 *
+                 * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
+                 *     `$sce.RESOURCE_URL` or `$sce.HTML`.
+                 *
+                 * @param trustedValue The value that should be considered trusted.
+                 * @returns A trusted representation of value, that can be used in the given context.
+                 */
+                function trustAs(type, trustedValue) {
+                    const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
+                    if (!Constructor) {
+                        $exceptionHandler($sceMinErr("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
+                        return undefined;
+                    }
+                    if (trustedValue === null ||
+                        isUndefined(trustedValue) ||
+                        trustedValue === "") {
+                        return trustedValue;
+                    }
+                    // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
+                    // mutable objects, we ensure here that the value passed in is actually a string.
+                    if (!isString(trustedValue)) {
+                        $exceptionHandler($sceMinErr("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
+                        return undefined;
+                    }
+                    const tst = new Constructor(trustedValue);
+                    return tst;
+                }
+                /**
+                 * If the passed parameter had been returned by a prior call to {@link ng.$sceDelegate#trustAs
+                 * `$sceDelegate.trustAs`}, returns the value that had been passed to {@link
+                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}.
+                 *
+                 * If the passed parameter is not a value that had been returned by {@link
+                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}, it must be returned as-is.
+                 *
+                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}
+                 *     call or anything else.
+                 * @returns The `value` that was originally provided to {@link ng.$sceDelegate#trustAs
+                 *     `$sceDelegate.trustAs`} if `value` is the result of such a call.  Otherwise, returns
+                 *     `value` unchanged.
+                 */
+                function valueOf(maybeTrusted) {
+                    if (isInstanceOf(maybeTrusted, trustedValueHolderBase)) {
+                        return maybeTrusted._unwrapTrustedValue();
+                    }
+                    return maybeTrusted;
+                }
+                /**
+                 *
+                 * Given an object and a security context in which to assign it, returns a value that's safe to
+                 * use in this context, which was represented by the parameter. To do so, this function either
+                 * unwraps the safe type it has been given (for instance, a {@link ng.$sceDelegate#trustAs
+                 * `$sceDelegate.trustAs`} result), or it might try to sanitize the value given, depending on
+                 * the context and sanitizer availablility.
+                 *
+                 * The contexts that can be sanitized are $sce.MEDIA_URL, $sce.URL and $sce.HTML. The first two are available
+                 * by default, and the third one relies on the `$sanitize` service (which may be loaded through
+                 * the `ngSanitize` module). Furthermore, for $sce.RESOURCE_URL context, a plain string may be
+                 * accepted if the resource url policy defined by {@link ng.$sceDelegateProvider#trustedResourceUrlList
+                 * `$sceDelegateProvider.trustedResourceUrlList`} and {@link ng.$sceDelegateProvider#bannedResourceUrlList
+                 * `$sceDelegateProvider.bannedResourceUrlList`} accepts that resource.
+                 *
+                 * This function will throw if the safe type isn't appropriate for this context, or if the
+                 * value given cannot be accepted in the context (which might be caused by sanitization not
+                 * being available, or the value not being recognized as safe).
+                 *
+                 * <div class="alert alert-danger">
+                 * Disabling auto-escaping is extremely dangerous, it usually creates a Cross Site Scripting
+                 * (XSS) vulnerability in your application.
+                 * </div>
+                 *
+                 * @param type The context in which this value is to be used (such as `$sce.HTML`).
+                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs
+                 *     `$sceDelegate.trustAs`} call, or anything else (which will not be considered trusted.)
+                 * @returns A version of the value that's safe to use in the given context, or throws an
+                 *     exception if this is impossible.
+                 */
+                function getTrusted(type, maybeTrusted) {
+                    if (maybeTrusted === null ||
+                        isUndefined(maybeTrusted) ||
+                        maybeTrusted === "") {
+                        return maybeTrusted;
+                    }
+                    const constructor = hasOwn(byType, type) ? byType[type] : null;
+                    // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
+                    // as-is.
+                    if (constructor && isInstanceOf(maybeTrusted, constructor)) {
+                        return maybeTrusted._unwrapTrustedValue();
+                    }
+                    // If maybeTrusted is a trusted class instance but not of the correct trusted type
+                    // then unwrap it and allow it to pass through to the rest of the checks
+                    if (isFunction(maybeTrusted._unwrapTrustedValue)) {
+                        maybeTrusted = maybeTrusted._unwrapTrustedValue();
+                    }
+                    // If we get here, then we will either sanitize the value or throw an exception.
+                    if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
+                        // we attempt to sanitize non-resource URLs
+                        return sanitizeUri(maybeTrusted.toString(), type === SCE_CONTEXTS._MEDIA_URL);
+                    }
+                    if (type === SCE_CONTEXTS._RESOURCE_URL) {
+                        if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
+                            return maybeTrusted;
+                        }
+                        $exceptionHandler($sceMinErr("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", maybeTrusted.toString()));
+                        return undefined;
+                    }
+                    else if (type === SCE_CONTEXTS._HTML) {
+                        // htmlSanitizer throws its own error when no sanitizer is available.
+                        return htmlSanitizer();
+                    }
+                    // Default error when the $sce service has no way to make the input safe.
+                    return $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
+                }
+                return { trustAs, getTrusted, valueOf };
+            },
+        ];
+    }
+}
+function SceProvider() {
+    let enabled = true;
+    /**
+     * @param value If provided, then enables/disables SCE application-wide.
+     * @returns True if SCE is enabled, false otherwise.
+     *
+     *
+     * Enables/disables SCE and returns the current value.
+     */
+    this.enabled = function (value) {
+        if (arguments.length) {
+            enabled = !!value;
+        }
+        return enabled;
+    };
+    this.$get = [
+        _parse,
+        _sceDelegate,
+        /**
+         * Creates the runtime `$sce` service.
+         */
+        ($parse, $sceDelegate) => {
+            const sce = {};
+            /**
+             * @returns True if SCE is enabled, false otherwise.  If you want to set the value, you
+             *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
+             *
+             *
+             * Returns a boolean indicating if SCE is enabled.
+             */
+            sce.isEnabled = function () {
+                return enabled;
+            };
+            sce.trustAs = $sceDelegate.trustAs;
+            sce.getTrusted = $sceDelegate.getTrusted;
+            sce.valueOf = $sceDelegate.valueOf;
+            if (!enabled) {
+                /**
+                 * Disables trust enforcement when SCE is configured off.
+                 */
+                sce.trustAs = sce.getTrusted = function (type, value) {
+                    return value;
+                };
+                sce.valueOf = (v) => v;
+            }
+            /**
+             * Converts AngularTS {@link guide/expression expression} into a function.  This is like {@link
+             * ng.$parse $parse} and is identical when the expression is a literal constant.  Otherwise, it
+             * wraps the expression in a call to {@link ng.$sce#getTrusted $sce.getTrusted(*type*,
+             * *result*)}
+             *
+             * @param type The SCE context in which this result will be used.
+             * @param expr String expression to compile.
+             * @returns A function which represents the compiled expression:
+             *
+             *    * `context` – `{object}` – an object against which any expressions embedded in the
+             *      strings are evaluated against (typically a scope object).
+             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
+             *      in `context`.
+             */
+            sce.parseAs = (type, expr) => {
+                const parsed = $parse(expr);
+                if (parsed._literal && parsed._constant) {
+                    return parsed;
+                }
+                return $parse(expr, (value) => sce.getTrusted(type, value));
+            };
+            /**
+             * Delegates to {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}. As such, returns a
+             * wrapped object that represents your value, and the trust you have in its safety for the given
+             * context. AngularTS can then use that value as-is in bindings of the specified secure context.
+             * This is used in bindings for `ng-bind-html`, `ng-include`, and most `src` attribute
+             * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
+             *
+             * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
+             *     `$sce.RESOURCE_URL` or `$sce.HTML`.
+             *
+             * @param value The value that that should be considered trusted.
+             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
+             *     in the context you specified.
+             */
+            /**
+             * Shorthand method.  `$sce.trustAsHtml(value)` →
+             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.HTML, value)`}
+             *
+             * @param value The value to mark as trusted for `$sce.HTML` context.
+             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
+             *     in `$sce.HTML` context (like `ng-bind-html`).
+             */
+            /**
+             * Shorthand method.  `$sce.trustAsUrl(value)` →
+             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.URL, value)`}
+             *
+             * @param value The value to mark as trusted for `$sce.URL` context.
+             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
+             *     in `$sce.URL` context. That context is currently unused, so there are almost no reasons
+             *     to use this function so far.
+             */
+            /**
+             * Shorthand method.  `$sce.trustAsResourceUrl(value)` →
+             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.RESOURCE_URL, value)`}
+             *
+             * @param value The value to mark as trusted for `$sce.RESOURCE_URL` context.
+             * @returns A wrapped version of value that can be used as a trusted variant of your `value`
+             *     in `$sce.RESOURCE_URL` context (template URLs in `ng-include`, most `src` attribute
+             *     bindings, ...)
+             */
+            /**
+             * Delegates to {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted`}.  As such,
+             * takes any input, and either returns a value that's safe to use in the specified context,
+             * or throws an exception. This function is aware of trusted values created by the `trustAs`
+             * function and its shorthands, and when contexts are appropriate, returns the unwrapped value
+             * as-is. Finally, this function can also throw when there is no way to turn `maybeTrusted` in a
+             * safe value (e.g., no sanitization is available or possible.)
+             *
+             * @param type The context in which this value is to be used.
+             * @param maybeTrusted The result of a prior {@link ng.$sce#trustAs
+             *     `$sce.trustAs`} call, or anything else (which will not be considered trusted.)
+             * @returns A version of the value that's safe to use in the given context, or throws an
+             *     exception if this is impossible.
+             */
+            /**
+             * Shorthand method.  `$sce.getTrustedHtml(value)` →
+             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.HTML, value)`}
+             *
+             * @param value The value to pass to `$sce.getTrusted`.
+             * @returns The return value of `$sce.getTrusted($sce.HTML, value)`
+             */
+            /**
+             * Shorthand method.  `$sce.getTrustedUrl(value)` →
+             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
+             *
+             * @param value The value to pass to `$sce.getTrusted`.
+             * @returns The return value of `$sce.getTrusted($sce.URL, value)`
+             */
+            /**
+             * Shorthand method.  `$sce.getTrustedResourceUrl(value)` →
+             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.RESOURCE_URL, value)`}
+             *
+             * @param value The value to pass to `$sceDelegate.getTrusted`.
+             * @returns The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
+             */
+            /**
+             * Shorthand method.  `$sce.parseAsHtml(expression string)` →
+             *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
+             *
+             * @param expression String expression to compile.
+             * @returns A function which represents the compiled expression:
+             *
+             *    * `context` – `{object}` – an object against which any expressions embedded in the
+             *      strings are evaluated against (typically a scope object).
+             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
+             *      in `context`.
+             */
+            /**
+             * Shorthand method.  `$sce.parseAsUrl(value)` →
+             *     {@link ng.$sceparseAs `$sce.parseAs($sce.URL, value)`}
+             *
+             * @param expression String expression to compile.
+             * @returns A function which represents the compiled expression:
+             *
+             *    * `context` – `{object}` – an object against which any expressions embedded in the
+             *      strings are evaluated against (typically a scope object).
+             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
+             *      in `context`.
+             */
+            /**
+             * Shorthand method.  `$sce.parseAsResourceUrl(value)` →
+             *     {@link ng.$sceparseAs `$sce.parseAs($sce.RESOURCE_URL, value)`}
+             *
+             * @param expression String expression to compile.
+             * @returns A function which represents the compiled expression:
+             *
+             *    * `context` – `{object}` – an object against which any expressions embedded in the
+             *      strings are evaluated against (typically a scope object).
+             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
+             *      in `context`.
+             */
+            /**
+             * Shorthand method.  `$sce.parseAsJs(value)` →
+             *     {@link ng.$sceparseAs `$sce.parseAs($sce.JS, value)`}
+             *
+             * @param expression String expression to compile.
+             * @returns A function which represents the compiled expression:
+             *
+             *    * `context` – `{object}` – an object against which any expressions embedded in the
+             *      strings are evaluated against (typically a scope object).
+             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
+             *      in `context`.
+             */
+            // Shorthand delegations.
+            const parse = sce.parseAs;
+            const { getTrusted } = sce;
+            const { trustAs } = sce;
+            entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
+                const lName = name.replace(/^_/, "").toLowerCase();
+                /** @param expr */
+                sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
+                    return parse(enumValue, expr);
+                };
+                /** @param value */
+                sce[snakeToCamel(`get_trusted_${lName}`)] = function (value) {
+                    return getTrusted(enumValue, value);
+                };
+                /** @param value */
+                sce[snakeToCamel(`trust_as_${lName}`)] = function (value) {
+                    return trustAs(enumValue, value);
+                };
+            });
+            return sce;
+        },
+    ];
 }
 
 /**
@@ -31513,7 +31591,7 @@ class StreamConnection {
         if (this._closed)
             return;
         // Close the old connection if it exists
-        if (this._connection && typeof this._connection.close === "function") {
+        if (this._connection && isFunction(this._connection.close)) {
             this._connection.close();
         }
         // Create new connection
@@ -31527,7 +31605,7 @@ class StreamConnection {
      * @param data - Data to send.
      */
     send(data) {
-        if (this._connection instanceof WebSocket) {
+        if (isInstanceOf(this._connection, WebSocket)) {
             this._connection.send(JSON.stringify(data));
         }
         else {
@@ -31552,12 +31630,12 @@ class StreamConnection {
     /** @internal */
     _bindEvents() {
         const conn = this._connection;
-        if (conn instanceof EventSource) {
+        if (isInstanceOf(conn, EventSource)) {
             conn.addEventListener("open", (err) => this._handleOpen(err));
             conn.addEventListener("message", (err) => this._handleMessage(err.data, err));
             conn.addEventListener("error", (err) => this._handleError(err));
         }
-        else if (conn instanceof WebSocket) {
+        else if (isInstanceOf(conn, WebSocket)) {
             conn.onopen = (err) => this._handleOpen(err);
             conn.onmessage = (err) => this._handleMessage(err.data, err);
             conn.onerror = (err) => this._handleError(err);
@@ -31668,7 +31746,7 @@ class SseProvider {
          * Returns the `$sse` connection factory bound to the configured defaults.
          */
         this.$get = [
-            $injectTokens._log,
+            _log,
             (log) => {
                 this._$log = log;
                 return (url, config = {}) => {
@@ -31748,8 +31826,8 @@ class TemplateCacheProvider {
 class TemplateRequestProvider {
     constructor() {
         this.$get = [
-            $injectTokens._templateCache,
-            $injectTokens._http,
+            _templateCache,
+            _http,
             /**
              * Creates the `$templateRequest` service.
              */
@@ -31809,7 +31887,7 @@ class WebSocketProvider {
          * Returns the `$websocket` connection factory bound to the configured defaults.
          */
         this.$get = [
-            $injectTokens._log,
+            _log,
             (log) => {
                 this._$log = log;
                 return (url, protocols = [], config = {}) => {
@@ -31853,6 +31931,17 @@ class WebSocketProvider {
     }
 }
 
+class WasmProvider {
+    constructor() {
+        this.$get = () => {
+            return async (src, imports = {}, opts = {}) => {
+                const result = await instantiateWasm(src, imports);
+                return opts.raw ? result : result.exports;
+            };
+        };
+    }
+}
+
 /**
  * Initializes and registers the core `ng` module.
  *
@@ -31862,21 +31951,17 @@ class WebSocketProvider {
 function registerNgModule(angular) {
     return angular
         .module("ng", [], [
-        $injectTokens._provide,
+        _provide,
         ($provide) => {
-            // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
-            $provide.provider({
-                $$sanitizeUri: SanitizeUriProvider,
-            });
-            $provide.provider($injectTokens._angular, class {
+            $provide.provider(_angular, class {
                 constructor() {
                     this.$get = () => angular;
                 }
             });
-            $provide.value($injectTokens._window, window);
-            $provide.value($injectTokens._document, document);
+            $provide.value(_window, window);
+            $provide.value(_document, document);
             $provide
-                .provider($injectTokens._compile, CompileProvider)
+                .provider(_compile, CompileProvider)
                 .directive({
                 input: inputDirective,
                 textarea: inputDirective,
@@ -31987,7 +32072,7 @@ function registerNgModule(angular) {
                 $parse: ParseProvider,
                 $rest: RestProvider,
                 $rootScope: RootScopeProvider,
-                $router: RouterProvider,
+                [_router]: _RouterProvider,
                 $sce: SceProvider,
                 $sceDelegate: SceDelegateProvider,
                 $sse: SseProvider,
@@ -31996,380 +32081,33 @@ function registerNgModule(angular) {
                 $urlConfig: UrlConfigProvider,
                 $view: ViewService,
                 $transitions: TransitionProvider,
-                $state: StateProvider,
                 $templateFactory: TemplateFactoryProvider,
                 $url: UrlService,
                 $stateRegistry: StateRegistryProvider,
+                $state: StateProvider,
                 $eventBus: PubSubProvider,
                 $websocket: WebSocketProvider,
+                $worker: WorkerProvider,
+                $wasm: WasmProvider,
             });
         },
     ])
         .factory("$stateParams", [
-        $injectTokens._router,
+        _router,
         /**
          * Exposes the router's current parameter bag as `$stateParams`.
          */
-        (globals) => globals.params,
+        (state) => state._params,
     ]);
 }
 
-const ngMinErr = minErr("ng");
-const $injectorMinErr = minErr("$injector");
-const rootScopeCleanupByElement = new WeakMap();
-const moduleRegistry = {};
+configureBuiltinRuntime(registerNgModule);
+configureRuntimeInjectionTokens($injectTokens);
 /**
- * Main Angular runtime entry point.
- *
- * It owns module registration, application bootstrap, injector access,
- * and the lightweight event-based invocation helpers exposed on `window.angular`.
+ * Main AngularTS runtime entry point with the full built-in `ng` module
+ * configured by default.
  */
-class Angular extends EventTarget {
-    /**
-     * Creates the Angular runtime singleton or a sub-application instance.
-     *
-     * @param subapp when `true`, skips assigning the instance to `window.angular`
-     */
-    constructor(subapp = false) {
-        super();
-        this.subapps = [];
-        /** @internal */
-        this._bootsrappedModules = [];
-        this.version = "0.26.0";
-        this.getController = getController;
-        this.getInjector = getInjector;
-        this.getScope = getScope;
-        this.errorHandlingConfig = errorHandlingConfig;
-        this.$t = {};
-        this._subapp = subapp;
-        values($injectTokens).forEach((token) => {
-            this.$t[token] = token;
-        });
-        if (!subapp) {
-            window.angular = this;
-        }
-        registerNgModule(this);
-    }
-    /**
-     * The `angular.module` is a global place for creating, registering and retrieving AngularTS
-     * modules.
-     * All modules (AngularTS core or 3rd party) that should be available to an application must be
-     * registered using this mechanism.
-     *
-     * Passing one argument retrieves an existing ng.NgModule,
-     * whereas passing more than one argument creates a new ng.NgModule
-     *
-     * # Module
-     *
-     * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
-     * `angular.module` is used to configure the auto.$injector `$injector`.
-     *
-     * ```js
-     * // Create a new module
-     * let myModule = angular.module('myModule', []);
-     *
-     * // register a new service
-     * myModule.value('appName', 'MyCoolApp');
-     *
-     * // configure existing services inside initialization blocks.
-     * myModule.config(['$locationProvider', function($locationProvider) {
-     *   // Configure existing providers
-     *   $locationProvider.hashPrefix('!');
-     * }]);
-     * ```
-     *
-     * Then you can create an injector and load your modules like this:
-     *
-     * ```js
-     * let injector = angular.injector(['ng', 'myModule'])
-     * ```
-     *
-     * However it's more likely that you'll just use
-     * `ng-app` directive or
-     * {@link bootstrap} to simplify this process for you.
-     *
-     * @param name The name of the module to create or retrieve.
-     * @param requires If specified then new module is being created. If
-     * unspecified then the module is being retrieved for further configuration.
-     * @param configFn Optional configuration function for the module that gets
-     * passed to `NgModule.config()`.
-     * @returns A newly registered module.
-     */
-    module(name, requires, configFn) {
-        assertNotHasOwnProperty(name, "module");
-        if (requires && hasOwn(moduleRegistry, name)) {
-            moduleRegistry[name] = null;
-        }
-        return ensure(moduleRegistry, name, () => {
-            if (!requires) {
-                throw $injectorMinErr("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
-            }
-            return new NgModule(name, requires, configFn);
-        });
-    }
-    /**
-     * Dispatches an invocation event to either an injectable service or a named scope.
-     *
-     * The event `type` identifies the target and the payload contains the expression
-     * to evaluate against that target.
-     */
-    dispatchEvent(event) {
-        const customEvent = event;
-        const $parse = this.$injector.get($injectTokens._parse);
-        const injectable = customEvent.type;
-        const target = this.$injector.has(injectable)
-            ? this.$injector.get(injectable)
-            : this.getScopeByName(injectable);
-        if (!target) {
-            const { detail } = customEvent;
-            if (isInvocationDetail(detail) && detail._reply) {
-                detail._reply.reject(new Error(`No target found for "${injectable}"`));
-            }
-            return false;
-        }
-        const { detail } = customEvent;
-        const expr = isString(detail)
-            ? detail
-            : isInvocationDetail(detail)
-                ? detail.expr
-                : "";
-        try {
-            const result = $parse(expr)(target);
-            if (isInvocationDetail(detail) && detail._reply) {
-                Promise.resolve(result).then(detail._reply.resolve, detail._reply.reject);
-            }
-        }
-        catch (err) {
-            if (isInvocationDetail(detail) && detail._reply) {
-                detail._reply.reject(err);
-            }
-        }
-        return true;
-    }
-    /**
-     * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
-     */
-    emit(input) {
-        const { type, expr } = this.splitInvocation(input);
-        this.dispatchEvent(new CustomEvent(type, { detail: expr }));
-    }
-    /**
-     * Await result. Accepts a single string: `"<target>.<expression>"`
-     */
-    call(input) {
-        const { type, expr } = this.splitInvocation(input);
-        return new Promise((resolve, reject) => {
-            const ok = this.dispatchEvent(new CustomEvent(type, {
-                detail: { expr, __reply: { resolve, reject } },
-            }));
-            if (!ok) {
-                reject(new Error(`Dispatch failed for "${type}"`));
-            }
-        });
-    }
-    /**
-     * Use this function to manually start up AngularTS application.
-     *
-     * AngularTS will detect if it has been loaded into the browser more than once and only allow the
-     * first loaded script to be bootstrapped and will report a warning to the browser console for
-     * each of the subsequent scripts. This prevents strange results in applications, where otherwise
-     * multiple instances of AngularTS try to work on the DOM.
-     *
-     * <div class="alert alert-warning">
-     * **Note:** Do not bootstrap the app on an element with a directive that uses {@link ng.$compile#transclusion transclusion},
-     * such as {@link ng.ngIf `ngIf`}, {@link ng.ngInclude `ngInclude`} and {@link ngRoute.ngView `ngView`}.
-     * Doing this misplaces the app {@link ng.$rootElement `$rootElement`} and the app's {@link auto.$injector injector},
-     * causing animations to stop working and making the injector inaccessible from outside the app.
-     * </div>
-     *
-     * ```html
-     * <!doctype html>
-     * <html>
-     * <body>
-     * <div ng-controller="WelcomeController">
-     *   {{greeting}}
-     * </div>
-     *
-     * <script src="angular.js"></script>
-     * <script>
-     *   let app = angular.module('demo', [])
-     *   .controller('WelcomeController', function($scope) {
-     *       $scope.greeting = 'Welcome!';
-     *   });
-     *   angular.bootstrap(document, ['demo']);
-     * </script>
-     * </body>
-     * </html>
-     * ```
-     *
-     * @param element DOM element which is the root of AngularTS application.
-     * @param modules an array of modules to load into the application.
-     *     Each item in the array should be the name of a predefined module or a (DI annotated)
-     *     function that will be invoked by the injector as a `config` block.
-     *     See: {@link angular.module modules}
-     * `config` controls bootstrap behavior such as `strictDi`.
-     * @returns The created injector instance for this application.
-     */
-    bootstrap(element, modules, config = { strictDi: false }) {
-        if (element instanceof Element || element instanceof Document) {
-            rootScopeCleanupByElement.get(element)?.();
-        }
-        if ((element instanceof Element || element instanceof Document) &&
-            getInjector(element)) {
-            throw ngMinErr("btstrpd", "App already bootstrapped");
-        }
-        if (isArray(modules)) {
-            this._bootsrappedModules = modules;
-        }
-        this._bootsrappedModules.unshift([
-            "$provide",
-            ($provide) => {
-                $provide.value($injectTokens._rootElement, element);
-            },
-        ]);
-        this._bootsrappedModules.unshift("ng");
-        const injector = createInjector(this._bootsrappedModules, config.strictDi);
-        injector.invoke([
-            $injectTokens._rootScope,
-            $injectTokens._rootElement,
-            $injectTokens._compile,
-            $injectTokens._injector,
-            (scope, el, compile, $injector) => {
-                this.$rootScope = scope;
-                this.$injector = $injector;
-                const rootElement = el;
-                rootScopeCleanupByElement.set(rootElement, () => {
-                    const existingScope = getScope(rootElement);
-                    if (existingScope?.$handler && !existingScope.$handler._destroyed) {
-                        existingScope.$destroy();
-                    }
-                    else if (scope.$handler && !scope.$handler._destroyed) {
-                        scope.$destroy();
-                    }
-                    if (rootScopeCleanupByElement.get(rootElement)) {
-                        rootScopeCleanupByElement.delete(rootElement);
-                    }
-                });
-                setCacheData(el, $injectTokens._injector, $injector);
-                const compileFn = compile(el);
-                compileFn(scope);
-                if (!hasOwn($injector, "strictDi")) {
-                    try {
-                        $injector.invoke(() => {
-                            /* empty */
-                        });
-                    }
-                    catch (error) {
-                        const errorStr = error instanceof Error ? error.toString() : String(error);
-                        $injector.strictDi = !!/strict mode/.exec(errorStr);
-                    }
-                }
-                const stateRegistry = $injector.get($injectTokens._stateRegistry);
-                stateRegistry
-                    .getAll()
-                    .map((state) => state._state().resolvables)
-                    .reduce(unnestR, [])
-                    .filter((resolvable) => resolvable.deps === "deferred")
-                    .forEach((resolvable) => {
-                    resolvable.deps = annotate(resolvable.resolveFn, $injector.strictDi);
-                });
-                scope.$on("$destroy", () => {
-                    if (rootScopeCleanupByElement.get(rootElement)) {
-                        rootScopeCleanupByElement.delete(rootElement);
-                    }
-                });
-            },
-        ]);
-        return injector;
-    }
-    /**
-     * Creates a standalone injector without bootstrapping the DOM.
-     */
-    injector(modules, strictDi) {
-        this.$injector = createInjector(modules, strictDi);
-        return this.$injector;
-    }
-    /**
-     * Finds `ng-app` roots under the provided element and bootstraps them.
-     */
-    init(element) {
-        const appElements = [];
-        let multimode = false;
-        ngAttrPrefixes.forEach((prefix) => {
-            const name = `${prefix}app`;
-            let candidates;
-            if (element.nodeType === 1 &&
-                element.hasAttribute(name)) {
-                candidates = [element];
-            }
-            else {
-                candidates = element.querySelectorAll(`[${name}]`);
-            }
-            candidates.forEach((el) => {
-                appElements.push({
-                    _element: el,
-                    _module: el.getAttribute(name),
-                });
-            });
-        });
-        appElements.forEach((app) => {
-            const strictDi = app._element.hasAttribute("strict-di") ||
-                app._element.hasAttribute("data-strict-di");
-            if (multimode) {
-                const submodule = new Angular(true);
-                this.subapps.push(submodule);
-                submodule.bootstrap(app._element, app._module ? [app._module] : [], {
-                    strictDi,
-                });
-            }
-            else {
-                this.bootstrap(app._element, app._module ? [app._module] : [], {
-                    strictDi,
-                });
-            }
-            multimode = true;
-        });
-    }
-    /**
-     * Finds a scope by its registered `$scopename`.
-     */
-    getScopeByName(name) {
-        validateIsString(name, "name");
-        const $rootScope = this.$injector.get($injectTokens._rootScope);
-        const scope = $rootScope.$searchByName(name);
-        return scope ? scope.$proxy : undefined;
-    }
-    /**
-     * Splits `"target.expression"` into the dispatch target and parse expression.
-     */
-    splitInvocation(input) {
-        if (typeof input !== "string") {
-            throw new TypeError("Invocation must be a string.");
-        }
-        const trimmed = input.trim();
-        const parts = trimmed.split(".");
-        if (parts.length < 2) {
-            throw new Error(`Invalid invocation "${input}". Expected "<target>.<expression>".`);
-        }
-        const type = String(parts.shift()).trim();
-        const expr = parts.join(".").trim();
-        if (!type || !expr) {
-            throw new Error(`Invalid invocation "${input}". Expected "<target>.<expression>".`);
-        }
-        return { type, expr };
-    }
-}
-/**
- * Returns the existing module instance for `name` or creates it via `factory`.
- */
-function ensure(obj, name, factory) {
-    return obj[name] || (obj[name] = factory());
-}
-/**
- * Narrows a custom event payload to the internal invocation shape.
- */
-function isInvocationDetail(value) {
-    return (isObject(value) && typeof value.expr === "string");
+class Angular extends AngularRuntime {
 }
 
 /**
