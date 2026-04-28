@@ -1,4 +1,4 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { _injector, _provide } from "../../injection-tokens.ts";
 import {
   filterFilter,
   type FilterFactory,
@@ -8,20 +8,19 @@ import { jsonFilter } from "../../filters/json.ts";
 import { limitToFilter } from "../../filters/limit-to.ts";
 import { orderByFilter } from "../../filters/order-by.ts";
 import type { Provider } from "../../interface.ts";
-import { assert, entries, isDefined, isFunction } from "../../shared/utils.ts";
+import { entries, isFunction } from "../../shared/utils.ts";
 import { validate, validateIsString } from "../../shared/validate.ts";
 
 const SUFFIX = "Filter";
 
 export class FilterProvider {
-  static $inject = [$t._provide];
+  static $inject = [_provide];
 
   /** @internal */
   _$provide: Provider;
   $get: [string, ($injector: ng.InjectorService) => FilterService];
 
   constructor($provide: Provider) {
-    assert(isDefined($provide));
     this._$provide = $provide;
 
     entries({
@@ -34,7 +33,7 @@ export class FilterProvider {
     });
 
     this.$get = [
-      $t._injector,
+      _injector,
       ($injector) => (name: string) => {
         validateIsString(name, "name");
 

@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _interpolate } from "../../injection-tokens.ts";
 import { getCacheData } from "../../shared/dom.ts";
 import {
   arrayFrom,
@@ -136,7 +136,7 @@ export function selectDirective(): ng.Directive {
   }
 }
 
-optionDirective.$inject = [$injectTokens._interpolate];
+optionDirective.$inject = [_interpolate];
 
 export function optionDirective(
   $interpolate: ng.InterpolateService,

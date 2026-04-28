@@ -1,10 +1,14 @@
+import {
+  _injector,
+  _routerProvider,
+  _urlProvider,
+} from "../../injection-tokens.ts";
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
 import { annotate } from "../../core/di/di.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { isString, keys } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { keys, isString } from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuiltStateDeclaration,
@@ -23,7 +27,7 @@ import type { StateObject } from "./state-object.ts";
  *
  */
 export class StateRegistryProvider {
-  /* @ignore */ static $inject = [$t._urlProvider, $t._routerProvider];
+  /* @ignore */ static $inject = [_urlProvider, _routerProvider];
 
   /** @internal */
   _states: StateStore;
@@ -69,7 +73,7 @@ export class StateRegistryProvider {
   }
 
   $get = [
-    $t._injector,
+    _injector,
     /**
      * @param {InjectorService} $injector
      * @returns {StateRegistryProvider}

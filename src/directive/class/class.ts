@@ -4,8 +4,8 @@ import {
   hasAnimate,
   isArray,
   isObject,
-  isString,
   nullObject,
+  isString,
 } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
@@ -125,6 +125,30 @@ export function arrayDifference(
   if (!tokens1 || !tokens1.length) return [];
 
   if (!tokens2 || !tokens2.length) return tokens1;
+
+  if (tokens2.length === 1) {
+    const token = tokens2[0];
+
+    const out = [];
+
+    for (let i = 0; i < tokens1.length; i++) {
+      const x = tokens1[i];
+
+      if (x !== token) out.push(x);
+    }
+
+    return out;
+  }
+
+  if (tokens1.length === 1) {
+    const token = tokens1[0];
+
+    for (let i = 0; i < tokens2.length; i++) {
+      if (tokens2[i] === token) return [];
+    }
+
+    return tokens1;
+  }
 
   const set2 = new Set(tokens2);
 

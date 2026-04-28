@@ -1,7 +1,7 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { _log, _parse } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-ngSetterDirective.$inject = [$t._parse, $t._log];
+ngSetterDirective.$inject = [_parse, _log];
 
 /**
  * Mirrors an element's HTML content into an assignable scope expression.

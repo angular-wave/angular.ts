@@ -1,13 +1,13 @@
+import { _injector } from "../../injection-tokens.ts";
 import {
   assertArgFn,
   isArray,
   isFunction,
   minErr,
 } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 
-const $injectorMinErr = minErr($injectTokens._injector);
+const $injectorMinErr = minErr(_injector);
 
 const ARROW_ARG = /^([^(]+?)=>/;
 

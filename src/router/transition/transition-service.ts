@@ -1,6 +1,9 @@
+import {
+  _exceptionHandlerProvider,
+  _routerProvider,
+} from "../../injection-tokens.ts";
 import { copy } from "../../shared/common.ts";
 import { isDefined } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import {
   registerAddCoreResolvables,
   treeChangesCleanup,
@@ -133,7 +136,7 @@ export interface TransitionService extends HookRegistry {
  * Central registry and factory for transition events, hooks, and transition instances.
  */
 export class TransitionProvider implements TransitionService {
-  static $inject = [$t._routerProvider, $t._exceptionHandlerProvider] as const;
+  static $inject = [_routerProvider, _exceptionHandlerProvider] as const;
 
   /** @internal */
   _transitionCount: number;

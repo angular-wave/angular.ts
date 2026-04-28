@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -9,7 +9,7 @@ const NG_HIDE_CLASS = "ng-hide";
 
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
 
-ngShowDirective.$inject = [$injectTokens._injector];
+ngShowDirective.$inject = [_injector];
 /**
  * Removes the `ng-hide` class when the watched expression becomes truthy.
  */
@@ -46,7 +46,7 @@ export function ngShowDirective($injector: ng.InjectorService): ng.Directive {
   };
 }
 
-ngHideDirective.$inject = [$injectTokens._injector];
+ngHideDirective.$inject = [_injector];
 /**
  * Adds the `ng-hide` class when the watched expression becomes truthy.
  */

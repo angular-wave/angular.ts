@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _log } from "../../injection-tokens.ts";
 import { entries } from "../../shared/utils.ts";
 import {
   StreamConnection,
@@ -72,7 +72,7 @@ export class SseProvider {
    * Returns the `$sse` connection factory bound to the configured defaults.
    */
   $get = [
-    $injectTokens._log,
+    _log,
     (log: ng.LogService): SseService => {
       this._$log = log;
 

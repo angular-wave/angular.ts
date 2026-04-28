@@ -1,12 +1,14 @@
+import { _parse } from "../../injection-tokens.ts";
 import {
   hasOwn,
+  isFunction,
   isNumberNaN,
   isUndefined,
   minErr,
+  isString,
 } from "../../shared/utils.ts";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
 import { startingTag } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 type ValidatingNgModelController = ng.NgModelController & {
   $validators: Record<string, (modelValue: any, viewValue: any) => boolean>;
@@ -39,7 +41,7 @@ export const requiredDirective: [
   string,
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
-  $t._parse,
+  _parse,
   /** Creates the `required` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
@@ -121,7 +123,7 @@ export const patternDirective: [
   string,
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
-  $t._parse,
+  _parse,
   /** Creates the `pattern` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
@@ -227,7 +229,7 @@ export const maxlengthDirective: [
   string,
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
-  $t._parse,
+  _parse,
   /** Creates the `maxlength` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
@@ -304,7 +306,7 @@ export const minlengthDirective: [
   string,
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
-  $t._parse,
+  _parse,
   /** Creates the `minlength` validator directive. */ (
     $parse: ng.ParseService,
   ) => ({
@@ -350,13 +352,13 @@ function parsePatternAttr(
 ): RegExp {
   let regex: RegExp | string = input;
 
-  if (typeof regex === "string") {
+  if (isString(regex)) {
     const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
 
     regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
   }
 
-  if (typeof regex.test !== "function") {
+  if (!isFunction(regex.test)) {
     throw minErr("ngPattern")(
       "noregexp",
       "Expected {0} to be a RegExp but was {1}. Element: {2}",

@@ -1,7 +1,12 @@
+import { _sce } from "../../injection-tokens.ts";
 import { BOOLEAN_ATTR } from "../../shared/dom.ts";
-import { directiveNormalize, entries } from "../../shared/utils.ts";
+import {
+  directiveNormalize,
+  entries,
+  getNodeName,
+  isNullOrUndefined,
+} from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
@@ -86,19 +91,51 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
   const normalized = directiveNormalize(`ng-${attrName}`);
 
   ngAttributeAliasDirectives[normalized] = [
-    $injectTokens._sce,
+    _sce,
     /** Creates the alias directive for interpolated URL-like attributes. */
     function ($sce: ng.SceService): ng.Directive {
       return {
         priority: 99, // it needs to run after the attributes are interpolated
         link(
           _scope: ng.Scope,
-          _element: Element,
+          element: Element,
           attr: Attributes & Record<string, string>,
         ): void {
+          const nodeName = getNodeName(element);
+
+          function sanitize(value: unknown): any {
+            if (isNullOrUndefined(value)) {
+              return value;
+            }
+
+            const stringValue = String(value);
+
+            if (stringValue.startsWith("unsafe:")) {
+              return stringValue;
+            }
+
+            if (
+              attrName === "src" &&
+              ["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
+                -1
+            ) {
+              return $sce.getTrustedResourceUrl(stringValue);
+            }
+
+            if (attrName === "href" && nodeName !== "image") {
+              return $sce.getTrustedUrl(stringValue);
+            }
+
+            return $sce.getTrustedMediaUrl(stringValue);
+          }
+
           // We need to sanitize the url at least once, in case it is a constant
           // non-interpolated attribute.
-          attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
+          const initialValue = attr[normalized];
+
+          if (initialValue && String(initialValue).indexOf("{{") === -1) {
+            attr.$set(normalized, sanitize(initialValue));
+          }
 
           attr.$observe<string>(normalized, (value) => {
             if (!value) {
@@ -109,7 +146,17 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
               return;
             }
 
-            attr.$set(attrName, value);
+            if (
+              attrName === "href" ||
+              (attrName === "src" &&
+                ["img", "video", "audio", "source", "track"].indexOf(
+                  nodeName,
+                ) !== -1)
+            ) {
+              attr.$set(attrName, sanitize(value));
+            } else {
+              attr.$set(attrName, value);
+            }
           });
         },
       };

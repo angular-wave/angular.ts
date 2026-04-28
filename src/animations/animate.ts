@@ -1,3 +1,4 @@
+import { _animateQueue, _provide } from "../injection-tokens.ts";
 import type { AnimationOptions } from "./interface.ts";
 import type { AnimateQueueService, QueuePhase } from "./queue/animate-queue.ts";
 import {
@@ -12,7 +13,6 @@ import {
 } from "../shared/utils.ts";
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
-import { $injectTokens } from "../injection-tokens.ts";
 import type { AnimateRunner } from "./runner/animate-runner.ts";
 import type { Injectable } from "../interface.ts";
 
@@ -180,7 +180,7 @@ function prepareAnimateOptions(options?: AnimationOptions): AnimationOptions {
   return isObject(options) ? options : ({} as AnimationOptions);
 }
 
-AnimateProvider.$inject = [$injectTokens._provide];
+AnimateProvider.$inject = [_provide];
 
 /** @param $provide */
 export function AnimateProvider(
@@ -303,7 +303,7 @@ export function AnimateProvider(
    */
   this.classNameFilter = function (expression?: RegExp): RegExp | null {
     if (arguments.length === 1) {
-      classNameFilter = expression instanceof RegExp ? expression : null;
+      classNameFilter = isInstanceOf(expression, RegExp) ? expression : null;
 
       if (classNameFilter) {
         const reservedRegex = new RegExp(
@@ -325,7 +325,7 @@ export function AnimateProvider(
   };
 
   this.$get = [
-    $injectTokens._animateQueue,
+    _animateQueue,
     /**
      * Creates the runtime `$animate` service facade.
      */

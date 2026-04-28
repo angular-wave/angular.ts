@@ -1,4 +1,5 @@
 import { NodeRef } from "./noderef.js";
+import { createDocumentFragment } from "./dom.ts";
 
 describe("NodeRef", () => {
   let div;
@@ -170,7 +171,7 @@ describe("NodeRef", () => {
     });
 
     it("handles DocumentFragment", () => {
-      const frag = document.createDocumentFragment();
+      const frag = createDocumentFragment();
       frag.append(div, span);
       const ref = new NodeRef(frag.childNodes);
       expect(ref._isList).toBeTrue();

@@ -50,6 +50,7 @@ export class AST {
   /** @internal */
   _ast(text: string): ASTNode {
     this._text = text;
+    this._index = 0;
     this._tokens = this._lexer._lex(text);
 
     const value = this._program();

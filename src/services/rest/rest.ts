@@ -1,11 +1,5 @@
-import { $injectTokens } from "../../injection-tokens.ts";
-import {
-  assert,
-  isArray,
-  isNullOrUndefined,
-  isString,
-} from "../../shared/utils.ts";
-import { BADARG } from "../../shared/validate.ts";
+import { _http } from "../../injection-tokens.ts";
+import { isArray, isNullOrUndefined, isString } from "../../shared/utils.ts";
 import { expandUriTemplate } from "./rfc.ts";
 import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
 
@@ -52,6 +46,9 @@ export class RestService<T = any, ID = any> {
   /** @internal */
   private _options: RestOptions;
 
+  /**
+   * @throws Error when `baseUrl` is empty or not a string.
+   */
   constructor(
     $http: HttpService,
     /** Base URL or RFC 6570 URI template for this resource. */
@@ -61,7 +58,9 @@ export class RestService<T = any, ID = any> {
     /** Extra `$http` options merged into every request. */
     options: RestOptions = {},
   ) {
-    assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
+    if (!isString(baseUrl) || baseUrl.length === 0) {
+      throw new Error("baseUrl required");
+    }
 
     this._$http = $http;
     this._baseUrl = baseUrl;
@@ -108,12 +107,13 @@ export class RestService<T = any, ID = any> {
    * @param id - Resource identifier appended to the base URL.
    * @param params - Additional URI template or query parameters.
    * @returns The mapped entity, raw response value, or `null` when empty.
+   * @throws Error when `id` is null or undefined.
    */
   async read(
     id: ID,
     params: Record<string, any> = {},
   ): Promise<T | unknown | null> {
-    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
     const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
 
     const resp = await this.request<unknown>("GET", url, null, params);
@@ -126,9 +126,10 @@ export class RestService<T = any, ID = any> {
    *
    * @param item - Request body to create.
    * @returns The server representation, mapped through `entityClass` when set.
+   * @throws Error when `item` is null or undefined.
    */
   async create(item: T): Promise<T | unknown> {
-    assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
+    if (isNullOrUndefined(item)) throw new Error(`badarg:item ${item}`);
     const resp = await this.request<unknown>("POST", this._baseUrl, item);
 
     return this.mapEntity(resp.data);
@@ -140,9 +141,10 @@ export class RestService<T = any, ID = any> {
    * @param id - Resource identifier appended to the base URL.
    * @param item - Request body to send.
    * @returns The updated entity, raw value, or `null` when the request fails.
+   * @throws Error when `id` is null or undefined.
    */
   async update(id: ID, item: Partial<T>): Promise<T | unknown | null> {
-    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
     const url = `${this._baseUrl}/${id}`;
 
     try {
@@ -159,9 +161,10 @@ export class RestService<T = any, ID = any> {
    *
    * @param id - Resource identifier appended to the base URL.
    * @returns `true` when the request succeeds, otherwise `false`.
+   * @throws Error when `id` is null or undefined.
    */
   async delete(id: ID): Promise<boolean> {
-    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
     const url = `${this._baseUrl}/${id}`;
 
     try {
@@ -210,7 +213,7 @@ export class RestProvider {
   constructor() {
     this._definitions = [];
     this.$get = [
-      $injectTokens._http,
+      _http,
       ($http: HttpService): RestFactory => {
         const services = new Map<string, RestService<any, any>>();
 

@@ -1,7 +1,19 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import {
+  _compile,
+  _http,
+  _injector,
+  _log,
+  _parse,
+  _sse,
+  _state,
+} from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
-import { emptyElement, removeElement } from "../../shared/dom.ts";
+import {
+  createDocumentFragment,
+  emptyElement,
+  removeElement,
+} from "../../shared/dom.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   arrayFrom,
@@ -10,10 +22,11 @@ import {
   isDefined,
   isInstanceOf,
   isObject,
-  isString,
   toKeyValue,
   wait,
+  isString,
 } from "../../shared/utils.ts";
+import { getEventNameForElement } from "../events/event-name.ts";
 
 type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
 
@@ -84,15 +97,7 @@ function defineDirective(
     $inject?: string[];
   };
 
-  directive.$inject = [
-    $t._http,
-    $t._compile,
-    $t._log,
-    $t._parse,
-    $t._state,
-    $t._sse,
-    $t._injector,
-  ];
+  directive.$inject = [_http, _compile, _log, _parse, _state, _sse, _injector];
 
   return directive;
 }
@@ -109,26 +114,6 @@ export const ngSseDirective: ng.DirectiveFactory = defineDirective(
   "get",
   "ngSse",
 );
-
-/**
- * Selects DOM event to listen for based on the element type.
- *
- * @param element - The DOM element to inspect.
- * @returns The name of the event to listen for.
- */
-export function getEventNameForElement(
-  element: Element,
-): "click" | "change" | "submit" {
-  const tag = element.tagName.toLowerCase();
-
-  if (["input", "textarea", "select"].includes(tag)) {
-    return "change";
-  } else if (tag === "form") {
-    return "submit";
-  }
-
-  return "click";
-}
 
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
 export function createHttpDirective(
@@ -176,7 +161,7 @@ export function createHttpDirective(
       if (!form) {
         if (
           "name" in element &&
-          typeof element.name === "string" &&
+          isString(element.name) &&
           element.name.length > 0
         ) {
           if (
@@ -265,10 +250,9 @@ export function createHttpDirective(
               | DocumentFragment
               | ChildNode;
 
-            nodes =
-              compiled instanceof DocumentFragment
-                ? arrayFrom(compiled.childNodes)
-                : [compiled];
+            nodes = isInstanceOf(compiled, DocumentFragment)
+              ? arrayFrom(compiled.childNodes)
+              : [compiled];
           }
 
           const targetSelector = attrsParam.target;
@@ -290,7 +274,7 @@ export function createHttpDirective(
               if (!parent) return;
 
               // Build fragment for static replacement OR a list for animation
-              const frag = document.createDocumentFragment();
+              const frag = createDocumentFragment();
 
               nodes.forEach((x) => frag.appendChild(x));
 

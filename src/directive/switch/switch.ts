@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -23,7 +23,7 @@ class NgSwitchController {
   }
 }
 
-ngSwitchDirective.$inject = [$injectTokens._injector];
+ngSwitchDirective.$inject = [_injector];
 
 /** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(

@@ -1,4 +1,8 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import {
+  _compile,
+  _injector,
+  _templateRequest,
+} from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -10,8 +14,8 @@ import {
   hasOwn,
   isArray,
   isInstanceOf,
-  isString,
   values,
+  isString,
 } from "../../shared/utils.ts";
 
 const ACTIVE_CLASS = "ng-active";
@@ -239,7 +243,7 @@ class NgMessageCtrl {
   }
 }
 
-ngMessagesDirective.$inject = [$injectTokens._injector];
+ngMessagesDirective.$inject = [_injector];
 /**
  * Builds the root `ngMessages` directive.
  */
@@ -276,10 +280,7 @@ function truthy(val: unknown): boolean {
   return isString(val) ? val.length > 0 : !!val;
 }
 
-ngMessagesIncludeDirective.$inject = [
-  $injectTokens._templateRequest,
-  $injectTokens._compile,
-];
+ngMessagesIncludeDirective.$inject = [_templateRequest, _compile];
 
 /**
  * Builds the directive that inlines external message templates.
@@ -329,7 +330,7 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
 function ngMessageDirectiveFactory(
   isDefault: boolean,
 ): ($injector: ng.InjectorService) => ng.Directive<any> {
-  ngMessageDirectiveFn.$inject = [$injectTokens._injector];
+  ngMessageDirectiveFn.$inject = [_injector];
   /**
    * Builds a concrete `ngMessage` directive definition.
    */

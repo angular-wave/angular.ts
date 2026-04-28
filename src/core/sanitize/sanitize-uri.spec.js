@@ -1,20 +1,25 @@
-import { SanitizeUriProvider } from "./sanitize-uri.js";
+import { SCE_CONTEXTS, SceDelegateProvider } from "../../services/sce/sce.js";
 
 describe("sanitizeUri", () => {
   let sanitizeHref;
   let sanitizeImg;
-  let sanitizeUriProvider;
+  let sceDelegateProvider;
   let testUrl;
-  let $$sanitizeUri;
   beforeEach(() => {
-    sanitizeUriProvider = new SanitizeUriProvider();
-    $$sanitizeUri = sanitizeUriProvider.$get[1](window);
+    sceDelegateProvider = new SceDelegateProvider();
+    const sceDelegate = sceDelegateProvider.$get[3](
+      { has: () => false },
+      window,
+      (error) => {
+        throw error;
+      },
+    );
 
     sanitizeHref = function (uri) {
-      return $$sanitizeUri(uri, false);
+      return sceDelegate.getTrusted(SCE_CONTEXTS._URL, uri);
     };
     sanitizeImg = function (uri) {
-      return $$sanitizeUri(uri, true);
+      return sceDelegate.getTrusted(SCE_CONTEXTS._MEDIA_URL, uri);
     };
   });
 
@@ -132,12 +137,12 @@ describe("sanitizeUri", () => {
     it("should allow reconfiguration of the src trusted URIs", () => {
       let returnVal;
       expect(
-        sanitizeUriProvider.imgSrcSanitizationTrustedUrlList() instanceof
+        sceDelegateProvider.imgSrcSanitizationTrustedUrlList() instanceof
           RegExp,
       ).toBe(true);
       returnVal =
-        sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sanitizeUriProvider);
+        sceDelegateProvider.imgSrcSanitizationTrustedUrlList(/javascript:/);
+      expect(returnVal).toBe(sceDelegateProvider);
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeImg(testUrl)).toBe("javascript:doEvilStuff()");
@@ -233,11 +238,11 @@ describe("sanitizeUri", () => {
     it("should allow reconfiguration of the href trusted URIs", () => {
       let returnVal;
       expect(
-        sanitizeUriProvider.aHrefSanitizationTrustedUrlList() instanceof RegExp,
+        sceDelegateProvider.aHrefSanitizationTrustedUrlList() instanceof RegExp,
       ).toBe(true);
       returnVal =
-        sanitizeUriProvider.aHrefSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sanitizeUriProvider);
+        sceDelegateProvider.aHrefSanitizationTrustedUrlList(/javascript:/);
+      expect(returnVal).toBe(sceDelegateProvider);
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeHref(testUrl)).toBe("javascript:doEvilStuff()");

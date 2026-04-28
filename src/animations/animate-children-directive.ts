@@ -1,10 +1,10 @@
+import { _interpolate } from "../injection-tokens.ts";
+import { setCacheData } from "../shared/dom.ts";
 import { isString } from "../shared/utils.ts";
 import { NG_ANIMATE_CHILDREN_DATA } from "./shared.ts";
-import { setCacheData } from "../shared/dom.ts";
-import { $injectTokens as $t } from "../injection-tokens.ts";
 import type { InterpolationFunction } from "../core/interpolate/interpolate.ts";
 
-$$AnimateChildrenDirective.$inject = [$t._interpolate];
+$$AnimateChildrenDirective.$inject = [_interpolate];
 
 /** Propagates `ng-animate-children` state to the element cache for animation lookups. */
 export function $$AnimateChildrenDirective(

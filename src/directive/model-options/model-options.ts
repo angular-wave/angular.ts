@@ -1,5 +1,12 @@
-import { $injectTokens } from "../../injection-tokens.ts";
-import { assign, entries, isDefined, keys, trim } from "../../shared/utils.ts";
+import { _attrs, _scope } from "../../injection-tokens.ts";
+import {
+  assign,
+  entries,
+  isDefined,
+  keys,
+  trim,
+  isString,
+} from "../../shared/utils.ts";
 import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
@@ -21,7 +28,7 @@ export type ModelOptionsConfig = NgModelOptions & {
 
 class NgModelOptionsController {
   static $nonscope = true;
-  static $inject = [$injectTokens._attrs, $injectTokens._scope];
+  static $inject = [_attrs, _scope];
 
   /** @internal */
   _attrs: ng.Attributes;
@@ -85,7 +92,7 @@ export class ModelOptions {
             mergedOptions.updateOnDefault = this._options.updateOnDefault;
           }
         }
-      } else if (key === "updateOn" && typeof option === "string") {
+      } else if (key === "updateOn" && isString(option)) {
         mergedOptions.updateOnDefault = false;
         mergedOptions[key] = trim(
           option.replace(DEFAULT_REGEXP, () => {

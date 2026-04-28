@@ -1,8 +1,8 @@
+import { _eventBus } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-ngChannelDirective.$inject = [$injectTokens._eventBus];
+ngChannelDirective.$inject = [_eventBus];
 /**
  * Subscribes an element to a pub/sub channel.
  *

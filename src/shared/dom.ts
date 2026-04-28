@@ -1,13 +1,15 @@
+import { _injector, _scope } from "../injection-tokens.ts";
 import {
   arrayFrom,
   assign,
   hasOwn,
   isArray,
   isDefined,
+  isInstanceOf,
   isObject,
+  isString,
 } from "./utils.js";
 import { NodeType } from "./node.ts";
-import { $injectTokens } from "../injection-tokens.ts";
 import type { ExpandoStore } from "../interface.ts";
 
 /**
@@ -36,7 +38,7 @@ export const Cache = {
 /**
  * Key for storing scope data attached to an element.
  */
-const SCOPE_KEY = $injectTokens._scope;
+const SCOPE_KEY = _scope;
 
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 
@@ -117,6 +119,10 @@ export function kebabToCamel(name: string): string {
  */
 export function snakeToCamel(name: string): string {
   return name.replace(UNDERSCORE_LOWERCASE_REGEXP, fnCamelCaseReplace);
+}
+
+export function createDocumentFragment(): DocumentFragment {
+  return document.createDocumentFragment();
 }
 
 /**
@@ -205,14 +211,18 @@ export function dealoc(
     | undefined,
   onlyDescendants = false,
 ): void {
-  if (!element || typeof element !== "object" || element instanceof Comment) {
+  if (
+    !element ||
+    typeof element !== "object" ||
+    isInstanceOf(element, Comment)
+  ) {
     return;
   }
 
   if (
     isArray(element) ||
-    element instanceof NodeList ||
-    element instanceof HTMLCollection
+    isInstanceOf(element, NodeList) ||
+    isInstanceOf(element, HTMLCollection)
   ) {
     const nodes = arrayFrom(element);
 
@@ -299,11 +309,11 @@ export function getOrSetCacheData(
 
   if (!expandoStore) return undefined;
 
-  if (isSimpleSetter && typeof key === "string") {
+  if (isSimpleSetter && isString(key)) {
     expandoStore[kebabToCamel(key)] = value;
   } else if (massGetter) {
     return expandoStore;
-  } else if (isSimpleGetter && typeof key === "string") {
+  } else if (isSimpleGetter && isString(key)) {
     return expandoStore[kebabToCamel(key)];
   } else if (key && typeof key === "object") {
     // key is now narrowed to object
@@ -500,7 +510,7 @@ const parser = new DOMParser();
 export function startingTag(elementOrStr: string | Element | Node): string {
   let clone: Node;
 
-  if (typeof elementOrStr === "string") {
+  if (isString(elementOrStr)) {
     const doc = parser.parseFromString(elementOrStr, "text/html");
 
     const { firstChild } = doc.body;
@@ -508,7 +518,10 @@ export function startingTag(elementOrStr: string | Element | Node): string {
     if (!firstChild) return ""; // empty string for empty input
 
     clone = firstChild.cloneNode(true);
-  } else if (elementOrStr instanceof Element || elementOrStr instanceof Node) {
+  } else if (
+    isInstanceOf(elementOrStr, Element) ||
+    isInstanceOf(elementOrStr, Node)
+  ) {
     clone = elementOrStr.cloneNode(true);
   } else {
     throw new Error("Input must be an HTML string or a DOM element.");
@@ -614,7 +627,7 @@ export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
 
 /** Returns the nearest injector service found while walking up the element tree. */
 export function getInjector(element: Element): ng.InjectorService {
-  return getInheritedData(element, $injectTokens._injector);
+  return getInheritedData(element, _injector);
 }
 
 /**

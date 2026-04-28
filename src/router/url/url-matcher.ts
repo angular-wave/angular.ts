@@ -3,6 +3,7 @@ import {
   hasOwn,
   isArray,
   isDefined,
+  isInstanceOf,
   isNullOrUndefined,
   isString,
 } from "../../shared/utils.ts";
@@ -211,7 +212,7 @@ export class UrlMatcher {
 
           if (isString(segment)) return 2;
 
-          if (segment instanceof Param) return 3;
+          if (isInstanceOf(segment, Param)) return 3;
 
           return 0;
         }));

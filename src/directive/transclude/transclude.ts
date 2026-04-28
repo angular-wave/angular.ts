@@ -1,7 +1,13 @@
-import { arrayFrom, isArray, minErr } from "../../shared/utils.ts";
+import { _compile } from "../../injection-tokens.ts";
+import {
+  arrayFrom,
+  isArray,
+  isFunction,
+  isInstanceOf,
+  minErr,
+} from "../../shared/utils.ts";
 import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type {
   CloneAttachFn,
   TranscludeFn,
@@ -10,7 +16,7 @@ import type {
 
 const ngTranscludeMinErr = minErr("ngTransclude");
 
-ngTranscludeDirective.$inject = [$injectTokens._compile];
+ngTranscludeDirective.$inject = [_compile];
 
 export function ngTranscludeDirective(
   $compile: ng.CompileService,
@@ -66,7 +72,7 @@ export function ngTranscludeDirective(
               transcludedScope &&
               lastNode &&
               "addEventListener" in lastNode &&
-              typeof lastNode.addEventListener === "function"
+              isFunction(lastNode.addEventListener)
             ) {
               lastNode.addEventListener("$destroy", destroyScope, {
                 once: true,
@@ -93,11 +99,11 @@ export function ngTranscludeDirective(
             return [];
           }
 
-          if (node instanceof DocumentFragment) {
+          if (isInstanceOf(node, DocumentFragment)) {
             return arrayFrom(node.childNodes);
           }
 
-          return node instanceof NodeList || isArray(node)
+          return isInstanceOf(node, NodeList) || isArray(node)
             ? arrayFrom(node)
             : [node];
         }

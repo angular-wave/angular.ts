@@ -1,4 +1,13 @@
 import {
+  _attrs,
+  _element,
+  _exceptionHandler,
+  _injector,
+  _interpolate,
+  _parse,
+  _scope,
+} from "../../injection-tokens.ts";
+import {
   DIRTY_CLASS,
   EMPTY_CLASS,
   INVALID_CLASS,
@@ -38,7 +47,6 @@ import {
   createLazyAnimate,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 export const ngModelMinErr = minErr("ngModel");
 
@@ -124,13 +132,13 @@ export interface NgModelOptions {
 export class NgModelController {
   /* @ignore */ static $nonscope = true;
   /* @ignore */ static $inject = [
-    $t._scope,
-    $t._exceptionHandler,
-    $t._attrs,
-    $t._element,
-    $t._parse,
-    $t._injector,
-    $t._interpolate,
+    _scope,
+    _exceptionHandler,
+    _attrs,
+    _element,
+    _parse,
+    _injector,
+    _interpolate,
   ];
 
   [key: string]: any;
@@ -1448,7 +1456,7 @@ export function ngModelDirective(): ng.Directive {
         return {
           pre: (
             scope: ng.Scope,
-            _element: HTMLElement,
+            _preElement: HTMLElement,
             attr: ng.Attributes,
             ctrls: any[],
           ) => {

@@ -1,5 +1,10 @@
-import { $injectTokens } from "../../injection-tokens.ts";
-import { emptyElement, removeElement, startingTag } from "../../shared/dom.ts";
+import { _compile, _parse } from "../../injection-tokens.ts";
+import {
+  createDocumentFragment,
+  emptyElement,
+  removeElement,
+  startingTag,
+} from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
   equals,
@@ -8,8 +13,8 @@ import {
   includes,
   isArrayLike,
   isDefined,
-  minErr,
   isNull,
+  minErr,
 } from "../../shared/utils.ts";
 import { SelectController } from "../select/select-ctrl.ts";
 
@@ -51,7 +56,7 @@ class OptionItem {
   }
 }
 
-ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
+ngOptionsDirective.$inject = [_compile, _parse];
 
 type NgOptionsCollection = {
   /** @internal */
@@ -225,7 +230,7 @@ export function ngOptionsDirective(
 
     const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
 
-    const listFragment = document.createDocumentFragment();
+    const listFragment = createDocumentFragment();
 
     selectCtrl._generateUnknownOptionValue = () => "?";
 

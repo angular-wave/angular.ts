@@ -8,6 +8,28 @@
   "module": "dist/angular-ts.esm.js",
   "browser": "dist/angular-ts.umd.js",
   "types": "@types/namespace.d.ts",
+  "exports": {
+    ".": {
+      "types": "./@types/namespace.d.ts",
+      "import": "./dist/angular-ts.esm.js",
+      "default": "./dist/angular-ts.esm.js"
+    },
+    "./runtime": {
+      "import": "./dist/runtime/index.js"
+    },
+    "./runtime/*": {
+      "import": "./dist/runtime/*.js"
+    },
+    "./directives/repeat": {
+      "import": "./dist/directive/repeat/repeat.js"
+    },
+    "./directives/*": {
+      "import": "./dist/directive/*/*.js"
+    },
+    "./providers/controller": {
+      "import": "./dist/core/controller/controller.js"
+    }
+  },
   "files": [
     "@types",
     "dist/",

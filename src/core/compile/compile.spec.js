@@ -4872,42 +4872,28 @@ describe("$compile", () => {
   });
 
   describe("configuration", () => {
-    it("should use $$sanitizeUriProvider for reconfiguration of the `aHrefSanitizationTrustedUrlList`", () => {
+    it("should use $sceDelegateProvider for reconfiguration of the `aHrefSanitizationTrustedUrlList`", () => {
       createInjector([
         "ng",
-        ($compileProvider, $$sanitizeUriProvider) => {
+        ($sceDelegateProvider) => {
           const newRe = /safe:/;
-          let returnVal;
 
-          expect($compileProvider.aHrefSanitizationTrustedUrlList()).toBe(
-            $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList(),
-          );
-          $compileProvider.aHrefSanitizationTrustedUrlList(newRe);
-          expect($$sanitizeUriProvider.aHrefSanitizationTrustedUrlList()).toBe(
-            newRe,
-          );
-          expect($compileProvider.aHrefSanitizationTrustedUrlList()).toBe(
+          $sceDelegateProvider.aHrefSanitizationTrustedUrlList(newRe);
+          expect($sceDelegateProvider.aHrefSanitizationTrustedUrlList()).toBe(
             newRe,
           );
         },
       ]);
     });
 
-    it("should use $$sanitizeUriProvider for reconfiguration of the `imgSrcSanitizationTrustedUrlList`", () => {
+    it("should use $sceDelegateProvider for reconfiguration of the `imgSrcSanitizationTrustedUrlList`", () => {
       createInjector([
         "ng",
-        ($compileProvider, $$sanitizeUriProvider) => {
+        ($sceDelegateProvider) => {
           const newRe = /safe:/;
-          let returnVal;
 
-          expect($compileProvider.imgSrcSanitizationTrustedUrlList()).toBe(
-            $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(),
-          );
-          $compileProvider.imgSrcSanitizationTrustedUrlList(newRe);
-          expect($$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList()).toBe(
-            newRe,
-          );
-          expect($compileProvider.imgSrcSanitizationTrustedUrlList()).toBe(
+          $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(newRe);
+          expect($sceDelegateProvider.imgSrcSanitizationTrustedUrlList()).toBe(
             newRe,
           );
         },
@@ -8023,8 +8009,8 @@ describe("$compile", () => {
           });
 
           it("should sanitize crafted img[srcset] entries that bypass domain allowlists", async () => {
-            module.config(($compileProvider) =>
-              $compileProvider.imgSrcSanitizationTrustedUrlList(
+            module.config(($sceDelegateProvider) =>
+              $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
                 /^https:\/\/angularjs\.org\//,
               ),
             );
@@ -14605,44 +14591,26 @@ describe("$compile", () => {
       expect(element.getAttribute("title")).toBe("javascript:doEvilStuff()");
     });
 
-    it("should use $$sanitizeUri", async () => {
-      const $$sanitizeUri = jasmine.createSpy("$$sanitizeUri");
-      module.value("$$sanitizeUri", $$sanitizeUri);
-      $$sanitizeUri.and.returnValue("someSanitizedUrl");
-
+    it("should sanitize plain URL values through SCE", async () => {
       initInjector("test1");
-      $rootScope.testUrl = "someUrl";
+      $rootScope.testUrl = "javascript:foo()";
       element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
       await wait();
-      expect(element.getAttribute("src")).toBe("someSanitizedUrl");
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+      expect(element.getAttribute("src")).toBe("unsafe:javascript:foo()");
     });
 
-    it("should use $$sanitizeUri on concatenated trusted values", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("someSanitizedUrl");
-      module.config(($provide) => {
-        $provide.value("$$sanitizeUri", $$sanitizeUri);
-      });
+    it("should sanitize concatenated trusted values", async () => {
       initInjector("test1");
 
       element = $compile('<img src="{{testUrl}}ponies"></img>')($rootScope);
       $rootScope.testUrl = $sce.trustAsUrl("javascript:foo();");
       await wait();
-      expect(element.getAttribute("src")).toEqual("someSanitizedUrl");
-
-      element = $compile('<img src="http://{{testUrl}}"></img>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("xyz");
-      await wait();
-      expect(element.getAttribute("src")).toEqual("someSanitizedUrl");
+      expect(element.getAttribute("src")).toEqual(
+        "unsafe:javascript:foo();ponies",
+      );
     });
 
-    it("should not use $$sanitizeUri with trusted values", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.throwError("Should not have been called");
-      module.value("$$sanitizeUri", $$sanitizeUri);
+    it("should pass through trusted media values", async () => {
       initInjector("test1");
       element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
       // Assigning javascript:foo to src makes at least IE9-11 complain, so use another
@@ -14707,31 +14675,28 @@ describe("$compile", () => {
       );
     });
 
-    it("should use $$sanitizeUri", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("someSanitizedUrl");
-      module.config(($provide) =>
-        $provide.value("$$sanitizeUri", $$sanitizeUri),
-      );
+    it("should sanitize srcset URLs through SCE", async () => {
       initInjector("test1");
       element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "someUrl";
       await wait();
-      expect(element.getAttribute("srcset")).toBe("someSanitizedUrl");
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+      expect(element.getAttribute("srcset")).toBe("someUrl");
 
       element = $compile('<img srcset="{{testUrl}}, {{testUrl}}"></img>')(
         $rootScope,
       );
       $rootScope.testUrl = "javascript:yay";
       await wait();
-      expect(element.getAttribute("srcset")).toEqual("someSanitizedUrl");
+      expect(element.getAttribute("srcset")).toEqual(
+        "unsafe:javascript:yay ,unsafe:javascript:yay",
+      );
 
       element = $compile('<img srcset="java{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "script:yay, javascript:nay";
       await wait();
-      expect(element.getAttribute("srcset")).toEqual("someSanitizedUrl");
+      expect(element.getAttribute("srcset")).toEqual(
+        "unsafe:javascript:yay ,unsafe:javascript:nay",
+      );
     });
 
     const testSet = {
@@ -14785,8 +14750,8 @@ describe("$compile", () => {
     }
 
     it("should apply imgSrcSanitizationTrustedUrlList to crafted srcset bindings", async () => {
-      module.config(($compileProvider) =>
-        $compileProvider.imgSrcSanitizationTrustedUrlList(
+      module.config(($sceDelegateProvider) =>
+        $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
           /^https:\/\/angularjs\.org\//,
         ),
       );
@@ -14889,35 +14854,19 @@ describe("$compile", () => {
       expect(element.getAttribute("title")).toBe("javascript:doEvilStuff()");
     });
 
-    it("should use $$sanitizeUri", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("someSanitizedUrl");
-      module.config(($provide) =>
-        $provide.value("$$sanitizeUri", $$sanitizeUri),
-      );
+    it("should sanitize plain href values through SCE", async () => {
       initInjector("test1");
       element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
       $rootScope.testUrl = "someUrl";
       await wait();
-      expect(element.getAttribute("href")).toBe("someSanitizedUrl");
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
-
-      $$sanitizeUri.calls.reset();
+      expect(element.getAttribute("href")).toBe("someUrl");
 
       element = $compile('<a ng-href="{{testUrl}}"></a>')($rootScope);
       await wait();
-      expect(element.getAttribute("href")).toBe("someSanitizedUrl");
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
+      expect(element.getAttribute("href")).toBe("someUrl");
     });
 
-    it("should use $$sanitizeUri when working with svg href bindings", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("https://clean.example.org");
-      module.config(($provide) =>
-        $provide.value("$$sanitizeUri", $$sanitizeUri),
-      );
+    it("should apply URL and media sanitization when working with svg href bindings", async () => {
       initInjector("test1");
       // This URL would fail the RESOURCE_URL trusted list, but that test shouldn't be run
       // because these interpolations will be resolved against the URL context instead
@@ -14928,11 +14877,7 @@ describe("$compile", () => {
       )($rootScope);
       await wait();
       expect(elementA.querySelector("a").getAttribute("href")).toBe(
-        "https://clean.example.org",
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith(
         `${$rootScope.testUrl}aTag`,
-        false,
       );
 
       const elementImage = $compile(
@@ -14940,21 +14885,11 @@ describe("$compile", () => {
       )($rootScope);
       await wait();
       expect(elementImage.querySelector("image").getAttribute("href")).toBe(
-        "https://clean.example.org",
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith(
         `${$rootScope.testUrl}imageTag`,
-        true,
       );
     });
 
-    it("should use $$sanitizeUri when working with svg and href through ng-href", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("https://clean.example.org");
-      module.config(($provide) =>
-        $provide.value("$$sanitizeUri", $$sanitizeUri),
-      );
+    it("should apply URL sanitization when working with svg and href through ng-href", async () => {
       initInjector("test1");
       // This URL would fail the RESOURCE_URL trusted list, but that test shouldn't be run
       // because these interpolations will be resolved against the URL context instead
@@ -14964,19 +14899,10 @@ describe("$compile", () => {
         $rootScope,
       );
       await wait();
-      expect(element.querySelector("a").href.baseVal).toBe(
-        "https://clean.example.org",
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
+      expect(element.querySelector("a").href.baseVal).toBe($rootScope.testUrl);
     });
 
-    it("should use $$sanitizeUri when working with svg image href bindings", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("https://clean.example.org");
-      module.config(($provide) =>
-        $provide.value("$$sanitizeUri", $$sanitizeUri),
-      );
+    it("should apply media sanitization when working with svg image href bindings", async () => {
       initInjector("test1");
       $rootScope.testUrl = "https://bad.example.org";
 
@@ -14985,36 +14911,29 @@ describe("$compile", () => {
       )($rootScope);
       await wait();
       expect(interpolatedHref.querySelector("image").getAttribute("href")).toBe(
-        "https://clean.example.org",
+        $rootScope.testUrl,
       );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
-
-      $$sanitizeUri.calls.reset();
 
       const ngHref = $compile(
         '<svg><image ng-href="{{ testUrl }}"></image></svg>',
       )($rootScope);
       await wait();
       expect(ngHref.querySelector("image").getAttribute("href")).toBe(
-        "https://clean.example.org",
+        $rootScope.testUrl,
       );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
-
-      $$sanitizeUri.calls.reset();
 
       const ngAttrHref = $compile(
         '<svg><image ng-attr-href="{{ testUrl }}"></image></svg>',
       )($rootScope);
       await wait();
       expect(ngAttrHref.querySelector("image").getAttribute("href")).toBe(
-        "https://clean.example.org",
+        $rootScope.testUrl,
       );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
     });
 
     it("should apply imgSrcSanitizationTrustedUrlList to svg image href bindings", async () => {
-      module.config(($compileProvider) =>
-        $compileProvider.imgSrcSanitizationTrustedUrlList(
+      module.config(($sceDelegateProvider) =>
+        $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
           /^https:\/\/angularjs\.org\//,
         ),
       );

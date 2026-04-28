@@ -9,13 +9,14 @@ import {
   directiveNormalize,
   hasOwn,
   isNullOrUndefined,
-  isString,
   isUndefined,
+  getNodeName,
   keys,
   minErr,
   nullObject,
   snakeCase,
   trim,
+  isString,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
@@ -222,7 +223,9 @@ export class Attributes {
       }
     }
 
-    const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
+    const elementNode = this._nodeRef?.node as Element | undefined;
+
+    const nodeName = elementNode && getNodeName(elementNode);
 
     let maybeSanitizedValue: string | boolean | null | unknown;
 

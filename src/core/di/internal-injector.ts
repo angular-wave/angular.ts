@@ -1,20 +1,18 @@
+import { _injector } from "../../injection-tokens.ts";
 import {
   hasOwn,
   isArray,
   isArrowFunction,
   minErr,
+  isString,
 } from "../../shared/utils.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 import { annotate, isClass } from "./di.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
+import { providerSuffix } from "./injector.ts";
 
-const $injectorMinErr = minErr($injectTokens._injector);
-
-const providerSuffix = "Provider";
-
-const INSTANTIATING = true;
+const $injectorMinErr = minErr(_injector);
 
 type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
 
@@ -45,7 +43,7 @@ class AbstractInjector {
    */
   get(serviceName: string): any {
     if (hasOwn(this._cache, serviceName)) {
-      if (this._cache[serviceName] === INSTANTIATING) {
+      if (this._cache[serviceName] === true) {
         throw $injectorMinErr(
           "cdep",
           "Circular dependency found: {0}",
@@ -57,7 +55,7 @@ class AbstractInjector {
     }
 
     this._path.unshift(serviceName);
-    this._cache[serviceName] = INSTANTIATING;
+    this._cache[serviceName] = true;
 
     try {
       this._cache[serviceName] = this._factory(serviceName);
@@ -88,10 +86,10 @@ class AbstractInjector {
 
     const $inject = annotate(fn, this.strictDi, serviceName);
 
-    for (let i = 0, { length } = $inject; i < length; i++) {
+    for (let i = 0; i < $inject.length; i++) {
       const key = $inject[i];
 
-      if (typeof key !== "string") {
+      if (!isString(key)) {
         throw $injectorMinErr(
           "itkn",
           "Incorrect injection token! Expected service name as string, got {0}",
@@ -119,7 +117,7 @@ class AbstractInjector {
     locals?: Record<string, any> | string,
     serviceName?: string,
   ): any {
-    if (typeof locals === "string") {
+    if (isString(locals)) {
       serviceName = locals;
       locals = undefined;
     }

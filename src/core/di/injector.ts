@@ -1,3 +1,4 @@
+import { _cookie, _injector } from "../../injection-tokens.ts";
 import {
   assert,
   assertArgFn,
@@ -8,13 +9,12 @@ import {
   isInstanceOf,
   isNullOrUndefined,
   isObject,
-  isString,
   isUndefined,
   minErr,
+  isString,
 } from "../../shared/utils.ts";
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import { validateArray } from "../../shared/validate.ts";
 import type {
   Constructor,
@@ -28,9 +28,9 @@ import type {
 } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 
-const $injectorMinErr = minErr($injectTokens._injector);
+const $injectorMinErr = minErr(_injector);
 
-const providerSuffix = "Provider";
+export const providerSuffix = "Provider";
 
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 
@@ -76,7 +76,7 @@ export function createInjector(
 
   const runBlocks = loadModules(modulesToLoad);
 
-  instanceInjector = protoInstanceInjector.get($injectTokens._injector);
+  instanceInjector = protoInstanceInjector.get(_injector);
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
@@ -149,7 +149,7 @@ export function createInjector(
    */
   function service(name: string, constructor: Function): ServiceProvider {
     return factory(name, [
-      $injectTokens._injector,
+      _injector,
       ($injector: InjectorService) => $injector.instantiate(constructor),
     ]);
   }
@@ -224,7 +224,7 @@ export function createInjector(
           case "cookie": {
             const instance = $injector.instantiate(ctor);
 
-            const $cookie = $injector.get($injectTokens._cookie);
+            const $cookie = $injector.get(_cookie);
 
             const serialize = backendOrConfig?.serialize ?? JSON.stringify;
 
@@ -232,24 +232,29 @@ export function createInjector(
 
             const cookieOpts = backendOrConfig?.cookie ?? {};
 
-            return createPersistentProxy(instance, name, {
-              getItem(key: string) {
-                const raw = $cookie.get(key);
+            return createPersistentProxy(
+              instance,
+              name,
+              {
+                getItem(key: string) {
+                  const raw = $cookie.get(key);
 
-                return isNullOrUndefined(raw) ? null : raw;
+                  return isNullOrUndefined(raw) ? null : raw;
+                },
+
+                setItem(k: string, v: string) {
+                  $cookie.put(k, v, cookieOpts);
+                },
+
+                removeItem(k: string) {
+                  $cookie.remove(k, cookieOpts);
+                },
               },
-
-              setItem(k: string, v: string) {
-                $cookie.put(k, v, cookieOpts);
+              {
+                serialize,
+                deserialize,
               },
-
-              removeItem(k: string) {
-                $cookie.remove(k, cookieOpts);
-              },
-
-              serialize,
-              deserialize,
-            });
+            );
           }
           case "custom": {
             const instance = $injector.instantiate(ctor);
@@ -261,7 +266,7 @@ export function createInjector(
             let deserialize = JSON.parse;
 
             if (backendOrConfig) {
-              if (typeof backendOrConfig.getItem === "function") {
+              if (isFunction(backendOrConfig.getItem)) {
                 // raw Storage object
                 backend = backendOrConfig;
               } else if (isObject(backendOrConfig)) {

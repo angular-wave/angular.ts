@@ -1,5 +1,11 @@
-import { isDefined } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import {
+  _anchorScroll,
+  _compile,
+  _exceptionHandler,
+  _injector,
+  _templateRequest,
+} from "../../injection-tokens.ts";
+import { isDefined, isInstanceOf } from "../../shared/utils.ts";
 import { removeElement } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
@@ -8,10 +14,10 @@ import {
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIncludeDirective.$inject = [
-  $t._templateRequest,
-  $t._anchorScroll,
-  $t._injector,
-  $t._exceptionHandler,
+  _templateRequest,
+  _anchorScroll,
+  _injector,
+  _exceptionHandler,
 ];
 
 /**
@@ -149,7 +155,7 @@ export function ngIncludeDirective(
                   scope.$emit("$includeContentError", src);
                 }
                 $exceptionHandler(
-                  err instanceof Error ? err : new Error(String(err)),
+                  isInstanceOf(err, Error) ? err : new Error(String(err)),
                 );
               });
           } else {
@@ -167,7 +173,7 @@ export function ngIncludeDirective(
 // We need this directive so that the element content is already filled when
 // the link function of another directive on the same element as ngInclude
 // is called.
-ngIncludeFillContentDirective.$inject = [$t._compile];
+ngIncludeFillContentDirective.$inject = [_compile];
 
 /**
  * Fills the `ngInclude` element with the resolved template content and compiles it.

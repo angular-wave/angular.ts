@@ -58,7 +58,7 @@ export function isArrayLike(obj: any): boolean {
   // arrays, strings and jQuery/jqLite objects are array like
   // * we have to check the existence of JQLite first as this method is called
   //   via the forEach method when constructing the JQLite object in the first place
-  if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
+  if (isArray(obj) || isInstanceOf(obj, Array) || isString(obj)) return true;
 
   const arrayLikeObj = obj as ArrayLike<any> & Object & Partial<NodeList>;
 
@@ -68,8 +68,7 @@ export function isArrayLike(obj: any): boolean {
   // other objects with suitable length characteristics are array-like
   return (
     isNumber(len) &&
-    ((len >= 0 && len - 1 in arrayLikeObj) ||
-      typeof arrayLikeObj.item === "function")
+    ((len >= 0 && len - 1 in arrayLikeObj) || isFunction(arrayLikeObj.item))
   );
 }
 
@@ -101,14 +100,19 @@ export function isArray<T = any>(array: any): array is T[] {
   return Array.isArray(array);
 }
 
+export type InstanceConstructor<T = any> = {
+  prototype: T;
+};
+
 /**
  * Returns whether a value is an instance of the provided constructor.
  */
 export function isInstanceOf<T>(
   val: any,
-  type: new (...args: any[]) => T,
-): val is T {
-  return val instanceof type;
+  type: InstanceConstructor<T>,
+): val is T;
+export function isInstanceOf(val: any, type: any): boolean {
+  return val instanceof (type as any);
 }
 
 /**
@@ -220,7 +224,7 @@ export function isError(value: any): value is Error {
     case "[object DOMException]":
       return true;
     default:
-      return value instanceof Error;
+      return isInstanceOf(value, Error);
   }
 }
 
@@ -424,8 +428,21 @@ export function hasCustomToString(obj: { toString: () => string }): boolean {
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  */
+const nodeNameCache = new WeakMap<Element, string>();
+
 export function getNodeName(element: Element): string {
-  return lowercase(element.nodeName);
+  let nodeName = nodeNameCache.get(element);
+
+  if (nodeName === undefined) {
+    const rawNodeName = element.nodeName;
+
+    if (!rawNodeName) return undefined as unknown as string;
+
+    nodeName = rawNodeName.toLowerCase();
+    nodeNameCache.set(element, nodeName);
+  }
+
+  return nodeName;
 }
 
 /**
@@ -599,6 +616,7 @@ export function equals(o1: any, o2: any): boolean {
  * throw error if the name given is hasOwnProperty
  * @param name the name to test
  * @param context the context in which the name is used, such as module or directive
+ * @throws AngularTS minErr when `name` would shadow `hasOwnProperty`.
  */
 export function assertNotHasOwnProperty(name: string, context: string): void {
   if (name === "hasOwnProperty") {
@@ -614,23 +632,26 @@ export function assertNotHasOwnProperty(name: string, context: string): void {
  * Converts a value to a display string using AngularTS serialization rules.
  */
 export function stringify(value: unknown): string | unknown {
-  if (isNull(value) || isUndefined(value)) {
+  if (isNullOrUndefined(value)) {
     return "";
   }
-  switch (typeof value) {
-    case "string":
-      break;
-    case "number":
-      value = `${value}`;
-      break;
-    default:
-      const objectValue = value as Object;
 
-      if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-        value = objectValue.toString();
-      } else {
-        value = toJson(value);
-      }
+  const type = typeof value;
+
+  if (type === "string") {
+    return value;
+  }
+
+  if (type === "number") {
+    return `${value}`;
+  }
+
+  const objectValue = value as Object;
+
+  if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
+    value = objectValue.toString();
+  } else {
+    value = toJson(value);
   }
 
   return value;
@@ -667,7 +688,7 @@ export function sliceArgs(args: IArguments | any[], startIndex?: number) {
 export function bind(context: any, fn: any) {
   const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
 
-  if (isFunction(fn) && !(fn instanceof RegExp)) {
+  if (isFunction(fn) && !isInstanceOf(fn, RegExp)) {
     return curryArgs.length
       ? function () {
           return arguments.length
@@ -691,11 +712,7 @@ export function bind(context: any, fn: any) {
 function toJsonReplacer(key: string, value: any): any {
   let val = value;
 
-  if (
-    typeof key === "string" &&
-    key.charAt(0) === "$" &&
-    key.charAt(1) === "$"
-  ) {
+  if (isString(key) && key.charAt(0) === "$" && key.charAt(1) === "$") {
     val = undefined;
   } else if (isWindow(value)) {
     val = "$WINDOW";
@@ -905,6 +922,8 @@ export function shallowCopy<T>(src: T, dst?: any): T {
 
 /**
  * Throws when the argument is false.
+ *
+ * @throws Error when `argument` is false.
  */
 export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
   if (!argument) {
@@ -914,6 +933,8 @@ export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
 
 /**
  * Throws a typed AngularTS argument error when the argument is falsy.
+ *
+ * @throws AngularTS minErr when `arg` is falsy.
  */
 export function assertArg<T>(arg: T, name: string, reason?: string): T {
   if (!arg) {
@@ -930,6 +951,8 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
 
 /**
  * Asserts that a value is a function, optionally unwrapping array-annotation first.
+ *
+ * @throws AngularTS minErr when `arg` is not a function.
  */
 export function assertArgFn(
   arg: string | Function | any[],
@@ -1057,7 +1080,7 @@ export function minErr(module: string): (...args: any[]) => Error {
  *
  */
 export function toDebugString(obj: any): string {
-  if (typeof obj === "function") {
+  if (isFunction(obj)) {
     return obj.toString().replace(/ \{[\s\S]*$/, "");
   }
 
@@ -1065,7 +1088,7 @@ export function toDebugString(obj: any): string {
     return "undefined";
   }
 
-  if (typeof obj !== "string") {
+  if (!isString(obj)) {
     const seen: object[] = [];
 
     const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
@@ -1098,7 +1121,7 @@ export function hashKey(obj: any): string {
   const key = obj && obj._hashKey;
 
   if (key) {
-    if (typeof key === "function") {
+    if (isFunction(key)) {
       return obj._hashKey();
     }
 
@@ -1376,7 +1399,7 @@ export async function instantiateWasm(
  * Returns whether a function is an arrow function.
  */
 export function isArrowFunction(fn: any): boolean {
-  return typeof fn === "function" && !fn.prototype;
+  return isFunction(fn) && !fn.prototype;
 }
 
 /**

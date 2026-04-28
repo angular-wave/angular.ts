@@ -1,14 +1,19 @@
+import { _animateProvider, _injector } from "../injection-tokens.ts";
 import type { AnimationOptions, Animator } from "./interface.ts";
-import { isArray, isFunction, isObject } from "../shared/utils.ts";
+import {
+  isArray,
+  isFunction,
+  isInstanceOf,
+  isObject,
+} from "../shared/utils.ts";
 import {
   applyAnimationClasses,
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.ts";
-import { $injectTokens } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 
-AnimateJsProvider.$inject = [$injectTokens._animateProvider];
+AnimateJsProvider.$inject = [_animateProvider];
 
 type JsAnimationOperation = (done: () => void) => void;
 
@@ -57,7 +62,7 @@ export function AnimateJsProvider(
   $animateProvider: AnimateProviderShape,
 ): void {
   this.$get = [
-    $injectTokens._injector,
+    _injector,
     /**
      * Creates the runtime JavaScript animation driver.
      */
@@ -291,7 +296,7 @@ export function AnimateJsProvider(
 
                 const value = animationFn.apply(ani, args);
 
-                if (value instanceof AnimateRunner) value.done(done);
+                if (isInstanceOf(value, AnimateRunner)) value.done(done);
               } else done();
             });
           });

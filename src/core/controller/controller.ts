@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,
@@ -7,9 +7,9 @@ import {
   isArray,
   isFunction,
   isObject,
-  isString,
   keys,
   minErr,
+  isString,
 } from "../../shared/utils.ts";
 
 export interface ControllerLocals {
@@ -93,7 +93,7 @@ export class ControllerProvider {
   constructor() {
     this._controllers = new Map();
     this.$get = [
-      $injectTokens._injector,
+      _injector,
       ($injector): ControllerService => {
         return (expression, locals, later, ident) => {
           let instance: any;

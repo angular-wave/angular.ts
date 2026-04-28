@@ -1,5 +1,5 @@
 import { removeFrom } from "../../shared/common.ts";
-import { assign, isFunction, isString, values } from "../../shared/utils.ts";
+import { assign, isFunction, values, isString } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";

@@ -29,6 +29,6 @@ export function isPromise(
   return (
     obj !== null &&
     typeof obj === "object" &&
-    typeof (obj as { then?: unknown }).then === "function"
+    isFunction((obj as { then?: unknown }).then)
   );
 }

@@ -1,3 +1,11 @@
+import {
+  _interpolate,
+  _rootScope,
+  _router,
+  _state,
+  _stateRegistry,
+  _transitions,
+} from "../../injection-tokens.ts";
 import { removeFrom } from "../../shared/common.ts";
 import {
   assign,
@@ -9,7 +17,6 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { getInheritedData } from "../../shared/dom.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 type ParsedStateRef = { _state: string | null; _paramExpr: string | null };
 
 type ProcessedDef = {
@@ -224,12 +231,7 @@ function bindEvents(
 
 // // TODO: SEPARATE THESE OUT
 
-StateRefDirective.$inject = [
-  $injectTokens._state,
-  $injectTokens._rootScope,
-  $injectTokens._stateRegistry,
-  $injectTokens._transitions,
-];
+StateRefDirective.$inject = [_state, _rootScope, _stateRegistry, _transitions];
 
 /**
  * Generates `ng-sref` links and keeps their href/state data in sync.
@@ -321,10 +323,10 @@ export function StateRefDirective(
 }
 
 StateRefDynamicDirective.$inject = [
-  $injectTokens._state,
-  $injectTokens._rootScope,
-  $injectTokens._stateRegistry,
-  $injectTokens._transitions,
+  _state,
+  _rootScope,
+  _stateRegistry,
+  _transitions,
 ];
 
 /**
@@ -417,11 +419,11 @@ export function StateRefDynamicDirective(
 }
 
 StateRefActiveDirective.$inject = [
-  $injectTokens._state,
-  $injectTokens._router,
-  $injectTokens._interpolate,
-  $injectTokens._stateRegistry,
-  $injectTokens._transitions,
+  _state,
+  _router,
+  _interpolate,
+  _stateRegistry,
+  _transitions,
 ];
 
 /**

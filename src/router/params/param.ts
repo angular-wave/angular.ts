@@ -4,9 +4,10 @@ import {
   hasOwn,
   isArray,
   isDefined,
+  isInstanceOf,
   isNullOrUndefined,
-  isString,
   isUndefined,
+  isString,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type { ParamDeclaration, RawParams, Replace } from "./interface.ts";
@@ -94,7 +95,7 @@ function getType(
     cfg.type &&
     urlType &&
     urlType.name === "string" &&
-    typeof cfg.type === "string" &&
+    isString(cfg.type) &&
     paramTypes.type(cfg.type)
   )
     return paramTypes.type(cfg.type) as ParamType;
@@ -114,7 +115,7 @@ function getType(
     return paramTypes.type(type) as ParamType;
   }
 
-  return cfg.type instanceof ParamType
+  return isInstanceOf(cfg.type, ParamType)
     ? cfg.type
     : (paramTypes.type(cfg.type as string) as ParamType);
 }

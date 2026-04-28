@@ -1,4 +1,9 @@
-import { isArray, isNullOrUndefined, keys } from "../../shared/utils.ts";
+import {
+  isArray,
+  isNullOrUndefined,
+  keys,
+  isString,
+} from "../../shared/utils.ts";
 
 /**
  * RFC 6570 Level 4 URI Template expander
@@ -16,8 +21,7 @@ export function expandUriTemplate(
   template: string,
   vars: Record<string, any> = {},
 ): string {
-  if (typeof template !== "string")
-    throw new TypeError("template must be a string");
+  if (!isString(template)) throw new TypeError("template must be a string");
 
   return template.replace(/\{([^}]+)\}/g, (_match, expression: string) => {
     return expandExpression(expression, vars);

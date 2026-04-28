@@ -4,7 +4,9 @@ import {
   createObject,
   hasOwn,
   isDefined,
+  isInstanceOf,
   isNullOrUndefined,
+  isString,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
@@ -160,7 +162,7 @@ function initDefaultTypes() {
     const defaultTypeBase = {
       encode: (val: any) => valToString(val),
       decode: (val: string) => valToString(val),
-      is: (val: any) => val instanceof String || typeof val === "string",
+      is: (val: any) => isInstanceOf(val, String) || isString(val),
       pattern: /.*/,
 
       equals: (a: any, b: any) => a === b,
@@ -195,7 +197,7 @@ function initDefaultTypes() {
     bool: makeDefaultType({
       encode: (val: any) => ((val && 1) || 0).toString(),
       decode: (val: string) => parseInt(val, 10) !== 0,
-      is: (val: any) => val instanceof Boolean || typeof val === "boolean",
+      is: (val: any) => isInstanceOf(val, Boolean) || typeof val === "boolean",
       pattern: /[01]/,
     }),
     date: makeDefaultType({
@@ -220,7 +222,7 @@ function initDefaultTypes() {
 
         return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
       },
-      is: (val: any) => val instanceof Date && !isNaN(val.valueOf()),
+      is: (val: any) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
       /**
        * @param {{ [x: string]: () => any; }} left
        * @param {{ [x: string]: () => any; }} right
@@ -238,7 +240,7 @@ function initDefaultTypes() {
     json: makeDefaultType({
       encode: (x: any) => JSON.stringify(x),
       decode: (x: string) => JSON.parse(x),
-      is: (val: any) => val instanceof Object,
+      is: (val: any) => isInstanceOf(val, Object),
       equals,
       pattern: /[^/]*/,
     }),

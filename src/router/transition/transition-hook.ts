@@ -1,6 +1,6 @@
 import { isPromise } from "../../shared/predicates.ts";
 import { fnToString, maxLength } from "../../shared/strings.ts";
-import { assign } from "../../shared/utils.ts";
+import { assign, isInstanceOf } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
@@ -211,7 +211,7 @@ export class TransitionHook {
       return Rejection.aborted("Hook aborted transition")._toPromise();
     }
 
-    if (result instanceof TargetState) {
+    if (isInstanceOf(result, TargetState)) {
       return Rejection.redirected(result)._toPromise();
     }
 

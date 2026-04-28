@@ -1,5 +1,11 @@
 import type { AnimationOptions } from "./interface.ts";
-import { arrayFrom, assign, isArray, isString } from "../shared/utils.ts";
+import {
+  arrayFrom,
+  assign,
+  isArray,
+  isInstanceOf,
+  isString,
+} from "../shared/utils.ts";
 import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -55,7 +61,7 @@ export function pendClasses(
 export function stripCommentsFromElement(
   element: NodeList | Node,
 ): Node[] | Node | undefined {
-  if (element instanceof NodeList) {
+  if (isInstanceOf(element, NodeList)) {
     return arrayFrom(element).filter(
       (x) => x.nodeType === NodeType._ELEMENT_NODE,
     );
