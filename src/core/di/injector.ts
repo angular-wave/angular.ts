@@ -13,7 +13,11 @@ import {
   minErr,
   isString,
 } from "../../shared/utils.ts";
-import { InjectorService, ProviderInjector } from "./internal-injector.ts";
+import {
+  InjectorService,
+  providerSuffix,
+  ProviderInjector,
+} from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
 import { validateArray } from "../../shared/validate.ts";
 import type {
@@ -29,8 +33,6 @@ import type {
 import type { NgModule } from "./ng-module/ng-module.ts";
 
 const $injectorMinErr = minErr(_injector);
-
-export const providerSuffix = "Provider";
 
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 

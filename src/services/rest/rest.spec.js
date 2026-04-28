@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _http } from "../../injection-tokens.ts";
 import { RestProvider, RestService } from "./rest.ts";
 import { expandExpression, expandUriTemplate, pctEncode } from "./rfc.ts";
 
@@ -195,7 +195,7 @@ describe("$rest", () => {
 
       provider.rest("users", "/users{?page}", UserEntity, { cache: true });
 
-      expect(provider.$get[0]).toBe($injectTokens._http);
+      expect(provider.$get[0]).toBe(_http);
 
       const factory = provider.$get[1]($http);
       const service = factory("/admins", UserEntity, { timeout: 10 });
