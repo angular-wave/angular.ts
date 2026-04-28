@@ -1,6 +1,7 @@
-import { arrayTuples, defaults, inherit, map } from "../../shared/common.ts";
+import { defaults } from "../../shared/common.ts";
 import {
   hasOwn,
+  inherit,
   isArray,
   isDefined,
   isInstanceOf,
@@ -137,9 +138,15 @@ export class UrlMatcher {
       (path) => path.location === DefType._PATH,
     );
 
-    return arrayTuples(staticSegments, [...pathParams, undefined])
-      .flat()
-      .filter((x: string | Param | undefined) => x !== "" && isDefined(x));
+    const result: Array<string | Param> = [];
+
+    for (let i = 0; i < staticSegments.length; i++) {
+      if (staticSegments[i] !== "") result.push(staticSegments[i]);
+
+      if (isDefined(pathParams[i])) result.push(pathParams[i]);
+    }
+
+    return result;
   }
 
   /**
@@ -232,12 +239,11 @@ export class UrlMatcher {
       weightsB = weights(b);
 
     padArrays(weightsA, weightsB, 0);
-    const _pairs = arrayTuples(weightsA, weightsB);
 
     let cmp;
 
-    for (let i = 0, l = _pairs.length; i < l; i++) {
-      cmp = _pairs[i][0] - _pairs[i][1];
+    for (let i = 0, l = weightsA.length; i < l; i++) {
+      cmp = weightsA[i]! - weightsB[i]!;
 
       if (cmp !== 0) return cmp;
     }
@@ -529,9 +535,9 @@ export class UrlMatcher {
 
       const split = reverseString(paramVal).split(/-(?!\\)/);
 
-      const allReversed = map(split, reverseString);
+      const allReversed = split.map(reverseString);
 
-      return (allReversed as string[]).map(unquoteDashes).reverse();
+      return allReversed.map(unquoteDashes).reverse();
     }
 
     for (let i = 0; i < nPathSegments; i++) {
@@ -707,8 +713,7 @@ export class UrlMatcher {
         if (isNullOrUndefined(encoded)) return acc;
 
         // If this parameter value is an array, encode the value using encodeDashes
-        if (isArray(encoded))
-          return acc + (map(encoded, encodeDashes) as string[]).join("-");
+        if (isArray(encoded)) return acc + encoded.map(encodeDashes).join("-");
 
         // If the parameter type is "raw", then do not encodeURIComponent
         if (param.raw) {
@@ -736,8 +741,7 @@ export class UrlMatcher {
 
         if (encoded.length === 0) return undefined;
 
-        if (!param.raw)
-          encoded = map(encoded, encodeURIComponent) as string | string[];
+        if (!param.raw) encoded = encoded.map(encodeURIComponent);
 
         return (encoded as any[]).map((val: any) => `${param.id}=${val}`);
       })

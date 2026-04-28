@@ -1,5 +1,5 @@
 import { _router, _templateFactory } from "../../injection-tokens.ts";
-import { equals, removeFrom } from "../../shared/common.ts";
+import { removeFrom } from "../../shared/common.ts";
 import { ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
@@ -225,13 +225,7 @@ export class ViewService {
     this._sync();
 
     return () => {
-      const idx = ngViews.indexOf(ngView);
-
-      if (idx === -1) {
-        return;
-      }
-
-      ngViews.splice(idx, 1);
+      removeFrom(ngViews, ngView);
       this._sync();
     };
   }
@@ -263,7 +257,7 @@ export class ViewService {
     const viewContext = viewDecl.$context as ViewContext;
 
     if (
-      !equals(viewContext, ngViewContext) &&
+      viewContext.name !== ngViewContext.name &&
       vcContext !== ngViewContext.name
     ) {
       return false;

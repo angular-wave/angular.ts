@@ -103,6 +103,14 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         ): void {
           const nodeName = getNodeName(element);
 
+          if (attrName === "srcset") {
+            const originalAttrName = attr.$attr[normalized];
+
+            if (originalAttrName) {
+              element.removeAttribute(originalAttrName);
+            }
+          }
+
           function sanitize(value: unknown): any {
             if (isNullOrUndefined(value)) {
               return value;

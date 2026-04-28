@@ -29,21 +29,6 @@ export function maxLength(max: number, str: string): string {
 
   return `${str.substring(0, max - DOTS.length)}${DOTS}`;
 }
-/**
- * Returns a string, with spaces added to the end, up to a desired str length
- *
- * If the string is already longer than the desired length, return the string.
- * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
- *
- * @param length the desired length of the string to return
- * @param str the input string
- */
-export function padString(length: number, str: string): string {
-  while (str.length < length) str += " ";
-
-  return str;
-}
-
 /** Converts a camelCase string into kebab-case. */
 export function kebobString(camelCase: string): string {
   return camelCase
@@ -54,7 +39,7 @@ export function kebobString(camelCase: string): string {
 const FN_LENGTH = 9;
 
 /** Returns a stable string representation for a function. */
-export function functionToString(fn: Function): string {
+function functionToString(fn: Function): string {
   const fnStr = fnToString(fn);
 
   const namedFunctionMatch = fnStr.match(/^(function [^ ]+\([^)]*\))/);

@@ -1,37 +1,9 @@
-import { defaults, filter, map, pick, tail } from "./common.js";
+import { defaults, tail } from "./common.js";
 import { is, pattern, val } from "./hof.js";
 import { isInjectable } from "./predicates.js";
 import { Queue } from "./queue.js";
 
 describe("common", function () {
-  describe("filter", function () {
-    it("should filter arrays", function () {
-      const input = [1, 2, 3, 4, 5];
-      const filtered = filter(input, function (int) {
-        return int > 2;
-      });
-      expect(filtered.length).toBe(3);
-      expect(filtered).toEqual([3, 4, 5]);
-    });
-
-    it("should properly compact arrays", function () {
-      expect(
-        filter([0, 1, 0, 2, 0, 3, 4], function (v) {
-          return !!v;
-        }),
-      ).toEqual([1, 2, 3, 4]);
-    });
-
-    it("should filter objects", function () {
-      const input = { foo: 1, bar: 2, baz: 3, qux: 4 };
-      const filtered = filter(input, function (value, _key) {
-        return value > 2;
-      });
-      expect(Object.keys(filtered).length).toBe(2);
-      expect(filtered).toEqual({ baz: 3, qux: 4 });
-    });
-  });
-
   describe("defaults", function () {
     it("should do left-associative object merge", function () {
       const options = { param1: "new val" };
@@ -106,55 +78,6 @@ describe("common", function () {
     it("should accept ng1 array notation", function () {
       const fn = ["foo", "bar", function (_foo, _bar) {}];
       expect(isInjectable(fn)).toBeTruthy();
-    });
-  });
-
-  describe("pick", () => {
-    it("should pick inherited properties", () => {
-      const parent = { foo: "foo", bar: "bar" };
-      const child = Object.create(parent);
-      expect(pick(child, ["foo"])).toEqual({ foo: "foo" });
-    });
-
-    it("should not pick missing properties", () => {
-      const obj = { foo: "foo", bar: "bar" };
-      expect(pick(obj, ["baz"])).toEqual({});
-    });
-  });
-
-  describe("map on arrays", () => {
-    it("should map arrays", () => {
-      const src = [1, 2, 3, 4];
-      const dest = map(src, (x) => x * 2);
-
-      expect(src).toEqual([1, 2, 3, 4]);
-      expect(dest).toEqual([2, 4, 6, 8]);
-    });
-
-    it("should map arrays in place when target === src", () => {
-      const src = [1, 2, 3, 4];
-      const dest = map(src, (x) => x * 2, src);
-
-      expect(src).toEqual([2, 4, 6, 8]);
-      expect(dest).toEqual([2, 4, 6, 8]);
-    });
-  });
-
-  describe("map on objects", () => {
-    it("should map objects", () => {
-      const src = { foo: 1, bar: 2, baz: 3 };
-      const dest = map(src, (x) => x * 2);
-
-      expect(src).toEqual({ foo: 1, bar: 2, baz: 3 });
-      expect(dest).toEqual({ foo: 2, bar: 4, baz: 6 });
-    });
-
-    it("should map objects in place when target === src", () => {
-      const src = { foo: 1, bar: 2, baz: 3 };
-      const dest = map(src, (x) => x * 2, src);
-
-      expect(src).toEqual({ foo: 2, bar: 4, baz: 6 });
-      expect(dest).toEqual({ foo: 2, bar: 4, baz: 6 });
     });
   });
 

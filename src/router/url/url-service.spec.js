@@ -1,6 +1,5 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
-import { map, find } from "../../shared/common.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 
 describe("UrlMatcher", () => {
@@ -556,11 +555,12 @@ describe("UrlMatcher", () => {
 
       // Pass again through Param.value() for normalization (like transitionTo)
       const paramDefs = m.parameters();
-      const values = map(parsed, function (val, key) {
-        return find(paramDefs, function (def) {
-          return def.id === key;
-        }).value(val);
+      const values = {};
+
+      Object.entries(parsed).forEach(([key, val]) => {
+        values[key] = paramDefs.find((def) => def.id === key).value(val);
       });
+
       expect(values).toEqual(expected);
     });
 

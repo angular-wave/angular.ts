@@ -2,8 +2,7 @@ import {
   _exceptionHandlerProvider,
   _routerProvider,
 } from "../../injection-tokens.ts";
-import { copy } from "../../shared/common.ts";
-import { isDefined } from "../../shared/utils.ts";
+import { assign, isDefined } from "../../shared/utils.ts";
 import {
   registerAddCoreResolvables,
   treeChangesCleanup,
@@ -537,7 +536,13 @@ function registerUpdateGlobalState(
       routerState._successfulTransitions._enqueue(trans);
       routerState._currentState = current;
       routerState._current = current?.self;
-      copy(trans.params(), routerState._params);
+      const params = routerState._params;
+
+      for (const key in params) {
+        delete params[key];
+      }
+
+      assign(params, trans.params());
     };
 
     const clearCurrentTransition = (): void => {
