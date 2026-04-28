@@ -1,5 +1,4 @@
 import {
-  addDateMinutes,
   arrayRemove,
   assert,
   assertArg,
@@ -26,7 +25,6 @@ import {
   isArray,
   mergeClasses,
   isArrowFunction,
-  isBlankObject,
   isBlob,
   isBoolean,
   isFile,
@@ -1148,7 +1146,6 @@ describe("utility functions", () => {
         true,
       );
       expect(isObject({})).toBe(true);
-      expect(isBlankObject(createObject(null))).toBe(true);
       expect(isString("text")).toBe(true);
       expect(isNull(null)).toBe(true);
       expect(isNullOrUndefined(undefined)).toBe(true);
@@ -1277,14 +1274,6 @@ describe("utility functions", () => {
 
       expect(bind(context, join, "b")("c")).toBe("a-b-c");
       expect(bind(context, /not-a-function/)).toEqual(/not-a-function/);
-    });
-
-    it("should add minutes without mutating the input date", () => {
-      const date = new Date("2020-01-01T00:00:00Z");
-      const result = addDateMinutes(date, 30);
-
-      expect(result.getTime()).toBe(date.getTime() + 30 * 60 * 1000);
-      expect(result).not.toBe(date);
     });
 
     it("should decode URI components safely", () => {

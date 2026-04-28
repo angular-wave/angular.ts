@@ -161,7 +161,7 @@ export function removeElementData(
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
  */
-export function getExpando(
+function getExpando(
   element: Element & Record<string, any>,
   createIfNecessary = false,
 ): ExpandoStore | undefined {
@@ -419,16 +419,6 @@ export function setScope(
 }
 
 /**
- * Gets the isolate scope attached directly to an element.
- *
- * @param element - The DOM element to get data from.
- * @returns The isolate scope stored on the element.
- */
-export function getIsolateScope(element: Element): any {
-  return getCacheData(element, ISOLATE_SCOPE_KEY);
-}
-
-/**
  * Sets the isolate scope attached to a given element.
  *
  * @param element - The DOM element to set data on.
@@ -619,7 +609,7 @@ function cleanSingleElementData(node: Element): void {
 }
 
 /** Removes cached data for each element in a node collection. */
-export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
+function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
   for (let i = 0, ii = nodes.length; i < ii; i++) {
     cleanSingleElementData(nodes[i]);
   }

@@ -129,18 +129,6 @@ export function isObject<T>(value: T): value is T & object {
 }
 
 /**
- * Determines if a value is an object with a null prototype
- *
- * @param value Reference to check.
- * @returns True if `value` is an `Object` with a null prototype
- */
-export function isBlankObject(value: any): boolean {
-  return (
-    value !== null && typeof value === "object" && !Object.getPrototypeOf(value)
-  );
-}
-
-/**
  * Determines if a reference is a `string`.
  * @param value - The value to check.
  * @returns True if `value` is a string.
@@ -745,17 +733,6 @@ export function toJson(obj: any, pretty?: boolean | number) {
  */
 export function fromJson(json: any): any {
   return isString(json) ? JSON.parse(json) : json;
-}
-
-/**
- * Returns a new date offset by the specified number of minutes.
- */
-export function addDateMinutes(date: Date, minutes: number): Date {
-  const newDate = new Date(date.getTime());
-
-  newDate.setMinutes(newDate.getMinutes() + minutes);
-
-  return newDate;
 }
 
 /**

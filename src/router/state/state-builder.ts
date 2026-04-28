@@ -74,18 +74,12 @@ function buildParams(
     params[param.id] = param;
   });
 
-  const urlParamIds = new Set<string>();
-
-  urlParams.forEach((param: { id: string }) => {
-    urlParamIds.add(param.id);
-  });
-
   const paramConfigs = state.params || {};
 
   const paramConfigKeys = keys(paramConfigs);
 
   paramConfigKeys.forEach((id) => {
-    if (!urlParamIds.has(id)) {
+    if (!hasOwn(params, id)) {
       params[id] = paramFactory.fromConfig(id, null, state.self);
     }
   });

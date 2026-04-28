@@ -1,7 +1,7 @@
-import { equals } from "../../shared/common.ts";
 import {
   assign,
   createObject,
+  equals,
   hasOwn,
   isDefined,
   isInstanceOf,

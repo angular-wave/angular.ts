@@ -9,7 +9,6 @@ import {
   createElementFromHTML as $,
   getController,
   getScope,
-  getIsolateScope,
 } from "../../shared/dom.ts";
 import { isFunction, getNodeName, extend, assert } from "../../shared/utils.ts";
 import { Cache } from "../../shared/dom.ts";
@@ -1789,7 +1788,7 @@ describe("$compile", () => {
     reloadModules();
     const el = $("<div my-directive></div>");
     $compile(el)($rootScope);
-    expect(getIsolateScope(el)).toBe(givenScope);
+    expect(getCacheData(el, "$isolateScope")).toBe(givenScope);
   });
 
   it("allows observing attribute to the isolate scope", () => {
@@ -7078,7 +7077,9 @@ describe("$compile", () => {
               const directiveElement = element.querySelector("a");
 
               expect(getScope(directiveElement)).toBeUndefined();
-              expect(getIsolateScope(directiveElement)).toBeDefined();
+              expect(
+                getCacheData(directiveElement, "$isolateScope"),
+              ).toBeDefined();
             });
 
             it("should render async directive templates without attaching inherited scope data to child nodes", async () => {
@@ -7093,7 +7094,9 @@ describe("$compile", () => {
 
               expect(asyncChild.textContent).toBe("async");
               expect(getScope(asyncChild)).toBeUndefined();
-              expect(getIsolateScope(asyncDirective)).toBeUndefined();
+              expect(
+                getCacheData(asyncDirective, "$isolateScope"),
+              ).toBeUndefined();
             });
 
             it("should render sync directive templates without attaching inherited scope data to child nodes", async () => {
@@ -7107,7 +7110,9 @@ describe("$compile", () => {
 
               expect(syncChild.textContent).toBe("");
               expect(getScope(syncChild)).toBeUndefined();
-              expect(getIsolateScope(syncDirective)).toBeDefined();
+              expect(
+                getCacheData(syncDirective, "$isolateScope"),
+              ).toBeDefined();
             });
           });
 
