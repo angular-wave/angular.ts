@@ -1,15 +1,24 @@
 import { spawn } from "node:child_process";
-import { access, mkdir, readdir, rm } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = fileURLToPath(new URL("../", import.meta.url));
 const tempDir = path.join(rootDir, ".coverage", "tmp");
 const reportDir = path.join(rootDir, "coverage");
+const baselinePath = path.join(rootDir, "utils", "coverage-baseline.json");
 const shouldCheckCoverage = process.argv.includes("--check");
+const shouldUpdateBaseline = process.argv.includes("--update-baseline");
 const coverageThresholds = {
   branches: 70,
-  functions: 80,
+  functions: 78,
   lines: 80,
   statements: 80,
 };
@@ -20,7 +29,13 @@ await rm(tempDir, { recursive: true, force: true });
 await rm(reportDir, { recursive: true, force: true });
 await mkdir(tempDir, { recursive: true });
 
-const env = { ...process.env, PW_COVERAGE: "1" };
+const coveragePort = process.env.PW_COVERAGE_PORT ?? "4001";
+const env = {
+  ...process.env,
+  PW_BASE_URL: `http://localhost:${coveragePort}`,
+  PW_COVERAGE: "1",
+  PORT: coveragePort,
+};
 console.log(
   "[coverage] running Playwright with Istanbul enabled for src/ tests only",
 );
@@ -48,6 +63,7 @@ if (coverageFiles.length > 0) {
       "--reporter=html",
       "--reporter=text-summary",
       "--reporter=lcov",
+      "--reporter=json-summary",
     ],
     env,
   );
@@ -77,6 +93,14 @@ if (coverageFiles.length > 0) {
       ),
     );
   }
+
+  if (shouldCheckCoverage) {
+    coverageExitCode = Math.max(coverageExitCode, await checkBaseline());
+  }
+
+  if (shouldUpdateBaseline) {
+    await updateBaseline();
+  }
 } else {
   console.warn(
     "[coverage] no coverage data was collected; skipping report generation",
@@ -97,6 +121,55 @@ async function assertReportExists(directory) {
       );
     }
   }
+}
+
+async function checkBaseline() {
+  const current = await readSummary();
+  const baseline = JSON.parse(await readFile(baselinePath, "utf-8"));
+  const failures = [];
+
+  for (const metric of ["branches", "functions", "lines", "statements"]) {
+    const currentPct = current.total[metric].pct;
+    const baselinePct = baseline.total[metric].pct;
+
+    if (currentPct < baselinePct) {
+      failures.push(
+        `${metric}: ${currentPct}% is below baseline ${baselinePct}%`,
+      );
+    }
+  }
+
+  if (failures.length) {
+    console.error("[coverage] coverage decreased from baseline");
+    failures.forEach((failure) => console.error(`[coverage] ${failure}`));
+
+    return 1;
+  }
+
+  console.log("[coverage] coverage did not decrease from baseline");
+
+  return 0;
+}
+
+async function updateBaseline() {
+  const current = await readSummary();
+  const baseline = {
+    total: {
+      branches: current.total.branches,
+      functions: current.total.functions,
+      lines: current.total.lines,
+      statements: current.total.statements,
+    },
+  };
+
+  await writeFile(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
+  console.log(`[coverage] baseline updated at ${baselinePath}`);
+}
+
+async function readSummary() {
+  return JSON.parse(
+    await readFile(path.join(reportDir, "coverage-summary.json"), "utf-8"),
+  );
 }
 
 function run(command, args, env) {

@@ -59,7 +59,7 @@ describe("ngInclude", () => {
       let $sce = injector.get("$sce");
       $rootScope = injector.get("$rootScope");
       $rootScope.fooUrl = $sce.trustAsResourceUrl(
-        "http://localhost:4000/mock/hello",
+        `${window.location.origin}/mock/hello`,
       );
       await wait(100);
       expect(element.textContent).toEqual("Hello");

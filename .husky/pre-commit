@@ -1,5 +1,8 @@
+#!/bin/sh
+
+make format
 make lint
 make check
-make format
+make test
+make coverage-check
 make types
-git add ./

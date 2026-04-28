@@ -5,7 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
  * https://github.com/motdotla/dotenv
  */
 // require('dotenv').config();
-const baseUrl = "http://localhost:4000";
+const port = process.env.PORT || "4000";
+const baseUrl = process.env.PW_BASE_URL || `http://localhost:${port}`;
 const isCI =
   "process" in globalThis &&
   !!(
@@ -84,6 +85,6 @@ export default defineConfig({
   webServer: {
     command: "make serve",
     url: baseUrl,
-    reuseExistingServer: true,
+    reuseExistingServer: process.env.PW_COVERAGE !== "1",
   },
 });
