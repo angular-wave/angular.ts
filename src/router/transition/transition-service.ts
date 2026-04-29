@@ -2,30 +2,25 @@ import {
   _exceptionHandlerProvider,
   _routerProvider,
 } from "../../injection-tokens.ts";
-import { assign, isDefined } from "../../shared/utils.ts";
 import {
-  registerAddCoreResolvables,
-  treeChangesCleanup,
-} from "../hooks/core-resolvables.ts";
-import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.ts";
-import { registerInvalidTransitionHook } from "../hooks/invalid-transition.ts";
-import {
-  registerOnEnterHook,
-  registerOnExitHook,
-  registerOnRetainHook,
-} from "../hooks/on-enter-exit-retain.ts";
-import { registerRedirectToHook } from "../hooks/redirect-to.ts";
-import {
-  registerEagerResolvePath,
-  registerLazyResolveState,
-  registerResolveRemaining,
-} from "../hooks/resolve.ts";
-import {
-  registerActivateViews,
-  registerLoadEnteringViews,
-} from "../hooks/views.ts";
+  assign,
+  isDefined,
+  isFunction,
+  isInstanceOf,
+  isString,
+  values,
+} from "../../shared/utils.ts";
+import { Resolvable } from "../resolve/resolvable.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
+import { TargetState } from "../state/target-state.ts";
+import { Rejection } from "./reject-factory.ts";
+import type { ViewConfig } from "../state/views.ts";
+import type {
+  BuiltStateDeclaration,
+  StateDeclaration,
+} from "../state/interface.ts";
+import { Transition, type TreeChanges } from "./transition.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { TargetState } from "../state/target-state.ts";
 import {
   makeEvent,
   registerHook,
@@ -45,7 +40,6 @@ import {
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import { Transition } from "./transition.ts";
 import type { StateProvider } from "../state/state-service.ts";
 import type { UrlService } from "../url/url-service.ts";
 import type { ViewService } from "../view/view.ts";
@@ -77,6 +71,10 @@ export const defaultTransOpts: TransitionOptions = {
   custom: {},
   current: () => null,
   source: "unknown",
+};
+
+const noop = () => {
+  /* empty */
 };
 
 /**
@@ -490,6 +488,285 @@ export class TransitionProvider implements TransitionService {
     registerLoadEnteringViews(this);
     registerUpdateGlobalState(this);
   }
+}
+
+function registerAddCoreResolvables(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService._onCreate(
+    {},
+    function addCoreResolvables(trans: Transition) {
+      trans.addResolvable(Resolvable.fromData(Transition, trans), "");
+      trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
+      trans.addResolvable(
+        Resolvable.fromData("$stateParams", trans.params()),
+        "",
+      );
+      trans.entering().forEach((state: ng.StateDeclaration) => {
+        trans.addResolvable(Resolvable.fromData("$state$", state), state);
+      });
+    },
+  );
+}
+
+const TRANSITION_TOKENS = ["$transition$", Transition];
+
+function treeChangesCleanup(trans: Transition): void {
+  const paths = values(trans.treeChanges() as Record<string, PathNode[]>);
+
+  const nodes: PathNode[] = [];
+
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
+
+    for (let j = 0; j < path.length; j++) {
+      const node = path[j];
+
+      if (nodes.indexOf(node) === -1) {
+        nodes.push(node);
+      }
+    }
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
+    const { resolvables } = node;
+
+    for (let j = 0; j < resolvables.length; j++) {
+      const resolve = resolvables[j];
+
+      if (TRANSITION_TOKENS.includes(resolve.token)) {
+        resolvables[j] = Resolvable.fromData(resolve.token, null);
+      }
+    }
+  }
+}
+
+function ignoredHook(trans: Transition) {
+  const ignoredReason = trans._ignoredReason();
+
+  if (!ignoredReason) return undefined;
+  const pending = trans._routerState._transition;
+
+  if (ignoredReason === "SameAsCurrent" && pending) {
+    pending.abort();
+  }
+
+  return Rejection.ignored()._toPromise();
+}
+
+function registerIgnoredTransitionHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onBefore({}, ignoredHook, { priority: -9999 });
+}
+
+function invalidTransitionHook(trans: Transition): void {
+  if (!trans.valid()) {
+    throw new Error(trans.error()?.toString());
+  }
+}
+
+function registerInvalidTransitionHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onBefore({}, invalidTransitionHook, {
+    priority: -10000,
+  });
+}
+
+function makeEnterExitRetainHook(
+  hookName: "onEnter" | "onExit" | "onRetain",
+): HookFn {
+  return (transition, state) => {
+    const _state = (state._state && state._state()) as Record<string, any>;
+
+    const hookFn = _state[hookName];
+
+    return hookFn(transition, state);
+  };
+}
+
+const onExitHook = makeEnterExitRetainHook("onExit");
+
+const onRetainHook = makeEnterExitRetainHook("onRetain");
+
+const onEnterHook = makeEnterExitRetainHook("onEnter");
+
+function registerOnExitHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onExit(
+    {
+      exiting: (state?: BuiltStateDeclaration) => !!state?.onExit,
+    },
+    onExitHook,
+  );
+}
+
+function registerOnRetainHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onRetain(
+    {
+      retained: (state?: BuiltStateDeclaration) => !!state?.onRetain,
+    },
+    onRetainHook,
+  );
+}
+
+function registerOnEnterHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onEnter(
+    {
+      entering: (state?: BuiltStateDeclaration) => !!state?.onEnter,
+    },
+    onEnterHook,
+  );
+}
+
+function registerRedirectToHook(
+  transitionService: TransitionService,
+  stateService: StateProvider,
+): DeregisterFn {
+  const redirectToHook = (trans: Transition) => {
+    const redirect = trans.to().redirectTo;
+
+    if (!redirect) return undefined;
+
+    function handleResult(result: any) {
+      if (!result) return undefined;
+
+      if (isInstanceOf(result, TargetState)) {
+        return result;
+      }
+
+      if (isString(result)) {
+        return stateService.target(result, trans.params(), trans.options());
+      }
+
+      if ((result as any).state || result.params) {
+        return stateService.target(
+          (result as any).state || trans.to(),
+          result.params || trans.params(),
+          trans.options(),
+        );
+      }
+
+      return undefined;
+    }
+
+    if (isFunction(redirect)) {
+      return Promise.resolve(redirect(trans)).then(handleResult);
+    }
+
+    return handleResult(redirect);
+  };
+
+  return transitionService.onStart(
+    {
+      to: (state) => !!(state as BuiltStateDeclaration).redirectTo,
+    },
+    redirectToHook,
+  );
+}
+
+const RESOLVE_HOOK_PRIORITY = 1000;
+
+const eagerResolvePath = (trans: Transition) =>
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._routerState._injector,
+  )
+    .resolvePath(true, trans)
+    .then(noop);
+
+function registerEagerResolvePath(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onStart({}, eagerResolvePath, {
+    priority: RESOLVE_HOOK_PRIORITY,
+  });
+}
+
+const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._routerState._injector,
+  )
+    .subContext((state._state as Function)())
+    .resolvePath(false, trans)
+    .then(noop);
+
+function matchEnteringState(): boolean {
+  return true;
+}
+
+function registerLazyResolveState(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onEnter(
+    { entering: matchEnteringState },
+    lazyResolveState,
+    {
+      priority: RESOLVE_HOOK_PRIORITY,
+    },
+  );
+}
+
+const resolveRemaining = (trans: Transition) =>
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._routerState._injector,
+  )
+    .resolvePath(false, trans)
+    .then(noop);
+
+function registerResolveRemaining(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onFinish({}, resolveRemaining, {
+    priority: RESOLVE_HOOK_PRIORITY,
+  });
+}
+
+const loadEnteringViews = (transition: Transition) => {
+  const enteringViews = transition.views("entering");
+
+  if (!enteringViews.length) return undefined;
+
+  return Promise.all(
+    enteringViews.map((view: ViewConfig) => Promise.resolve(view.load())),
+  ).then(noop);
+};
+
+function registerLoadEnteringViews(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onFinish({}, loadEnteringViews);
+}
+
+function registerActivateViews(
+  transitionService: TransitionService,
+  viewService: ViewService,
+): DeregisterFn {
+  const activateViews = (transition: Transition) => {
+    const enteringViews = transition.views("entering");
+
+    const exitingViews = transition.views("exiting");
+
+    if (!enteringViews.length && !exitingViews.length) return;
+
+    exitingViews.forEach((view) => viewService._deactivateViewConfig(view));
+    enteringViews.forEach((view) => {
+      viewService._activateViewConfig(view);
+    });
+    viewService._sync();
+  };
+
+  return transitionService.onSuccess({}, activateViews);
 }
 
 function registerUpdateUrl(

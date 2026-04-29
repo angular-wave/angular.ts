@@ -2,6 +2,7 @@ import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ngInitDirective } from "./init.ts";
 
 describe("ngInit", () => {
   let element;
@@ -20,6 +21,20 @@ describe("ngInit", () => {
 
   afterEach(() => {
     dealoc(element);
+  });
+
+  it("should create a pre-link function that evaluates the expression", () => {
+    const directive = ngInitDirective();
+    const link = directive.compile();
+    const scope = {
+      $eval: jasmine.createSpy("$eval"),
+    };
+
+    link.pre(scope, document.createElement("div"), {
+      ngInit: "value = 123",
+    });
+
+    expect(scope.$eval).toHaveBeenCalledWith("value = 123");
   });
 
   it("should init model", async () => {

@@ -5,10 +5,10 @@ import {
 } from "../../injection-tokens.ts";
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
-import { StateQueueManager } from "./state-queue-manager.ts";
+import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { keys, isString } from "../../shared/utils.ts";
+import { hasOwn, keys, isString } from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuiltStateDeclaration,
@@ -18,7 +18,6 @@ import type {
   StateRegistryListener,
   StateStore,
 } from "./interface.ts";
-import type { StateObject } from "./state-object.ts";
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -42,7 +41,7 @@ export class StateRegistryProvider {
   /** @internal */
   _builder: StateBuilder;
   /** @internal */
-  _stateQueue: StateQueueManager;
+  _queue: StateObject[];
   /** @internal */
   _root!: StateObject;
 
@@ -59,12 +58,7 @@ export class StateRegistryProvider {
 
     this._builder = new StateBuilder(this._matcher, urlService);
 
-    this._stateQueue = new StateQueueManager(
-      this._urlService,
-      this._states,
-      this._builder,
-      this._listeners,
-    );
+    this._queue = [];
 
     this.registerRoot();
 
@@ -115,7 +109,7 @@ export class StateRegistryProvider {
       abstract: true,
     };
 
-    this._root = this._stateQueue._register(rootStateDef);
+    this._root = this._register(rootStateDef);
     this._root.navigable = null;
   }
 
@@ -187,7 +181,120 @@ export class StateRegistryProvider {
    *          If the state was only queued, then the object is not fully built.
    */
   register(stateDefinition: _StateDeclaration): StateObject {
-    return this._stateQueue._register(stateDefinition);
+    return this._register(stateDefinition);
+  }
+
+  /** @internal */
+  _register(stateDeclaration: ng.StateDeclaration): StateObject {
+    const state = new StateObject(stateDeclaration);
+
+    const { name } = state;
+
+    if (!isString(name)) throw new Error("State must have a valid name");
+
+    if (hasOwn(this._states, name) || this._isQueued(name)) {
+      throw new Error(`State '${name}' is already defined`);
+    }
+
+    this._queue.push(state);
+    this._flush();
+
+    return state;
+  }
+
+  /** @internal */
+  _isQueued(name: string): boolean {
+    const { _queue } = this;
+
+    for (let i = 0; i < _queue.length; i++) {
+      if (_queue[i].name === name) return true;
+    }
+
+    return false;
+  }
+
+  /** @internal */
+  _flush(): StateStore {
+    const { _queue, _states, _builder } = this;
+
+    const registered: StateObject[] = [];
+
+    const orphans: StateObject[] = [];
+
+    const previousQueueLength: Record<string, number> = {};
+
+    while (_queue.length) {
+      const state = _queue.shift();
+
+      if (!state) continue;
+
+      const { name } = state;
+
+      const result = _builder._build(state);
+
+      const orphanIndex = orphans.indexOf(state);
+
+      if (result) {
+        const existingState = hasOwn(_states, name) ? _states[name] : undefined;
+
+        if (existingState?.name === name) {
+          throw new Error(`State '${name}' is already defined`);
+        }
+
+        _states[name] = state;
+        this._attachRoute(state);
+
+        if (orphanIndex >= 0) orphans.splice(orphanIndex, 1);
+        registered.push(state);
+        continue;
+      }
+
+      const previousLength = previousQueueLength[name];
+
+      previousQueueLength[name] = _queue.length;
+
+      if (orphanIndex >= 0 && previousLength === _queue.length) {
+        _queue.push(state);
+        this._notifyRegistered(registered);
+
+        return _states;
+      }
+
+      if (orphanIndex < 0) {
+        orphans.push(state);
+      }
+
+      _queue.push(state);
+    }
+
+    this._notifyRegistered(registered);
+
+    return _states;
+  }
+
+  /** @internal */
+  _notifyRegistered(registered: StateObject[]): void {
+    if (!registered.length) return;
+
+    const declarations: StateDeclaration[] = [];
+
+    for (let i = 0; i < registered.length; i++) {
+      declarations.push(registered[i].self);
+    }
+
+    this._listeners.forEach((listener) => {
+      listener("registered", declarations);
+    });
+  }
+
+  /** @internal */
+  _attachRoute(state: StateObject | ng.StateDeclaration): void {
+    if (
+      !(state as ng.StateDeclaration & { abstract?: boolean }).abstract &&
+      state.url
+    ) {
+      this._urlService._registerStateRoute(state as StateObject);
+    }
   }
 
   /**

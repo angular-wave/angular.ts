@@ -33,10 +33,10 @@ describe("$aria", () => {
         '<div role="checkbox" ng-model="val" ng-aria-disable></div>',
       )(scope);
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-checked")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-checked")).toBeFalse();
     });
 
@@ -48,11 +48,11 @@ describe("$aria", () => {
       const radio1 = element.children[0];
       const radio2 = element.children[1];
 
-      scope.$apply('val = "one"');
+      scope.$eval('val = "one"');
       expect(radio1.hasAttribute("aria-checked")).toBeFalse();
       expect(radio2.hasAttribute("aria-checked")).toBeFalse();
 
-      scope.$apply('val = "two"');
+      scope.$eval('val = "two"');
       expect(radio1.hasAttribute("aria-checked")).toBeFalse();
       expect(radio2.hasAttribute("aria-checked")).toBeFalse();
     });
@@ -62,29 +62,29 @@ describe("$aria", () => {
       element = $compile('<div ng-disabled="val" ng-aria-disable></div>')(
         scope,
       );
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-disabled")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-disabled")).toBeFalse();
     });
 
     // ariaHidden
     it("should not attach aria-hidden to `ngShow`", () => {
       element = $compile('<div ng-show="val" ng-aria-disable></div>')(scope);
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-hidden")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-hidden")).toBeFalse();
     });
 
     it("should not attach aria-hidden to `ngHide`", () => {
       element = $compile('<div ng-hide="val" ng-aria-disable></div>')(scope);
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-hidden")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-hidden")).toBeFalse();
     });
 
@@ -93,10 +93,10 @@ describe("$aria", () => {
       element = $compile(
         '<input ng-model="val" ng-minlength="10" ng-aria-disable />',
       )(scope);
-      scope.$apply('val = "lt 10"');
+      scope.$eval('val = "lt 10"');
       expect(element.hasAttribute("aria-invalid")).toBeFalse();
 
-      scope.$apply('val = "gt 10 characters"');
+      scope.$eval('val = "gt 10 characters"');
       expect(element.hasAttribute("aria-invalid")).toBeFalse();
     });
 
@@ -104,10 +104,10 @@ describe("$aria", () => {
       element = $compile(
         '<div role="textbox" ng-model="val" ng-minlength="10" ng-aria-disable></div>',
       )(scope);
-      scope.$apply('val = "lt 10"');
+      scope.$eval('val = "lt 10"');
       expect(element.hasAttribute("aria-invalid")).toBeFalse();
 
-      scope.$apply('val = "gt 10 characters"');
+      scope.$eval('val = "gt 10 characters"');
       expect(element.hasAttribute("aria-invalid")).toBeFalse();
     });
 
@@ -122,10 +122,10 @@ describe("$aria", () => {
       element = $compile('<div ng-readonly="val" ng-aria-disable></div>')(
         scope,
       );
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-readonly")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-readonly")).toBeFalse();
     });
 
@@ -141,10 +141,10 @@ describe("$aria", () => {
       element = $compile(
         '<div ng-model="val" ng-required="val" ng-aria-disable></div>',
       )(scope);
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       expect(element.hasAttribute("aria-required")).toBeFalse();
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       expect(element.hasAttribute("aria-required")).toBeFalse();
     });
 
@@ -157,12 +157,12 @@ describe("$aria", () => {
       expect(element.hasAttribute("aria-valuemin")).toBeFalse();
       expect(element.hasAttribute("aria-valuenow")).toBeFalse();
 
-      scope.$apply("val = 50");
+      scope.$eval("val = 50");
       expect(element.hasAttribute("aria-valuemax")).toBeFalse();
       expect(element.hasAttribute("aria-valuemin")).toBeFalse();
       expect(element.hasAttribute("aria-valuenow")).toBeFalse();
 
-      scope.$apply("val = 150");
+      scope.$eval("val = 150");
       expect(element.hasAttribute("aria-valuemax")).toBeFalse();
       expect(element.hasAttribute("aria-valuemin")).toBeFalse();
       expect(element.hasAttribute("aria-valuenow")).toBeFalse();
@@ -181,13 +181,13 @@ describe("$aria", () => {
         expect(slider.hasAttribute(attr)).toBeFalse();
       });
 
-      scope.$apply("val = 50");
+      scope.$eval("val = 50");
       ["aria-valuemax", "aria-valuemin", "aria-valuenow"].forEach((attr) => {
         expect(progressbar.hasAttribute(attr)).toBeFalse();
         expect(slider.hasAttribute(attr)).toBeFalse();
       });
 
-      scope.$apply("val = 150");
+      scope.$eval("val = 150");
       ["aria-valuemax", "aria-valuemin", "aria-valuenow"].forEach((attr) => {
         expect(progressbar.hasAttribute(attr)).toBeFalse();
         expect(slider.hasAttribute(attr)).toBeFalse();
@@ -247,23 +247,23 @@ describe("$aria", () => {
   describe("aria-hidden", () => {
     it("should attach aria-hidden to ng-show", async () => {
       element = $compile('<div ng-show="val"></div>')(scope);
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
 
       expect(element.getAttribute("aria-hidden")).toBe("true");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("false");
     });
 
     it("should attach aria-hidden to ng-hide", async () => {
       element = $compile('<div ng-hide="val"></div>')(scope);
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("false");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("true");
     });
@@ -275,7 +275,7 @@ describe("$aria", () => {
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("userSetValue");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("userSetValue");
     });
@@ -287,35 +287,35 @@ describe("$aria", () => {
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("userSetValue");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("userSetValue");
     });
 
     it("should always set aria-hidden to a boolean value", async () => {
       element = $compile('<div ng-hide="val"></div>')(scope);
-      scope.$apply('val = "test angular"');
+      scope.$eval('val = "test angular"');
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("true");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("false");
 
-      scope.$apply("val = {}");
+      scope.$eval("val = {}");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("true");
 
       element = $compile('<div ng-show="val"></div>')(scope);
-      scope.$apply('val = "test angular"');
+      scope.$eval('val = "test angular"');
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("false");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("true");
 
-      scope.$apply("val = {}");
+      scope.$eval("val = {}");
       await wait();
       expect(element.getAttribute("aria-hidden")).toBe("false");
     });
@@ -337,7 +337,7 @@ describe("$aria", () => {
     });
 
     it("should not attach aria-hidden", () => {
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       element = $compile('<div ng-show="val"></div>')(scope);
       expect(element.hasAttribute("aria-hidden")).toBeFalse();
 
@@ -349,22 +349,22 @@ describe("$aria", () => {
   describe("aria-checked", () => {
     it('should not attach itself to native input type="checkbox"', async () => {
       element = $compile('<input type="checkbox" ng-model="val">')(scope);
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-checked")).toBeNull();
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(element.getAttribute("aria-checked")).toBeNull();
     });
 
     it("should attach itself to custom checkbox", async () => {
       element = $compile('<div role="checkbox" ng-model="val"></div>')(scope);
-      scope.$apply('val = "checked"');
+      scope.$eval('val = "checked"');
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("false");
     });
@@ -377,22 +377,22 @@ describe("$aria", () => {
         return value === "not-checked";
       };
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(ctrl.$modelValue).toBe(true);
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(ctrl.$modelValue).toBe(false);
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply('val = "not-checked"');
+      scope.$eval('val = "not-checked"');
       await wait();
       expect(ctrl.$modelValue).toBe("not-checked");
       expect(element.getAttribute("aria-checked")).toBe("false");
 
-      scope.$apply('val = "checked"');
+      scope.$eval('val = "checked"');
       await wait();
       expect(ctrl.$modelValue).toBe("checked");
       expect(element.getAttribute("aria-checked")).toBe("true");
@@ -402,11 +402,11 @@ describe("$aria", () => {
       const element = $compile('<input type="checkbox" ng-checked="val">')(
         scope,
       );
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-checked")).toBeNull();
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(element.getAttribute("aria-checked")).toBeNull();
     });
@@ -414,11 +414,11 @@ describe("$aria", () => {
     it("should handle custom checkbox with ngChecked", async () => {
       const element = $compile('<div role="checkbox" ng-checked="val">')(scope);
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("false");
     });
@@ -429,12 +429,12 @@ describe("$aria", () => {
           '<input type="radio" ng-model="val" value="two"></div>',
       )(scope);
 
-      scope.$apply("val='one'");
+      scope.$eval("val='one'");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBeNull();
       expect(element.children[1].getAttribute("aria-checked")).toBeNull();
 
-      scope.$apply("val='two'");
+      scope.$eval("val='two'");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBeNull();
       expect(element.children[1].getAttribute("aria-checked")).toBeNull();
@@ -446,12 +446,12 @@ describe("$aria", () => {
           '<div role="radio" ng-model="val" value="two"></div></div>',
       )(scope);
 
-      scope.$apply("val='one'");
+      scope.$eval("val='one'");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("true");
       expect(element.children[1].getAttribute("aria-checked")).toBe("false");
 
-      scope.$apply("val='two'");
+      scope.$eval("val='two'");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("false");
       expect(element.children[1].getAttribute("aria-checked")).toBe("true");
@@ -463,12 +463,12 @@ describe("$aria", () => {
           '<div role="radio" ng-model="val" value="1"></div></div>',
       )(scope);
 
-      scope.$apply("val=0");
+      scope.$eval("val=0");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("true");
       expect(element.children[1].getAttribute("aria-checked")).toBe("false");
 
-      scope.$apply("val=1");
+      scope.$eval("val=1");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("false");
       expect(element.children[1].getAttribute("aria-checked")).toBe("true");
@@ -486,7 +486,7 @@ describe("$aria", () => {
       expect(element.children[0].getAttribute("aria-checked")).toBe("true");
       expect(element.children[1].getAttribute("aria-checked")).toBe("false");
 
-      scope.$apply("val = false");
+      scope.$eval("val = false");
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("false");
       expect(element.children[1].getAttribute("aria-checked")).toBe("true");
@@ -500,7 +500,7 @@ describe("$aria", () => {
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply("val = 'two'");
+      scope.$eval("val = 'two'");
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("false");
     });
@@ -509,11 +509,11 @@ describe("$aria", () => {
       element = $compile('<div role="menuitemcheckbox" ng-model="val"></div>')(
         scope,
       );
-      scope.$apply('val = "checked"');
+      scope.$eval('val = "checked"');
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("true");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-checked")).toBe("false");
     });
@@ -533,7 +533,7 @@ describe("$aria", () => {
           "<div role='menuitemcheckbox' checked='checked' aria-checked='userSetValue'></div>",
         )(scope),
       ];
-      scope.$apply("val1=true;val2='one';val3='1'");
+      scope.$eval("val1=true;val2='one';val3='1'");
       await wait();
       expectAriaAttrOnEachElement(element, "aria-checked", "userSetValue");
     });
@@ -643,7 +643,7 @@ describe("$aria", () => {
         '<button ng-disabled="val"></button>',
       ].forEach((tmpl) => {
         const element = $compile(tmpl)(scope);
-        scope.$apply("val = true");
+        scope.$eval("val = true");
 
         expect(element.getAttribute("disabled")).toBeDefined();
         expect(element.getAttribute("aria-disabled")).toBeNull();
@@ -655,7 +655,7 @@ describe("$aria", () => {
       await wait();
       expect(element.getAttribute("aria-disabled")).toBe("false");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-disabled")).toBe("true");
     });
@@ -670,16 +670,16 @@ describe("$aria", () => {
     it("should always set aria-disabled to a boolean value", async () => {
       element = $compile('<div ng-disabled="val"></div>')(scope);
 
-      scope.$apply('val = "test angular"');
+      scope.$eval('val = "test angular"');
       await wait();
 
       expect(element.getAttribute("aria-disabled")).toBe("true");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-disabled")).toBe("false");
 
-      scope.$apply("val = {}");
+      scope.$eval("val = {}");
       await wait();
       expect(element.getAttribute("aria-disabled")).toBe("true");
     });
@@ -703,7 +703,7 @@ describe("$aria", () => {
     it("should not attach aria-disabled", async () => {
       element = $compile('<div ng-disabled="val"></div>')(scope);
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-disabled")).toBeNull();
     });
@@ -714,11 +714,11 @@ describe("$aria", () => {
       element = $compile('<input ng-model="txtInput" ng-minlength="10">')(
         scope,
       );
-      scope.$apply("txtInput='LTten'");
+      scope.$eval("txtInput='LTten'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("true");
 
-      scope.$apply("txtInput='morethantencharacters'");
+      scope.$eval("txtInput='morethantencharacters'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("false");
     });
@@ -727,11 +727,11 @@ describe("$aria", () => {
       element = $compile(
         '<div ng-model="txtInput" role="textbox" ng-minlength="10"></div>',
       )(scope);
-      scope.$apply("txtInput='LTten'");
+      scope.$eval("txtInput='LTten'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("true");
 
-      scope.$apply("txtInput='morethantencharacters'");
+      scope.$eval("txtInput='morethantencharacters'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("false");
     });
@@ -741,7 +741,7 @@ describe("$aria", () => {
         '<input ng-model="txtInput" ng-minlength="10" aria-invalid="userSetValue">',
       )(scope);
       await wait();
-      scope.$apply("txtInput='LTten'");
+      scope.$eval("txtInput='LTten'");
       expect(element.getAttribute("aria-invalid")).toBe("userSetValue");
     });
 
@@ -754,11 +754,11 @@ describe("$aria", () => {
       element = $compile(
         '<div ng-model="txtInput" type="hidden" role="textbox" ng-minlength="10"></div>',
       )(scope);
-      scope.$apply("txtInput='LTten'");
+      scope.$eval("txtInput='LTten'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("true");
 
-      scope.$apply("txtInput='morethantencharacters'");
+      scope.$eval("txtInput='morethantencharacters'");
       await wait();
       expect(element.getAttribute("aria-invalid")).toBe("false");
     });
@@ -780,7 +780,7 @@ describe("$aria", () => {
     });
 
     it("should not attach aria-invalid if the option is disabled", () => {
-      scope.$apply("txtInput='LTten'");
+      scope.$eval("txtInput='LTten'");
       element = $compile('<input ng-model="txtInput" ng-minlength="10">')(
         scope,
       );
@@ -797,7 +797,7 @@ describe("$aria", () => {
         '<button ng-readonly="val"></button>',
       ].forEach((tmpl) => {
         const element = $compile(tmpl)(scope);
-        scope.$apply("val = true");
+        scope.$eval("val = true");
 
         expect(element.getAttribute("readonly")).toBeDefined();
         expect(element.getAttribute("aria-readonly")).toBeNull();
@@ -809,7 +809,7 @@ describe("$aria", () => {
       await wait();
       expect(element.getAttribute("aria-readonly")).toBe("false");
 
-      scope.$apply("val = true");
+      scope.$eval("val = true");
       await wait();
       expect(element.getAttribute("aria-readonly")).toBe("true");
     });
@@ -824,15 +824,15 @@ describe("$aria", () => {
     it("should always set aria-readonly to a boolean value", async () => {
       element = $compile('<div ng-readonly="val"></div>')(scope);
 
-      scope.$apply('val = "test angular"');
+      scope.$eval('val = "test angular"');
       await wait();
       expect(element.getAttribute("aria-readonly")).toBe("true");
 
-      scope.$apply("val = null");
+      scope.$eval("val = null");
       await wait();
       expect(element.getAttribute("aria-readonly")).toBe("false");
 
-      scope.$apply("val = {}");
+      scope.$eval("val = {}");
       await wait();
       expect(element.getAttribute("aria-readonly")).toBe("true");
     });
@@ -939,13 +939,13 @@ describe("$aria", () => {
         $compile('<div role="slider" min="0" max="100" ng-model="val">')(scope),
       ];
 
-      scope.$apply("val = 50");
+      scope.$eval("val = 50");
       await wait();
       expectAriaAttrOnEachElement(element, "aria-valuenow", "50");
       expectAriaAttrOnEachElement(element, "aria-valuemin", "0");
       expectAriaAttrOnEachElement(element, "aria-valuemax", "100");
 
-      scope.$apply("val = 90");
+      scope.$eval("val = 90");
       await wait();
       expectAriaAttrOnEachElement(element, "aria-valuenow", "90");
     });
@@ -963,14 +963,14 @@ describe("$aria", () => {
         )(scope),
       ];
 
-      scope.$apply("val = 50");
+      scope.$eval("val = 50");
       expectAriaAttrOnEachElement(element, "aria-valuenow", "userSetValue1");
       expectAriaAttrOnEachElement(element, "aria-valuemin", "userSetValue2");
       expectAriaAttrOnEachElement(element, "aria-valuemax", "userSetValue3");
     });
 
     it("should update `aria-valuemin/max` when `min/max` changes dynamically", async () => {
-      scope.$apply("min = 25; max = 75");
+      scope.$eval("min = 25; max = 75");
       element = $compile(
         '<input type="range" ng-model="val" min="{{min}}" max="{{max}}" />',
       )(scope);
@@ -978,17 +978,17 @@ describe("$aria", () => {
       expect(element.getAttribute("aria-valuemin")).toBe("25");
       expect(element.getAttribute("aria-valuemax")).toBe("75");
 
-      scope.$apply("min = 0");
+      scope.$eval("min = 0");
       await wait();
       expect(element.getAttribute("aria-valuemin")).toBe("0");
 
-      scope.$apply("max = 100");
+      scope.$eval("max = 100");
       await wait();
       expect(element.getAttribute("aria-valuemax")).toBe("100");
     });
 
     it("should update `aria-valuemin/max` when `ng-min/ng-max` changes dynamically", async () => {
-      scope.$apply("min = 25; max = 75");
+      scope.$eval("min = 25; max = 75");
       element = $compile(
         '<input type="range" ng-model="val" ng-min="min" ng-max="max" />',
       )(scope);
@@ -996,12 +996,12 @@ describe("$aria", () => {
       expect(element.getAttribute("aria-valuemin")).toBe("25");
       expect(element.getAttribute("aria-valuemax")).toBe("75");
 
-      scope.$apply("min = 0");
+      scope.$eval("min = 0");
 
       await wait();
       expect(element.getAttribute("aria-valuemin")).toBe("0");
 
-      scope.$apply("max = 100");
+      scope.$eval("max = 100");
 
       await wait();
       expect(element.getAttribute("aria-valuemax")).toBe("100");
@@ -1038,7 +1038,7 @@ describe("$aria", () => {
     });
 
     it("should not attach itself", async () => {
-      scope.$apply("val = 50");
+      scope.$eval("val = 50");
 
       element = $compile(
         '<input type="range" ng-model="val" min="0" max="100">',

@@ -1407,7 +1407,7 @@ describe("$location", () => {
 
   //       const originalUrl = $window.location.href;
 
-  //       $rootScope.$apply(() => {
+  //       $rootScope.$eval(() => {
   //         $rootScope.$evalAsync(() => {
   //           $window.history.pushState({}, null, `${originalUrl}/qux`);
   //         });
@@ -1416,7 +1416,7 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://foo.bar/#!/baz/qux");
   //       expect($location.absUrl).toBe("http://foo.bar/#!/baz/qux");
 
-  //       $rootScope.$apply(() => {
+  //       $rootScope.$eval(() => {
   //         $rootScope.$evalAsync(() => {
   //           $window.history.replaceState({}, null, `${originalUrl}/quux`);
   //         });
@@ -1435,7 +1435,7 @@ describe("$location", () => {
   //       $location.setUrl("baz");
   //       $rootScope.$digest();
 
-  //       $rootScope.$apply(() => {
+  //       $rootScope.$eval(() => {
   //         $rootScope.$evalAsync(() => {
   //           $window.location.href += "/qux";
   //         });
@@ -1666,15 +1666,15 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // location.href = '...' fires hashchange event synchronously, so it might happen inside $apply
-  //   it("should not $apply when browser url changed inside $apply", () => {
+  //   // location.href = '...' fires hashchange event synchronously, so it might happen inside digest entry
+  //   it("should not digest entry when browser url changed inside digest entry", () => {
   //     initService({ html5Mode: false, hashPrefix: "!", supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://new.com/a/b#!", baseHref: "/a/b" });
   //     inject(($rootScope, $browser, $location, $window) => {
   //       const OLD_URL = $browser.url();
   //       const NEW_URL = "http://new.com/a/b#!/new";
 
-  //       $rootScope.$apply(() => {
+  //       $rootScope.$eval(() => {
   //         $window.location.href = NEW_URL;
   //         $browser.$$checkUrlChange(); // simulate firing event from browser
   //         expect($location.absUrl).toBe(OLD_URL); // should be async
@@ -1685,7 +1685,7 @@ describe("$location", () => {
   //   });
 
   //   // location.href = '...' fires hashchange event synchronously, so it might happen inside $digest
-  //   it("should not $apply when browser url changed inside $digest", () => {
+  //   it("should not digest entry when browser url changed inside $digest", () => {
   //     initService({ html5Mode: false, hashPrefix: "!", supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://new.com/a/b#!", baseHref: "/a/b" });
   //     inject(($rootScope, $browser, $location, $window) => {
@@ -1717,14 +1717,14 @@ describe("$location", () => {
   //       ).and.callThrough();
   //       $location.setPath("/new/path");
   //       expect($browserUrl).not.toHaveBeenCalled();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browser.url()).toBe("http://new.com/a/b#!/new/path");
   //     });
   //   });
 
-  //   it("should update browser only once per $apply cycle", () => {
+  //   it("should update browser only once per digest entry cycle", () => {
   //     initService({ html5Mode: false, hashPrefix: "!", supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://new.com/a/b#!", baseHref: "/a/b" });
   //     inject(($rootScope, $browser, $location) => {
@@ -1738,7 +1738,7 @@ describe("$location", () => {
   //         $location.setSearch("a=b");
   //       });
 
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browser.url()).toBe("http://new.com/a/b#!/new/path?a=b");
   //     });
@@ -1753,7 +1753,7 @@ describe("$location", () => {
   //         "url",
   //       ).and.callThrough();
   //       $location.setPath("/n/url").replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browserUrl.calls.mostRecent().args).toEqual([
@@ -1771,21 +1771,21 @@ describe("$location", () => {
   //     inject(($rootScope, $browser, $location) => {
   //       // init watches
   //       $location.setUrl("/initUrl");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       // changes url but resets it before digest
   //       $location.setUrl("/newUrl").replace().url("/initUrl");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
 
   //       // set the url to the old value
   //       $location.setUrl("/newUrl").replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
 
   //       // doesn't even change url only calls replace()
   //       $location.replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
   //     });
   //   });
@@ -1897,7 +1897,7 @@ describe("$location", () => {
   //         "url",
   //       ).and.callThrough();
   //       $location.setPath("/n/url").state({ a: 2 }).replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browserUrl.calls.mostRecent().args).toEqual([
@@ -1925,7 +1925,7 @@ describe("$location", () => {
   //         .replace()
   //         .state({ b: 3 })
   //         .setPath("/o/url");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browserUrl.calls.mostRecent().args).toEqual([
@@ -1948,7 +1948,7 @@ describe("$location", () => {
   //         "url",
   //       ).and.callThrough();
   //       $location.setState({ a: 2 }).replace().state({ b: 3 });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browserUrl.calls.mostRecent().args).toEqual([
@@ -1968,7 +1968,7 @@ describe("$location", () => {
   //     inject(($rootScope, $location) => {
   //       // init watches
   //       $location.setUrl("/initUrl").state({ a: 2 });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       // changes url & state but resets them before digest
   //       $location
@@ -1977,17 +1977,17 @@ describe("$location", () => {
   //         .replace()
   //         .state({ b: 3 })
   //         .url("/initUrl");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
 
   //       // set the url to the old value
   //       $location.setUrl("/newUrl").state({ a: 2 }).replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
 
   //       // doesn't even change url only calls replace()
   //       $location.replace();
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.$$replace).toBe(false);
   //     });
   //   });
@@ -2000,11 +2000,11 @@ describe("$location", () => {
   //       const o = { a: 2 };
   //       $location.setState(o);
   //       o.a = 3;
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.state()).toEqual({ a: 3 });
 
   //       o.a = 4;
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.state()).toEqual({ a: 3 });
   //     });
   //   });
@@ -2015,7 +2015,7 @@ describe("$location", () => {
 
   //     inject(($rootScope, $location, $browser) => {
   //       $location.setState({ a: 2 });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.getState()).toBe($browser.state());
   //     });
   //   });
@@ -2026,7 +2026,7 @@ describe("$location", () => {
 
   //     inject(($rootScope, $location) => {
   //       $location.setUrl("/foo").state({ a: 2 });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($location.getState()).toEqual({ a: 2 });
   //     });
   //   });
@@ -2037,14 +2037,14 @@ describe("$location", () => {
 
   //     inject(($rootScope, $location, $browser) => {
   //       $location.setUrl("/foo").state({ a: 2 });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       const $browserUrl = spyOnlyCallsWithArgs(
   //         $browser,
   //         "url",
   //       ).and.callThrough();
   //       $location.setUrl("/bar");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
 
   //       expect($browserUrl).toHaveBeenCalled();
   //       expect($browserUrl.calls.mostRecent().args).toEqual([
@@ -2084,7 +2084,7 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://domain.com/base/index.html#!/a/b");
   //       $location.setPath("/new");
   //       $location.setSearch({ a: true });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.url()).toBe(
   //         "http://domain.com/base/index.html#!/new?a",
   //       );
@@ -2101,7 +2101,7 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://domain.com/base/index.html#/a/b");
   //       $location.setPath("/new");
   //       $location.setSearch({ a: true });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.url()).toBe("http://domain.com/base/index.html#/new?a");
   //     });
   //   });
@@ -2123,7 +2123,7 @@ describe("$location", () => {
   //         );
   //         $location.setPath("/new");
   //         $location.setSearch({ a: true });
-  //         $rootScope.$apply();
+  //         $rootScope.$flushQueue();
   //         expect($browser.url()).toBe(
   //           "http://domain.com/base/index.html#!!/new?a",
   //         );
@@ -2175,7 +2175,7 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://domain.com/base/old/index.html#a");
   //       $location.setPath("/new");
   //       $location.setSearch({ a: true });
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.url()).toBe("http://domain.com/base/new?a#a");
   //     });
   //   });
@@ -2190,7 +2190,7 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://domain.com/base/a/b");
   //       $location.setPath("/new");
   //       $location.setHash("abc");
-  //       $rootScope.$apply();
+  //       $rootScope.$flushQueue();
   //       expect($browser.url()).toBe("http://domain.com/base/new#abc");
   //       expect($location.getPath()).toBe("/new");
   //     });
@@ -2411,7 +2411,7 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$apply(() => {
+  //         $rootScope.$eval(() => {
   //           $location.setPath("/");
   //         });
   //         browserTrigger(link, "click");
@@ -2728,7 +2728,7 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$apply(() => {
+  //         $rootScope.$eval(() => {
   //           $location.setPath("/some");
   //           $location.setHash("foo");
   //         });
@@ -2752,7 +2752,7 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$apply(() => {
+  //         $rootScope.$eval(() => {
   //           $location.setPath("/some");
   //           $location.setHash("foo");
   //         });
@@ -3075,7 +3075,7 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($log.info.logs).toEqual([]);
 
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
@@ -3116,7 +3116,7 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($log.info.logs).toEqual([]);
 
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
@@ -3146,7 +3146,7 @@ describe("$location", () => {
   //     });
 
   //     $location.setUrl("/somePath");
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
@@ -3189,7 +3189,7 @@ describe("$location", () => {
   //     });
 
   //     $location.setUrl("/somePath");
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
@@ -3233,7 +3233,7 @@ describe("$location", () => {
   //     });
 
   //     $location.setUrl("/somePath");
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
@@ -3270,7 +3270,7 @@ describe("$location", () => {
   //     $browser,
   //     $rootScope,
   //   ) => {
-  //     $rootScope.$apply(); // clear initial $locationChangeStart
+  //     $rootScope.$flushQueue(); // clear initial $locationChangeStart
 
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($location.getUrl()).toEqual("");
@@ -3304,7 +3304,7 @@ describe("$location", () => {
   //     $log,
   //   ) => {
   //     $location.setUrl("/somepath");
-  //     $rootScope.$apply();
+  //     $rootScope.$flushQueue();
 
   //     expect($browser.url()).toEqual("http://server/#!/somepath");
   //     expect($location.getUrl()).toEqual("/somepath");
@@ -3492,12 +3492,12 @@ describe("$location", () => {
   //     });
 
   //     // change through $location service
-  //     $rootScope.$apply(() => {
+  //     $rootScope.$eval(() => {
   //       $location.setPath("/myNewPath");
   //     });
 
   //     // reset location
-  //     $rootScope.$apply(() => {
+  //     $rootScope.$eval(() => {
   //       $location.setPath("");
   //     });
 

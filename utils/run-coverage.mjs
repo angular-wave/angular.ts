@@ -40,6 +40,14 @@ console.log(
   "[coverage] running Playwright with Istanbul enabled for src/ tests only",
 );
 const testExitCode = await run("npx", coverageTestArgs, env);
+
+if (testExitCode !== 0) {
+  console.error(
+    `[coverage] Playwright failed with exit code ${testExitCode}; skipping coverage report and threshold checks`,
+  );
+  process.exit(testExitCode);
+}
+
 const coverageFiles = (await readdir(tempDir)).filter((file) =>
   file.endsWith(".json"),
 );

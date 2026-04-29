@@ -1,6 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ngBindHtmlDirective } from "./bind.ts";
 
 describe("ng-bind", () => {
   let $rootScope;
@@ -182,6 +183,36 @@ describe("ng-bind", () => {
   });
 
   describe("ngBindHtml", () => {
+    it("should parse the expression during compile", () => {
+      const parse = jasmine.createSpy("$parse").and.returnValue(() => {});
+      const directive = ngBindHtmlDirective(parse);
+
+      const link = directive.compile(document.createElement("div"), {
+        ngBindHtml: "html",
+      });
+
+      expect(parse).toHaveBeenCalledWith("html");
+      expect(link).toEqual(jasmine.any(Function));
+    });
+
+    it("should create a link function that writes watched html", () => {
+      const directive = ngBindHtmlDirective(() => {});
+      const link = directive.compile(document.createElement("div"), {
+        ngBindHtml: "html",
+      });
+      const element = document.createElement("div");
+      const scope = {
+        $watch: jasmine.createSpy("$watch").and.callFake((_expr, listener) => {
+          listener("<span>trusted</span>");
+        }),
+      };
+
+      link(scope, element);
+
+      expect(scope.$watch).toHaveBeenCalledWith("html", jasmine.any(Function));
+      expect(element.innerHTML).toBe("<span>trusted</span>");
+    });
+
     it("should complain about accidental use of interpolation", async () => {
       expect(() => {
         $compile('<div ng-bind-html="{{myHtml}}"></div>');

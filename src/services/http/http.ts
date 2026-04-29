@@ -538,15 +538,13 @@ export function HttpProvider(this: any): void {
   let useApplyAsync = false;
 
   /**
-   * Configure $http service to combine processing of multiple http responses received at around
-   * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
-   * significant performance improvement for bigger applications that make many HTTP requests
-   * concurrently (common during application bootstrap).
+   * Configure $http service to defer processing of responses received at around the
+   * same time. This can reduce repeated response work for applications that make
+   * many HTTP requests concurrently (common during application bootstrap).
    *
    * Defaults to false. If no value is specified, returns the current configured value.
    *
-   * @param value - If true, completed requests schedule a deferred apply on the next tick,
-   *   allowing nearby responses to share the same digest cycle.
+   * @param value - If true, completed requests are deferred to the next tick.
    *
    * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
    */
@@ -660,7 +658,7 @@ export function HttpProvider(this: any): void {
       /**
        * Issues an HTTP request using the provider defaults and configured interceptors.
        */
-      const $http = function (requestConfig: ng.RequestConfig) {
+      const $http = function <T>(requestConfig: RequestConfig): HttpPromise<T> {
         if (!isObject(requestConfig)) {
           throw minErr("$http")(
             "badreq",
@@ -685,10 +683,10 @@ export function HttpProvider(this: any): void {
             paramSerializer: defaults.paramSerializer,
           },
           requestConfig,
-        ) as ng.RequestConfig;
+        ) as RequestConfig;
 
         config.headers = mergeHeaders(requestConfig);
-        config.method = uppercase(config.method) as ng.HttpMethod;
+        config.method = uppercase(config.method) as HttpMethod;
         config.paramSerializer = isString(config.paramSerializer)
           ? $injector.get(config.paramSerializer)
           : config.paramSerializer;
@@ -722,7 +720,7 @@ export function HttpProvider(this: any): void {
         promise = promise.then(serverRequest);
         promise = chainInterceptors(promise, responseInterceptors);
 
-        return promise as HttpPromise<any>;
+        return promise as HttpPromise<T>;
 
         /** Applies a list of interceptor success/error pairs to a promise chain. */
         function chainInterceptors(
@@ -745,7 +743,7 @@ export function HttpProvider(this: any): void {
         /** Resolves any header factory functions against the current request configuration. */
         function executeHeaderFns(
           headers: HttpHeaderType,
-          configParam: ng.RequestConfig,
+          configParam: RequestConfig,
         ): Record<string, string> {
           let headerContent: any;
 
@@ -768,7 +766,7 @@ export function HttpProvider(this: any): void {
 
         /** Merges provider defaults with request-specific headers for a single request. */
         function mergeHeaders(
-          configParam: ng.RequestConfig,
+          configParam: RequestConfig,
         ): Record<string, string> {
           let defHeaders = (defaults.headers || {}) as HttpRequestConfigHeaders;
 
@@ -800,7 +798,7 @@ export function HttpProvider(this: any): void {
         }
 
         /** Executes the request pipeline and attaches response transforms. */
-        function serverRequest(configParam: ng.RequestConfig): Promise<any> {
+        function serverRequest(configParam: RequestConfig): Promise<any> {
           const headers = configParam.headers || {};
 
           configParam.headers = headers;
@@ -859,16 +857,20 @@ export function HttpProvider(this: any): void {
 
           return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
         }
-      } as unknown as ng.HttpService & {
-        pendingRequests: ng.RequestConfig[];
+      } as HttpService & {
+        pendingRequests: RequestConfig[];
         defaults: HttpProviderDefaults;
         [key: string]: any;
       };
 
       $http.pendingRequests = [];
 
-      createShortMethods("get", "delete", "head");
-      createShortMethodsWithData("post", "put", "patch");
+      $http.get = createShortMethod("GET");
+      $http.delete = createShortMethod("DELETE");
+      $http.head = createShortMethod("HEAD");
+      $http.post = createShortMethodWithData("POST");
+      $http.put = createShortMethodWithData("PUT");
+      $http.patch = createShortMethodWithData("PATCH");
 
       /**
        * Exposes the runtime equivalent of `$httpProvider.defaults`.
@@ -880,45 +882,42 @@ export function HttpProvider(this: any): void {
 
       return $http;
 
-      /** Generates shorthand methods for requests that do not send a request body. */
-      function createShortMethods(
-        ...names: Array<"get" | "delete" | "head">
-      ): void {
-        names.forEach((name) => {
-          $http[name] = function (url: string, config?: RequestShortcutConfig) {
-            return $http(
-              extend({}, config || {}, {
-                method: name,
-                url,
-              }) as ng.RequestConfig,
-            );
-          };
-        });
+      /** Creates one shorthand method for requests that do not send a request body. */
+      function createShortMethod(method: HttpMethod): HttpService["get"] {
+        return function <T>(
+          url: string,
+          config?: RequestShortcutConfig,
+        ): HttpPromise<T> {
+          return $http<T>(
+            extend({}, config || {}, {
+              method,
+              url,
+            }) as RequestConfig,
+          );
+        };
       }
 
-      /** Generates shorthand methods for requests that send a request body. */
-      function createShortMethodsWithData(
-        ...names: Array<"post" | "put" | "patch">
-      ): void {
-        names.forEach((name) => {
-          $http[name] = function (
-            url: string,
-            data: string | object,
-            config?: RequestShortcutConfig,
-          ) {
-            return $http(
-              extend({}, config || {}, {
-                method: name,
-                url,
-                data,
-              }) as ng.RequestConfig,
-            );
-          };
-        });
+      /** Creates one shorthand method for requests that send a request body. */
+      function createShortMethodWithData(
+        method: HttpMethod,
+      ): HttpService["post"] {
+        return function <T>(
+          url: string,
+          data: any,
+          config?: RequestShortcutConfig,
+        ): HttpPromise<T> {
+          return $http<T>(
+            extend({}, config || {}, {
+              method,
+              url,
+              data,
+            }) as RequestConfig,
+          );
+        };
       }
 
       /** Sends the request through the low-level HTTP backend and cache layer. */
-      function sendReq(config: ng.RequestConfig, reqData: any) {
+      function sendReq(config: RequestConfig, reqData: any) {
         const { promise, resolve, reject } = withResolvers();
 
         let cache: any;
@@ -1023,11 +1022,11 @@ export function HttpProvider(this: any): void {
 
         return promise;
 
-        /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
+        /** Wraps raw XHR event handlers so optional deferred delivery is consistent. */
         function createApplyHandlers(
           eventHandlers:
-            | ng.RequestConfig["eventHandlers"]
-            | ng.RequestConfig["uploadEventHandlers"],
+            | RequestConfig["eventHandlers"]
+            | RequestConfig["uploadEventHandlers"],
         ): Record<string, EventListener> {
           if (eventHandlers) {
             const applyHandlers: Record<string, EventListener> = {};
@@ -1181,8 +1180,8 @@ export function http(
   timeout?: number | Promise<any>,
   withCredentials?: boolean,
   responseType?: XMLHttpRequestResponseType,
-  eventHandlers?: ng.RequestConfig["eventHandlers"],
-  uploadEventHandlers?: ng.RequestConfig["uploadEventHandlers"],
+  eventHandlers?: RequestConfig["eventHandlers"],
+  uploadEventHandlers?: RequestConfig["uploadEventHandlers"],
 ): void {
   url = url || trimEmptyHash(window.location.href);
 

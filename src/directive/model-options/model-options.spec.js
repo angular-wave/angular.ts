@@ -429,7 +429,7 @@ describe("ngModelOptions", () => {
         //       "/>",
         //   )($rootScope);
 
-        //   $rootScope.$apply("color = 'white'");
+        //   $rootScope.$eval("color = 'white'");
         //   browserTrigger(inputElm[2], "click");
         //   expect($rootScope.color).toBe("white");
 
@@ -450,7 +450,7 @@ describe("ngModelOptions", () => {
         //       "/>",
         //   )($rootScope);
 
-        //   $rootScope.$apply("color = 'white'");
+        //   $rootScope.$eval("color = 'white'");
         //   browserTrigger((inputElm[2]), "click");
         //   expect($rootScope.color).toBe("blue");
         // });
@@ -477,7 +477,7 @@ describe("ngModelOptions", () => {
           browserTrigger(inputElm, "click");
           expect($rootScope.name).toEqual("a");
 
-          $rootScope.$apply("name = undefined");
+          $rootScope.$eval("name = undefined");
           await wait();
           expect(inputElm.value).toBe("");
           ctrl.$overrideModelOptions({ updateOn: "click" });
@@ -779,7 +779,7 @@ describe("ngModelOptions", () => {
       //   )($rootScope);
 
       //   changeGivenInputTo(inputElm, "a");
-      //   $rootScope.$apply("name = 'b'");
+      //   $rootScope.$eval("name = 'b'");
       //   browserTrigger(inputElm, "blur");
       //   expect($rootScope.name).toBe("b");
       // });
@@ -964,7 +964,7 @@ describe("ngModelOptions", () => {
             defer = Promise.withResolvers();
             return defer.promise;
           };
-          $rootScope.$apply("value = '12345'");
+          $rootScope.$eval("value = '12345'");
           await wait();
           expect(inputElm.value).toBe("12345");
           expect($rootScope.form.input.$pending.promiseValidator).toBe(true);
