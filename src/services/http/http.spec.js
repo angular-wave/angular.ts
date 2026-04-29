@@ -1127,63 +1127,15 @@ describe("$http", function () {
     });
   });
 
-  describe("useApplyAsync", function () {
-    beforeEach(function () {
-      const injector = createInjector([
-        "ng",
-        function ($httpProvider) {
-          $httpProvider.useApplyAsync(true);
-        },
-      ]);
-      $http = injector.get("$http");
-      $rootScope = injector.get("$rootScope");
+  it("calls configured event handlers", async function () {
+    const loadSpy = jasmine.createSpy("load");
+
+    await $http.get("/mock/hello", {
+      eventHandlers: { load: loadSpy },
     });
 
-    it("does not resolve promise immediately when enabled", async function () {
-      const resolvedSpy = jasmine.createSpy();
-      $http.get("/mock/hello").then(resolvedSpy);
-      await wait();
-
-      expect(resolvedSpy).not.toHaveBeenCalled();
-    });
-
-    it("resolves promise later when enabled", async function () {
-      const resolvedSpy = jasmine.createSpy();
-      await $http.get("/mock/hello").then(resolvedSpy);
-      await wait();
-
-      expect(resolvedSpy).toHaveBeenCalled();
-    });
-
-    it("defers configured event handlers when enabled", async function () {
-      const loadSpy = jasmine.createSpy("load");
-
-      await $http.get("/mock/hello", {
-        eventHandlers: { load: loadSpy },
-      });
-
-      await wait();
-      expect(loadSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe("provider configuration", function () {
-    it("returns the current deferred response setting", function () {
-      let initial;
-      let updated;
-
-      createInjector([
-        "ng",
-        function ($httpProvider) {
-          initial = $httpProvider.useApplyAsync();
-          $httpProvider.useApplyAsync(true);
-          updated = $httpProvider.useApplyAsync();
-        },
-      ]);
-
-      expect(initial).toBe(false);
-      expect(updated).toBe(true);
-    });
+    await wait();
+    expect(loadSpy).toHaveBeenCalled();
   });
 });
 
@@ -3918,98 +3870,6 @@ describe("http", () => {
 //     });
 
 //     $httpBackend.verifyNoOutstandingExpectation = () => { /* empty */ };
-//   });
-// });
-
-// describe("$http with deferred delivery", () => {
-//   let $http;
-//   let $httpBackend;
-//   let $rootScope;
-//   let $browser;
-//   let log;
-
-//   beforeEach(inject([
-//     "$http",
-//     "$httpBackend",
-//     "$rootScope",
-//     "$browser",
-//     "log",
-//     function (http, backend, scope, browser, logger) {
-//       $http = http;
-//       $httpBackend = backend;
-//       $rootScope = scope;
-//       $browser = browser;
-//       spyOn($rootScope, "digest entry").and.callThrough();
-//       spyOn($rootScope, "deferred delivery").and.callThrough();
-//       spyOn($rootScope, "$digest").and.callThrough();
-//       spyOn($browser.defer, "cancel").and.callThrough();
-//       log = logger;
-//     },
-//   ]));
-
-//   it("should schedule coalesced apply on response", () => {
-//     const handler = jasmine.createSpy("handler");
-//     $httpBackend
-//       .expect("GET", "/template1.html")
-//       .respond(200, "<h1>Header!</h1>", {});
-//     $http.get("/template1.html").then(handler);
-//     // Ensure requests are sent
-//     ;
-
-//     $httpBackend.flush(null, null, false);
-//     expect($rootScope.deferred delivery).toHaveBeenCalled();
-//     expect(handler).not.toHaveBeenCalled();
-
-//     $browser.defer.flush();
-//     expect(handler).toHaveBeenCalled();
-//   });
-
-//   it("should combine multiple responses within short time frame into a single digest entry", () => {
-//     $httpBackend
-//       .expect("GET", "/template1.html")
-//       .respond(200, "<h1>Header!</h1>", {});
-//     $httpBackend
-//       .expect("GET", "/template2.html")
-//       .respond(200, "<p>Body!</p>", {});
-
-//     $http.get("/template1.html").then(log.fn("response 1"));
-//     $http.get("/template2.html").then(log.fn("response 2"));
-//     // Ensure requests are sent
-//     ;
-
-//     $httpBackend.flush(null, null, false);
-//     expect(log).toEqual([]);
-
-//     $browser.defer.flush();
-//     expect(log).toEqual(["response 1", "response 2"]);
-//   });
-
-//   it("should handle pending responses immediately if a digest occurs on $rootScope", () => {
-//     $httpBackend
-//       .expect("GET", "/template1.html")
-//       .respond(200, "<h1>Header!</h1>", {});
-//     $httpBackend
-//       .expect("GET", "/template2.html")
-//       .respond(200, "<p>Body!</p>", {});
-//     $httpBackend
-//       .expect("GET", "/template3.html")
-//       .respond(200, "<p>Body!</p>", {});
-
-//     $http.get("/template1.html").then(log.fn("response 1"));
-//     $http.get("/template2.html").then(log.fn("response 2"));
-//     $http.get("/template3.html").then(log.fn("response 3"));
-//     // Ensure requests are sent
-//     ;
-
-//     // Intermediate $digest occurs before 3rd response is received, assert that pending responses
-//     /// are handled
-//     $httpBackend.flush(2);
-//     expect(log).toEqual(["response 1", "response 2"]);
-
-//     // Finally, third response is received, and a second coalesced digest entry is started
-//     $httpBackend.flush(null, null, false);
-//     $browser.defer.flush();
-//     expect(log).toEqual(["response 1", "response 2", "response 3"]);
 //   });
 // });
 
