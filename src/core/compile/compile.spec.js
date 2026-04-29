@@ -5983,8 +5983,16 @@ describe("$compile", () => {
       });
 
       it("should allow all template URLs by default", async () => {
-        $compile("<div cross-domain-template></div>")($rootScope);
+        $templateCache.set(
+          "http://example.com/should-not-load.html",
+          "<span>example.com/cached-version</span>",
+        );
+        element = $compile("<div cross-domain-template></div>")($rootScope);
         await wait();
+
+        expect(element.outerHTML).toEqual(
+          '<div cross-domain-template=""><span>example.com/cached-version</span></div>',
+        );
         expect(errors.length).toBe(0);
       });
 

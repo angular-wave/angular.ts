@@ -535,29 +535,6 @@ export function HttpProvider(this: any): void {
     paramSerializer: _httpParamSerializer,
   });
 
-  let useApplyAsync = false;
-
-  /**
-   * Configure $http service to defer processing of responses received at around the
-   * same time. This can reduce repeated response work for applications that make
-   * many HTTP requests concurrently (common during application bootstrap).
-   *
-   * Defaults to false. If no value is specified, returns the current configured value.
-   *
-   * @param value - If true, completed requests are deferred to the next tick.
-   *
-   * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
-   */
-  this.useApplyAsync = function (value?: boolean) {
-    if (isDefined(value)) {
-      useApplyAsync = !!value;
-
-      return this;
-    }
-
-    return useApplyAsync;
-  };
-
   /**
    * Array containing service factories for all synchronous or asynchronous `$http`
    * pre-processing of request or postprocessing of responses.
@@ -1015,45 +992,37 @@ export function HttpProvider(this: any): void {
             config.timeout,
             config.withCredentials,
             config.responseType as XMLHttpRequestResponseType | undefined,
-            createApplyHandlers(config.eventHandlers),
-            createApplyHandlers(config.uploadEventHandlers),
+            createEventHandlers(config.eventHandlers),
+            createEventHandlers(config.uploadEventHandlers),
           );
         }
 
         return promise;
 
-        /** Wraps raw XHR event handlers so optional deferred delivery is consistent. */
-        function createApplyHandlers(
+        /** Wraps raw XHR event handlers with function/object listener support. */
+        function createEventHandlers(
           eventHandlers:
             | RequestConfig["eventHandlers"]
             | RequestConfig["uploadEventHandlers"],
         ): Record<string, EventListener> {
           if (eventHandlers) {
-            const applyHandlers: Record<string, EventListener> = {};
+            const handlers: Record<string, EventListener> = {};
 
             entries(eventHandlers).forEach(([key, eventHandler]) => {
-              applyHandlers[key] = function (event: Event) {
-                if (useApplyAsync) {
-                  setTimeout(() => callEventHandler());
-                } else {
-                  callEventHandler();
-                }
-
-                function callEventHandler() {
-                  if (isFunction(eventHandler)) {
-                    eventHandler(event);
-                  } else if (
-                    eventHandler &&
-                    typeof eventHandler === "object" &&
-                    "handleEvent" in eventHandler
-                  ) {
-                    (eventHandler as EventListenerObject).handleEvent(event);
-                  }
+              handlers[key] = function (event: Event) {
+                if (isFunction(eventHandler)) {
+                  eventHandler(event);
+                } else if (
+                  eventHandler &&
+                  typeof eventHandler === "object" &&
+                  "handleEvent" in eventHandler
+                ) {
+                  (eventHandler as EventListenerObject).handleEvent(event);
                 }
               };
             });
 
-            return applyHandlers;
+            return handlers;
           } else {
             return {};
           }
@@ -1082,21 +1051,13 @@ export function HttpProvider(this: any): void {
             }
           }
 
-          function resolveHttpPromise() {
-            resolvePromise(
-              response,
-              status,
-              headersString,
-              statusText,
-              xhrStatus,
-            );
-          }
-
-          if (useApplyAsync) {
-            setTimeout(resolveHttpPromise);
-          } else {
-            resolveHttpPromise();
-          }
+          resolvePromise(
+            response,
+            status,
+            headersString,
+            statusText,
+            xhrStatus,
+          );
         }
 
         /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
