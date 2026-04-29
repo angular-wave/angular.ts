@@ -203,7 +203,7 @@ describe("form", () => {
     await wait();
     expect(scope.ctrl.myForm).toBeUndefined();
 
-    scope.$apply("formPresent = true");
+    scope.$eval("formPresent = true");
     await wait();
 
     expect(scope.ctrl.myForm).toBeDefined();
@@ -211,7 +211,7 @@ describe("form", () => {
     formController = getController(doc.querySelector("form"), "form");
     expect(scope.ctrl.myForm == formController).toBeTrue();
 
-    scope.$apply("formPresent = false");
+    scope.$eval("formPresent = false");
     await wait();
 
     expect(doc.innerText).toBe("");
@@ -760,7 +760,7 @@ describe("form", () => {
       ).toBe(true);
 
       // remove child input
-      scope.$apply("inputPresent = false");
+      scope.$eval("inputPresent = false");
       await wait();
       expect(parent.$error.required).toBeFalsy();
       expect(parent._success.maxlength).toBeFalsy();
@@ -800,7 +800,7 @@ describe("form", () => {
           "</form>",
       );
       $compile(doc)(scope);
-      scope.$apply("inputPresent = true");
+      scope.$eval("inputPresent = true");
       await wait();
       const { parent } = scope;
       const { child } = scope;
@@ -820,7 +820,7 @@ describe("form", () => {
       );
 
       // remove child input
-      scope.$apply("inputPresent = false");
+      scope.$eval("inputPresent = false");
       await wait();
       expect(parent.$pending).toBeUndefined();
       expect(child.$pending).toBeUndefined();

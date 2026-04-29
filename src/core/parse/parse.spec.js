@@ -1159,11 +1159,11 @@ describe("parser", () => {
         scope.$watch("[(a | foo)]", () => {
           /* empty */
         });
-        scope.$apply("a = {b: 1}");
+        scope.$eval("a = {b: 1}");
         await wait();
         // Would be great if filter-output was checked for changes and this didn't throw...
         expect(async () => {
-          scope.$apply("a = {b: 1}");
+          scope.$eval("a = {b: 1}");
           await wait();
         }).not.toThrow();
       });
@@ -1173,11 +1173,11 @@ describe("parser", () => {
           /* empty */
         });
 
-        scope.$apply("a = 1");
+        scope.$eval("a = 1");
 
         // Would be great if filter-output was checked for changes and this didn't throw...
         expect(async () => {
-          scope.$apply("a = {}");
+          scope.$eval("a = {}");
           await wait();
         }).not.toThrow();
       });
@@ -1401,12 +1401,12 @@ describe("parser", () => {
         watcherCalls++;
       });
 
-      scope.$apply("a = 1");
+      scope.$eval("a = 1");
       await wait();
       expect(filterCalls).toBe(2);
       expect(watcherCalls).toBe(2);
 
-      scope.$apply("a = 2");
+      scope.$eval("a = 2");
       await wait();
       expect(filterCalls).toBe(3);
       expect(watcherCalls).toBe(3);
@@ -1468,22 +1468,22 @@ describe("parser", () => {
       await wait();
       expect(callCount).toBe(1);
 
-      scope.$apply("val = 1");
+      scope.$eval("val = 1");
       await wait();
       expect(callCount).toBe(2);
       expect(lastVal).toEqual({ val: 1 });
 
-      scope.$apply("val = []");
+      scope.$eval("val = []");
       await wait();
       expect(callCount).toBe(3);
       expect(lastVal).toEqual({ val: [] });
 
-      scope.$apply("val = []");
+      scope.$eval("val = []");
       await wait();
       expect(callCount).toBe(4);
       expect(lastVal).toEqual({ val: [] });
 
-      scope.$apply("val = {}");
+      scope.$eval("val = {}");
       await wait();
       expect(callCount).toBe(5);
       expect(lastVal).toEqual({ val: {} });
@@ -1498,21 +1498,21 @@ describe("parser", () => {
       };
 
       scope.$watch("{val: val}", listener);
-      scope.$apply("val = 1");
+      scope.$eval("val = 1");
       await wait();
       expect(callCount).toBe(2);
       expect(lastVal).toEqual({ val: 1 });
 
-      scope.$apply("val = [2]");
+      scope.$eval("val = [2]");
       await wait();
       expect(callCount).toBe(3);
       expect(lastVal).toEqual({ val: [2] });
 
-      scope.$apply("val.push(3)");
+      scope.$eval("val.push(3)");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$apply("val.length = 0");
+      scope.$eval("val.length = 0");
       await wait();
       expect(callCount).toBe(3);
     });
@@ -1524,19 +1524,19 @@ describe("parser", () => {
       };
 
       scope.$watch("[{val: [val]}]", listener);
-      scope.$apply("val = 1");
+      scope.$eval("val = 1");
       await wait();
       expect(callCount).toBe(2);
 
-      scope.$apply("val = [2]");
+      scope.$eval("val = [2]");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$apply("val.push(3)");
+      scope.$eval("val.push(3)");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$apply("val.length = 0");
+      scope.$eval("val.length = 0");
       await wait();
       expect(callCount).toBe(3);
     });
@@ -1670,7 +1670,7 @@ describe("parser", () => {
       await wait();
 
       expect(lastValue).toEqual({ 1: true });
-      scope.$apply("a.b = 2");
+      scope.$eval("a.b = 2");
       await wait();
       expect(lastValue).toEqual({ 2: true });
     });

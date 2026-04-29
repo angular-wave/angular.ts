@@ -6,6 +6,7 @@ import {
 } from "../../shared/dom.ts";
 import { hashKey, equals, isNumberNaN, toJson } from "../../shared/utils.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { optionDirective } from "./select.ts";
 
 describe("select", () => {
   let scope;
@@ -16,6 +17,7 @@ describe("select", () => {
   let selectCtrl;
   let renderSpy;
   let $rootScope;
+  let injector;
   const optionAttributesList = [];
   let errors = [];
 
@@ -67,7 +69,7 @@ describe("select", () => {
           errors.push(exception.message);
         };
       });
-    let injector = window.angular.bootstrap(document.getElementById("app"), [
+    injector = window.angular.bootstrap(document.getElementById("app"), [
       "myModule",
       ($compileProvider) => {
         $compileProvider.directive("spyOnWriteValue", () => ({
@@ -147,6 +149,36 @@ describe("select", () => {
           },
         };
       },
+    });
+  });
+
+  describe("option compile", () => {
+    it("should set a static value from option text during compile", () => {
+      const directive = optionDirective(injector.get("$interpolate"));
+      const option = document.createElement("option");
+      const attr = {
+        $set: jasmine.createSpy("$set"),
+      };
+
+      option.textContent = "literal";
+      const link = directive.compile(option, attr);
+
+      expect(attr.$set).toHaveBeenCalledWith("value", "literal");
+      expect(link).toEqual(jasmine.any(Function));
+    });
+
+    it("should preserve explicit option values during compile", () => {
+      const directive = optionDirective(injector.get("$interpolate"));
+      const option = document.createElement("option");
+      const attr = {
+        value: "explicit",
+        $set: jasmine.createSpy("$set"),
+      };
+
+      const link = directive.compile(option, attr);
+
+      expect(attr.$set).not.toHaveBeenCalled();
+      expect(link).toEqual(jasmine.any(Function));
     });
   });
 
@@ -230,7 +262,7 @@ describe("select", () => {
         expect(ngModelCtrl.$error.required).toBeFalsy();
 
         // // model -> view
-        scope.$apply("selection = null");
+        scope.$eval("selection = null");
         await wait();
         options = element.querySelectorAll("option");
         expect(options[0].selected).toBe(true);
@@ -254,11 +286,11 @@ describe("select", () => {
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-valid")).toBeTrue();
 
-        scope.$apply("required = true");
+        scope.$eval("required = true");
         await wait();
         expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-        scope.$apply('selection = "a"');
+        scope.$eval('selection = "a"');
         await wait();
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(element.value).toBe("a");
@@ -266,7 +298,7 @@ describe("select", () => {
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-        scope.$apply("required = false");
+        scope.$eval("required = false");
         await wait();
         expect(element.classList.contains("ng-valid")).toBeTrue();
       });
@@ -296,7 +328,7 @@ describe("select", () => {
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(ngModelCtrl.$error.required).toBeFalsy();
 
-        scope.$apply('selection = "c"');
+        scope.$eval('selection = "c"');
         await wait();
         expect(element.value).toBe(unknownValue("c"));
         expect(element.classList.contains("ng-valid")).toBeTrue();
@@ -865,7 +897,7 @@ describe("select", () => {
       compile(template);
 
       // It should not throw when removing the element
-      scope.$apply("visible = false");
+      scope.$eval("visible = false");
       await wait();
       expect(true).toBeTruthy();
     });
@@ -911,7 +943,7 @@ describe("select", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // empty -> selection
-      scope.$apply('selected = "x"');
+      scope.$eval('selected = "x"');
       await wait();
       expect(element.value).toBe("x");
       expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -919,7 +951,7 @@ describe("select", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // remove empty
-      // scope.$apply("empty = false");
+      // scope.$eval("empty = false");
       // await wait();
       // expect(element.value).toBe("x");
       // expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -927,7 +959,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // selection -> unknown
-      // scope.$apply('selected = "unmatched"');
+      // scope.$eval('selected = "unmatched"');
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -935,7 +967,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // add empty
-      // scope.$apply("empty = true");
+      // scope.$eval("empty = true");
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -943,7 +975,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> empty
-      // scope.$apply("selected = null");
+      // scope.$eval("selected = null");
       // await wait();
       // expect(element.value).toBe("");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -951,7 +983,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // empty -> unknown
-      // scope.$apply('selected = "unmatched"');
+      // scope.$eval('selected = "unmatched"');
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -959,7 +991,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> selection
-      // scope.$apply('selected = "y"');
+      // scope.$eval('selected = "y"');
       // await wait();
       // expect(element.value).toBe("y");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -967,7 +999,7 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // selection -> empty
-      // scope.$apply("selected = null");
+      // scope.$eval("selected = null");
       // await wait();
       // expect(element.value).toBe("");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);

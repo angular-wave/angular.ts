@@ -93,6 +93,17 @@ describe("$http", function () {
     expect(response.config.headers["Cache-Control"]).toBe("no-cache");
   });
 
+  it("allows requests when default headers are unset", async function () {
+    $http.defaults.headers = undefined;
+
+    await $http.get("/mock/hello").then(function (r) {
+      response = r;
+    });
+
+    await wait();
+    expect(response.status).toBe(200);
+  });
+
   it("sets method-specific default headers on POST request", async function () {
     await $http({
       method: "POST",
@@ -628,6 +639,24 @@ describe("$http", function () {
     ).toBeTrue();
   });
 
+  it("does not attach null, undefined, or function params from arrays", async function () {
+    await $http({
+      url: "/mock/hello",
+      params: {
+        a: [42, null, undefined, () => "ignored", 43],
+      },
+    }).then(function (r) {
+      response = r;
+    });
+    await wait();
+
+    expect(
+      response.config
+        .paramSerializer(response.config.params)
+        .endsWith("a=42&a=43"),
+    ).toBeTrue();
+  });
+
   it("serializes objects to json", async function () {
     await $http({
       method: "POST",
@@ -1125,6 +1154,36 @@ describe("$http", function () {
 
       expect(resolvedSpy).toHaveBeenCalled();
     });
+
+    it("defers configured event handlers when enabled", async function () {
+      const loadSpy = jasmine.createSpy("load");
+
+      await $http.get("/mock/hello", {
+        eventHandlers: { load: loadSpy },
+      });
+
+      await wait();
+      expect(loadSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe("provider configuration", function () {
+    it("returns the current deferred response setting", function () {
+      let initial;
+      let updated;
+
+      createInjector([
+        "ng",
+        function ($httpProvider) {
+          initial = $httpProvider.useApplyAsync();
+          $httpProvider.useApplyAsync(true);
+          updated = $httpProvider.useApplyAsync();
+        },
+      ]);
+
+      expect(initial).toBe(false);
+      expect(updated).toBe(true);
+    });
   });
 });
 
@@ -1238,6 +1297,24 @@ describe("http", () => {
     expect(callback).not.toHaveBeenCalled();
 
     requests[0].error();
+    expect(callback).toHaveBeenCalled();
+  });
+
+  it("should complete the request on timeout", () => {
+    callback.and.callFake(
+      (status, response, headers, statusText, xhrStatus) => {
+        expect(status).toBe(-1);
+        expect(response).toBe(null);
+        expect(headers).toBe(null);
+        expect(statusText).toBe("");
+        expect(xhrStatus).toBe("timeout");
+      },
+    );
+
+    http("GET", "/url", null, callback, {});
+    expect(callback).not.toHaveBeenCalled();
+
+    requests[0].timeout();
     expect(callback).toHaveBeenCalled();
   });
 
@@ -1552,7 +1629,7 @@ describe("http", () => {
 //         $http = $h;
 //         $rootScope = $rs;
 //         $sce = $sc;
-//         spyOn($rootScope, "$apply").and.callThrough();
+//         spyOn($rootScope, "digest entry").and.callThrough();
 //       },
 //     ]));
 
@@ -2303,21 +2380,21 @@ describe("http", () => {
 
 //     });
 //     describe("callbacks", () => {
-//       it("should $apply after success callback", () => {
+//       it("should digest entry after success callback", () => {
 //         $httpBackend.when("GET").respond(200);
 //         await $http({ method: "GET", url: "/some" });
 //         $httpBackend.flush();
-//         expect($rootScope.$apply).toHaveBeenCalled();
+//         expect($rootScope.digest entry).toHaveBeenCalled();
 //       });
 
-//       it("should $apply after error callback", () => {
+//       it("should digest entry after error callback", () => {
 //         $httpBackend.when("GET").respond(404);
 //         await $http({ method: "GET", url: "/some" }).catch(() => { /* empty */ });
 //         $httpBackend.flush();
-//         expect($rootScope.$apply).toHaveBeenCalled();
+//         expect($rootScope.digest entry).toHaveBeenCalled();
 //       });
 
-//       it("should $apply even if exception thrown during callback", inject((
+//       it("should digest entry even if exception thrown during callback", inject((
 //         $exceptionHandler,
 //       ) => {
 //         $httpBackend.when("GET").respond(200);
@@ -2325,7 +2402,7 @@ describe("http", () => {
 
 //         await $http({ method: "GET", url: "/some" }).then(callback);
 //         $httpBackend.flush();
-//         expect($rootScope.$apply).toHaveBeenCalled();
+//         expect($rootScope.digest entry).toHaveBeenCalled();
 
 //         $exceptionHandler.errors = [];
 //       }));
@@ -3255,7 +3332,7 @@ describe("http", () => {
 //           },
 //         );
 
-//         $rootScope.$apply(() => {
+//         $rootScope.$eval(() => {
 //           canceler.resolve();
 //         });
 
@@ -3844,7 +3921,7 @@ describe("http", () => {
 //   });
 // });
 
-// describe("$http with $applyAsync", () => {
+// describe("$http with deferred delivery", () => {
 //   let $http;
 //   let $httpBackend;
 //   let $rootScope;
@@ -3862,8 +3939,8 @@ describe("http", () => {
 //       $httpBackend = backend;
 //       $rootScope = scope;
 //       $browser = browser;
-//       spyOn($rootScope, "$apply").and.callThrough();
-//       spyOn($rootScope, "$applyAsync").and.callThrough();
+//       spyOn($rootScope, "digest entry").and.callThrough();
+//       spyOn($rootScope, "deferred delivery").and.callThrough();
 //       spyOn($rootScope, "$digest").and.callThrough();
 //       spyOn($browser.defer, "cancel").and.callThrough();
 //       log = logger;
@@ -3880,14 +3957,14 @@ describe("http", () => {
 //     ;
 
 //     $httpBackend.flush(null, null, false);
-//     expect($rootScope.$applyAsync).toHaveBeenCalled();
+//     expect($rootScope.deferred delivery).toHaveBeenCalled();
 //     expect(handler).not.toHaveBeenCalled();
 
 //     $browser.defer.flush();
 //     expect(handler).toHaveBeenCalled();
 //   });
 
-//   it("should combine multiple responses within short time frame into a single $apply", () => {
+//   it("should combine multiple responses within short time frame into a single digest entry", () => {
 //     $httpBackend
 //       .expect("GET", "/template1.html")
 //       .respond(200, "<h1>Header!</h1>", {});
@@ -3929,7 +4006,7 @@ describe("http", () => {
 //     $httpBackend.flush(2);
 //     expect(log).toEqual(["response 1", "response 2"]);
 
-//     // Finally, third response is received, and a second coalesced $apply is started
+//     // Finally, third response is received, and a second coalesced digest entry is started
 //     $httpBackend.flush(null, null, false);
 //     $browser.defer.flush();
 //     expect(log).toEqual(["response 1", "response 2", "response 3"]);
@@ -4148,6 +4225,13 @@ function installFakeXHR() {
       this.statusText = "";
       this.responseText = "";
       if (typeof this.onerror === "function") this.onerror();
+    }
+
+    timeout() {
+      this.status = 0;
+      this.statusText = "";
+      this.responseText = "";
+      if (typeof this.ontimeout === "function") this.ontimeout();
     }
 
     // optional, if your http() reads getAllResponseHeaders()

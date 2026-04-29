@@ -54,11 +54,11 @@ describe("ng-style", () => {
   it("should support binding for object literals", async () => {
     element = $compile('<div ng-style="{height: heightStr}"></div>')($scope);
     expect(parseInt(element.style.height + 0, 10)).toEqual(0); // height could be '' or '0px'
-    $scope.$apply('heightStr = "40px"');
+    $scope.$eval('heightStr = "40px"');
     await wait();
     expect(element.style.height).toBe("40px");
 
-    $scope.$apply('heightStr = "100px"');
+    $scope.$eval('heightStr = "100px"');
     await wait();
     expect(element.style.height).toBe("100px");
   });
@@ -100,7 +100,7 @@ describe("ng-style", () => {
       expect(element.style[postCompStyle]).toBe(postCompVal);
     });
 
-    it("should not mess up stuff after $apply with no model changes", async () => {
+    it("should not mess up stuff after $eval with no model changes", async () => {
       element.style["padding-top"] = "33px";
       await wait();
       await wait();
@@ -111,7 +111,7 @@ describe("ng-style", () => {
       expect(element.style["padding-top"]).toBe("33px");
     });
 
-    it("should not mess up stuff after $apply with non-colliding model changes", async () => {
+    it("should not mess up stuff after $eval with non-colliding model changes", async () => {
       scope.styleObj = { "padding-top": "99px" };
       await wait();
       await wait();

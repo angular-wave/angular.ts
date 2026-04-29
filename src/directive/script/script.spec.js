@@ -2,6 +2,7 @@ import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { createElementFromHTML } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { scriptDirective } from "./script.ts";
 
 describe("scriptDirective", () => {
   let $rootScope;
@@ -18,6 +19,32 @@ describe("scriptDirective", () => {
         $templateCache = _$templateCache_;
       },
     );
+  });
+
+  it("should cache ng-template contents during compile", () => {
+    const directive = scriptDirective($templateCache);
+    const element = document.createElement("script");
+
+    element.innerText = "<p>cached</p>";
+    directive.compile(element, {
+      type: "text/ng-template",
+      id: "cached.html",
+    });
+
+    expect($templateCache.get("cached.html")).toBe("<p>cached</p>");
+  });
+
+  it("should ignore non-template scripts during compile", () => {
+    const directive = scriptDirective($templateCache);
+    const element = document.createElement("script");
+
+    element.innerText = "ignored";
+    directive.compile(element, {
+      type: "text/javascript",
+      id: "ignored.js",
+    });
+
+    expect($templateCache.get("ignored.js")).toBeUndefined();
   });
 
   it("should populate $templateCache with contents of a ng-template script element", () => {

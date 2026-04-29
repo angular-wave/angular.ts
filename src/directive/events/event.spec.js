@@ -2,7 +2,7 @@ import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
-import { createWindowEventDirective } from "./events.ts";
+import { createEventDirective, createWindowEventDirective } from "./events.ts";
 
 describe("event directives", () => {
   let angular;
@@ -92,7 +92,7 @@ describe("event directives", () => {
   });
 
   describe("focus", () => {
-    describe("call the listener asynchronously during $apply", () => {
+    describe("call the listener asynchronously during reactive event delivery", () => {
       it("should call the listener with non isolate scopes", async () => {
         let scope = $rootScope.$new();
         element = $compile('<input type="text" ng-focus="focus()">')(scope);
@@ -117,7 +117,7 @@ describe("event directives", () => {
       });
     });
 
-    it("should call the listener synchronously inside of $apply if outside of $apply", async () => {
+    it("should call the listener synchronously during event delivery", async () => {
       element = $compile(
         '<input type="text" ng-focus="focus()" ng-model="value">',
       )($rootScope);
@@ -166,6 +166,61 @@ describe("event directives", () => {
     expect(el.removeEventListener).toHaveBeenCalledWith("click", handler);
   });
 
+  describe("createEventDirective", () => {
+    it("should compile an event expression and register the listener on link", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+      const link = directive.compile(null, { ngClick: "click($event)" });
+      const scope = $rootScope.$new();
+      const button = document.createElement("button");
+      scope.click = jasmine.createSpy("click");
+
+      spyOn(button, "addEventListener").and.callThrough();
+      spyOn(button, "removeEventListener").and.callThrough();
+
+      link(scope, button);
+
+      expect(button.addEventListener).toHaveBeenCalledWith(
+        "click",
+        jasmine.any(Function),
+      );
+
+      const event = new Event("click");
+      button.dispatchEvent(event);
+
+      expect(scope.click).toHaveBeenCalledWith(event);
+
+      const handler = button.addEventListener.calls.mostRecent().args[1];
+      scope.$destroy();
+
+      expect(button.removeEventListener).toHaveBeenCalledWith("click", handler);
+    });
+
+    it("should delegate listener errors to $exceptionHandler", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+      const link = directive.compile(null, { ngClick: "boom()" });
+      const scope = $rootScope.$new();
+      const button = document.createElement("button");
+      scope.boom = () => {
+        throw new Error("listener error");
+      };
+
+      link(scope, button);
+      button.dispatchEvent(new Event("click"));
+
+      expect(logs).toEqual(["listener error"]);
+    });
+  });
+
   it("should expose keyboard event information to handlers", async () => {
     const scope = $rootScope.$new();
     element = $compile('<input type="text" ng-keydown="lastKey = $event.key">')(
@@ -180,7 +235,7 @@ describe("event directives", () => {
   });
 
   describe("blur", () => {
-    describe("call the listener asynchronously during $apply", () => {
+    describe("call the listener asynchronously during reactive event delivery", () => {
       it("should call the listener with non isolate scopes", async () => {
         const scope = $rootScope.$new();
         element = $compile('<input type="text" ng-blur="blur()">')(scope);

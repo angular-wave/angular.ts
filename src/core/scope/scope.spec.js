@@ -1599,7 +1599,7 @@ describe("Scope", () => {
         scope.$watch("foo", watch2);
       });
 
-      scope.$apply("foo = true");
+      scope.$eval("foo = true");
       await wait();
       expect(watch1).toHaveBeenCalled();
       expect(watch2).toHaveBeenCalled();
@@ -1667,7 +1667,7 @@ describe("Scope", () => {
           /* empty */
         });
         expect(async () => {
-          scope.$apply("remove = true");
+          scope.$eval("remove = true");
           await wait();
         }).not.toThrow();
       });
@@ -2279,7 +2279,7 @@ describe("Scope", () => {
     });
   });
 
-  describe("$apply", () => {
+  describe("$eval", () => {
     beforeEach(() => (logs = []));
 
     it("should eval an expression, modify the scope and trigger the watches", async () => {
@@ -2290,34 +2290,34 @@ describe("Scope", () => {
       await wait();
       expect(counter).toEqual(1);
 
-      scope.$apply("a=1");
+      scope.$eval("a=1");
       await wait();
       expect(counter).toEqual(2);
     });
 
     it("should update the scope and add values", async () => {
-      scope.$apply("a=1");
+      scope.$eval("a=1");
       await wait();
       expect(scope.a).toEqual(1);
     });
 
     it("should update the scope and remove values", async () => {
       scope.a = 2;
-      scope.$apply("a=null");
+      scope.$eval("a=null");
       await wait();
       expect(scope.a).toBeNull();
     });
 
     it("should update the scope and modify objects", async () => {
-      scope.$apply("a={b: 2}");
+      scope.$eval("a={b: 2}");
       await wait();
       expect(scope.a.b).toEqual(2);
 
-      scope.$apply("a.b = 3");
+      scope.$eval("a.b = 3");
       await wait();
       expect(scope.a.b).toEqual(3);
 
-      scope.$apply("a={c: 2}");
+      scope.$eval("a={c: 2}");
       await wait();
       expect(scope.a.c).toEqual(2);
       expect(scope.a.b).toBeUndefined();
@@ -2327,32 +2327,32 @@ describe("Scope", () => {
       scope.a = [];
       scope.$watch("a", () => count++);
 
-      scope.$apply("a.push(1)");
+      scope.$eval("a.push(1)");
 
       await wait();
       expect(scope.a).toEqual([1]);
       expect(count).toEqual(2);
 
-      scope.$apply("a.push(2)");
+      scope.$eval("a.push(2)");
 
       await wait();
       expect(scope.a).toEqual([1, 2]);
       expect(count).toEqual(3);
     });
 
-    it("should apply expression with full lifecycle", async () => {
+    it("should evaluate expressions and trigger watchers", async () => {
       let log = "";
       const child = scope.$new();
       scope.$watch("a", (a) => {
         log += "1";
       });
 
-      child.$apply("a = 0");
+      child.$eval("a = 0");
       await wait();
       expect(log).toEqual("11");
     });
 
-    it("should catch exceptions", async () => {
+    it("should throw expression exceptions", async () => {
       let log = "";
       const child = scope.$new();
       scope.$watch("a", (a) => {
@@ -2360,97 +2360,12 @@ describe("Scope", () => {
       });
       scope.a = 0;
       await wait();
-      child.$apply("2+");
+      expect(() => child.$eval("2+")).toThrow();
       await wait();
       expect(log).toEqual("11");
-      expect(logs[0].message).toEqual(
-        "[$parse:ueoe] Unexpected end of expression: 2+",
-      );
+      expect(logs).toEqual([]);
     });
   });
-
-  // describe("$applyAsync", () => {
-  //   beforeEach(() => (logs = []));
-  //   it("should evaluate in the context of specific $scope", () => {
-  //     const scope = scope.$new();
-  //     let id = scope.$applyAsync('x = "CODE ORANGE"');
-
-  //     $browser.cancel(id);
-  //     setTimeout(() => {
-  //       expect(scope.x).toBe("CODE ORANGE");
-  //       expect(scope.x).toBeUndefined();
-  //     });
-
-  //     expect(scope.x).toBeUndefined();
-  //   });
-
-  //   it("should evaluate queued expressions in order", () => {
-  //     scope.x = [];
-  //     let id1 = scope.$applyAsync('x.push("expr1")');
-  //     let id2 = scope.$applyAsync('x.push("expr2")');
-
-  //     $browser.cancel(id1);
-  //     $browser.cancel(id2);
-  //     setTimeout(() => {
-  //       expect(scope.x).toEqual(["expr1", "expr2"]);
-  //     });
-  //     expect(scope.x).toEqual([]);
-  //   });
-
-  //   it("should evaluate subsequently queued items in same turn", () => {
-  //     scope.x = [];
-  //     let id = scope.$applyAsync(() => {
-  //       scope.x.push("expr1");
-  //       scope.$applyAsync('x.push("expr2")');
-  //       expect($browser.deferredFns.length).toBe(0);
-  //     });
-
-  //     $browser.cancel(id);
-  //     setTimeout(() => {
-  //       expect(scope.x).toEqual(["expr1", "expr2"]);
-  //     });
-  //     expect(scope.x).toEqual([]);
-  //   });
-
-  //   it("should pass thrown exceptions to $exceptionHandler", () => {
-  //     let id = scope.$applyAsync(() => {
-  //       throw "OOPS";
-  //     });
-
-  //     $browser.cancel(id);
-  //     expect(logs).toEqual([]);
-  //     setTimeout(() => expect(logs[0]).toEqual("OOPS"));
-  //   });
-
-  //   it("should evaluate subsequent expressions after an exception is thrown", () => {
-  //     let id = scope.$applyAsync(() => {
-  //       throw "OOPS";
-  //     });
-  //     let id2 = scope.$applyAsync('x = "All good!"');
-
-  //     $browser.cancel(id);
-  //     $browser.cancel(id2);
-  //     setTimeout(() => expect(scope.x).toBe("All good!"));
-  //     expect(scope.x).toBeUndefined();
-  //   });
-
-  //   it("should be cancelled if a scope digest occurs before the next tick", () => {
-  //     const cancel = spyOn($browser, "cancel").and.callThrough();
-  //     const expression = jasmine.createSpy("expr");
-
-  //     scope.$applyAsync(expression);
-
-  //     expect(expression).toHaveBeenCalled();
-  //     expect(cancel).toHaveBeenCalled();
-  //     expression.calls.reset();
-  //     cancel.calls.reset();
-
-  //     // assert that another digest won't call the function again
-
-  //     expect(expression).not.toHaveBeenCalled();
-  //     expect(cancel).not.toHaveBeenCalled();
-  //   });
-  // });
 
   describe("$postUpdate", () => {
     beforeEach(() => (logs = []));
@@ -2485,7 +2400,7 @@ describe("Scope", () => {
       expect(signature).toBe("ABCD");
     });
 
-    it("should support $apply calls nested in $postUpdate callbacks", async () => {
+    it("should support $eval calls nested in $postUpdate callbacks", async () => {
       let signature = "";
 
       scope.$postUpdate(() => {
@@ -2497,7 +2412,7 @@ describe("Scope", () => {
         scope.$postUpdate(() => {
           signature += "D";
         });
-        scope.$apply("a = 2");
+        scope.$eval("a = 2");
       });
 
       scope.$postUpdate(() => {
@@ -3326,7 +3241,6 @@ describe("Scope", () => {
       expect(handler._propertyMap._children).toBe(handler._children);
       expect(handler._propertyMap.$watch).toBeUndefined();
       expect(handler._propertyMap.$eval).toBeUndefined();
-      expect(handler._propertyMap.$apply).toBeUndefined();
       expect(handler._propertyMap.$new).toBeUndefined();
     });
 

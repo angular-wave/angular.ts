@@ -1,6 +1,7 @@
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML } from "../../shared/dom.ts";
+import { ngRefDirective } from "./ref.ts";
 
 describe("ngRef", () => {
   describe("on a component", () => {
@@ -40,6 +41,25 @@ describe("ngRef", () => {
 
       $compile = injector.get("$compile");
       $rootScope = injector.get("$rootScope");
+    });
+
+    describe("compile", () => {
+      it("should create a link function that assigns and clears the element ref", () => {
+        const directive = ngRefDirective(injector.get("$parse"));
+        const element = document.createElement("div");
+        const scope = $rootScope.$new();
+        const link = directive.compile(element, {
+          ngRef: "elementRef",
+        });
+
+        link(scope, element, {});
+
+        expect(scope.elementRef).toBe(element);
+
+        scope.$destroy();
+
+        expect(scope.elementRef).toBeNull();
+      });
     });
 
     it("should bind in the current scope the controller of a component", () => {
@@ -403,13 +423,13 @@ describe("ngRef", () => {
     //         "</div>";
     //       const element = $compile(template)($rootScope);
 
-    //       $rootScope.$apply("present = false");
+    //       $rootScope.$eval("present = false");
     //       expect(element.textContent).toBe("");
-    //       $rootScope.$apply("present = true");
+    //       $rootScope.$eval("present = true");
     //       expect(element.textContent).toBe("SUCCESS");
-    //       $rootScope.$apply("present = false");
+    //       $rootScope.$eval("present = false");
     //       expect(element.textContent).toBe("");
-    //       $rootScope.$apply("present = true");
+    //       $rootScope.$eval("present = true");
     //       expect(element.textContent).toBe("SUCCESS");
     //       dealoc(element);
     //     });
@@ -538,7 +558,7 @@ describe("ngRef", () => {
 
     //     expect($rootScope.controllers).toEqual(controllers);
 
-    //     $rootScope.$apply("elements = []");
+    //     $rootScope.$eval("elements = []");
 
     //     expect($rootScope.controllers).toEqual([null, null, null, null, null]);
     //   });

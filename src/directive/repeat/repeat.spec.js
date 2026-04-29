@@ -1,6 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ngRepeatDirective } from "./repeat.ts";
 
 describe("ngRepeat", () => {
   let element;
@@ -48,6 +49,27 @@ describe("ngRepeat", () => {
     //   expect($exceptionHandler.errors).toBe([]);
     // }
     //dealoc(element);
+  });
+
+  describe("compile", () => {
+    it("should create a link function for a valid repeat expression", () => {
+      const directive = ngRepeatDirective(injector);
+      const link = directive.compile(document.createElement("li"), {
+        ngRepeat: "item in items",
+      });
+
+      expect(link).toEqual(jasmine.any(Function));
+    });
+
+    it("should reject invalid repeat expressions during compile", () => {
+      const directive = ngRepeatDirective(injector);
+
+      expect(() => {
+        directive.compile(document.createElement("li"), {
+          ngRepeat: "item of items",
+        });
+      }).toThrowError(/Expected expression/);
+    });
   });
 
   it("should iterate over an array of objects", async () => {

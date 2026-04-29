@@ -960,7 +960,6 @@ export class Scope {
       context?._arrayMutationWrappers ?? new WeakMap();
 
     this._propertyMap = {
-      $apply: this.$apply.bind(this),
       $broadcast: this.$broadcast.bind(this),
       _children: this._children,
       $destroy: this.$destroy.bind(this),
@@ -2422,15 +2421,6 @@ export class Scope {
       const key = keyList[i];
 
       this.set(this.$target, key, newTargetRecord[key], this.$proxy);
-    }
-  }
-
-  /** Evaluates an expression and routes any thrown error through the exception handler. */
-  $apply(expr: ng.Expression): any {
-    try {
-      return $parse(expr)(this.$proxy);
-    } catch (err) {
-      return $exceptionHandler(err);
     }
   }
 
