@@ -2148,35 +2148,30 @@ describe("input", () => {
           //   expect(scope.value).toBe(10);
 
           //   // Step changes, but value matches
-          //   scope.$eval("step = 5");
           //   expect(inputElm.value).toBe("10");
           //   expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           //   expect(scope.value).toBe(10);
           //   expect(scope.form.alias.$error.step).toBeFalsy();
 
           //   // Step changes, value does not match
-          //   scope.$eval("step = 6");
           //   expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
           //   expect(scope.value).toBeUndefined();
           //   expect(inputElm.value).toBe("10");
           //   expect(scope.form.alias.$error.step).toBeTruthy();
 
           //   // null = valid
-          //   scope.$eval("step = null");
           //   expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           //   expect(scope.value).toBe(10);
           //   expect(inputElm.value).toBe("10");
           //   expect(scope.form.alias.$error.step).toBeFalsy();
 
           //   // Step val as string
-          //   scope.$eval('step = "7"');
           //   expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
           //   expect(scope.value).toBeUndefined();
           //   expect(inputElm.value).toBe("10");
           //   expect(scope.form.alias.$error.step).toBeTruthy();
 
           //   // unparsable string is ignored
-          //   scope.$eval('step = "abc"');
           //   expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           //   expect(scope.value).toBe(10);
           //   expect(inputElm.value).toBe("10");
@@ -2203,7 +2198,6 @@ describe("input", () => {
             expect(inputElm.classList.contains("ng-valid")).toBeTrue();
             expect(scope.value).toBe(15);
             // TODO
-            // scope.$eval("step = 3");
             // await wait();
             // expect(inputElm.value).toBe("15");
             // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
@@ -2216,7 +2210,6 @@ describe("input", () => {
             // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
             // expect(scope.value).toBe(8);
 
-            // scope.$eval("min = 10; step = 20");
             // inputElm.value = "30";
             // inputElm.dispatchEvent(new Event("change"));
             // await wait();
@@ -2224,21 +2217,18 @@ describe("input", () => {
             // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
             // expect(scope.value).toBe(30);
 
-            // scope.$eval("min = 5");
             // await wait();
             // expect(inputElm.value).toBe("30");
             // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
             // expect(ngModel.$error.step).toBe(true);
             // expect(scope.value).toBeUndefined();
 
-            // scope.$eval("step = 0.00000001");
             // await wait();
             // expect(inputElm.value).toBe("30");
             // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
             // expect(scope.value).toBe(30);
 
             // // 0.3 - 0.2 === 0.09999999999999998
-            // scope.$eval("min = 0.2; step = (0.3 - 0.2)");
             // inputElm.value = "0.3";
             // inputElm.dispatchEvent(new Event("change"));
             // await wait();
@@ -2652,7 +2642,8 @@ describe("input", () => {
           expect(inputElm.value).toBe("0");
           expect(scope.value).toBe(0);
 
-          scope.$eval("value = 5; min = 10");
+          scope.value = 5;
+          scope.min = 10;
           await wait();
           expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           expect(inputElm.value).toBe("10");
@@ -2741,7 +2732,8 @@ describe("input", () => {
           expect(inputElm.value).toBe("100");
           expect(scope.value).toBe(100);
 
-          scope.$eval("value = 90; max = 10");
+          scope.value = 90;
+          scope.max = 10;
           await wait();
           expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           expect(inputElm.value).toBe("10");
@@ -3579,7 +3571,6 @@ describe("input", () => {
       //     expect(element.value).toBe("newValue");
       //     expect(element.getAttribute("value")).toBeNull();
 
-      //     scope.$eval(() => {
       //       scope.value = "anotherValue";
       //     });
       //     expect(element.value).toBe("anotherValue");

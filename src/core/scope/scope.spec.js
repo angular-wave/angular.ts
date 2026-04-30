@@ -398,23 +398,23 @@ describe("Scope", () => {
   describe("this", () => {
     it("should evaluate 'this' to be the scope", () => {
       const child = scope.$new();
-      expect(scope.$eval("this")).toEqual(scope.$target);
-      expect(child.$eval("this")).toEqual(child.$target);
+      expect($parse("this")(scope)).toEqual(scope.$target);
+      expect($parse("this")(child)).toEqual(child.$target);
     });
 
     it("'this' should not be recursive", () => {
-      expect(scope.$eval("this.this")).toBeUndefined();
-      expect(scope.$eval("$parent.this")).toBeUndefined();
+      expect($parse("this.this")(scope)).toBeUndefined();
+      expect($parse("$parent.this")(scope)).toBeUndefined();
     });
 
     it("should not be able to overwrite the 'this' keyword", () => {
       scope.this = 123;
-      expect(scope.$eval("this")).toEqual(scope);
+      expect($parse("this")(scope)).toEqual(scope);
     });
 
     it("should be able to access a constant variable named 'this'", () => {
       scope.this = 42;
-      expect(scope.$eval("this['this']")).toBe(42);
+      expect($parse("this['this']")(scope)).toBe(42);
     });
   });
 
@@ -1599,7 +1599,7 @@ describe("Scope", () => {
         scope.$watch("foo", watch2);
       });
 
-      scope.$eval("foo = true");
+      scope.foo = true;
       await wait();
       expect(watch1).toHaveBeenCalled();
       expect(watch2).toHaveBeenCalled();
@@ -1667,7 +1667,7 @@ describe("Scope", () => {
           /* empty */
         });
         expect(async () => {
-          scope.$eval("remove = true");
+          scope.remove = true;
           await wait();
         }).not.toThrow();
       });
@@ -2266,23 +2266,23 @@ describe("Scope", () => {
     }
   });
 
-  describe("$eval", () => {
-    it("should eval an expression and modify the scope", () => {
-      expect(scope.$eval("a=1")).toEqual(1);
+  describe("$parse expression evaluation", () => {
+    it("should evaluate an expression and modify the scope", () => {
+      expect($parse("a=1")(scope)).toEqual(1);
       expect(scope.a).toEqual(1);
-      scope.$eval("b=2");
+      $parse("b=2")(scope);
       expect(scope.b).toEqual(2);
     });
 
     it("should allow passing locals to the expression", () => {
-      expect(scope.$eval("a+1", { a: 2 })).toBe(3);
+      expect($parse("a+1")(scope, { a: 2 })).toBe(3);
     });
   });
 
-  describe("$eval", () => {
+  describe("scope property updates", () => {
     beforeEach(() => (logs = []));
 
-    it("should eval an expression, modify the scope and trigger the watches", async () => {
+    it("should modify the scope and trigger the watches", async () => {
       let counter = 0;
       scope.$watch("a", () => {
         counter++;
@@ -2290,34 +2290,34 @@ describe("Scope", () => {
       await wait();
       expect(counter).toEqual(1);
 
-      scope.$eval("a=1");
+      scope.a = 1;
       await wait();
       expect(counter).toEqual(2);
     });
 
     it("should update the scope and add values", async () => {
-      scope.$eval("a=1");
+      scope.a = 1;
       await wait();
       expect(scope.a).toEqual(1);
     });
 
     it("should update the scope and remove values", async () => {
       scope.a = 2;
-      scope.$eval("a=null");
+      scope.a = null;
       await wait();
       expect(scope.a).toBeNull();
     });
 
     it("should update the scope and modify objects", async () => {
-      scope.$eval("a={b: 2}");
+      scope.a = { b: 2 };
       await wait();
       expect(scope.a.b).toEqual(2);
 
-      scope.$eval("a.b = 3");
+      scope.a.b = 3;
       await wait();
       expect(scope.a.b).toEqual(3);
 
-      scope.$eval("a={c: 2}");
+      scope.a = { c: 2 };
       await wait();
       expect(scope.a.c).toEqual(2);
       expect(scope.a.b).toBeUndefined();
@@ -2327,13 +2327,13 @@ describe("Scope", () => {
       scope.a = [];
       scope.$watch("a", () => count++);
 
-      scope.$eval("a.push(1)");
+      scope.a.push(1);
 
       await wait();
       expect(scope.a).toEqual([1]);
       expect(count).toEqual(2);
 
-      scope.$eval("a.push(2)");
+      scope.a.push(2);
 
       await wait();
       expect(scope.a).toEqual([1, 2]);
@@ -2347,7 +2347,7 @@ describe("Scope", () => {
         log += "1";
       });
 
-      child.$eval("a = 0");
+      $parse("a = 0")(child);
       await wait();
       expect(log).toEqual("11");
     });
@@ -2360,7 +2360,7 @@ describe("Scope", () => {
       });
       scope.a = 0;
       await wait();
-      expect(() => child.$eval("2+")).toThrow();
+      expect(() => $parse("2+")(child)).toThrow();
       await wait();
       expect(log).toEqual("11");
       expect(logs).toEqual([]);
@@ -2400,7 +2400,7 @@ describe("Scope", () => {
       expect(signature).toBe("ABCD");
     });
 
-    it("should support $eval calls nested in $postUpdate callbacks", async () => {
+    it("should support scope updates nested in $postUpdate callbacks", async () => {
       let signature = "";
 
       scope.$postUpdate(() => {
@@ -2412,7 +2412,7 @@ describe("Scope", () => {
         scope.$postUpdate(() => {
           signature += "D";
         });
-        scope.$eval("a = 2");
+        scope.a = 2;
       });
 
       scope.$postUpdate(() => {
@@ -3240,7 +3240,6 @@ describe("Scope", () => {
       expect(handler._propertyMap.$id).toBe(handler.$id);
       expect(handler._propertyMap._children).toBe(handler._children);
       expect(handler._propertyMap.$watch).toBeUndefined();
-      expect(handler._propertyMap.$eval).toBeUndefined();
       expect(handler._propertyMap.$new).toBeUndefined();
     });
 

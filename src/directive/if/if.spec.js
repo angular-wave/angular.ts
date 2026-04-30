@@ -183,11 +183,11 @@ describe("ngIf", () => {
       await wait();
       expect(element.children.length).toBe(9);
 
-      $scope.$eval("values.splice(0,1)");
+      $scope.values.splice(0, 1);
       await wait();
       expect(element.children.length).toBe(6);
 
-      $scope.$eval("values.push(1)");
+      $scope.values.push(1);
       await wait();
       expect(element.children.length).toBe(9);
     });

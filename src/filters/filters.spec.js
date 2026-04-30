@@ -50,8 +50,8 @@ describe("filters", () => {
       function ($filterProvider) {
         $filterProvider.register("myFilter", () => filter);
       },
-    ]).invoke(($rootScope) => {
-      $rootScope.$eval("10|myFilter");
+    ]).invoke(($rootScope, $parse) => {
+      $parse("10|myFilter")($rootScope);
     });
     expect(filter).toHaveBeenCalledWith(10);
   });

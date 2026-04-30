@@ -130,7 +130,6 @@ describe("validators", () => {
       inputElm.dispatchEvent(new Event("change"));
       expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
-      // $rootScope.$eval(() => {
       //   $rootScope.regexp = /abc?/;
       // });
       // await wait();
@@ -158,7 +157,6 @@ describe("validators", () => {
       expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
       // ON FLY CNANGES
-      // $rootScope.$eval(() => {
       //   $rootScope.regexp = /^\d+$/;
       // });
       // await wait();
@@ -169,7 +167,6 @@ describe("validators", () => {
       // await wait();
       // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
-      // $rootScope.$eval(() => {
       //   $rootScope.regexp = "";
       // });
       // await wait();
@@ -450,7 +447,6 @@ describe("validators", () => {
       inputElm.dispatchEvent(new Event("change"));
 
       // ONFLY CHANGE
-      // $rootScope.$eval('maxlength = "5"');
       // await wait();
       // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 

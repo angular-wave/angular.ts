@@ -1407,8 +1407,6 @@ describe("$location", () => {
 
   //       const originalUrl = $window.location.href;
 
-  //       $rootScope.$eval(() => {
-  //         $rootScope.$evalAsync(() => {
   //           $window.history.pushState({}, null, `${originalUrl}/qux`);
   //         });
   //       });
@@ -1416,8 +1414,6 @@ describe("$location", () => {
   //       expect($browser.url()).toBe("http://foo.bar/#!/baz/qux");
   //       expect($location.absUrl).toBe("http://foo.bar/#!/baz/qux");
 
-  //       $rootScope.$eval(() => {
-  //         $rootScope.$evalAsync(() => {
   //           $window.history.replaceState({}, null, `${originalUrl}/quux`);
   //         });
   //       });
@@ -1435,8 +1431,6 @@ describe("$location", () => {
   //       $location.setUrl("baz");
   //       $rootScope.$digest();
 
-  //       $rootScope.$eval(() => {
-  //         $rootScope.$evalAsync(() => {
   //           $window.location.href += "/qux";
   //         });
   //       });
@@ -1674,7 +1668,6 @@ describe("$location", () => {
   //       const OLD_URL = $browser.url();
   //       const NEW_URL = "http://new.com/a/b#!/new";
 
-  //       $rootScope.$eval(() => {
   //         $window.location.href = NEW_URL;
   //         $browser.$$checkUrlChange(); // simulate firing event from browser
   //         expect($location.absUrl).toBe(OLD_URL); // should be async
@@ -2411,7 +2404,6 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$eval(() => {
   //           $location.setPath("/");
   //         });
   //         browserTrigger(link, "click");
@@ -2728,7 +2720,6 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$eval(() => {
   //           $location.setPath("/some");
   //           $location.setHash("foo");
   //         });
@@ -2752,7 +2743,6 @@ describe("$location", () => {
   //       }),
   //       setupRewriteChecks(),
   //       ($browser, $location, $rootScope) => {
-  //         $rootScope.$eval(() => {
   //           $location.setPath("/some");
   //           $location.setHash("foo");
   //         });
@@ -3492,12 +3482,10 @@ describe("$location", () => {
   //     });
 
   //     // change through $location service
-  //     $rootScope.$eval(() => {
   //       $location.setPath("/myNewPath");
   //     });
 
   //     // reset location
-  //     $rootScope.$eval(() => {
   //       $location.setPath("");
   //     });
 

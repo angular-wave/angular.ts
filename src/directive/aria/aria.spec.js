@@ -533,7 +533,9 @@ describe("$aria", () => {
           "<div role='menuitemcheckbox' checked='checked' aria-checked='userSetValue'></div>",
         )(scope),
       ];
-      scope.$eval("val1=true;val2='one';val3='1'");
+      scope.val1 = true;
+      scope.val2 = "one";
+      scope.val3 = "1";
       await wait();
       expectAriaAttrOnEachElement(element, "aria-checked", "userSetValue");
     });
@@ -970,7 +972,8 @@ describe("$aria", () => {
     });
 
     it("should update `aria-valuemin/max` when `min/max` changes dynamically", async () => {
-      scope.$eval("min = 25; max = 75");
+      scope.min = 25;
+      scope.max = 75;
       element = $compile(
         '<input type="range" ng-model="val" min="{{min}}" max="{{max}}" />',
       )(scope);
@@ -988,7 +991,8 @@ describe("$aria", () => {
     });
 
     it("should update `aria-valuemin/max` when `ng-min/ng-max` changes dynamically", async () => {
-      scope.$eval("min = 25; max = 75");
+      scope.min = 25;
+      scope.max = 75;
       element = $compile(
         '<input type="range" ng-model="val" ng-min="min" ng-max="max" />',
       )(scope);

@@ -8,7 +8,6 @@ import {
   isFunction,
   isInstanceOf,
   isNull,
-  isNullOrUndefined,
   isObject,
   isProxy,
   isProxySymbol,
@@ -964,7 +963,6 @@ export class Scope {
       _children: this._children,
       $destroy: this.$destroy.bind(this),
       $emit: this.$emit.bind(this),
-      $eval: this.$eval.bind(this),
       $flushQueue: this.$flushQueue.bind(this),
       $getById: this.$getById.bind(this),
       $handler: this,
@@ -2388,27 +2386,6 @@ export class Scope {
         this._scheduleListener(currentListeners);
       }
     }
-  }
-
-  /** Evaluates an Angular expression in the context of this scope. */
-  $eval(expr: ng.Expression, locals?: Record<string, any>) {
-    const fn = $parse(expr);
-
-    const res = fn(this, locals);
-
-    if (isNullOrUndefined(res) || res === Object.hasOwnProperty) {
-      return res;
-    }
-
-    if (isFunction(res)) {
-      return res();
-    }
-
-    if (Number.isNaN(res)) {
-      return 0;
-    }
-
-    return res;
   }
 
   /** Merges enumerable properties from the provided object into the current scope target. */

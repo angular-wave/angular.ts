@@ -283,7 +283,8 @@ describe("ngClass", () => {
     const e1 = element.children[0];
     const e2 = element.children[1];
 
-    $rootScope.$eval('two = "two"; five = true');
+    $rootScope.two = "two";
+    $rootScope.five = true;
     await wait();
     expect(e1).toHaveClass("one");
     expect(e1).toHaveClass("two");
@@ -360,7 +361,7 @@ describe("ngClass", () => {
 
       expect(element).not.toHaveClass("x");
 
-      $rootScope.$eval("testObj.a = true");
+      $rootScope.testObj.a = true;
       await wait();
       expect(element).toHaveClass("x");
     });

@@ -1922,7 +1922,7 @@ describe("data-change", () => {
 
   afterEach(() => dealoc(el));
 
-  it("should $eval expression after new value is set in the model", async () => {
+  it("should evaluate change expression after new value is set in the model", async () => {
     el.innerHTML =
       'Test<input type="text" ng-model="value" data-change="change()" />';
 
@@ -1941,7 +1941,7 @@ describe("data-change", () => {
     expect($rootScope.change).toHaveBeenCalled();
   });
 
-  it("should not $eval the expression if changed from model", async () => {
+  it("should not evaluate the change expression if changed from model", async () => {
     el.innerHTML =
       'Test<input type="text" ng-model="value" data-change="change()" />';
 
@@ -1956,7 +1956,7 @@ describe("data-change", () => {
     expect($rootScope.change).not.toHaveBeenCalled();
   });
 
-  it("should $eval ngChange expression on checkbox", async () => {
+  it("should evaluate ngChange expression on checkbox", async () => {
     el.innerHTML =
       'Test<input type="checkbox" ng-model="value" data-change="changeFn()" />';
 

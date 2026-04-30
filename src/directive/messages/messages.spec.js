@@ -195,7 +195,6 @@ describe("ngMessages", () => {
   //       )($rootScope);
   //       ;
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = prop;
   //       });
   //       expect(element.textContent).not.toContain("Message is set");
@@ -215,14 +214,12 @@ describe("ngMessages", () => {
   //           "</div>",
   //       )($rootScope);
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = {};
   //       });
 
   //       expect(messageChildren(element).length).toBe(0);
   //       expect(trim(element.textContent)).toEqual("");
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = {
   //           blue: true,
   //           red: false,
@@ -232,7 +229,6 @@ describe("ngMessages", () => {
   //       expect(messageChildren(element).length).toBe(1);
   //       expect(trim(element.textContent)).toEqual("This message is blue");
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = {
   //           red: prop,
   //         };
@@ -241,13 +237,11 @@ describe("ngMessages", () => {
   //       expect(messageChildren(element).length).toBe(1);
   //       expect(trim(element.textContent)).toEqual("This message is red");
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = null;
   //       });
   //       expect(messageChildren(element).length).toBe(0);
   //       expect(trim(element.textContent)).toEqual("");
 
-  //       $rootScope.$eval(() => {
   //         $rootScope.col = {
   //           blue: 0,
   //           red: null,
@@ -439,7 +433,6 @@ describe("ngMessages", () => {
   //       "</div>",
   //   )($rootScope);
 
-  //   $rootScope.$eval(() => {
   //     $rootScope.col = {};
   //   });
 
@@ -448,7 +441,6 @@ describe("ngMessages", () => {
   //   expect(event.args[1]).toBe("ng-inactive");
   //   expect(event.args[2]).toBe("ng-active");
 
-  //   $rootScope.$eval(() => {
   //     $rootScope.col = { ready: true };
   //   });
 
@@ -500,7 +492,6 @@ describe("ngMessages", () => {
     //         "</div>",
     //     )($rootScope);
     //
-    //     $rootScope.$eval(() => {
     //       $rootScope.col = {
     //         a: true,
     //         b: true,
@@ -532,7 +523,6 @@ describe("ngMessages", () => {
   //     "</div>";
   //
   //   element = $compile(html)($rootScope);
-  //   $rootScope.$eval(() => {
   //     $rootScope.forA = "A";
   //     $rootScope.items = { a: true };
   //   });
@@ -540,7 +530,6 @@ describe("ngMessages", () => {
   //   expect(element.textContent).toBe("A");
   //   const watchers = countWatchers($rootScope);
   //
-  //   $rootScope.$eval("items.a = false");
   //
   //   expect(element.textContent).toBe("");
   //   // We don't know exactly how many watchers are on the scope, only that there should be
@@ -705,7 +694,6 @@ describe("ngMessages", () => {
     //       $rootScope.items = [{}, {}, {}];
 
     //       element = $compile(html)($rootScope);
-    //       $rootScope.$eval(() => {
     //         $rootScope.items[0].a = true;
     //         $rootScope.items[1].b = true;
     //         $rootScope.items[2].c = true;
@@ -722,7 +710,6 @@ describe("ngMessages", () => {
     //       // this is the standard order of the displayed error messages
     //       expect(element.textContent.trim()).toBe("ABC");
 
-    //       $rootScope.$eval(() => {
     //         $rootScope.items[0].a = false;
     //         $rootScope.items[0].c = true;
 
@@ -736,7 +723,6 @@ describe("ngMessages", () => {
     //       // we should see both 1 and 3 changed
     //       expect(element.textContent.trim()).toBe("A");
 
-    //       $rootScope.$eval(() => {
     //         // add the value for the 2nd item back
     //         $rootScope.items[1].b = true;
     //         $rootScope.items.reverse();
@@ -801,7 +787,6 @@ describe("ngMessages", () => {
     //       );
 
     //       element = $compile(html)($rootScope);
-    //       $rootScope.$eval(() => {
     //         $rootScope.data = {
     //           a: 1,
     //           b: 2,
@@ -812,7 +797,6 @@ describe("ngMessages", () => {
     //       expect(messageChildren(element).length).toBe(1);
     //       expect(trim(element.textContent)).toEqual("A");
 
-    //       $rootScope.$eval(() => {
     //         $rootScope.data = {
     //           c: 3,
     //         };
@@ -908,7 +892,6 @@ describe("ngMessages", () => {
     //     "</div>";
 
     //   element = $compile(html)($rootScope);
-    //   $rootScope.$eval("items = {b: true, c: true}");
 
     //   expect(element.textContent).toBe("B");
 
@@ -922,8 +905,6 @@ describe("ngMessages", () => {
     //   expect(trim(deregisterSpy.calls.mostRecent().args[0].nodeValue)).toBe(
     //     "ngMessage: b",
     //   );
-
-    //   $rootScope.$eval("items.a = true");
 
     //   expect(element.textContent).toBe("A");
     // });
@@ -958,7 +939,6 @@ describe("ngMessages", () => {
     //           `</div>`,
     //       )($rootScope);
 
-    //       $rootScope.$eval(() => {
     //         $rootScope.data = {
     //           one: true,
     //           two: false,

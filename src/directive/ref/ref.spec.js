@@ -423,13 +423,9 @@ describe("ngRef", () => {
     //         "</div>";
     //       const element = $compile(template)($rootScope);
 
-    //       $rootScope.$eval("present = false");
     //       expect(element.textContent).toBe("");
-    //       $rootScope.$eval("present = true");
     //       expect(element.textContent).toBe("SUCCESS");
-    //       $rootScope.$eval("present = false");
     //       expect(element.textContent).toBe("");
-    //       $rootScope.$eval("present = true");
     //       expect(element.textContent).toBe("SUCCESS");
     //       dealoc(element);
     //     });
@@ -557,8 +553,6 @@ describe("ngRef", () => {
     //     await wait();
 
     //     expect($rootScope.controllers).toEqual(controllers);
-
-    //     $rootScope.$eval("elements = []");
 
     //     expect($rootScope.controllers).toEqual([null, null, null, null, null]);
     //   });

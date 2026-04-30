@@ -402,17 +402,11 @@ describe("ngSwitch", () => {
 //           ),
 //         )($scope);
 
-//         $scope.$eval('inc = "one"');
-
 //         let destroyed;
 //         const inner = element.children(0);
 //         inner.on("$destroy", () => {
 //           destroyed = true;
 //         });
-
-//         $scope.$eval('inc = "two"');
-
-//         $scope.$eval('inc = "one"');
 
 //         expect(destroyed).toBe(true);
 //       };
