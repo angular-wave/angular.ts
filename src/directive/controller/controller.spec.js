@@ -139,7 +139,7 @@ describe("ngController", () => {
     );
     window.angular
       .module("myModule", [])
-      .controller("Count", function CountController($scope) {
+      .controller("Count", function CountController() {
         count += 1;
       });
 

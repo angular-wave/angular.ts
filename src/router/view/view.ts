@@ -16,6 +16,8 @@ export interface ViewContext {
 export interface ActiveNgView {
   /** An auto-incremented id */
   id: number;
+  /** The DOM node for the ng-view anchor */
+  element: HTMLElement;
   /** The ng-view short name */
   name: string;
   /** The ng-view's fully qualified name */

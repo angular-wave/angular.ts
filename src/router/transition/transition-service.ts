@@ -77,6 +77,62 @@ const noop = () => {
   /* empty */
 };
 
+const afterViewCommitTask = () =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
+
+type ViewTransitionDocument = Document & {
+  startViewTransition: (updateCallback: () => void) => {
+    updateCallbackDone: Promise<void>;
+    finished: Promise<void>;
+  };
+};
+
+let viewTransitionActive = false;
+
+function runWithViewTransition(updateCallback: () => void): Promise<void> | void;
+function runWithViewTransition(updateCallback: () => void): Promise<void> | void {
+  if (viewTransitionActive) {
+    updateCallback();
+
+    return;
+  }
+
+  let hasCallbackError = false;
+
+  let callbackError: unknown;
+
+  viewTransitionActive = true;
+
+  const viewTransition = (
+    document as ViewTransitionDocument
+  ).startViewTransition(() => {
+    try {
+      updateCallback();
+    } catch (error) {
+      hasCallbackError = true;
+      callbackError = error;
+      throw error;
+    }
+  });
+
+  viewTransition.finished.then(
+    () => {
+      viewTransitionActive = false;
+    },
+    () => {
+      viewTransitionActive = false;
+    },
+  );
+
+  if (hasCallbackError) {
+    throw callbackError;
+  }
+
+  return viewTransition.updateCallbackDone.then(afterViewCommitTask);
+}
+
 /**
  * The runtime service instance returned from `TransitionProvider.$get`.
  *
@@ -752,6 +808,9 @@ function registerActivateViews(
   transitionService: TransitionService,
   viewService: ViewService,
 ): DeregisterFn {
+  const hasConnectedNgView = () =>
+    viewService._ngViews.some((ngView) => ngView.element.isConnected);
+
   const activateViews = (transition: Transition) => {
     const enteringViews = transition.views("entering");
 
@@ -759,11 +818,21 @@ function registerActivateViews(
 
     if (!enteringViews.length && !exitingViews.length) return;
 
-    exitingViews.forEach((view) => viewService._deactivateViewConfig(view));
-    enteringViews.forEach((view) => {
-      viewService._activateViewConfig(view);
-    });
-    viewService._sync();
+    const updateViews = () => {
+      exitingViews.forEach((view) => viewService._deactivateViewConfig(view));
+      enteringViews.forEach((view) => {
+        viewService._activateViewConfig(view);
+      });
+      viewService._sync();
+    };
+
+    if (!hasConnectedNgView()) {
+      updateViews();
+
+      return;
+    }
+
+    return runWithViewTransition(updateViews);
   };
 
   return transitionService.onSuccess({}, activateViews);
