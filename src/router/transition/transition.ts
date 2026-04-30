@@ -921,14 +921,14 @@ export class Transition {
     // When the chain is complete, then resolve or reject the deferred
     const transitionSuccess = () => {
       this.success = true;
-      this._deferred.resolve(this.to());
       const hooks = this._hookBuilder.buildHooksForPhase(
         TransitionHookPhase._SUCCESS,
       );
 
-      for (let i = 0; i < hooks.length; i++) {
-        hooks[i].invokeHook();
-      }
+      TransitionHook.invokeHooks(hooks, () => Promise.resolve()).then(
+        () => this._deferred.resolve(this.to()),
+        (reason) => transitionError(Rejection.normalize(reason)),
+      );
     };
 
     const transitionError = (reason: Rejection) => {

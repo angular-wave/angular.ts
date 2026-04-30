@@ -17,10 +17,6 @@ import {
   isInstanceOf,
   isString,
 } from "../../shared/utils.ts";
-import {
-  createLazyAnimate,
-  getAnimateForNode,
-} from "../../animations/lazy-animate.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { ViewConfig } from "../state/views.ts";
 import {
@@ -39,11 +35,6 @@ type PromiseResolvers<T> = {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
   reject: (reason?: any) => void;
-};
-
-type Renderer = {
-  enter: (element: HTMLElement, target: HTMLElement, cb: () => void) => void;
-  leave: (element: HTMLElement, cb: () => void) => void;
 };
 
 function getFirstElementFromClone(
@@ -211,7 +202,7 @@ const controllerLastParamsChangedTransition = new WeakMap<
  * ```
  */
 
-ViewDirective.$inject = [_view, _state, _injector, _anchorScroll, _interpolate];
+ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate];
 
 /**
  * Renders and updates the currently active view configuration.
@@ -219,38 +210,10 @@ ViewDirective.$inject = [_view, _state, _injector, _anchorScroll, _interpolate];
 export function ViewDirective(
   $view: ViewService,
   $state: ng.StateService,
-  $injector: ng.InjectorService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
   void $state;
-  const getAnimate = createLazyAnimate($injector);
-
-  function getRenderer(): Renderer {
-    return {
-      enter(element: HTMLElement, target: HTMLElement, cb: () => void): void {
-        const animate = getAnimateForNode(getAnimate, element);
-
-        if (animate) {
-          animate.enter(element, null, target).done(cb);
-        } else {
-          target.after(element);
-          cb();
-        }
-      },
-
-      leave(element: HTMLElement, cb: () => void): void {
-        const animate = getAnimateForNode(getAnimate, element);
-
-        if (animate) {
-          animate.leave(element).done(cb);
-        } else {
-          removeElement(element);
-          cb();
-        }
-      },
-    };
-  }
 
   const rootData: ActiveNgViewRootData = {
     $cfg: { viewDecl: { $context: $view._rootViewContext() as ViewContext } },
@@ -272,7 +235,6 @@ export function ViewDirective(
       ) {
         const onloadExp = attrs.onload || "",
           autoScrollExp = attrs.autoscroll,
-          renderer = getRenderer(),
           inherited =
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
@@ -283,8 +245,6 @@ export function ViewDirective(
                 attrs.ngView || attrs.name || "",
               ) as ng.InterpolationFunction
             )(scope) || "$default";
-
-        let previousEl: HTMLElement | null = null;
 
         let currentEl: HTMLElement | null = null;
 
@@ -299,6 +259,7 @@ export function ViewDirective(
 
         const activeNgView: ActiveNgView = {
           id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+          element: $element,
           name, // ng-view name, retained internally for nested view matching
           fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
           config: null, // The active ViewConfig loaded for this ng-view
@@ -357,12 +318,8 @@ export function ViewDirective(
         scope.$on("$destroy", function () {
           unregister();
         });
-        function cleanupLastView(): void {
-          if (previousEl) {
-            removeElement(previousEl);
-            previousEl = null;
-          }
 
+        function cleanupLastView(): void {
           if (currentScope) {
             currentScope.$destroy();
             currentScope = null;
@@ -373,11 +330,8 @@ export function ViewDirective(
               | NgViewAnimData
               | undefined;
 
-            renderer.leave(currentEl, function () {
-              _viewData?.$$animLeave.resolve();
-              previousEl = null;
-            });
-            previousEl = currentEl;
+            removeElement(currentEl);
+            _viewData?.$$animLeave.resolve();
             currentEl = null;
           }
         }
@@ -420,23 +374,20 @@ export function ViewDirective(
               setCacheData(node, "$ngViewAnim", $ngViewAnim);
               setCacheData(node, "$ngView", $ngViewData);
             });
-            renderer.enter(elementClone, $element, () => {
-              animEnter.resolve(undefined);
-
-              if (currentScope)
-                currentScope.$emit("$viewContentAnimationEnded");
-
-              if (
-                (isDefined(autoScrollExp) && !autoScrollExp) ||
-                (autoScrollExp && scope.$eval(autoScrollExp))
-              ) {
-                $anchorScroll(elementClone);
-              }
-            });
+            $element.after(elementClone);
+            animEnter.resolve(undefined);
             cleanupLastView();
+
+            if (
+              (isDefined(autoScrollExp) && !autoScrollExp) ||
+              (autoScrollExp && scope.$eval(autoScrollExp))
+            ) {
+              $anchorScroll(elementClone);
+            }
           }) as unknown as HTMLElement;
 
           currentScope = newScope;
+          currentScope.$emit("$viewContentAnimationEnded");
           /**
            * Fired once the view is **loaded**, *after* the DOM is rendered.
            *

@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Router View Transitions</title>
+    <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <script type="module" src="../index.ts"></script>
+    <style>
+      :root {
+        color: #1f2937;
+        background: #f7f7fb;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 28px 18px;
+        background: #17202a;
+        color: #f8fafc;
+      }
+
+      .brand {
+        margin: 0 0 18px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .nav a {
+        display: block;
+        border-radius: 8px;
+        color: inherit;
+        padding: 10px 12px;
+        text-decoration: none;
+      }
+
+      .nav a:hover {
+        background: #263442;
+      }
+
+      .content {
+        padding: 42px;
+      }
+
+      .route-view {
+        view-transition-name: router-view;
+        min-height: 420px;
+        border-radius: 12px;
+        padding: 38px;
+        box-shadow: 0 22px 70px rgb(31 41 55 / 0.14);
+      }
+
+      .route-view h1 {
+        margin: 0 0 12px;
+        font-size: 34px;
+        line-height: 1.15;
+      }
+
+      .route-view p {
+        max-width: 680px;
+        margin: 0 0 24px;
+        color: #475569;
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 28px;
+      }
+
+      .metric {
+        border: 1px solid rgb(15 23 42 / 0.12);
+        border-radius: 8px;
+        padding: 18px;
+        background: rgb(255 255 255 / 0.72);
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 26px;
+      }
+
+      .home-view {
+        background: linear-gradient(135deg, #ffffff 0%, #d8f3dc 100%);
+      }
+
+      .reports-view {
+        background: linear-gradient(135deg, #ffffff 0%, #dbeafe 100%);
+      }
+
+      .settings-view {
+        background: linear-gradient(135deg, #ffffff 0%, #fde68a 100%);
+      }
+
+      ::view-transition-old(router-view) {
+        animation: 180ms ease both route-fade-out;
+      }
+
+      ::view-transition-new(router-view) {
+        animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both route-slide-in;
+      }
+
+      @keyframes route-fade-out {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        to {
+          opacity: 0;
+          transform: scale(0.985);
+        }
+      }
+
+      @keyframes route-slide-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.99);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          flex-direction: row;
+          align-items: center;
+          overflow-x: auto;
+          padding: 14px;
+        }
+
+        .brand {
+          margin: 0 10px 0 0;
+          white-space: nowrap;
+        }
+
+        .content {
+          padding: 18px;
+        }
+
+        .route-view {
+          min-height: 360px;
+          padding: 26px;
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        window.angular.module("routerViewTransition", []).config([
+          "$stateProvider",
+          ($stateProvider) => {
+            $stateProvider
+              .state({
+                name: "home",
+                url: "/src/router/router-view-transition-test.html",
+                template: `
+                  <main class="route-view home-view">
+                    <h1>Overview</h1>
+                    <p>The router now wraps view activation in the browser View Transition API, so the old and new routed templates can animate as one committed navigation.</p>
+                    <section class="metrics">
+                      <div class="metric"><strong>24</strong><span>Open tasks</span></div>
+                      <div class="metric"><strong>8</strong><span>Deploys</span></div>
+                      <div class="metric"><strong>99%</strong><span>Health</span></div>
+                    </section>
+                  </main>
+                `,
+              })
+              .state({
+                name: "reports",
+                url: "/reports",
+                template: `
+                  <main class="route-view reports-view">
+                    <h1>Reports</h1>
+                    <p>Route changes replace the active ng-view content inside document.startViewTransition(), allowing CSS to animate the named routed view.</p>
+                    <section class="metrics">
+                      <div class="metric"><strong>12k</strong><span>Requests</span></div>
+                      <div class="metric"><strong>42ms</strong><span>Median latency</span></div>
+                      <div class="metric"><strong>17</strong><span>Alerts reviewed</span></div>
+                    </section>
+                  </main>
+                `,
+              })
+              .state({
+                name: "settings",
+                url: "/settings",
+                template: `
+                  <main class="route-view settings-view">
+                    <h1>Settings</h1>
+                    <p>The transition is driven by normal router navigation. Existing ng-sref links and state transitions keep using the same API.</p>
+                    <section class="metrics">
+                      <div class="metric"><strong>3</strong><span>Profiles</span></div>
+                      <div class="metric"><strong>6</strong><span>Integrations</span></div>
+                      <div class="metric"><strong>18</strong><span>Rules</span></div>
+                    </section>
+                  </main>
+                `,
+              });
+          },
+        ]);
+      });
+    </script>
+  </head>
+  <body ng-app="routerViewTransition">
+    <div class="shell">
+      <nav class="nav" aria-label="Demo views">
+        <h2 class="brand">Router Demo</h2>
+        <a ng-sref="home">Overview</a>
+        <a ng-sref="reports">Reports</a>
+        <a ng-sref="settings">Settings</a>
+      </nav>
+      <section class="content">
+        <ng-view></ng-view>
+      </section>
+    </div>
+  </body>
+</html>

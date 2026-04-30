@@ -38,7 +38,7 @@ export function ngIncludeDirective(
     controller: () => {
       /* empty */
     },
-    compile(_element: Element, attr: Attributes & Record<string, string>) {
+    compile(_element: Element, attr: Attributes) {
       const srcExp = attr.ngInclude || attr.src;
 
       const onloadExp = attr.onload || "";

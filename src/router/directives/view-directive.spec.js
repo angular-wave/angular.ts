@@ -17,6 +17,7 @@ describe("ngView", () => {
     $injector,
     $state,
     $anchorScroll,
+    animateSpies,
     errorLog = [];
 
   const aState = {
@@ -172,6 +173,13 @@ describe("ngView", () => {
       $state = _$state_;
       $anchorScroll = _$anchorScroll_;
     });
+
+    const $animate = $injector.get("$animate");
+
+    animateSpies = {
+      enter: spyOn($animate, "enter").and.callThrough(),
+      leave: spyOn($animate, "leave").and.callThrough(),
+    };
   });
 
   describe("linking ng-directive", () => {
@@ -435,6 +443,159 @@ describe("ngView", () => {
     await wait(100);
     expect(log).toContain("destroy;");
     expect(log).toContain("animLeave;");
+  });
+
+  it("should activate routed views inside document.startViewTransition", async () => {
+    await wait(350);
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    let committedInsideCallback = false;
+
+    spyOn(document, "startViewTransition").and.callFake((callback) => {
+      expect(elem.querySelector("ng-view").textContent).toBe("");
+
+      callback();
+
+      expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
+      committedInsideCallback = true;
+
+      return {
+        updateCallbackDone: Promise.resolve(),
+        finished: Promise.resolve(),
+      };
+    });
+
+    await $state.transitionTo("a");
+    await wait(20);
+
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+    expect(committedInsideCallback).toBeTrue();
+  });
+
+  it("should not start a view transition for an ignored same-state transition", async () => {
+    await wait(350);
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    spyOn(document, "startViewTransition").and.callFake((callback) => {
+      callback();
+
+      return {
+        updateCallbackDone: Promise.resolve(),
+        finished: Promise.resolve(),
+      };
+    });
+
+    await $state.transitionTo("a");
+    await wait(20);
+
+    document.startViewTransition.calls.reset();
+
+    await $state.transitionTo("a");
+    await wait(20);
+
+    expect(document.startViewTransition).not.toHaveBeenCalled();
+    expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
+  });
+
+  it("should not use $animate enter or leave for routed view replacement", async () => {
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    animateSpies.enter.calls.reset();
+    animateSpies.leave.calls.reset();
+
+    await $state.transitionTo("a");
+    await wait(20);
+    await $state.transitionTo("b");
+    await wait(20);
+
+    expect(animateSpies.enter).not.toHaveBeenCalled();
+    expect(animateSpies.leave).not.toHaveBeenCalled();
+  });
+
+  it("should not start a view transition for detached routed views", async () => {
+    await wait(350);
+    const detachedScope = scope.$new();
+    const detachedElement = createElementFromHTML(
+      "<div><ng-view></ng-view></div>",
+    );
+
+    $compile(detachedElement)(detachedScope);
+
+    spyOn(document, "startViewTransition").and.callThrough();
+
+    await $state.transitionTo("a");
+    await wait(20);
+
+    expect(document.startViewTransition).not.toHaveBeenCalled();
+    expect(detachedElement.querySelector("ng-view").textContent).toBe(
+      aState.template,
+    );
+
+    detachedScope.$destroy();
+    dealoc(detachedElement);
+  });
+
+  it("should not wait for the visual view transition to finish before resolving the route transition", async () => {
+    await wait(350);
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    let finishVisualTransition;
+    const finished = new Promise((resolve) => {
+      finishVisualTransition = resolve;
+    });
+
+    spyOn(document, "startViewTransition").and.callFake((callback) => {
+      callback();
+
+      return {
+        updateCallbackDone: Promise.resolve(),
+        finished,
+      };
+    });
+
+    await $state.transitionTo("a");
+
+    expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+
+    finishVisualTransition();
+    await wait(20);
+  });
+
+  it("should commit overlapping routed view changes without waiting for the active view transition", async () => {
+    await wait(350);
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    let finishFirstTransition;
+    const firstTransitionFinished = new Promise((resolve) => {
+      finishFirstTransition = resolve;
+    });
+
+    spyOn(document, "startViewTransition").and.callFake((callback) => {
+      callback();
+
+      return {
+        updateCallbackDone: Promise.resolve(),
+        finished: firstTransitionFinished,
+      };
+    });
+
+    await $state.transitionTo("a");
+    await wait(20);
+    expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
+
+    await $state.transitionTo("b");
+    await wait(20);
+    expect(elem.querySelector("ng-view").textContent).toBe(bState.template);
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+
+    finishFirstTransition();
+    await wait(20);
   });
 
   it("should do ngClass animations", async () => {
