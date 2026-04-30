@@ -1,9 +1,4 @@
-import {
-  _http,
-  _injector,
-  _templateCache,
-  _templateRequest,
-} from "../injection-tokens.ts";
+import { _injector, _templateRequest } from "../injection-tokens.ts";
 import {
   isArray,
   isDefined,
@@ -28,6 +23,49 @@ type TemplateResult =
   | Promise<{ template: string }>
   | Promise<{ component: string }>;
 
+const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
+
+const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
+
+const PREFIXED_COMPONENT_ELEMENT = /^(x|data)-/;
+
+type TemplateConfigType =
+  | "template"
+  | "templateUrl"
+  | "templateProvider"
+  | "component"
+  | "default";
+
+function asTemplate(
+  result: string | Promise<string>,
+): Promise<{ template: string }> {
+  return Promise.resolve(result).then((str) => ({ template: str }));
+}
+
+function asComponent(
+  result: string | Promise<string>,
+): Promise<{ component: string }> {
+  return Promise.resolve(result).then((str) => ({ component: str }));
+}
+
+function getConfigType(config: any): TemplateConfigType {
+  if (isDefined(config.template)) return "template";
+
+  if (isDefined(config.templateUrl)) return "templateUrl";
+
+  if (isDefined(config.templateProvider)) return "templateProvider";
+
+  if (isDefined(config.component)) return "component";
+
+  return "default";
+}
+
+function componentElementName(camelCase: string): string {
+  const kebobed = kebobString(camelCase);
+
+  return PREFIXED_COMPONENT_ELEMENT.exec(kebobed) ? `x-${kebobed}` : kebobed;
+}
+
 /**
  * Resolves route templates and components from state view declarations.
  */
@@ -35,29 +73,19 @@ export class TemplateFactoryProvider {
   /** @internal */
   _templateRequest: ng.TemplateRequestService | undefined;
   /** @internal */
-  _http: ng.HttpService | undefined;
-  /** @internal */
-  _templateCache: ng.TemplateCacheService | undefined;
-  /** @internal */
   _injector: ng.InjectorService | undefined;
 
   /**
-   * Wires HTTP, template request, cache, and injector services into the factory.
+   * Wires template request and injector services into the factory.
    */
   $get = [
-    _http,
-    _templateCache,
     _templateRequest,
     _injector,
     (
-      $http: ng.HttpService,
-      $templateCache: ng.TemplateCacheService,
       $templateRequest: ng.TemplateRequestService,
       $injector: ng.InjectorService,
     ): TemplateFactoryProvider => {
       this._templateRequest = $templateRequest;
-      this._http = $http;
-      this._templateCache = $templateCache;
       this._injector = $injector;
 
       return this;
@@ -72,33 +100,6 @@ export class TemplateFactoryProvider {
     params: any,
     context: ResolveContext,
   ): TemplateResult {
-    const defaultTemplate = "<ng-view></ng-view>";
-
-    const asTemplate = (result: string | Promise<string>) =>
-      Promise.resolve(result).then((str) => ({ template: str }));
-
-    const asComponent = (result: string | Promise<string>) =>
-      Promise.resolve(result).then((str) => ({ component: str }));
-
-    const getConfigType = (
-      configParam: any,
-    ):
-      | "template"
-      | "templateUrl"
-      | "templateProvider"
-      | "component"
-      | "default" => {
-      if (isDefined(configParam.template)) return "template";
-
-      if (isDefined(configParam.templateUrl)) return "templateUrl";
-
-      if (isDefined(configParam.templateProvider)) return "templateProvider";
-
-      if (isDefined(configParam.component)) return "component";
-
-      return "default";
-    };
-
     switch (getConfigType(config)) {
       case "template":
         return asTemplate(this.fromString(config.template, params) as string);
@@ -107,13 +108,11 @@ export class TemplateFactoryProvider {
           this.fromUrl(config.templateUrl, params) as Promise<string>,
         );
       case "templateProvider":
-        return asTemplate(
-          this.fromProvider(config.templateProvider, params, context),
-        );
+        return asTemplate(this.fromProvider(config.templateProvider, context));
       case "component":
         return asComponent(config.component);
       default:
-        return asTemplate(defaultTemplate);
+        return asTemplate(DEFAULT_TEMPLATE);
     }
   }
 
@@ -137,7 +136,6 @@ export class TemplateFactoryProvider {
 
   fromProvider(
     provider: Injectable<any>,
-    _params: Function,
     context: ResolveContext,
   ): string | Promise<string> {
     const deps = annotate(provider);
@@ -161,48 +159,60 @@ export class TemplateFactoryProvider {
     bindings?: Record<string, string>,
   ): string {
     bindings = bindings || {};
-    const kebob = (camelCase: string): string => {
-      const kebobed = kebobString(camelCase);
+    const componentBindings = getComponentBindings(this._injector, component);
 
-      return /^(x|data)-/.exec(kebobed) ? `x-${kebobed}` : kebobed;
-    };
+    const attrs: string[] = [];
 
-    const attributeTpl = (input: BindingTuple): string => {
-      const { name, type } = input;
+    for (let i = 0; i < componentBindings.length; i++) {
+      attrs.push(
+        componentAttributeTemplate(
+          ngView,
+          context,
+          bindings,
+          componentBindings[i],
+        ),
+      );
+    }
 
-      const attrName = kebob(name);
+    const kebobName = componentElementName(component);
 
-      if (ngView.getAttribute(attrName) && !bindings![name]) {
-        return `${attrName}='${ngView.getAttribute(attrName)}'`;
-      }
-
-      const resolveName = bindings![name] || name;
-
-      if (type === "@") return `${attrName}='{{$resolve.${resolveName}}}'`;
-
-      if (type === "&") {
-        const res = context.getResolvable(resolveName);
-
-        const fn = res && res.data;
-
-        const args = (fn && annotate(fn)) || [];
-
-        const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
-
-        return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
-      }
-
-      return `${attrName}='$resolve.${resolveName}'`;
-    };
-
-    const attrs = getComponentBindings(this._injector, component)
-      .map(attributeTpl)
-      .join(" ");
-
-    const kebobName = kebob(component);
-
-    return `<${kebobName} ${attrs}></${kebobName}>`;
+    return `<${kebobName} ${attrs.join(" ")}></${kebobName}>`;
   }
+}
+
+function componentAttributeTemplate(
+  ngView: Element,
+  context: ResolveContext,
+  bindings: Record<string, string>,
+  input: BindingTuple,
+): string {
+  const { name, type } = input;
+
+  const attrName = componentElementName(name);
+
+  const existingAttr = ngView.getAttribute(attrName);
+
+  if (existingAttr && !bindings[name]) {
+    return `${attrName}='${existingAttr}'`;
+  }
+
+  const resolveName = bindings[name] || name;
+
+  if (type === "@") return `${attrName}='{{$resolve.${resolveName}}}'`;
+
+  if (type === "&") {
+    const res = context.getResolvable(resolveName);
+
+    const fn = res && res.data;
+
+    const args = (fn && annotate(fn)) || [];
+
+    const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
+
+    return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
+  }
+
+  return `${attrName}='$resolve.${resolveName}'`;
 }
 
 /**
@@ -222,13 +232,15 @@ function getComponentBindings(
 
   const bindings: BindingTuple[] = [];
 
-  cmpDefs.forEach((def) => {
+  for (let i = 0; i < cmpDefs.length; i++) {
+    const def = cmpDefs[i];
+
     const defBindings = getBindings(def);
 
-    defBindings.forEach((binding) => {
-      bindings.push(binding);
-    });
-  });
+    for (let j = 0; j < defBindings.length; j++) {
+      bindings.push(defBindings[j]);
+    }
+  }
 
   return bindings;
 }
@@ -246,13 +258,15 @@ const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {
 
   const bindings: BindingTuple[] = [];
 
-  bindingKeys.forEach((key) => {
-    const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
+  for (let i = 0; i < bindingKeys.length; i++) {
+    const key = bindingKeys[i];
+
+    const match = BINDING_MATCH.exec(bindingsObj[key] || "");
 
     if (match) {
       bindings.push({ name: match[2] || key, type: match[1] });
     }
-  });
+  }
 
   return bindings;
 };
