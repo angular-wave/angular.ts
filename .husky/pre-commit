@@ -3,6 +3,5 @@
 make format
 make lint
 make check
-make test
 make coverage-check
 make types

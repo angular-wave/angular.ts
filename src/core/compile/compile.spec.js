@@ -236,9 +236,8 @@ describe("$compile", () => {
       const templateNode = document.createElement("div");
       const cloneNode = document.createElement("div");
       const templateAttrs = new Attributes(
-        injector.get("$animate"),
+        injector,
         injector.get("$exceptionHandler"),
-        $sce,
         new NodeRef(templateNode),
       );
       const templateObserver = jasmine.createSpy("templateObserver");
@@ -248,9 +247,8 @@ describe("$compile", () => {
       templateAttrs.$observe("name", templateObserver);
 
       const cloneAttrs = new Attributes(
-        injector.get("$animate"),
+        injector,
         injector.get("$exceptionHandler"),
-        $sce,
         new NodeRef(cloneNode),
         templateAttrs,
       );
@@ -8013,15 +8011,15 @@ describe("$compile", () => {
             expect($rootScope.attr.img).toEqual("evil:foo()");
           });
 
-          it("should automatically sanitize img[srcset]", async () => {
+          it("should not automatically sanitize img[srcset]", async () => {
             element = $compile("<img></img>")($rootScope);
             $rootScope.attr.$set("srcset", "evil:foo()");
             await wait();
-            expect(element.getAttribute("srcset")).toEqual("unsafe:evil:foo()");
-            expect($rootScope.attr.srcset).toEqual("unsafe:evil:foo()");
+            expect(element.getAttribute("srcset")).toEqual("evil:foo()");
+            expect($rootScope.attr.srcset).toEqual("evil:foo()");
           });
 
-          it("should sanitize crafted img[srcset] entries that bypass domain allowlists", async () => {
+          it("should not sanitize crafted img[srcset] entries when set through $attrs", async () => {
             module.config(($sceDelegateProvider) =>
               $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
                 /^https:\/\/angularjs\.org\//,
@@ -8036,10 +8034,10 @@ describe("$compile", () => {
             );
             await wait();
             expect(element.getAttribute("srcset")).toEqual(
-              "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
             );
             expect($rootScope.attr.srcset).toEqual(
-              "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
             );
 
             $rootScope.attr.$set(
@@ -8048,20 +8046,18 @@ describe("$compile", () => {
             );
             await wait();
             expect(element.getAttribute("srcset")).toEqual(
-              "https://angularjs.org/favicon.ico xyz,unsafe:data:image/svg+xml;base64,PHN2Zy8+",
+              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
             );
             expect($rootScope.attr.srcset).toEqual(
-              "https://angularjs.org/favicon.ico xyz,unsafe:data:image/svg+xml;base64,PHN2Zy8+",
+              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
             );
           });
 
-          it("should not accept trusted values for img[srcset]", async () => {
+          it("should accept trusted values when img[srcset] is set through $attrs", async () => {
             const trusted = $sce.trustAsMediaUrl("trustme:foo()");
             element = $compile("<img></img>")($rootScope);
             await wait();
-            expect(() => {
-              $rootScope.attr.$set("srcset", trusted);
-            }).toThrowError(/srcset/);
+            expect(() => $rootScope.attr.$set("srcset", trusted)).not.toThrow();
           });
         });
       });
@@ -14762,7 +14758,7 @@ describe("$compile", () => {
       });
     }
 
-    it("should apply imgSrcSanitizationTrustedUrlList to crafted srcset bindings", async () => {
+    it("should apply imgSrcSanitizationTrustedUrlList to supported srcset bindings", async () => {
       module.config(($sceDelegateProvider) =>
         $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
           /^https:\/\/angularjs\.org\//,
@@ -14799,7 +14795,7 @@ describe("$compile", () => {
       $rootScope.testUrl = disallowedDomainPayload;
       await wait();
       expect(srcsetElement.getAttribute("srcset")).toEqual(
-        "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+        disallowedDomainPayload,
       );
 
       srcsetElement = $compile('<img ng-prop-srcset="testUrl"></img>')(

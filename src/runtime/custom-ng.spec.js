@@ -42,6 +42,23 @@ describe("custom runtime", () => {
     expect(element.textContent).toBe("ab");
   });
 
+  it("compiles controlled bindings without an SCE provider", async () => {
+    const angular = createAngularCustom({ attachToWindow: true });
+    const injector = angular.injector(["ng"]);
+    const $compile = injector.get("$compile");
+    const $rootScope = injector.get("$rootScope");
+
+    expect(() => injector.get("$sce")).toThrowError(/Unknown provider/);
+
+    $rootScope.url = "javascript:controlled()";
+    element = createElementFromHTML('<a href="{{url}}"></a>');
+
+    $compile(element)($rootScope);
+    await wait();
+
+    expect(element.getAttribute("href")).toBe("javascript:controlled()");
+  });
+
   it("does not attach bare custom runtimes to window.angular by default", () => {
     const previousAngular = window.angular;
 

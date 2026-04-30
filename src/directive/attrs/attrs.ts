@@ -5,11 +5,71 @@ import {
   entries,
   getNodeName,
   isNullOrUndefined,
+  isString,
+  minErr,
+  trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
+
+const $compileMinErr = minErr("$compile");
+
+function sanitizeSrcset(
+  $sce: ng.SceService,
+  value: unknown,
+  invokeType: string,
+): unknown {
+  if (!value) {
+    return value;
+  }
+
+  if (!isString(value)) {
+    throw $compileMinErr(
+      "srcset",
+      'Can\'t pass trusted values to `{0}`: "{1}"',
+      invokeType,
+      String(value),
+    );
+  }
+
+  let result = "";
+
+  const trimmedSrcset = trim(value);
+
+  const srcPattern =
+    /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
+
+  const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+
+  const rawUris = trimmedSrcset.split(pattern);
+
+  const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
+
+  let i: number;
+
+  for (i = 0; i < nbrUrisWith2parts; i++) {
+    const innerIdx = i * 2;
+
+    const uri = trim(rawUris[innerIdx]);
+
+    result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+    result += ` ${trim(rawUris[innerIdx + 1])}`;
+  }
+
+  const lastTuple = trim(rawUris[i * 2]).split(/\s/);
+
+  const uri = trim(lastTuple[0]);
+
+  result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+
+  if (lastTuple.length === 2) {
+    result += ` ${trim(lastTuple[1])}`;
+  }
+
+  return result;
+}
 
 export const ngAttributeAliasDirectives: Record<string, ng.DirectiveFactory> =
   {};
@@ -142,7 +202,12 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
           const initialValue = attr[normalized];
 
           if (initialValue && String(initialValue).indexOf("{{") === -1) {
-            attr.$set(normalized, sanitize(initialValue));
+            attr.$set(
+              normalized,
+              attrName === "srcset"
+                ? (sanitizeSrcset($sce, initialValue, "ng-srcset") as string)
+                : sanitize(initialValue),
+            );
           }
 
           attr.$observe<string>(normalized, (value) => {
@@ -162,6 +227,11 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                 ) !== -1)
             ) {
               attr.$set(attrName, sanitize(value));
+            } else if (attrName === "srcset") {
+              attr.$set(
+                attrName,
+                sanitizeSrcset($sce, value, "ng-srcset") as string,
+              );
             } else {
               attr.$set(attrName, value);
             }

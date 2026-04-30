@@ -42,13 +42,36 @@ type SceMatcher = RegExp | "self";
 type TrustedValueHolder = {
   /** @internal */
   _unwrapTrustedValue(): string;
+  /** @internal */
+  _unwrapTrustedType(): unknown;
   valueOf(): string;
   toString(): string;
 };
 
 type TrustedValueHolderConstructor = new (
   trustedValue?: string,
+  trustedType?: unknown,
 ) => TrustedValueHolder;
+
+type TrustedTypesPolicy = {
+  createHTML(value: string): unknown;
+  createScriptURL(value: string): unknown;
+};
+
+type TrustedTypesFactory = {
+  createPolicy(
+    policyName: string,
+    rules: {
+      createHTML?: (value: string) => string;
+      createScriptURL?: (value: string) => string;
+    },
+  ): TrustedTypesPolicy;
+};
+
+const trustedTypesPolicyByWindow = new WeakMap<
+  Window,
+  TrustedTypesPolicy | null
+>();
 
 export interface SceService {
   getTrusted(type: SceContext, mayBeTrusted: any): any;
@@ -139,6 +162,64 @@ export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
     "imatcher",
     'Matchers may only be "self", string patterns or RegExp objects',
   );
+}
+
+function getTrustedTypesPolicy($window: Window): TrustedTypesPolicy | null {
+  if (trustedTypesPolicyByWindow.has($window)) {
+    return trustedTypesPolicyByWindow.get($window) ?? null;
+  }
+
+  const { trustedTypes } = $window as unknown as {
+    trustedTypes?: TrustedTypesFactory;
+  };
+
+  let policy: TrustedTypesPolicy | null = null;
+
+  if (trustedTypes) {
+    try {
+      policy = trustedTypes.createPolicy("angular-ts", {
+        createHTML: (value) => value,
+        createScriptURL: (value) => value,
+      });
+    } catch {
+      policy = null;
+    }
+  }
+
+  trustedTypesPolicyByWindow.set($window, policy);
+
+  return policy;
+}
+
+function createTrustedType(
+  policy: TrustedTypesPolicy | null,
+  type: SceContext,
+  value: string,
+): unknown {
+  if (!policy) {
+    return value;
+  }
+
+  if (type === SCE_CONTEXTS._HTML) {
+    return policy.createHTML(value);
+  }
+
+  if (type === SCE_CONTEXTS._RESOURCE_URL) {
+    return policy.createScriptURL(value);
+  }
+
+  return value;
+}
+
+function unwrapTrustedValueForContext(
+  type: SceContext,
+  value: TrustedValueHolder,
+): unknown {
+  if (type === SCE_CONTEXTS._HTML || type === SCE_CONTEXTS._RESOURCE_URL) {
+    return value._unwrapTrustedType();
+  }
+
+  return value._unwrapTrustedValue();
 }
 
 /**
@@ -371,6 +452,8 @@ export class SceDelegateProvider implements UriSanitizationConfig {
         $window: Window,
         $exceptionHandler: ng.ExceptionHandlerService,
       ) {
+        const trustedTypesPolicy = getTrustedTypesPolicy($window);
+
         let htmlSanitizer: (...args: any[]) => any = function () {
           $exceptionHandler(
             $sceMinErr(
@@ -462,9 +545,13 @@ export class SceDelegateProvider implements UriSanitizationConfig {
           const holderType = function TrustedValueHolderType(
             this: TrustedValueHolder,
             trustedValue = "",
+            trustedType = trustedValue,
           ) {
             this._unwrapTrustedValue = function () {
               return trustedValue;
+            };
+            this._unwrapTrustedType = function () {
+              return trustedType;
             };
           } as unknown as TrustedValueHolderConstructor;
 
@@ -557,7 +644,10 @@ export class SceDelegateProvider implements UriSanitizationConfig {
             return undefined;
           }
 
-          const tst = new Constructor(trustedValue);
+          const tst = new Constructor(
+            trustedValue,
+            createTrustedType(trustedTypesPolicy, type, trustedValue),
+          );
 
           return tst;
         }
@@ -627,7 +717,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
           // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
           // as-is.
           if (constructor && isInstanceOf(maybeTrusted, constructor)) {
-            return maybeTrusted._unwrapTrustedValue();
+            return unwrapTrustedValueForContext(type, maybeTrusted);
           }
 
           // If maybeTrusted is a trusted class instance but not of the correct trusted type

@@ -25,12 +25,7 @@ describe("ngCloak", () => {
 
   it("should invoke $set on attribute of directive", () => {
     const ngCloak = ngCloakDirective();
-    const attr = new Attributes(
-      injector,
-      () => {},
-      () => {},
-      new NodeRef(element),
-    );
+    const attr = new Attributes(injector, () => {}, new NodeRef(element));
 
     spyOn(attr, "$set");
     ngCloak.compile(element, attr);
