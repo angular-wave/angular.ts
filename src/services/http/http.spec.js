@@ -3284,7 +3284,6 @@ describe("http", () => {
 //           },
 //         );
 
-//         $rootScope.$eval(() => {
 //           canceler.resolve();
 //         });
 

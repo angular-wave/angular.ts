@@ -469,7 +469,6 @@ describe("ngInclude", () => {
       //   ($rootScope, $animate, $timeout) => {
       //     expect(autoScrollSpy).not.toHaveBeenCalled();
 
-      //     $rootScope.$eval("tpl = 'template.html'");
       //     expect($animate.queue.shift().event).toBe("enter");
 
       //     $animate.flush();
@@ -687,19 +686,11 @@ describe("ngInclude", () => {
     //       $templateCache.set("one", [200, "<div>one</div>", {}]);
     //       $templateCache.set("two", [200, "<div>two</div>", {}]);
 
-    //       $scope.$eval('inc = "one"');
-
     //       let destroyed;
     //       const inner = element.children(0);
     //       inner.on("$destroy", () => {
     //         destroyed = true;
     //       });
-
-    //       $scope.$eval('inc = "two"');
-
-    //       $scope.$eval('inc = "one"');
-
-    //       $scope.$eval('inc = "two"');
 
     //       expect(destroyed).toBe(true);
     //     };

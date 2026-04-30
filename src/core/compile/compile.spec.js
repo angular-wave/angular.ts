@@ -8776,7 +8776,8 @@ describe("$compile", () => {
           log = [];
 
           // Update val to trigger the onChanges
-          $rootScope.$eval("val1 = 42; val2 = 17");
+          $rootScope.val1 = 42;
+          $rootScope.val2 = 17;
           await wait();
           expect(log).toEqual([
             [

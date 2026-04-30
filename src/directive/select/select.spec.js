@@ -951,7 +951,6 @@ describe("select", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // remove empty
-      // scope.$eval("empty = false");
       // await wait();
       // expect(element.value).toBe("x");
       // expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -959,7 +958,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // selection -> unknown
-      // scope.$eval('selected = "unmatched"');
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -967,7 +965,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // add empty
-      // scope.$eval("empty = true");
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -975,7 +972,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> empty
-      // scope.$eval("selected = null");
       // await wait();
       // expect(element.value).toBe("");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -983,7 +979,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // empty -> unknown
-      // scope.$eval('selected = "unmatched"');
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -991,7 +986,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> selection
-      // scope.$eval('selected = "y"');
       // await wait();
       // expect(element.value).toBe("y");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -999,7 +993,6 @@ describe("select", () => {
       // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // // selection -> empty
-      // scope.$eval("selected = null");
       // await wait();
       // expect(element.value).toBe("");
       // expect(selectCtrl.$hasEmptyOption()).toBe(true);

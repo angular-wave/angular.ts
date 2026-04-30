@@ -429,7 +429,6 @@ describe("ngModelOptions", () => {
         //       "/>",
         //   )($rootScope);
 
-        //   $rootScope.$eval("color = 'white'");
         //   browserTrigger(inputElm[2], "click");
         //   expect($rootScope.color).toBe("white");
 
@@ -450,7 +449,6 @@ describe("ngModelOptions", () => {
         //       "/>",
         //   )($rootScope);
 
-        //   $rootScope.$eval("color = 'white'");
         //   browserTrigger((inputElm[2]), "click");
         //   expect($rootScope.color).toBe("blue");
         // });
@@ -779,7 +777,6 @@ describe("ngModelOptions", () => {
       //   )($rootScope);
 
       //   changeGivenInputTo(inputElm, "a");
-      //   $rootScope.$eval("name = 'b'");
       //   browserTrigger(inputElm, "blur");
       //   expect($rootScope.name).toBe("b");
       // });

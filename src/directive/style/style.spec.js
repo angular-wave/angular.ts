@@ -100,7 +100,7 @@ describe("ng-style", () => {
       expect(element.style[postCompStyle]).toBe(postCompVal);
     });
 
-    it("should not mess up stuff after $eval with no model changes", async () => {
+    it("should not mess up stuff after a queued update with no model changes", async () => {
       element.style["padding-top"] = "33px";
       await wait();
       await wait();
@@ -111,7 +111,7 @@ describe("ng-style", () => {
       expect(element.style["padding-top"]).toBe("33px");
     });
 
-    it("should not mess up stuff after $eval with non-colliding model changes", async () => {
+    it("should not mess up stuff after non-colliding model changes", async () => {
       scope.styleObj = { "padding-top": "99px" };
       await wait();
       await wait();

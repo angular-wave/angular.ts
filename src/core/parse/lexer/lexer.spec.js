@@ -213,17 +213,17 @@ describe("lexer", () => {
     });
 
     it("should tokenize negative number", () => {
-      let value = $rootScope.$eval("-0.5");
+      let value = $parse("-0.5")($rootScope);
       expect(value).toEqual(-0.5);
 
-      value = $rootScope.$eval("{a:-0.5}");
+      value = $parse("{a:-0.5}")($rootScope);
       expect(value).toEqual({ a: -0.5 });
     });
 
     it("should tokenize number with exponent", () => {
       let tokens = lex("0.5E-10");
       expect(tokens[0]._value).toEqual(0.5e-10);
-      expect($rootScope.$eval("0.5E-10")).toEqual(0.5e-10);
+      expect($parse("0.5E-10")($rootScope)).toEqual(0.5e-10);
 
       tokens = lex("0.5E+10");
       expect(tokens[0]._value).toEqual(0.5e10);

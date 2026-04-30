@@ -9,6 +9,24 @@ describe("parser", () => {
   let scope;
   let logs = [];
 
+  function evaluateExpression(evalScope, expr, locals) {
+    const result = $parse(expr)(evalScope, locals);
+
+    if (result == null || result === Object.hasOwnProperty) {
+      return result;
+    }
+
+    if (isFunction(result)) {
+      return result();
+    }
+
+    if (Number.isNaN(result)) {
+      return 0;
+    }
+
+    return result;
+  }
+
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
@@ -32,8 +50,9 @@ describe("parser", () => {
       function ($filterProvider) {
         filterProvider = $filterProvider;
       },
-    ]).invoke((_$rootScope_) => {
+    ]).invoke((_$rootScope_, _$parse_) => {
       $rootScope = _$rootScope_;
+      $parse = _$parse_;
     });
   });
 
@@ -45,79 +64,82 @@ describe("parser", () => {
           function ($filterProvider) {
             filterProvider = $filterProvider;
           },
-        ]).invoke((_$rootScope_) => {
+        ]).invoke((_$rootScope_, _$parse_) => {
           scope = _$rootScope_;
+          $parse = _$parse_;
         });
       });
 
       it("should parse expressions", () => {
-        expect(scope.$eval("-1")).toEqual(-1);
-        expect(scope.$eval("1 + 2.5")).toEqual(3.5);
-        expect(scope.$eval("1 + -2.5")).toEqual(-1.5);
-        expect(scope.$eval("1+2*3/4")).toEqual(1 + (2 * 3) / 4);
-        expect(scope.$eval("0-(-1)+1.5")).toEqual(0 - -1 + 1.5);
-        expect(scope.$eval("-0-(-1)+(+2)*-3/-4")).toEqual(
+        expect(evaluateExpression(scope, "-1")).toEqual(-1);
+        expect(evaluateExpression(scope, "1 + 2.5")).toEqual(3.5);
+        expect(evaluateExpression(scope, "1 + -2.5")).toEqual(-1.5);
+        expect(evaluateExpression(scope, "1+2*3/4")).toEqual(1 + (2 * 3) / 4);
+        expect(evaluateExpression(scope, "0-(-1)+1.5")).toEqual(0 - -1 + 1.5);
+        expect(evaluateExpression(scope, "-0-(-1)+(+2)*-3/-4")).toEqual(
           -0 - -1 + (+2 * -3) / -4,
         );
-        expect(scope.$eval("1/2*3")).toEqual((1 / 2) * 3);
+        expect(evaluateExpression(scope, "1/2*3")).toEqual((1 / 2) * 3);
       });
 
       it("should parse unary", () => {
-        expect(scope.$eval("+1")).toEqual(+1);
-        expect(scope.$eval("-1")).toEqual(-1);
-        expect(scope.$eval("+'1'")).toEqual(+"1");
-        expect(scope.$eval("-'1'")).toEqual(-"1");
-        expect(scope.$eval("+undefined")).toEqual(0);
+        expect(evaluateExpression(scope, "+1")).toEqual(+1);
+        expect(evaluateExpression(scope, "-1")).toEqual(-1);
+        expect(evaluateExpression(scope, "+'1'")).toEqual(+"1");
+        expect(evaluateExpression(scope, "-'1'")).toEqual(-"1");
+        expect(evaluateExpression(scope, "+undefined")).toEqual(0);
 
         // Note: don't change toEqual to toBe as toBe collapses 0 & -0.
-        expect(scope.$eval("-undefined")).toEqual(-0);
-        expect(scope.$eval("+null")).toEqual(+null);
-        expect(scope.$eval("-null")).toEqual(-null);
-        expect(scope.$eval("+false")).toEqual(+false);
-        expect(scope.$eval("-false")).toEqual(-false);
-        expect(scope.$eval("+true")).toEqual(+true);
-        expect(scope.$eval("-true")).toEqual(-true);
+        expect(evaluateExpression(scope, "-undefined")).toEqual(-0);
+        expect(evaluateExpression(scope, "+null")).toEqual(+null);
+        expect(evaluateExpression(scope, "-null")).toEqual(-null);
+        expect(evaluateExpression(scope, "+false")).toEqual(+false);
+        expect(evaluateExpression(scope, "-false")).toEqual(-false);
+        expect(evaluateExpression(scope, "+true")).toEqual(+true);
+        expect(evaluateExpression(scope, "-true")).toEqual(-true);
       });
 
       it("should parse comparison", () => {
-        expect(scope.$eval("false")).toBeFalsy();
-        expect(scope.$eval("!true")).toBeFalsy();
-        expect(scope.$eval("1==1")).toBeTruthy();
-        expect(scope.$eval("1==true")).toBeTruthy();
-        expect(scope.$eval("1!=true")).toBeFalsy();
-        expect(scope.$eval("1===1")).toBeTruthy();
-        expect(scope.$eval("1==='1'")).toBeFalsy();
-        expect(scope.$eval("1===true")).toBeFalsy();
-        expect(scope.$eval("'true'===true")).toBeFalsy();
-        expect(scope.$eval("1!==2")).toBeTruthy();
-        expect(scope.$eval("1!=='1'")).toBeTruthy();
-        expect(scope.$eval("1!=2")).toBeTruthy();
-        expect(scope.$eval("1<2")).toBeTruthy();
-        expect(scope.$eval("1<=1")).toBeTruthy();
-        expect(scope.$eval("1>2")).toEqual(1 > 2);
-        expect(scope.$eval("2>=1")).toEqual(2 >= 1);
-        expect(scope.$eval("true==2<3")).toEqual(2 < 3);
-        expect(scope.$eval("true===2<3")).toEqual(2 < 3);
+        expect(evaluateExpression(scope, "false")).toBeFalsy();
+        expect(evaluateExpression(scope, "!true")).toBeFalsy();
+        expect(evaluateExpression(scope, "1==1")).toBeTruthy();
+        expect(evaluateExpression(scope, "1==true")).toBeTruthy();
+        expect(evaluateExpression(scope, "1!=true")).toBeFalsy();
+        expect(evaluateExpression(scope, "1===1")).toBeTruthy();
+        expect(evaluateExpression(scope, "1==='1'")).toBeFalsy();
+        expect(evaluateExpression(scope, "1===true")).toBeFalsy();
+        expect(evaluateExpression(scope, "'true'===true")).toBeFalsy();
+        expect(evaluateExpression(scope, "1!==2")).toBeTruthy();
+        expect(evaluateExpression(scope, "1!=='1'")).toBeTruthy();
+        expect(evaluateExpression(scope, "1!=2")).toBeTruthy();
+        expect(evaluateExpression(scope, "1<2")).toBeTruthy();
+        expect(evaluateExpression(scope, "1<=1")).toBeTruthy();
+        expect(evaluateExpression(scope, "1>2")).toEqual(1 > 2);
+        expect(evaluateExpression(scope, "2>=1")).toEqual(2 >= 1);
+        expect(evaluateExpression(scope, "true==2<3")).toEqual(2 < 3);
+        expect(evaluateExpression(scope, "true===2<3")).toEqual(2 < 3);
 
-        expect(scope.$eval("true===3===3")).toEqual((true === 3) === 3);
-        expect(scope.$eval("3===3===true")).toEqual(true);
-        expect(scope.$eval("3 >= 3 > 2")).toEqual(3 >= 3 > 2);
+        expect(evaluateExpression(scope, "true===3===3")).toEqual(
+          (true === 3) === 3,
+        );
+        expect(evaluateExpression(scope, "3===3===true")).toEqual(true);
+        expect(evaluateExpression(scope, "3 >= 3 > 2")).toEqual(3 >= 3 > 2);
       });
 
       it("should parse logical", () => {
-        expect(scope.$eval("0&&2")).toEqual(0 && 2);
-        expect(scope.$eval("0||2")).toEqual(0 || 2);
-        expect(scope.$eval("0||1&&2")).toEqual(0 || (1 && 2));
-        expect(scope.$eval("true&&a")).toEqual(undefined);
-        expect(scope.$eval("true&&a()")).toEqual(undefined);
-        expect(scope.$eval("true&&a()()")).toEqual(undefined);
-        expect(scope.$eval("true&&a.b")).toEqual(undefined);
-        expect(scope.$eval("true&&a.b.c")).toEqual(undefined);
-        expect(scope.$eval("false||a")).toEqual(undefined);
-        expect(scope.$eval("false||a()")).toEqual(undefined);
-        expect(scope.$eval("false||a()()")).toEqual(undefined);
-        expect(scope.$eval("false||a.b")).toEqual(undefined);
-        expect(scope.$eval("false||a.b.c")).toEqual(undefined);
+        expect(evaluateExpression(scope, "0&&2")).toEqual(0 && 2);
+        expect(evaluateExpression(scope, "0||2")).toEqual(0 || 2);
+        expect(evaluateExpression(scope, "0||1&&2")).toEqual(0 || (1 && 2));
+        expect(evaluateExpression(scope, "true&&a")).toEqual(undefined);
+        expect(evaluateExpression(scope, "true&&a()")).toEqual(undefined);
+        expect(evaluateExpression(scope, "true&&a()()")).toEqual(undefined);
+        expect(evaluateExpression(scope, "true&&a.b")).toEqual(undefined);
+        expect(evaluateExpression(scope, "true&&a.b.c")).toEqual(undefined);
+        expect(evaluateExpression(scope, "false||a")).toEqual(undefined);
+        expect(evaluateExpression(scope, "false||a()")).toEqual(undefined);
+        expect(evaluateExpression(scope, "false||a()()")).toEqual(undefined);
+        expect(evaluateExpression(scope, "false||a.b")).toEqual(undefined);
+        expect(evaluateExpression(scope, "false||a.b.c")).toEqual(undefined);
       });
 
       it("should parse ternary", () => {
@@ -138,72 +160,120 @@ describe("parser", () => {
         });
 
         // Simple.
-        expect(scope.$eval("0?0:2")).toEqual(0 ? 0 : 2);
-        expect(scope.$eval("1?0:2")).toEqual(1 ? 0 : 2);
+        expect(evaluateExpression(scope, "0?0:2")).toEqual(0 ? 0 : 2);
+        expect(evaluateExpression(scope, "1?0:2")).toEqual(1 ? 0 : 2);
 
         // Nested on the left.
-        expect(scope.$eval("0?0?0:0:2")).toEqual(0 ? (0 ? 0 : 0) : 2);
-        expect(scope.$eval("1?0?0:0:2")).toEqual(1 ? (0 ? 0 : 0) : 2);
-        expect(scope.$eval("0?1?0:0:2")).toEqual(0 ? (1 ? 0 : 0) : 2);
-        expect(scope.$eval("0?0?1:0:2")).toEqual(0 ? (0 ? 1 : 0) : 2);
-        expect(scope.$eval("0?0?0:2:3")).toEqual(0 ? (0 ? 0 : 2) : 3);
-        expect(scope.$eval("1?1?0:0:2")).toEqual(1 ? (1 ? 0 : 0) : 2);
-        expect(scope.$eval("1?1?1:0:2")).toEqual(1 ? (1 ? 1 : 0) : 2);
-        expect(scope.$eval("1?1?1:2:3")).toEqual(1 ? (1 ? 1 : 2) : 3);
-        expect(scope.$eval("1?1?1:2:3")).toEqual(1 ? (1 ? 1 : 2) : 3);
+        expect(evaluateExpression(scope, "0?0?0:0:2")).toEqual(
+          0 ? (0 ? 0 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "1?0?0:0:2")).toEqual(
+          1 ? (0 ? 0 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "0?1?0:0:2")).toEqual(
+          0 ? (1 ? 0 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "0?0?1:0:2")).toEqual(
+          0 ? (0 ? 1 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "0?0?0:2:3")).toEqual(
+          0 ? (0 ? 0 : 2) : 3,
+        );
+        expect(evaluateExpression(scope, "1?1?0:0:2")).toEqual(
+          1 ? (1 ? 0 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "1?1?1:0:2")).toEqual(
+          1 ? (1 ? 1 : 0) : 2,
+        );
+        expect(evaluateExpression(scope, "1?1?1:2:3")).toEqual(
+          1 ? (1 ? 1 : 2) : 3,
+        );
+        expect(evaluateExpression(scope, "1?1?1:2:3")).toEqual(
+          1 ? (1 ? 1 : 2) : 3,
+        );
 
         // Nested on the right.
-        expect(scope.$eval("0?0:0?0:2")).toEqual(0 ? 0 : 0 ? 0 : 2);
-        expect(scope.$eval("1?0:0?0:2")).toEqual(1 ? 0 : 0 ? 0 : 2);
-        expect(scope.$eval("0?1:0?0:2")).toEqual(0 ? 1 : 0 ? 0 : 2);
-        expect(scope.$eval("0?0:1?0:2")).toEqual(0 ? 0 : 1 ? 0 : 2);
-        expect(scope.$eval("0?0:0?2:3")).toEqual(0 ? 0 : 0 ? 2 : 3);
-        expect(scope.$eval("1?1:0?0:2")).toEqual(1 ? 1 : 0 ? 0 : 2);
-        expect(scope.$eval("1?1:1?0:2")).toEqual(1 ? 1 : 1 ? 0 : 2);
-        expect(scope.$eval("1?1:1?2:3")).toEqual(1 ? 1 : 1 ? 2 : 3);
-        expect(scope.$eval("1?1:1?2:3")).toEqual(1 ? 1 : 1 ? 2 : 3);
+        expect(evaluateExpression(scope, "0?0:0?0:2")).toEqual(
+          0 ? 0 : 0 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "1?0:0?0:2")).toEqual(
+          1 ? 0 : 0 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "0?1:0?0:2")).toEqual(
+          0 ? 1 : 0 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "0?0:1?0:2")).toEqual(
+          0 ? 0 : 1 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "0?0:0?2:3")).toEqual(
+          0 ? 0 : 0 ? 2 : 3,
+        );
+        expect(evaluateExpression(scope, "1?1:0?0:2")).toEqual(
+          1 ? 1 : 0 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "1?1:1?0:2")).toEqual(
+          1 ? 1 : 1 ? 0 : 2,
+        );
+        expect(evaluateExpression(scope, "1?1:1?2:3")).toEqual(
+          1 ? 1 : 1 ? 2 : 3,
+        );
+        expect(evaluateExpression(scope, "1?1:1?2:3")).toEqual(
+          1 ? 1 : 1 ? 2 : 3,
+        );
 
         // Precedence with respect to logical operators.
-        expect(scope.$eval("0&&1?0:1")).toEqual(0 && 1 ? 0 : 1);
-        expect(scope.$eval("1||0?0:0")).toEqual(1 || 0 ? 0 : 0);
+        expect(evaluateExpression(scope, "0&&1?0:1")).toEqual(0 && 1 ? 0 : 1);
+        expect(evaluateExpression(scope, "1||0?0:0")).toEqual(1 || 0 ? 0 : 0);
 
-        expect(scope.$eval("0?0&&1:2")).toEqual(0 ? 0 && 1 : 2);
-        expect(scope.$eval("0?1&&1:2")).toEqual(0 ? 1 && 1 : 2);
-        expect(scope.$eval("0?0||0:1")).toEqual(0 ? 0 || 0 : 1);
-        expect(scope.$eval("0?0||1:2")).toEqual(0 ? 0 || 1 : 2);
+        expect(evaluateExpression(scope, "0?0&&1:2")).toEqual(0 ? 0 && 1 : 2);
+        expect(evaluateExpression(scope, "0?1&&1:2")).toEqual(0 ? 1 && 1 : 2);
+        expect(evaluateExpression(scope, "0?0||0:1")).toEqual(0 ? 0 || 0 : 1);
+        expect(evaluateExpression(scope, "0?0||1:2")).toEqual(0 ? 0 || 1 : 2);
 
-        expect(scope.$eval("1?0&&1:2")).toEqual(1 ? 0 && 1 : 2);
-        expect(scope.$eval("1?1&&1:2")).toEqual(1 ? 1 && 1 : 2);
-        expect(scope.$eval("1?0||0:1")).toEqual(1 ? 0 || 0 : 1);
-        expect(scope.$eval("1?0||1:2")).toEqual(1 ? 0 || 1 : 2);
+        expect(evaluateExpression(scope, "1?0&&1:2")).toEqual(1 ? 0 && 1 : 2);
+        expect(evaluateExpression(scope, "1?1&&1:2")).toEqual(1 ? 1 && 1 : 2);
+        expect(evaluateExpression(scope, "1?0||0:1")).toEqual(1 ? 0 || 0 : 1);
+        expect(evaluateExpression(scope, "1?0||1:2")).toEqual(1 ? 0 || 1 : 2);
 
-        expect(scope.$eval("0?1:0&&1")).toEqual(0 ? 1 : 0 && 1);
-        expect(scope.$eval("0?2:1&&1")).toEqual(0 ? 2 : 1 && 1);
-        expect(scope.$eval("0?1:0||0")).toEqual(0 ? 1 : 0 || 0);
-        expect(scope.$eval("0?2:0||1")).toEqual(0 ? 2 : 0 || 1);
+        expect(evaluateExpression(scope, "0?1:0&&1")).toEqual(0 ? 1 : 0 && 1);
+        expect(evaluateExpression(scope, "0?2:1&&1")).toEqual(0 ? 2 : 1 && 1);
+        expect(evaluateExpression(scope, "0?1:0||0")).toEqual(0 ? 1 : 0 || 0);
+        expect(evaluateExpression(scope, "0?2:0||1")).toEqual(0 ? 2 : 0 || 1);
 
-        expect(scope.$eval("1?1:0&&1")).toEqual(1 ? 1 : 0 && 1);
-        expect(scope.$eval("1?2:1&&1")).toEqual(1 ? 2 : 1 && 1);
-        expect(scope.$eval("1?1:0||0")).toEqual(1 ? 1 : 0 || 0);
-        expect(scope.$eval("1?2:0||1")).toEqual(1 ? 2 : 0 || 1);
+        expect(evaluateExpression(scope, "1?1:0&&1")).toEqual(1 ? 1 : 0 && 1);
+        expect(evaluateExpression(scope, "1?2:1&&1")).toEqual(1 ? 2 : 1 && 1);
+        expect(evaluateExpression(scope, "1?1:0||0")).toEqual(1 ? 1 : 0 || 0);
+        expect(evaluateExpression(scope, "1?2:0||1")).toEqual(1 ? 2 : 0 || 1);
 
         // Function calls.
         expect(
-          scope.$eval("returnTrue() ? returnString() : returnInt()"),
+          evaluateExpression(
+            scope,
+            "returnTrue() ? returnString() : returnInt()",
+          ),
         ).toEqual(returnTrue() ? returnString() : returnInt());
         expect(
-          scope.$eval("returnFalse() ? returnString() : returnInt()"),
+          evaluateExpression(
+            scope,
+            "returnFalse() ? returnString() : returnInt()",
+          ),
         ).toEqual(returnFalse() ? returnString() : returnInt());
         expect(
-          scope.$eval("returnTrue() ? returnString() : returnInt()"),
+          evaluateExpression(
+            scope,
+            "returnTrue() ? returnString() : returnInt()",
+          ),
         ).toEqual(returnTrue() ? returnString() : returnInt());
         expect(
-          scope.$eval("identity(returnFalse() ? returnString() : returnInt())"),
+          evaluateExpression(
+            scope,
+            "identity(returnFalse() ? returnString() : returnInt())",
+          ),
         ).toEqual(identity(returnFalse() ? returnString() : returnInt()));
       });
 
       it("should parse string", () => {
-        expect(scope.$eval("'a' + 'b c'")).toEqual("ab c");
+        expect(evaluateExpression(scope, "'a' + 'b c'")).toEqual("ab c");
       });
 
       it("should parse filters", () => {
@@ -213,27 +283,29 @@ describe("parser", () => {
         );
 
         expect(() => {
-          scope.$eval("1|nonexistent");
+          evaluateExpression(scope, "1|nonexistent");
         }).toThrowError();
 
         scope.offset = 3;
-        expect(scope.$eval("'abcd'|substring:1:offset")).toEqual("bc");
+        expect(evaluateExpression(scope, "'abcd'|substring:1:offset")).toEqual(
+          "bc",
+        );
       });
 
       it("should access scope", () => {
         scope.a = 123;
         scope.b = { c: 456 };
-        expect(scope.$eval("a", scope)).toEqual(123);
-        expect(scope.$eval("b.c", scope)).toEqual(456);
-        expect(scope.$eval("x.y.z", scope)).not.toBeDefined();
+        expect(evaluateExpression(scope, "a", scope)).toEqual(123);
+        expect(evaluateExpression(scope, "b.c", scope)).toEqual(456);
+        expect(evaluateExpression(scope, "x.y.z", scope)).not.toBeDefined();
       });
 
       it("should handle white-spaces around dots in paths", () => {
         scope.a = { b: 4 };
-        expect(scope.$eval("a . b", scope)).toEqual(4);
-        expect(scope.$eval("a. b", scope)).toEqual(4);
-        expect(scope.$eval("a .b", scope)).toEqual(4);
-        expect(scope.$eval("a    . \nb", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a . b", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a. b", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a .b", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a    . \nb", scope)).toEqual(4);
       });
 
       it("should handle white-spaces around dots in method invocations", () => {
@@ -243,21 +315,23 @@ describe("parser", () => {
           },
           c: 4,
         };
-        expect(scope.$eval("a . b ()", scope)).toEqual(4);
-        expect(scope.$eval("a. b ()", scope)).toEqual(4);
-        expect(scope.$eval("a .b ()", scope)).toEqual(4);
-        expect(scope.$eval("a  \n  . \nb   \n ()", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a . b ()", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a. b ()", scope)).toEqual(4);
+        expect(evaluateExpression(scope, "a .b ()", scope)).toEqual(4);
+        expect(
+          evaluateExpression(scope, "a  \n  . \nb   \n ()", scope),
+        ).toEqual(4);
       });
 
       it("should throw syntax error exception for identifiers ending with a dot", () => {
         scope.a = { b: 4 };
 
         expect(() => {
-          scope.$eval("a.", scope);
+          evaluateExpression(scope, "a.", scope);
         }).toThrowError(/ueoe/);
 
         expect(() => {
-          scope.$eval("a .", scope);
+          evaluateExpression(scope, "a .", scope);
         }).toThrowError(/ueoe/);
       });
 
@@ -275,7 +349,9 @@ describe("parser", () => {
             },
           },
         };
-        expect(scope.$eval("a.b.c.d.e.f.g.h.i.j.k.l.m.n", scope)).toBe("nooo!");
+        expect(
+          evaluateExpression(scope, "a.b.c.d.e.f.g.h.i.j.k.l.m.n", scope),
+        ).toBe("nooo!");
       });
 
       [2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 42, 99].forEach((pathLength) => {
@@ -295,27 +371,27 @@ describe("parser", () => {
           for (i = 2; i <= pathLength; i++) {
             path += `.x${i}`;
           }
-          expect(scope.$eval(path)).toBe(42);
+          expect(evaluateExpression(scope, path)).toBe(42);
           locals[`x${pathLength}`] = "not 42";
-          expect(scope.$eval(path, locals)).toBe(42);
+          expect(evaluateExpression(scope, path, locals)).toBe(42);
         });
       });
 
       it("should be forgiving", () => {
         scope.a = { b: 23 };
-        expect(scope.$eval("b")).toBeUndefined();
-        expect(scope.$eval("a.x")).toBeUndefined();
-        expect(scope.$eval("a.b.c.d")).toBeUndefined();
+        expect(evaluateExpression(scope, "b")).toBeUndefined();
+        expect(evaluateExpression(scope, "a.x")).toBeUndefined();
+        expect(evaluateExpression(scope, "a.b.c.d")).toBeUndefined();
         scope.a = undefined;
-        expect(scope.$eval("a - b")).toBe(0);
-        expect(scope.$eval("a + b")).toBeUndefined();
+        expect(evaluateExpression(scope, "a - b")).toBe(0);
+        expect(evaluateExpression(scope, "a + b")).toBeUndefined();
         scope.a = 0;
-        expect(scope.$eval("a - b")).toBe(0);
-        expect(scope.$eval("a + b")).toBe(0);
+        expect(evaluateExpression(scope, "a - b")).toBe(0);
+        expect(evaluateExpression(scope, "a + b")).toBe(0);
         scope.a = undefined;
         scope.b = 0;
-        expect(scope.$eval("a - b")).toBe(0);
-        expect(scope.$eval("a + b")).toBe(0);
+        expect(evaluateExpression(scope, "a - b")).toBe(0);
+        expect(evaluateExpression(scope, "a + b")).toBe(0);
       });
 
       it("should support property names that collide with native object properties", () => {
@@ -325,8 +401,10 @@ describe("parser", () => {
           return "custom toString";
         };
 
-        expect(scope.$eval("watch", scope)).toBe(1);
-        expect(scope.$eval("toString()", scope)).toBe("custom toString");
+        expect(evaluateExpression(scope, "watch", scope)).toBe(1);
+        expect(evaluateExpression(scope, "toString()", scope)).toBe(
+          "custom toString",
+        );
       });
 
       it("should not break if hasOwnProperty is referenced in an expression", () => {
@@ -334,10 +412,10 @@ describe("parser", () => {
         // By evaluating an expression that calls hasOwnProperty, the getterFnCache
         // will store a property called hasOwnProperty.  This is effectively:
         // getterFnCache['hasOwnProperty'] = null
-        scope.$eval('obj.hasOwnProperty("value")');
+        evaluateExpression(scope, 'obj.hasOwnProperty("value")');
         // If we rely on this property then evaluating any expression will fail
         // because it is not able to find out if obj.value is there in the cache
-        expect(scope.$eval("obj.value")).toBe(1);
+        expect(evaluateExpression(scope, "obj.value")).toBe(1);
       });
 
       it('should not break if the expression is "hasOwnProperty"', () => {
@@ -345,70 +423,70 @@ describe("parser", () => {
         // By evaluating hasOwnProperty, the $parse cache will store a getter for
         // the scope's own hasOwnProperty function, which will mess up future cache look ups.
         // i.e. cache['hasOwnProperty'] = (scope) => scope.hasOwnProperty;
-        scope.$eval("hasOwnProperty");
-        expect(scope.$eval("fooExp")).toBe("barVal");
+        evaluateExpression(scope, "hasOwnProperty");
+        expect(evaluateExpression(scope, "fooExp")).toBe("barVal");
       });
 
       it("should evaluate grouped expressions", () => {
-        expect(scope.$eval("(1+2)*3")).toEqual((1 + 2) * 3);
+        expect(evaluateExpression(scope, "(1+2)*3")).toEqual((1 + 2) * 3);
       });
 
       it("should evaluate assignments", () => {
-        expect(scope.$eval("a=12")).toEqual(12);
+        expect(evaluateExpression(scope, "a=12")).toEqual(12);
         expect(scope.a).toEqual(12);
 
-        expect(scope.$eval("x.y.z=123;")).toEqual(123);
+        expect(evaluateExpression(scope, "x.y.z=123;")).toEqual(123);
         expect(scope.x.y.z).toEqual(123);
 
-        expect(scope.$eval("a=123; b=234")).toEqual(234);
+        expect(evaluateExpression(scope, "a=123; b=234")).toEqual(234);
         expect(scope.a).toEqual(123);
         expect(scope.b).toEqual(234);
       });
 
       it("should throw with invalid left-val in assignments", () => {
         expect(() => {
-          scope.$eval("1 = 1");
+          evaluateExpression(scope, "1 = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("{} = 1");
+          evaluateExpression(scope, "{} = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("[] = 1");
+          evaluateExpression(scope, "[] = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("true = 1");
+          evaluateExpression(scope, "true = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("(a=b) = 1");
+          evaluateExpression(scope, "(a=b) = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("(1<2) = 1");
+          evaluateExpression(scope, "(1<2) = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("(1+2) = 1");
+          evaluateExpression(scope, "(1+2) = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("!v = 1");
+          evaluateExpression(scope, "!v = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("this = 1");
+          evaluateExpression(scope, "this = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("+v = 1");
+          evaluateExpression(scope, "+v = 1");
         }).toThrowError(/lval/);
         expect(() => {
-          scope.$eval("(1?v1:v2) = 1");
+          evaluateExpression(scope, "(1?v1:v2) = 1");
         }).toThrowError(/lval/);
       });
 
       it("should evaluate assignments in ternary operator", () => {
-        scope.$eval("a = 1 ? 2 : 3");
+        evaluateExpression(scope, "a = 1 ? 2 : 3");
         expect(scope.a).toBe(2);
 
-        scope.$eval("0 ? a = 2 : a = 3");
+        evaluateExpression(scope, "0 ? a = 2 : a = 3");
         expect(scope.a).toBe(3);
 
-        scope.$eval("1 ? a = 2 : a = 3");
+        evaluateExpression(scope, "1 ? a = 2 : a = 3");
         expect(scope.a).toBe(2);
       });
 
@@ -416,35 +494,35 @@ describe("parser", () => {
         scope.a = 1;
 
         // postfix returns old value
-        expect(scope.$eval("a++")).toBe(1);
+        expect(evaluateExpression(scope, "a++")).toBe(1);
         expect(scope.a).toBe(2);
 
         // prefix returns new value
-        expect(scope.$eval("++a")).toBe(3);
+        expect(evaluateExpression(scope, "++a")).toBe(3);
         expect(scope.a).toBe(3);
 
         // decrement forms
-        expect(scope.$eval("a--")).toBe(3);
+        expect(evaluateExpression(scope, "a--")).toBe(3);
         expect(scope.a).toBe(2);
 
-        expect(scope.$eval("--a")).toBe(1);
+        expect(evaluateExpression(scope, "--a")).toBe(1);
         expect(scope.a).toBe(1);
       });
 
       it("should evaluate update expressions on member access", () => {
         scope.obj = { n: 5 };
 
-        expect(scope.$eval("obj.n++")).toBe(5);
+        expect(evaluateExpression(scope, "obj.n++")).toBe(5);
         expect(scope.obj.n).toBe(6);
 
-        expect(scope.$eval("++obj.n")).toBe(7);
+        expect(evaluateExpression(scope, "++obj.n")).toBe(7);
         expect(scope.obj.n).toBe(7);
 
         scope.key = "n";
-        expect(scope.$eval("obj[key]--")).toBe(7);
+        expect(evaluateExpression(scope, "obj[key]--")).toBe(7);
         expect(scope.obj.n).toBe(6);
 
-        expect(scope.$eval("--obj[key]")).toBe(5);
+        expect(evaluateExpression(scope, "--obj[key]")).toBe(5);
         expect(scope.obj.n).toBe(5);
       });
 
@@ -452,14 +530,14 @@ describe("parser", () => {
         scope.const = function (a, b) {
           return 123;
         };
-        expect(scope.$eval("const()")).toEqual(123);
+        expect(evaluateExpression(scope, "const()")).toEqual(123);
       });
 
       it("should evaluate function call with arguments", () => {
         scope.add = function (a, b) {
           return a + b;
         };
-        expect(scope.$eval("add(1,2)")).toEqual(3);
+        expect(evaluateExpression(scope, "add(1,2)")).toEqual(3);
       });
 
       it("should allow filter chains as arguments", () => {
@@ -469,7 +547,10 @@ describe("parser", () => {
         scope.begin = 1;
         scope.limit = 2;
         expect(
-          scope.$eval("concat('abcd'|limitTo:limit:begin,'abcd'|limitTo:2:1)"),
+          evaluateExpression(
+            scope,
+            "concat('abcd'|limitTo:limit:begin,'abcd'|limitTo:2:1)",
+          ),
         ).toEqual("bcbc");
       });
 
@@ -479,60 +560,71 @@ describe("parser", () => {
             return 33;
           };
         };
-        expect(scope.$eval("getter()()")).toBe(33);
+        expect(evaluateExpression(scope, "getter()()")).toBe(33);
       });
 
       it("should evaluate multiplication and division", () => {
         scope.taxRate = 8;
         scope.subTotal = 100;
-        expect(scope.$eval("taxRate / 100 * subTotal")).toEqual(8);
-        expect(scope.$eval("subTotal * taxRate / 100")).toEqual(8);
+        expect(evaluateExpression(scope, "taxRate / 100 * subTotal")).toEqual(
+          8,
+        );
+        expect(evaluateExpression(scope, "subTotal * taxRate / 100")).toEqual(
+          8,
+        );
       });
 
       it("should evaluate array", () => {
-        expect(scope.$eval("[]").length).toEqual(0);
-        expect(scope.$eval("[1, 2]").length).toEqual(2);
-        expect(scope.$eval("[1, 2]")[0]).toEqual(1);
-        expect(scope.$eval("[1, 2]")[1]).toEqual(2);
-        expect(scope.$eval("[1, 2,]")[1]).toEqual(2);
-        expect(scope.$eval("[1, 2,]").length).toEqual(2);
+        expect(evaluateExpression(scope, "[]").length).toEqual(0);
+        expect(evaluateExpression(scope, "[1, 2]").length).toEqual(2);
+        expect(evaluateExpression(scope, "[1, 2]")[0]).toEqual(1);
+        expect(evaluateExpression(scope, "[1, 2]")[1]).toEqual(2);
+        expect(evaluateExpression(scope, "[1, 2,]")[1]).toEqual(2);
+        expect(evaluateExpression(scope, "[1, 2,]").length).toEqual(2);
       });
 
       it("should evaluate array access", () => {
-        expect(scope.$eval("[1][0]")).toEqual(1);
-        expect(scope.$eval("[[1]][0][0]")).toEqual(1);
-        expect(scope.$eval("[].length")).toEqual(0);
-        expect(scope.$eval("[1, 2].length")).toEqual(2);
+        expect(evaluateExpression(scope, "[1][0]")).toEqual(1);
+        expect(evaluateExpression(scope, "[[1]][0][0]")).toEqual(1);
+        expect(evaluateExpression(scope, "[].length")).toEqual(0);
+        expect(evaluateExpression(scope, "[1, 2].length")).toEqual(2);
       });
 
       it("should evaluate object", () => {
-        expect(scope.$eval("{}")).toEqual({});
-        expect(scope.$eval("{a:'b'}")).toEqual({ a: "b" });
-        expect(scope.$eval("{'a':'b'}")).toEqual({ a: "b" });
-        expect(scope.$eval("{\"a\":'b'}")).toEqual({ a: "b" });
-        expect(scope.$eval("{a:'b',}")).toEqual({ a: "b" });
-        expect(scope.$eval("{'a':'b',}")).toEqual({ a: "b" });
-        expect(scope.$eval("{\"a\":'b',}")).toEqual({ a: "b" });
-        expect(scope.$eval("{'0':1}")).toEqual({ 0: 1 });
-        expect(scope.$eval("{0:1}")).toEqual({ 0: 1 });
-        expect(scope.$eval("{1:1}")).toEqual({ 1: 1 });
-        expect(scope.$eval("{null:1}")).toEqual({ null: 1 });
-        expect(scope.$eval("{'null':1}")).toEqual({ null: 1 });
-        expect(scope.$eval("{false:1}")).toEqual({ false: 1 });
-        expect(scope.$eval("{'false':1}")).toEqual({ false: 1 });
-        expect(scope.$eval("{'':1,}")).toEqual({ "": 1 });
+        expect(evaluateExpression(scope, "{}")).toEqual({});
+        expect(evaluateExpression(scope, "{a:'b'}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{'a':'b'}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{\"a\":'b'}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{a:'b',}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{'a':'b',}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{\"a\":'b',}")).toEqual({ a: "b" });
+        expect(evaluateExpression(scope, "{'0':1}")).toEqual({ 0: 1 });
+        expect(evaluateExpression(scope, "{0:1}")).toEqual({ 0: 1 });
+        expect(evaluateExpression(scope, "{1:1}")).toEqual({ 1: 1 });
+        expect(evaluateExpression(scope, "{null:1}")).toEqual({ null: 1 });
+        expect(evaluateExpression(scope, "{'null':1}")).toEqual({ null: 1 });
+        expect(evaluateExpression(scope, "{false:1}")).toEqual({ false: 1 });
+        expect(evaluateExpression(scope, "{'false':1}")).toEqual({ false: 1 });
+        expect(evaluateExpression(scope, "{'':1,}")).toEqual({ "": 1 });
 
         // ES6 object initializers.
-        expect(scope.$eval("{x, y}", { x: "foo", y: "bar" })).toEqual({
+        expect(
+          evaluateExpression(scope, "{x, y}", { x: "foo", y: "bar" }),
+        ).toEqual({
           x: "foo",
           y: "bar",
         });
-        expect(scope.$eval("{[x]: x}", { x: "foo" })).toEqual({ foo: "foo" });
-        expect(scope.$eval('{[x + "z"]: x}', { x: "foo" })).toEqual({
+        expect(evaluateExpression(scope, "{[x]: x}", { x: "foo" })).toEqual({
+          foo: "foo",
+        });
+        expect(
+          evaluateExpression(scope, '{[x + "z"]: x}', { x: "foo" }),
+        ).toEqual({
           fooz: "foo",
         });
         expect(
-          scope.$eval(
+          evaluateExpression(
+            scope,
             "{x, 1: x, [x = x + 1]: x, 3: x + 1, [x = x + 2]: x, 5: x + 1}",
             { x: 1 },
           ),
@@ -541,31 +633,36 @@ describe("parser", () => {
 
       it("should throw syntax error exception for non constant/identifier JSON keys", () => {
         expect(() => {
-          scope.$eval("{[:0}");
+          evaluateExpression(scope, "{[:0}");
         }).toThrowError(/syntax/);
         expect(() => {
-          scope.$eval("{{:0}");
+          evaluateExpression(scope, "{{:0}");
         }).toThrowError(/syntax/);
         expect(() => {
-          scope.$eval("{?:0}");
+          evaluateExpression(scope, "{?:0}");
         }).toThrowError(/syntax/);
         expect(() => {
-          scope.$eval("{):0}");
+          evaluateExpression(scope, "{):0}");
         }).toThrowError(/syntax/);
       });
 
       it("should evaluate object access", () => {
-        expect(scope.$eval("{false:'WC', true:'CC'}[false]")).toEqual("WC");
+        expect(
+          evaluateExpression(scope, "{false:'WC', true:'CC'}[false]"),
+        ).toEqual("WC");
       });
 
       it("should evaluate JSON", () => {
-        expect(scope.$eval("[{}]")).toEqual([{}]);
-        expect(scope.$eval("[{a:[]}, {b:1}]")).toEqual([{ a: [] }, { b: 1 }]);
+        expect(evaluateExpression(scope, "[{}]")).toEqual([{}]);
+        expect(evaluateExpression(scope, "[{a:[]}, {b:1}]")).toEqual([
+          { a: [] },
+          { b: 1 },
+        ]);
       });
 
       it("should evaluate multiple statements", () => {
-        expect(scope.$eval("a=1;b=3;a+b")).toEqual(4);
-        expect(scope.$eval(";;1;;")).toEqual(1);
+        expect(evaluateExpression(scope, "a=1;b=3;a+b")).toEqual(4);
+        expect(evaluateExpression(scope, ";;1;;")).toEqual(1);
       });
 
       it("should evaluate object methods in correct context (this)", () => {
@@ -577,8 +674,8 @@ describe("parser", () => {
         };
 
         scope.obj = new C();
-        expect(scope.$eval("obj.getA()")).toEqual(123);
-        expect(scope.$eval("obj['getA']()")).toEqual(123);
+        expect(evaluateExpression(scope, "obj.getA()")).toEqual(123);
+        expect(evaluateExpression(scope, "obj['getA']()")).toEqual(123);
       });
 
       it("should evaluate methods in correct context (this) in argument", () => {
@@ -593,85 +690,91 @@ describe("parser", () => {
         };
 
         scope.obj = new C();
-        expect(scope.$eval("obj.sum(obj.getA())")).toEqual(246);
-        expect(scope.$eval("obj['sum'](obj.getA())")).toEqual(246);
+        expect(evaluateExpression(scope, "obj.sum(obj.getA())")).toEqual(246);
+        expect(evaluateExpression(scope, "obj['sum'](obj.getA())")).toEqual(
+          246,
+        );
       });
 
       it("should evaluate objects on scope context", () => {
         scope.a = "abc";
-        expect(scope.$eval("{a:a}").a).toEqual("abc");
+        expect(evaluateExpression(scope, "{a:a}").a).toEqual("abc");
       });
 
       it("should evaluate field access on function call result", () => {
         scope.a = function () {
           return { name: "misko" };
         };
-        expect(scope.$eval("a().name")).toEqual("misko");
+        expect(evaluateExpression(scope, "a().name")).toEqual("misko");
       });
 
       it("should evaluate field access after array access", () => {
         scope.items = [{}, { name: "misko" }];
-        expect(scope.$eval("items[1].name")).toEqual("misko");
+        expect(evaluateExpression(scope, "items[1].name")).toEqual("misko");
       });
 
       it("should evaluate array assignment", () => {
         scope.items = [];
 
-        expect(scope.$eval('items[1] = "abc"')).toEqual("abc");
-        expect(scope.$eval("items[1]")).toEqual("abc");
+        expect(evaluateExpression(scope, 'items[1] = "abc"')).toEqual("abc");
+        expect(evaluateExpression(scope, "items[1]")).toEqual("abc");
       });
 
       it("should evaluate grouped filters", () => {
         scope.name = "MISKO";
-        expect(scope.$eval("n = (name|limitTo:2|limitTo:1)")).toEqual("M");
-        expect(scope.$eval("n")).toEqual("M");
+        expect(
+          evaluateExpression(scope, "n = (name|limitTo:2|limitTo:1)"),
+        ).toEqual("M");
+        expect(evaluateExpression(scope, "n")).toEqual("M");
       });
 
       it("should evaluate remainder", () => {
-        expect(scope.$eval("1%2")).toEqual(1);
+        expect(evaluateExpression(scope, "1%2")).toEqual(1);
       });
 
       it("should evaluate sum with undefined", () => {
-        expect(scope.$eval("1+undefined")).toEqual(1);
-        expect(scope.$eval("undefined+1")).toEqual(1);
+        expect(evaluateExpression(scope, "1+undefined")).toEqual(1);
+        expect(evaluateExpression(scope, "undefined+1")).toEqual(1);
       });
 
       it("should throw exception on non-closed bracket", () => {
         expect(() => {
-          scope.$eval("[].count(");
+          evaluateExpression(scope, "[].count(");
         }).toThrowError(/ueoe/);
       });
 
       it("should evaluate double negation", () => {
-        expect(scope.$eval("true")).toBeTruthy();
-        expect(scope.$eval("!true")).toBeFalsy();
-        expect(scope.$eval("!!true")).toBeTruthy();
-        expect(scope.$eval('{true:"a", false:"b"}[!!true]')).toEqual("a");
+        expect(evaluateExpression(scope, "true")).toBeTruthy();
+        expect(evaluateExpression(scope, "!true")).toBeFalsy();
+        expect(evaluateExpression(scope, "!!true")).toBeTruthy();
+        expect(
+          evaluateExpression(scope, '{true:"a", false:"b"}[!!true]'),
+        ).toEqual("a");
       });
 
       it("should evaluate negation", () => {
-        expect(scope.$eval("!false || true")).toEqual(true);
-        expect(scope.$eval("!11 == 10")).toEqual(!11 == 10);
-        expect(scope.$eval("12/6/2")).toEqual(12 / 6 / 2);
+        expect(evaluateExpression(scope, "!false || true")).toEqual(true);
+        expect(evaluateExpression(scope, "!11 == 10")).toEqual(!11 == 10);
+        expect(evaluateExpression(scope, "12/6/2")).toEqual(12 / 6 / 2);
       });
 
       it("should evaluate exclamation mark", () => {
-        expect(scope.$eval('suffix = "!"')).toEqual("!");
+        expect(evaluateExpression(scope, 'suffix = "!"')).toEqual("!");
       });
 
       it("should evaluate minus", () => {
-        expect(scope.$eval("{a:'-'}")).toEqual({ a: "-" });
+        expect(evaluateExpression(scope, "{a:'-'}")).toEqual({ a: "-" });
       });
 
       it("should evaluate undefined", () => {
-        expect(scope.$eval("undefined")).not.toBeDefined();
-        expect(scope.$eval("a=undefined")).not.toBeDefined();
+        expect(evaluateExpression(scope, "undefined")).not.toBeDefined();
+        expect(evaluateExpression(scope, "a=undefined")).not.toBeDefined();
         expect(scope.a).not.toBeDefined();
       });
 
       it("should allow assignment after array dereference", () => {
         scope.obj = [{}];
-        scope.$eval("obj[0].name=1");
+        evaluateExpression(scope, "obj[0].name=1");
         expect(scope.obj.name).toBeUndefined();
         expect(scope.obj[0].name).toEqual(1);
       });
@@ -680,16 +783,16 @@ describe("parser", () => {
         scope.run = function () {
           throw new Error("IT SHOULD NOT HAVE RUN");
         };
-        expect(scope.$eval("false && run()")).toBe(false);
-        expect(scope.$eval("false && true && run()")).toBe(false);
+        expect(evaluateExpression(scope, "false && run()")).toBe(false);
+        expect(evaluateExpression(scope, "false && true && run()")).toBe(false);
       });
 
       it("should short-circuit OR operator", () => {
         scope.run = function () {
           throw new Error("IT SHOULD NOT HAVE RUN");
         };
-        expect(scope.$eval("true || run()")).toBe(true);
-        expect(scope.$eval("true || false || run()")).toBe(true);
+        expect(evaluateExpression(scope, "true || run()")).toBe(true);
+        expect(evaluateExpression(scope, "true || false || run()")).toBe(true);
       });
 
       it("should throw TypeError on using a 'broken' object as a key to access a property", () => {
@@ -705,7 +808,7 @@ describe("parser", () => {
         ].forEach((brokenObject) => {
           scope.brokenObject = brokenObject;
           expect(() => {
-            scope.$eval("object[brokenObject]");
+            evaluateExpression(scope, "object[brokenObject]");
           }).toThrow();
         });
       });
@@ -715,16 +818,19 @@ describe("parser", () => {
         scope.zero = 0;
         scope.bool = false;
 
-        expect(scope.$eval("empty.substring(0)")).toBe("");
-        expect(scope.$eval("zero.toString()")).toBe("0");
-        expect(scope.$eval("bool.toString()")).toBe("false");
+        expect(evaluateExpression(scope, "empty.substring(0)")).toBe("");
+        expect(evaluateExpression(scope, "zero.toString()")).toBe("0");
+        expect(evaluateExpression(scope, "bool.toString()")).toBe("false");
       });
 
       it("should evaluate expressions with line terminators", () => {
         scope.a = "a";
         scope.b = { c: "bc" };
         expect(
-          scope.$eval('a + \n b.c + \r "\td" + \t \r\n\r "\r\n\n"'),
+          evaluateExpression(
+            scope,
+            'a + \n b.c + \r "\td" + \t \r\n\r "\r\n\n"',
+          ),
         ).toEqual("abc\td\r\n\n");
       });
 
@@ -773,7 +879,7 @@ describe("parser", () => {
             },
           };
         };
-        expect(scope.$eval("fn().anotherFn()")).toBe(true);
+        expect(evaluateExpression(scope, "fn().anotherFn()")).toBe(true);
       });
 
       it("should call the function once when it is part of the context", () => {
@@ -786,7 +892,7 @@ describe("parser", () => {
             },
           };
         };
-        expect(scope.$eval("fn().anotherFn()")).toBe("lucas");
+        expect(evaluateExpression(scope, "fn().anotherFn()")).toBe("lucas");
         expect(count).toBe(1);
       });
 
@@ -798,7 +904,7 @@ describe("parser", () => {
             return "lucas";
           };
         };
-        expect(scope.$eval("fn()()")).toBe("lucas");
+        expect(evaluateExpression(scope, "fn()()")).toBe("lucas");
         expect(count).toBe(1);
       });
 
@@ -809,7 +915,7 @@ describe("parser", () => {
           count++;
           return element;
         };
-        expect(scope.$eval('fn().name = "lucas"')).toBe("lucas");
+        expect(evaluateExpression(scope, 'fn().name = "lucas"')).toBe("lucas");
         expect(element.name).toBe("lucas");
         expect(count).toBe(1);
       });
@@ -821,7 +927,7 @@ describe("parser", () => {
           count++;
           return element;
         };
-        expect(scope.$eval('fn()[0] = "lucas"')).toBe("lucas");
+        expect(evaluateExpression(scope, 'fn()[0] = "lucas"')).toBe("lucas");
         expect(element[0]).toBe("lucas");
         expect(count).toBe(1);
       });
@@ -839,7 +945,7 @@ describe("parser", () => {
           count++;
           return element;
         };
-        expect(scope.$eval("fn()[0].anotherFn()")).toBe("lucas");
+        expect(evaluateExpression(scope, "fn()[0].anotherFn()")).toBe("lucas");
         expect(count).toBe(1);
       });
 
@@ -856,7 +962,9 @@ describe("parser", () => {
           count++;
           return element;
         };
-        expect(scope.$eval("fn().name.anotherFn()")).toBe("lucas");
+        expect(evaluateExpression(scope, "fn().name.anotherFn()")).toBe(
+          "lucas",
+        );
         expect(count).toBe(1);
       });
 
@@ -867,7 +975,9 @@ describe("parser", () => {
           count++;
           return 0;
         };
-        expect(scope.$eval('element[fn()].name = "lucas"')).toBe("lucas");
+        expect(evaluateExpression(scope, 'element[fn()].name = "lucas"')).toBe(
+          "lucas",
+        );
         expect(scope.element.$target[0].name).toBe("lucas");
         expect(count).toBe(1);
       });
@@ -1159,11 +1269,11 @@ describe("parser", () => {
         scope.$watch("[(a | foo)]", () => {
           /* empty */
         });
-        scope.$eval("a = {b: 1}");
+        evaluateExpression(scope, "a = {b: 1}");
         await wait();
         // Would be great if filter-output was checked for changes and this didn't throw...
         expect(async () => {
-          scope.$eval("a = {b: 1}");
+          evaluateExpression(scope, "a = {b: 1}");
           await wait();
         }).not.toThrow();
       });
@@ -1173,11 +1283,11 @@ describe("parser", () => {
           /* empty */
         });
 
-        scope.$eval("a = 1");
+        evaluateExpression(scope, "a = 1");
 
         // Would be great if filter-output was checked for changes and this didn't throw...
         expect(async () => {
-          scope.$eval("a = {}");
+          evaluateExpression(scope, "a = {}");
           await wait();
         }).not.toThrow();
       });
@@ -1401,12 +1511,12 @@ describe("parser", () => {
         watcherCalls++;
       });
 
-      scope.$eval("a = 1");
+      evaluateExpression(scope, "a = 1");
       await wait();
       expect(filterCalls).toBe(2);
       expect(watcherCalls).toBe(2);
 
-      scope.$eval("a = 2");
+      evaluateExpression(scope, "a = 2");
       await wait();
       expect(filterCalls).toBe(3);
       expect(watcherCalls).toBe(3);
@@ -1468,22 +1578,22 @@ describe("parser", () => {
       await wait();
       expect(callCount).toBe(1);
 
-      scope.$eval("val = 1");
+      evaluateExpression(scope, "val = 1");
       await wait();
       expect(callCount).toBe(2);
       expect(lastVal).toEqual({ val: 1 });
 
-      scope.$eval("val = []");
+      evaluateExpression(scope, "val = []");
       await wait();
       expect(callCount).toBe(3);
       expect(lastVal).toEqual({ val: [] });
 
-      scope.$eval("val = []");
+      evaluateExpression(scope, "val = []");
       await wait();
       expect(callCount).toBe(4);
       expect(lastVal).toEqual({ val: [] });
 
-      scope.$eval("val = {}");
+      evaluateExpression(scope, "val = {}");
       await wait();
       expect(callCount).toBe(5);
       expect(lastVal).toEqual({ val: {} });
@@ -1498,21 +1608,21 @@ describe("parser", () => {
       };
 
       scope.$watch("{val: val}", listener);
-      scope.$eval("val = 1");
+      evaluateExpression(scope, "val = 1");
       await wait();
       expect(callCount).toBe(2);
       expect(lastVal).toEqual({ val: 1 });
 
-      scope.$eval("val = [2]");
+      evaluateExpression(scope, "val = [2]");
       await wait();
       expect(callCount).toBe(3);
       expect(lastVal).toEqual({ val: [2] });
 
-      scope.$eval("val.push(3)");
+      evaluateExpression(scope, "val.push(3)");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$eval("val.length = 0");
+      evaluateExpression(scope, "val.length = 0");
       await wait();
       expect(callCount).toBe(3);
     });
@@ -1524,19 +1634,19 @@ describe("parser", () => {
       };
 
       scope.$watch("[{val: [val]}]", listener);
-      scope.$eval("val = 1");
+      evaluateExpression(scope, "val = 1");
       await wait();
       expect(callCount).toBe(2);
 
-      scope.$eval("val = [2]");
+      evaluateExpression(scope, "val = [2]");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$eval("val.push(3)");
+      evaluateExpression(scope, "val.push(3)");
       await wait();
       expect(callCount).toBe(3);
 
-      scope.$eval("val.length = 0");
+      evaluateExpression(scope, "val.length = 0");
       await wait();
       expect(callCount).toBe(3);
     });
@@ -1670,7 +1780,7 @@ describe("parser", () => {
       await wait();
 
       expect(lastValue).toEqual({ 1: true });
-      scope.$eval("a.b = 2");
+      evaluateExpression(scope, "a.b = 2");
       await wait();
       expect(lastValue).toEqual({ 2: true });
     });
@@ -1886,75 +1996,79 @@ describe("parser", () => {
       // simpleGetterFn1
       it("should return null for `a` where `a` is null", () => {
         $rootScope.a = null;
-        expect($rootScope.$eval("a")).toBe(null);
+        expect(evaluateExpression($rootScope, "a")).toBe(null);
       });
 
       it("should return undefined for `a` where `a` is undefined", () => {
-        expect($rootScope.$eval("a")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "a")).toBeUndefined();
       });
 
       // simpleGetterFn2
       it("should return undefined for properties of `null` constant", () => {
-        expect($rootScope.$eval("null.a")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "null.a")).toBeUndefined();
       });
 
       it("should return undefined for properties of `null` values", () => {
         $rootScope.a = null;
-        expect($rootScope.$eval("a.b")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "a.b")).toBeUndefined();
       });
 
       it("should return null for `a.b` where `b` is null", () => {
         $rootScope.a = { b: null };
-        expect($rootScope.$eval("a.b")).toBe(null);
+        expect(evaluateExpression($rootScope, "a.b")).toBe(null);
       });
 
       // cspSafeGetter && pathKeys.length < 6 || pathKeys.length > 2
       it("should return null for `a.b.c.d.e` where `e` is null", () => {
         $rootScope.a = { b: { c: { d: { e: null } } } };
-        expect($rootScope.$eval("a.b.c.d.e")).toBe(null);
+        expect(evaluateExpression($rootScope, "a.b.c.d.e")).toBe(null);
       });
 
       it("should return undefined for `a.b.c.d.e` where `d` is null", () => {
         $rootScope.a = { b: { c: { d: null } } };
-        expect($rootScope.$eval("a.b.c.d.e")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "a.b.c.d.e")).toBeUndefined();
       });
 
       // cspSafeGetter || pathKeys.length > 6
       it("should return null for `a.b.c.d.e.f.g` where `g` is null", () => {
         $rootScope.a = { b: { c: { d: { e: { f: { g: null } } } } } };
-        expect($rootScope.$eval("a.b.c.d.e.f.g")).toBe(null);
+        expect(evaluateExpression($rootScope, "a.b.c.d.e.f.g")).toBe(null);
       });
 
       it("should return undefined for `a.b.c.d.e.f.g` where `f` is null", () => {
         $rootScope.a = { b: { c: { d: { e: { f: null } } } } };
-        expect($rootScope.$eval("a.b.c.d.e.f.g")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "a.b.c.d.e.f.g")).toBeUndefined();
       });
 
       it("should return undefined if the return value of a function invocation is undefined", () => {
         $rootScope.fn = function () {};
-        expect($rootScope.$eval("fn()")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "fn()")).toBeUndefined();
       });
 
       it("should ignore undefined values when doing addition/concatenation", () => {
         $rootScope.fn = function () {};
-        expect($rootScope.$eval('foo + "bar" + fn()')).toBe("bar");
+        expect(evaluateExpression($rootScope, 'foo + "bar" + fn()')).toBe(
+          "bar",
+        );
       });
 
       it("should treat properties named null/undefined as normal properties", () => {
         expect(
-          $rootScope.$eval("a.null.undefined.b", {
+          evaluateExpression($rootScope, "a.null.undefined.b", {
             a: { null: { undefined: { b: 1 } } },
           }),
         ).toBe(1);
       });
 
       it("should not allow overriding null/undefined keywords", () => {
-        expect($rootScope.$eval("null.a", { null: { a: 42 } })).toBeUndefined();
+        expect(
+          evaluateExpression($rootScope, "null.a", { null: { a: 42 } }),
+        ).toBeUndefined();
       });
 
       it("should allow accessing null/undefined properties on `this`", () => {
         $rootScope.null = { a: 42 };
-        expect($rootScope.$eval("this.null.a")).toBe(42);
+        expect(evaluateExpression($rootScope, "this.null.a")).toBe(42);
       });
 
       it("should allow accessing $locals", () => {
@@ -1962,22 +2076,26 @@ describe("parser", () => {
         $rootScope.bar = "bar";
         $rootScope.$locals = "foo";
         const locals = { foo: 42 };
-        expect($rootScope.$eval("$locals")).toBeUndefined();
-        expect($rootScope.$eval("$locals.foo")).toBeUndefined();
-        expect($rootScope.$eval("this.$locals")).toBe("foo");
+        expect(evaluateExpression($rootScope, "$locals")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "$locals.foo")).toBeUndefined();
+        expect(evaluateExpression($rootScope, "this.$locals")).toBe("foo");
         expect(() => {
-          $rootScope.$eval("$locals = {}");
+          evaluateExpression($rootScope, "$locals = {}");
         }).toThrow();
         expect(() => {
-          $rootScope.$eval("$locals.bar = 23");
+          evaluateExpression($rootScope, "$locals.bar = 23");
         }).toThrow();
-        expect($rootScope.$eval("$locals", locals)).toBe(locals);
-        expect($rootScope.$eval("$locals.foo", locals)).toBe(42);
-        expect($rootScope.$eval("this.$locals", locals)).toBe("foo");
+        expect(evaluateExpression($rootScope, "$locals", locals)).toBe(locals);
+        expect(evaluateExpression($rootScope, "$locals.foo", locals)).toBe(42);
+        expect(evaluateExpression($rootScope, "this.$locals", locals)).toBe(
+          "foo",
+        );
         expect(() => {
-          $rootScope.$eval("$locals = {}", locals);
+          evaluateExpression($rootScope, "$locals = {}", locals);
         }).toThrow();
-        expect($rootScope.$eval("$locals.bar = 23", locals)).toEqual(23);
+        expect(
+          evaluateExpression($rootScope, "$locals.bar = 23", locals),
+        ).toEqual(23);
         expect(locals.bar).toBe(23);
       });
     });
