@@ -10,18 +10,12 @@ import {
   hasOwn,
   isNullOrUndefined,
   isUndefined,
-  getNodeName,
   keys,
-  minErr,
   nullObject,
   snakeCase,
-  trim,
-  isString,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
-
-const $compileMinErr = minErr("$compile");
 
 const SIMPLE_ATTR_NAME = /^\w/;
 
@@ -75,8 +69,6 @@ export class Attributes {
   _getAnimate: LazyAnimate;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
-  /** @internal */
-  _sce: ng.SceService;
   $attr: Record<string, string>;
   /** @internal */
   _nodeRef: NodeRef | undefined;
@@ -87,13 +79,11 @@ export class Attributes {
   constructor(
     $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
-    $sce: ng.SceService,
     nodeRef?: NodeRef,
     attributesToCopy?: Record<string, any>,
   ) {
     this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
-    this._sce = $sce;
     this.$attr = {};
 
     if (attributesToCopy) {
@@ -223,37 +213,22 @@ export class Attributes {
       }
     }
 
-    const elementNode = this._nodeRef?.node as Element | undefined;
-
-    const nodeName = elementNode && getNodeName(elementNode);
-
-    let maybeSanitizedValue: string | boolean | null | unknown;
-
-    if (nodeName === "img" && key === "srcset") {
-      this[key] = maybeSanitizedValue = this._sanitizeSrcset(
-        value,
-        "$set('srcset', value)",
-      );
-    } else {
-      maybeSanitizedValue = value;
-    }
-
     if (writeAttr !== false) {
       if (!attrName) return;
       const elem = this._element() as Element;
 
-      if (isNullOrUndefined(maybeSanitizedValue)) {
+      if (isNullOrUndefined(value)) {
         elem.removeAttribute(attrName);
       } else if (SIMPLE_ATTR_NAME.test(attrName)) {
-        if (booleanKey && maybeSanitizedValue === false) {
+        if (booleanKey && value === false) {
           elem.removeAttribute(attrName);
         } else if (booleanKey) {
-          elem.toggleAttribute(attrName, maybeSanitizedValue as boolean);
+          elem.toggleAttribute(attrName, value as boolean);
         } else {
-          elem.setAttribute(attrName, maybeSanitizedValue as string);
+          elem.setAttribute(attrName, value as string);
         }
       } else {
-        this._setSpecialAttr(elem, attrName, maybeSanitizedValue as string);
+        this._setSpecialAttr(elem, attrName, value as string);
       }
     }
 
@@ -264,7 +239,7 @@ export class Attributes {
 
       for (let i = 0, l = observerListeners.length; i < l; i++) {
         try {
-          observerListeners[i](maybeSanitizedValue);
+          observerListeners[i](value);
         } catch (err) {
           this._exceptionHandler(err);
         }
@@ -302,54 +277,6 @@ export class Attributes {
     attributes.removeNamedItem(attribute.name);
     attribute.value = value ?? "";
     element.attributes.setNamedItem(attribute);
-  }
-
-  /** @internal */
-  _sanitizeSrcset(value: unknown, invokeType: string): unknown {
-    let i: number;
-
-    if (!value) {
-      return value;
-    }
-
-    if (!isString(value)) {
-      throw $compileMinErr(
-        "srcset",
-        'Can\'t pass trusted values to `{0}`: "{1}"',
-        invokeType,
-        (value as Object).toString(),
-      );
-    }
-
-    let result = "";
-
-    const trimmedSrcset = trim(value);
-
-    const srcPattern =
-      /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
-
-    const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
-
-    const rawUris = trimmedSrcset.split(pattern);
-
-    const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
-
-    for (i = 0; i < nbrUrisWith2parts; i++) {
-      const innerIdx = i * 2;
-
-      result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
-      result += ` ${trim(rawUris[innerIdx + 1])}`;
-    }
-
-    const lastTuple = trim(rawUris[i * 2]).split(/\s/);
-
-    result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
-
-    if (lastTuple.length === 2) {
-      result += ` ${trim(lastTuple[1])}`;
-    }
-
-    return result.replace(/unsafe:unsafe/g, "unsafe");
   }
 }
 

@@ -4,7 +4,6 @@ import {
   _document,
   _filter,
   _provide,
-  _sceDelegate,
   _window,
 } from "../injection-tokens.ts";
 import { CompileProvider } from "../core/compile/compile.ts";
@@ -18,10 +17,6 @@ import {
   DisabledControllerProvider,
   DisabledTemplateRequestProvider,
 } from "./disabled-providers.ts";
-import {
-  MinimalSceDelegateProvider,
-  MinimalSceProvider,
-} from "./minimal-providers.ts";
 
 export type DirectiveRegistration = Record<string, ng.DirectiveFactory>;
 
@@ -66,8 +61,6 @@ export const coreProviders = {
   $interpolate: InterpolateProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
-  $sce: MinimalSceProvider,
-  [_sceDelegate]: MinimalSceDelegateProvider,
   $templateRequest: DisabledTemplateRequestProvider,
 } satisfies ProviderRegistration;
 

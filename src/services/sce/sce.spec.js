@@ -56,7 +56,7 @@ describe("SCE", () => {
       const originalValue = "original_value";
       let wrappedValue = $sce.trustAs(SCE_CONTEXTS._HTML, originalValue);
       expect(typeof wrappedValue).toBe("object");
-      expect($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue)).toBe(
+      expect(String($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue))).toBe(
         "original_value",
       );
       $sce.getTrusted(
@@ -113,7 +113,7 @@ describe("SCE", () => {
     it("should unwrap values and return the original", () => {
       const originalValue = "originalValue";
       const wrappedValue = $sce.trustAs(SCE_CONTEXTS._HTML, originalValue);
-      expect($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue)).toBe(
+      expect(String($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue))).toBe(
         originalValue,
       );
     });
@@ -139,8 +139,19 @@ describe("SCE", () => {
     it("should implement toString on trusted values", () => {
       const originalValue = "123";
       const wrappedValue = $sce.trustAsHtml(originalValue);
-      expect($sce.getTrustedHtml(wrappedValue)).toBe(originalValue);
+      expect(String($sce.getTrustedHtml(wrappedValue))).toBe(originalValue);
       expect(wrappedValue.toString()).toBe(originalValue.toString());
+    });
+
+    it("should return native trusted values for trusted HTML when available", () => {
+      if (!window.trustedTypes) {
+        return;
+      }
+
+      const trustedHtml = $sce.getTrustedHtml($sce.trustAsHtml("<b>x</b>"));
+
+      expect(trustedHtml instanceof window.TrustedHTML).toBe(true);
+      expect(String(trustedHtml)).toBe("<b>x</b>");
     });
   });
 
@@ -193,9 +204,14 @@ describe("SCE", () => {
 
     it("should return trusted values from expression function", () => {
       const exprFn = $sce.parseAs(SCE_CONTEXTS._HTML, "foo");
-      expect(
-        exprFn({}, { foo: $sce.trustAs(SCE_CONTEXTS._HTML, "trustedValue") }),
-      ).toBe("trustedValue");
+      const result = exprFn(
+        {},
+        { foo: $sce.trustAs(SCE_CONTEXTS._HTML, "trustedValue") },
+      );
+      if (window.TrustedHTML) {
+        expect(result).toEqual(jasmine.any(window.TrustedHTML));
+      }
+      expect(String(result)).toBe("trustedValue");
     });
 
     it("should support shorthand methods", () => {
