@@ -23,6 +23,22 @@ import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";
 
+const TEMPLATE_VIEW_KEYS = [
+  "templateProvider",
+  "templateUrl",
+  "template",
+  "notify",
+  "async",
+];
+
+const CONTROLLER_VIEW_KEYS = ["controller", "controllerAs", "resolveAs"];
+
+const COMPONENT_VIEW_KEYS = ["component", "bindings"];
+
+const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
+
+const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
+
 /**
  * @param {unknown} url
  */
@@ -70,19 +86,23 @@ function buildParams(
 
   const params: Record<string, any> = {};
 
-  urlParams.forEach((param: { id: string }) => {
+  for (let i = 0; i < urlParams.length; i++) {
+    const param = urlParams[i] as { id: string };
+
     params[param.id] = param;
-  });
+  }
 
   const paramConfigs = state.params || {};
 
   const paramConfigKeys = keys(paramConfigs);
 
-  paramConfigKeys.forEach((id) => {
+  for (let i = 0; i < paramConfigKeys.length; i++) {
+    const id = paramConfigKeys[i];
+
     if (!hasOwn(params, id)) {
       params[id] = paramFactory.fromConfig(id, null, state.self);
     }
-  });
+  }
 
   return params;
 }
@@ -104,28 +124,12 @@ function viewsBuilder(
     return {};
   }
 
-  const tplKeys = [
-    "templateProvider",
-    "templateUrl",
-    "template",
-    "notify",
-    "async",
-  ];
-
-  const ctrlKeys = ["controller", "controllerAs", "resolveAs"];
-
-  const compKeys = ["component", "bindings"];
-
-  const nonCompKeys = tplKeys.concat(ctrlKeys);
-
-  const allViewKeys = compKeys.concat(nonCompKeys);
-
-  if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
+  if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
     throw new Error(
       `State '${state.name}' has a 'views' object. ` +
         `It cannot also have view properties at the state level. ` +
         `Move these properties into a view declaration: ` +
-        `${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
+        `${ALL_VIEW_KEYS.filter((key) => isDefined(state[key])).join(", ")}`,
     );
   }
 
@@ -133,11 +137,13 @@ function viewsBuilder(
 
   const defaultViewConfig: Record<string, any> = {};
 
-  allViewKeys.forEach((key) => {
+  for (let i = 0; i < ALL_VIEW_KEYS.length; i++) {
+    const key = ALL_VIEW_KEYS[i];
+
     if (isDefined(state[key])) {
       defaultViewConfig[key] = state[key];
     }
-  });
+  }
 
   const viewsObject = (state.views || {
     $default: defaultViewConfig,
@@ -145,7 +151,9 @@ function viewsBuilder(
 
   const viewEntries = entries(viewsObject);
 
-  viewEntries.forEach(([entryName, entryConfig]) => {
+  for (let i = 0; i < viewEntries.length; i++) {
+    const [entryName, entryConfig] = viewEntries[i];
+
     let name = entryName as string;
 
     let config = entryConfig as Record<string, any> | string;
@@ -158,9 +166,12 @@ function viewsBuilder(
 
     config = assign({}, config);
 
-    if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
+    if (
+      hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
+      hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)
+    ) {
       throw new Error(
-        `Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`,
+        `Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`,
       );
     }
 
@@ -177,7 +188,7 @@ function viewsBuilder(
     config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
 
     views[name] = config;
-  });
+  }
 
   return views;
 }
@@ -275,9 +286,11 @@ function resolvablesBuilder(
   const resolvables: Resolvable[] = [];
 
   if (isArray(decl)) {
-    decl.forEach((literal) => {
+    for (let i = 0; i < decl.length; i++) {
+      const literal = decl[i];
+
       resolvables.push(literalToResolvable(literal));
-    });
+    }
 
     return resolvables;
   }
@@ -286,9 +299,11 @@ function resolvablesBuilder(
 
   const resolveKeys = keys(resolveObj);
 
-  resolveKeys.forEach((token) => {
+  for (let i = 0; i < resolveKeys.length; i++) {
+    const token = resolveKeys[i];
+
     resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
-  });
+  }
 
   return resolvables;
 }

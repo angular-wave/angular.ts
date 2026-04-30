@@ -13,7 +13,7 @@ import {
   type RegisteredHook,
   type RegisteredHooks,
 } from "./hook-registry.ts";
-import { HookBuilder } from "./hook-builder.ts";
+import { buildHooksForPhase } from "./hook-builder.ts";
 import {
   applyViewConfigs,
   buildToPath,
@@ -121,15 +121,12 @@ export class Transition {
   /** @internal */
   _registeredHooks: RegisteredHooks;
   /** @internal */
-  _hookBuilder: HookBuilder;
-  /** @internal */
   _targetState: TargetState;
   /** @internal */
   _options: TransitionOptions;
   success: boolean | undefined;
   /** @internal */
   _error: any;
-  isActive: () => boolean;
 
   /**
    * Creates a new Transition object.
@@ -163,11 +160,6 @@ export class Transition {
     this.promise = this._deferred.promise;
     this._registeredHooks = {};
 
-    this._hookBuilder = new HookBuilder(this);
-
-    /** Checks if this transition is currently active/running. */
-    this.isActive = () => this._routerState._transition === this;
-
     this._targetState = targetState;
 
     if (!targetState.valid()) {
@@ -183,9 +175,7 @@ export class Transition {
       toPath,
       this._options.reloadState,
     );
-    const onCreateHooks = this._hookBuilder.buildHooksForPhase(
-      TransitionHookPhase._CREATE,
-    );
+    const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
 
     TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
     this.applyViewConfigs();
@@ -916,14 +906,12 @@ export class Transition {
   run() {
     // Gets transition hooks array for the given phase
     const getHooksFor = (phase: TransitionHookPhase) =>
-      this._hookBuilder.buildHooksForPhase(phase);
+      buildHooksForPhase(this, phase);
 
     // When the chain is complete, then resolve or reject the deferred
     const transitionSuccess = () => {
       this.success = true;
-      const hooks = this._hookBuilder.buildHooksForPhase(
-        TransitionHookPhase._SUCCESS,
-      );
+      const hooks = buildHooksForPhase(this, TransitionHookPhase._SUCCESS);
 
       TransitionHook.invokeHooks(hooks, () => Promise.resolve()).then(
         () => this._deferred.resolve(this.to()),
@@ -969,6 +957,11 @@ export class Transition {
       .then(transitionSuccess, transitionError);
 
     return this.promise;
+  }
+
+  /** Checks if this transition is currently active/running. */
+  isActive(): boolean {
+    return this._routerState._transition === this;
   }
 
   /**
