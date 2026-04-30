@@ -961,6 +961,14 @@ export function hiddenInputDirective(): ng.Directive {
 
 const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
 
+function parseConstantValue(value: string): boolean | number {
+  if (value === "true") return true;
+
+  if (value === "false") return false;
+
+  return Number(value);
+}
+
 /**
  * Keeps an input element's `value` attribute and property synchronized with `ngValue`.
  */
@@ -984,11 +992,11 @@ export function ngValueDirective(): ng.Directive {
     compile(_: HTMLElement, tplAttr: ng.Attributes) {
       if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
         return function (
-          scope: ng.Scope,
+          _scope: ng.Scope,
           elm: HTMLElement,
           attr: ng.Attributes,
         ) {
-          const value = scope.$eval(attr.ngValue);
+          const value = parseConstantValue(attr.ngValue);
 
           updateElementValue(elm as HTMLInputElement, attr, value);
         };

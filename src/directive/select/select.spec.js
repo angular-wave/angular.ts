@@ -262,7 +262,7 @@ describe("select", () => {
         expect(ngModelCtrl.$error.required).toBeFalsy();
 
         // // model -> view
-        scope.$eval("selection = null");
+        scope.selection = null;
         await wait();
         options = element.querySelectorAll("option");
         expect(options[0].selected).toBe(true);
@@ -286,11 +286,11 @@ describe("select", () => {
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-valid")).toBeTrue();
 
-        scope.$eval("required = true");
+        scope.required = true;
         await wait();
         expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-        scope.$eval('selection = "a"');
+        scope.selection = "a";
         await wait();
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(element.value).toBe("a");
@@ -298,7 +298,7 @@ describe("select", () => {
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-        scope.$eval("required = false");
+        scope.required = false;
         await wait();
         expect(element.classList.contains("ng-valid")).toBeTrue();
       });
@@ -328,7 +328,7 @@ describe("select", () => {
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(ngModelCtrl.$error.required).toBeFalsy();
 
-        scope.$eval('selection = "c"');
+        scope.selection = "c";
         await wait();
         expect(element.value).toBe(unknownValue("c"));
         expect(element.classList.contains("ng-valid")).toBeTrue();
@@ -897,7 +897,7 @@ describe("select", () => {
       compile(template);
 
       // It should not throw when removing the element
-      scope.$eval("visible = false");
+      scope.visible = false;
       await wait();
       expect(true).toBeTruthy();
     });
@@ -943,7 +943,7 @@ describe("select", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // empty -> selection
-      scope.$eval('selected = "x"');
+      scope.selected = "x";
       await wait();
       expect(element.value).toBe("x");
       expect(selectCtrl.$hasEmptyOption()).toBe(true);

@@ -1519,6 +1519,10 @@ export function ngModelDirective(): ng.Directive {
           ) => {
             const modelCtrl = ctrls[0];
 
+            const { change } = elementPost.dataset;
+
+            const changeFn = change ? modelCtrl._parse(change) : undefined;
+
             modelCtrl._setUpdateOnEvents();
 
             function setTouched() {
@@ -1536,9 +1540,7 @@ export function ngModelDirective(): ng.Directive {
             });
 
             modelCtrl.$viewChangeListeners.push(() => {
-              const { change } = elementPost.dataset;
-
-              change && scope.$eval(change);
+              changeFn?.(scope);
             });
           },
         };

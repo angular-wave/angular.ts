@@ -4,6 +4,7 @@ import {
   _controller,
   _injector,
   _interpolate,
+  _parse,
   _state,
   _transitions,
   _view,
@@ -202,7 +203,7 @@ const controllerLastParamsChangedTransition = new WeakMap<
  * ```
  */
 
-ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate];
+ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
 
 /**
  * Renders and updates the currently active view configuration.
@@ -212,6 +213,7 @@ export function ViewDirective(
   $state: ng.StateService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
+  $parse: ng.ParseService,
 ): ng.Directive {
   void $state;
 
@@ -245,6 +247,10 @@ export function ViewDirective(
                 attrs.ngView || attrs.name || "",
               ) as ng.InterpolationFunction
             )(scope) || "$default";
+
+        const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+
+        const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
 
         let currentEl: HTMLElement | null = null;
 
@@ -380,7 +386,7 @@ export function ViewDirective(
 
             if (
               (isDefined(autoScrollExp) && !autoScrollExp) ||
-              (autoScrollExp && scope.$eval(autoScrollExp))
+              (autoScrollExp && autoScrollFn?.(scope))
             ) {
               $anchorScroll(elementClone);
             }
@@ -394,7 +400,7 @@ export function ViewDirective(
            * @param event Event object.
            */
           currentScope!.$emit("$viewContentLoaded", config || viewConfig);
-          currentScope!.$eval(onloadExp);
+          onloadFn?.(currentScope);
         }
       };
     },

@@ -286,7 +286,7 @@ describe("ngModel", () => {
         expect(scope.value).toBeUndefined();
 
         // further digests
-        scope.$eval('value = "aaa"');
+        scope.value = "aaa";
         await wait();
 
         expect(ctrl.$viewValue).toBe("aaa");
@@ -454,7 +454,7 @@ describe("ngModel", () => {
 
     describe("model -> view", () => {
       it("should set the value to $modelValue", async () => {
-        scope.$eval("value = 10");
+        scope.value = 10;
         await wait();
         expect(ctrl.$modelValue).toBe(10);
       });
@@ -472,7 +472,7 @@ describe("ngModel", () => {
           return `${value}`;
         });
 
-        scope.$eval("value = 3");
+        scope.value = 3;
         await wait();
         expect(log).toEqual([3, 5]);
         expect(ctrl.$viewValue).toBe("5");
@@ -481,13 +481,13 @@ describe("ngModel", () => {
       it("should $render only if value changed", async () => {
         spyOn(ctrl, "$render");
 
-        scope.$eval("value = 3");
+        scope.value = 3;
         await wait();
         expect(ctrl.$render).toHaveBeenCalled();
         ctrl.$render.calls.reset();
 
         ctrl.$formatters.push(() => 3);
-        scope.$eval("value = 5");
+        scope.value = 5;
         await wait();
         expect(ctrl.$render).not.toHaveBeenCalled();
       });
@@ -496,7 +496,7 @@ describe("ngModel", () => {
         spyOn(ctrl, "$render");
 
         ctrl.$formatters.push(() => undefined);
-        scope.$eval("value = 5");
+        scope.value = 5;
         await wait();
         expect(ctrl.$render).toHaveBeenCalled();
       });
@@ -508,7 +508,7 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval("value = 5");
+        scope.value = 5;
         await wait();
         expect(ctrl.$viewValue).toBe(5);
         expect(ctrl.$render).toHaveBeenCalled();
@@ -519,8 +519,8 @@ describe("ngModel", () => {
 
         spyOn(ctrl, "$render");
         ctrl.$validators.spyValidator = jasmine.createSpy("spyValidator");
-        scope.$eval('value = "first"');
-        scope.$eval('value = "second"');
+        scope.value = "first";
+        scope.value = "second";
         await wait();
         expect(ctrl.$validators.spyValidator).toHaveBeenCalled();
         expect(ctrl.$render).toHaveBeenCalled();
@@ -598,7 +598,7 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval("value = 10");
+        scope.value = 10;
         defer.resolve();
         await wait();
 
@@ -727,7 +727,7 @@ describe("ngModel", () => {
     describe("validation", () => {
       describe("$validate", () => {
         it("should perform validations when $validate() is called", async () => {
-          scope.$eval('value = ""');
+          scope.value = "";
           await wait();
           let validatorResult = false;
           ctrl.$validators.someValidator = function (value) {
@@ -766,7 +766,7 @@ describe("ngModel", () => {
             return valid;
           };
 
-          scope.$eval('value = "abc"');
+          scope.value = "abc";
           await wait();
           expect(scope.value).toBe("abc");
 
@@ -782,7 +782,7 @@ describe("ngModel", () => {
             return valid;
           };
 
-          scope.$eval('value = "abc"');
+          scope.value = "abc";
           await wait();
           expect(scope.value).toBe("abc");
 
@@ -816,7 +816,7 @@ describe("ngModel", () => {
             return false;
           };
 
-          scope.$eval('value = "invalid"');
+          scope.value = "invalid";
           await wait();
           expect(ctrl.$valid).toBe(false);
           expect(scope.value).toBe("invalid");
@@ -833,7 +833,7 @@ describe("ngModel", () => {
 
           ctrl.$formatters.push((modelValue) => "xyz");
 
-          scope.$eval('value = "abc"');
+          scope.value = "abc";
           await wait();
           expect(ctrl.$viewValue).toBe("xyz");
 
@@ -848,7 +848,7 @@ describe("ngModel", () => {
 
           ctrl.$parsers.push((modelValue) => "xyz");
 
-          scope.$eval('value = "abc"');
+          scope.value = "abc";
           await wait();
 
           ctrl.$validate();
@@ -880,7 +880,7 @@ describe("ngModel", () => {
 
           ctrl.$formatters.push((value) => `${value}...`);
 
-          scope.$eval('value = "matias"');
+          scope.value = "matias";
           await wait();
           expect(captures).toEqual(["matias", "matias..."]);
         });
@@ -909,19 +909,19 @@ describe("ngModel", () => {
           return /^\d+$/.test(value);
         };
 
-        scope.$eval('value = ""');
+        scope.value = "";
         await wait();
         expect(count).toBe(1);
 
-        scope.$eval("value = 1");
+        scope.value = 1;
         await wait();
         expect(count).toBe(2);
 
-        scope.$eval("value = 1");
+        scope.value = 1;
         await wait();
         expect(count).toBe(2);
 
-        scope.$eval('value = ""');
+        scope.value = "";
         await wait();
         expect(count).toBe(3);
       });
@@ -986,7 +986,7 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval('value = ""');
+        scope.value = "";
         await wait();
         expect(ctrl.$valid).toBeUndefined();
         expect(ctrl.$invalid).toBeUndefined();
@@ -1003,7 +1003,7 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval('value = "123"');
+        scope.value = "123";
         defer.reject();
         await wait();
         expect(ctrl.$valid).toBe(false);
@@ -1015,7 +1015,7 @@ describe("ngModel", () => {
         ctrl.$asyncValidators.async = function (value) {
           return true;
         };
-        scope.$eval('value = "123"');
+        scope.value = "123";
         await wait();
         expect(errors[0].match(/nopromise/)).toBeTruthy();
       });
@@ -1043,7 +1043,7 @@ describe("ngModel", () => {
           return stages.async.defer.promise;
         };
 
-        scope.$eval('value = "123"');
+        scope.value = "123";
         await wait();
         expect(ctrl.$valid).toBe(false);
         expect(ctrl.$invalid).toBe(true);
@@ -1053,14 +1053,14 @@ describe("ngModel", () => {
 
         stages.sync.status1 = true;
 
-        scope.$eval('value = "456"');
+        scope.value = "456";
         await wait();
         expect(stages.sync.count).toBe(4);
         expect(stages.async.count).toBe(0);
 
         stages.sync.status2 = true;
 
-        scope.$eval('value = "789"');
+        scope.value = "789";
         await wait();
         expect(stages.sync.count).toBe(6);
         expect(stages.async.count).toBe(1);
@@ -1078,11 +1078,11 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval('value = ""');
+        scope.value = "";
         await wait();
         defer.reject();
 
-        scope.$eval('value = "123"');
+        scope.value = "123";
         await wait();
         defer.resolve();
         expect(ctrl.$valid).toBe(false);
@@ -1102,7 +1102,7 @@ describe("ngModel", () => {
           return defer.promise;
         };
 
-        scope.$eval('value = "123"');
+        scope.value = "123";
         await wait();
         expect(ctrl.$pending).toEqual({ async: true });
         expect(ctrl.$valid).toBeUndefined();
@@ -1110,7 +1110,7 @@ describe("ngModel", () => {
         expect(defers.length).toBe(1);
         expect(isObject(ctrl.$pending)).toBe(true);
 
-        scope.$eval('value = "456"');
+        scope.value = "456";
         await wait();
         expect(ctrl.$pending).toEqual({ async: true });
         expect(ctrl.$valid).toBeUndefined();
@@ -1365,7 +1365,7 @@ describe("ngModel", () => {
         });
 
         // Parser and validators are invalid
-        scope.$eval('value = "allInvalid"');
+        scope.value = "allInvalid";
         await wait();
         expect(scope.value).toBe("allInvalid");
         expect(ctrl.$error).toEqual({
@@ -1389,7 +1389,7 @@ describe("ngModel", () => {
         expect(ctrl.$error).toEqual({ parserOrValidator: true });
 
         // Parser is valid, validators are invalid
-        scope.$eval('value = "parseValid-validatorsInvalid"');
+        scope.value = "parseValid-validatorsInvalid";
         await wait();
         expect(scope.value).toBe("parseValid-validatorsInvalid");
         expect(ctrl.$error).toEqual({
@@ -1422,7 +1422,7 @@ describe("ngModel", () => {
         });
 
         // Parser is invalid, validators are valid
-        scope.$eval('value = "parseInvalid-validatorsValid"');
+        scope.value = "parseInvalid-validatorsValid";
         await wait();
         expect(scope.value).toBe("parseInvalid-validatorsValid");
         expect(ctrl.$error).toEqual({});
@@ -1607,7 +1607,7 @@ describe("ngModel", () => {
 
     it("should use them after the builtin ones for number inputs", async () => {
       createInput("number");
-      scope.$eval("val = {part: 1}");
+      scope.val = { part: 1 };
       await wait();
       expect(inputElm.value).toBe("1");
 
@@ -1951,7 +1951,7 @@ describe("data-change", () => {
     });
 
     $rootScope.change = jasmine.createSpy("change");
-    $rootScope.$eval("value = true");
+    $rootScope.value = true;
     await wait();
     expect($rootScope.change).not.toHaveBeenCalled();
   });

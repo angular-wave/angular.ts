@@ -7403,12 +7403,12 @@ describe("$compile", () => {
       it("should return a deregistration function while observing an attribute", async () => {
         $compile('<div some-attr="{{value}}" observer></div>')($rootScope);
 
-        $rootScope.$eval('value = "first-value"');
+        $rootScope.value = "first-value";
         await wait();
         expect(observeSpy).toHaveBeenCalledWith("first-value");
 
         deregisterObserver();
-        $rootScope.$eval('value = "new-value"');
+        $rootScope.value = "new-value";
         await wait();
         expect(observeSpy).not.toHaveBeenCalledWith("new-value");
       });
@@ -7536,7 +7536,7 @@ describe("$compile", () => {
 
         element = div;
         $compile(element)($rootScope);
-        $rootScope.$eval("value = 0");
+        $rootScope.value = 0;
         await wait();
         expect(element.textContent).toBe("102030");
         dealoc(div);
@@ -8249,21 +8249,21 @@ describe("$compile", () => {
             d2Controller.count,
             d3Controller.count,
           ]).toEqual([0, 0, 0]);
-          $rootScope.$eval("show = [false, true, true]");
+          $rootScope.show = [false, true, true];
           await wait();
           expect([
             d1Controller.count,
             d2Controller.count,
             d3Controller.count,
           ]).toEqual([1, 0, 0]);
-          $rootScope.$eval("show = [false, false, true]");
+          $rootScope.show = [false, false, true];
           await wait();
           expect([
             d1Controller.count,
             d2Controller.count,
             d3Controller.count,
           ]).toEqual([1, 1, 0]);
-          $rootScope.$eval("show = [false, false, false]");
+          $rootScope.show = [false, false, false];
           await wait();
           expect([
             d1Controller.count,
@@ -8316,7 +8316,7 @@ describe("$compile", () => {
             '<parent ng-if="show"><child><grand-child></grand-child></child></parent>',
           )($rootScope);
           await wait();
-          $rootScope.$eval("show = true");
+          $rootScope.show = true;
           await wait();
           expect(log).toEqual([
             "parent created",
@@ -8324,7 +8324,7 @@ describe("$compile", () => {
             "grand child created",
           ]);
           log = [];
-          $rootScope.$eval("show = false");
+          $rootScope.show = false;
           await wait();
           expect(log).toEqual([
             "parent destroyed",
@@ -8427,7 +8427,7 @@ describe("$compile", () => {
           log = [];
 
           // Update val to trigger the onChanges
-          $rootScope.$eval("val = 42");
+          $rootScope.val = 42;
           await wait();
 
           // Now we should have a double changes entry in the log
@@ -8442,7 +8442,7 @@ describe("$compile", () => {
           log = [];
 
           // Update val to trigger the onChanges
-          $rootScope.$eval("val = 17");
+          $rootScope.val = 17;
           await wait();
           expect(log[0]).toEqual({
             prop1: jasmine.objectContaining({ currentValue: 17 }),
@@ -8455,13 +8455,13 @@ describe("$compile", () => {
           log = [];
 
           // Update val3 to trigger the "other" two-way binding
-          $rootScope.$eval("val3 = 63");
+          $rootScope.val3 = 63;
           await wait();
           // onChanges should not have been called
           expect(log).toEqual([]);
 
           // Update val4 to trigger the "attr" interpolation binding
-          $rootScope.$eval("val4 = 22");
+          $rootScope.val4 = 22;
           await wait();
           // onChanges should not have been called
           expect(log[0]).toEqual({
@@ -8488,7 +8488,7 @@ describe("$compile", () => {
           element = $compile('<c1 prop1="val"></c1>')($rootScope);
           await wait();
           log = [];
-          $rootScope.$eval("val = 1");
+          $rootScope.val = 1;
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8497,7 +8497,7 @@ describe("$compile", () => {
           });
 
           $rootScope._children[0].$ctrl.prop1 = 2;
-          $rootScope.$eval("val = 2");
+          $rootScope.val = 2;
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8525,7 +8525,7 @@ describe("$compile", () => {
           element = $compile('<c1 prop1="[val]"></c1>')($rootScope);
           await wait();
           log = [];
-          $rootScope.$eval("val = 1");
+          $rootScope.val = 1;
           await wait();
 
           expect(log.pop()).toEqual({
@@ -8534,7 +8534,7 @@ describe("$compile", () => {
             }),
           });
 
-          $rootScope.$eval("val = 2");
+          $rootScope.val = 2;
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8567,7 +8567,7 @@ describe("$compile", () => {
             }),
           });
           log = [];
-          $rootScope.$eval("val = [1]");
+          $rootScope.val = [1];
           await wait();
 
           expect(log.pop()).toEqual({
@@ -8576,7 +8576,7 @@ describe("$compile", () => {
             }),
           });
 
-          $rootScope.$eval("val = [2]");
+          $rootScope.val = [2];
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8603,7 +8603,7 @@ describe("$compile", () => {
 
           element = $compile('<c1 prop1="[val]"></c1>')($rootScope);
           await wait();
-          $rootScope.$eval("val = [1]");
+          $rootScope.val = [1];
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8611,7 +8611,7 @@ describe("$compile", () => {
             }),
           });
 
-          $rootScope.$eval("val = [1]");
+          $rootScope.val = [1];
           await wait();
           expect(log.pop()).toEqual({
             prop1: jasmine.objectContaining({
@@ -8636,7 +8636,7 @@ describe("$compile", () => {
             $rootScope = _$rootScope_;
           });
 
-          $rootScope.$eval("a = 7");
+          $rootScope.a = 7;
           element = $compile('<c1 prop="a" attr="{{a}}"></c1>')($rootScope);
           await wait();
 
@@ -8652,7 +8652,7 @@ describe("$compile", () => {
           });
 
           log = [];
-          $rootScope.$eval("a = 9");
+          $rootScope.a = 9;
           await wait();
           expect(log[0]).toEqual({
             prop: jasmine.objectContaining({
@@ -8683,7 +8683,7 @@ describe("$compile", () => {
             $rootScope = _$rootScope_;
           });
 
-          $rootScope.$eval("a = 7");
+          $rootScope.a = 7;
           element = $compile('<c1 prop="a" attr="{{a}}"></c1>')($rootScope);
           await wait();
           expect(log[0]).toEqual({
@@ -8692,7 +8692,7 @@ describe("$compile", () => {
           });
 
           log = [];
-          $rootScope.$eval("a = 10");
+          $rootScope.a = 10;
           await wait();
           expect(log[0]).toEqual({
             prop: jasmine.objectContaining({
@@ -8735,7 +8735,7 @@ describe("$compile", () => {
           expect(prototypeSpy).not.toHaveBeenCalled();
 
           constructorSpy.calls.reset();
-          $rootScope.$eval('a = "bar"');
+          $rootScope.a = "bar";
           await wait();
           expect(constructorSpy).toHaveBeenCalled();
           expect(prototypeSpy).not.toHaveBeenCalled();
@@ -8886,7 +8886,7 @@ describe("$compile", () => {
           // The second component's changes should still be called
           expect(log[1]).toEqual("onChange");
 
-          $rootScope.$eval("a = 42");
+          $rootScope.a = 42;
 
           await wait();
           // The first component's error should be logged
@@ -8928,7 +8928,7 @@ describe("$compile", () => {
           expect(log[0]).toEqual("bad hook: undefined");
           expect(log[1]).toEqual("bad hook: NaN");
 
-          $rootScope.$eval("a = 42");
+          $rootScope.a = 42;
 
           await wait();
           // // Both component's error should be logged individually
@@ -9715,7 +9715,7 @@ describe("$compile", () => {
             expect(component.input).toEqual("$onInit");
 
             // Outer change
-            $rootScope.$eval('name = "re-outer"');
+            $rootScope.name = "re-outer";
             await wait();
             expect(component.input).toEqual(["re-outer"]);
             expect(log).toEqual(["constructor", "$onInit"]);
@@ -9726,7 +9726,7 @@ describe("$compile", () => {
             $compile('<ow-component input="name"></ow-component>')($rootScope);
 
             expect(component.input).toEqual("$onInit");
-            $rootScope.$eval('name = "outer2"');
+            $rootScope.name = "outer2";
             await wait();
             expect($rootScope.name).toEqual("outer2");
             expect(component.input).toEqual("outer2");
@@ -11490,7 +11490,7 @@ describe("$compile", () => {
         });
 
         changeLog.length = 0;
-        $rootScope.$eval("value = 42");
+        $rootScope.value = 42;
         await wait();
 
         expect(changeLog).toEqual([
@@ -12574,18 +12574,18 @@ describe("$compile", () => {
           await wait();
           expect(Cache.size).toEqual(cacheSize);
 
-          $bootstrappedRootScope.$eval("xs = [0,1]");
+          $bootstrappedRootScope.xs = [0, 1];
           await wait();
           // Once this path has materialized a concrete ngIf block inside ngRepeat,
           // one live cache entry remains on the shared transclusion scaffolding
           // until the root is deallocated.
           expect(Cache.size).toEqual(cacheSize + 1);
 
-          $bootstrappedRootScope.$eval("xs = [0]");
+          $bootstrappedRootScope.xs = [0];
           await wait();
           expect(Cache.size).toEqual(cacheSize + 1);
 
-          $bootstrappedRootScope.$eval("xs = []");
+          $bootstrappedRootScope.xs = [];
           await wait();
           expect(Cache.size).toEqual(cacheSize + 1);
 
@@ -12601,17 +12601,17 @@ describe("$compile", () => {
           );
           const $bootstrappedRootScope = injector.get("$rootScope");
 
-          $bootstrappedRootScope.$eval("xs = [0,1]");
+          $bootstrappedRootScope.xs = [0, 1];
           await wait();
           // At this point we have a bunch of comment placeholders but no real transcluded elements
           // So the cache only contains the root element's data
           expect(Cache.size).toEqual(cacheSize);
 
-          $bootstrappedRootScope.$eval("val = true");
+          $bootstrappedRootScope.val = true;
           // Now we have two concrete transcluded elements plus some comments so two more cache items
           expect(Cache.size).toEqual(cacheSize);
 
-          $bootstrappedRootScope.$eval("val = false");
+          $bootstrappedRootScope.val = false;
           await wait();
           // Once again we only have comments so no transcluded elements and the cache is back to just
           // the root element
@@ -13151,7 +13151,7 @@ describe("$compile", () => {
           element.appendChild(document.createTextNode("3{{ value }}"));
 
           $compile(element)($rootScope);
-          $rootScope.$eval("value = 0");
+          $rootScope.value = 0;
           await wait();
           expect(element.textContent).toBe("102030");
         });
@@ -13224,19 +13224,19 @@ describe("$compile", () => {
                 "</div>",
             )($rootScope);
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.textContent).toBe("");
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.textContent).toBe("true");
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.textContent).toBe("");
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.textContent).toBe("true");
           });
@@ -13260,19 +13260,19 @@ describe("$compile", () => {
                 "</div>",
             )($rootScope);
             await wait();
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.textContent).toContain("msg-1");
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.textContent).not.toContain("msg-1");
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.textContent).toContain("msg-1");
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.textContent).not.toContain("msg-1");
           });
@@ -13282,19 +13282,19 @@ describe("$compile", () => {
               $rootScope,
             );
             await wait();
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.innerHTML).toContain("some comment");
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.innerHTML).not.toContain("some comment");
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             expect(element.innerHTML).toContain("some comment");
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(element.innerHTML).not.toContain("some comment");
           });
@@ -13302,16 +13302,16 @@ describe("$compile", () => {
           it("should not leak the transclude scope if the transcluded contains only text nodes", async () => {
             element = $compile("<div toggle>some text</div>")($rootScope);
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
 
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
           });
 
@@ -13322,11 +13322,11 @@ describe("$compile", () => {
                 "</div>",
             )($rootScope);
             await wait();
-            $rootScope.$eval("t = true");
+            $rootScope.t = true;
             await wait();
             const childScopes = getChildScopes($rootScope);
 
-            $rootScope.$eval("t = false");
+            $rootScope.t = false;
             await wait();
             expect(childScopes.length).toBeGreaterThan(0);
           });
@@ -14101,7 +14101,7 @@ describe("$compile", () => {
         expect(outerCompilationCount).toBe(0);
         expect(innerCompilationCount).toBe(0);
         expect(transclude).toBeUndefined();
-        $rootScope.$eval("shouldCompile=true");
+        $rootScope.shouldCompile = true;
         await wait();
         expect(outerCompilationCount).toBe(1);
         expect(innerCompilationCount).toBe(0);
@@ -14468,7 +14468,7 @@ describe("$compile", () => {
       const initialWatcherCount =
         $rootScope.$handler._watchers.get("value")?.length || 0;
       $compile(element)($rootScope);
-      $rootScope.$eval("value = 0");
+      $rootScope.value = 0;
       await wait();
       const newWatcherCount =
         $rootScope.$handler._watchers.get("value").length - initialWatcherCount;

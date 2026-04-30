@@ -357,12 +357,12 @@ describe("ngOptions", () => {
     expect(options[1]).toEqualOption("00FF00", "green");
     expect(options[2]).toEqualOption("0000FF", "blue");
     expect(options[1].selected).toEqual(true);
-    scope.$eval('object.azur = "8888FF"');
+    scope.object.azur = "8888FF";
     await wait();
     options = element.querySelectorAll("option");
     expect(options[1].selected).toEqual(true);
     await wait();
-    scope.$eval("selected = object.azur");
+    scope.selected = scope.object.azur;
     await wait();
     options = element.querySelectorAll("option");
     expect(options[3].selected).toEqual(true);
@@ -865,12 +865,12 @@ describe("ngOptions", () => {
         });
 
         // Initially the model is set to an enabled option
-        scope.$eval("selected = 30");
+        scope.selected = 30;
         let options = element.querySelectorAll("option");
         expect(options.eq(3)[0].selected).toEqual(true);
 
         // Now set the model to a disabled option
-        scope.$eval("selected = 1");
+        scope.selected = 1;
         options = element.querySelectorAll("option");
 
         // jQuery returns null for val() when the option is disabled, see
@@ -897,7 +897,7 @@ describe("ngOptions", () => {
         });
 
         // Set the model to a disabled option
-        scope.$eval("selected = 1");
+        scope.selected = 1;
         let options = element.querySelectorAll("option");
 
         // jQuery returns null for val() when the option is disabled, see
@@ -958,7 +958,7 @@ describe("ngOptions", () => {
         });
 
         // Initially the model is set to an enabled option
-        scope.$eval("selected = [3]");
+        scope.selected = [3];
         let options = element.querySelectorAll("option");
         expect(options[0][0].selected).toEqual(false);
         expect(options[1][0].selected).toEqual(false);
@@ -966,7 +966,7 @@ describe("ngOptions", () => {
         expect(options.eq(3)[0].selected).toEqual(true);
 
         // Now add a disabled option
-        scope.$eval("selected = [1,3]");
+        scope.selected = [1, 3];
         options = element.querySelectorAll("option");
         expect(options[0][0].selected).toEqual(false);
         expect(options[1][0].selected).toEqual(true);
@@ -974,7 +974,7 @@ describe("ngOptions", () => {
         expect(options.eq(3)[0].selected).toEqual(true);
 
         // Now only select the disabled option
-        scope.$eval("selected = [1]");
+        scope.selected = [1];
         expect(options[0][0].selected).toEqual(false);
         expect(options[1][0].selected).toEqual(true);
         expect(options[2][0].selected).toEqual(false);
@@ -996,7 +996,7 @@ describe("ngOptions", () => {
         });
 
         // Set the model to a disabled option
-        scope.$eval("selected = [1]");
+        scope.selected = [1];
         let options = element.querySelectorAll("option");
 
         expect(options[0][0].selected).toEqual(false);
@@ -1693,7 +1693,7 @@ describe("ngOptions", () => {
         expect(element.value).toBe("?");
         expect(element.length).toBe(4);
 
-        scope.$eval("selected = values[1]");
+        scope.selected = scope.values[1];
 
         expect(element.value).not.toBe("");
         expect(element.length).toBe(3);
@@ -1996,11 +1996,11 @@ describe("ngOptions", () => {
 
       expect(element.value).toBe("");
 
-      scope.$eval("isBlank = false");
+      scope.isBlank = false;
 
       expect(element.value).toBe("?");
 
-      scope.$eval("isBlank = true");
+      scope.isBlank = true;
 
       expect(element.value).toBe("");
     });
@@ -2011,14 +2011,14 @@ describe("ngOptions", () => {
       scope.values = [{ name: "A" }];
       createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
 
-      scope.$eval("isBlank = true");
+      scope.isBlank = true;
 
       options = element.querySelectorAll("option");
       expect(options.length).toBe(2);
       expect(options[0].value).toBe("");
       expect(options[0].textContent).toBe("blank");
 
-      scope.$eval("isBlank = false");
+      scope.isBlank = false;
 
       expect(element.value).toBe("?");
     });
@@ -2045,11 +2045,11 @@ describe("ngOptions", () => {
 
       expect(element.querySelectorAll("option")[2].selected).toBe(true);
 
-      scope.$eval("isBlank = true");
+      scope.isBlank = true;
       expect(element.querySelectorAll("option")[0].value).toBe("");
       expect(element.querySelectorAll("option")[0].selected).toBe(false);
 
-      scope.$eval("selected = null");
+      scope.selected = null;
       expect(element.querySelectorAll("option")[0].value).toBe("");
       expect(element.querySelectorAll("option")[0].selected).toBe(true);
 
@@ -2415,7 +2415,7 @@ describe("ngOptions", () => {
         }
 
         // Select `optionA`
-        scope.$eval("selected = [values[0]]");
+        scope.selected = [scope.values[0]];
 
         expect(optionsSetSelected[0]).toHaveBeenCalledOnceWith(true);
         expect(optionsSetSelected[1]).not.toHaveBeenCalled();
@@ -2540,7 +2540,7 @@ describe("ngOptions", () => {
       expect(ngModelCtrl.$error.required).toBeFalsy();
 
       // // model -> view
-      scope.$eval("selection = null");
+      scope.selection = null;
       expect(options[0].selected).toBe(true);
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       expect(ngModelCtrl.$error.required).toBeTruthy();
@@ -2569,16 +2569,16 @@ describe("ngOptions", () => {
       setSelectValue(element, 0);
       expect(element.classList.contains("ng-valid")).toBeTrue();
 
-      scope.$eval("required = true");
+      scope.required = true;
       expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-      scope.$eval("value = values[0]");
+      scope.value = scope.values[0];
       expect(element.classList.contains("ng-valid")).toBeTrue();
 
       setSelectValue(element, 0);
       expect(element.classList.contains("ng-invalid")).toBeTrue();
 
-      scope.$eval("required = false");
+      scope.required = false;
       expect(element.classList.contains("ng-valid")).toBeTrue();
     });
 
@@ -2641,7 +2641,7 @@ describe("ngOptions", () => {
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(ngModelCtrl.$error.required).toBeFalsy();
 
-      scope.$eval('selection = "c"');
+      scope.selection = "c";
       expect(element.value).toBe("?");
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(ngModelCtrl.$error.required).toBeFalsy();
@@ -2669,7 +2669,7 @@ describe("ngOptions", () => {
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(scope.value).toBe(false);
 
-      scope.$eval("required = true");
+      scope.required = true;
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(scope.value).toBe(false);
     });
@@ -2880,7 +2880,7 @@ describe("ngOptions", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // remove empty
-      scope.$eval("isBlank = false");
+      scope.isBlank = false;
 
       expect(element.value).not.toBe("");
       expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -2888,7 +2888,7 @@ describe("ngOptions", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // selection -> unknown
-      scope.$eval('selected = "unmatched"');
+      scope.selected = "unmatched";
 
       expect(element.value).toBe("?");
       expect(selectCtrl.$hasEmptyOption()).toBe(false);
@@ -2896,7 +2896,7 @@ describe("ngOptions", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // add empty
-      scope.$eval("isBlank = true");
+      scope.isBlank = true;
 
       expect(element.value).toBe("?");
       expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -2914,7 +2914,7 @@ describe("ngOptions", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // empty -> unknown
-      scope.$eval('selected = "unmatched"');
+      scope.selected = "unmatched";
 
       expect(element.value).toBe("?");
       expect(selectCtrl.$hasEmptyOption()).toBe(true);
@@ -2932,7 +2932,7 @@ describe("ngOptions", () => {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // selection -> empty
-      scope.$eval("selected = null");
+      scope.selected = null;
 
       expect(element.value).toBe("");
       expect(selectCtrl.$hasEmptyOption()).toBe(true);

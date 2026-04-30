@@ -1,4 +1,4 @@
-import { _attrs, _scope } from "../../injection-tokens.ts";
+import { _attrs, _parse, _scope } from "../../injection-tokens.ts";
 import {
   assign,
   entries,
@@ -28,18 +28,25 @@ export type ModelOptionsConfig = NgModelOptions & {
 
 class NgModelOptionsController {
   static $nonscope = true;
-  static $inject = [_attrs, _scope];
+  static $inject = [_attrs, _scope, _parse];
 
   /** @internal */
   _attrs: ng.Attributes;
   /** @internal */
   _scope: ng.Scope;
+  /** @internal */
+  _parse: ng.ParseService;
   parentCtrl: NgModelOptionsController | null;
   $options: ModelOptions;
 
-  constructor($attrs: ng.Attributes, $scope: ng.Scope) {
+  constructor(
+    $attrs: ng.Attributes,
+    $scope: ng.Scope,
+    $parse: ng.ParseService,
+  ) {
     this._attrs = $attrs;
     this._scope = $scope;
+    this._parse = $parse;
     this.parentCtrl = null;
     this.$options = defaultModelOptions;
   }
@@ -49,9 +56,9 @@ class NgModelOptionsController {
       ? this.parentCtrl.$options
       : defaultModelOptions;
 
-    const modelOptionsDefinition = this._scope.$eval(
+    const modelOptionsDefinition = this._parse(
       this._attrs.ngModelOptions as string,
-    ) as ModelOptionsConfig;
+    )(this._scope) as ModelOptionsConfig;
 
     this.$options = parentOptions.createChild(modelOptionsDefinition);
   }

@@ -112,7 +112,7 @@ describe("ngIf", () => {
       makeIf("hello");
       await wait();
       expect(element.children.length).toBe(1);
-      $scope.$eval('hello = "true2"');
+      $scope.hello = "true2";
       await wait();
       expect(element.children.length).toBe(1);
     });
@@ -123,7 +123,7 @@ describe("ngIf", () => {
       await wait();
       expect(element.children.length).toBe(1);
       setCacheData(element.children[0], "flag", true);
-      $scope.$eval('hello = "true2"');
+      $scope.hello = "true2";
       await wait();
       expect(element.children.length).toBe(1);
       expect(getCacheData(element.children[0], "flag")).toBe(true);
@@ -134,13 +134,13 @@ describe("ngIf", () => {
       makeIf("hello");
       await wait();
       expect(element.children.length).toBe(1);
-      $scope.$eval("hello = false");
+      $scope.hello = false;
       await wait();
       expect(element.childNodes[0].nodeType).toBe(Node.COMMENT_NODE);
     });
 
     it("should create a new scope every time the expression evaluates to true", async () => {
-      $scope.$eval("value = true");
+      $scope.value = true;
       await wait();
       element.append(
         createElementFromHTML(
@@ -215,12 +215,12 @@ describe("ngIf", () => {
       element.children[0].classList.remove("my-class");
       expect(element.children[0].className).not.toContain("my-class");
 
-      $scope.$eval("value = false");
+      $scope.value = false;
       await wait();
 
       expect(element.childNodes[0].nodeType).toBe(Node.COMMENT_NODE);
 
-      $scope.$eval("value = true");
+      $scope.value = true;
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.children[0].className).toContain("my-class");

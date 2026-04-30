@@ -477,7 +477,7 @@ describe("ngMessages", () => {
         };
         await wait();
 
-        $rootScope.$eval("show = false");
+        $rootScope.show = false;
         await wait();
         expect(messageChildren(element).length).toBe(0);
       },
@@ -561,12 +561,12 @@ describe("ngMessages", () => {
     expect(messageChildren(element).length).toBe(0);
     expect(Object.keys(ctrl._messages).length).toEqual(0);
 
-    $rootScope.$eval("show = true");
+    $rootScope.show = true;
     await wait();
     expect(messageChildren(element).length).toBe(0);
     expect(Object.keys(ctrl._messages).length).toEqual(1);
 
-    $rootScope.$eval("show = false");
+    $rootScope.show = false;
     await wait();
     expect(messageChildren(element).length).toBe(0);
     expect(Object.keys(ctrl._messages).length).toEqual(0);
@@ -583,16 +583,16 @@ describe("ngMessages", () => {
     const ctrl = getController(element, "ngMessages");
     await wait();
 
-    $rootScope.$eval("items = null");
+    $rootScope.items = null;
     await wait();
     expect(ctrl._renderLater).toBeFalse();
 
-    $rootScope.$eval("show = true");
+    $rootScope.show = true;
     await wait();
     expect(ctrl._renderLater).toBeFalse();
     expect(Object.keys(ctrl._messages).length).toEqual(1);
 
-    $rootScope.$eval("show = false");
+    $rootScope.show = false;
     await wait();
     expect(ctrl._renderLater).toBeFalse();
     expect(Object.keys(ctrl._messages).length).toEqual(0);
@@ -665,11 +665,11 @@ describe("ngMessages", () => {
       await wait();
       expect(element.textContent.trim()).toBe("Default message is set");
 
-      $rootScope.$eval("default = false");
+      $rootScope.default = false;
       await wait();
       expect(element.textContent.trim()).toBe("");
 
-      $rootScope.$eval("default = true");
+      $rootScope.default = true;
       await wait();
       expect(element.textContent.trim()).toBe("Default message is set");
 

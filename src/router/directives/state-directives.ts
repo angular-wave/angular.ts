@@ -1,5 +1,6 @@
 import {
   _interpolate,
+  _parse,
   _rootScope,
   _router,
   _state,
@@ -231,7 +232,13 @@ function bindEvents(
 
 // // TODO: SEPARATE THESE OUT
 
-StateRefDirective.$inject = [_state, _rootScope, _stateRegistry, _transitions];
+StateRefDirective.$inject = [
+  _state,
+  _rootScope,
+  _stateRegistry,
+  _transitions,
+  _parse,
+];
 
 /**
  * Generates `ng-sref` links and keeps their href/state data in sync.
@@ -241,6 +248,7 @@ export function StateRefDirective(
   $rootScope: ng.Scope,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
+  $parse: ng.ParseService,
 ): ng.Directive {
   const $state = $stateService;
 
@@ -265,16 +273,17 @@ export function StateRefDirective(
 
       const ref = parseStateRef(attrs.ngSref);
 
+      const ngStateOptsFn = attrs.ngSrefOpts
+        ? $parse(attrs.ngSrefOpts)
+        : undefined;
+
+      const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
+
       rawDef._ngState = ref._state;
-      rawDef._ngStateOpts = attrs.ngSrefOpts
-        ? scope.$eval(attrs.ngSrefOpts)
-        : {};
+      rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
 
       function update() {
-        rawDef._ngStateParams = assign(
-          {},
-          ref._paramExpr && scope.$eval(ref._paramExpr),
-        );
+        rawDef._ngStateParams = assign({}, paramFn && paramFn(scope));
         const def = getDef();
 
         if (unlinkInfoFn) {
@@ -302,7 +311,7 @@ export function StateRefDirective(
           },
           true,
         );
-        rawDef._ngStateParams = assign({}, scope.$eval(ref._paramExpr));
+        rawDef._ngStateParams = assign({}, paramFn?.(scope));
       }
 
       update();
@@ -327,6 +336,7 @@ StateRefDynamicDirective.$inject = [
   _rootScope,
   _stateRegistry,
   _transitions,
+  _parse,
 ];
 
 /**
@@ -337,6 +347,7 @@ export function StateRefDynamicDirective(
   $rootScope: ng.Scope,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
+  $parse: ng.ParseService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -393,7 +404,7 @@ export function StateRefDynamicDirective(
       }
       inputAttrs.forEach((field) => {
         rawDef[rawDefKeyByAttr[field]] = attrs[field]
-          ? scope.$eval(attrs[field])
+          ? $parse(attrs[field])(scope)
           : null;
         attrs.$observe(field, (expr) => {
           watchDeregFns[field]();
@@ -424,6 +435,7 @@ StateRefActiveDirective.$inject = [
   _interpolate,
   _stateRegistry,
   _transitions,
+  _parse,
 ];
 
 /**
@@ -435,6 +447,7 @@ export function StateRefActiveDirective(
   $interpolate: ng.InterpolateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
+  $parse: ng.ParseService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -460,7 +473,9 @@ export function StateRefActiveDirective(
         )($scope) || "";
 
       try {
-        ngSrefActive = $scope.$eval($attrs.ngSrefActive);
+        ngSrefActive = $attrs.ngSrefActive
+          ? $parse($attrs.ngSrefActive)($scope)
+          : undefined;
       } catch {
         // Do nothing. ngSrefActive is not a valid expression.
         // Fall back to using $interpolate below
@@ -539,7 +554,7 @@ export function StateRefActiveDirective(
 
                 addState(
                   ref._state,
-                  ref._paramExpr && $scope.$eval(ref._paramExpr),
+                  ref._paramExpr && $parse(ref._paramExpr)($scope),
                   activeClassParam,
                 );
               };

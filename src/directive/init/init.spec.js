@@ -24,17 +24,23 @@ describe("ngInit", () => {
   });
 
   it("should create a pre-link function that evaluates the expression", () => {
-    const directive = ngInitDirective();
-    const link = directive.compile();
+    const parse = jasmine
+      .createSpy("$parse")
+      .and.returnValue(jasmine.createSpy("initFn"));
+    const directive = ngInitDirective(parse);
+    const link = directive.compile(document.createElement("div"), {
+      ngInit: "value = 123",
+    });
     const scope = {
-      $eval: jasmine.createSpy("$eval"),
+      value: undefined,
     };
 
     link.pre(scope, document.createElement("div"), {
       ngInit: "value = 123",
     });
 
-    expect(scope.$eval).toHaveBeenCalledWith("value = 123");
+    expect(parse).toHaveBeenCalledWith("value = 123");
+    expect(parse.calls.mostRecent().returnValue).toHaveBeenCalledWith(scope);
   });
 
   it("should init model", async () => {

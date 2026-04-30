@@ -1118,12 +1118,12 @@ describe("binding", () => {
   it("should apply ng-style values from the evaluated style object", async () => {
     element = $compile('<div ng-style="style"/>')($rootScope);
 
-    $rootScope.$eval('style={height: "10px"}');
+    $rootScope.style = { height: "10px" };
     await wait();
 
     expect(element.style["height"]).toBe("10px");
 
-    $rootScope.$eval("style={}");
+    $rootScope.style = {};
     await wait();
   });
 

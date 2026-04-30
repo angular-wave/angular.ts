@@ -1,17 +1,22 @@
+import { _parse } from "../../injection-tokens.ts";
 import { getController } from "../../shared/dom.ts";
 
-export function ngInitDirective(): ng.Directive {
+ngInitDirective.$inject = [_parse];
+
+export function ngInitDirective($parse: ng.ParseService): ng.Directive {
   return {
     priority: 450,
-    compile() {
+    compile(_element: Element, attrs: ng.Attributes) {
+      const initFn = $parse(attrs.ngInit);
+
       return {
-        pre(scope: ng.Scope, element: Element, attrs: ng.Attributes) {
+        pre(scope: ng.Scope, element: Element) {
           const controller = getController(element);
 
           if (controller) {
-            controller.$eval(attrs.ngInit);
+            initFn(controller);
           } else {
-            scope.$eval(attrs.ngInit);
+            initFn(scope);
           }
         },
       };

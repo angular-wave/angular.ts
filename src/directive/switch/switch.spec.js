@@ -186,19 +186,19 @@ describe("ngSwitch", () => {
         "</div>",
     )($scope);
 
-    $scope.$eval('mode = "a"');
+    $scope.mode = "a";
     await wait();
     expect(element.children.length).toBe(2);
 
-    $scope.$eval('mode = "b"');
+    $scope.mode = "b";
     await wait();
     expect(element.children.length).toBe(1);
 
-    $scope.$eval('mode = "a"');
+    $scope.mode = "a";
     await wait();
     expect(element.children.length).toBe(2);
 
-    $scope.$eval('mode = "b"');
+    $scope.mode = "b";
     await wait();
     expect(element.children.length).toBe(1);
   });
@@ -227,7 +227,7 @@ describe("ngSwitch", () => {
     await wait();
     expect(element.textContent).toBe("FOO 1FOO 2");
 
-    scope.$eval('value = "bar"');
+    scope.value = "bar";
 
     await wait();
     expect(element.textContent).toBe("BAZ");
@@ -243,15 +243,15 @@ describe("ngSwitch", () => {
           "</div>",
       )($scope);
 
-      $scope.$eval('mode = "a"');
+      $scope.mode = "a";
       await wait();
       expect(element.children.length).toBe(2);
       expect(element.textContent).toBe("Block1|Block2|");
-      $scope.$eval('mode = "b"');
+      $scope.mode = "b";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block1|");
-      $scope.$eval('mode = "c"');
+      $scope.mode = "c";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");
@@ -266,15 +266,15 @@ describe("ngSwitch", () => {
           "</div>",
       )($scope);
 
-      $scope.$eval('mode = "a"');
+      $scope.mode = "a";
       await wait();
       expect(element.children.length).toBe(2);
       expect(element.textContent).toBe("Block1|Block2|");
-      $scope.$eval('mode = ""');
+      $scope.mode = "";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block1|");
-      $scope.$eval('mode = "c"');
+      $scope.mode = "c";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");
@@ -289,15 +289,15 @@ describe("ngSwitch", () => {
           "</div>",
       )($scope);
 
-      $scope.$eval('mode = "a"');
+      $scope.mode = "a";
       await wait();
       expect(element.children.length).toBe(2);
       expect(element.textContent).toBe("Block1|Block2|");
-      $scope.$eval('mode = "b"');
+      $scope.mode = "b";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block1|");
-      $scope.$eval('mode = "c"');
+      $scope.mode = "c";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");
@@ -312,15 +312,15 @@ describe("ngSwitch", () => {
           "</div>",
       )($scope);
 
-      $scope.$eval('mode = "a"');
+      $scope.mode = "a";
       await wait();
       expect(element.children.length).toBe(2);
       expect(element.textContent).toBe("Block1|Block2|");
-      $scope.$eval('mode = "b|a"');
+      $scope.mode = "b|a";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block1|");
-      $scope.$eval('mode = "c"');
+      $scope.mode = "c";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");
@@ -335,15 +335,15 @@ describe("ngSwitch", () => {
           "</div>",
       )($scope);
 
-      $scope.$eval('mode = "a"');
+      $scope.mode = "a";
       await wait();
       expect(element.children.length).toBe(2);
       expect(element.textContent).toBe("Block1|Block2|");
-      $scope.$eval('mode = "b"');
+      $scope.mode = "b";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block1|");
-      $scope.$eval('mode = "c"');
+      $scope.mode = "c";
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");

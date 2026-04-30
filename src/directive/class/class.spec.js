@@ -264,7 +264,7 @@ describe("ngClass", () => {
     expect(element).not.toHaveClass("yes");
     expect(element).toHaveClass("no");
 
-    $rootScope.$eval("test = true");
+    $rootScope.test = true;
     await wait();
 
     expect(element).toHaveClass("same");
