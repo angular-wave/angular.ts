@@ -3,6 +3,7 @@ import {
   _compile,
   _exceptionHandler,
   _injector,
+  _parse,
   _templateRequest,
 } from "../../injection-tokens.ts";
 import { isDefined, isInstanceOf } from "../../shared/utils.ts";
@@ -18,6 +19,7 @@ ngIncludeDirective.$inject = [
   _anchorScroll,
   _injector,
   _exceptionHandler,
+  _parse,
 ];
 
 /**
@@ -28,6 +30,7 @@ export function ngIncludeDirective(
   $anchorScroll: ng.AnchorScrollService,
   $injector: ng.InjectorService,
   $exceptionHandler: ng.ExceptionHandlerService,
+  $parse: ng.ParseService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -45,6 +48,10 @@ export function ngIncludeDirective(
 
       const autoScrollExp = attr.autoscroll;
 
+      const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+
+      const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
+
       return (
         scope: ng.Scope & Record<string, any>,
         $element: Element,
@@ -59,7 +66,7 @@ export function ngIncludeDirective(
         function maybeScroll() {
           if (
             isDefined(autoScrollExp) &&
-            (!autoScrollExp || scope.$eval(autoScrollExp))
+            (!autoScrollExp || autoScrollFn?.(scope))
           ) {
             $anchorScroll();
           }
@@ -145,7 +152,7 @@ export function ngIncludeDirective(
                 currentScope = newScope;
                 currentElement = clone;
                 currentScope!.$emit("$includeContentLoaded", src);
-                scope.$eval(onloadExp);
+                onloadFn?.(scope);
               })
               .catch((err: unknown) => {
                 if (scope._destroyed) return;

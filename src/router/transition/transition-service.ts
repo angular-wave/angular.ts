@@ -91,12 +91,11 @@ type ViewTransitionDocument = Document & {
 
 let viewTransitionActive = false;
 
-function runWithViewTransition(updateCallback: () => void): Promise<void> | void;
-function runWithViewTransition(updateCallback: () => void): Promise<void> | void {
+function runWithViewTransition(updateCallback: () => void): Promise<void> {
   if (viewTransitionActive) {
     updateCallback();
 
-    return;
+    return Promise.resolve();
   }
 
   let hasCallbackError = false;
@@ -811,12 +810,14 @@ function registerActivateViews(
   const hasConnectedNgView = () =>
     viewService._ngViews.some((ngView) => ngView.element.isConnected);
 
-  const activateViews = (transition: Transition) => {
+  const activateViews = (transition: Transition): Promise<void> => {
     const enteringViews = transition.views("entering");
 
     const exitingViews = transition.views("exiting");
 
-    if (!enteringViews.length && !exitingViews.length) return;
+    if (!enteringViews.length && !exitingViews.length) {
+      return Promise.resolve();
+    }
 
     const updateViews = () => {
       exitingViews.forEach((view) => viewService._deactivateViewConfig(view));
@@ -829,7 +830,7 @@ function registerActivateViews(
     if (!hasConnectedNgView()) {
       updateViews();
 
-      return;
+      return Promise.resolve();
     }
 
     return runWithViewTransition(updateViews);

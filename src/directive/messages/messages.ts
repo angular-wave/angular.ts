@@ -1,6 +1,7 @@
 import {
   _compile,
   _injector,
+  _parse,
   _templateRequest,
 } from "../../injection-tokens.ts";
 import {
@@ -38,6 +39,8 @@ type MessageInstance = {
   test: (name: string | number | symbol) => boolean | undefined;
 };
 
+type TruthyExpression = true | ((scope: ng.Scope) => unknown) | undefined;
+
 class NgMessageCtrl {
   /** @internal */
   _element: HTMLElement;
@@ -61,6 +64,10 @@ class NgMessageCtrl {
   _cachedCollection: MessageCollection | null;
   /** @internal */
   _default: MessageInstance | undefined;
+  /** @internal */
+  _multipleExpression: TruthyExpression;
+  /** @internal */
+  _ngMessagesMultipleExpression: TruthyExpression;
 
   /**
    * Creates a controller that manages message matching and attachment state.
@@ -70,6 +77,7 @@ class NgMessageCtrl {
     $scope: ng.Scope,
     $attrs: ng.Attributes,
     getAnimate: LazyAnimate,
+    $parse: ng.ParseService,
   ) {
     this._element = $element;
     this._scope = $scope;
@@ -84,6 +92,11 @@ class NgMessageCtrl {
     this._cachedCollection = null;
 
     this._default = undefined;
+    this._multipleExpression = parseAttrTruthy($parse, this._attrs.multiple);
+    this._ngMessagesMultipleExpression = parseAttrTruthy(
+      $parse,
+      this._attrs.ngMessagesMultiple,
+    );
 
     this._scope.$watch(
       this._attrs.ngMessages || this._attrs.for,
@@ -102,8 +115,8 @@ class NgMessageCtrl {
     this._cachedCollection = collection;
 
     const multiple =
-      isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
-      isAttrTruthy(this._scope, this._attrs.multiple);
+      evalAttrTruthy(this._scope, this._ngMessagesMultipleExpression) ||
+      evalAttrTruthy(this._scope, this._multipleExpression);
 
     const unmatchedMessages: MessageInstance[] = [];
 
@@ -243,12 +256,13 @@ class NgMessageCtrl {
   }
 }
 
-ngMessagesDirective.$inject = [_injector];
+ngMessagesDirective.$inject = [_injector, _parse];
 /**
  * Builds the root `ngMessages` directive.
  */
 export function ngMessagesDirective(
   $injector: ng.InjectorService,
+  $parse: ng.ParseService,
 ): ng.Directive<NgMessageCtrl> {
   const getAnimate = createLazyAnimate($injector);
 
@@ -259,18 +273,24 @@ export function ngMessagesDirective(
       $element: HTMLElement,
       $scope: ng.Scope,
       $attrs: ng.Attributes,
-    ) => new NgMessageCtrl($element, $scope, $attrs, getAnimate),
+    ) => new NgMessageCtrl($element, $scope, $attrs, getAnimate, $parse),
   };
 }
 
 /**
  * Evaluates whether an `ngMessages` boolean-style attribute should be treated as enabled.
  */
-function isAttrTruthy(scope: ng.Scope, attr: string | undefined): boolean {
-  return (
-    (isString(attr) && attr.length === 0) || // empty attribute
-    truthy(attr && scope.$eval(attr))
-  );
+function parseAttrTruthy(
+  $parse: ng.ParseService,
+  attr: string | undefined,
+): TruthyExpression {
+  if (!isString(attr)) return undefined;
+
+  return attr.length === 0 ? true : $parse(attr);
+}
+
+function evalAttrTruthy(scope: ng.Scope, expr: TruthyExpression): boolean {
+  return expr === true || truthy(expr && expr(scope));
 }
 
 /**
@@ -329,13 +349,17 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  */
 function ngMessageDirectiveFactory(
   isDefault: boolean,
-): ($injector: ng.InjectorService) => ng.Directive<any> {
-  ngMessageDirectiveFn.$inject = [_injector];
+): (
+  $injector: ng.InjectorService,
+  $parse: ng.ParseService,
+) => ng.Directive<any> {
+  ngMessageDirectiveFn.$inject = [_injector, _parse];
   /**
    * Builds a concrete `ngMessage` directive definition.
    */
   function ngMessageDirectiveFn(
     $injector: ng.InjectorService,
+    $parse: ng.ParseService,
   ): ng.Directive<any> {
     const getAnimate = createLazyAnimate($injector);
 
@@ -377,7 +401,9 @@ function ngMessageDirectiveFactory(
           };
 
           if (dynamicExp) {
-            assignRecords(scope.$eval(dynamicExp));
+            const dynamicFn = $parse(dynamicExp);
+
+            assignRecords(dynamicFn(scope));
             scope.$watch(dynamicExp, assignRecords);
           } else {
             assignRecords(staticExp);

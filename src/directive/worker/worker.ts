@@ -30,6 +30,8 @@ export function ngWorkerDirective(
 
       const eventName = attrs.trigger || getEventNameForElement(element);
 
+      const paramsFn = attrs.params ? $parse(attrs.params) : undefined;
+
       let throttled = false;
 
       let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -94,7 +96,7 @@ export function ngWorkerDirective(
         let params: unknown;
 
         try {
-          params = attrs.params ? scope.$eval(attrs.params) : undefined;
+          params = paramsFn?.(scope);
         } catch (err) {
           $log.error("ngWorker: failed to evaluate data-params", err);
           params = undefined;

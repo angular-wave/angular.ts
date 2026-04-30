@@ -54,11 +54,11 @@ describe("ng-style", () => {
   it("should support binding for object literals", async () => {
     element = $compile('<div ng-style="{height: heightStr}"></div>')($scope);
     expect(parseInt(element.style.height + 0, 10)).toEqual(0); // height could be '' or '0px'
-    $scope.$eval('heightStr = "40px"');
+    $scope.heightStr = "40px";
     await wait();
     expect(element.style.height).toBe("40px");
 
-    $scope.$eval('heightStr = "100px"');
+    $scope.heightStr = "100px";
     await wait();
     expect(element.style.height).toBe("100px");
   });

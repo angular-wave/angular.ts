@@ -514,7 +514,7 @@ export function createHttpDirective(
 
             if (isObject(html)) {
               if (attrs.target) {
-                scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
+                $parse(attrs.target)._assign?.(scope, html);
               } else {
                 scope.$merge(html);
               }
