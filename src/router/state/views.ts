@@ -1,5 +1,6 @@
 import { assign, isString } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
+import type { RawParams } from "../params/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
@@ -15,8 +16,7 @@ export class ViewConfig {
   component: string | undefined;
   template: string | undefined;
   loaded: boolean;
-  controller: any;
-  getTemplate: (ngView: any, context: ResolveContext) => string | undefined;
+  controller: ViewDeclaration["controller"] | undefined;
 
   /**
    * Stores the declarative view definition plus the runtime path/context needed
@@ -39,15 +39,18 @@ export class ViewConfig {
     this.$id = id++;
     this.loaded = false;
     this.controller = undefined;
-    this.getTemplate = (ngView: any, context: ResolveContext) =>
-      this.component
-        ? this.factory.makeComponentTemplate(
-            ngView,
-            context,
-            this.component,
-            this.viewDecl.bindings,
-          )
-        : this.template;
+  }
+
+  /** @internal */
+  _getTemplate(ngView: Element, context: ResolveContext): string | undefined {
+    return this.component
+      ? this.factory.makeComponentTemplate(
+          ngView,
+          context,
+          this.component,
+          this.viewDecl.bindings,
+        )
+      : this.template;
   }
 
   /**
@@ -57,30 +60,29 @@ export class ViewConfig {
   async load(): Promise<ViewConfig> {
     const context = new ResolveContext(this.path, this.factory._injector);
 
-    const params: Record<string, any> = {};
+    const params: RawParams = {};
 
     for (let i = 0; i < this.path.length; i++) {
       assign(params, this.path[i].paramValues);
     }
 
-    const promises = [
-      Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
-      Promise.resolve(this.getController()),
-    ];
+    const viewResult = await this.factory.fromConfig(
+      this.viewDecl,
+      params,
+      context,
+    );
 
-    const results = await Promise.all(promises);
-
-    this.controller = results[1];
-    assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+    this.controller = await Promise.resolve(this.getController());
+    assign(this, viewResult); // Either { template: "tpl" } or { component: "cmpName" }
 
     return this;
   }
 
   /**
    * Gets the controller for a view configuration.
-   * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
+   * @returns the configured controller function, annotated factory, or controller name.
    */
-  getController(): Function | Promise<Function> {
+  getController(): ViewDeclaration["controller"] {
     return this.viewDecl.controller;
   }
 
@@ -116,7 +118,13 @@ export class ViewConfig {
     if (relativeMatch.exec(ngViewContextAnchor)) {
       let anchorState: StateObject | null | undefined = context;
 
-      const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
+      let hops = 0;
+
+      for (let i = 0; i < ngViewContextAnchor.length; i++) {
+        if (ngViewContextAnchor[i] === "^") {
+          hops++;
+        }
+      }
 
       for (let i = 0; i < hops; i++) {
         anchorState = anchorState && anchorState.parent;

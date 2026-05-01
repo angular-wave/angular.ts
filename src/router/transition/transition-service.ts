@@ -7,6 +7,7 @@ import {
   isDefined,
   isFunction,
   isInstanceOf,
+  isObject,
   isString,
   values,
 } from "../../shared/utils.ts";
@@ -14,11 +15,12 @@ import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
-import type { ViewConfig } from "../state/views.ts";
 import type {
   BuiltStateDeclaration,
+  RedirectToResult,
   StateDeclaration,
 } from "../state/interface.ts";
+import type { StateObject } from "../state/state-object.ts";
 import { Transition, type TreeChanges } from "./transition.ts";
 import type { PathNode } from "../path/path-node.ts";
 import {
@@ -357,9 +359,15 @@ export class TransitionProvider implements TransitionService {
    */
   /** @internal */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[] {
-    const transitionHookTypes = isDefined(phase)
-      ? this._eventTypes.filter((type) => type.hookPhase === phase)
-      : this._eventTypes.slice();
+    const transitionHookTypes: TransitionEventType[] = [];
+
+    for (let i = 0; i < this._eventTypes.length; i++) {
+      const eventType = this._eventTypes[i];
+
+      if (!isDefined(phase) || eventType.hookPhase === phase) {
+        transitionHookTypes.push(eventType);
+      }
+    }
 
     return transitionHookTypes.sort((left, right) => {
       const cmpByPhase = left.hookPhase - right.hookPhase;
@@ -557,14 +565,19 @@ function registerAddCoreResolvables(
         Resolvable.fromData("$stateParams", trans.params()),
         "",
       );
-      trans.entering().forEach((state: ng.StateDeclaration) => {
+
+      const entering = trans.entering();
+
+      for (let i = 0; i < entering.length; i++) {
+        const state = entering[i];
+
         trans.addResolvable(Resolvable.fromData("$state$", state), state);
-      });
+      }
     },
   );
 }
 
-const TRANSITION_TOKENS = ["$transition$", Transition];
+const TRANSITION_TOKENS = ["$transition$", Transition] as const;
 
 function treeChangesCleanup(trans: Transition): void {
   const paths = values(trans.treeChanges() as Record<string, PathNode[]>);
@@ -591,7 +604,7 @@ function treeChangesCleanup(trans: Transition): void {
     for (let j = 0; j < resolvables.length; j++) {
       const resolve = resolvables[j];
 
-      if (TRANSITION_TOKENS.includes(resolve.token)) {
+      if (TRANSITION_TOKENS.some((token) => token === resolve.token)) {
         resolvables[j] = Resolvable.fromData(resolve.token, null);
       }
     }
@@ -635,11 +648,9 @@ function makeEnterExitRetainHook(
   hookName: "onEnter" | "onExit" | "onRetain",
 ): HookFn {
   return (transition, state) => {
-    const _state = (state._state && state._state()) as Record<string, any>;
+    const hookFn = state._state?.()[hookName];
 
-    const hookFn = _state[hookName];
-
-    return hookFn(transition, state);
+    return hookFn?.(transition, state);
   };
 }
 
@@ -654,7 +665,7 @@ function registerOnExitHook(
 ): DeregisterFn {
   return transitionService.onExit(
     {
-      exiting: (state?: BuiltStateDeclaration) => !!state?.onExit,
+      exiting: (state?: StateObject) => !!state?.onExit,
     },
     onExitHook,
   );
@@ -665,7 +676,7 @@ function registerOnRetainHook(
 ): DeregisterFn {
   return transitionService.onRetain(
     {
-      retained: (state?: BuiltStateDeclaration) => !!state?.onRetain,
+      retained: (state?: StateObject) => !!state?.onRetain,
     },
     onRetainHook,
   );
@@ -676,7 +687,7 @@ function registerOnEnterHook(
 ): DeregisterFn {
   return transitionService.onEnter(
     {
-      entering: (state?: BuiltStateDeclaration) => !!state?.onEnter,
+      entering: (state?: StateObject) => !!state?.onEnter,
     },
     onEnterHook,
   );
@@ -691,7 +702,7 @@ function registerRedirectToHook(
 
     if (!redirect) return undefined;
 
-    function handleResult(result: any) {
+    function handleResult(result: RedirectToResult) {
       if (!result) return undefined;
 
       if (isInstanceOf(result, TargetState)) {
@@ -702,9 +713,9 @@ function registerRedirectToHook(
         return stateService.target(result, trans.params(), trans.options());
       }
 
-      if ((result as any).state || result.params) {
+      if (isObject(result) && ("state" in result || "params" in result)) {
         return stateService.target(
-          (result as any).state || trans.to(),
+          result.state || trans.to(),
           result.params || trans.params(),
           trans.options(),
         );
@@ -751,7 +762,7 @@ const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
     (trans.treeChanges() as TreeChanges).to,
     trans._routerState._injector,
   )
-    .subContext((state._state as Function)())
+    .subContext(state._state!())
     .resolvePath(false, trans)
     .then(noop);
 
@@ -791,10 +802,13 @@ const loadEnteringViews = (transition: Transition) => {
   const enteringViews = transition.views("entering");
 
   if (!enteringViews.length) return undefined;
+  const promises = new Array(enteringViews.length);
 
-  return Promise.all(
-    enteringViews.map((view: ViewConfig) => Promise.resolve(view.load())),
-  ).then(noop);
+  for (let i = 0; i < enteringViews.length; i++) {
+    promises[i] = Promise.resolve(enteringViews[i].load());
+  }
+
+  return Promise.all(promises).then(noop);
 };
 
 function registerLoadEnteringViews(
@@ -807,9 +821,6 @@ function registerActivateViews(
   transitionService: TransitionService,
   viewService: ViewService,
 ): DeregisterFn {
-  const hasConnectedNgView = () =>
-    viewService._ngViews.some((ngView) => ngView.element.isConnected);
-
   const activateViews = (transition: Transition): Promise<void> => {
     const enteringViews = transition.views("entering");
 
@@ -820,14 +831,18 @@ function registerActivateViews(
     }
 
     const updateViews = () => {
-      exitingViews.forEach((view) => viewService._deactivateViewConfig(view));
-      enteringViews.forEach((view) => {
-        viewService._activateViewConfig(view);
-      });
+      for (let i = 0; i < exitingViews.length; i++) {
+        viewService._deactivateViewConfig(exitingViews[i]);
+      }
+
+      for (let i = 0; i < enteringViews.length; i++) {
+        viewService._activateViewConfig(enteringViews[i]);
+      }
+
       viewService._sync();
     };
 
-    if (!hasConnectedNgView()) {
+    if (!hasConnectedNgView(viewService)) {
       updateViews();
 
       return Promise.resolve();
@@ -837,6 +852,18 @@ function registerActivateViews(
   };
 
   return transitionService.onSuccess({}, activateViews);
+}
+
+function hasConnectedNgView(viewService: ViewService): boolean {
+  const ngViews = viewService._ngViews;
+
+  for (let i = 0; i < ngViews.length; i++) {
+    if (ngViews[i].element.isConnected) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function registerUpdateUrl(
@@ -849,20 +876,14 @@ function registerUpdateUrl(
 
     const $state = stateService;
 
-    if (
-      options.source !== "url" &&
-      options.location &&
-      $state.$current?.navigable
-    ) {
+    const navigable = $state.$current?.navigable;
+
+    if (options.source !== "url" && options.location && navigable?.url) {
       const urlOptions = {
         replace: options.location === "replace",
-      } as any;
+      };
 
-      urlService.push(
-        $state.$current.navigable.url,
-        $state._routerState._params,
-        urlOptions,
-      );
+      urlService.push(navigable.url, $state._routerState._params, urlOptions);
     }
 
     urlService.update(true);

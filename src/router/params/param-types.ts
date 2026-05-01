@@ -11,6 +11,19 @@ import {
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
+
+type ParamTypeDefinitionRecord = ParamTypeDefinition & Record<string, unknown>;
+
+type DefaultParamTypeName =
+  | "hash"
+  | "string"
+  | "query"
+  | "path"
+  | "int"
+  | "bool"
+  | "date"
+  | "json"
+  | "any";
 /**
  * A registry for parameter types.
  *
@@ -45,7 +58,17 @@ export class ParamTypes {
     pattern?: unknown;
   }[];
 
-  defaultTypes: Record<string, ParamTypeDefinition & Record<string, any>>;
+  declare hash: ParamTypeDefinitionRecord;
+  declare string: ParamTypeDefinitionRecord;
+  declare query: ParamTypeDefinitionRecord;
+  declare path: ParamTypeDefinitionRecord;
+  declare int: ParamTypeDefinitionRecord;
+  declare bool: ParamTypeDefinitionRecord;
+  declare date: ParamTypeDefinitionRecord;
+  declare json: ParamTypeDefinitionRecord;
+  declare any: ParamTypeDefinitionRecord;
+
+  defaultTypes: Record<string, ParamTypeDefinitionRecord>;
   types: Record<string, ParamType>;
 
   /**
@@ -56,7 +79,7 @@ export class ParamTypes {
     this.$injector = $angular.$injector;
     this.enqueue = true;
     this.typeQueue = [];
-    const defaultTypeNames = [
+    const defaultTypeNames: DefaultParamTypeName[] = [
       "hash",
       "string",
       "query",
@@ -72,14 +95,14 @@ export class ParamTypes {
 
     const defaultParamTypes: Record<string, ParamType> = {};
 
-    defaultTypeNames.forEach((name) => {
-      const definition = (ParamTypes.prototype as Record<string, any>)[
-        name
-      ] as ParamTypeDefinition & Record<string, any>;
+    for (let i = 0; i < defaultTypeNames.length; i++) {
+      const name = defaultTypeNames[i];
+
+      const definition = this[name];
 
       this.defaultTypes[name] = definition;
       defaultParamTypes[name] = new ParamType(assign({ name }, definition));
-    });
+    }
 
     // Register default types. Store them in the prototype of this.types.
     this.types = createObject(defaultParamTypes) as Record<string, ParamType>;
@@ -115,7 +138,7 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[name as string] = new ParamType(assign({ name }, definition));
+    this.types[name] = new ParamType(assign({ name }, definition));
 
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });
@@ -152,20 +175,22 @@ export class ParamTypes {
     return (this.$injector ||= this._angular.$injector);
   }
 }
+
+function valToString(val: unknown): string | undefined {
+  return !isNullOrUndefined(val) ? val.toString() : undefined;
+}
+
 function initDefaultTypes() {
   const makeDefaultType = (
-    def: Partial<ParamTypeDefinition> & Record<string, any>,
-  ): ParamTypeDefinition & Record<string, any> => {
-    const valToString = (val: any) =>
-      !isNullOrUndefined(val) ? val.toString() : val;
-
+    def: Partial<ParamTypeDefinition> & Record<string, unknown>,
+  ): ParamTypeDefinitionRecord => {
     const defaultTypeBase = {
-      encode: (val: any) => valToString(val),
+      encode: (val: unknown) => valToString(val),
       decode: (val: string) => valToString(val),
-      is: (val: any) => isInstanceOf(val, String) || isString(val),
+      is: (val: unknown) => isInstanceOf(val, String) || isString(val),
       pattern: /.*/,
 
-      equals: (a: any, b: any) => a === b,
+      equals: (a: unknown, b: unknown) => a === b,
     };
 
     return assign({}, defaultTypeBase, def);
@@ -189,45 +214,58 @@ function initDefaultTypes() {
       is(val) {
         return (
           !isNullOrUndefined(val) &&
-          (this as any).decode(val.toString()) === val
+          (this as ParamTypeDefinition).decode?.(val.toString()) === val
         );
       },
       pattern: /-?\d+/,
     }),
     bool: makeDefaultType({
-      encode: (val: any) => ((val && 1) || 0).toString(),
+      encode: (val: unknown) => ((val && 1) || 0).toString(),
       decode: (val: string) => parseInt(val, 10) !== 0,
-      is: (val: any) => isInstanceOf(val, Boolean) || typeof val === "boolean",
+      is: (val: unknown) =>
+        isInstanceOf(val, Boolean) || typeof val === "boolean",
       pattern: /[01]/,
     }),
     date: makeDefaultType({
       /**
-       * @param {{ getFullYear: () => any; getMonth: () => number; getDate: () => any; }} val
+       * @param {{ getFullYear: () => number; getMonth: () => number; getDate: () => number; }} val
        */
       encode(val) {
-        return !(this as any).is(val)
-          ? ""
-          : [
-              val.getFullYear(),
-              `0${val.getMonth() + 1}`.slice(-2),
-              `0${val.getDate()}`.slice(-2),
-            ].join("-");
-      },
-      /**
-       * @param {any} val
-       */
-      decode(val: any) {
-        if ((this as any).is(val)) return val;
-        const match = (this as any).capture.exec(val);
+        if (!isInstanceOf(val, Date) || isNaN(val.valueOf())) {
+          return "";
+        }
 
-        return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
+        return [
+          val.getFullYear(),
+          `0${val.getMonth() + 1}`.slice(-2),
+          `0${val.getDate()}`.slice(-2),
+        ].join("-");
       },
-      is: (val: any) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
       /**
-       * @param {{ [x: string]: () => any; }} left
-       * @param {{ [x: string]: () => any; }} right
+       * @param {unknown} val
+       */
+      decode(val: unknown) {
+        if ((this as ParamTypeDefinition).is?.(val)) return val;
+        const match = (this as { capture: RegExp }).capture.exec(String(val));
+
+        return match
+          ? new Date(
+              parseInt(match[1], 10),
+              parseInt(match[2], 10) - 1,
+              parseInt(match[3], 10),
+            )
+          : undefined;
+      },
+      is: (val: unknown) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
+      /**
+       * @param {Date} left
+       * @param {Date} right
        */
       equals(left, right) {
+        if (!isInstanceOf(left, Date) || !isInstanceOf(right, Date)) {
+          return false;
+        }
+
         return (
           left.getFullYear() === right.getFullYear() &&
           left.getMonth() === right.getMonth() &&
@@ -238,16 +276,16 @@ function initDefaultTypes() {
       capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
     }),
     json: makeDefaultType({
-      encode: (x: any) => JSON.stringify(x),
+      encode: (x: unknown) => JSON.stringify(x),
       decode: (x: string) => JSON.parse(x),
-      is: (val: any) => isInstanceOf(val, Object),
+      is: (val: unknown) => isInstanceOf(val, Object),
       equals,
       pattern: /[^/]*/,
     }),
     // does not encode/decode
     any: makeDefaultType({
-      encode: (x: any) => x,
-      decode: (x: any) => x,
+      encode: (x: unknown) => x as string,
+      decode: (x: string) => x,
       is: () => true,
       equals,
     }),

@@ -7,6 +7,14 @@
  *
  * @packageDocumentation
  */
+export type ResolvableToken = unknown;
+
+export type ResolvableData = unknown;
+
+export type ResolveFn = (
+  ...dependencies: ResolvableData[]
+) => ResolvableData | Promise<ResolvableData>;
+
 /**
  * A plain object used to describe a [[Resolvable]]
  *
@@ -31,7 +39,7 @@ export interface ResolvableLiteral {
    * This Resolvable's DI token.
    * The Resolvable will be injectable elsewhere using the token.
    */
-  token: any;
+  token: ResolvableToken;
 
   /**
    * A function which fetches the Resolvable's data
@@ -45,7 +53,7 @@ export interface ResolvableLiteral {
    * This function will be provided the dependencies listed in [[deps]] as its arguments.
    * The resolve system will asynchronously fetch the dependencies before invoking this function.
    */
-  resolveFn: Function;
+  resolveFn?: ResolveFn;
 
   /**
    * Starts resolving at transition start instead of waiting until the state is entered.
@@ -62,8 +70,8 @@ export interface ResolvableLiteral {
    * The DI tokens are references to other `Resolvables`, or to other
    * services from the native DI system.
    */
-  deps?: any[];
+  deps?: ResolvableToken[];
 
   /** Pre-resolved data. */
-  data?: any;
+  data?: ResolvableData;
 }

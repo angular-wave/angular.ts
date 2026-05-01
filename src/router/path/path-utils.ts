@@ -161,13 +161,10 @@ export function treeChanges(
 
   let keep = 0;
 
-  const nodesMatch = (node1: PathNode, node2: PathNode) =>
-    node1.equals(node2, nonDynamicParams);
-
   while (
     keep < max &&
     fromPath[keep].state !== reloadState &&
-    nodesMatch(fromPath[keep], toPath[keep])
+    fromPath[keep].equals(toPath[keep], nonDynamicParams)
   ) {
     keep++;
   }

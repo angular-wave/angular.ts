@@ -35,6 +35,7 @@ import type {
   OnInvalidCallback,
   StateDeclaration,
   StateOrName,
+  StateTransitionResult,
   TransitionPromise,
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
@@ -104,7 +105,7 @@ export class StateProvider {
    *
    * @deprecated This is a passthrough through to [[Router.params]]
    */
-  get params() {
+  get params(): RawParams {
     return this._routerState._params;
   }
 
@@ -179,7 +180,7 @@ export class StateProvider {
    *
    * @param {StateDeclaration} definition
    */
-  state(definition: StateDeclaration) {
+  state(definition: StateDeclaration): this {
     if (!definition.name) {
       throw stdErr("stateinvalid", `'name' required`);
     }
@@ -208,14 +209,12 @@ export class StateProvider {
   _handleInvalidTargetState(
     fromPath: PathNode[],
     toState: TargetState,
-  ): Promise<any> {
+  ): Promise<StateTransitionResult> {
     const fromState = makeTargetState(this._getRegistry(), fromPath);
 
     const routerState = this._routerState;
 
-    const latestThing = () => routerState._transitionHistory._peekTail();
-
-    const latest = latestThing();
+    const latest = routerState._transitionHistory._peekTail();
 
     const callbackQueue = new Queue<OnInvalidCallback>(
       this._invalidCallbacks.slice(),
@@ -223,7 +222,9 @@ export class StateProvider {
 
     const injector = this._$injector;
 
-    const checkForRedirect = (result: HookResult): Promise<any> | undefined => {
+    const checkForRedirect = (
+      result: HookResult,
+    ): Promise<StateTransitionResult> | undefined => {
       if (!isInstanceOf(result, TargetState)) {
         return undefined;
       }
@@ -240,7 +241,7 @@ export class StateProvider {
         return Rejection.invalid(target.error())._toPromise();
       }
 
-      if (latestThing() !== latest) {
+      if (routerState._transitionHistory._peekTail() !== latest) {
         return Rejection.superseded()._toPromise();
       }
 
@@ -252,9 +253,9 @@ export class StateProvider {
     };
 
     /**
-     * @returns {Promise<any>}
+     * @returns A promise for the eventual target state.
      */
-    function invokeNextCallback(): Promise<any> {
+    function invokeNextCallback(): Promise<StateTransitionResult> {
       const nextCallback = callbackQueue._dequeue();
 
       if (nextCallback === undefined)
@@ -400,9 +401,13 @@ export class StateProvider {
    *
    * @param {*} [options] Transition options
    *
-   * @returns {Promise<any>} A promise representing the state of the new transition.
+   * @returns A promise representing the state of the new transition.
    */
-  go(to: StateOrName, params?: any, options?: any) {
+  go(
+    to: StateOrName,
+    params?: RawParams,
+    options?: TransitionOptions,
+  ): TransitionPromise | Promise<StateTransitionResult> {
     const defautGoOpts = { relative: this.$current, inherit: true };
 
     const transOpts = defaults(options, defautGoOpts, defaultTransOpts);
@@ -418,9 +423,13 @@ export class StateProvider {
    * This may be returned from a Transition Hook to redirect a transition, for example.
    * @param {string | StateDeclaration | StateObject} identifier
    * @param {{}} params
-   * @param {any} [options]
+   * @param {TransitionOptions} [options]
    */
-  target(identifier: StateOrName, params: any = {}, options: any = {}) {
+  target(
+    identifier: StateOrName,
+    params: RawParams = {},
+    options: TransitionOptions = {},
+  ): TargetState {
     // If we're reloading, find the state object to reload from
     if (isObject(options.reload) && !options.reload.name)
       throw new Error("Invalid reload state object");
@@ -429,11 +438,19 @@ export class StateProvider {
     options.reloadState =
       options.reload === true
         ? reg.root()
-        : reg._matcher.find(options.reload, options.relative);
+        : options.reload
+          ? reg._matcher.find(options.reload, options.relative)
+          : undefined;
 
     if (options.reload && !options.reloadState)
       throw new Error(
-        `No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`,
+        `No such reload state '${
+          isString(options.reload)
+            ? options.reload
+            : isObject(options.reload) && "name" in options.reload
+              ? String(options.reload.name)
+              : String(options.reload)
+        }'`,
       );
 
     return new TargetState(this._getRegistry(), identifier, params, options);
@@ -444,9 +461,9 @@ export class StateProvider {
 
     const latestSuccess = routerState._successfulTransitions._peekTail();
 
-    const rootPath = () => [new PathNode(this._getRegistry().root())];
-
-    return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
+    return latestSuccess
+      ? latestSuccess._treeChanges.to
+      : [new PathNode(this._getRegistry().root())];
   }
 
   /**
@@ -470,13 +487,13 @@ export class StateProvider {
    *      will populate $stateParams.
    * @param {TransitionOptions} options Transition options
    *
-   * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
+   * @returns A promise representing the state of the new transition. See [[go]]
    */
   transitionTo(
     to: StateOrName,
     toParams: RawParams = {},
-    options: TransitionOptions | any = {},
-  ): TransitionPromise | Promise<any> {
+    options: TransitionOptions = {},
+  ): TransitionPromise | Promise<StateTransitionResult> {
     options = defaults(options, defaultTransOpts);
     const getCurrent = () => this._routerState._transition;
 
@@ -503,13 +520,13 @@ export class StateProvider {
      * no error occurred.  Likewise, the transition.run() promise may be rejected because of
      * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
      */
-    type RejectionHandler = (error: any) => Promise<any>;
+    type RejectionHandler = (error: unknown) => Promise<StateTransitionResult>;
 
     type RejectedTransitionHandler = (trans: Transition) => RejectionHandler;
 
     const rejectedTransitionHandler: RejectedTransitionHandler =
       (trans: Transition) =>
-      (error: any): Promise<any> => {
+      (error: unknown): Promise<StateTransitionResult> => {
         if (isInstanceOf(error, Rejection)) {
           const isLatest =
             this._routerState._lastStartedTransitionId <= trans.$id;
@@ -670,7 +687,7 @@ export class StateProvider {
 
     const include = this.$current?.includes;
 
-    if (!isDefined(state)) return undefined;
+    if (!isDefined(state) || !include) return undefined;
 
     if (!isDefined(include[state.name])) return false;
 

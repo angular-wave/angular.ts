@@ -44,7 +44,7 @@ import type { ViewConfig } from "../state/views.ts";
 import type { RawParams } from "../params/interface.ts";
 
 export interface Transition {
-  promise: Promise<any>;
+  promise: Promise<StateDeclaration>;
   $id: number;
   /** @internal */
   _aborted?: boolean;
@@ -54,23 +54,30 @@ export interface Transition {
   _transitionService: TransitionService;
   /** @internal */
   _treeChanges: TreeChanges;
-  addResolvable(resolvable: Resolvable | ResolvableLiteral, state?: any): void;
-  entering(): ng.StateDeclaration[];
-  exiting(): ng.StateDeclaration[];
-  views(pathname?: string, state?: any): any[];
-  params(pathname?: string): Record<string, any>;
-  treeChanges(pathname?: string): any;
+  addResolvable(
+    resolvable: Resolvable | ResolvableLiteral,
+    state?: StateOrName,
+  ): void;
+  entering(): StateDeclaration[];
+  exiting(): StateDeclaration[];
+  views(pathname?: string, state?: StateObject): ViewConfig[];
+  params(pathname?: string): RawParams;
+  treeChanges(pathname?: string): TreeChanges | PathNode[];
   valid(): boolean;
-  error(): any;
+  error(): Rejection | undefined;
   originalTransition(): Transition;
   targetState(): TargetState;
   options(): TransitionOptions;
-  to(): any;
-  redirect(targetState: TargetState): any;
-  run(): Promise<any>;
+  to(): StateDeclaration;
+  redirect(targetState: TargetState): Transition;
+  run(): Promise<StateDeclaration>;
   isActive(): boolean;
-  onSuccess(matchCriteria: any, callback: any, options?: any): any;
-  $to(): any;
+  onSuccess(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  $to(): StateObject;
   redirectedFrom(): Transition | null;
 }
 
@@ -80,7 +87,7 @@ const REDIRECT_MAX = 20;
 type DeferredPromise<T> = {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 };
 
 function createDeferredPromise<T>(): DeferredPromise<T> {
@@ -96,6 +103,45 @@ function createDeferredPromise<T>(): DeferredPromise<T> {
   return { promise, resolve, reject };
 }
 
+function nodeIsReloading(node: PathNode, reloadState?: StateObject): boolean {
+  return !!reloadState && node.state.includes[reloadState.name];
+}
+
+function sameReloadAwarePath(
+  pathA: PathNode[],
+  pathB: PathNode[],
+  reloadState?: StateObject,
+): boolean {
+  if (pathA.length !== pathB.length) return false;
+  const pathPrefix = matching(pathA, pathB);
+
+  let retainedCount = 0;
+
+  for (let i = 0; i < pathPrefix.length; i++) {
+    if (!nodeIsReloading(pathPrefix[i], reloadState)) {
+      retainedCount++;
+    }
+  }
+
+  return pathA.length === retainedCount;
+}
+
+function avoidEmptyHash(params: RawParams): RawParams {
+  if (params["#"] !== null && params["#"] !== undefined) {
+    return params;
+  }
+
+  const cleanParams: RawParams = {};
+
+  for (const key in params) {
+    if (key !== "#") {
+      cleanParams[key] = params[key];
+    }
+  }
+
+  return cleanParams;
+}
+
 /**
  * Represents a transition between two states.
  *
@@ -106,7 +152,7 @@ function createDeferredPromise<T>(): DeferredPromise<T> {
  */
 export class Transition {
   static diToken: typeof Transition;
-  promise: Promise<any>;
+  promise: Promise<StateDeclaration>;
   $id: number;
   /** @internal */
   _aborted?: boolean;
@@ -117,7 +163,7 @@ export class Transition {
   /** @internal */
   _treeChanges: TreeChanges;
   /** @internal */
-  _deferred: DeferredPromise<any>;
+  _deferred: DeferredPromise<StateDeclaration>;
   /** @internal */
   _registeredHooks: RegisteredHooks;
   /** @internal */
@@ -126,7 +172,7 @@ export class Transition {
   _options: TransitionOptions;
   success: boolean | undefined;
   /** @internal */
-  _error: any;
+  _error: Rejection | undefined;
 
   /**
    * Creates a new Transition object.
@@ -367,7 +413,7 @@ export class Transition {
   /**
    * @returns {StateObject} the internal from [State] object
    */
-  $from() {
+  $from(): StateObject {
     const fromPath = this._treeChanges.from;
 
     const fromNode = fromPath.length
@@ -380,7 +426,7 @@ export class Transition {
   /**
    * @returns {StateObject} the internal to [State] object
    */
-  $to() {
+  $to(): StateObject {
     const toPath = this._treeChanges.to;
 
     const toNode = toPath.length
@@ -397,7 +443,7 @@ export class Transition {
    *
    * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
    */
-  from() {
+  from(): StateDeclaration {
     return this.$from()!.self;
   }
 
@@ -408,7 +454,7 @@ export class Transition {
    *
    * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
    */
-  to() {
+  to(): StateDeclaration {
     return this.$to()!.self;
   }
 
@@ -419,15 +465,15 @@ export class Transition {
    *
    * @returns {TargetState} the [[TargetState]] of this Transition
    */
-  targetState() {
+  targetState(): TargetState {
     return this._targetState;
   }
 
   /**
    * @param {string} pathname
-   * @returns {any}
+   * @returns {RawParams}
    */
-  params(pathname = "to") {
+  params(pathname = "to"): RawParams {
     const path = (this._treeChanges[pathname] || []) as PathNode[];
 
     const params: RawParams = {};
@@ -678,7 +724,7 @@ export class Transition {
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
    * @returns {PathNode[] | TreeChanges}
    */
-  treeChanges(pathname?: string) {
+  treeChanges(pathname?: string): TreeChanges | PathNode[] {
     return pathname
       ? ((this._treeChanges[pathname] || []) as PathNode[])
       : this._treeChanges;
@@ -694,7 +740,7 @@ export class Transition {
    *
    * @returns {Transition} Returns a new [[Transition]] instance.
    */
-  redirect(targetState: TargetState) {
+  redirect(targetState: TargetState): Transition {
     let redirects = 1;
 
     let trans: Transition | null = this;
@@ -745,10 +791,6 @@ export class Transition {
     // You can wait for the resolve, then redirect to a child state based on the result.
     // The redirected transition does not have to re-fetch the resolve.
     // ---------------------------------------------------------
-    const nodeIsReloading = (reloadState?: StateObject) => (node: PathNode) => {
-      return reloadState && node.state.includes[reloadState.name];
-    };
-
     const params = matching(
       redirectEnteringNodes,
       originalEnteringNodes,
@@ -758,10 +800,10 @@ export class Transition {
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes: PathNode[] = [];
 
-    const isReloading = nodeIsReloading(targetState.options().reloadState);
+    const { reloadState } = targetState.options();
 
     for (let i = 0; i < params.length; i++) {
-      if (!isReloading(params[i])) {
+      if (!nodeIsReloading(params[i], reloadState)) {
         matchingEnteringNodes.push(params[i]);
       }
     }
@@ -856,38 +898,21 @@ export class Transition {
 
     const { reloadState } = this._options;
 
-    const same = (pathA: PathNode[], pathB: PathNode[]) => {
-      if (pathA.length !== pathB.length) return false;
-      const pathPrefix = matching(pathA, pathB);
-
-      let retainedCount = 0;
-
-      for (let i = 0; i < pathPrefix.length; i++) {
-        const node = pathPrefix[i];
-
-        if (!reloadState || !node.state.includes[reloadState.name]) {
-          retainedCount++;
-        }
-      }
-
-      return pathA.length === retainedCount;
-    };
-
     const newTC = this._treeChanges;
 
     const pendTC = pending && pending._treeChanges;
 
     if (
       pendTC &&
-      same(pendTC.to, newTC.to) &&
-      same(pendTC.exiting, newTC.exiting)
+      sameReloadAwarePath(pendTC.to, newTC.to, reloadState) &&
+      sameReloadAwarePath(pendTC.exiting, newTC.exiting, reloadState)
     )
       return "SameAsPending";
 
     if (
       newTC.exiting.length === 0 &&
       newTC.entering.length === 0 &&
-      same(newTC.from, newTC.to)
+      sameReloadAwarePath(newTC.from, newTC.to, reloadState)
     )
       return "SameAsCurrent";
 
@@ -901,9 +926,9 @@ export class Transition {
    *
    * @internal
    *
-   * @returns {Promise<any>} a promise for a successful transition.
+   * @returns {Promise<StateDeclaration>} a promise for a successful transition.
    */
-  run() {
+  run(): Promise<StateDeclaration> {
     // Gets transition hooks array for the given phase
     const getHooksFor = (phase: TransitionHookPhase) =>
       buildHooksForPhase(this, phase);
@@ -994,7 +1019,7 @@ export class Transition {
    *
    * @returns a transition rejection explaining why the transition is invalid, or the reason the transition failed.
    */
-  error() {
+  error(): Rejection | undefined {
     const state = this.$to() as StateObject;
 
     if (state.self.abstract) {
@@ -1046,22 +1071,6 @@ export class Transition {
     const fromStateOrName = this.from();
 
     const toStateOrName = this.to();
-
-    const avoidEmptyHash = (params: RawParams) => {
-      if (params["#"] !== null && params["#"] !== undefined) {
-        return params;
-      }
-
-      const cleanParams: RawParams = {};
-
-      for (const key in params) {
-        if (key !== "#") {
-          cleanParams[key] = params[key];
-        }
-      }
-
-      return cleanParams;
-    };
 
     // (X) means the to state is invalid.
     const id = this.$id,

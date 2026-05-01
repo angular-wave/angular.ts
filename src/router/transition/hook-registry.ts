@@ -1,8 +1,7 @@
 import { removeFrom } from "../../shared/common.ts";
-import { assign, isFunction, values, isString } from "../../shared/utils.ts";
+import { hasOwn, isFunction, isString } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import { TransitionHookScope } from "./transition-hook.ts";
 import type {
@@ -10,6 +9,7 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookMatchCriterion,
+  IStateMatch,
   HookRegOptions,
 } from "./interface.ts";
 import type { TransitionService } from "./transition-service.ts";
@@ -26,6 +26,12 @@ export interface IMatchingNodes {
   entering: PathNode[];
 }
 
+type HookRegistrationFn = (
+  matchObject: HookMatchCriteria,
+  callback: HookFn,
+  options?: HookRegOptions,
+) => DeregisterFn;
+
 /**
  * Tests a state against one hook match criterion.
  */
@@ -36,29 +42,26 @@ export function matchState(
 ): boolean {
   const toMatch = isString(criterion) ? [criterion] : criterion;
 
-  const matchGlobs = (_state: BuiltStateDeclaration): boolean => {
+  if (isFunction(toMatch)) {
+    return !!(toMatch as IStateMatch)(state, transition);
+  }
+
+  if (toMatch) {
     const globStrings = toMatch as string[];
 
     for (let i = 0; i < globStrings.length; i++) {
       const glob = new Glob(globStrings[i]);
 
       if (
-        (glob && glob.matches(_state.name)) ||
-        (!glob && globStrings[i] === _state.name)
+        (glob && glob.matches(state.name)) ||
+        (!glob && globStrings[i] === state.name)
       ) {
         return true;
       }
     }
+  }
 
-    return false;
-  };
-
-  const matchFn = (isFunction(toMatch) ? toMatch : matchGlobs) as unknown as (
-    state: StateObject,
-    transition: Transition,
-  ) => unknown;
-
-  return !!matchFn(state, transition);
+  return false;
 }
 
 /**
@@ -81,7 +84,7 @@ export class RegisteredHook {
 
   constructor(
     tranSvc: TransitionService,
-    eventType: unknown,
+    eventType: TransitionEventType,
     callback: HookFn,
     matchCriteria: HookMatchCriteria,
     removeHookFromRegistry: (hook: RegisteredHook) => void,
@@ -121,34 +124,16 @@ export class RegisteredHook {
   }
 
   /** @internal */
-  _getDefaultMatchCriteria(): HookMatchCriteria {
-    const pathTypes = this.tranSvc._getPathTypes();
-
-    const criteria = {} as HookMatchCriteria;
-
-    for (const key in pathTypes) {
-      criteria[key] = true;
-    }
-
-    return criteria;
-  }
-
-  /** @internal */
   _getMatchingNodes(
     treeChanges: TreeChanges,
     transition: Transition,
-  ): IMatchingNodes {
-    const criteria = assign(
-      this._getDefaultMatchCriteria(),
-      this.matchCriteria,
-    );
-
-    const pathTypes = values(this.tranSvc._getPathTypes());
+  ): IMatchingNodes | null {
+    const pathTypes = this.tranSvc._getPathTypes();
 
     const matchingNodes = {} as IMatchingNodes;
 
-    for (let i = 0; i < pathTypes.length; i++) {
-      const pathType = pathTypes[i];
+    for (const name in pathTypes) {
+      const pathType = pathTypes[name];
 
       const isStateHook = pathType.scope === TransitionHookScope._STATE;
 
@@ -162,11 +147,17 @@ export class RegisteredHook {
           ? [transitionNode]
           : [];
 
-      matchingNodes[pathType.name] = this._matchingNodes(
-        nodes,
-        criteria[pathType.name] as HookMatchCriterion,
-        transition,
-      ) as PathNode[];
+      const criterion = hasOwn(this.matchCriteria, pathType.name)
+        ? (this.matchCriteria[pathType.name] as HookMatchCriterion)
+        : true;
+
+      const matching = this._matchingNodes(nodes, criterion, transition);
+
+      if (!matching) {
+        return null;
+      }
+
+      matchingNodes[pathType.name] = matching;
     }
 
     return matchingNodes;
@@ -176,20 +167,7 @@ export class RegisteredHook {
     treeChanges: TreeChanges,
     transition: Transition,
   ): IMatchingNodes | null {
-    const matches = this._getMatchingNodes(treeChanges, transition);
-
-    const matchedPaths = values(matches);
-
-    let allMatched = true;
-
-    for (let i = 0; i < matchedPaths.length; i++) {
-      if (!matchedPaths[i]) {
-        allMatched = false;
-        break;
-      }
-    }
-
-    return allMatched ? matches : null;
+    return this._getMatchingNodes(treeChanges, transition);
   }
 
   deregister(): void {
@@ -206,7 +184,7 @@ export interface RegisteredHooks {
 type HookSource = {
   /** @internal */
   _registeredHooks?: RegisteredHooks;
-} & Record<string, any>;
+};
 
 /**
  * Registers a hook on either the transition service or a single transition.
@@ -214,18 +192,16 @@ type HookSource = {
 export function registerHook(
   hookSource: HookSource,
   transitionService: TransitionService,
-  eventType: unknown,
+  eventType: TransitionEventType,
   matchCriteria: HookMatchCriteria,
   callback: HookFn,
   options: HookRegOptions = {},
 ): DeregisterFn {
-  const typedEventType = eventType as TransitionEventType;
-
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
 
-  const hooks = (_registeredHooks[typedEventType.name] =
-    _registeredHooks[typedEventType.name] || []);
+  const hooks = (_registeredHooks[eventType.name] =
+    _registeredHooks[eventType.name] || []);
 
   const removeHookFn = (hook: RegisteredHook): void => {
     removeFrom(hooks, hook);
@@ -233,7 +209,7 @@ export function registerHook(
 
   const registeredHook = new RegisteredHook(
     transitionService,
-    typedEventType,
+    eventType,
     callback,
     matchCriteria,
     removeHookFn,
@@ -251,19 +227,12 @@ export function registerHook(
 export function makeEvent(
   hookSource: HookSource,
   transitionService: TransitionService,
-  eventType: unknown,
-): (
-  matchObject: HookMatchCriteria,
-  callback: HookFn,
-  options?: HookRegOptions,
-) => DeregisterFn {
+  eventType: TransitionEventType,
+): HookRegistrationFn {
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
 
-  const typedEventType = eventType as TransitionEventType;
-
-  const hooks = (_registeredHooks[typedEventType.name] =
-    [] as RegisteredHook[]);
+  const hooks = (_registeredHooks[eventType.name] = [] as RegisteredHook[]);
 
   const removeHookFn = (hook: RegisteredHook): void => {
     removeFrom(hooks, hook);
@@ -276,7 +245,7 @@ export function makeEvent(
   ): DeregisterFn {
     const registeredHook = new RegisteredHook(
       transitionService,
-      typedEventType,
+      eventType,
       callback,
       matchObject,
       removeHookFn,
@@ -288,7 +257,9 @@ export function makeEvent(
     return registeredHook.deregister.bind(registeredHook);
   }
 
-  hookSource[typedEventType.name] = hookRegistrationFn;
+  (hookSource as HookSource & Record<string, HookRegistrationFn>)[
+    eventType.name
+  ] = hookRegistrationFn;
 
   return hookRegistrationFn;
 }

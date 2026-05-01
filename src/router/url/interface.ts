@@ -2,6 +2,7 @@ import { StateDeclaration } from "../state/interface.ts";
 import { Param, StateObject } from "../state/state-object.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamType } from "../params/param-type.ts";
+import type { RawParams } from "../params/interface.ts";
 
 export interface UrlMatcherCompileConfig {
   // If state is provided, use the configuration in the `params` block
@@ -17,14 +18,14 @@ export interface UrlMatcherCompileConfig {
  */
 export interface UrlParts {
   path: string;
-  search?: { [key: string]: any };
+  search?: RawParams;
   hash?: string;
 }
 
 /** The result of matching a URL against registered state URLs. */
 export interface MatchResult {
   /** The matched state params */
-  match: any;
+  match: RawParams;
   /** The state that matched */
   state: StateObject;
   /** The state's URL matcher */
@@ -34,7 +35,7 @@ export interface MatchResult {
 }
 
 export interface UrlMatcherCache {
-  segments?: any[];
+  segments?: Array<string | Param>;
   weights?: number[] | (2 | 3 | 1 | undefined)[];
   path?: UrlMatcher[];
   parent?: UrlMatcher;
@@ -57,7 +58,7 @@ export const defaultConfig: UrlMatcherCompileConfig = {
 
 export interface ParamDetails {
   param: Param;
-  value: any;
+  value: unknown;
   isValid: boolean;
   isDefaultValue: boolean;
   squash: boolean | string;

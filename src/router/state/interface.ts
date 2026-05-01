@@ -1,7 +1,9 @@
 import { ParamDeclaration, RawParams } from "../params/interface.ts";
+import type { Param } from "../params/param.ts";
 import { StateObject } from "./state-object.ts";
 import { ViewContext } from "../view/view.ts";
-import { Injectable } from "../../interface.ts";
+import { ControllerConstructor, Injectable } from "../../interface.ts";
+import type { UrlMatcher } from "../url/url-matcher.ts";
 import type { Transition } from "../transition/transition.ts";
 import {
   TransitionStateHookFn,
@@ -17,7 +19,9 @@ export type StateOrName = string | StateDeclaration | StateObject;
 
 export type StateStore = Record<string, StateObject | BuiltStateDeclaration>;
 
-export interface TransitionPromise extends Promise<StateObject> {
+export type StateTransitionResult = StateDeclaration | undefined;
+
+export interface TransitionPromise extends Promise<StateTransitionResult> {
   transition: Transition;
 }
 
@@ -26,6 +30,18 @@ export interface TargetStateDef {
   params?: RawParams;
   options?: TransitionOptions;
 }
+
+export type RouterInjectable = Injectable<(...args: unknown[]) => unknown>;
+
+export type TemplateFactory = (params?: RawParams) => string;
+
+export type TemplateUrlFactory = (
+  params?: RawParams,
+) => string | null | undefined;
+
+export type TemplateProvider = Injectable<
+  (...args: unknown[]) => string | Promise<string>
+>;
 
 /**
  * Object-style state resolves.
@@ -41,7 +57,7 @@ export interface TargetStateDef {
  * }
  * ```
  */
-export type StateResolveObject = { [key: string]: Injectable<any> };
+export type StateResolveObject = { [key: string]: RouterInjectable };
 
 /**
  * Array-style state resolves.
@@ -152,7 +168,7 @@ export interface ViewDeclarationCommon {
    *
    * See: [[Ng1Controller]] for information about component-level router hooks.
    */
-  controller?: Injectable<any> | string;
+  controller?: Injectable<ControllerConstructor> | string;
 
   /**
    * A controller alias name.
@@ -194,7 +210,7 @@ export interface ViewDeclarationCommon {
    * }
    * ```
    */
-  template?: Function | string;
+  template?: TemplateFactory | string;
 
   /**
    * The URL for the HTML template for the view.
@@ -216,7 +232,7 @@ export interface ViewDeclarationCommon {
    * }
    * ```
    */
-  templateUrl?: string | Function;
+  templateUrl?: string | TemplateUrlFactory;
 
   /**
    * Injected function which returns the HTML template.
@@ -229,7 +245,7 @@ export interface ViewDeclarationCommon {
    * }
    * ```
    */
-  templateProvider?: Injectable<any>;
+  templateProvider?: TemplateProvider;
 }
 
 /**
@@ -534,7 +550,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * }
    * ```
    */
-  params?: { [key: string]: ParamDeclaration | any };
+  params?: { [key: string]: ParamDeclaration | unknown };
 
   /**
    * An inherited property to store state data
@@ -548,7 +564,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * Care should be taken if you are using `hasOwnProperty` on the `data` object.
    * Properties from parent objects will return false for `hasOwnProperty`.
    */
-  data?: any;
+  data?: unknown;
 
   /**
    * Synchronously or asynchronously redirects Transitions to a different state/params
@@ -646,7 +662,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * });
    * ```
    */
-  onEnter?: TransitionStateHookFn | Injectable<any>;
+  onEnter?: TransitionStateHookFn | RouterInjectable;
   /**
    * A state hook invoked when a state is being retained.
    *
@@ -673,7 +689,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * });
    * ```
    */
-  onRetain?: TransitionStateHookFn | Injectable<any>;
+  onRetain?: TransitionStateHookFn | RouterInjectable;
   /**
    * A state hook invoked when a state is being exited.
    *
@@ -700,7 +716,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * });
    * ```
    */
-  onExit?: TransitionStateHookFn | Injectable<any>;
+  onExit?: TransitionStateHookFn | RouterInjectable;
 
   /**
    * Marks all the state's parameters as `dynamic`.
@@ -743,16 +759,25 @@ export type BuiltStateDeclaration = StateDeclaration & {
   navigable?: BuiltStateDeclaration | null;
 
   /** URL object built from url / parent / root */
-  url?: any;
+  url?: UrlMatcher;
 
   /** Computed parameters of this state */
-  params?: Record<string, any>;
+  params?: Record<string, Param>;
 
   /** Optional parent state */
   parent?: StateDeclaration | null;
 
   /** Optional inherited data */
-  data?: any;
+  data?: unknown;
+
+  /** Built state hook invoked when the state is entered. */
+  onEnter?: TransitionStateHookFn;
+
+  /** Built state hook invoked when the state is retained. */
+  onRetain?: TransitionStateHookFn;
+
+  /** Built state hook invoked when the state is exited. */
+  onExit?: TransitionStateHookFn;
 
   /** @internal */
   _stateObjectCache?: { nameGlob: Glob } | null;

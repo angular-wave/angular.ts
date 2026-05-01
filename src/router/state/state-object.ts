@@ -9,8 +9,13 @@ import {
 } from "../../shared/utils.ts";
 import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
-import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
+import type {
+  BuiltStateDeclaration,
+  StateDeclaration,
+  ViewDeclaration,
+} from "./interface.ts";
 import type { TransitionStateHookFn } from "../transition/interface.ts";
+import type { UrlMatcher } from "../url/url-matcher.ts";
 
 /**
  * Internal representation of a ng-router state.
@@ -27,23 +32,26 @@ export class StateObject {
   static isStateDeclaration(
     obj: StateObject | StateDeclaration,
   ): obj is StateDeclaration {
-    return isFunction((obj as any)._state);
+    return isFunction((obj as { _state?: unknown })._state);
   }
 
-  static isState(obj: any): obj is StateObject {
-    return isObject(obj._stateObjectCache);
+  static isState(obj: unknown): obj is StateObject {
+    return (
+      isObject(obj) &&
+      isObject((obj as { _stateObjectCache?: unknown })._stateObjectCache)
+    );
   }
 
-  name;
-  navigable: { url: any } | undefined | null;
+  name: string;
+  navigable: StateObject | undefined | null;
   parent: StateObject | null | undefined;
-  params: ArrayLike<Param> | undefined;
-  url: { parameter: (id: any, opts: {}) => any } | undefined;
-  data: any;
-  includes: any;
+  params: Record<string, Param> | undefined;
+  url: UrlMatcher | undefined;
+  data: unknown;
+  includes!: Record<string, boolean>;
   path: StateObject[] | undefined;
   /** @internal */
-  _views: any;
+  _views: Record<string, ViewDeclaration> | undefined;
   resolvables: Resolvable[] | undefined;
   onEnter: TransitionStateHookFn | undefined;
   onRetain: TransitionStateHookFn | undefined;
@@ -78,11 +86,11 @@ export class StateObject {
    * reference to the actual `State` instance, the original definition object passed to
    * `$stateProvider.state()`, or the fully-qualified name.
    *
-   * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
+   * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
    *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
-  is(ref: any): boolean {
+  is(ref: StateObject | StateDeclaration | string): boolean {
     return this === ref || this.self === ref || this.fqn() === ref;
   }
 

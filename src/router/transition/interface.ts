@@ -1,4 +1,4 @@
-import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
+import { StateDeclaration } from "../state/interface.ts";
 import { PredicateBinary } from "../../shared/interface.ts";
 import { Transition } from "./transition.ts";
 import { StateObject } from "../state/state-object.ts";
@@ -274,11 +274,9 @@ export type HookFn = TransitionHookFn | TransitionStateHookFn;
  *    - If the promise resolves to anything else, the transition will resume
  * - Anything else: the transition will resume
  */
-export type HookResult =
-  | boolean
-  | TargetState
-  | void
-  | Promise<boolean | TargetState | void>;
+export type HookResultValue = boolean | TargetState | void;
+
+export type HookResult = HookResultValue | Promise<HookResultValue>;
 
 /**
  * These options may be provided when registering a Transition Hook (such as `onStart`)
@@ -307,7 +305,7 @@ export interface HookRegOptions {
 }
 
 /** A predicate type which tests if a [[StateObject]] and [[Transition]] passes some test. Returns a boolean. */
-export type IStateMatch = PredicateBinary<BuiltStateDeclaration, Transition>;
+export type IStateMatch = PredicateBinary<StateObject, Transition>;
 
 /**
  * Hook Criterion used to match a transition.

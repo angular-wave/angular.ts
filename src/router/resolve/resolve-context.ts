@@ -1,11 +1,21 @@
 import { stringify } from "../../shared/strings.ts";
-import { isArray, isInstanceOf, isUndefined } from "../../shared/utils.ts";
-import { subPath } from "../path/path-utils.ts";
+import {
+  isArray,
+  isInstanceOf,
+  isString,
+  isUndefined,
+} from "../../shared/utils.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { Transition } from "../transition/transition.ts";
 import { Resolvable, type ResolvableLiteral } from "./resolvable.ts";
+import type { ResolvableData, ResolvableToken } from "./interface.ts";
+
+export type ResolvedToken = {
+  token: ResolvableToken;
+  value: ResolvableData;
+};
 
 /**
  * Provides resolve lookup and execution helpers for a specific transition path.
@@ -28,8 +38,8 @@ export class ResolveContext {
   /**
    * Returns the unique tokens available from all resolvables in this path.
    */
-  getTokens(): any[] {
-    const tokens: any[] = [];
+  getTokens(): ResolvableToken[] {
+    const tokens: ResolvableToken[] = [];
 
     for (let i = 0; i < this._path.length; i++) {
       const { resolvables } = this._path[i];
@@ -49,7 +59,7 @@ export class ResolveContext {
   /**
    * Returns the most local resolvable registered for the specified token.
    */
-  getResolvable(token: string): Resolvable {
+  getResolvable(token: ResolvableToken): Resolvable {
     let matching: Resolvable | undefined;
 
     for (let i = 0; i < this._path.length; i++) {
@@ -71,10 +81,14 @@ export class ResolveContext {
    * Returns a child resolve context scoped to the specified state.
    */
   subContext(state: StateObject | BuiltStateDeclaration): ResolveContext {
-    const contextPath = subPath(
-      this._path,
-      (node?: PathNode) => node?.state.name === state.name,
-    );
+    let contextPath: PathNode[] | undefined;
+
+    for (let i = 0; i < this._path.length; i++) {
+      if (this._path[i].state.name === state.name) {
+        contextPath = this._path.slice(0, i + 1);
+        break;
+      }
+    }
 
     return new ResolveContext(
       (contextPath || this._path) as PathNode[],
@@ -106,7 +120,7 @@ export class ResolveContext {
 
     const resolvables: Resolvable[] = [];
 
-    const keys: any[] = [];
+    const keys: ResolvableToken[] = [];
 
     for (let i = 0; i < newResolvables.length; i++) {
       const resolvable = newResolvables[i];
@@ -139,8 +153,8 @@ export class ResolveContext {
   /**
    * Resolves the path's resolvables.
    */
-  resolvePath(eagerOnly = false, trans: Transition): Promise<any> | any {
-    const promises: Promise<{ token: any; value: any }>[] = [];
+  resolvePath(eagerOnly = false, trans: Transition): Promise<ResolvedToken[]> {
+    const promises: Promise<ResolvedToken>[] = [];
 
     for (let i = 0; i < this._path.length; i++) {
       const node = this._path[i];
@@ -187,7 +201,16 @@ export class ResolveContext {
   getDependencies(resolvable: Resolvable): Resolvable[] {
     const node = this.findNode(resolvable);
 
-    const dependencyPath = subPath(this._path, (x) => x === node) || this._path;
+    let dependencyPath = this._path;
+
+    if (node) {
+      for (let i = 0; i < this._path.length; i++) {
+        if (this._path[i] === node) {
+          dependencyPath = this._path.slice(0, i + 1);
+          break;
+        }
+      }
+    }
 
     const availableResolvables: Resolvable[] = [];
 
@@ -203,7 +226,7 @@ export class ResolveContext {
       }
     }
 
-    const latestByToken = new Map<any, Resolvable>();
+    const latestByToken = new Map<ResolvableToken, Resolvable>();
 
     for (let i = 0; i < availableResolvables.length; i++) {
       const candidate = availableResolvables[i];
@@ -216,7 +239,7 @@ export class ResolveContext {
     const dependencies: Resolvable[] = [];
 
     for (let i = 0; i < deps.length; i++) {
-      const token = deps[i] as string;
+      const token = deps[i];
 
       const matching = latestByToken.get(token);
 
@@ -225,9 +248,9 @@ export class ResolveContext {
         continue;
       }
 
-      let fromInjector: any;
+      let fromInjector: unknown;
 
-      if (this._injector) {
+      if (this._injector && isString(token)) {
         try {
           fromInjector = this._injector.get(token);
         } catch {
