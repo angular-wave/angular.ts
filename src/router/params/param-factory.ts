@@ -17,7 +17,11 @@ export class ParamFactory {
    * @param {ParamType | null} type
    * @param {ng.StateDeclaration} state
    */
-  fromConfig(id: string, type: ParamType | null, state: ng.StateDeclaration) {
+  fromConfig(
+    id: string,
+    type: ParamType | null,
+    state: ng.StateDeclaration,
+  ): Param {
     return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
   }
 
@@ -26,7 +30,7 @@ export class ParamFactory {
    * @param {ParamType} type
    * @param {ng.StateDeclaration} state
    */
-  fromPath(id: string, type: ParamType, state: ng.StateDeclaration) {
+  fromPath(id: string, type: ParamType, state: ng.StateDeclaration): Param {
     return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
   }
 
@@ -35,7 +39,7 @@ export class ParamFactory {
    * @param {ParamType} type
    * @param {ng.StateDeclaration} state
    */
-  fromSearch(id: string, type: ParamType, state: ng.StateDeclaration) {
+  fromSearch(id: string, type: ParamType, state: ng.StateDeclaration): Param {
     return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
   }
 }

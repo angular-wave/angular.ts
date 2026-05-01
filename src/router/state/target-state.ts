@@ -39,11 +39,14 @@ import type { StateObject } from "./state-object.ts";
  * or invalid (the state being targeted is not registered).
  */
 export class TargetState {
-  static isDef(obj: any): obj is TargetStateDef {
+  static isDef(obj: unknown): obj is TargetStateDef {
     return (
-      obj &&
-      obj.state &&
-      (isString(obj.state) || (isObject(obj.state) && isString(obj.state.name)))
+      isObject(obj) &&
+      "state" in obj &&
+      (obj as { state?: unknown }).state !== undefined &&
+      (isString((obj as { state?: unknown }).state) ||
+        (isObject((obj as { state?: unknown }).state) &&
+          isString((obj as { state: { name?: unknown } }).state.name)))
     );
   }
 
@@ -134,8 +137,8 @@ export class TargetState {
 
     if (!this._definition && !!base) {
       const stateName =
-        isObject(base) && isString((base as any).name)
-          ? (base as any).name
+        isObject(base) && isString((base as { name?: unknown }).name)
+          ? (base as { name: string }).name
           : base;
 
       return `Could not resolve '${this.name()}' from state '${stateName}'`;

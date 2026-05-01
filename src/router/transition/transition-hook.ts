@@ -5,7 +5,7 @@ import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
-import type { HookResult } from "./interface.ts";
+import type { HookResult, HookResultValue } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
@@ -32,9 +32,9 @@ export const TransitionHookScope = {
 
 export type TransitionHookScope = number;
 
-type HookErrorHandler = (error: any) => any;
+type HookErrorHandler = (error: unknown) => unknown;
 
-type HookResultHandler = (result: HookResult) => any;
+type HookResultHandler = (result: HookResult) => unknown;
 
 export interface TransitionHookOptions {
   current: () => Transition | void; // path?
@@ -58,7 +58,7 @@ export class TransitionHook {
   static HANDLE_RESULT: (hook: TransitionHook) => HookResultHandler;
   static LOG_REJECTED_RESULT: (hook: TransitionHook) => HookResultHandler;
   static LOG_ERROR: (hook?: {
-    logError: (error: any) => any;
+    logError: (error: unknown) => unknown;
   }) => HookErrorHandler;
 
   static REJECT_ERROR: () => HookErrorHandler;
@@ -70,14 +70,16 @@ export class TransitionHook {
   options: TransitionHookOptions;
   /** @internal */
   _type: TransitionEventType;
-  isSuperseded: () => boolean;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   /**
    * Runs hooks in sequence, waiting for each async hook before invoking the next.
    */
-  static chain(hooks: TransitionHook[], waitFor?: Promise<any>): Promise<any> {
+  static chain(
+    hooks: TransitionHook[],
+    waitFor?: Promise<unknown>,
+  ): Promise<unknown> {
     let promise = waitFor || Promise.resolve();
 
     for (let i = 0; i < hooks.length; i++) {
@@ -91,8 +93,8 @@ export class TransitionHook {
 
   static invokeHooks(
     hooks: TransitionHook[],
-    doneCallback: () => Promise<any>,
-  ): Promise<any> {
+    doneCallback: () => Promise<unknown>,
+  ): Promise<unknown> {
     for (let idx = 0; idx < hooks.length; idx++) {
       const hookResult = hooks[idx].invokeHook();
 
@@ -101,10 +103,8 @@ export class TransitionHook {
 
         return TransitionHook.chain(
           remainingHooks,
-          hookResult as Promise<any>,
-        ).then(() => {
-          doneCallback();
-        });
+          Promise.resolve(hookResult),
+        ).then(doneCallback);
       }
     }
 
@@ -132,10 +132,15 @@ export class TransitionHook {
     this.registeredHook = registeredHook;
     this.options = assign({}, defaultOptions, options) as TransitionHookOptions;
     this._type = registeredHook._eventType;
-    this.isSuperseded = () =>
-      this._type.hookPhase === TransitionHookPhase._RUN &&
-      !this.options.transition?.isActive();
     this._exceptionHandler = exceptionHandler;
+  }
+
+  /** @internal */
+  _isSuperseded(): boolean {
+    return (
+      this._type.hookPhase === TransitionHookPhase._RUN &&
+      !this.options.transition?.isActive()
+    );
   }
 
   /**
@@ -149,7 +154,7 @@ export class TransitionHook {
    * Executes the underlying hook callback and normalizes its result into
    * the router's rejection / redirect model.
    */
-  invokeHook(): Promise<any> | undefined {
+  invokeHook(): unknown {
     const hook = this.registeredHook;
 
     if (hook._deregistered) return undefined;
@@ -167,20 +172,20 @@ export class TransitionHook {
         this.stateContext as StateDeclaration,
       ) as HookResult;
 
-    const normalizeErr = (err: any): Promise<any> =>
+    const normalizeErr = (err: unknown): Promise<never> =>
       Rejection.normalize(err)._toPromise();
 
-    const handleError = (err: Rejection): any =>
+    const handleError = (err: Rejection): unknown =>
       hook._eventType.getErrorHandler()(err);
 
-    const handleResult = (result: HookResult): any =>
+    const handleResult = (result: HookResult): unknown =>
       hook._eventType.getResultHandler(this)(result);
 
     try {
       const result = invokeCallback();
 
       if (!this._type.synchronous && isPromise(result)) {
-        return (result as Promise<any>)
+        return Promise.resolve(result)
           .catch(normalizeErr)
           .then(handleResult, handleError);
       }
@@ -198,13 +203,13 @@ export class TransitionHook {
   /**
    * Converts raw hook return values into transition outcomes.
    */
-  handleHookResult(result: HookResult): Promise<any> | undefined {
+  handleHookResult(result: HookResult): Promise<unknown> | undefined {
     const notCurrent = this.getNotCurrentRejection();
 
     if (notCurrent) return notCurrent;
 
     if (isPromise(result)) {
-      return (result as Promise<any>).then((val) => this.handleHookResult(val));
+      return Promise.resolve(result).then((val) => this.handleHookResult(val));
     }
 
     if (result === false) {
@@ -221,12 +226,12 @@ export class TransitionHook {
   /**
    * Returns a rejection when the transition was aborted or superseded.
    */
-  getNotCurrentRejection(): Promise<any> | undefined {
+  getNotCurrentRejection(): Promise<never> | undefined {
     if (this.transition._aborted) {
       return Rejection.aborted()._toPromise();
     }
 
-    if (this.isSuperseded()) {
+    if (this._isSuperseded()) {
       return Rejection.superseded(this.options.current())._toPromise();
     }
 
@@ -252,14 +257,14 @@ export class TransitionHook {
 
 TransitionHook.HANDLE_RESULT =
   (hook: TransitionHook) =>
-  (result: HookResult): any =>
+  (result: HookResult): unknown =>
     hook.handleHookResult(result);
 
 TransitionHook.LOG_REJECTED_RESULT =
   (hook: TransitionHook) =>
   (result: HookResult): undefined => {
     if (isPromise(result)) {
-      (result as Promise<any>).catch((err: any) =>
+      Promise.resolve(result as Promise<HookResultValue>).catch((err) =>
         hook.logError(Rejection.normalize(err)),
       );
     }
@@ -268,13 +273,13 @@ TransitionHook.LOG_REJECTED_RESULT =
   };
 
 TransitionHook.LOG_ERROR =
-  (hook?: { logError: (error: any) => any }) =>
-  (error: any): any =>
+  (hook?: { logError: (error: unknown) => unknown }) =>
+  (error: unknown): unknown =>
     hook?.logError(error);
 
 TransitionHook.REJECT_ERROR =
   () =>
-  (error: any): Promise<any> => {
+  (error: unknown): Promise<never> => {
     const promise = Promise.reject(error);
 
     promise.catch(() => 0);
@@ -284,6 +289,6 @@ TransitionHook.REJECT_ERROR =
 
 TransitionHook.THROW_ERROR =
   () =>
-  (error: any): never => {
+  (error: unknown): never => {
     throw error;
   };

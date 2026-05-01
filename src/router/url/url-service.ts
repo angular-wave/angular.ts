@@ -7,7 +7,6 @@ import {
 } from "../../injection-tokens.ts";
 import {
   assign,
-  entries,
   isDefined,
   isFunction,
   isInstanceOf,
@@ -19,11 +18,16 @@ import { stripLastPathElement } from "../../shared/strings.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamFactory } from "../params/param-factory.ts";
 import { getBaseHref } from "../../shared/dom.ts";
-import type { MatchResult, UrlParts } from "./interface.ts";
+import type {
+  MatchResult,
+  UrlMatcherCompileConfig,
+  UrlParts,
+} from "./interface.ts";
 import type { StateProvider } from "../../router/state/state-service.ts";
 import type { UrlConfigProvider } from "./url-config.ts";
 import type { UrlConfigProvider as UrlConfigProviderType } from "../../router/url/url-config.ts";
 import type { StateObject } from "../state/state-object.ts";
+import type { RawParams } from "../params/interface.ts";
 import type { StateParams } from "../params/state-params.ts";
 
 const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
@@ -207,11 +211,11 @@ export class UrlService {
    * @param {string} [newUrl] The new value for the URL.
    *               This url should reflect only the new internal [[path]], [[search]], and [[hash]] values.
    *               It should not include the protocol, site, port, or base path of an absolute HREF.
-   * @param {any} [state] The history's state object, i.e., pushState (if the LocationServices implementation supports it)
+   * @param {unknown} [state] The history's state object, i.e., pushState (if the LocationServices implementation supports it)
    *
    * @return the url (after potentially being processed)
    */
-  url(newUrl?: string, state?: any): string {
+  url(newUrl?: string, state?: unknown): string {
     const location = this._getLocation();
 
     if (isDefined(newUrl)) {
@@ -312,10 +316,7 @@ export class UrlService {
   }
 
   /** @internal */
-  _transitionToStateRoute(
-    state: StateObject,
-    params: Record<string, any>,
-  ): void {
+  _transitionToStateRoute(state: StateObject, params: RawParams): void {
     const $state = this._stateService;
 
     if (!$state) return;
@@ -367,7 +368,7 @@ export class UrlService {
    * Given a URL (as a [[UrlParts]] object), check all state routes and determine the best match.
    * Return the result as a [[MatchResult]].
    * @param {UrlParts} url
-   * @returns {any}
+   * @returns {MatchResult | undefined}
    */
   match(url: UrlParts): MatchResult | undefined {
     url = assign({ path: "", search: {}, hash: "" }, url);
@@ -419,18 +420,22 @@ export class UrlService {
    *
    * Pushes a new location to the browser history.
    * @internal
-   * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
+   * @param {{ format: (arg0: StateParams) => string | null; }} urlMatcher
    * @param {StateParams} params
    * @param {string} options
    */
   push(
-    urlMatcher: { format: (arg0: any) => string | undefined },
+    urlMatcher: { format: (arg0: StateParams) => string | null },
     params: StateParams,
     options: { replace?: boolean },
   ): void {
     const replace = options && !!options.replace;
 
-    this.url(urlMatcher.format(params || {}), replace);
+    const url = urlMatcher.format(params || {});
+
+    if (!isNull(url)) {
+      this.url(url, replace);
+    }
   }
 
   /**
@@ -443,17 +448,17 @@ export class UrlService {
      * $bob = $url.href(matcher, params);
      * // $bob == "/about/bob";
      * ```
-     * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-     * @param {Object} params An object of parameter values to fill the matcher's required parameters.
-     * @param {{ absolute: any; }} options Options object. The options are:
+     * @param {{ format: (arg0: RawParams) => string | null; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
+     * @param {RawParams} params An object of parameter values to fill the matcher's required parameters.
+     * @param {{ absolute?: boolean; }} options Options object. The options are:
 
     - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
      * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
      */
   href(
-    urlMatcher: { format: (arg0: any) => any },
-    params: object,
-    options: { absolute: any },
+    urlMatcher: { format: (arg0: RawParams) => string | null },
+    params: RawParams,
+    options: { absolute?: boolean },
   ): string | null {
     let url = urlMatcher.format(params);
 
@@ -486,7 +491,10 @@ export class UrlService {
    * @param {*} [config]  The config object hash.
    * @returns The UrlMatcher.
    */
-  compile(urlPattern: string, config?: any) {
+  compile(
+    urlPattern: string,
+    config?: UrlMatcherCompileConfig & { params?: RawParams },
+  ) {
     const urlConfig = this._config;
 
     // backward-compatible support for config.params -> config.state.params
@@ -502,60 +510,74 @@ export class UrlService {
       urlPattern,
       urlConfig.paramTypes,
       this._paramFactory,
-      assign(globalConfig, config),
+      assign(globalConfig, config) as UrlMatcherCompileConfig,
     );
   }
 
   /**
    * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
    *
-   * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
+   * @param {unknown} object  The object to perform the type check against.
    * @returns `true` if the object matches the `UrlMatcher` interface, by
    *          implementing all the same methods.
    */
-  isMatcher(object: UrlMatcher & Record<string, any>): boolean {
+  isMatcher(object: unknown): object is UrlMatcher {
     if (!isObject(object)) return false;
-    let result = true;
+    const candidate = object as Record<string, unknown>;
 
-    entries(UrlMatcher.prototype as unknown as Record<string, unknown>).forEach(
-      ([name, val]) => {
-        if (isFunction(val))
-          result =
-            result && isDefined(object[name]) && isFunction(object[name]);
-      },
-    );
+    const { prototype } = UrlMatcher;
 
-    return result;
+    const methodNames = Object.keys(prototype);
+
+    for (let i = 0; i < methodNames.length; i++) {
+      const { [i]: name } = methodNames;
+
+      const val = Object.getOwnPropertyDescriptor(prototype, name)?.value;
+
+      if (
+        isFunction(val) &&
+        (!isDefined(candidate[name]) || !isFunction(candidate[name]))
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
 
 function stateRouteMatchPriority(
   urlMatcher: UrlMatcher,
-  params: Record<string, any>,
+  params: RawParams,
 ): number {
-  const optional = urlMatcher.parameters().filter((param) => param.isOptional);
+  const parameters = urlMatcher.parameters();
 
-  if (!optional.length) return EXACT_ROUTE_MATCH_PRIORITY;
+  let optionalCount = 0;
 
   let matched = 0;
 
-  for (let i = 0; i < optional.length; i++) {
-    if (params[optional[i].id]) matched++;
+  for (let i = 0; i < parameters.length; i++) {
+    const param = parameters[i];
+
+    if (!param.isOptional) continue;
+    optionalCount++;
+
+    if (params[param.id]) matched++;
   }
 
-  return matched / optional.length;
+  return optionalCount ? matched / optionalCount : EXACT_ROUTE_MATCH_PRIORITY;
 }
 
 /**
  * @param {string} url
  * @param {boolean} isHtml5
- * @param {any} absolute
+ * @param {boolean | undefined} absolute
  * @param {string} baseHref
  */
 function appendBasePath(
   url: string,
   isHtml5: boolean,
-  absolute: any,
+  absolute: boolean | undefined,
   baseHref: string,
 ) {
   if (baseHref === "/") return url;

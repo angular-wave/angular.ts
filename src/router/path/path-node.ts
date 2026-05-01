@@ -43,7 +43,13 @@ export class PathNode {
         inherit: false,
       });
       this.paramValues = {};
-      this.resolvables = state.resolvables?.map((res) => res.clone()) || [];
+      this.resolvables = [];
+
+      const resolvables = state.resolvables || [];
+
+      for (let i = 0; i < resolvables.length; i++) {
+        this.resolvables.push(resolvables[i].clone());
+      }
     }
   }
 

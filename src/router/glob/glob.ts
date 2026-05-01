@@ -60,18 +60,23 @@ export class Glob {
   constructor(text: string) {
     this._text = text;
 
-    const regexpString = this._text
-      .split(".")
-      .map((seg: string) => {
-        if (seg === "**") return "(?:|(?:\\.[^.]*)*)";
+    const segments = this._text.split(".");
 
-        if (seg === "*") return "\\.[^.]*";
+    const regexpParts: string[] = [];
 
-        return `\\.${seg}`;
-      })
-      .join("");
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
 
-    this._regexp = new RegExp(`^${regexpString}$`);
+      if (segment === "**") {
+        regexpParts.push("(?:|(?:\\.[^.]*)*)");
+      } else if (segment === "*") {
+        regexpParts.push("\\.[^.]*");
+      } else {
+        regexpParts.push(`\\.${segment}`);
+      }
+    }
+
+    this._regexp = new RegExp(`^${regexpParts.join("")}$`);
   }
 
   matches(name: string): boolean {

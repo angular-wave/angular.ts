@@ -25,6 +25,15 @@ export type TransitionRejectionDetail =
 
 let id = 0;
 
+function detailToString(data: TransitionRejectionDetail): string {
+  return data &&
+    typeof data === "object" &&
+    "toString" in data &&
+    data.toString !== Object.prototype.toString
+    ? String(data.toString())
+    : stringify(data);
+}
+
 /**
  * Normalized representation of a transition failure, abort, ignore, or redirect.
  */
@@ -101,22 +110,14 @@ export class Rejection {
   }
 
   toString(): string {
-    const detailString = (data: TransitionRejectionDetail): string =>
-      data &&
-      typeof data === "object" &&
-      "toString" in data &&
-      data.toString !== Object.prototype.toString
-        ? String(data.toString())
-        : stringify(data);
-
-    return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailString(this.detail)})`;
+    return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
   }
 
   /**
    * Returns a rejected promise tagged with this rejection instance.
    */
   /** @internal */
-  _toPromise(): Promise<any> & { _transitionRejection: Rejection } {
+  _toPromise(): Promise<never> & { _transitionRejection: Rejection } {
     const promise = Promise.reject(this);
 
     promise.catch(() => 0);

@@ -12,7 +12,15 @@ import { DirectiveSuffix } from "../core/compile/compile.ts";
 import { kebobString } from "../shared/strings.ts";
 import { Resolvable } from "./resolve/resolvable.ts";
 import type { ResolveContext } from "./resolve/resolve-context.ts";
-import type { Injectable } from "../interface.ts";
+import type { ResolveFn } from "./resolve/interface.ts";
+import type { RawParams } from "./params/interface.ts";
+import type {
+  RouterInjectable,
+  TemplateFactory,
+  TemplateProvider,
+  TemplateUrlFactory,
+  ViewDeclarationCommon,
+} from "./state/interface.ts";
 
 type BindingTuple = {
   name: string;
@@ -20,7 +28,7 @@ type BindingTuple = {
 };
 
 type TemplateResult =
-  | Promise<{ template: string }>
+  | Promise<{ template: string | undefined }>
   | Promise<{ component: string }>;
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
@@ -37,9 +45,11 @@ type TemplateConfigType =
   | "default";
 
 function asTemplate(
-  result: string | Promise<string>,
-): Promise<{ template: string }> {
-  return Promise.resolve(result).then((str) => ({ template: str }));
+  result: string | Promise<string> | null,
+): Promise<{ template: string | undefined }> {
+  return Promise.resolve(result).then((str) => ({
+    template: str ?? undefined,
+  }));
 }
 
 function asComponent(
@@ -48,7 +58,7 @@ function asComponent(
   return Promise.resolve(result).then((str) => ({ component: str }));
 }
 
-function getConfigType(config: any): TemplateConfigType {
+function getConfigType(config: ViewDeclarationCommon): TemplateConfigType {
   if (isDefined(config.template)) return "template";
 
   if (isDefined(config.templateUrl)) return "templateUrl";
@@ -96,21 +106,19 @@ export class TemplateFactoryProvider {
    * Resolves a state's view config into either concrete template HTML or a component name.
    */
   fromConfig(
-    config: any,
-    params: any,
+    config: ViewDeclarationCommon,
+    params: RawParams,
     context: ResolveContext,
   ): TemplateResult {
     switch (getConfigType(config)) {
       case "template":
-        return asTemplate(this.fromString(config.template, params) as string);
+        return asTemplate(this.fromString(config.template!, params));
       case "templateUrl":
-        return asTemplate(
-          this.fromUrl(config.templateUrl, params) as Promise<string>,
-        );
+        return asTemplate(this.fromUrl(config.templateUrl!, params));
       case "templateProvider":
-        return asTemplate(this.fromProvider(config.templateProvider, context));
+        return asTemplate(this.fromProvider(config.templateProvider!, context));
       case "component":
-        return asComponent(config.component);
+        return asComponent(config.component as string);
       default:
         return asTemplate(DEFAULT_TEMPLATE);
     }
@@ -119,34 +127,37 @@ export class TemplateFactoryProvider {
   /**
    * Resolves a literal template string or template factory function.
    */
-  fromString(template: string | Function, params?: any): string | object {
-    return isFunction(template) ? (template as Function)(params) : template;
+  fromString(template: string | TemplateFactory, params?: RawParams): string {
+    return isFunction(template) ? template(params) : template;
   }
 
   /**
    * Fetches a template from a static URL or a URL factory.
    */
-  fromUrl(url: string | Function, params: object): Promise<string> | null {
-    if (isFunction(url)) url = (url as Function)(params) as string;
+  fromUrl(
+    url: string | TemplateUrlFactory,
+    params: RawParams,
+  ): Promise<string> | null {
+    const templateUrl = isFunction(url) ? url(params) : url;
 
-    if (isNullOrUndefined(url)) return null;
+    if (isNullOrUndefined(templateUrl)) return null;
 
-    return this._templateRequest!(url as string);
+    return this._templateRequest!(templateUrl);
   }
 
   fromProvider(
-    provider: Injectable<any>,
+    provider: TemplateProvider,
     context: ResolveContext,
   ): string | Promise<string> {
     const deps = annotate(provider);
 
-    const providerFn = isArray(provider)
-      ? (provider[provider.length - 1] as Function)
-      : provider;
+    const providerFn = (
+      isArray(provider) ? provider[provider.length - 1] : provider
+    ) as ResolveFn;
 
     const resolvable = new Resolvable("", providerFn, deps);
 
-    return resolvable.get(context);
+    return resolvable.get(context) as Promise<string>;
   }
 
   /**
@@ -205,7 +216,10 @@ function componentAttributeTemplate(
 
     const fn = res && res.data;
 
-    const args = (fn && annotate(fn)) || [];
+    const args =
+      fn && (isFunction(fn) || isArray(fn))
+        ? (annotate(fn as RouterInjectable) as string[])
+        : [];
 
     const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
 

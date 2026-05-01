@@ -10,7 +10,12 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
-import type { ParamDeclaration, RawParams, Replace } from "./interface.ts";
+import type {
+  ParamDeclaration,
+  ParamDefaultValueFactory,
+  RawParams,
+  Replace,
+} from "./interface.ts";
 import type { ParamTypes } from "./param-types.ts";
 import type { UrlConfigProvider } from "../url/url-config.ts";
 
@@ -18,8 +23,8 @@ type DefTypeValue = (typeof DefType)[keyof typeof DefType];
 
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
 
-function isShorthand(cfg: ParamDeclaration | any): boolean {
-  const config = cfg || {};
+function isShorthand(cfg: unknown): boolean {
+  const config = (cfg || {}) as Record<string, unknown>;
 
   for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
     if (hasOwn(config, SHORTHAND_KEYS[i])) {
@@ -63,15 +68,22 @@ function getParamDeclaration(
  * @param {ParamDeclaration} cfg
  * @return {ParamDeclaration}
  */
-function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
+function unwrapShorthand(cfg: unknown): ParamDeclaration {
   cfg = isShorthand(cfg) ? { value: cfg } : cfg;
-  getStaticDefaultValue._cacheable = true;
-  function getStaticDefaultValue() {
-    return cfg.value;
-  }
-  const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
 
-  return assign(cfg, { _fn });
+  const getStaticDefaultValue: ParamDefaultValueFactory = () => {
+    return (cfg as ParamDeclaration).value;
+  };
+
+  getStaticDefaultValue._cacheable = true;
+
+  const paramConfig = cfg as ParamDeclaration;
+
+  const _fn = isInjectable(paramConfig.value)
+    ? paramConfig.value
+    : getStaticDefaultValue;
+
+  return assign(paramConfig, { _fn });
 }
 
 /**
@@ -187,6 +199,20 @@ function getReplace(
   return result;
 }
 
+function getArrayMode(
+  id: string,
+  location: DefTypeValue,
+  config: ParamDeclaration,
+): boolean | "auto" {
+  const arrayDefaults = {
+    array: location === DefType._SEARCH ? "auto" : false,
+  };
+
+  const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
+
+  return assign(arrayDefaults, arrayParamNomenclature, config).array;
+}
+
 export class Param {
   isOptional: boolean;
   type: ParamType;
@@ -201,9 +227,9 @@ export class Param {
   config: ParamDeclaration;
   matchingKeys: RawParams | undefined;
   /** @internal */
-  _defaultValueCache?: { defaultValue: any };
+  _defaultValueCache?: { defaultValue: unknown };
   /** @internal */
-  _getInjector: () => ng.InjectorService | undefined;
+  _paramTypes: ParamTypes;
 
   /**
    *
@@ -223,7 +249,7 @@ export class Param {
     const config = getParamDeclaration(id, location, state);
 
     type = getType(config, type, location, id, urlConfig.paramTypes);
-    const arrayMode = getArrayMode();
+    const arrayMode = getArrayMode(id, location, config);
 
     type = arrayMode
       ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
@@ -247,16 +273,6 @@ export class Param {
       ? !!config.inherit
       : !!type.inherit;
 
-    // array config: param name (param[]) overrides default settings.  explicit config overrides param name.
-    function getArrayMode(): boolean | "auto" {
-      const arrayDefaults = {
-        array: location === DefType._SEARCH ? "auto" : false,
-      };
-
-      const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
-
-      return assign(arrayDefaults, arrayParamNomenclature, config).array;
-    }
     this.isOptional = isOptional;
     this.type = type;
     this.location = location;
@@ -269,13 +285,13 @@ export class Param {
     this.array = arrayMode;
     this.config = config;
     this.matchingKeys = undefined;
-    this._getInjector = () => urlConfig.paramTypes._getInjector();
+    this._paramTypes = urlConfig.paramTypes;
   }
 
   /**
-   * @param {any} value
+   * @param {unknown} value
    */
-  isDefaultValue(value: any): boolean {
+  isDefaultValue(value: unknown): boolean {
     return this.isOptional && this.type.equals(this.value(), value);
   }
 
@@ -284,48 +300,56 @@ export class Param {
    * default value, which may be the result of an injectable function.
    * @param {undefined} [value]
    */
-  value(value?: any): any {
-    /**
-     * [Internal] Get the default value of a parameter, which may be an injectable function.
-     */
-    const getDefaultValue = () => {
-      if (this._defaultValueCache) return this._defaultValueCache.defaultValue;
+  value(value?: unknown): unknown {
+    value = this._replaceSpecialValues(value);
 
-      const injector = this._getInjector();
+    return isUndefined(value)
+      ? this._getDefaultValue()
+      : this.type.$normalize(value);
+  }
 
-      if (!injector)
-        throw new Error(
-          "Injectable functions cannot be called at configuration time",
-        );
-      const defaultValue = injector.invoke(this.config._fn);
+  /** @internal */
+  _getDefaultValue(): unknown {
+    if (this._defaultValueCache) return this._defaultValueCache.defaultValue;
 
-      if (
-        defaultValue !== null &&
-        defaultValue !== undefined &&
-        !this.type.is(defaultValue)
-      )
-        throw new Error(
-          `Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`,
-        );
+    const injector = this._paramTypes._getInjector();
 
-      if (this.config._fn._cacheable) {
-        this._defaultValueCache = { defaultValue };
-      }
+    if (!injector)
+      throw new Error(
+        "Injectable functions cannot be called at configuration time",
+      );
 
-      return defaultValue;
-    };
+    const defaultValueProvider = this.config._fn;
 
-    const replaceSpecialValues = (val: any) => {
-      for (const tuple of this.replace) {
-        if (tuple.from === val) return tuple.to;
-      }
+    const defaultValue = defaultValueProvider
+      ? injector.invoke(defaultValueProvider)
+      : undefined;
 
-      return val;
-    };
+    if (
+      defaultValue !== null &&
+      defaultValue !== undefined &&
+      !this.type.is(defaultValue)
+    )
+      throw new Error(
+        `Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`,
+      );
 
-    value = replaceSpecialValues(value);
+    if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
+      this._defaultValueCache = { defaultValue };
+    }
 
-    return isUndefined(value) ? getDefaultValue() : this.type.$normalize(value);
+    return defaultValue;
+  }
+
+  /** @internal */
+  _replaceSpecialValues(value: unknown): unknown {
+    for (let i = 0; i < this.replace.length; i++) {
+      const tuple = this.replace[i];
+
+      if (tuple.from === value) return tuple.to;
+    }
+
+    return value;
   }
 
   isSearch(): boolean {
@@ -335,7 +359,7 @@ export class Param {
   /**
    * @param {null} value
    */
-  validates(value: any): boolean {
+  validates(value: unknown): boolean {
     // There was no parameter value, but the param is optional
     if ((isUndefined(value) || value === null) && this.isOptional) return true;
     // The value was not of the correct ParamType, and could not be decoded to the correct ParamType
@@ -354,10 +378,10 @@ export class Param {
 
   /**
    * @param {Param[]} params
-   * @param {Record<string, any>} values
+   * @param {RawParams} values
    * @return {RawParams}
    */
-  static values(params: Param[], values: Record<string, any> = {}): RawParams {
+  static values(params: Param[], values: RawParams = {}): RawParams {
     const paramValues: RawParams = {};
 
     for (const param of params) {
@@ -372,14 +396,14 @@ export class Param {
    *
    * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
    * @param {Param[]} params : The list of Param objects to filter
-   * @param {Record<string, any>} values1 : The first set of parameter values
-   * @param {Record<string, any>} values2 : the second set of parameter values
+   * @param {RawParams} values1 : The first set of parameter values
+   * @param {RawParams} values2 : the second set of parameter values
    * @returns {Param[]} any Param objects whose values were different between values1 and values2
    */
   static changed(
     params: Param[],
-    values1: Record<string, any> = {},
-    values2: Record<string, any> = {},
+    values1: RawParams = {},
+    values2: RawParams = {},
   ): Param[] {
     const changed: Param[] = [];
 
@@ -396,26 +420,26 @@ export class Param {
 
   /**
    * Checks if two param value objects are equal (for a set of [[Param]] objects)
-   * @param {any[]} params The list of [[Param]] objects to check
+   * @param {Param[]} params The list of [[Param]] objects to check
    * @param values1 The first set of param values
    * @param values2 The second set of param values
    * @returns true if the param values in values1 and values2 are equal
    */
   static equals(
     params: Param[],
-    values1: Record<string, any> = {},
-    values2: Record<string, any> = {},
+    values1: RawParams = {},
+    values2: RawParams = {},
   ): boolean {
     return Param.changed(params, values1, values2).length === 0;
   }
 
   /**
    * Returns true if a the parameter values are valid, according to the Param definitions
-   * @param {any[]} params
-   * @param {Record<string, any>} values
+   * @param {Param[]} params
+   * @param {RawParams} values
    * @return {boolean}
    */
-  static validates(params: Param[], values: Record<string, any> = {}): boolean {
+  static validates(params: Param[], values: RawParams = {}): boolean {
     for (let i = 0; i < params.length; i++) {
       const param = params[i];
 

@@ -48,13 +48,25 @@ export class StateMatcher {
     } else if (isStr && matchGlob) {
       const states = values(this._states);
 
-      const matches = states.filter((stateObj) =>
-        stateObj._stateObjectCache?.nameGlob?.matches(name),
-      );
+      const matches: StateObject[] = [];
+
+      for (let i = 0; i < states.length; i++) {
+        const stateObj = states[i];
+
+        if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
+          matches.push(stateObj);
+        }
+      }
 
       if (matches.length > 1) {
+        const names: string[] = [];
+
+        for (let i = 0; i < matches.length; i++) {
+          names.push(matches[i].name);
+        }
+
         throw new Error(
-          `stateMatcher.find: Found multiple matches for ${name} using glob: ${matches.map((match) => match.name)}`,
+          `stateMatcher.find: Found multiple matches for ${name} using glob: ${names}`,
         );
       }
 

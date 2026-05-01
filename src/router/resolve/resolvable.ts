@@ -11,8 +11,37 @@ import {
 } from "../../shared/utils.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { ResolveContext } from "./resolve-context.ts";
-import type { ResolvableLiteral } from "./interface.ts";
+import type {
+  ResolveFn,
+  ResolvableData,
+  ResolvableLiteral,
+  ResolvableToken,
+} from "./interface.ts";
 export type { ResolvableLiteral } from "./interface.ts";
+
+async function resolveResolvable(
+  resolvable: Resolvable,
+  resolveContext: ResolveContext,
+  trans?: Transition,
+): Promise<ResolvableData> {
+  const dependencies = resolveContext.getDependencies(resolvable);
+
+  const dependencyPromises = new Array(dependencies.length);
+
+  for (let i = 0; i < dependencies.length; i++) {
+    dependencyPromises[i] = dependencies[i].get(resolveContext, trans);
+  }
+
+  const resolvedDeps = await Promise.all(dependencyPromises);
+
+  const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
+
+  resolvable.data = resolvedValue;
+  resolvable.resolved = true;
+  resolvable.resolveFn = null;
+
+  return resolvable.data;
+}
 
 /**
  * # The Resolve subsystem
@@ -29,23 +58,23 @@ export type { ResolvableLiteral } from "./interface.ts";
  * and in-flight promise so router state resolution stays idempotent.
  */
 export class Resolvable {
-  token: any;
-  resolveFn: Function | null | undefined;
-  deps: any[] | string;
+  token: ResolvableToken;
+  resolveFn: ResolveFn | null | undefined;
+  deps: ResolvableToken[] | string;
   eager: boolean;
-  data: any;
+  data: ResolvableData;
   resolved: boolean;
-  promise: Promise<any> | undefined;
+  promise: Promise<ResolvableData> | undefined;
 
   /**
    * @throws Error when a resolve function is provided without a token.
    */
   constructor(
-    arg1: any,
-    resolveFn?: Function | undefined,
-    deps?: any[],
+    arg1: Resolvable | ResolvableLiteral | ResolvableToken,
+    resolveFn?: ResolveFn | undefined,
+    deps?: ResolvableToken[],
     eager?: boolean,
-    data?: any,
+    data?: ResolvableData,
   ) {
     this.token = undefined;
     this.resolveFn = undefined;
@@ -68,7 +97,7 @@ export class Resolvable {
       this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
     } else if (
       isObject(arg1) &&
-      arg1.token &&
+      hasOwn(arg1, "token") &&
       (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))
     ) {
       const literal = arg1 as ResolvableLiteral;
@@ -87,29 +116,13 @@ export class Resolvable {
    * Resolves this token by first resolving its dependencies, then invoking
    * the resolve function and caching the resulting value.
    */
-  resolve(resolveContext: ResolveContext, trans?: Transition): Promise<any> {
-    const getResolvableDependencies = (): Promise<any[]> =>
-      Promise.all(
-        resolveContext
-          .getDependencies(this)
-          .map((resolvable) => resolvable.get(resolveContext, trans)),
-      );
-
-    const invokeResolveFn = (resolvedDeps: any[]): any =>
-      this.resolveFn?.apply(null, resolvedDeps);
-
-    const applyResolvedValue = (resolvedValue: any): any => {
-      this.data = resolvedValue;
-      this.resolved = true;
-      this.resolveFn = null;
-
-      return this.data;
-    };
-
-    this.promise = Promise.resolve()
-      .then(getResolvableDependencies)
-      .then(invokeResolveFn)
-      .then(applyResolvedValue);
+  resolve(
+    resolveContext: ResolveContext,
+    trans?: Transition,
+  ): Promise<ResolvableData> {
+    this.promise = Promise.resolve().then(() =>
+      resolveResolvable(this, resolveContext, trans),
+    );
 
     return this.promise;
   }
@@ -117,7 +130,10 @@ export class Resolvable {
   /**
    * Returns the cached promise, resolving the token first if necessary.
    */
-  get(resolveContext: ResolveContext, trans?: Transition): Promise<any> {
+  get(
+    resolveContext: ResolveContext,
+    trans?: Transition,
+  ): Promise<ResolvableData> {
     return this.promise || this.resolve(resolveContext, trans);
   }
 
@@ -127,7 +143,13 @@ export class Resolvable {
   toString(): string {
     const deps = isArray(this.deps) ? this.deps : [this.deps];
 
-    return `Resolvable(token: ${stringify(this.token)}, requires: [${deps.map(stringify)}])`;
+    const depStrings = new Array(deps.length);
+
+    for (let i = 0; i < deps.length; i++) {
+      depStrings[i] = stringify(deps[i]);
+    }
+
+    return `Resolvable(token: ${stringify(this.token)}, requires: [${depStrings}])`;
   }
 
   /**
@@ -140,7 +162,7 @@ export class Resolvable {
   /**
    * Creates a resolvable that is already resolved to `data`.
    */
-  static fromData(token: any, data: any): Resolvable {
+  static fromData(token: ResolvableToken, data: ResolvableData): Resolvable {
     return new Resolvable(token, () => data, undefined, undefined, data);
   }
 }

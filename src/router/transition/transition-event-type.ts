@@ -2,11 +2,13 @@ import { TransitionHook } from "./transition-hook.ts";
 import type { HookResult } from "./interface.ts";
 import type { PathType } from "./transition-service.ts";
 
-type GetResultHandler = (hook: TransitionHook) => (result: HookResult) => any;
+type GetResultHandler = (
+  hook: TransitionHook,
+) => (result: HookResult) => unknown;
 
 type GetErrorHandler = (hook?: {
-  logError: (error: any) => any;
-}) => (error: any) => any;
+  logError: (error: unknown) => unknown;
+}) => (error: unknown) => unknown;
 
 /**
  * Immutable metadata describing one transition lifecycle event.

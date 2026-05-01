@@ -16,14 +16,24 @@ import { annotate } from "../../core/di/di.ts";
 import { ViewConfig } from "./views.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
-import type { ResolvableLiteral } from "../resolve/interface.ts";
-import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
+import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
+import type {
+  BuiltStateDeclaration,
+  StateDeclaration,
+  ViewDeclaration,
+} from "./interface.ts";
 import type { PathNode } from "../path/path-node.ts";
+import type { Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";
+import type { TransitionStateHookFn } from "../transition/interface.ts";
 
-const TEMPLATE_VIEW_KEYS = [
+type ViewDeclarationKey = keyof ViewDeclaration | "notify" | "async";
+
+type ViewDeclarationValueMap = Partial<Record<ViewDeclarationKey, unknown>>;
+
+const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = [
   "templateProvider",
   "templateUrl",
   "template",
@@ -31,9 +41,13 @@ const TEMPLATE_VIEW_KEYS = [
   "async",
 ];
 
-const CONTROLLER_VIEW_KEYS = ["controller", "controllerAs", "resolveAs"];
+const CONTROLLER_VIEW_KEYS: ViewDeclarationKey[] = [
+  "controller",
+  "controllerAs",
+  "resolveAs",
+];
 
-const COMPONENT_VIEW_KEYS = ["component", "bindings"];
+const COMPONENT_VIEW_KEYS: ViewDeclarationKey[] = ["component", "bindings"];
 
 const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
 
@@ -53,7 +67,7 @@ function buildUrl(
   stateObject: StateObject & BuiltStateDeclaration,
   $url: ng.UrlService,
   root: StateObject | BuiltStateDeclaration,
-) {
+): UrlMatcher | null {
   const stateDec = stateObject.self;
 
   const { parent } = stateObject;
@@ -62,7 +76,7 @@ function buildUrl(
 
   const url = (
     !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
-  ) as (UrlMatcher & Record<string, any>) | null;
+  ) as UrlMatcher | null;
 
   if (!url) return null;
 
@@ -71,7 +85,7 @@ function buildUrl(
 
   return parsed && parsed.root
     ? url
-    : ((parent && parent.navigable) || root).url.append(url);
+    : ((parent && parent.navigable) || root).url!.append(url);
 }
 
 /**
@@ -80,14 +94,14 @@ function buildUrl(
 function buildParams(
   state: BuiltStateDeclaration,
   paramFactory: ParamFactory,
-): Record<string, any> {
+): Record<string, Param> {
   const urlParams =
     (state.url && state.url.parameters({ inherit: false })) || [];
 
-  const params: Record<string, any> = {};
+  const params: Record<string, Param> = {};
 
   for (let i = 0; i < urlParams.length; i++) {
-    const param = urlParams[i] as { id: string };
+    const param = urlParams[i];
 
     params[param.id] = param;
   }
@@ -107,9 +121,12 @@ function buildParams(
   return params;
 }
 
-function hasAnyViewKey(keyItems: string[], obj: Record<string, any>): boolean {
+function hasAnyViewKey(
+  keyItems: ViewDeclarationKey[],
+  values: ViewDeclarationValueMap,
+): boolean {
   for (let i = 0; i < keyItems.length; i++) {
-    if (isDefined(obj[keyItems[i]])) {
+    if (isDefined(values[keyItems[i]])) {
       return true;
     }
   }
@@ -117,37 +134,53 @@ function hasAnyViewKey(keyItems: string[], obj: Record<string, any>): boolean {
   return false;
 }
 
+function presentViewKeys(
+  keyItems: ViewDeclarationKey[],
+  values: ViewDeclarationValueMap,
+): string {
+  const present: string[] = [];
+
+  for (let i = 0; i < keyItems.length; i++) {
+    const key = keyItems[i];
+
+    if (isDefined(values[key])) {
+      present.push(key);
+    }
+  }
+
+  return present.join(", ");
+}
+
 function viewsBuilder(
-  state: StateObject & Record<string, any>,
-): Record<string, any> {
+  state: StateObject & StateDeclaration,
+): Record<string, ViewDeclaration> {
   if (!state.parent) {
     return {};
   }
 
   if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
     throw new Error(
-      `State '${state.name}' has a 'views' object. ` +
-        `It cannot also have view properties at the state level. ` +
-        `Move these properties into a view declaration: ` +
-        `${ALL_VIEW_KEYS.filter((key) => isDefined(state[key])).join(", ")}`,
+      `State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`,
     );
   }
 
-  const views: Record<string, any> = {};
+  const views: Record<string, ViewDeclaration> = {};
 
-  const defaultViewConfig: Record<string, any> = {};
+  const defaultViewConfig: Record<string, unknown> = {};
+
+  const stateValues: ViewDeclarationValueMap = state;
 
   for (let i = 0; i < ALL_VIEW_KEYS.length; i++) {
     const key = ALL_VIEW_KEYS[i];
 
-    if (isDefined(state[key])) {
-      defaultViewConfig[key] = state[key];
+    if (isDefined(stateValues[key])) {
+      defaultViewConfig[key] = stateValues[key];
     }
   }
 
   const viewsObject = (state.views || {
     $default: defaultViewConfig,
-  }) as Record<string, any>;
+  }) as Record<string, ViewDeclaration | string>;
 
   const viewEntries = entries(viewsObject);
 
@@ -156,7 +189,7 @@ function viewsBuilder(
 
     let name = entryName as string;
 
-    let config = entryConfig as Record<string, any> | string;
+    let config = entryConfig as ViewDeclaration | string;
 
     name = name || "$default";
 
@@ -164,7 +197,7 @@ function viewsBuilder(
       config = { component: config };
     }
 
-    config = assign({}, config);
+    config = assign({}, config) as ViewDeclaration;
 
     if (
       hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
@@ -193,17 +226,19 @@ function viewsBuilder(
   return views;
 }
 
-function getResolveLocals(ctx: ResolveContext): Record<string, any> {
-  const tokens = ctx.getTokens().filter(isString);
+function getResolveLocals(ctx: ResolveContext): Record<string, unknown> {
+  const tokens = ctx.getTokens();
 
-  const locals: Record<string, any> = {};
+  const locals: Record<string, unknown> = {};
 
   for (let i = 0; i < tokens.length; i++) {
     const key = tokens[i];
 
-    const resolvable = ctx.getResolvable(key);
+    if (!isString(key)) {
+      continue;
+    }
 
-    locals[key] = resolvable.data;
+    locals[key] = ctx.getResolvable(key).data;
   }
 
   return locals;
@@ -211,15 +246,19 @@ function getResolveLocals(ctx: ResolveContext): Record<string, any> {
 
 function valueToResolvable(
   token: string,
-  value: any,
+  value: unknown,
   strictDi: boolean | undefined,
 ): Resolvable {
   if (isArray(value)) {
-    return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
+    return new Resolvable(
+      token,
+      value[value.length - 1] as ResolveFn,
+      value.slice(0, -1),
+    );
   }
 
   if (isFunction(value)) {
-    return new Resolvable(token, value, annotate(value, strictDi));
+    return new Resolvable(token, value as ResolveFn, annotate(value, strictDi));
   }
 
   throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
@@ -339,16 +378,16 @@ export class StateBuilder {
   }
 
   _buildStateHook(
-    stateObject: StateObject & Record<string, any>,
+    stateObject: StateObject,
     hookName: "onEnter" | "onExit" | "onRetain",
-  ): ((trans: ng.Transition, state: BuiltStateDeclaration) => any) | undefined {
+  ): TransitionStateHookFn | undefined {
     const hook = stateObject[hookName];
 
     if (!hook) return undefined;
 
     const pathname = hookName === "onExit" ? "from" : "to";
 
-    return (trans: ng.Transition, state: BuiltStateDeclaration) => {
+    return (trans: ng.Transition, state: StateDeclaration) => {
       const $injector = this._$injector as InjectorService;
 
       const resolveContext = new ResolveContext(
@@ -356,7 +395,9 @@ export class StateBuilder {
         $injector,
       );
 
-      const subContext = resolveContext.subContext(state._state());
+      const subContext = resolveContext.subContext(
+        (state as BuiltStateDeclaration)._state(),
+      );
 
       const locals = assign(getResolveLocals(subContext), {
         $state$: state,
@@ -387,18 +428,19 @@ export class StateBuilder {
     state.parent = isRoot(state)
       ? null
       : matcher.find(parent) || matcher.find("");
-    state.url = buildUrl(
-      state as StateObject & BuiltStateDeclaration,
-      urlService,
-      matcher.find("") as StateObject | BuiltStateDeclaration,
-    ) as any;
+    state.url =
+      buildUrl(
+        state as StateObject & BuiltStateDeclaration,
+        urlService,
+        matcher.find("") as StateObject | BuiltStateDeclaration,
+      ) || undefined;
     state.resolvables = resolvablesBuilder(
       state as StateObject & StateDeclaration,
       this._$injector && this._$injector.strictDi,
     );
-    state.onExit = this._buildStateHook(state, "onExit") as any;
-    state.onRetain = this._buildStateHook(state, "onRetain") as any;
-    state.onEnter = this._buildStateHook(state, "onEnter") as any;
+    state.onExit = this._buildStateHook(state, "onExit");
+    state.onRetain = this._buildStateHook(state, "onRetain");
+    state.onEnter = this._buildStateHook(state, "onEnter");
 
     state.navigable =
       !isRoot(state) && state.url
@@ -409,7 +451,7 @@ export class StateBuilder {
     state.params = buildParams(
       state as StateObject & BuiltStateDeclaration,
       this._paramFactory,
-    ) as any;
+    );
 
     if (state.parent && state.parent.data) {
       state.data = state.self.data = assign(

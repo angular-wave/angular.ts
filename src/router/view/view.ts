@@ -9,7 +9,7 @@ import type { TemplateFactoryProvider } from "../template-factory.ts";
 /** @internal */
 export interface ViewContext {
   name: string;
-  parent: ViewContext;
+  parent?: ViewContext | null;
 }
 
 /** @internal */
@@ -117,7 +117,7 @@ export class ViewService {
     _router,
     (
       $templateFactory: TemplateFactoryProvider,
-      $routerState: any,
+      $routerState: ng._RouterProvider,
     ): ViewService => {
       this._templateFactory = $templateFactory;
       this._rootViewContext($routerState._currentState || null);

@@ -35,7 +35,7 @@ import { TargetState } from "../state/target-state.ts";
 type PromiseResolvers<T> = {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 };
 
 function getFirstElementFromClone(
@@ -100,7 +100,7 @@ type ActiveNgViewRootData = {
   $ngView: Partial<ActiveNgView>;
 };
 
-type ViewControllerInstance = Record<string, any> & {
+type ViewControllerInstance = Record<string, unknown> & {
   $onInit?: () => void;
   ngOnParamsChanged?: (
     params: Record<string, unknown>,
@@ -109,15 +109,14 @@ type ViewControllerInstance = Record<string, any> & {
   ngCanExit?: (trans: ng.Transition) => unknown;
 };
 
-type NgCanExitTransition = ng.Transition &
-  Record<string, any> & {
-    redirectedFrom(): NgCanExitTransition | null;
-  };
+type NgCanExitTransition = ng.Transition & {
+  _ngCanExitIds?: Record<number, boolean>;
+};
 
 function withResolvers<T>(): PromiseResolvers<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
 
-  let reject: (reason?: any) => void;
+  let reject: (reason?: unknown) => void;
 
   const promise = new Promise<T>((resolveParam, rejectParam) => {
     resolve = resolveParam;
@@ -136,6 +135,81 @@ const controllerLastParamsChangedTransition = new WeakMap<
   ViewControllerInstance,
   ng.Transition
 >();
+
+type ParamSchemaEntry = {
+  id: string | number;
+  type: { equals: (a: unknown, b: unknown) => boolean };
+};
+
+function appendParamSchema(
+  nodes: PathNode[],
+  schema: ParamSchemaEntry[],
+): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const nodeSchema = nodes[i].paramSchema;
+
+    for (let j = 0; j < nodeSchema.length; j++) {
+      schema.push(nodeSchema[j]);
+    }
+  }
+}
+
+function controllerKeyData(
+  element: Element,
+  key: string,
+): ViewControllerInstance | undefined {
+  return (
+    (getCacheData(element, key) as ViewControllerInstance | undefined) ||
+    (getInheritedData(element, key) as ViewControllerInstance | undefined)
+  );
+}
+
+function getComponentController(
+  element: HTMLElement,
+  componentName: string,
+  tagRegexp: RegExp,
+): ViewControllerInstance | undefined {
+  const candidates = element.querySelectorAll("*");
+
+  let directiveEl: Element | undefined;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+
+    if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
+      directiveEl = candidate;
+      break;
+    }
+  }
+
+  if (!directiveEl) return undefined;
+
+  const camelNameFromTag = directiveEl.tagName
+    .toLowerCase()
+    .replace(/^(x-|data-)/, "")
+    .replace(/-([a-z])/g, (_all, letter: string) => letter.toUpperCase());
+
+  const scopeWithCtrl =
+    (getCacheData(directiveEl, "$isolateScope") as
+      | Record<string, ViewControllerInstance>
+      | undefined) ||
+    (getInheritedData(directiveEl, "$isolateScope") as
+      | Record<string, ViewControllerInstance>
+      | undefined) ||
+    (getCacheData(directiveEl, "$scope") as
+      | Record<string, ViewControllerInstance>
+      | undefined) ||
+    (getInheritedData(directiveEl, "$scope") as
+      | Record<string, ViewControllerInstance>
+      | undefined);
+
+  return (
+    controllerKeyData(directiveEl, `$${componentName}Controller`) ||
+    controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ||
+    controllerKeyData(directiveEl, "$ngControllerController") ||
+    scopeWithCtrl?.$ctrl
+  );
+}
 
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
@@ -227,7 +301,11 @@ export function ViewDirective(
     terminal: true,
     priority: 400,
     transclude: "element",
-    compile(_tElement: any, _tAttrs: any, $transclude?: ng.TranscludeFn) {
+    compile(
+      _tElement: Element,
+      _tAttrs: ng.Attributes,
+      $transclude?: ng.TranscludeFn,
+    ) {
       const transclude = $transclude as ng.TranscludeFn;
 
       return function (
@@ -367,7 +445,9 @@ export function ViewDirective(
            * @param viewName Name of the view.
            */
           newScope.$emit("$viewContentLoading", name);
-          currentEl = transclude(newScope, (clone) => {
+          let enteredElement: HTMLElement | null = null;
+
+          transclude(newScope, (clone) => {
             const elementClone = getFirstElementFromClone(clone);
 
             const cloneNodes = getRootNodesFromClone(clone);
@@ -376,10 +456,13 @@ export function ViewDirective(
               return;
             }
 
-            cloneNodes.forEach((node) => {
+            for (let i = 0; i < cloneNodes.length; i++) {
+              const node = cloneNodes[i];
+
               setCacheData(node, "$ngViewAnim", $ngViewAnim);
               setCacheData(node, "$ngView", $ngViewData);
-            });
+            }
+            enteredElement = elementClone;
             $element.after(elementClone);
             animEnter.resolve(undefined);
             cleanupLastView();
@@ -390,7 +473,9 @@ export function ViewDirective(
             ) {
               $anchorScroll(elementClone);
             }
-          }) as unknown as HTMLElement;
+          });
+
+          currentEl = enteredElement;
 
           currentScope = newScope;
           currentScope.$emit("$viewContentAnimationEnded");
@@ -444,14 +529,14 @@ export function ViewDirectiveFill(
         }
         const cfg = (data.$cfg || {
           viewDecl: {},
-          getTemplate: () => undefined,
-        }) as Pick<ViewConfig, "viewDecl" | "getTemplate" | "controller"> &
+          _getTemplate: () => undefined,
+        }) as Pick<ViewConfig, "viewDecl" | "_getTemplate" | "controller"> &
           Partial<Pick<ViewConfig, "path">>;
 
         const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
 
         $element.innerHTML =
-          cfg.getTemplate($element, resolveCtx as ResolveContext) || initial;
+          cfg._getTemplate($element, resolveCtx as ResolveContext) || initial;
         const link = $compile(
           ($element as HTMLIFrameElement).contentDocument ||
             $element.childNodes,
@@ -465,7 +550,7 @@ export function ViewDirectiveFill(
 
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
 
-        const targetScope = scope.$target as Record<string, any>;
+        const targetScope = scope.$target as Record<string, unknown>;
 
         if (resolveAs) {
           targetScope[resolveAs as string] = locals;
@@ -481,7 +566,9 @@ export function ViewDirectiveFill(
             targetScope[controllerAs as string] = controllerInstance;
 
             if (resolveAs) {
-              targetScope[controllerAs as string][resolveAs as string] = locals;
+              (targetScope[controllerAs as string] as Record<string, unknown>)[
+                resolveAs as string
+              ] = locals;
             }
           }
           // TODO: Use $view service as a central point for registering component-level hooks
@@ -489,9 +576,15 @@ export function ViewDirectiveFill(
           // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
           // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
           setCacheData($element, "$ngControllerController", controllerInstance);
-          arrayFrom($element.children).forEach((ell) => {
-            setCacheData(ell, "$ngControllerController", controllerInstance);
-          });
+          const { children } = $element;
+
+          for (let i = 0; i < children.length; i++) {
+            setCacheData(
+              children[i],
+              "$ngControllerController",
+              controllerInstance,
+            );
+          }
           registerControllerCallbacks(
             $transitions,
             controllerInstance,
@@ -515,60 +608,16 @@ export function ViewDirectiveFill(
 
           const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
 
-          const getComponentController = () => {
-            const candidates = arrayFrom($element.querySelectorAll("*"));
-
-            const directiveEl = candidates.find(
-              (el) => el.tagName && tagRegexp.exec(el.tagName),
-            );
-
-            if (!directiveEl) {
-              return undefined;
-            }
-
-            const camelNameFromTag = directiveEl.tagName
-              .toLowerCase()
-              .replace(/^(x-|data-)/, "")
-              .replace(/-([a-z])/g, (_all, letter: string) =>
-                letter.toUpperCase(),
-              );
-
-            const tryControllerKey = (key: string) =>
-              (getCacheData(directiveEl, key) as
-                | ViewControllerInstance
-                | undefined) ||
-              (getInheritedData(directiveEl, key) as
-                | ViewControllerInstance
-                | undefined);
-
-            const scopeWithCtrl =
-              (getCacheData(directiveEl, "$isolateScope") as
-                | Record<string, ViewControllerInstance>
-                | undefined) ||
-              (getInheritedData(directiveEl, "$isolateScope") as
-                | Record<string, ViewControllerInstance>
-                | undefined) ||
-              (getCacheData(directiveEl, "$scope") as
-                | Record<string, ViewControllerInstance>
-                | undefined) ||
-              (getInheritedData(directiveEl, "$scope") as
-                | Record<string, ViewControllerInstance>
-                | undefined);
-
-            return (
-              tryControllerKey(`$${componentName}Controller`) ||
-              tryControllerKey(`$${camelNameFromTag}Controller`) ||
-              tryControllerKey("$ngControllerController") ||
-              scopeWithCtrl?.$ctrl
-            );
-          };
-
           const registerComponentCallbacks = (attempt = 0) => {
             if (scope.$handler._destroyed) {
               return;
             }
 
-            const componentCtrl = getComponentController();
+            const componentCtrl = getComponentController(
+              $element,
+              componentName,
+              tagRegexp,
+            );
 
             if (componentCtrl) {
               registerControllerCallbacks(
@@ -627,7 +676,7 @@ function registerControllerCallbacks(
   if (isFunction(onInit) && !cfg.viewDecl.component) {
     onInit();
   }
-  const viewState = (cfg.path[cfg.path.length - 1] as any).state.self;
+  const viewState = cfg.path[cfg.path.length - 1].state.self;
 
   const hookOptions = { bind: controllerInstance };
 
@@ -686,35 +735,20 @@ function registerControllerCallbacks(
           : []
       ) as PathNode[];
 
-      const toSchema: Array<{
-        id: string | number;
-        type: { equals: (a: unknown, b: unknown) => boolean };
-      }> = [];
+      const toSchema: ParamSchemaEntry[] = [];
 
-      toNodes.forEach((node) => {
-        node.paramSchema.forEach((param) => {
-          toSchema.push(param);
-        });
-      });
+      appendParamSchema(toNodes, toSchema);
 
-      const fromSchema: Array<{
-        id: string | number;
-        type: { equals: (a: unknown, b: unknown) => boolean };
-      }> = [];
+      const fromSchema: ParamSchemaEntry[] = [];
 
-      fromNodes.forEach((node) => {
-        node.paramSchema.forEach((param) => {
-          fromSchema.push(param);
-        });
-      });
+      appendParamSchema(fromNodes, fromSchema);
 
       // Find the to params that have different values than the from params
-      const changedToParams: Array<{
-        id: string | number;
-        type: { equals: (a: unknown, b: unknown) => boolean };
-      }> = [];
+      const changedToParams: ParamSchemaEntry[] = [];
 
-      toSchema.forEach((param) => {
+      for (let i = 0; i < toSchema.length; i++) {
+        const param = toSchema[i];
+
         const idx = fromSchema.indexOf(param);
 
         if (
@@ -723,18 +757,20 @@ function registerControllerCallbacks(
         ) {
           changedToParams.push(param);
         }
-      });
+      }
 
       // Only trigger callback if a to param has changed or is new
       if (changedToParams.length) {
         // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
         const newValues: Record<string | number, unknown> = {};
 
-        changedToParams.forEach((param) => {
+        for (let i = 0; i < changedToParams.length; i++) {
+          const param = changedToParams[i];
+
           const key = param.id;
 
           if (key in toParams) newValues[key] = toParams[key];
-        });
+        }
         onParamsChanged.call(controllerInstance, newValues, $transition$);
       }
     };
@@ -781,21 +817,24 @@ function registerControllerCallbacks(
 
     const id = _ngCanExitId++;
 
-    const cacheProp = "_ngCanExitIds";
-
     /**
      * Returns true if any transition in the redirect chain already answered truthy.
      */
-    const prevTruthyAnswer = (trans: NgCanExitTransition | null): boolean =>
-      !!trans &&
-      ((trans[cacheProp] && trans[cacheProp][id] === true) ||
-        prevTruthyAnswer(trans.redirectedFrom()));
+    const prevTruthyAnswer = (trans: ng.Transition | null): boolean => {
+      if (!trans) return false;
+
+      const cache = (trans as NgCanExitTransition)._ngCanExitIds;
+
+      return cache?.[id] === true || prevTruthyAnswer(trans.redirectedFrom());
+    };
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-    const wrappedHook = (trans: NgCanExitTransition) => {
+    const wrappedHook = (trans: ng.Transition) => {
       let promise: Promise<boolean | void | TargetState> | undefined;
 
-      const ids = (trans[cacheProp] = trans[cacheProp] || {});
+      const cacheTrans = trans as NgCanExitTransition;
+
+      const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds || {});
 
       if (!prevTruthyAnswer(trans)) {
         promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));

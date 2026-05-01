@@ -1,4 +1,13 @@
 import { ParamType } from "./param-type.ts";
+import type { Injectable } from "../../interface.ts";
+
+export type ParamDefaultValueFactory = (() => unknown) & {
+  _cacheable?: boolean;
+};
+
+export type ParamDefaultValueProvider =
+  | Injectable<() => unknown>
+  | ParamDefaultValueFactory;
 
 /**
  * Parameter values
@@ -14,7 +23,7 @@ import { ParamType } from "./param-type.ts";
  * ```
  */
 export interface RawParams {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -104,7 +113,7 @@ export interface ParamDeclaration {
    *
    * Default: `undefined`
    */
-  value?: any;
+  value?: unknown;
 
   /**
    * The parameter's type
@@ -343,7 +352,7 @@ export interface ParamDeclaration {
   inherit?: boolean;
 
   /** @internal */
-  _fn?: any;
+  _fn?: ParamDefaultValueProvider;
 }
 
 /**
@@ -575,7 +584,7 @@ export interface ParamTypeDefinition {
    *        meta-programming of `ParamType` objects.
    * @returns `true` if the value matches the type, otherwise `false`.
    */
-  is(val: any, key?: string): boolean;
+  is(val: unknown, key?: string): boolean;
 
   /**
    * Encodes a custom/native type value to a string that can be embedded in a URL.
@@ -595,7 +604,7 @@ export interface ParamTypeDefinition {
    * @param key The name of the parameter in which `val` is stored. Can be used for meta-programming of `ParamType` objects.
    * @returns a string representation of `val` that can be encoded in a URL.
    */
-  encode(val: any, key?: string): string | string[];
+  encode(val: unknown, key?: string): string | string[];
 
   /**
    * Decodes a parameter value string (from URL string or transition param) to a custom/native value.
@@ -611,7 +620,7 @@ export interface ParamTypeDefinition {
    * @param key The name of the parameter in which `val` is stored. Can be used for meta-programming of `ParamType` objects.
    * @returns a custom representation of the URL parameter value.
    */
-  decode(val: string, key?: string): any;
+  decode(val: string, key?: string): unknown;
 
   /**
    * Determines whether two decoded values are equivalent.
@@ -625,5 +634,5 @@ export interface ParamTypeDefinition {
    * @param b A value to compare against.
    * @returns `true` if the values are equivalent/equal, otherwise `false`.
    */
-  equals(a: any, b: any): boolean;
+  equals(a: unknown, b: unknown): boolean;
 }

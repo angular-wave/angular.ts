@@ -1,10 +1,11 @@
 import { assign, keys } from "../../shared/utils.ts";
+import type { RawParams } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 
 export class StateParams {
-  [key: string]: any;
+  [key: string]: unknown;
 
-  constructor(params: Record<string, any> = {}) {
+  constructor(params: RawParams = {}) {
     assign(this, params);
   }
 
@@ -17,22 +18,19 @@ export class StateParams {
    * @param {StateObject} $to Internal definition of object representing state to transition to.
    */
   $inherit(
-    newParams: Record<string, any>,
+    newParams: RawParams,
     $current: StateObject,
     $to: StateObject,
-  ): Record<string, any> {
+  ): RawParams {
     const parents = ancestors($current, $to);
 
-    const inherited: Record<string, any> = {};
+    const inherited: RawParams = {};
 
     const inheritList: string[] = [];
 
     for (const parent of parents) {
       if (!parent || !parent.params) continue;
-      const parentParams = parent.params as unknown as Record<
-        string,
-        { inherit?: boolean }
-      >;
+      const parentParams = parent.params;
 
       const parentParamsKeys = keys(parentParams);
 
