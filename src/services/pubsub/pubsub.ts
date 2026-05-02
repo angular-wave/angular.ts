@@ -36,8 +36,8 @@ export class PubSub {
   private _topics: Record<string, ListenerEntry[]>;
   /** @internal */
   private _disposed: boolean;
-  /** Exception handler used when a subscriber throws during async delivery. */
-  public $exceptionHandler: ng.ExceptionHandlerService;
+  /** @internal */
+  private _exceptionHandler: ng.ExceptionHandlerService;
 
   /**
    * Create a publish/subscribe event bus.
@@ -50,7 +50,7 @@ export class PubSub {
   constructor($exceptionHandler: ng.ExceptionHandlerService) {
     this._topics = nullObject() as Record<string, ListenerEntry[]>;
     this._disposed = false;
-    this.$exceptionHandler = $exceptionHandler;
+    this._exceptionHandler = $exceptionHandler;
   }
 
   /**
@@ -204,7 +204,7 @@ export class PubSub {
         try {
           fn.apply(context, args);
         } catch (err) {
-          this.$exceptionHandler(err);
+          this._exceptionHandler(err);
         }
       }
     });
