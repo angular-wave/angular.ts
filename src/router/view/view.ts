@@ -1,6 +1,8 @@
 import { _router, _templateFactory } from "../../injection-tokens.ts";
 import { removeFrom } from "../../shared/common.ts";
-import { ViewConfig } from "../state/views.ts";
+import { assign, isString } from "../../shared/utils.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
+import type { RawParams } from "../params/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -22,17 +24,135 @@ export interface ActiveNgView {
   name: string;
   /** The ng-view's fully qualified name */
   fqn: string;
-  /** The ViewConfig that is currently loaded into the ng-view */
-  config: ViewConfig | null;
+  /** The internal view record currently loaded into the ng-view. */
+  config: _ViewConfig | null;
   /** The state context in which the ng-view tag was created. */
   creationContext: ViewContext;
-  /** A callback that should apply a ViewConfig (or clear the ng-view, if config is undefined) */
-  configUpdated: (config: ViewConfig | undefined) => void;
+  /** Applies an internal view record or clears the ng-view when config is undefined. */
+  configUpdated: (config: _ViewConfig | undefined) => void;
 }
 
-export type { ViewConfig } from "../state/views.ts";
+/** @internal */
+export interface _ViewConfig {
+  $id: number;
+  path: PathNode[];
+  viewDecl: ViewDeclaration;
+  factory: TemplateFactoryProvider;
+  component: string | undefined;
+  template: string | undefined;
+  loaded: boolean;
+  controller: ViewDeclaration["controller"] | undefined;
+}
 
 const FQN_MULTIPLIER = 10_000;
+
+let nextViewId = 0;
+
+/** @internal */
+export function createViewConfig(
+  path: PathNode[],
+  viewDecl: ViewDeclaration,
+  factory: TemplateFactoryProvider,
+): _ViewConfig {
+  return {
+    $id: nextViewId++,
+    path,
+    viewDecl,
+    factory,
+    component: undefined,
+    template: undefined,
+    loaded: false,
+    controller: undefined,
+  };
+}
+
+/** @internal */
+export function getViewTemplate(
+  config: _ViewConfig,
+  ngView: Element,
+  context: ResolveContext,
+): string | undefined {
+  return config.component
+    ? config.factory.makeComponentTemplate(
+        ngView,
+        context,
+        config.component,
+        config.viewDecl.bindings,
+      )
+    : config.template;
+}
+
+/** @internal */
+export async function loadViewConfig(
+  config: _ViewConfig,
+): Promise<_ViewConfig> {
+  const params: RawParams = {};
+
+  for (let i = 0; i < config.path.length; i++) {
+    assign(params, config.path[i].paramValues);
+  }
+
+  const viewResult = await config.factory.fromConfig(config.viewDecl, params);
+
+  config.controller = config.viewDecl.controller;
+  assign(config, viewResult);
+
+  return config;
+}
+
+/** @internal */
+export function normalizeNgViewTarget(
+  context: StateObject,
+  rawViewName = "",
+): { ngViewName: string; ngViewContextAnchor: string } {
+  const viewAtContext = rawViewName.split("@");
+
+  let ngViewName = viewAtContext[0] || "$default";
+
+  let ngViewContextAnchor = isString(viewAtContext[1]) ? viewAtContext[1] : "^";
+
+  const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+
+  if (relativeViewNameSugar) {
+    ngViewContextAnchor = relativeViewNameSugar[1];
+    ngViewName = relativeViewNameSugar[2];
+  }
+
+  if (ngViewName.charAt(0) === "!") {
+    ngViewName = ngViewName.substring(1);
+    ngViewContextAnchor = "";
+  }
+
+  const relativeMatch = /^(\^(?:\.\^)*)$/;
+
+  if (relativeMatch.exec(ngViewContextAnchor)) {
+    let anchorState: StateObject | null | undefined = context;
+
+    let hops = 0;
+
+    for (let i = 0; i < ngViewContextAnchor.length; i++) {
+      if (ngViewContextAnchor[i] === "^") {
+        hops++;
+      }
+    }
+
+    for (let i = 0; i < hops; i++) {
+      anchorState = anchorState && anchorState.parent;
+    }
+
+    if (!anchorState) {
+      anchorState = context;
+
+      while (anchorState.parent) anchorState = anchorState.parent;
+    }
+
+    ngViewContextAnchor = anchorState.name;
+  } else if (ngViewContextAnchor === ".") {
+    ngViewContextAnchor = context.name;
+  }
+
+  return { ngViewName, ngViewContextAnchor };
+}
 
 function contextDepth(context: ViewContext): number {
   let cursor: ViewContext | undefined = context;
@@ -65,8 +185,8 @@ function ngViewDepth(
 }
 
 function viewConfigDepth(
-  cache: Map<ViewConfig, number>,
-  config: ViewConfig,
+  cache: Map<_ViewConfig, number>,
+  config: _ViewConfig,
 ): number {
   const cached = cache.get(config);
 
@@ -93,7 +213,7 @@ export class ViewService {
   /** @internal */
   _ngViews: ActiveNgView[];
   /** @internal */
-  _viewConfigs: ViewConfig[];
+  _viewConfigs: _ViewConfig[];
   /** @internal */
   _templateFactory: TemplateFactoryProvider | undefined;
   /** @internal */
@@ -137,24 +257,10 @@ export class ViewService {
   }
 
   /**
-   * Builds a view config for one view declaration along the specified path.
-   */
-  /** @internal */
-  _createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
-    const templateFactory = this._templateFactory;
-
-    if (!templateFactory) {
-      throw new Error("ViewService: No template factory registered");
-    }
-
-    return new ViewConfig(path, decl, templateFactory);
-  }
-
-  /**
    * Removes a view config from the active registry.
    */
   /** @internal */
-  _deactivateViewConfig(viewConfig: ViewConfig): void {
+  _deactivateViewConfig(viewConfig: _ViewConfig): void {
     removeFrom(this._viewConfigs, viewConfig);
   }
 
@@ -162,7 +268,7 @@ export class ViewService {
    * Adds a view config to the active registry.
    */
   /** @internal */
-  _activateViewConfig(viewConfig: ViewConfig): void {
+  _activateViewConfig(viewConfig: _ViewConfig): void {
     this._viewConfigs.push(viewConfig);
   }
 
@@ -182,7 +288,7 @@ export class ViewService {
 
     const ngViewDepthCache = new Map<ActiveNgView, number>();
 
-    const viewConfigDepthCache = new Map<ViewConfig, number>();
+    const viewConfigDepthCache = new Map<_ViewConfig, number>();
 
     this._ngViews.sort(
       (left, right) =>
@@ -193,7 +299,7 @@ export class ViewService {
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
 
-      let selectedViewConfig: ViewConfig | undefined = undefined;
+      let selectedViewConfig: _ViewConfig | undefined = undefined;
 
       let bestDepth = Number.NEGATIVE_INFINITY;
 
@@ -240,7 +346,7 @@ export class ViewService {
   static _matches(
     ngViewsByFqn: Record<string, ActiveNgView>,
     ngView: ActiveNgView,
-    viewConfig: ViewConfig,
+    viewConfig: _ViewConfig,
   ): boolean {
     if (!viewConfig || !viewConfig.viewDecl) return false;
 

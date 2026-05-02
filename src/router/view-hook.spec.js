@@ -177,7 +177,7 @@ describe("view hooks", () => {
       const _state = $state;
       ctrl.prototype.ngCanExit = function (trans) {
         log += "canexit;";
-        expect(typeof trans.treeChanges).toBe("function");
+        expect(trans._treeChanges).toBeDefined();
         // expect(trans.injector().get("$state")).toBe(_state);
       };
       await initial();

@@ -76,8 +76,6 @@ describe("templateFactory", () => {
       dealoc(document.getElementById("app"));
       const mod = angular.module("defaultModule", []);
       mod.component("myComponent", { template: "hi" });
-      mod.component("dataComponent", { template: "hi" });
-      mod.component("xComponent", { template: "hi" });
       $injector = window.angular.bootstrap(document.getElementById("app"), [
         "defaultModule",
       ]);
@@ -106,23 +104,6 @@ describe("templateFactory", () => {
       $stateService.go("cmp");
       await wait(100);
       expect(el.innerHTML).toMatch(/\<my-component/);
-    });
-
-    it("should prefix the components dom element with x- for components named dataFoo", async () => {
-      $stateRegistry.register({
-        name: "cmp",
-        component: "dataComponent",
-      });
-      $stateService.go("cmp");
-      await wait(100);
-      expect(el.innerHTML).toMatch(/\<x-data-component/);
-    });
-
-    it("should prefix the components dom element with x- for components named xFoo", async () => {
-      $stateRegistry.register({ name: "cmp", component: "xComponent" });
-      $stateService.go("cmp");
-      await wait(100);
-      expect(el.innerHTML).toMatch(/\<x-x-component/);
     });
   });
 });

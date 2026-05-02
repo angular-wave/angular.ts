@@ -2,12 +2,13 @@ import { assign, isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";
+import type { TreeChanges } from "./interface.ts";
 import {
   TransitionHook,
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import type { Transition, TreeChanges } from "./transition.ts";
+import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
 /** @internal */
@@ -41,7 +42,7 @@ function buildHooks(
   transition: Transition,
   hookType: TransitionEventType,
 ): TransitionHook[] {
-  const treeChanges = transition.treeChanges() as TreeChanges;
+  const treeChanges = transition._treeChanges;
 
   const matchingHooks = getMatchingHooks(hookType, treeChanges, transition);
 
@@ -49,7 +50,7 @@ function buildHooks(
 
   const baseHookOptions = {
     transition,
-    current: () => transition.options().current?.() || undefined,
+    current: () => transition._options.current?.() || undefined,
   };
 
   const hookTuples: HookTuple[] = [];
@@ -108,32 +109,26 @@ function getMatchingHooks(
   treeChanges: TreeChanges,
   transition: Transition,
 ): Array<{ hook: RegisteredHook; matches: IMatchingNodes }> {
-  const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
-
   const $transitions = transition._transitionService;
-
-  const registries = isCreate ? [$transitions] : [transition, $transitions];
 
   const matchingHooks: Array<{
     hook: RegisteredHook;
     matches: IMatchingNodes;
   }> = [];
 
-  for (let i = 0; i < registries.length; i++) {
-    const hooks = registries[i].getHooks(hookType.name);
+  const hooks = $transitions.getHooks(hookType.name);
 
-    if (!isArray(hooks)) {
-      throw new Error(`broken event named: ${hookType.name}`);
-    }
+  if (!isArray(hooks)) {
+    throw new Error(`broken event named: ${hookType.name}`);
+  }
 
-    for (let j = 0; j < hooks.length; j++) {
-      const hook = hooks[j] as RegisteredHook;
+  for (let i = 0; i < hooks.length; i++) {
+    const hook = hooks[i] as RegisteredHook;
 
-      const matches = hook.matches(treeChanges, transition);
+    const matches = hook.matches(treeChanges, transition);
 
-      if (matches) {
-        matchingHooks.push({ hook, matches });
-      }
+    if (matches) {
+      matchingHooks.push({ hook, matches });
     }
   }
 

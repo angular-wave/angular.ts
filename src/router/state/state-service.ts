@@ -18,7 +18,6 @@ import {
   minErr,
   isString,
 } from "../../shared/utils.ts";
-import { Queue } from "../../shared/queue.ts";
 import { makeTargetState } from "../path/path-utils.ts";
 import { PathNode } from "../path/path-node.ts";
 import { defaultTransOpts } from "../transition/transition-service.ts";
@@ -214,11 +213,9 @@ export class StateProvider {
 
     const routerState = this._routerState;
 
-    const latest = routerState._transitionHistory._peekTail();
+    const latest = routerState._lastStartedTransition;
 
-    const callbackQueue = new Queue<OnInvalidCallback>(
-      this._invalidCallbacks.slice(),
-    );
+    const callbacks = this._invalidCallbacks.slice();
 
     const injector = this._$injector;
 
@@ -241,7 +238,7 @@ export class StateProvider {
         return Rejection.invalid(target.error())._toPromise();
       }
 
-      if (routerState._transitionHistory._peekTail() !== latest) {
+      if (routerState._lastStartedTransition !== latest) {
         return Rejection.superseded()._toPromise();
       }
 
@@ -255,8 +252,8 @@ export class StateProvider {
     /**
      * @returns A promise for the eventual target state.
      */
-    function invokeNextCallback(): Promise<StateTransitionResult> {
-      const nextCallback = callbackQueue._dequeue();
+    const invokeNextCallback = (index = 0): Promise<StateTransitionResult> => {
+      const nextCallback = callbacks[index];
 
       if (nextCallback === undefined)
         return Rejection.invalid(toState.error())._toPromise();
@@ -266,8 +263,8 @@ export class StateProvider {
 
       return callbackResult
         .then(checkForRedirect)
-        .then((result) => result || invokeNextCallback());
-    }
+        .then((result) => result || invokeNextCallback(index + 1));
+    };
 
     return invokeNextCallback();
   }
@@ -459,7 +456,7 @@ export class StateProvider {
   getCurrentPath(): PathNode[] {
     const routerState = this._routerState;
 
-    const latestSuccess = routerState._successfulTransitions._peekTail();
+    const latestSuccess = routerState._lastSuccessfulTransition;
 
     return latestSuccess
       ? latestSuccess._treeChanges.to

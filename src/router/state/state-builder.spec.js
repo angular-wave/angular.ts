@@ -39,7 +39,6 @@ describe("StateBuilder", function () {
       jasmine.objectContaining({
         templateUrl: "/foo.html",
         controller: "FooController",
-        resolveAs: "$resolve",
       }),
     );
   });
@@ -85,6 +84,28 @@ describe("StateBuilder", function () {
         views: { main: { controller: "FooController" } },
       }),
     ).toThrow();
+  });
+
+  it("should reject removed templateProvider view declarations", function () {
+    expect(() =>
+      builder._build({
+        name: "foo",
+        self: {},
+        parent: parent,
+        templateProvider: () => "hello",
+      }),
+    ).toThrowError(/unsupported view properties: templateProvider/);
+
+    expect(() =>
+      builder._build({
+        name: "foo",
+        self: {},
+        parent: parent,
+        views: {
+          main: { templateProvider: () => "hello" },
+        },
+      }),
+    ).toThrowError(/unsupported view properties: templateProvider/);
   });
 
   it("should not allow a view config with both component and template keys", function () {

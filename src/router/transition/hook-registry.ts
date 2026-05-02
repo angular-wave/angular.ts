@@ -1,6 +1,5 @@
 import { removeFrom } from "../../shared/common.ts";
 import { hasOwn, isFunction, isString } from "../../shared/utils.ts";
-import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { StateObject } from "../state/state-object.ts";
 import { TransitionHookScope } from "./transition-hook.ts";
@@ -40,25 +39,12 @@ export function matchState(
   criterion: HookMatchCriterion,
   transition: Transition,
 ): boolean {
-  const toMatch = isString(criterion) ? [criterion] : criterion;
-
-  if (isFunction(toMatch)) {
-    return !!(toMatch as IStateMatch)(state, transition);
+  if (isString(criterion)) {
+    return criterion === state.name;
   }
 
-  if (toMatch) {
-    const globStrings = toMatch as string[];
-
-    for (let i = 0; i < globStrings.length; i++) {
-      const glob = new Glob(globStrings[i]);
-
-      if (
-        (glob && glob.matches(state.name)) ||
-        (!glob && globStrings[i] === state.name)
-      ) {
-        return true;
-      }
-    }
+  if (isFunction(criterion)) {
+    return !!(criterion as IStateMatch)(state, transition);
   }
 
   return false;
