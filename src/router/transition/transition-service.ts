@@ -21,6 +21,7 @@ import type {
   StateDeclaration,
 } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
+import type { RouterProvider } from "../router.ts";
 import { Transition } from "./transition.ts";
 import type { PathNode } from "../path/path-node.ts";
 import {
@@ -34,9 +35,14 @@ import type {
   HookMatchCriteria,
   HookRegOptions,
   HookRegistry,
+  HookResult,
   TransitionOptions,
 } from "./interface.ts";
-import { TransitionEventType } from "./transition-event-type.ts";
+import {
+  TransitionEventType,
+  type TransitionErrorHandler,
+  type TransitionResultHandler,
+} from "./transition-event-type.ts";
 import {
   TransitionHook,
   TransitionHookPhase,
@@ -79,14 +85,15 @@ export const defaultTransOpts: TransitionOptions = {
   source: "unknown",
 };
 
-const noop = () => {
+function noop(): void {
   /* empty */
-};
+}
 
-const afterViewCommitTask = () =>
-  new Promise<void>((resolve) => {
+function afterViewCommitTask(): Promise<void> {
+  return new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
   });
+}
 
 type ViewTransitionDocument = Document & {
   startViewTransition: (updateCallback: () => void) => {
@@ -187,6 +194,12 @@ export interface TransitionService extends HookRegistry {
   _view: ViewService;
 
   /** @internal */
+  _stateService: StateProvider;
+
+  /** @internal */
+  _urlService: UrlService;
+
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 }
 
@@ -205,14 +218,18 @@ export class TransitionProvider implements TransitionService {
   /** @internal */
   _criteriaPaths: PathTypes;
   /** @internal */
-  _routerState: ng._RouterProvider;
+  _routerState: RouterProvider;
   /** @internal */
   _view!: ViewService;
+  /** @internal */
+  _stateService!: StateProvider;
+  /** @internal */
+  _urlService!: UrlService;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   constructor(
-    routerState: ng._RouterProvider,
+    routerState: RouterProvider,
     $exceptionHandler: ng.ExceptionHandlerProvider,
   ) {
     this._transitionCount = 0;
@@ -242,9 +259,11 @@ export class TransitionProvider implements TransitionService {
     viewService: ViewService,
   ): void {
     this._view = viewService;
-    registerUpdateUrl(this, stateService, urlService);
-    registerRedirectToHook(this, stateService);
-    registerActivateViews(this, viewService);
+    this._stateService = stateService;
+    this._urlService = urlService;
+    registerUpdateUrl(this);
+    registerRedirectToHook(this);
+    registerActivateViews(this);
   }
 
   /**
@@ -275,8 +294,8 @@ export class TransitionProvider implements TransitionService {
       0,
       paths.to,
       NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.THROW_ERROR,
+      TH._logRejectedResult,
+      TH._throwError,
       SYNCHRONOUS,
     );
     this._defineEvent("onBefore", TransitionHookPhase._BEFORE, 0, paths.to);
@@ -302,8 +321,8 @@ export class TransitionProvider implements TransitionService {
       0,
       paths.to,
       NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.LOG_ERROR,
+      TH._logRejectedResult,
+      TH._logError,
       SYNCHRONOUS,
     );
     this._defineEvent(
@@ -312,8 +331,8 @@ export class TransitionProvider implements TransitionService {
       0,
       paths.to,
       NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.LOG_ERROR,
+      TH._logRejectedResult,
+      TH._logError,
       SYNCHRONOUS,
     );
   }
@@ -339,8 +358,8 @@ export class TransitionProvider implements TransitionService {
     hookOrder: number,
     criteriaMatchPath: PathType,
     reverseSort = false,
-    getResultHandler = TransitionHook.HANDLE_RESULT,
-    getErrorHandler = TransitionHook.REJECT_ERROR,
+    resultHandler: TransitionResultHandler = TransitionHook._handleResult,
+    errorHandler: TransitionErrorHandler = TransitionHook._rejectError,
     synchronous = false,
   ): void {
     const eventType = new TransitionEventType(
@@ -349,8 +368,8 @@ export class TransitionProvider implements TransitionService {
       hookOrder,
       criteriaMatchPath,
       reverseSort,
-      getResultHandler,
-      getErrorHandler,
+      resultHandler,
+      errorHandler,
       synchronous,
     );
 
@@ -529,13 +548,13 @@ export class TransitionProvider implements TransitionService {
    */
   /** @internal */
   _getEventType(eventName: string): TransitionEventType {
-    const eventType = this._eventTypes.find((type) => type.name === eventName);
+    for (let i = 0; i < this._eventTypes.length; i++) {
+      const eventType = this._eventTypes[i];
 
-    if (!eventType) {
-      throw new Error(`Unknown Transition hook event: ${eventName}`);
+      if (eventType.name === eventName) return eventType;
     }
 
-    return eventType;
+    throw new Error(`Unknown Transition hook event: ${eventName}`);
   }
 
   /**
@@ -705,21 +724,26 @@ function registerInvalidTransitionHook(
   });
 }
 
-function makeEnterExitRetainHook(
-  hookName: "onEnter" | "onExit" | "onRetain",
-): HookFn {
-  return (transition, state) => {
-    const hookFn = state._state?.()[hookName];
-
-    return hookFn?.(transition, state);
-  };
+function onExitHook(
+  transition: Transition,
+  state: StateDeclaration,
+): HookResult {
+  return state._state?.().onExit?.(transition, state);
 }
 
-const onExitHook = makeEnterExitRetainHook("onExit");
+function onRetainHook(
+  transition: Transition,
+  state: StateDeclaration,
+): HookResult {
+  return state._state?.().onRetain?.(transition, state);
+}
 
-const onRetainHook = makeEnterExitRetainHook("onRetain");
-
-const onEnterHook = makeEnterExitRetainHook("onEnter");
+function onEnterHook(
+  transition: Transition,
+  state: StateDeclaration,
+): HookResult {
+  return state._state?.().onEnter?.(transition, state);
+}
 
 function registerOnExitHook(
   transitionService: TransitionService,
@@ -754,58 +778,74 @@ function registerOnEnterHook(
   );
 }
 
+function hasRedirectTo(state?: StateObject): boolean {
+  return !!(state as BuiltStateDeclaration).redirectTo;
+}
+
+function handleRedirectToResult(
+  stateService: StateProvider,
+  trans: Transition,
+  result: RedirectToResult,
+): TargetState | undefined {
+  if (!result) return undefined;
+
+  if (isInstanceOf(result, TargetState)) {
+    return result;
+  }
+
+  if (isString(result)) {
+    return stateService.target(result, trans.params(), trans._options);
+  }
+
+  if (isObject(result) && ("state" in result || "params" in result)) {
+    return stateService.target(
+      result.state || trans.to(),
+      result.params || trans.params(),
+      trans._options,
+    );
+  }
+
+  return undefined;
+}
+
+async function redirectToHook(
+  this: TransitionProvider,
+  trans: Transition,
+): Promise<TargetState | undefined> {
+  const redirect = trans.to().redirectTo;
+
+  if (!redirect) return undefined;
+
+  const stateService = this._stateService;
+
+  if (isFunction(redirect)) {
+    const result = await Promise.resolve(redirect(trans));
+
+    return handleRedirectToResult(stateService, trans, result);
+  }
+
+  return handleRedirectToResult(stateService, trans, redirect);
+}
+
 function registerRedirectToHook(
   transitionService: TransitionService,
-  stateService: StateProvider,
 ): DeregisterFn {
-  const redirectToHook = (trans: Transition) => {
-    const redirect = trans.to().redirectTo;
-
-    if (!redirect) return undefined;
-
-    function handleResult(result: RedirectToResult) {
-      if (!result) return undefined;
-
-      if (isInstanceOf(result, TargetState)) {
-        return result;
-      }
-
-      if (isString(result)) {
-        return stateService.target(result, trans.params(), trans._options);
-      }
-
-      if (isObject(result) && ("state" in result || "params" in result)) {
-        return stateService.target(
-          result.state || trans.to(),
-          result.params || trans.params(),
-          trans._options,
-        );
-      }
-
-      return undefined;
-    }
-
-    if (isFunction(redirect)) {
-      return Promise.resolve(redirect(trans)).then(handleResult);
-    }
-
-    return handleResult(redirect);
-  };
-
   return transitionService.onStart(
     {
-      to: (state) => !!(state as BuiltStateDeclaration).redirectTo,
+      to: hasRedirectTo,
     },
     redirectToHook,
+    { bind: transitionService },
   );
 }
 
 const RESOLVE_HOOK_PRIORITY = 1000;
 
-const eagerResolvePath = (trans: Transition) =>
-  new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+function eagerResolvePath(trans: Transition): Promise<void> {
+  return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .resolvePath(true, trans)
     .then(noop);
+}
 
 function registerEagerResolvePath(
   transitionService: TransitionService,
@@ -815,11 +855,15 @@ function registerEagerResolvePath(
   });
 }
 
-const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
-  new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+function lazyResolveState(
+  trans: Transition,
+  state: StateDeclaration,
+): Promise<void> {
+  return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .subContext(state._state!())
     .resolvePath(false, trans)
     .then(noop);
+}
 
 function matchEnteringState(): boolean {
   return true;
@@ -837,10 +881,11 @@ function registerLazyResolveState(
   );
 }
 
-const resolveRemaining = (trans: Transition) =>
-  new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+function resolveRemaining(trans: Transition): Promise<void> {
+  return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .resolvePath(false, trans)
     .then(noop);
+}
 
 function registerResolveRemaining(
   transitionService: TransitionService,
@@ -850,7 +895,7 @@ function registerResolveRemaining(
   });
 }
 
-const loadEnteringViews = (transition: Transition) => {
+function loadEnteringViews(transition: Transition): Promise<void> | undefined {
   const enteringViews = transitionViews(transition, "entering");
 
   if (!enteringViews.length) return undefined;
@@ -861,7 +906,7 @@ const loadEnteringViews = (transition: Transition) => {
   }
 
   return Promise.all(promises).then(noop);
-};
+}
 
 function registerLoadEnteringViews(
   transitionService: TransitionService,
@@ -869,41 +914,55 @@ function registerLoadEnteringViews(
   return transitionService.onFinish({}, loadEnteringViews);
 }
 
-function registerActivateViews(
-  transitionService: TransitionService,
+function updateViewConfigs(
   viewService: ViewService,
-): DeregisterFn {
-  const activateViews = (transition: Transition): Promise<void> => {
-    const enteringViews = transitionViews(transition, "entering");
+  enteringViews: _ViewConfig[],
+  exitingViews: _ViewConfig[],
+): void {
+  for (let i = 0; i < exitingViews.length; i++) {
+    viewService._deactivateViewConfig(exitingViews[i]);
+  }
 
-    const exitingViews = transitionViews(transition, "exiting");
+  for (let i = 0; i < enteringViews.length; i++) {
+    viewService._activateViewConfig(enteringViews[i]);
+  }
 
-    if (!enteringViews.length && !exitingViews.length) {
-      return Promise.resolve();
-    }
+  viewService._sync();
+}
 
-    const updateViews = () => {
-      for (let i = 0; i < exitingViews.length; i++) {
-        viewService._deactivateViewConfig(exitingViews[i]);
-      }
+function activateViewsHook(
+  this: TransitionProvider,
+  transition: Transition,
+): Promise<void> {
+  const viewService = this._view;
 
-      for (let i = 0; i < enteringViews.length; i++) {
-        viewService._activateViewConfig(enteringViews[i]);
-      }
+  const enteringViews = transitionViews(transition, "entering");
 
-      viewService._sync();
-    };
+  const exitingViews = transitionViews(transition, "exiting");
 
-    if (!hasConnectedNgView(viewService)) {
-      updateViews();
+  if (!enteringViews.length && !exitingViews.length) {
+    return Promise.resolve();
+  }
 
-      return Promise.resolve();
-    }
-
-    return runWithViewTransition(updateViews);
+  const updateViews = (): void => {
+    updateViewConfigs(viewService, enteringViews, exitingViews);
   };
 
-  return transitionService.onSuccess({}, activateViews);
+  if (!hasConnectedNgView(viewService)) {
+    updateViews();
+
+    return Promise.resolve();
+  }
+
+  return runWithViewTransition(updateViews);
+}
+
+function registerActivateViews(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onSuccess({}, activateViewsHook, {
+    bind: transitionService,
+  });
 }
 
 function hasConnectedNgView(viewService: ViewService): boolean {
@@ -918,30 +977,35 @@ function hasConnectedNgView(viewService: ViewService): boolean {
   return false;
 }
 
-function registerUpdateUrl(
-  transitionService: TransitionService,
-  stateService: ng.StateService,
-  urlService: ng.UrlService,
-): DeregisterFn {
-  const updateUrl = (transition: Transition): void => {
-    const options = transition._options;
+function updateUrlHook(this: TransitionProvider, transition: Transition): void {
+  const options = transition._options;
 
-    const $state = stateService;
+  const stateService = this._stateService;
 
-    const navigable = $state.$current?.navigable;
+  const urlService = this._urlService;
 
-    if (options.source !== "url" && options.location && navigable?.url) {
-      const urlOptions = {
-        replace: options.location === "replace",
-      };
+  const navigable = stateService.$current?.navigable;
 
-      urlService.push(navigable.url, $state._routerState._params, urlOptions);
-    }
+  if (options.source !== "url" && options.location && navigable?.url) {
+    const urlOptions = {
+      replace: options.location === "replace",
+    };
 
-    urlService.update(true);
-  };
+    urlService.push(
+      navigable.url,
+      stateService._routerState._params,
+      urlOptions,
+    );
+  }
 
-  return transitionService.onSuccess({}, updateUrl, { priority: 9999 });
+  urlService.update(true);
+}
+
+function registerUpdateUrl(transitionService: TransitionService): DeregisterFn {
+  return transitionService.onSuccess({}, updateUrlHook, {
+    bind: transitionService,
+    priority: 9999,
+  });
 }
 
 function registerUpdateGlobalState(

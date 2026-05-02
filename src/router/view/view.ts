@@ -7,6 +7,7 @@ import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { TemplateFactoryProvider } from "../template-factory.ts";
+import type { RouterProvider } from "../router.ts";
 
 /** @internal */
 export interface ViewContext {
@@ -237,7 +238,7 @@ export class ViewService {
     _router,
     (
       $templateFactory: TemplateFactoryProvider,
-      $routerState: ng._RouterProvider,
+      $routerState: RouterProvider,
     ): ViewService => {
       this._templateFactory = $templateFactory;
       this._rootViewContext($routerState._currentState || null);

@@ -945,11 +945,8 @@ describe("ngSrefActive", () => {
     template = $compile(el)($rootScope);
     await wait(100);
 
-    _stateProvider.onInvalid(function ($to$) {
-      if ($to$.name() === "contacts.lazy") {
-        _stateProvider.state({ name: "contacts.lazy" });
-        return $to$;
-      }
+    _stateProvider.lazy("contacts.lazy", function () {
+      return { name: "contacts.lazy" };
     });
 
     $state.transitionTo("contacts.item", { id: 1 });
@@ -968,11 +965,8 @@ describe("ngSrefActive", () => {
     template = $compile(el)($rootScope);
     await wait(100);
 
-    _stateProvider.onInvalid(function ($to$) {
-      if ($to$.name() === "contacts.lazy") {
-        _stateProvider.state({ name: "contacts.lazy" });
-        return $to$;
-      }
+    _stateProvider.lazy("contacts.lazy", function () {
+      return { name: "contacts.lazy" };
     });
 
     $state.transitionTo("contacts.item", { id: 1 });

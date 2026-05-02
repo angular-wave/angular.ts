@@ -1,5 +1,4 @@
 import { pushR, tail } from "./common.ts";
-import { pattern, val } from "./hof.ts";
 import { isInjectable, isPromise } from "./predicates.ts";
 import {
   isArray,
@@ -79,21 +78,6 @@ export function stringify(value: any): string {
     obj.constructor !== Object &&
     isFunction(obj.toString);
 
-  const stringifyPattern = pattern([
-    [isUndefined, val("undefined")],
-    [isNull, val("null")],
-    [isPromise, val("[Promise]")],
-    [
-      isRejection,
-      /** @internal */
-      (reg: { _transitionRejection: { toString: () => any } }) =>
-        reg._transitionRejection.toString(),
-    ],
-    [hasToString, (str: { toString: () => any }) => str.toString()],
-    [isInjectable, functionToString],
-    [val(true), (bool: any) => bool],
-  ]);
-
   /** Formats a single item while tracking circular references. */
   function format(item: any): any {
     if (isObject(item)) {
@@ -101,7 +85,19 @@ export function stringify(value: any): string {
       seen.push(item);
     }
 
-    return stringifyPattern(item);
+    if (isUndefined(item)) return "undefined";
+
+    if (isNull(item)) return "null";
+
+    if (isPromise(item)) return "[Promise]";
+
+    if (isRejection(item)) return item._transitionRejection.toString();
+
+    if (hasToString(item)) return item.toString();
+
+    if (isInjectable(item)) return functionToString(item);
+
+    return item;
   }
 
   if (isUndefined(value)) {
@@ -117,24 +113,8 @@ export function stringify(value: any): string {
   );
 }
 
-export const stripLastPathElement = (str: string): string =>
-  str.replace(/\/[^/]*$/, "");
-
-/**
- * Splits on a delimiter, but returns the delimiters in the array
- *
- * #### Example:
- * ```js
- * var splitOnSlashes = splitOnDelim('/');
- * splitOnSlashes("/foo"); // ["/", "foo"]
- * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
- * ```
- * `delim` is kept in the output array.
- */
-export function splitOnDelim(delim: string): (str: string) => string[] {
-  const re = new RegExp(`(${delim})`, "g");
-
-  return (str: string) => str.split(re).filter(Boolean);
+export function stripLastPathElement(str: string): string {
+  return str.replace(/\/[^/]*$/, "");
 }
 
 /**

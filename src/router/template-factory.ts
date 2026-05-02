@@ -224,7 +224,7 @@ function getComponentBindings(
   return bindings;
 }
 
-const getBindings = (def: ng.Directive): BindingTuple[] => {
+function getBindings(def: ng.Directive): BindingTuple[] {
   const componentBindings = def.bindToController;
 
   if (
@@ -236,9 +236,9 @@ const getBindings = (def: ng.Directive): BindingTuple[] => {
   }
 
   return [];
-};
+}
 
-const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {
+function scopeBindings(bindingsObj: Record<string, string>): BindingTuple[] {
   const bindingKeys = keys(bindingsObj || {});
 
   const bindings: BindingTuple[] = [];
@@ -254,4 +254,4 @@ const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {
   }
 
   return bindings;
-};
+}

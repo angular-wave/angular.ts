@@ -1,6 +1,5 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
-import { curry } from "../../shared/hof.ts";
 import { StateMatcher } from "../state/state-matcher.ts";
 import { StateBuilder } from "../state/state-builder.ts";
 import { StateObject } from "../state/state-object.ts";
@@ -37,11 +36,13 @@ describe("view", () => {
   });
 
   let register;
-  const registerState = curry(function (_states, stateBuilder, config) {
-    const state = new StateObject(config);
-    const built = stateBuilder._build(state);
-    return (_states[built.name] = built);
-  });
+  function registerState(_states, stateBuilder) {
+    return function register(config) {
+      const state = new StateObject(config);
+      const built = stateBuilder._build(state);
+      return (_states[built.name] = built);
+    };
+  }
 
   describe("matching", () => {
     it("matches root default ng-view targets using the active ng-view fqn format", () => {

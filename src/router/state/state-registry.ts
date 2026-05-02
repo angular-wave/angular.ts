@@ -18,6 +18,7 @@ import type {
   StateRegistryListener,
   StateStore,
 } from "./interface.ts";
+import type { RouterProvider } from "../router.ts";
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -45,7 +46,7 @@ export class StateRegistryProvider {
   /** @internal */
   _root!: StateObject;
 
-  constructor(urlService: ng.UrlService, routerState: ng._RouterProvider) {
+  constructor(urlService: ng.UrlService, routerState: RouterProvider) {
     this._states = {};
 
     this._urlService = urlService;

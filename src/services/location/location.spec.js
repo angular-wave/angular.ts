@@ -15,7 +15,7 @@ import {
 } from "./location.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
-import { _RouterProvider } from "../../router/router.ts";
+import { RouterProvider } from "../../router/router.ts";
 
 describe("$location", () => {
   let module;
@@ -47,7 +47,7 @@ describe("$location", () => {
 
     it("should treat default rewriteLinks as auto when router is not configured", () => {
       const provider = new LocationProvider();
-      const router = new _RouterProvider();
+      const router = new RouterProvider();
 
       expect(provider._rewriteLinksConfigured).toBeFalse();
       expect(
@@ -61,7 +61,7 @@ describe("$location", () => {
 
     it("should enable default rewriteLinks when router is configured", () => {
       const provider = new LocationProvider();
-      const router = new _RouterProvider();
+      const router = new RouterProvider();
 
       router._markConfiguredRouting();
 
@@ -84,13 +84,13 @@ describe("$location", () => {
         isLinkRewritingEnabled(
           provider.html5ModeConf.rewriteLinks,
           provider._rewriteLinksConfigured,
-          new _RouterProvider(),
+          new RouterProvider(),
         ),
       ).toBeTrue();
     });
 
     it("should detect configured router from router globals", () => {
-      const router = new _RouterProvider();
+      const router = new RouterProvider();
 
       expect(hasConfiguredRouter(router)).toBeFalse();
 

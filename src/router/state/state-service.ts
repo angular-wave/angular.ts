@@ -13,12 +13,12 @@ import {
   assign,
   isDefined,
   isInstanceOf,
+  isArray,
   isNullOrUndefined,
   isObject,
   minErr,
   isString,
 } from "../../shared/utils.ts";
-import { makeTargetState } from "../path/path-utils.ts";
 import { PathNode } from "../path/path-node.ts";
 import { defaultTransOpts } from "../transition/transition-service.ts";
 import { RejectType, Rejection } from "../transition/reject-factory.ts";
@@ -28,10 +28,11 @@ import { Glob } from "../glob/glob.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { ViewService } from "../view/view.ts";
-import type { HookResult, TransitionOptions } from "../transition/interface.ts";
+import type { TransitionOptions } from "../transition/interface.ts";
 import type {
   HrefOptions,
-  OnInvalidCallback,
+  LazyStateLoader,
+  LazyStateLoadResult,
   StateDeclaration,
   StateOrName,
   StateTransitionResult,
@@ -39,8 +40,16 @@ import type {
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
+import type { RouterProvider } from "../router.ts";
 
 const stdErr = minErr("$stateProvider");
+
+type LazyStateRegistration = {
+  prefix: string;
+  loader: LazyStateLoader;
+  promise?: Promise<void>;
+  loaded: boolean;
+};
 
 /**
  * Attaches a catch handler to silence unhandled rejection warnings,
@@ -73,7 +82,7 @@ export const silentRejection = <E = unknown>(error: E): Promise<never> =>
  */
 export class StateProvider {
   /** @internal */
-  _routerState: ng._RouterProvider;
+  _routerState: RouterProvider;
   /** @internal */
   _transitionService: ng.TransitionProvider;
   /** @internal */
@@ -83,7 +92,7 @@ export class StateProvider {
   /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
-  _invalidCallbacks: OnInvalidCallback[];
+  _lazyStates: LazyStateRegistration[];
   /** @internal */
   _defaultErrorHandler: ng.ExceptionHandlerService;
 
@@ -132,7 +141,7 @@ export class StateProvider {
 
   constructor(
     stateRegistry: StateRegistryProvider,
-    routerState: ng._RouterProvider,
+    routerState: RouterProvider,
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
@@ -141,7 +150,7 @@ export class StateProvider {
     this._stateRegistry = stateRegistry;
     this._urlService = undefined;
     this._$injector = undefined;
-    this._invalidCallbacks = [];
+    this._lazyStates = [];
 
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
   }
@@ -193,53 +202,71 @@ export class StateProvider {
     return this;
   }
 
-  /**
-   * Handler for when [[transitionTo]] is called with an invalid state.
-   *
-   * Invokes the [[onInvalid]] callbacks, in natural order.
-   * Each callback's return value is checked in sequence until one of them returns an instance of TargetState.
-   * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
-   *
-   * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-   * @internal
-   * @param {PathNode[]} fromPath
-   * @param {TargetState} toState
-   */
-  _handleInvalidTargetState(
-    fromPath: PathNode[],
-    toState: TargetState,
-  ): Promise<StateTransitionResult> {
-    const fromState = makeTargetState(this._getRegistry(), fromPath);
+  /** @internal */
+  _registerLazyResult(result: LazyStateLoadResult): void {
+    if (!result) return;
 
+    const states = isArray(result) ? result : [result];
+
+    for (let i = 0; i < states.length; i++) {
+      this.state(states[i]);
+    }
+  }
+
+  /** @internal */
+  _findLazyState(target: TargetState): LazyStateRegistration | undefined {
+    const name = target.name();
+
+    if (!isString(name)) return undefined;
+
+    for (let i = 0; i < this._lazyStates.length; i++) {
+      const lazy = this._lazyStates[i];
+
+      if (name === lazy.prefix || name.startsWith(`${lazy.prefix}.`)) {
+        return lazy;
+      }
+    }
+
+    return undefined;
+  }
+
+  /** @internal */
+  _loadLazyTargetState(toState: TargetState): Promise<StateTransitionResult> {
     const routerState = this._routerState;
 
     const latest = routerState._lastStartedTransition;
 
-    const callbacks = this._invalidCallbacks.slice();
+    const lazy = this._findLazyState(toState);
 
-    const injector = this._$injector;
+    if (!lazy) {
+      return Rejection.invalid(toState.error())._toPromise();
+    }
 
-    const checkForRedirect = (
-      result: HookResult,
-    ): Promise<StateTransitionResult> | undefined => {
-      if (!isInstanceOf(result, TargetState)) {
-        return undefined;
+    if (!lazy.promise) {
+      lazy.promise = Promise.resolve(lazy.loader(toState, this._$injector))
+        .then((result) => {
+          this._registerLazyResult(result);
+          lazy.loaded = true;
+        })
+        .catch((error) => {
+          lazy.promise = undefined;
+          throw error;
+        });
+    }
+
+    return lazy.promise.then(() => {
+      if (routerState._lastStartedTransition !== latest) {
+        return Rejection.superseded()._toPromise();
       }
-      let target = result;
 
-      // Recreate the TargetState, in case the state is now defined.
-      target = this.target(
-        target.identifier(),
-        target.params(),
-        target.options(),
+      const target = this.target(
+        toState.identifier(),
+        toState.params(),
+        toState.options(),
       );
 
       if (!target.valid()) {
         return Rejection.invalid(target.error())._toPromise();
-      }
-
-      if (routerState._lastStartedTransition !== latest) {
-        return Rejection.superseded()._toPromise();
       }
 
       return this.transitionTo(
@@ -247,61 +274,21 @@ export class StateProvider {
         target.params(),
         target.options(),
       );
-    };
-
-    /**
-     * @returns A promise for the eventual target state.
-     */
-    const invokeNextCallback = (index = 0): Promise<StateTransitionResult> => {
-      const nextCallback = callbacks[index];
-
-      if (nextCallback === undefined)
-        return Rejection.invalid(toState.error())._toPromise();
-      const callbackResult = Promise.resolve(
-        nextCallback(toState, fromState, injector),
-      );
-
-      return callbackResult
-        .then(checkForRedirect)
-        .then((result) => result || invokeNextCallback(index + 1));
-    };
-
-    return invokeNextCallback();
+    });
   }
 
   /**
-   * Registers an Invalid State handler
-   *
-   * Registers a [[OnInvalidCallback]] function to be invoked when [[StateService.transitionTo]]
-   * has been called with an invalid state reference parameter
-   *
-   * Example:
-   * ```js
-   * stateService.onInvalid(function(to) {
-   *   if (to.name() === 'foo') {
-   *     stateService.state({ name: 'foo' });
-   *     return stateService.target('foo');
-   *   }
-   * });
-   * ```
-   *
-   * @param {OnInvalidCallback} callback invoked when the toState is invalid
-   *   This function receives the (invalid) toState, the fromState, and an injector.
-   *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
-   *   If one is returned, it is treated as a redirect.
-   *
-   * @returns a function which deregisters the callback
+   * Registers a lazy state namespace.
+   * The loader is invoked the first time navigation targets this prefix.
    */
-  onInvalid(callback: OnInvalidCallback): () => void {
-    this._invalidCallbacks.push(callback);
+  lazy(prefix: string, loader: LazyStateLoader): this {
+    this._lazyStates.push({
+      prefix: prefix.replace(/\.\*\*$/, ""),
+      loader,
+      loaded: false,
+    });
 
-    return () => {
-      const index = this._invalidCallbacks.indexOf(callback);
-
-      if (index !== -1) {
-        this._invalidCallbacks.splice(index, 1);
-      }
-    };
+    return this;
   }
 
   /**
@@ -463,6 +450,56 @@ export class StateProvider {
       : [new PathNode(this._getRegistry().root())];
   }
 
+  /** @internal */
+  _handleTransitionRejection(
+    trans: Transition,
+    error: unknown,
+  ): Promise<StateTransitionResult> {
+    if (isInstanceOf(error, Rejection)) {
+      const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
+
+      if (error.type === RejectType._IGNORED) {
+        isLatest && this._getUrlService().update();
+
+        // Consider ignored `Transition.run()` as a successful `transitionTo`.
+        return Promise.resolve(this._routerState._current);
+      }
+
+      const { detail } = error;
+
+      if (
+        error.type === RejectType._SUPERSEDED &&
+        error.redirected &&
+        isInstanceOf(detail, TargetState)
+      ) {
+        const redirect = trans.redirect(detail);
+
+        return redirect
+          .run()
+          .catch((reason) => this._handleTransitionRejection(redirect, reason));
+      }
+
+      if (error.type === RejectType._ABORTED) {
+        isLatest && this._getUrlService().update();
+
+        return Promise.reject(error);
+      }
+    }
+
+    this.defaultErrorHandler()(error);
+
+    return Promise.reject(error);
+  }
+
+  /** @internal */
+  async _runTransitionTo(trans: Transition): Promise<StateTransitionResult> {
+    try {
+      return await trans.run();
+    } catch (error) {
+      return this._handleTransitionRejection(trans, error);
+    }
+  }
+
   /**
    * Low-level method for transitioning to a new state.
    *
@@ -499,7 +536,7 @@ export class StateProvider {
 
     const currentPath = this.getCurrentPath();
 
-    if (!ref.exists()) return this._handleInvalidTargetState(currentPath, ref);
+    if (!ref.exists()) return this._loadLazyTargetState(ref);
 
     if (!ref.valid()) return silentRejection(ref.error());
 
@@ -517,55 +554,9 @@ export class StateProvider {
      * no error occurred.  Likewise, the transition.run() promise may be rejected because of
      * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
      */
-    type RejectionHandler = (error: unknown) => Promise<StateTransitionResult>;
-
-    type RejectedTransitionHandler = (trans: Transition) => RejectionHandler;
-
-    const rejectedTransitionHandler: RejectedTransitionHandler =
-      (trans: Transition) =>
-      (error: unknown): Promise<StateTransitionResult> => {
-        if (isInstanceOf(error, Rejection)) {
-          const isLatest =
-            this._routerState._lastStartedTransitionId <= trans.$id;
-
-          if (error.type === RejectType._IGNORED) {
-            isLatest && this._getUrlService().update();
-
-            // Consider ignored `Transition.run()` as a successful `transitionTo`
-            return Promise.resolve(this._routerState._current);
-          }
-          const { detail } = error;
-
-          if (
-            error.type === RejectType._SUPERSEDED &&
-            error.redirected &&
-            isInstanceOf(detail, TargetState)
-          ) {
-            // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
-            // by returning the promise for the new (redirect) `Transition.run()`.
-            const redirect = trans.redirect(detail);
-
-            return redirect.run().catch(rejectedTransitionHandler(redirect));
-          }
-
-          if (error.type === RejectType._ABORTED) {
-            isLatest && this._getUrlService().update();
-
-            return Promise.reject(error);
-          }
-        }
-        const errorHandler = this.defaultErrorHandler();
-
-        errorHandler(error);
-
-        return Promise.reject(error);
-      };
-
     const transition = this._transitionService.create(currentPath, ref);
 
-    const transitionToPromise = transition
-      .run()
-      .catch(rejectedTransitionHandler(transition));
+    const transitionToPromise = this._runTransitionTo(transition);
 
     silenceUncaughtInPromise(transitionToPromise); // issue #2676
 

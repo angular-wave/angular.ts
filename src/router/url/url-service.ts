@@ -29,6 +29,7 @@ import type { UrlConfigProvider as UrlConfigProviderType } from "../../router/ur
 import type { StateObject } from "../state/state-object.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateParams } from "../params/state-params.ts";
+import type { RouterProvider } from "../router.ts";
 
 const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
 
@@ -50,7 +51,7 @@ export class UrlService {
   /** @internal */
   _stateRoutes: StateObject[];
   /** @internal */
-  _markConfiguredRouting: () => void;
+  _routerState: Pick<RouterProvider, "_markConfiguredRouting">;
   /** @internal */
   _config: UrlConfigProvider;
   /** @internal */
@@ -87,13 +88,13 @@ export class UrlService {
 
   constructor(
     $locationProvider: ng.LocationProvider,
-    router: Pick<ng._RouterProvider, "_markConfiguredRouting">,
+    router: Pick<RouterProvider, "_markConfiguredRouting">,
     urlConfigProvider: UrlConfigProviderType,
   ) {
     this._locationProvider = $locationProvider;
     this._stateService = undefined;
     this._stateRoutes = [];
-    this._markConfiguredRouting = () => router._markConfiguredRouting();
+    this._routerState = router;
     this._config = urlConfigProvider;
     this._paramFactory = new ParamFactory(this._config);
     this._urlListeners = [];
@@ -306,7 +307,7 @@ export class UrlService {
   _registerStateRoute(state: StateObject): void {
     if (!this._stateRoutes.includes(state)) {
       this._stateRoutes.push(state);
-      this._markConfiguredRouting();
+      this._routerState._markConfiguredRouting();
     }
   }
 

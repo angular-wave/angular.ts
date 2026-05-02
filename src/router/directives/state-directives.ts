@@ -22,6 +22,7 @@ import type { RawParams } from "../params/interface.ts";
 import type { StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
+import type { RouterProvider } from "../router.ts";
 
 type ParsedStateRef = { _state: string | null; _paramExpr: string | null };
 
@@ -478,7 +479,7 @@ StateRefActiveDirective.$inject = [
  */
 export function StateRefActiveDirective(
   $state: ng.StateService,
-  $routerState: ng._RouterProvider,
+  $routerState: RouterProvider,
   $interpolate: ng.InterpolateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,

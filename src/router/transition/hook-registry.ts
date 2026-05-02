@@ -60,7 +60,8 @@ export class RegisteredHook {
   _eventType: TransitionEventType;
   callback: HookFn;
   matchCriteria: HookMatchCriteria;
-  removeHookFromRegistry: (hook: RegisteredHook) => void;
+  /** @internal */
+  _hooks: RegisteredHook[];
   invokeCount: number;
   /** @internal */
   _deregistered: boolean;
@@ -73,14 +74,14 @@ export class RegisteredHook {
     eventType: TransitionEventType,
     callback: HookFn,
     matchCriteria: HookMatchCriteria,
-    removeHookFromRegistry: (hook: RegisteredHook) => void,
+    hooks: RegisteredHook[],
     options: HookRegOptions = {},
   ) {
     this.tranSvc = tranSvc;
     this._eventType = eventType as TransitionEventType;
     this.callback = callback;
     this.matchCriteria = matchCriteria;
-    this.removeHookFromRegistry = removeHookFromRegistry;
+    this._hooks = hooks;
     this.invokeCount = 0;
     this._deregistered = false;
     this.priority = options.priority || 0;
@@ -157,7 +158,7 @@ export class RegisteredHook {
   }
 
   deregister(): void {
-    this.removeHookFromRegistry(this);
+    removeFrom(this._hooks, this);
     this._deregistered = true;
   }
 }
@@ -189,16 +190,12 @@ export function registerHook(
   const hooks = (_registeredHooks[eventType.name] =
     _registeredHooks[eventType.name] || []);
 
-  const removeHookFn = (hook: RegisteredHook): void => {
-    removeFrom(hooks, hook);
-  };
-
   const registeredHook = new RegisteredHook(
     transitionService,
     eventType,
     callback,
     matchCriteria,
-    removeHookFn,
+    hooks,
     options,
   );
 
@@ -220,10 +217,6 @@ export function makeEvent(
 
   const hooks = (_registeredHooks[eventType.name] = [] as RegisteredHook[]);
 
-  const removeHookFn = (hook: RegisteredHook): void => {
-    removeFrom(hooks, hook);
-  };
-
   function hookRegistrationFn(
     matchObject: HookMatchCriteria,
     callback: HookFn,
@@ -234,7 +227,7 @@ export function makeEvent(
       eventType,
       callback,
       matchObject,
-      removeHookFn,
+      hooks,
       options,
     );
 

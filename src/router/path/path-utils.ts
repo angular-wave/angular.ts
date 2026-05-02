@@ -12,7 +12,6 @@ import type { StateObject } from "../state/state-object.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TreeChanges } from "../transition/interface.ts";
 import type { StateRegistryProvider } from "../state/state-registry.ts";
-import type { Predicate } from "../../shared/interface.ts";
 
 /**
  * Converts a TargetState into the concrete path nodes used by a transition.
@@ -64,13 +63,7 @@ export function applyViewConfigs(
 
     const viewDecls = values(node.state._views || {});
 
-    const viewSubPath = subPath(path, (x) => x === node);
-
-    if (!viewSubPath) {
-      node._views = [];
-
-      continue;
-    }
+    const viewSubPath = path.slice(0, i + 1);
 
     const viewConfigs: _ViewConfig[] = [];
 
@@ -225,25 +218,6 @@ export function matching(
   }
 
   return matchingPath;
-}
-
-/**
- * Return a subpath of a path which stops at the first matching node.
- */
-export function subPath(
-  path: PathNode[],
-  predicate: Predicate<PathNode>,
-): PathNode[] | undefined {
-  let elementIdx = -1;
-
-  for (let i = 0; i < path.length; i++) {
-    if (predicate(path[i])) {
-      elementIdx = i;
-      break;
-    }
-  }
-
-  return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
 }
 
 export function nonDynamicParams(node: PathNode): Param[] {

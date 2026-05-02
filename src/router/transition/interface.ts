@@ -1,5 +1,4 @@
 import { StateDeclaration } from "../state/interface.ts";
-import { PredicateBinary } from "../../shared/interface.ts";
 import { Transition } from "./transition.ts";
 import { StateObject } from "../state/state-object.ts";
 import { PathNode } from "../path/path-node.ts";
@@ -305,7 +304,10 @@ export interface HookRegOptions {
 }
 
 /** A predicate type which tests if a [[StateObject]] and [[Transition]] passes some test. Returns a boolean. */
-export type IStateMatch = PredicateBinary<StateObject, Transition>;
+export type IStateMatch = (
+  state?: StateObject,
+  transition?: Transition,
+) => boolean;
 
 /**
  * Hook Criterion used to match a transition.

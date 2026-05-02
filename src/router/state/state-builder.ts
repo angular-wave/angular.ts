@@ -19,6 +19,7 @@ import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
 import type {
   BuiltStateDeclaration,
+  RouterInjectable,
   StateDeclaration,
   ViewDeclaration,
 } from "./interface.ts";
@@ -27,11 +28,22 @@ import type { Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";
-import type { TransitionStateHookFn } from "../transition/interface.ts";
+import type {
+  HookResult,
+  TransitionStateHookFn,
+} from "../transition/interface.ts";
 
 type ViewDeclarationKey = keyof ViewDeclaration | "notify" | "async";
 
 type ViewDeclarationValueMap = Partial<Record<ViewDeclarationKey, unknown>>;
+
+type StateLifecycleHookName = "_onEnter" | "_onExit" | "_onRetain";
+
+type StateLifecyclePathName = "to" | "from";
+
+type StateLifecycleHookContext = {
+  _$injector: ng.InjectorService | undefined;
+};
 
 const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = [
   "templateUrl",
@@ -376,6 +388,59 @@ function resolvablesBuilder(
 
   return resolvables;
 }
+
+function invokeStateLifecycleHook(
+  trans: ng.Transition,
+  state: StateDeclaration,
+  hookName: StateLifecycleHookName,
+  pathname: StateLifecyclePathName,
+): HookResult {
+  const stateObject = (state as BuiltStateDeclaration)._state() as StateObject;
+
+  const hook = stateObject[hookName];
+
+  if (!hook) return undefined;
+
+  const hookContext = stateObject._hookContext as StateLifecycleHookContext;
+
+  const $injector = hookContext._$injector as InjectorService;
+
+  const resolveContext = new ResolveContext(
+    (trans._treeChanges[pathname] || []) as PathNode[],
+    $injector,
+  );
+
+  const subContext = resolveContext.subContext(stateObject);
+
+  const locals = assign(getResolveLocals(subContext), {
+    $state$: state,
+    $transition$: trans,
+  });
+
+  return $injector.invoke(hook, hookContext, locals) as HookResult;
+}
+
+function invokeOnEnterHook(
+  trans: ng.Transition,
+  state: StateDeclaration,
+): HookResult {
+  return invokeStateLifecycleHook(trans, state, "_onEnter", "to");
+}
+
+function invokeOnRetainHook(
+  trans: ng.Transition,
+  state: StateDeclaration,
+): HookResult {
+  return invokeStateLifecycleHook(trans, state, "_onRetain", "to");
+}
+
+function invokeOnExitHook(
+  trans: ng.Transition,
+  state: StateDeclaration,
+): HookResult {
+  return invokeStateLifecycleHook(trans, state, "_onExit", "from");
+}
+
 /**
  * A internal global service
  *
@@ -407,35 +472,20 @@ export class StateBuilder {
     this._urlService = urlService;
   }
 
-  _buildStateHook(
+  /** @internal */
+  _assignStateHook(
     stateObject: StateObject,
-    hookName: "onEnter" | "onExit" | "onRetain",
-  ): TransitionStateHookFn | undefined {
-    const hook = stateObject[hookName];
+    publicName: "onEnter" | "onExit" | "onRetain",
+    privateName: StateLifecycleHookName,
+    hookFn: TransitionStateHookFn,
+  ): void {
+    const hook = stateObject[publicName] as RouterInjectable | undefined;
 
-    if (!hook) return undefined;
+    if (!hook) return;
 
-    const pathname = hookName === "onExit" ? "from" : "to";
-
-    return (trans: ng.Transition, state: StateDeclaration) => {
-      const $injector = this._$injector as InjectorService;
-
-      const resolveContext = new ResolveContext(
-        (trans._treeChanges[pathname] || []) as PathNode[],
-        $injector,
-      );
-
-      const subContext = resolveContext.subContext(
-        (state as BuiltStateDeclaration)._state(),
-      );
-
-      const locals = assign(getResolveLocals(subContext), {
-        $state$: state,
-        $transition$: trans,
-      });
-
-      return $injector.invoke(hook, this, locals);
-    };
+    stateObject[privateName] = hook;
+    stateObject._hookContext = this;
+    stateObject[publicName] = hookFn;
   }
 
   /**
@@ -468,9 +518,9 @@ export class StateBuilder {
       state as StateObject & StateDeclaration,
       this._$injector && this._$injector.strictDi,
     );
-    state.onExit = this._buildStateHook(state, "onExit");
-    state.onRetain = this._buildStateHook(state, "onRetain");
-    state.onEnter = this._buildStateHook(state, "onEnter");
+    this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
+    this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
+    this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
 
     state.navigable =
       !isRoot(state) && state.url
