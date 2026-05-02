@@ -189,10 +189,3 @@ export type {
 } from "./router/transition/reject-factory.ts";
 export { TransitionProvider } from "./router/transition/transition-service.ts";
 export { Transition } from "./router/transition/transition.ts";
-export type {
-  MatchResult,
-  UrlMatcherCompileConfig,
-  UrlParts,
-} from "./router/url/interface.ts";
-export { UrlConfigProvider } from "./router/url/url-config.ts";
-export { UrlService } from "./router/url/url-service.ts";

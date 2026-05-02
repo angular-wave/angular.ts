@@ -1,7 +1,6 @@
 import {
   decodePath,
   encodePath,
-  hasConfiguredRouter,
   isLinkRewritingEnabled,
   normalizePath,
   Location,
@@ -15,7 +14,6 @@ import {
 } from "./location.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
-import { RouterProvider } from "../../router/router.ts";
 
 describe("$location", () => {
   let module;
@@ -45,33 +43,22 @@ describe("$location", () => {
       expect(provider.html5ModeConf.rewriteLinks).toBeTrue();
     });
 
-    it("should treat default rewriteLinks as auto when router is not configured", () => {
+    it("should enable default rewriteLinks", () => {
       const provider = new LocationProvider();
-      const router = new RouterProvider();
 
-      expect(provider._rewriteLinksConfigured).toBeFalse();
-      expect(
-        isLinkRewritingEnabled(
-          provider.html5ModeConf.rewriteLinks,
-          provider._rewriteLinksConfigured,
-          router,
-        ),
-      ).toBeFalse();
+      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+        true,
+      );
     });
 
-    it("should enable default rewriteLinks when router is configured", () => {
+    it("should allow disabling rewriteLinks", () => {
       const provider = new LocationProvider();
-      const router = new RouterProvider();
 
-      router._markConfiguredRouting();
+      provider.html5ModeConf.rewriteLinks = false;
 
-      expect(
-        isLinkRewritingEnabled(
-          provider.html5ModeConf.rewriteLinks,
-          provider._rewriteLinksConfigured,
-          router,
-        ),
-      ).toBeTrue();
+      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+        false,
+      );
     });
 
     it("should allow explicitly forcing rewriteLinks on", () => {
@@ -79,24 +66,9 @@ describe("$location", () => {
 
       provider.html5ModeConf.rewriteLinks = true;
 
-      expect(provider._rewriteLinksConfigured).toBeTrue();
-      expect(
-        isLinkRewritingEnabled(
-          provider.html5ModeConf.rewriteLinks,
-          provider._rewriteLinksConfigured,
-          new RouterProvider(),
-        ),
-      ).toBeTrue();
-    });
-
-    it("should detect configured router from router globals", () => {
-      const router = new RouterProvider();
-
-      expect(hasConfiguredRouter(router)).toBeFalse();
-
-      router._markConfiguredRouting();
-
-      expect(hasConfiguredRouter(router)).toBeTrue();
+      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+        true,
+      );
     });
   });
 

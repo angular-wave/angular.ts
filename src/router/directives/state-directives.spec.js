@@ -16,7 +16,6 @@ describe("ngStateRef", () => {
     $injector,
     $state,
     $stateParams,
-    $url,
     errorLog = [];
 
   beforeEach(() => {
@@ -70,8 +69,6 @@ describe("ngStateRef", () => {
     $compile = $injector.get("$compile");
     $state = $injector.get("$state");
     $stateParams = $injector.get("$stateParams");
-    $url = $injector.get("$url");
-    $url.listen();
   });
 
   afterEach(() => (window.location.hash = ""));
@@ -329,8 +326,6 @@ describe("ngStateRef", () => {
       $compile = $injector.get("$compile");
       $state = $injector.get("$state");
       $stateParams = $injector.get("$stateParams");
-      $url = $injector.get("$url");
-      $url.listen();
       await buildHtml5DOM();
     });
 

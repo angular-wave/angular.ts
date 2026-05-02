@@ -1,14 +1,22 @@
 import { DefType, Param } from "./param.ts";
 import type { ParamType } from "./param-type.ts";
-import type { UrlConfigProvider } from "../url/url-config.ts";
+import type { ParamTypeMap } from "./param-types.ts";
+
+export interface UrlParamConfig {
+  _paramTypes: ParamTypeMap;
+  _getDefaultSquashPolicy(): boolean | string;
+}
 
 export class ParamFactory {
-  urlServiceConfig: UrlConfigProvider;
+  /** @internal */
+  _injector: ng.InjectorService | undefined;
+  urlServiceConfig: UrlParamConfig;
 
   /**
-   * @param {UrlConfigProvider} urlServiceConfig
+   * @param {UrlParamConfig} urlServiceConfig
    */
-  constructor(urlServiceConfig: UrlConfigProvider) {
+  constructor(urlServiceConfig: UrlParamConfig) {
+    this._injector = undefined;
     this.urlServiceConfig = urlServiceConfig;
   }
 
@@ -22,7 +30,14 @@ export class ParamFactory {
     type: ParamType | null,
     state: ng.StateDeclaration,
   ): Param {
-    return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
+    return new Param(
+      id,
+      type,
+      DefType._CONFIG,
+      this.urlServiceConfig,
+      this,
+      state,
+    );
   }
 
   /**
@@ -31,7 +46,14 @@ export class ParamFactory {
    * @param {ng.StateDeclaration} state
    */
   fromPath(id: string, type: ParamType, state: ng.StateDeclaration): Param {
-    return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
+    return new Param(
+      id,
+      type,
+      DefType._PATH,
+      this.urlServiceConfig,
+      this,
+      state,
+    );
   }
 
   /**
@@ -40,6 +62,13 @@ export class ParamFactory {
    * @param {ng.StateDeclaration} state
    */
   fromSearch(id: string, type: ParamType, state: ng.StateDeclaration): Param {
-    return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
+    return new Param(
+      id,
+      type,
+      DefType._SEARCH,
+      this.urlServiceConfig,
+      this,
+      state,
+    );
   }
 }

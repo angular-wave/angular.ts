@@ -47,7 +47,9 @@ export class StateObject {
   navigable: StateObject | undefined | null;
   parent: StateObject | null | undefined;
   params: Record<string, Param> | undefined;
-  url: UrlMatcher | undefined;
+  url: string | undefined;
+  /** @internal */
+  _url: UrlMatcher | undefined;
   data: unknown;
   includes!: Record<string, boolean>;
   path: StateObject[] | undefined;
@@ -174,7 +176,7 @@ export class StateObject {
    * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
   parameter(id: string, opts: Partial<Param> = {}): Param | undefined {
-    const urlParam = this.url && this.url.parameter(id, opts);
+    const urlParam = this._url && this._url._parameter(id, opts);
 
     if (urlParam) return urlParam;
 

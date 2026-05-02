@@ -124,7 +124,6 @@ import type {
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
-import type { UrlService as TUrlService } from "./router/url/url-service.ts";
 import {
   StateDeclaration as TStateDeclaration,
   StateResolveArray as TStateResolveArray,
@@ -138,7 +137,6 @@ import type {
 import type { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
-import type { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.ts";
 import type { AriaService as TAriaService } from "./directive/aria/aria.ts";
 
 declare global {
@@ -206,8 +204,6 @@ declare global {
 
     export type TransitionService = TTransitionService;
 
-    export type UrlConfigProvider = TUrlConfigProvider;
-
     // Services
     export type AnchorScrollService = TAnchorScrollService;
 
@@ -272,8 +268,6 @@ declare global {
     export type TemplateCacheService = Map<string, string>;
 
     export type TemplateRequestService = TTemplateRequestService;
-
-    export type UrlService = TUrlService;
 
     // Support types
     export type AngularService = Angular;

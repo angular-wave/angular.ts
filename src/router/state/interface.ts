@@ -3,7 +3,6 @@ import type { Param } from "../params/param.ts";
 import { StateObject } from "./state-object.ts";
 import { ViewContext } from "../view/view.ts";
 import { ControllerConstructor, Injectable } from "../../interface.ts";
-import type { UrlMatcher } from "../url/url-matcher.ts";
 import type { Transition } from "../transition/transition.ts";
 import {
   TransitionStateHookFn,
@@ -467,7 +466,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * A URL fragment (with optional parameters) which is used to match the browser location with this state.
    *
    * This fragment will be appended to the parent state's URL in order to build up the overall URL for this state.
-   * See [[UrlMatcher]] for details on acceptable patterns.
+   * It may include path parameters, typed parameters, and query parameters.
    *
    * @example
    * ```js
@@ -685,7 +684,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * All parameters on the state will use this value for `dynamic` as a default.
    * Individual parameters may override this default using [[ParamDeclaration.dynamic]] in the [[params]] block.
    *
-   * Note: this value overrides the `dynamic` value on a custom parameter type ([[ParamTypeDefinition.dynamic]]).
+   * This default applies to all parameters declared on this state.
    */
   dynamic?: boolean;
 }
@@ -719,8 +718,8 @@ export type BuiltStateDeclaration = StateDeclaration & {
   /** Closest ancestor state that has a URL (navigable) */
   navigable?: BuiltStateDeclaration | null;
 
-  /** URL object built from url / parent / root */
-  url?: UrlMatcher;
+  /** @internal URL matcher built from url / parent / root */
+  _url?: unknown;
 
   /** Computed parameters of this state */
   params?: Record<string, Param>;

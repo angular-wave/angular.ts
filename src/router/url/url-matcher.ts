@@ -9,15 +9,38 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { DefType, Param } from "../params/param.ts";
-import type {
-  ParamDetails,
-  UrlMatcherCache,
-  UrlMatcherCompileConfig,
-} from "./interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { ParamType } from "../params/param-type.ts";
-import type { ParamTypes } from "../params/param-types.ts";
+import type { ParamTypeMap } from "../params/param-types.ts";
 import type { RawParams } from "../params/interface.ts";
+import type { StateDeclaration } from "../state/interface.ts";
+
+const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
+
+/** @internal */
+export interface UrlMatcherCompileConfig {
+  state?: StateDeclaration;
+  strict?: boolean;
+  caseInsensitive?: boolean;
+  decodeParams?: boolean;
+}
+
+interface UrlMatcherCache {
+  _segments?: Array<string | Param>;
+  _weights?: number[] | (2 | 3 | 1 | undefined)[];
+  _path?: UrlMatcher[];
+  _parent?: UrlMatcher;
+  _pattern?: RegExp | null;
+}
+
+interface ParamDetails {
+  param: Param;
+  value: unknown;
+  isValid: boolean;
+  isDefaultValue: boolean;
+  squash: boolean | string;
+  encoded: string | string[];
+}
 
 function quoteRegExp(str: string, param?: Param): string {
   let surroundPattern = ["", ""];
@@ -50,14 +73,14 @@ const defaultConfig = {
 };
 
 function getMatcherSegments(matcher: UrlMatcher): Array<string | Param> {
-  if (matcher._cache.segments) return matcher._cache.segments;
+  if (matcher._cache._segments) return matcher._cache._segments;
 
-  const path = matcher._cache.path || [matcher];
+  const path = matcher._cache._path || [matcher];
 
   const joinedSegments: Array<string | Param> = [];
 
   for (let i = 0; i < path.length; i++) {
-    const matcherSegments = UrlMatcher.pathSegmentsAndParams(path[i]);
+    const matcherSegments = getPathSegmentsAndParams(path[i]);
 
     for (let j = 0; j < matcherSegments.length; j++) {
       const segment = matcherSegments[j] as string | Param;
@@ -91,11 +114,11 @@ function getMatcherSegments(matcher: UrlMatcher): Array<string | Param> {
     }
   }
 
-  return (matcher._cache.segments = segments);
+  return (matcher._cache._segments = segments);
 }
 
 function getMatcherWeights(matcher: UrlMatcher): number[] {
-  if (matcher._cache.weights) return matcher._cache.weights as number[];
+  if (matcher._cache._weights) return matcher._cache._weights as number[];
 
   const segments = getMatcherSegments(matcher);
 
@@ -114,7 +137,7 @@ function getMatcherWeights(matcher: UrlMatcher): number[] {
             : 0;
   }
 
-  return (matcher._cache.weights = weights);
+  return (matcher._cache._weights = weights);
 }
 
 function padArrays(left: number[], right: number[], padVal: number): void {
@@ -176,7 +199,7 @@ function hasInvalidParams(params: Array<string | ParamDetails>): boolean {
 }
 
 function getPatternRegExp(matcher: UrlMatcher, pathMatchers: UrlMatcher[]) {
-  if (matcher._cache.pattern) return matcher._cache.pattern;
+  if (matcher._cache._pattern) return matcher._cache._pattern;
 
   const compiled: string[] = [];
 
@@ -188,14 +211,14 @@ function getPatternRegExp(matcher: UrlMatcher, pathMatchers: UrlMatcher[]) {
     }
   }
 
-  return (matcher._cache.pattern = new RegExp(
+  return (matcher._cache._pattern = new RegExp(
     [
       "^",
       compiled.join(""),
-      matcher.config.strict === false ? "/?" : "",
+      matcher._config.strict === false ? "/?" : "",
       "$",
     ].join(""),
-    matcher.config.caseInsensitive ? "i" : undefined,
+    matcher._config.caseInsensitive ? "i" : undefined,
   ));
 }
 
@@ -206,7 +229,7 @@ function buildFormattedPathSegments(
   const segments: Array<string | ParamDetails> = [];
 
   for (let i = 0; i < matchers.length; i++) {
-    const matcherSegments = UrlMatcher.pathSegmentsAndParams(matchers[i]);
+    const matcherSegments = getPathSegmentsAndParams(matchers[i]);
 
     for (let j = 0; j < matcherSegments.length; j++) {
       const segment = matcherSegments[j] as string | Param;
@@ -227,7 +250,7 @@ function buildFormattedQueryParams(
   const queryParams: ParamDetails[] = [];
 
   for (let i = 0; i < matchers.length; i++) {
-    const params = UrlMatcher.queryParams(matchers[i]);
+    const params = getQueryParams(matchers[i]);
 
     for (let j = 0; j < params.length; j++) {
       queryParams.push(getParamDetails(params[j], values));
@@ -312,7 +335,7 @@ function buildQueryString(queryParams: ParamDetails[]): string {
 }
 
 function checkParamErrors(id: string, pattern: string, params: Param[]): void {
-  if (!UrlMatcher.nameValidator.test(id))
+  if (!PARAM_NAME_VALIDATOR.test(id))
     throw new Error(`Invalid parameter name '${id}' in pattern '${pattern}'`);
 
   for (let i = 0; i < params.length; i++) {
@@ -322,6 +345,63 @@ function checkParamErrors(id: string, pattern: string, params: Param[]): void {
       );
     }
   }
+}
+
+function getPathSegmentsAndParams(matcher: UrlMatcher): Array<string | Param> {
+  const staticSegments = matcher._segments;
+
+  const pathParams: Param[] = [];
+
+  for (let i = 0; i < matcher._params.length; i++) {
+    const param = matcher._params[i];
+
+    if (param.location === DefType._PATH) {
+      pathParams.push(param);
+    }
+  }
+
+  const result: Array<string | Param> = [];
+
+  for (let i = 0; i < staticSegments.length; i++) {
+    if (staticSegments[i] !== "") result.push(staticSegments[i]);
+
+    if (isDefined(pathParams[i])) result.push(pathParams[i]);
+  }
+
+  return result;
+}
+
+function getQueryParams(matcher: UrlMatcher): Param[] {
+  const queryParams: Param[] = [];
+
+  for (let i = 0; i < matcher._params.length; i++) {
+    const param = matcher._params[i];
+
+    if (param.location === DefType._SEARCH) {
+      queryParams.push(param);
+    }
+  }
+
+  return queryParams;
+}
+
+/** @internal */
+export function compareUrlMatchers(a: UrlMatcher, b: UrlMatcher): number {
+  const weightsA = getMatcherWeights(a);
+
+  const weightsB = getMatcherWeights(b);
+
+  padArrays(weightsA, weightsB, 0);
+
+  let cmp;
+
+  for (let i = 0, l = weightsA.length; i < l; i++) {
+    cmp = weightsA[i]! - weightsB[i]!;
+
+    if (cmp !== 0) return cmp;
+  }
+
+  return 0;
 }
 
 function makeRegexpType(
@@ -339,7 +419,7 @@ function getMatchDetails(
   last: number,
   match: RegExpExecArray,
   isSearch: boolean,
-  paramTypes: ParamTypes,
+  paramTypes: ParamTypeMap,
   config: UrlMatcherCompileConfig,
 ): {
   id: string;
@@ -349,7 +429,7 @@ function getMatchDetails(
 } {
   const id = match[2] || match[3];
 
-  const defaultType = paramTypes.type(isSearch ? "query" : "path");
+  const defaultType = paramTypes[isSearch ? "query" : "path"];
 
   const regexp = isSearch
     ? match[4]
@@ -367,12 +447,14 @@ function getMatchDetails(
     segment: pattern.substring(last, match.index),
     type: !regexp
       ? defaultType
-      : (paramTypes.type(regexp) as ParamType | undefined) ||
+      : (paramTypes[regexp] as ParamType | undefined) ||
         makeRegexpType(defaultType, regexp, config.caseInsensitive),
   };
 }
 
 /**
+ * @internal
+ *
  * Matches URLs against patterns.
  *
  * Matches URLs against patterns and extracts named parameters from the path or the search
@@ -381,7 +463,7 @@ function getMatchDetails(
  * A URL pattern consists of a path pattern, optionally followed by '?' and a list of search (query)
  * parameters. Multiple search parameter names are separated by '&'. Search parameters
  * do not influence whether or not a URL is matched, but their values are passed through into
- * the matched parameters returned by [[UrlMatcher.exec]].
+ * the matched parameters returned by `UrlMatcher`.
  *
  * - *Path parameters* are defined using curly brace placeholders (`/somepath/{param}`)
  * or colon placeholders (`/somePath/:param`).
@@ -391,10 +473,9 @@ function getMatchDetails(
  * The regexp must match for the url to be matched.
  * Should the regexp itself contain curly braces, they must be in matched pairs or escaped with a backslash.
  *
- * Note: a RegExp parameter will encode its value using either [[ParamTypes.path]] or [[ParamTypes.query]].
+ * Note: a RegExp parameter will encode its value using either the built-in `path` or `query` type.
  *
- * - *Custom parameter types* may also be specified after a colon (`/somePath/{param:int}`) in curly brace parameters.
- *   See [[UrlMatcherFactory.type]] for more information.
+ * - *Built-in parameter types* may also be specified after a colon (`/somePath/{param:int}`) in curly brace parameters.
  *
  * - *Catch-all parameters* are defined using an asterisk placeholder (`/somepath/*catchallparam`).
  *   A catch-all * parameter value will contain the remainder of the URL.
@@ -424,119 +505,41 @@ function getMatchDetails(
  *
  */
 export class UrlMatcher {
-  static nameValidator = /^\w+([-.]+\w+)*(?:\[\])?$/;
   /** @internal */
   _cache: UrlMatcherCache;
-  /** @internal */
-  _children: UrlMatcher[];
   /** @internal */
   _params: Param[];
   /** @internal */
   _segments: string[];
   /** @internal */
   _compiled: string[];
-  config: UrlMatcherCompileConfig;
-  pattern: string;
-  /**
-   * @internal Given a matcher, return an array with the matcher's path segments and path params, in order
-   * @param {UrlMatcher} matcher
-   */
-  static pathSegmentsAndParams(matcher: UrlMatcher): Array<string | Param> {
-    const staticSegments = matcher._segments;
-
-    const pathParams: Param[] = [];
-
-    for (let i = 0; i < matcher._params.length; i++) {
-      const param = matcher._params[i];
-
-      if (param.location === DefType._PATH) {
-        pathParams.push(param);
-      }
-    }
-
-    const result: Array<string | Param> = [];
-
-    for (let i = 0; i < staticSegments.length; i++) {
-      if (staticSegments[i] !== "") result.push(staticSegments[i]);
-
-      if (isDefined(pathParams[i])) result.push(pathParams[i]);
-    }
-
-    return result;
-  }
-
-  /**
-   * @internal Given a matcher, return an array with the matcher's query params
-   * @param {UrlMatcher} matcher
-   * @returns {Param[]}
-   */
-  static queryParams(matcher: UrlMatcher): Param[] {
-    const queryParams: Param[] = [];
-
-    for (let i = 0; i < matcher._params.length; i++) {
-      const param = matcher._params[i];
-
-      if (param.location === DefType._SEARCH) {
-        queryParams.push(param);
-      }
-    }
-
-    return queryParams;
-  }
-
-  /**
-   * Compare two UrlMatchers
-   *
-   * This comparison function converts a UrlMatcher into static and dynamic path segments.
-   * Each static path segment is a static string between a path separator (slash character).
-   * Each dynamic segment is a path parameter.
-   *
-   * The comparison function sorts static segments before dynamic ones.
-   * @param {UrlMatcher} a
-   * @param {UrlMatcher} b
-   */
-  static compare(a: UrlMatcher, b: UrlMatcher): number {
-    const weightsA = getMatcherWeights(a),
-      weightsB = getMatcherWeights(b);
-
-    padArrays(weightsA, weightsB, 0);
-
-    let cmp;
-
-    for (let i = 0, l = weightsA.length; i < l; i++) {
-      cmp = weightsA[i]! - weightsB[i]!;
-
-      if (cmp !== 0) return cmp;
-    }
-
-    return 0;
-  }
-
+  /** @internal */
+  _config: UrlMatcherCompileConfig;
+  /** @internal */
+  _pattern: string;
   /**
    * @param {string} pattern The pattern to compile into a matcher.
-   * @param {ParamTypes} paramTypes The [[ParamTypes]] registry
+   * @param {ParamTypeMap} paramTypes The built-in parameter type map
    * @param {ParamFactory} paramFactory A [[ParamFactory]] object
    * @param {UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
    */
   constructor(
     pattern: string,
-    paramTypes: ParamTypes,
+    paramTypes: ParamTypeMap,
     paramFactory: ParamFactory,
     config: UrlMatcherCompileConfig,
   ) {
     this._cache = {
-      path: [this],
+      _path: [this],
     };
-
-    this._children = [];
 
     this._params = [];
 
     this._segments = [];
 
     this._compiled = [];
-    this.config = config = defaults(config, defaultConfig);
-    this.pattern = pattern;
+    this._config = config = defaults(config, defaultConfig);
+    this._pattern = pattern;
     // Find all placeholders and create a compiled pattern, using either classic or curly syntax:
     //   '*' name
     //   ':' name
@@ -659,24 +662,15 @@ export class UrlMatcher {
    * @param {UrlMatcher} url A `UrlMatcher` instance to append as a child of the current `UrlMatcher`.
    * @returns {UrlMatcher} A new `UrlMatcher` instance representing the concatenation of this `UrlMatcher` and the provided `url` matcher.
    */
-  append(url: UrlMatcher): UrlMatcher {
-    this._children.push(url);
+  /** @internal */
+  _append(url: UrlMatcher): UrlMatcher {
     url._cache = {
-      path: (this._cache.path || [this]).concat(url),
-      parent: this,
-      pattern: null,
+      _path: (this._cache._path || [this]).concat(url),
+      _parent: this,
+      _pattern: null,
     };
 
     return url;
-  }
-
-  isRoot() {
-    return (this._cache.path || [this])[0] === this;
-  }
-
-  /** Returns the input pattern string */
-  toString() {
-    return this.pattern;
   }
 
   /**
@@ -702,7 +696,7 @@ export class UrlMatcher {
    *
    * #### Example:
    * ```js
-   * new UrlMatcher('/user/{id}?q&r').exec('/user/bob', {
+   * new UrlMatcher('/user/{id}?q&r')._exec('/user/bob', {
    *   x: '1', q: 'hello'
    * });
    * // returns { id: 'bob', q: 'hello', r: null }
@@ -712,14 +706,15 @@ export class UrlMatcher {
    * @param {string} hash URL hash e.g. `$location.getHash()`.
    * @returns {RawParams | null} The captured parameter values.
    */
-  exec(path: string, search: RawParams = {}, hash: string): RawParams | null {
-    const pathMatchers = this._cache.path || [this];
+  /** @internal */
+  _exec(path: string, search: RawParams = {}, hash: string): RawParams | null {
+    const pathMatchers = this._cache._path || [this];
 
     const match = getPatternRegExp(this, pathMatchers).exec(path);
 
     if (!match) return null;
     // options = defaults(options, { isolate: false });
-    const allParams = this.parameters(),
+    const allParams = this._parameters(),
       pathParams: Param[] = [],
       searchParams: Param[] = [],
       values: RawParams = {};
@@ -741,7 +736,7 @@ export class UrlMatcher {
     }
 
     if (nPathSegments !== match.length - 1)
-      throw new Error(`Unbalanced capture group in route '${this.pattern}'`);
+      throw new Error(`Unbalanced capture group in route '${this._pattern}'`);
 
     for (let i = 0; i < nPathSegments; i++) {
       const param = pathParams[i];
@@ -784,10 +779,10 @@ export class UrlMatcher {
    * @returns {Array.<Param>}  An array of [[Param]] objects. Must be treated as read-only. If the
    *    pattern has no parameters, an empty array is returned.
    */
-  parameters(opts: { inherit?: boolean } = {}): Param[] {
+  _parameters(opts: { inherit?: boolean } = {}): Param[] {
     if (opts.inherit === false) return this._params;
 
-    const path = this._cache.path || [this];
+    const path = this._cache._path || [this];
 
     const params: Param[] = [];
 
@@ -808,8 +803,8 @@ export class UrlMatcher {
    * @param {{ inherit?: boolean }} opts
    * @returns {Param | null}
    */
-  parameter(id: string, opts: { inherit?: boolean } = {}): Param | null {
-    const { parent } = this._cache;
+  _parameter(id: string, opts: { inherit?: boolean } = {}): Param | null {
+    const { _parent: parent } = this._cache;
 
     for (let i = 0; i < this._params.length; i++) {
       const param = this._params[i];
@@ -817,7 +812,9 @@ export class UrlMatcher {
       if (param.id === id) return param;
     }
 
-    return opts.inherit !== false && parent ? parent.parameter(id, opts) : null;
+    return opts.inherit !== false && parent
+      ? parent._parameter(id, opts)
+      : null;
   }
 
   /**
@@ -828,10 +825,11 @@ export class UrlMatcher {
    * @param {RawParams} params The object hash of parameters to validate.
    * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
    */
-  validates(params: RawParams): boolean {
+  /** @internal */
+  _validates(params: RawParams): boolean {
     params = params || {};
     // I'm not sure why this checks only the param keys passed in, and not all the params known to the matcher
-    const paramSchema = this.parameters();
+    const paramSchema = this._parameters();
 
     for (let i = 0; i < paramSchema.length; i++) {
       const paramDef = paramSchema[i];
@@ -855,16 +853,17 @@ export class UrlMatcher {
    *
    * #### Example:
    * ```js
-   * new UrlMatcher('/user/{id}?q').format({ id:'bob', q:'yes' });
+   * new UrlMatcher('/user/{id}?q')._format({ id:'bob', q:'yes' });
    * // returns '/user/bob?q=yes'
    * ```
    *
    * @param {RawParams} values  the values to substitute for the parameters in this pattern.
    * @returns the formatted URL (path and optionally search part).
    */
-  format(values: RawParams = {} as RawParams) {
+  /** @internal */
+  _format(values: RawParams = {} as RawParams) {
     // Build the full path of UrlMatchers (including all parent UrlMatchers)
-    const urlMatchers = this._cache.path || [this];
+    const urlMatchers = this._cache._path || [this];
 
     const pathSegmentsAndParams = buildFormattedPathSegments(
       urlMatchers,

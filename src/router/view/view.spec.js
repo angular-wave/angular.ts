@@ -8,18 +8,18 @@ import { PathNode } from "../path/path-node.ts";
 import { applyViewConfigs } from "../path/path-utils.ts";
 
 describe("view", () => {
-  let $injector, $urlProvider, root, states;
+  let $injector, routerState, root, states;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
       .module("defaultModule", [])
-      .config(function (_$provide_, _$urlProvider_) {
+      .config(function (_$provide_, _$$rProvider_) {
         _$provide_.factory("foo", () => {
           return "Foo";
         });
-        $urlProvider = _$urlProvider_;
+        routerState = _$$rProvider_;
       });
     $injector = window.angular.bootstrap(document.getElementById("app"), [
       "defaultModule",
@@ -29,7 +29,7 @@ describe("view", () => {
       $injector = _$injector_;
       states = {};
       const matcher = new StateMatcher(states);
-      const stateBuilder = new StateBuilder(matcher, $urlProvider);
+      const stateBuilder = new StateBuilder(matcher, routerState);
       register = registerState(states, stateBuilder);
       root = register({ name: "" });
     });

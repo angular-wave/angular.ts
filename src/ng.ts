@@ -119,8 +119,6 @@ import { StateProvider } from "./router/state/state-service.ts";
 import { StateRegistryProvider } from "./router/state/state-registry.ts";
 import { TemplateFactoryProvider } from "./router/template-factory.ts";
 import { TransitionProvider } from "./router/transition/transition-service.ts";
-import { UrlConfigProvider } from "./router/url/url-config.ts";
-import { UrlService } from "./router/url/url-service.ts";
 import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 import { CookieProvider } from "./services/cookie/cookie.ts";
@@ -281,11 +279,9 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $sse: SseProvider,
             $templateCache: TemplateCacheProvider,
             $templateRequest: TemplateRequestProvider,
-            $urlConfig: UrlConfigProvider,
             $view: ViewService,
             $transitions: TransitionProvider,
             $templateFactory: TemplateFactoryProvider,
-            $url: UrlService,
             $stateRegistry: StateRegistryProvider,
             $state: StateProvider,
             $eventBus: PubSubProvider,
