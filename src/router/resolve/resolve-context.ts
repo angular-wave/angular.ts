@@ -17,6 +17,17 @@ export type ResolvedToken = {
   value: ResolvableData;
 };
 
+async function resolveToken(
+  resolvable: Resolvable,
+  context: ResolveContext,
+  trans: Transition,
+): Promise<ResolvedToken> {
+  return {
+    token: resolvable.token,
+    value: await resolvable.get(context, trans),
+  };
+}
+
 /**
  * Provides resolve lookup and execution helpers for a specific transition path.
  */
@@ -41,17 +52,13 @@ export class ResolveContext {
   getTokens(): ResolvableToken[] {
     const tokens: ResolvableToken[] = [];
 
-    for (let i = 0; i < this._path.length; i++) {
-      const { resolvables } = this._path[i];
-
-      for (let j = 0; j < resolvables.length; j++) {
-        const { token } = resolvables[j];
-
+    this._path.forEach(({ resolvables }) => {
+      resolvables.forEach(({ token }) => {
         if (!tokens.includes(token)) {
           tokens.push(token);
         }
-      }
-    }
+      });
+    });
 
     return tokens;
   }
@@ -62,17 +69,13 @@ export class ResolveContext {
   getResolvable(token: ResolvableToken): Resolvable {
     let matching: Resolvable | undefined;
 
-    for (let i = 0; i < this._path.length; i++) {
-      const { resolvables } = this._path[i];
-
-      for (let j = 0; j < resolvables.length; j++) {
-        const candidate = resolvables[j] as Resolvable;
-
+    this._path.forEach(({ resolvables }) => {
+      resolvables.forEach((candidate) => {
         if (candidate.token === token) {
-          matching = candidate;
+          matching = candidate as Resolvable;
         }
-      }
-    }
+      });
+    });
 
     return matching as Resolvable;
   }
@@ -122,30 +125,24 @@ export class ResolveContext {
 
     const keys: ResolvableToken[] = [];
 
-    for (let i = 0; i < newResolvables.length; i++) {
-      const resolvable = newResolvables[i];
-
+    newResolvables.forEach((resolvable) => {
       const normalized = isInstanceOf(resolvable, Resolvable)
         ? resolvable
         : new Resolvable(resolvable);
 
       resolvables.push(normalized);
       keys.push(normalized.token);
-    }
+    });
 
     const nextResolvables: Resolvable[] = [];
 
-    for (let i = 0; i < node.resolvables.length; i++) {
-      const existing = node.resolvables[i];
-
+    node.resolvables.forEach((existing) => {
       if (!keys.includes(existing.token)) {
         nextResolvables.push(existing);
       }
-    }
+    });
 
-    for (let i = 0; i < resolvables.length; i++) {
-      nextResolvables.push(resolvables[i]);
-    }
+    resolvables.forEach((resolvable) => nextResolvables.push(resolvable));
 
     node.resolvables = nextResolvables;
   }
@@ -156,25 +153,15 @@ export class ResolveContext {
   resolvePath(eagerOnly = false, trans: Transition): Promise<ResolvedToken[]> {
     const promises: Promise<ResolvedToken>[] = [];
 
-    for (let i = 0; i < this._path.length; i++) {
-      const node = this._path[i];
-
+    this._path.forEach((node) => {
       const subContext = this.subContext(node.state);
 
-      for (let j = 0; j < node.resolvables.length; j++) {
-        const resolvable = node.resolvables[j];
-
-        if (eagerOnly && !resolvable.eager) {
-          continue;
+      node.resolvables.forEach((resolvable) => {
+        if (!eagerOnly || resolvable.eager) {
+          promises.push(resolveToken(resolvable, subContext, trans));
         }
-
-        const promise = resolvable
-          .get(subContext, trans)
-          .then((value) => ({ token: resolvable.token, value }));
-
-        promises.push(promise);
-      }
-    }
+      });
+    });
 
     return Promise.all(promises);
   }
@@ -214,38 +201,31 @@ export class ResolveContext {
 
     const availableResolvables: Resolvable[] = [];
 
-    for (let i = 0; i < dependencyPath.length; i++) {
-      const { resolvables } = dependencyPath[i];
-
-      for (let j = 0; j < resolvables.length; j++) {
-        const candidate = resolvables[j] as Resolvable;
-
+    dependencyPath.forEach(({ resolvables }) => {
+      resolvables.forEach((candidate) => {
         if (candidate !== resolvable) {
-          availableResolvables.push(candidate);
+          availableResolvables.push(candidate as Resolvable);
         }
-      }
-    }
+      });
+    });
 
     const latestByToken = new Map<ResolvableToken, Resolvable>();
 
-    for (let i = 0; i < availableResolvables.length; i++) {
-      const candidate = availableResolvables[i];
-
+    availableResolvables.forEach((candidate) => {
       latestByToken.set(candidate.token, candidate);
-    }
+    });
 
     const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
 
     const dependencies: Resolvable[] = [];
 
-    for (let i = 0; i < deps.length; i++) {
-      const token = deps[i];
-
+    deps.forEach((token) => {
       const matching = latestByToken.get(token);
 
       if (matching) {
         dependencies.push(matching);
-        continue;
+
+        return;
       }
 
       let fromInjector: unknown;
@@ -264,10 +244,8 @@ export class ResolveContext {
         );
       }
 
-      dependencies.push(
-        new Resolvable(token, () => fromInjector, [], undefined, fromInjector),
-      );
-    }
+      dependencies.push(new Resolvable({ token, data: fromInjector }));
+    });
 
     return dependencies;
   }

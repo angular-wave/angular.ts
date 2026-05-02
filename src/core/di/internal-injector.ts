@@ -87,9 +87,7 @@ class AbstractInjector {
 
     const $inject = annotate(fn, this.strictDi, serviceName);
 
-    for (let i = 0; i < $inject.length; i++) {
-      const key = $inject[i];
-
+    $inject.forEach((key) => {
       if (!isString(key)) {
         throw $injectorMinErr(
           "itkn",
@@ -98,7 +96,7 @@ class AbstractInjector {
         );
       }
       args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
-    }
+    });
 
     return args;
   }

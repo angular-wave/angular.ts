@@ -71,17 +71,15 @@ const uniqueStrings = (classes: string[]): string[] =>
 function appendSplitClasses(classes: string[], value: string): void {
   const split = value.split(/\s/);
 
-  for (let i = 0; i < split.length; i++) {
-    if (split[i]) classes.push(split[i]);
-  }
+  split.forEach((className) => {
+    if (className) classes.push(className);
+  });
 }
 
 function getClasses(stateList: ActiveClassState[]): string[] {
   const classes: string[] = [];
 
-  for (let i = 0; i < stateList.length; i++) {
-    appendSplitClasses(classes, stateList[i]._activeClass);
-  }
+  stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
 
   return classes;
 }
@@ -409,13 +407,11 @@ export function StateRefDynamicDirective(
 
       const watchDeregFns = {} as WatchDeregFns;
 
-      for (let i = 0; i < inputAttrs.length; i++) {
-        const attr = inputAttrs[i];
-
+      inputAttrs.forEach((attr) => {
         watchDeregFns[attr] = () => {
           /* empty */
         };
-      }
+      });
 
       function update() {
         const def = processedDef($state, element, rawDef);
@@ -436,9 +432,7 @@ export function StateRefDynamicDirective(
         }
       }
 
-      for (let i = 0; i < inputAttrs.length; i++) {
-        const field = inputAttrs[i];
-
+      inputAttrs.forEach((field) => {
         rawDef[rawDefKeyByAttr[field]] = attrs[field]
           ? $parse(attrs[field])(scope)
           : null;
@@ -452,7 +446,7 @@ export function StateRefDynamicDirective(
               update();
             }) || noopDeregister;
         });
-      }
+      });
       update();
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
       scope.$on("$destroy", $transitions.onSuccess({}, update));
@@ -583,17 +577,15 @@ export function StateRefActiveDirective(
             statesDefinition as Record<string, unknown>,
           );
 
-          for (let i = 0; i < stateEntries.length; i++) {
-            const [activeClass, stateOrName] = stateEntries[i];
-
+          stateEntries.forEach(([activeClass, stateOrName]) => {
             if (isString(stateOrName)) {
               addStateForClass(stateOrName, activeClass);
             } else if (isArray(stateOrName)) {
-              for (let j = 0; j < stateOrName.length; j++) {
-                addStateForClass(stateOrName[j] as string, activeClass);
-              }
+              stateOrName.forEach((stateName) => {
+                addStateForClass(stateName as string, activeClass);
+              });
             }
-          }
+          });
         }
       }
       function addStateForClass(
@@ -647,9 +639,7 @@ export function StateRefActiveDirective(
 
         let exactlyMatchesAny = false;
 
-        for (let i = 0; i < states.length; i++) {
-          const state = states[i];
-
+        states.forEach((state) => {
           if ($state.includes(state._state.name, state._params as RawParams)) {
             fuzzyStates.push(state);
           }
@@ -657,7 +647,7 @@ export function StateRefActiveDirective(
           if ($state.is(state._state.name, state._params as RawParams)) {
             exactlyMatchesAny = true;
           }
-        }
+        });
 
         const fuzzyClasses = getClasses(fuzzyStates);
 
@@ -673,25 +663,19 @@ export function StateRefActiveDirective(
 
         const uniqueClasses = uniqueStrings(allClasses);
 
-        for (let i = 0; i < uniqueClasses.length; i++) {
-          const cls = uniqueClasses[i];
-
+        uniqueClasses.forEach((cls) => {
           if (!addClasses.includes(cls)) {
             removeClasses.push(cls);
           }
-        }
+        });
 
-        for (let i = 0; i < addClasses.length; i++) {
-          const className = addClasses[i];
-
+        addClasses.forEach((className) => {
           $element.classList.add(className);
-        }
+        });
 
-        for (let i = 0; i < removeClasses.length; i++) {
-          const className = removeClasses[i];
-
+        removeClasses.forEach((className) => {
           $element.classList.remove(className);
-        }
+        });
       }
       update();
     },

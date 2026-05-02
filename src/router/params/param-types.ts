@@ -95,14 +95,12 @@ export class ParamTypes {
 
     const defaultParamTypes: Record<string, ParamType> = {};
 
-    for (let i = 0; i < defaultTypeNames.length; i++) {
-      const name = defaultTypeNames[i];
-
+    defaultTypeNames.forEach((name) => {
       const definition = this[name];
 
       this.defaultTypes[name] = definition;
       defaultParamTypes[name] = new ParamType(assign({ name }, definition));
-    }
+    });
 
     // Register default types. Store them in the prototype of this.types.
     this.types = createObject(defaultParamTypes) as Record<string, ParamType>;

@@ -37,15 +37,23 @@ type TemplateConfigType = "template" | "templateUrl" | "component" | "default";
 function asTemplate(
   result: string | Promise<string> | null,
 ): Promise<{ template: string | undefined }> {
-  return Promise.resolve(result).then((str) => ({
-    template: str ?? undefined,
-  }));
+  return Promise.resolve(result).then(toTemplateResult);
 }
 
 function asComponent(
   result: string | Promise<string>,
 ): Promise<{ component: string }> {
-  return Promise.resolve(result).then((str) => ({ component: str }));
+  return Promise.resolve(result).then(toComponentResult);
+}
+
+function toTemplateResult(str: string | null): {
+  template: string | undefined;
+} {
+  return { template: str ?? undefined };
+}
+
+function toComponentResult(str: string): { component: string } {
+  return { component: str };
 }
 
 function getConfigType(config: ViewDeclarationCommon): TemplateConfigType {
@@ -139,16 +147,11 @@ export class TemplateFactoryProvider {
 
     const attrs: string[] = [];
 
-    for (let i = 0; i < componentBindings.length; i++) {
+    componentBindings.forEach((binding) => {
       attrs.push(
-        componentAttributeTemplate(
-          ngView,
-          context,
-          bindings,
-          componentBindings[i],
-        ),
+        componentAttributeTemplate(ngView, context, bindings, binding),
       );
-    }
+    });
 
     const kebobName = componentElementName(component);
 
@@ -211,15 +214,13 @@ function getComponentBindings(
 
   const bindings: BindingTuple[] = [];
 
-  for (let i = 0; i < cmpDefs.length; i++) {
-    const def = cmpDefs[i];
-
+  cmpDefs.forEach((def) => {
     const defBindings = getBindings(def);
 
-    for (let j = 0; j < defBindings.length; j++) {
-      bindings.push(defBindings[j]);
-    }
-  }
+    defBindings.forEach((binding) => {
+      bindings.push(binding);
+    });
+  });
 
   return bindings;
 }
@@ -243,15 +244,13 @@ function scopeBindings(bindingsObj: Record<string, string>): BindingTuple[] {
 
   const bindings: BindingTuple[] = [];
 
-  for (let i = 0; i < bindingKeys.length; i++) {
-    const key = bindingKeys[i];
-
+  bindingKeys.forEach((key) => {
     const match = BINDING_MATCH.exec(bindingsObj[key] || "");
 
     if (match) {
       bindings.push({ name: match[2] || key, type: match[1] });
     }
-  }
+  });
 
   return bindings;
 }

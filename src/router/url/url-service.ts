@@ -12,6 +12,7 @@ import {
   isInstanceOf,
   isNull,
   isObject,
+  keys,
 } from "../../shared/utils.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { stripLastPathElement } from "../../shared/strings.ts";
@@ -376,16 +377,14 @@ export class UrlService {
 
     let best: MatchResult | undefined;
 
-    for (let i = 0; i < this._stateRoutes.length; i++) {
-      const state = this._stateRoutes[i];
-
+    this._stateRoutes.forEach((state) => {
       const urlMatcher = state.url;
 
-      if (!isInstanceOf(urlMatcher, UrlMatcher)) continue;
+      if (!isInstanceOf(urlMatcher, UrlMatcher)) return;
 
       const match = urlMatcher.exec(url.path, url.search, url.hash || "");
 
-      if (match === null || !urlMatcher.validates(match)) continue;
+      if (match === null || !urlMatcher.validates(match)) return;
 
       const weight = stateRouteMatchPriority(urlMatcher, match);
 
@@ -397,7 +396,7 @@ export class UrlService {
       ) {
         best = { match, state, urlMatcher, weight };
       }
-    }
+    });
 
     return best;
   }
@@ -528,7 +527,7 @@ export class UrlService {
 
     const { prototype } = UrlMatcher;
 
-    const methodNames = Object.keys(prototype);
+    const methodNames = keys(prototype);
 
     for (let i = 0; i < methodNames.length; i++) {
       const { [i]: name } = methodNames;
@@ -557,14 +556,12 @@ function stateRouteMatchPriority(
 
   let matched = 0;
 
-  for (let i = 0; i < parameters.length; i++) {
-    const param = parameters[i];
-
-    if (!param.isOptional) continue;
+  parameters.forEach((param) => {
+    if (!param.isOptional) return;
     optionalCount++;
 
     if (params[param.id]) matched++;
-  }
+  });
 
   return optionalCount ? matched / optionalCount : EXACT_ROUTE_MATCH_PRIORITY;
 }

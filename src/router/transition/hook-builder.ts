@@ -27,13 +27,13 @@ export function buildHooksForPhase(
 
   const hooks: TransitionHook[] = [];
 
-  for (let i = 0; i < eventTypes.length; i++) {
-    const builtHooks = buildHooks(transition, eventTypes[i]);
+  eventTypes.forEach((eventType) => {
+    const builtHooks = buildHooks(transition, eventType);
 
-    for (let j = 0; j < builtHooks.length; j++) {
-      if (builtHooks[j]) hooks.push(builtHooks[j]);
-    }
-  }
+    builtHooks.forEach((hook) => {
+      if (hook) hooks.push(hook);
+    });
+  });
 
   return hooks;
 }
@@ -55,14 +55,10 @@ function buildHooks(
 
   const hookTuples: HookTuple[] = [];
 
-  for (let i = 0; i < matchingHooks.length; i++) {
-    const { hook, matches } = matchingHooks[i];
-
+  matchingHooks.forEach(({ hook, matches }) => {
     const matchingNodes = matches[hookType._criteriaMatchPath.name];
 
-    for (let j = 0; j < matchingNodes.length; j++) {
-      const node = matchingNodes[j];
-
+    matchingNodes.forEach((node) => {
       const options = assign(
         {
           bind: hook.bind,
@@ -86,8 +82,8 @@ function buildHooks(
       );
 
       hookTuples.push({ hook, node, transitionHook });
-    }
-  }
+    });
+  });
 
   hookTuples.sort(
     hookType.reverseSort
@@ -97,9 +93,7 @@ function buildHooks(
 
   const hooks: TransitionHook[] = [];
 
-  for (let i = 0; i < hookTuples.length; i++) {
-    hooks.push(hookTuples[i].transitionHook);
-  }
+  hookTuples.forEach((tuple) => hooks.push(tuple.transitionHook));
 
   return hooks;
 }
@@ -122,15 +116,13 @@ function getMatchingHooks(
     throw new Error(`broken event named: ${hookType.name}`);
   }
 
-  for (let i = 0; i < hooks.length; i++) {
-    const hook = hooks[i] as RegisteredHook;
-
+  hooks.forEach((hook) => {
     const matches = hook.matches(treeChanges, transition);
 
     if (matches) {
       matchingHooks.push({ hook, matches });
     }
-  }
+  });
 
   return matchingHooks;
 }

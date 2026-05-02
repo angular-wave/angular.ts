@@ -1,4 +1,5 @@
 import type { Attributes } from "../../core/compile/attributes.ts";
+import { keys } from "../../shared/utils.ts";
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
  */
@@ -20,20 +21,22 @@ export function ngStyleDirective(): ng.Directive {
           const target = newStyles?.$target || newStyles;
 
           if (oldStyles) {
-            for (const key in oldStyles) {
+            keys(oldStyles).forEach((key) => {
               element.style.removeProperty(key);
-            }
+            });
           }
 
           if (target) {
-            oldStyles = {};
+            const nextStyles: Record<string, string> = {};
 
-            for (const key in target) {
+            keys(target).forEach((key) => {
               const value = target[key];
 
               element.style.setProperty(key, value);
-              oldStyles[key] = value;
-            }
+              nextStyles[key] = value;
+            });
+
+            oldStyles = nextStyles;
           } else {
             oldStyles = null;
           }

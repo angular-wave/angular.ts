@@ -17,6 +17,7 @@ import {
   DisabledControllerProvider,
   DisabledTemplateRequestProvider,
 } from "./disabled-providers.ts";
+import { keys } from "../shared/utils.ts";
 
 export type DirectiveRegistration = Record<string, ng.DirectiveFactory>;
 
@@ -115,14 +116,14 @@ export function registerCustomNgModule(
         ) as unknown as FilterProvider;
 
         filterRegistrations.forEach((filters) => {
-          Object.keys(filters).forEach((name) => {
+          keys(filters).forEach((name) => {
             $filterProvider.register(name, filters[name]);
           });
         });
       }
 
       serviceRegistrations.forEach((services) => {
-        Object.keys(services).forEach((name) => {
+        keys(services).forEach((name) => {
           $provide.service(name, services[name]);
         });
       });

@@ -25,9 +25,9 @@ export function buildPath(targetState: TargetState): PathNode[] {
 
   const path: PathNode[] = [];
 
-  for (let i = 0; i < states.length; i++) {
-    path.push(new PathNode(states[i]).applyRawParams(toParams));
-  }
+  states.forEach((state) =>
+    path.push(new PathNode(state).applyRawParams(toParams)),
+  );
 
   return path;
 }
@@ -67,7 +67,7 @@ export function applyViewConfigs(
 
     const viewConfigs: _ViewConfig[] = [];
 
-    for (let j = 0; j < viewDecls.length; j++) {
+    viewDecls.forEach((viewDecl) => {
       const templateFactory = $view._templateFactory;
 
       if (!templateFactory) {
@@ -75,9 +75,9 @@ export function applyViewConfigs(
       }
 
       viewConfigs.push(
-        createViewConfig(viewSubPath, viewDecls[j], templateFactory),
+        createViewConfig(viewSubPath, viewDecl, templateFactory),
       );
-    }
+    });
 
     node._views = viewConfigs;
   }
@@ -93,17 +93,13 @@ export function inheritParams(
 ): PathNode[] {
   const noInherit: string[] = [];
 
-  for (let i = 0; i < fromPath.length; i++) {
-    const { paramSchema } = fromPath[i];
-
-    for (let j = 0; j < paramSchema.length; j++) {
-      const param = paramSchema[j];
-
+  fromPath.forEach(({ paramSchema }) => {
+    paramSchema.forEach((param) => {
       if (!param.inherit) {
         noInherit.push(param.id);
       }
-    }
-  }
+    });
+  });
 
   const inheritedPath: PathNode[] = [];
 
@@ -122,9 +118,7 @@ export function inheritParams(
       }
     }
 
-    for (let j = 0; j < noInherit.length; j++) {
-      delete fromParamVals[noInherit[j]];
-    }
+    noInherit.forEach((key) => delete fromParamVals[key]);
 
     const toParamVals: RawParams = {};
 
@@ -132,13 +126,13 @@ export function inheritParams(
 
     const toNodeParamValues = toNode.paramValues;
 
-    for (const key in toNodeParamValues) {
+    keys(toNodeParamValues).forEach((key) => {
       if (toKeys.indexOf(key) === -1) {
         toParamVals[key] = toNodeParamValues[key];
       } else {
         incomingParamVals[key] = toNodeParamValues[key];
       }
-    }
+    });
 
     const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
 
@@ -184,9 +178,9 @@ export function treeChanges(
 
   const retainedWithToParams: PathNode[] = [];
 
-  for (let i = 0; i < retained.length; i++) {
-    retainedWithToParams.push(applyToParams(retained[i], i));
-  }
+  retained.forEach((node, idx) =>
+    retainedWithToParams.push(applyToParams(node, idx)),
+  );
 
   const entering = toPath.slice(keep);
 
@@ -225,11 +219,9 @@ export function nonDynamicParams(node: PathNode): Param[] {
 
   const nonDynamic: Param[] = [];
 
-  for (let i = 0; i < params.length; i++) {
-    const param = params[i];
-
+  params.forEach((param) => {
     if (!param.dynamic) nonDynamic.push(param);
-  }
+  });
 
   return nonDynamic;
 }
@@ -254,9 +246,7 @@ export function makeTargetState(
 function pathToParams(path: PathNode[]): RawParams {
   const params: RawParams = {};
 
-  for (let i = 0; i < path.length; i++) {
-    assign(params, path[i].paramValues);
-  }
+  path.forEach((node) => assign(params, node.paramValues));
 
   return params;
 }

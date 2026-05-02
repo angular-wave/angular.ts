@@ -64,9 +64,7 @@ export class Glob {
 
     const regexpParts: string[] = [];
 
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i];
-
+    segments.forEach((segment) => {
       if (segment === "**") {
         regexpParts.push("(?:|(?:\\.[^.]*)*)");
       } else if (segment === "*") {
@@ -74,7 +72,7 @@ export class Glob {
       } else {
         regexpParts.push(`\\.${segment}`);
       }
-    }
+    });
 
     this._regexp = new RegExp(`^${regexpParts.join("")}$`);
   }

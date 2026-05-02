@@ -580,6 +580,8 @@ export function equals(o1: any, o2: any): boolean {
   const keySet: Record<string, boolean> = nullObject();
 
   for (const key in o1) {
+    if (!hasOwn(o1, key)) continue;
+
     if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
 
     if (!equals(o1[key], o2[key])) return false;
@@ -587,6 +589,8 @@ export function equals(o1: any, o2: any): boolean {
   }
 
   for (const key in o2) {
+    if (!hasOwn(o2, key)) continue;
+
     if (
       !(key in keySet) &&
       key.charAt(0) !== "$" &&
@@ -743,7 +747,11 @@ export function parseKeyValue(value: string) {
 
   const res = value || "";
 
-  res.split("&").forEach((keyValue: string) => {
+  const keyValues = res.split("&");
+
+  for (let i = 0; i < keyValues.length; i++) {
+    let keyValue = keyValues[i];
+
     let splitPoint;
 
     let key;
@@ -776,7 +784,7 @@ export function parseKeyValue(value: string) {
         }
       }
     }
-  });
+  }
 
   return obj;
 }
@@ -789,24 +797,31 @@ export function toKeyValue(
 ): string {
   const parts: string[] = [];
 
-  obj &&
-    entries(obj).forEach(([key, value]) => {
+  if (obj) {
+    const keyValues = entries(obj);
+
+    for (let i = 0; i < keyValues.length; i++) {
+      const [key, value] = keyValues[i];
+
       if (isArray(value)) {
-        value.forEach((arrayValue) => {
+        for (let j = 0; j < value.length; j++) {
+          const arrayValue = value[j];
+
           parts.push(
             encodeUriQuery(key, true) +
               (arrayValue === true
                 ? ""
                 : `=${encodeUriQuery(arrayValue, true)}`),
           );
-        });
+        }
       } else {
         parts.push(
           encodeUriQuery(key, true) +
             (value === true ? "" : `=${encodeUriQuery(value, true)}`),
         );
       }
-    });
+    }
+  }
 
   return parts.length ? parts.join("&") : "";
 }
@@ -885,6 +900,8 @@ export function shallowCopy<T>(src: T, dst?: any): T {
     const out: Record<string, unknown> = dst || {};
 
     for (const key in src) {
+      if (!hasOwn(src, key)) continue;
+
       // Copy all properties except $$-prefixed
       if (!key.startsWith("$$")) {
         out[key] = src[key];
