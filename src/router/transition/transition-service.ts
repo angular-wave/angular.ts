@@ -50,7 +50,6 @@ import {
   TransitionHookScope,
 } from "./transition-hook.ts";
 import type { StateProvider } from "../state/state-service.ts";
-import type { UrlService } from "../url/url-service.ts";
 import {
   loadViewConfig,
   type _ViewConfig,
@@ -183,7 +182,6 @@ export interface TransitionService extends HookRegistry {
   /** @internal Wire hooks that require runtime services. */
   _initRuntimeHooks(
     stateService: StateProvider,
-    urlService: UrlService,
     viewService: ViewService,
   ): void;
 
@@ -196,9 +194,6 @@ export interface TransitionService extends HookRegistry {
 
   /** @internal */
   _stateService: StateProvider;
-
-  /** @internal */
-  _urlService: UrlService;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
@@ -224,8 +219,6 @@ export class TransitionProvider implements TransitionService {
   _view!: ViewService;
   /** @internal */
   _stateService!: StateProvider;
-  /** @internal */
-  _urlService!: UrlService;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
@@ -256,12 +249,10 @@ export class TransitionProvider implements TransitionService {
   /** @internal */
   _initRuntimeHooks(
     stateService: StateProvider,
-    urlService: UrlService,
     viewService: ViewService,
   ): void {
     this._view = viewService;
     this._stateService = stateService;
-    this._urlService = urlService;
     registerUpdateUrl(this);
     registerRedirectToHook(this);
     registerActivateViews(this);
@@ -971,23 +962,23 @@ function updateUrlHook(this: TransitionProvider, transition: Transition): void {
 
   const stateService = this._stateService;
 
-  const urlService = this._urlService;
+  const routerState = this._routerState;
 
   const navigable = stateService.$current?.navigable;
 
-  if (options.source !== "url" && options.location && navigable?.url) {
+  if (options.source !== "url" && options.location && navigable?._url) {
     const urlOptions = {
       replace: options.location === "replace",
     };
 
-    urlService.push(
-      navigable.url,
+    routerState._push(
+      navigable._url,
       stateService._routerState._params,
       urlOptions,
     );
   }
 
-  urlService.update(true);
+  routerState._update(true);
 }
 
 function registerUpdateUrl(transitionService: TransitionService): DeregisterFn {

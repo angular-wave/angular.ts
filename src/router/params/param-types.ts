@@ -1,20 +1,17 @@
 import {
   assign,
-  createObject,
   equals,
-  hasOwn,
-  isDefined,
   isInstanceOf,
   isNullOrUndefined,
   isString,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
-import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 
-type ParamTypeDefinitionRecord = ParamTypeDefinition & Record<string, unknown>;
+type ParamTypeDefinitionRecord = Partial<ParamTypeDefinition> &
+  Record<string, unknown>;
 
-type DefaultParamTypeName =
+type BuiltInParamTypeName =
   | "hash"
   | "string"
   | "query"
@@ -24,180 +21,51 @@ type DefaultParamTypeName =
   | "date"
   | "json"
   | "any";
-/**
- * A registry for parameter types.
- *
- * This registry manages the built-in (and custom) parameter types.
- *
- * The built-in parameter types are:
- *
- * - [[string]]
- * - [[path]]
- * - [[query]]
- * - [[hash]]
- * - [[int]]
- * - [[bool]]
- * - [[date]]
- * - [[json]]
- * - [[any]]
- *
- * To register custom parameter types, use [[UrlConfig.type]], i.e.,
- *
- * ```js
- * router.urlService.config.type(customType)
- * ```
- */
-export class ParamTypes {
-  /** @internal */
-  _angular: ng.AngularService;
-  $injector: InjectorService;
-  enqueue: boolean;
-  typeQueue: {
-    name: string;
-    def: () => ParamTypeDefinition;
-    pattern?: unknown;
-  }[];
 
-  declare hash: ParamTypeDefinitionRecord;
-  declare string: ParamTypeDefinitionRecord;
-  declare query: ParamTypeDefinitionRecord;
-  declare path: ParamTypeDefinitionRecord;
-  declare int: ParamTypeDefinitionRecord;
-  declare bool: ParamTypeDefinitionRecord;
-  declare date: ParamTypeDefinitionRecord;
-  declare json: ParamTypeDefinitionRecord;
-  declare any: ParamTypeDefinitionRecord;
+/** @internal */
+export type ParamTypeMap = Record<BuiltInParamTypeName, ParamType> &
+  Record<string, ParamType | undefined>;
 
-  defaultTypes: Record<string, ParamTypeDefinitionRecord>;
-  types: Record<string, ParamType>;
-
-  /**
-   * @param {ng.AngularService} $angular
-   */
-  constructor($angular: ng.AngularService) {
-    this._angular = $angular;
-    this.$injector = $angular.$injector;
-    this.enqueue = true;
-    this.typeQueue = [];
-    const defaultTypeNames: DefaultParamTypeName[] = [
-      "hash",
-      "string",
-      "query",
-      "path",
-      "int",
-      "bool",
-      "date",
-      "json",
-      "any",
-    ];
-
-    this.defaultTypes = {};
-
-    const defaultParamTypes: Record<string, ParamType> = {};
-
-    defaultTypeNames.forEach((name) => {
-      const definition = this[name];
-
-      this.defaultTypes[name] = definition;
-      defaultParamTypes[name] = new ParamType(assign({ name }, definition));
-    });
-
-    // Register default types. Store them in the prototype of this.types.
-    this.types = createObject(defaultParamTypes) as Record<string, ParamType>;
-  }
-
-  /**
-   * Registers a parameter type
-   *
-   * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
-   * @param {string} name
-   * @param {ParamTypeDefinition} [definition]
-   * @param {() => ParamTypeDefinition} [definitionFn]
-   */
-  type(name: string): ParamType | undefined;
-  type(
-    name: string,
-    definition: ParamTypeDefinition,
-    definitionFn?: () => ParamTypeDefinition,
-  ): ParamTypes;
-
-  type(
-    name: string,
-    definition?: ParamTypeDefinition,
-    definitionFn?: () => ParamTypeDefinition,
-  ): ParamTypes | ParamType | undefined {
-    if (!isDefined(definition)) {
-      if (this.typeQueue.length && this._getInjector()) {
-        this._flushTypeQueue();
-      }
-
-      return this.types[name];
-    }
-
-    if (hasOwn(this.types, name))
-      throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[name] = new ParamType(assign({ name }, definition));
-
-    if (definitionFn) {
-      this.typeQueue.push({ name, def: definitionFn });
-
-      if (!this.enqueue && this._getInjector()) this._flushTypeQueue();
-    }
-
-    return this;
-  }
-
-  /** @internal */
-  _flushTypeQueue() {
-    const injector = this._getInjector();
-
-    if (!injector) {
-      return;
-    }
-
-    while (this.typeQueue.length) {
-      const type = this.typeQueue.shift() as {
-        name: string;
-        def: () => ParamTypeDefinition;
-        pattern?: unknown;
-      };
-
-      if (type.pattern)
-        throw new Error("You cannot override a type's .pattern at runtime.");
-      assign(this.types[type.name], injector.invoke(type.def));
-    }
-  }
-
-  /** @internal */
-  _getInjector(): InjectorService | undefined {
-    return (this.$injector ||= this._angular.$injector);
-  }
+function encodePathPart(match: string): string {
+  return match === "~" ? "~~" : "~2F";
 }
 
-function valToString(val: unknown): string | undefined {
-  return !isNullOrUndefined(val) ? val.toString() : undefined;
+function decodePathPart(match: string): string {
+  return match === "~~" ? "~" : "/";
 }
 
-function initDefaultTypes() {
-  const makeDefaultType = (
-    def: Partial<ParamTypeDefinition> & Record<string, unknown>,
-  ): ParamTypeDefinitionRecord => {
-    const defaultTypeBase = {
-      encode: (val: unknown) => valToString(val),
-      decode: (val: string) => valToString(val),
-      is: (val: unknown) => isInstanceOf(val, String) || isString(val),
-      pattern: /.*/,
+function encodePath(value: unknown): unknown {
+  return !isNullOrUndefined(value)
+    ? value.toString().replace(/([~/])/g, encodePathPart)
+    : value;
+}
 
-      equals: (a: unknown, b: unknown) => a === b,
-    };
+function decodePath(value: unknown): unknown {
+  return !isNullOrUndefined(value)
+    ? value.toString().replace(/(~~|~2F)/g, decodePathPart)
+    : value;
+}
 
-    return assign({}, defaultTypeBase, def);
+function makeDefaultType(
+  def: Record<string, unknown>,
+): ParamTypeDefinitionRecord {
+  const defaultTypeBase = {
+    is: (val: unknown) => isInstanceOf(val, String) || isString(val),
+    pattern: /.*/,
+
+    equals: (a: unknown, b: unknown) => a === b,
   };
 
-  // Default Parameter Type Definitions
-  assign(ParamTypes.prototype, {
+  return assign({}, defaultTypeBase, def);
+}
+
+/** @internal */
+export function createDefaultParamTypes(): ParamTypeMap {
+  const definitions: Record<BuiltInParamTypeName, ParamTypeDefinitionRecord> = {
     string: makeDefaultType({}),
     path: makeDefaultType({
+      encode: encodePath,
+      decode: decodePath,
       pattern: /[^/]*/,
     }),
     query: makeDefaultType({}),
@@ -209,10 +77,12 @@ function initDefaultTypes() {
       /**
        * @param {unknown} val
        */
-      is(val) {
+      is(val: unknown) {
         return (
           !isNullOrUndefined(val) &&
-          (this as ParamTypeDefinition).decode?.(val.toString()) === val
+          ((this as unknown as ParamTypeDefinition).decode?.(
+            val.toString(),
+          ) as unknown) === val
         );
       },
       pattern: /-?\d+/,
@@ -228,7 +98,7 @@ function initDefaultTypes() {
       /**
        * @param {{ getFullYear: () => number; getMonth: () => number; getDate: () => number; }} val
        */
-      encode(val) {
+      encode(val: Date) {
         if (!isInstanceOf(val, Date) || isNaN(val.valueOf())) {
           return "";
         }
@@ -243,7 +113,7 @@ function initDefaultTypes() {
        * @param {unknown} val
        */
       decode(val: unknown) {
-        if ((this as ParamTypeDefinition).is?.(val)) return val;
+        if ((this as unknown as ParamTypeDefinition).is?.(val)) return val;
         const match = (this as { capture: RegExp }).capture.exec(String(val));
 
         return match
@@ -259,7 +129,7 @@ function initDefaultTypes() {
        * @param {Date} left
        * @param {Date} right
        */
-      equals(left, right) {
+      equals(left: unknown, right: unknown) {
         if (!isInstanceOf(left, Date) || !isInstanceOf(right, Date)) {
           return false;
         }
@@ -287,6 +157,17 @@ function initDefaultTypes() {
       is: () => true,
       equals,
     }),
-  });
+  };
+
+  return {
+    hash: new ParamType(assign({ name: "hash" }, definitions.hash)),
+    string: new ParamType(assign({ name: "string" }, definitions.string)),
+    query: new ParamType(assign({ name: "query" }, definitions.query)),
+    path: new ParamType(assign({ name: "path" }, definitions.path)),
+    int: new ParamType(assign({ name: "int" }, definitions.int)),
+    bool: new ParamType(assign({ name: "bool" }, definitions.bool)),
+    date: new ParamType(assign({ name: "date" }, definitions.date)),
+    json: new ParamType(assign({ name: "json" }, definitions.json)),
+    any: new ParamType(assign({ name: "any" }, definitions.any)),
+  };
 }
-initDefaultTypes();

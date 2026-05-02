@@ -119,12 +119,12 @@ export interface ParamDeclaration {
    * The parameter's type
    *
    * Specifies the [[ParamType]] of the parameter.
-   * Parameter types can be used to customize the encoding/decoding of parameter values.
+   * Parameter types control the encoding/decoding of parameter values.
    *
    * Set this property to the name of parameter's type.
-   * The type may be either one of the built in types, or a custom type that has been registered with the [[UrlMatcherFactory]].
+   * The type must be one of the built-in types.
    *
-   * See [[ParamTypes]] for the list of built in types.
+   * Supported built-in types are `string`, `path`, `query`, `hash`, `int`, `bool`, `date`, `json`, and `any`.
    *
    * ---
    *
@@ -267,10 +267,6 @@ export interface ParamDeclaration {
    *
    * ---
    *
-   * Note: this value overrides the `dynamic` value on a custom parameter type ([[ParamTypeDefinition.dynamic]]).
-   *
-   * ---
-   *
    * Default: `false`
    */
   dynamic?: boolean;
@@ -294,8 +290,6 @@ export interface ParamDeclaration {
    * instead of `/product/camping%2Ftents%2Fawesome_tent`.
    *
    * ---
-   *
-   * Note: this value overrides the `raw` value on a custom parameter type ([[ParamTypeDefinition.raw]]).
    *
    * ### Decoding warning
    *
@@ -343,10 +337,6 @@ export interface ParamDeclaration {
    *
    * ---
    *
-   * See also [[TransitionOptions.inherit]] and [[ParamTypeDefinition.inherit]]
-   *
-   * ---
-   *
    * Default: `true`
    */
   inherit?: boolean;
@@ -381,23 +371,10 @@ export interface Replace {
 }
 
 /**
- * Describes a custom [[ParamType]]
- *
- * See: [[UrlMatcherFactory.type]]
- *
- * A developer can create a custom parameter type definition to customize the encoding and decoding of parameter values.
- * The definition should implement all the methods of this interface.
+ * Describes a built-in [[ParamType]].
  *
  * Parameter values are parsed from the URL as strings.
- * However, it is often useful to parse the string into some other form, such as:
- *
- * - integer
- * - date
- * - array of <integer/date/string>
- * - custom object
- * - some internal string representation
- *
- * Typed parameter definitions control how parameter values are encoded (to the URL) and decoded (from the URL).
+ * Typed parameter definitions control how built-in parameter values are encoded to the URL and decoded from the URL.
  * The router always provides decoded parameter values to the user (from methods such as [[Transition.params]]).
  *
  * For example, if a state has a url of `/foo/{fooId:int}` (the `fooId` parameter is of the `int` ParamType)
@@ -408,85 +385,7 @@ export interface Replace {
  * fooId === "123" // false
  * fooId === 123 // true
  * ```
- *
- *
- * #### Examples
- *
- * This example encodes an array of integers as a dash-delimited string to be used in the URL.
- *
- * If we call `$state.go('foo', { fooIds: [20, 30, 40] });`, the URL changes to `/foo/20-30-40`.
- * If we navigate to `/foo/1-2-3`, the `foo` state's onEnter logs `[1, 2, 3]`.
- *
- * @example
- * ```
- *
- * $urlMatcherFactoryProvider.type('intarray', {
- *   // Take an array of ints [1,2,3] and return a string "1-2-3"
- *   encode: (array) => array.join("-"),
- *
- *   // Take an string "1-2-3" and return an array of ints [1,2,3]
- *   decode: (str) => str.split("-").map(x => parseInt(x, 10)),
- *
- *   // Match the encoded string in the URL
- *   pattern: new RegExp("[0-9]+(?:-[0-9]+)*")
- *
- *   // Ensure that the (decoded) object is an array, and that all its elements are numbers
- *   is: (obj) => isArray(obj) &&
- *       obj.reduce((acc, item) => acc && typeof item === 'number', true),
- *
- *   // Compare two arrays of integers
- *   equals: (array1, array2) => array1.length === array2.length &&
- *       array1.reduce((acc, item, idx) => acc && item === array2[idx], true);
- * });
- *
- * $stateProvider.state('foo', {
- *   url: "/foo/{fooIds:intarray}",
- *   onEnter: function($transition$) {
- *     console.log($transition$.fooIds); // Logs "[1, 2, 3]"
- *   }
- * });
- * ```
- *
- *
- * This example decodes an integer from the URL.
- * It uses the integer as an index to look up an item from a static list.
- * That item from the list is the decoded parameter value.
- *
- * @example
- * ```
- *
- * var list = ['John', 'Paul', 'George', 'Ringo'];
- *
- * $urlMatcherFactoryProvider.type('listItem', {
- *   encode: function(item) {
- *     // Represent the list item in the URL using its corresponding index
- *     return list.indexOf(item);
- *   },
- *   decode: function(item) {
- *     // Look up the list item by index
- *     return list[parseInt(item, 10)];
- *   },
- *   is: function(item) {
- *     // Ensure the item is valid by checking to see that it appears
- *     // in the list
- *     return list.indexOf(item) > -1;
- *   }
- * });
- *
- * $stateProvider.state('list', {
- *   url: "/list/{item:listItem}",
- *   controller: function($scope, $stateParams) {
- *     console.log($stateParams.item);
- *   }
- * });
- *
- * // ...
- *
- * // Changes URL to '/list/3', logs "Ringo" to the console
- * $state.go('list', { item: "Ringo" });
- * ```
- *
- * See: [[UrlConfig.type]]
+ * @internal
  */
 export interface ParamTypeDefinition {
   /**
@@ -509,7 +408,6 @@ export interface ParamTypeDefinition {
    * Disables url-encoding of parameter values
    *
    * If a parameter type is declared `raw`, it will not be url-encoded.
-   * Custom encoding can still be applied in the [[encode]] function.
    *
    * ### Decoding warning
    *
@@ -563,23 +461,12 @@ export interface ParamTypeDefinition {
    * Detects whether some value is of this particular type.
    * Accepts a decoded value and determines whether it matches this `ParamType` object.
    *
-   * If your custom type encodes the parameter to a specific type, check for that type here.
-   * For example, if your custom type decodes the URL parameter value as an array of ints, return true if the
-   * input is an array of ints:
-   *
-   * ```
-   * is: (val) => isArray(val) && array.reduce((acc, x) => acc && parseInt(val, 10) === val, true)
-   * ```
-   *
-   * If your type decodes the URL parameter value to a custom string, check that the string matches
-   * the pattern (don't use an arrow fn if you need `this`): `function (val) { return !!this.pattern.exec(val) }`
-   *
    * Note: This method is _not used to check if the URL matches_.
    * It's used to check if a _decoded value *is* this type_.
    * Use [[pattern]] to check the encoded value in the URL.
    *
    * @param val The value to check.
-   * @param key If the type check is happening in the context of a specific [[UrlMatcher]]  object,
+   * @param key If the type check is happening in the context of a specific URL parameter,
    *        this is the name of the parameter in which `val` is stored. Can be used for
    *        meta-programming of `ParamType` objects.
    * @returns `true` if the value matches the type, otherwise `false`.
@@ -587,16 +474,10 @@ export interface ParamTypeDefinition {
   is(val: unknown, key?: string): boolean;
 
   /**
-   * Encodes a custom/native type value to a string that can be embedded in a URL.
+   * Encodes a built-in/native type value to a string that can be embedded in a URL.
    *
    * Note that the return value does *not* need to be URL-safe (i.e. passed through `encodeURIComponent()`).
    * It only needs to be a representation of `val` that has been encoded as a string.
-   *
-   * For example, if your custom type decodes to an array of ints, then encode the array of ints to a string here:
-   *
-   * ```js
-   * encode: (intarray) => intarray.join("-")
-   * ```
    *
    * Note: in general, [[encode]] and [[decode]] should be symmetrical.  That is, `encode(decode(str)) === str`
    *

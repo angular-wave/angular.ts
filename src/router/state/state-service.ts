@@ -1,11 +1,12 @@
 import {
   _exceptionHandlerProvider,
   _injector,
+  _router,
   _routerProvider,
+  _rootScope,
   _stateRegistry,
   _stateRegistryProvider,
   _transitionsProvider,
-  _url,
   _view,
 } from "../../injection-tokens.ts";
 import { defaults } from "../../shared/common.ts";
@@ -89,8 +90,6 @@ export class StateProvider {
   /** @internal */
   _stateRegistry: StateRegistryProvider;
   /** @internal */
-  _urlService: ng.UrlService | undefined;
-  /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
   _lazyStates: LazyStateRegistration[];
@@ -100,13 +99,6 @@ export class StateProvider {
   /** @internal */
   _getRegistry(): StateRegistryProvider {
     return this._stateRegistry;
-  }
-
-  /** @internal */
-  _getUrlService(): ng.UrlService {
-    if (!this._urlService) throw new Error("Url service is not initialized");
-
-    return this._urlService;
   }
 
   /**
@@ -149,7 +141,6 @@ export class StateProvider {
     this._routerState = routerState;
     this._transitionService = transitionService;
     this._stateRegistry = stateRegistry;
-    this._urlService = undefined;
     this._$injector = undefined;
     this._lazyStates = [];
 
@@ -159,25 +150,31 @@ export class StateProvider {
   $get = [
     _injector,
     _stateRegistry,
-    _url,
+    _router,
+    _rootScope,
     _view,
     /**
      * @param {ng.InjectorService} $injector
      * @param {StateRegistryProvider} $stateRegistry
-     * @param {ng.UrlService} $url
+     * @param {RouterProvider} routerState
+     * @param {ng.RootScopeService} $rootScope
      * @param viewService
      * @returns {StateProvider}
      */
     (
       $injector: ng.InjectorService,
       $stateRegistry: StateRegistryProvider,
-      $url: ng.UrlService,
+      routerState: RouterProvider,
+      $rootScope: ng.RootScopeService,
       viewService: ViewService,
     ) => {
       this._stateRegistry = $stateRegistry;
-      this._urlService = $url;
-      $url._stateService = this;
-      this._transitionService._initRuntimeHooks(this, $url, viewService);
+      this._routerState = routerState;
+      routerState._stateService = this;
+      $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) =>
+        routerState._sync(evt),
+      );
+      this._transitionService._initRuntimeHooks(this, viewService);
       this._$injector = $injector;
       this._routerState._injector = $injector;
 
@@ -466,7 +463,7 @@ export class StateProvider {
       const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
 
       if (error.type === RejectType._IGNORED) {
-        isLatest && this._getUrlService().update();
+        isLatest && this._routerState._update();
 
         // Consider ignored `Transition.run()` as a successful `transitionTo`.
         return Promise.resolve(this._routerState._current);
@@ -485,7 +482,7 @@ export class StateProvider {
       }
 
       if (error.type === RejectType._ABORTED) {
-        isLatest && this._getUrlService().update();
+        isLatest && this._routerState._update();
 
         return Promise.reject(error);
       }
@@ -751,11 +748,11 @@ export class StateProvider {
       );
     const nav = state && options?.lossy ? state.navigable : state;
 
-    if (!nav || isNullOrUndefined(nav.url)) {
+    if (!nav || isNullOrUndefined(nav._url)) {
       return null;
     }
 
-    return this._getUrlService().href(nav.url, params, {
+    return this._routerState._href(nav._url, params, {
       absolute: options?.absolute,
     });
   }

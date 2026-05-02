@@ -6,7 +6,7 @@ describe("router services", () => {
   let providers;
   let $injector;
   let $state;
-  let $url;
+  let $$r;
   let $location;
 
   beforeEach(() => {
@@ -15,14 +15,12 @@ describe("router services", () => {
     let module = window["angular"].module("defaultModule", []);
     module.config(
       (
-        $urlProvider,
         $stateRegistryProvider,
         $$rProvider,
         $transitionsProvider,
         $stateProvider,
       ) => {
         providers = {
-          $urlProvider,
           $stateRegistryProvider,
           $$rProvider,
           $transitionsProvider,
@@ -35,12 +33,11 @@ describe("router services", () => {
       "defaultModule",
     ]);
     $state = $injector.get("$state");
-    $url = $injector.get("$url");
+    $$r = $injector.get("$$r");
     $location = $injector.get("$location");
   });
 
   it("Should expose private ng-router providers through internal Angular DI", () => {
-    expect(providers.$urlProvider).toBeDefined();
     expect(providers.$stateRegistryProvider).toBeDefined();
     expect(providers.$$rProvider).toBeDefined();
     expect(providers.$transitionsProvider).toBeDefined();
@@ -48,7 +45,6 @@ describe("router services", () => {
   });
 
   it("Should expose private ng-router services through internal Angular DI", () => {
-    expect($injector.get("$url")).toBeDefined();
     expect($injector.get("$stateRegistry")).toBeDefined();
     expect($injector.get("$$r")).toBeDefined();
     expect($injector.get("$transitions")).toBeDefined();
@@ -56,7 +52,7 @@ describe("router services", () => {
     expect($injector.get("$view")).toBeDefined();
   });
 
-  it("activates the initial url-matched state after listen and sync", async () => {
+  it("activates the initial url-matched state after sync", async () => {
     providers.$stateProvider.state({
       name: "home",
       url: "/startup-home",
@@ -64,8 +60,7 @@ describe("router services", () => {
     });
 
     $location.url("/startup-home");
-    $url.listen(true);
-    $url.sync();
+    $$r._sync();
     await wait(50);
 
     expect($state.current.name).toBe("home");

@@ -1,37 +1,25 @@
-import { assign, isArray, isDefined } from "../../shared/utils.ts";
+import {
+  assign,
+  isArray,
+  isDefined,
+  isNullOrUndefined,
+} from "../../shared/utils.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 
 type ArrayUnaryMethod = "encode" | "decode" | "is" | "$normalize";
 
-const emptyParamTypeDefinition: ParamTypeDefinition = {
-  is: (val: unknown) => !!val,
-  encode: (val: unknown) => val as string,
-  decode: (val: unknown) => val,
-  equals: (left: unknown, right: unknown) => left === right,
-};
+type ParamTypeConfig = Partial<ParamTypeDefinition> & Record<string, unknown>;
+
+const emptyParamTypeDefinition: ParamTypeConfig = {};
+
+function valToString(val: unknown): string | undefined {
+  return !isNullOrUndefined(val) ? val.toString() : undefined;
+}
 
 /**
  * An internal class which implements [[ParamTypeDefinition]].
  *
- * A [[ParamTypeDefinition]] is a plain javascript object used to register custom parameter types.
- * When a param type definition is registered, an instance of this class is created internally.
- *
- * This class has naive implementations for all the [[ParamTypeDefinition]] methods.
- *
- * Used by [[UrlMatcher]] when matching or formatting URLs, or comparing and validating parameter values.
- *
- * #### Example:
- * ```js
- * var paramTypeDef = {
- *   decode: function(val) { return parseInt(val, 10); },
- *   encode: function(val) { return val && val.toString(); },
- *   equals: function(a, b) { return this.is(a) && a === b; },
- *   is: function(val) { return angular.isNumber(val) && isFinite(val) && val % 1 === 0; },
- *   pattern: /\d+/
- * }
- *
- * var paramType = new ParamType(paramTypeDef);
- * ```
+ * Used internally when matching or formatting URLs, or comparing and validating parameter values.
  */
 export class ParamType {
   [key: string]: unknown;
@@ -39,11 +27,7 @@ export class ParamType {
   inherit: boolean;
   name: string | undefined;
 
-  /**
-     * @param {ParamTypeDefinition} def A configuration object which contains the custom type definition.  The object's
-    properties will override the default methods and/or pattern in `ParamType`'s public interface.
-     */
-  constructor(def: ParamTypeDefinition) {
+  constructor(def: ParamTypeConfig) {
     this.pattern = /.*/;
     this.inherit = true;
     assign(this, def);
@@ -62,14 +46,14 @@ export class ParamType {
    * @param {unknown} val
    */
   encode(val: unknown): unknown {
-    return val;
+    return valToString(val);
   }
 
   /**
    * @param {unknown} val
    */
   decode(val: unknown): unknown {
-    return val;
+    return valToString(val);
   }
 
   /**

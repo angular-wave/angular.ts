@@ -16,10 +16,15 @@ import type {
   RawParams,
   Replace,
 } from "./interface.ts";
-import type { ParamTypes } from "./param-types.ts";
-import type { UrlConfigProvider } from "../url/url-config.ts";
+import type { ParamTypeMap } from "./param-types.ts";
+import type { UrlParamConfig } from "./param-factory.ts";
 
 type DefTypeValue = (typeof DefType)[keyof typeof DefType];
+
+export interface ParamRuntime {
+  /** @internal */
+  _injector: ng.InjectorService | undefined;
+}
 
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
 
@@ -91,14 +96,14 @@ function unwrapShorthand(cfg: unknown): ParamDeclaration {
  * @param {ParamType | null} urlType
  * @param {DefType} location
  * @param {string} id
- * @param {ParamTypes} paramTypes
+ * @param {ParamTypeMap} paramTypes
  */
 function getType(
   cfg: ParamDeclaration,
   urlType: ParamType | null,
   location: DefTypeValue,
   id: string,
-  paramTypes: ParamTypes,
+  paramTypes: ParamTypeMap,
 ): ParamType {
   if (cfg.type && urlType && urlType.name !== "string")
     throw new Error(`Param '${id}' has two type configurations.`);
@@ -108,9 +113,9 @@ function getType(
     urlType &&
     urlType.name === "string" &&
     isString(cfg.type) &&
-    paramTypes.type(cfg.type)
+    paramTypes[cfg.type]
   )
-    return paramTypes.type(cfg.type) as ParamType;
+    return paramTypes[cfg.type] as ParamType;
 
   if (urlType) return urlType;
 
@@ -124,12 +129,12 @@ function getType(
             ? "query"
             : "string";
 
-    return paramTypes.type(type) as ParamType;
+    return paramTypes[type] as ParamType;
   }
 
   return isInstanceOf(cfg.type, ParamType)
     ? cfg.type
-    : (paramTypes.type(cfg.type as string) as ParamType);
+    : (paramTypes[cfg.type as string] as ParamType);
 }
 
 /**
@@ -227,26 +232,28 @@ export class Param {
   /** @internal */
   _defaultValueCache?: { defaultValue: unknown };
   /** @internal */
-  _paramTypes: ParamTypes;
+  _runtime: ParamRuntime;
 
   /**
    *
    * @param {string} id
    * @param {ParamType | null} type
    * @param {DefType} location
-   * @param {UrlConfigProvider} urlConfig
+   * @param {UrlParamConfig} urlConfig
+   * @param {ParamRuntime} runtime
    * @param {ng.StateDeclaration} state
    */
   constructor(
     id: string,
     type: ParamType | null,
     location: DefTypeValue,
-    urlConfig: UrlConfigProvider,
+    urlConfig: UrlParamConfig,
+    runtime: ParamRuntime,
     state: ng.StateDeclaration,
   ) {
     const config = getParamDeclaration(id, location, state);
 
-    type = getType(config, type, location, id, urlConfig.paramTypes);
+    type = getType(config, type, location, id, urlConfig._paramTypes);
     const arrayMode = getArrayMode(id, location, config);
 
     type = arrayMode
@@ -262,7 +269,7 @@ export class Param {
     const squash = getSquashPolicy(
       config,
       isOptional,
-      urlConfig.defaultSquashPolicy(),
+      urlConfig._getDefaultSquashPolicy(),
     );
 
     const replace = getReplace(config, arrayMode, isOptional, squash);
@@ -283,7 +290,7 @@ export class Param {
     this.array = arrayMode;
     this.config = config;
     this.matchingKeys = undefined;
-    this._paramTypes = urlConfig.paramTypes;
+    this._runtime = runtime;
   }
 
   /**
@@ -310,7 +317,7 @@ export class Param {
   _getDefaultValue(): unknown {
     if (this._defaultValueCache) return this._defaultValueCache.defaultValue;
 
-    const injector = this._paramTypes._getInjector();
+    const injector = this._runtime._injector;
 
     if (!injector)
       throw new Error(

@@ -6,6 +6,7 @@ import {
   isArray,
   isDefined,
   isFunction,
+  isInstanceOf,
   isString,
   keys,
 } from "../../shared/utils.ts";
@@ -27,7 +28,8 @@ import type { PathNode } from "../path/path-node.ts";
 import type { Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
-import type { UrlMatcher } from "../url/url-matcher.ts";
+import { UrlMatcher } from "../url/url-matcher.ts";
+import type { RouterProvider } from "../router.ts";
 import type {
   HookResult,
   TransitionStateHookFn,
@@ -74,7 +76,7 @@ function parseUrl(url: unknown): false | { val: string; root: boolean } {
 
 function buildUrl(
   stateObject: StateObject & BuiltStateDeclaration,
-  $url: ng.UrlService,
+  routerState: RouterProvider,
   root: StateObject | BuiltStateDeclaration,
 ): UrlMatcher | null {
   const stateDec = stateObject.self;
@@ -83,29 +85,29 @@ function buildUrl(
 
   const parsed = parseUrl(stateDec.url);
 
-  const url = (
-    !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
-  ) as UrlMatcher | null;
+  const url = parsed
+    ? routerState._compile(parsed.val, { state: stateDec })
+    : null;
 
   if (!url) return null;
 
-  if (!$url.isMatcher(url))
+  if (!isInstanceOf(url, UrlMatcher))
     throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
 
-  return parsed && parsed.root
-    ? url
-    : ((parent && parent.navigable) || root).url!.append(url);
+  const base = ((parent && parent.navigable) || root) as StateObject;
+
+  return parsed && parsed.root ? url : base._url!._append(url);
 }
 
 /**
  * @param {ParamFactory} paramFactory
  */
 function buildParams(
-  state: BuiltStateDeclaration,
+  state: StateObject & BuiltStateDeclaration,
   paramFactory: ParamFactory,
 ): Record<string, Param> {
   const urlParams =
-    (state.url && state.url.parameters({ inherit: false })) || [];
+    (state._url && state._url._parameters({ inherit: false })) || [];
 
   const params: Record<string, Param> = {};
 
@@ -439,17 +441,17 @@ export class StateBuilder {
   /** @internal */
   _paramFactory: ParamFactory;
   /** @internal */
-  _urlService: ng.UrlService;
+  _routerState: RouterProvider;
 
   /**
    * @param {StateMatcher} matcher
-   * @param {ng.UrlService} urlService
+   * @param {RouterProvider} routerState
    */
-  constructor(matcher: StateMatcher, urlService: ng.UrlService) {
+  constructor(matcher: StateMatcher, routerState: RouterProvider) {
     this._matcher = matcher;
     this._$injector = undefined;
-    this._paramFactory = urlService._paramFactory;
-    this._urlService = urlService;
+    this._paramFactory = routerState._paramFactory;
+    this._routerState = routerState;
   }
 
   /** @internal */
@@ -477,7 +479,7 @@ export class StateBuilder {
    */
   /** @internal */
   _build(state: StateObject): StateObject | null {
-    const { _matcher: matcher, _urlService: urlService } = this;
+    const { _matcher: matcher, _routerState: routerState } = this;
 
     const parent = this._parentName(state);
 
@@ -488,10 +490,10 @@ export class StateBuilder {
     state.parent = isRoot(state)
       ? null
       : matcher.find(parent) || matcher.find("");
-    state.url =
+    state._url =
       buildUrl(
         state as StateObject & BuiltStateDeclaration,
-        urlService,
+        routerState,
         matcher.find("") as StateObject | BuiltStateDeclaration,
       ) || undefined;
     state.resolvables = resolvablesBuilder(
@@ -503,7 +505,7 @@ export class StateBuilder {
     this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
 
     state.navigable =
-      !isRoot(state) && state.url
+      !isRoot(state) && state._url
         ? state
         : state.parent
           ? state.parent.navigable

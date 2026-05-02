@@ -1,8 +1,4 @@
-import {
-  _injector,
-  _routerProvider,
-  _urlProvider,
-} from "../../injection-tokens.ts";
+import { _injector, _routerProvider } from "../../injection-tokens.ts";
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
@@ -27,12 +23,12 @@ import type { RouterProvider } from "../router.ts";
  *
  */
 export class StateRegistryProvider {
-  /* @ignore */ static $inject = [_urlProvider, _routerProvider];
+  /* @ignore */ static $inject = [_routerProvider];
 
   /** @internal */
   _states: StateStore;
   /** @internal */
-  _urlService: ng.UrlService;
+  _routerState: RouterProvider;
   /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
@@ -46,10 +42,10 @@ export class StateRegistryProvider {
   /** @internal */
   _root!: StateObject;
 
-  constructor(urlService: ng.UrlService, routerState: RouterProvider) {
+  constructor(routerState: RouterProvider) {
     this._states = {};
 
-    this._urlService = urlService;
+    this._routerState = routerState;
 
     this._$injector = undefined;
 
@@ -57,7 +53,7 @@ export class StateRegistryProvider {
 
     this._matcher = new StateMatcher(this._states);
 
-    this._builder = new StateBuilder(this._matcher, urlService);
+    this._builder = new StateBuilder(this._matcher, routerState);
 
     this._queue = [];
 
@@ -293,12 +289,9 @@ export class StateRegistryProvider {
   }
 
   /** @internal */
-  _attachRoute(state: StateObject | ng.StateDeclaration): void {
-    if (
-      !(state as ng.StateDeclaration & { abstract?: boolean }).abstract &&
-      state.url
-    ) {
-      this._urlService._registerStateRoute(state as StateObject);
+  _attachRoute(state: StateObject): void {
+    if (!state.self.abstract && state._url) {
+      this._routerState._registerStateRoute(state);
     }
   }
 
@@ -337,7 +330,7 @@ export class StateRegistryProvider {
     const deregistered = [state].concat(children).reverse();
 
     deregistered.forEach((_state) => {
-      this._urlService._removeStateRoute(_state as StateObject);
+      this._routerState._removeStateRoute(_state as StateObject);
       // Remove state from registry
       delete this._states[_state.name];
     });
