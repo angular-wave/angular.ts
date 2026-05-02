@@ -18,6 +18,7 @@ import type { TargetState } from "../state/target-state.ts";
 import type { TransitionService } from "./transition-service.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RawParams } from "../params/interface.ts";
+import type { RouterProvider } from "../router.ts";
 
 export interface Transition {
   promise: Promise<StateDeclaration>;
@@ -25,7 +26,7 @@ export interface Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _routerState: ng._RouterService;
+  _routerState: RouterProvider;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -62,6 +63,10 @@ function createDeferredPromise<T>(): DeferredPromise<T> {
   });
 
   return { promise, resolve, reject };
+}
+
+function resolvedPromise(): Promise<void> {
+  return Promise.resolve();
 }
 
 function nodeIsReloading(node: PathNode, reloadState?: StateObject): boolean {
@@ -118,7 +123,7 @@ export class Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _routerState: ng._RouterService;
+  _routerState: RouterProvider;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -148,7 +153,7 @@ export class Transition {
     fromPath: PathNode[],
     targetState: TargetState,
     transitionService: TransitionService,
-    routerState: ng._RouterService,
+    routerState: RouterProvider,
   ) {
     this._routerState = routerState;
 
@@ -465,6 +470,70 @@ export class Transition {
     return undefined;
   }
 
+  /** @internal */
+  _getHooksFor(phase: TransitionHookPhase): TransitionHook[] {
+    return buildHooksForPhase(this, phase);
+  }
+
+  /** @internal */
+  _startTransition(): Promise<void> {
+    const { _routerState } = this;
+
+    _routerState._lastStartedTransitionId = this.$id;
+    _routerState._transition = this;
+    _routerState._lastStartedTransition = this;
+
+    return Promise.resolve();
+  }
+
+  /** @internal */
+  _runTransitionHooks(): Promise<unknown> {
+    // Wait to build the RUN hook chain until BEFORE hooks have completed.
+    // This allows a BEFORE hook to add more RUN hooks dynamically.
+    const allRunHooks = this._getHooksFor(TransitionHookPhase._RUN);
+
+    return TransitionHook.invokeHooks(allRunHooks, resolvedPromise);
+  }
+
+  /** @internal */
+  _resolveTransition(): void {
+    this._deferred.resolve(this.to());
+  }
+
+  /** @internal */
+  _transitionSuccess(): void {
+    this.success = true;
+
+    const hooks = this._getHooksFor(TransitionHookPhase._SUCCESS);
+
+    void this._runSuccessHooks(hooks);
+  }
+
+  /** @internal */
+  async _runSuccessHooks(hooks: TransitionHook[]): Promise<void> {
+    try {
+      await TransitionHook.invokeHooks(hooks, resolvedPromise);
+      this._resolveTransition();
+    } catch (reason) {
+      this._transitionError(reason);
+    }
+  }
+
+  /** @internal */
+  _transitionError(reason: unknown): void {
+    const rejection = Rejection.normalize(reason);
+
+    this.success = false;
+    this._deferred.reject(rejection);
+    this._error = rejection;
+
+    const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
+
+    for (let i = 0; i < hooks.length; i++) {
+      hooks[i].invokeHook();
+    }
+  }
+
   /**
    * Runs the transition
    *
@@ -475,59 +544,22 @@ export class Transition {
    * @returns {Promise<StateDeclaration>} a promise for a successful transition.
    */
   run(): Promise<StateDeclaration> {
-    // Gets transition hooks array for the given phase
-    const getHooksFor = (phase: TransitionHookPhase) =>
-      buildHooksForPhase(this, phase);
-
-    // When the chain is complete, then resolve or reject the deferred
-    const transitionSuccess = () => {
-      this.success = true;
-      const hooks = buildHooksForPhase(this, TransitionHookPhase._SUCCESS);
-
-      TransitionHook.invokeHooks(hooks, () => Promise.resolve()).then(
-        () => this._deferred.resolve(this.to()),
-        (reason) => transitionError(Rejection.normalize(reason)),
-      );
-    };
-
-    const transitionError = (reason: Rejection) => {
-      this.success = false;
-      this._deferred.reject(reason);
-      this._error = reason;
-      const hooks = getHooksFor(TransitionHookPhase._ERROR);
-
-      for (let i = 0; i < hooks.length; i++) {
-        hooks[i].invokeHook();
-      }
-    };
-
-    const runTransition = () => {
-      // Wait to build the RUN hook chain until the BEFORE hooks are done
-      // This allows a BEFORE hook to dynamically add additional RUN hooks via the Transition object.
-      const allRunHooks = getHooksFor(TransitionHookPhase._RUN);
-
-      const resolved = Promise.resolve();
-
-      return TransitionHook.invokeHooks(allRunHooks, () => resolved);
-    };
-
-    const startTransition = () => {
-      const { _routerState } = this;
-
-      _routerState._lastStartedTransitionId = this.$id;
-      _routerState._transition = this;
-      _routerState._lastStartedTransition = this;
-
-      return Promise.resolve();
-    };
-
-    const allBeforeHooks = getHooksFor(TransitionHookPhase._BEFORE);
-
-    TransitionHook.invokeHooks(allBeforeHooks, startTransition)
-      .then(runTransition)
-      .then(transitionSuccess, transitionError);
+    void this._run();
 
     return this.promise;
+  }
+
+  /** @internal */
+  async _run(): Promise<void> {
+    try {
+      const allBeforeHooks = this._getHooksFor(TransitionHookPhase._BEFORE);
+
+      await TransitionHook.invokeHooks(allBeforeHooks, this);
+      await this._runTransitionHooks();
+      this._transitionSuccess();
+    } catch (reason) {
+      this._transitionError(reason);
+    }
   }
 
   /** Checks if this transition is currently active/running. */

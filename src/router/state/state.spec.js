@@ -399,17 +399,13 @@ describe("$state", () => {
         expect(message).toBeDefined();
       });
 
-      it("can register a missing state asynchronously from onInvalid and retry the transition", async () => {
-        $stateProvider.onInvalid(async (to) => {
-          if (to.name() !== "asyncLoaded") return undefined;
-
+      it("can register a missing state asynchronously from a lazy state loader and retry the transition", async () => {
+        $stateProvider.lazy("asyncLoaded", async () => {
           const imported = await Promise.resolve({
             states: [{ name: "asyncLoaded", url: "/async-loaded" }],
           });
 
-          imported.states.forEach((state) => $stateProvider.state(state));
-
-          return to;
+          return imported.states;
         });
 
         await $state.transitionTo("asyncLoaded");

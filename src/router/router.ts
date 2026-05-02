@@ -8,7 +8,7 @@ import type { Transition } from "./transition/transition.ts";
  *
  * @internal
  */
-export class _RouterProvider {
+export class RouterProvider {
   /** @internal */
   _params: StateParams;
   /** @internal */
@@ -74,7 +74,7 @@ export class _RouterProvider {
   /**
    * Returns the singleton router internals instance.
    */
-  $get(): _RouterProvider {
+  $get(): RouterProvider {
     return this;
   }
 }

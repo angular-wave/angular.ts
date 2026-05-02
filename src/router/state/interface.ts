@@ -8,7 +8,6 @@ import type { Transition } from "../transition/transition.ts";
 import {
   TransitionStateHookFn,
   TransitionOptions,
-  HookResult,
 } from "../transition/interface.ts";
 import { ResolvableLiteral } from "../resolve/interface.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
@@ -24,6 +23,13 @@ export type StateTransitionResult = StateDeclaration | undefined;
 export interface TransitionPromise extends Promise<StateTransitionResult> {
   transition: Transition;
 }
+
+export type LazyStateLoadResult = StateDeclaration | StateDeclaration[] | void;
+
+export type LazyStateLoader = (
+  target: TargetState,
+  injector?: ng.InjectorService,
+) => LazyStateLoadResult | Promise<LazyStateLoadResult>;
 
 export interface TargetStateDef {
   state: StateOrName;
@@ -785,9 +791,3 @@ export type StateRegistryListener = (
   event: "registered" | "deregistered",
   states: StateDeclaration[],
 ) => void;
-
-export type OnInvalidCallback = (
-  toState?: TargetState,
-  fromState?: TargetState,
-  injector?: ng.InjectorService,
-) => HookResult;

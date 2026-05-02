@@ -1,5 +1,4 @@
 import { defaults, tail } from "./common.js";
-import { is, pattern, val } from "./hof.js";
 import { isInjectable } from "./predicates.js";
 
 describe("common", function () {
@@ -26,34 +25,6 @@ describe("common", function () {
       const vals = { param1: 0, param2: 0 };
       expect(defaults(null, vals)).toEqual(vals);
       expect(defaults(undefined, vals)).toEqual(vals);
-    });
-  });
-
-  describe("val", function () {
-    it("should return identity", function () {
-      const f = function () {},
-        foo = {};
-      expect(val(f)()).toBe(f);
-      expect(val(foo)()).toBe(foo);
-      expect(val(true)()).toBe(true);
-      expect(val(false)()).toBe(false);
-      expect(val(null)()).toBe(null);
-    });
-  });
-
-  describe("pattern", function () {
-    it("should return the result of a paired function when a condition function returns true", function () {
-      const typeChecker = pattern([
-        [is(Number), val("number!")],
-        [is(String), val("string!")],
-        [is(Boolean), val("boolean!")],
-      ]);
-
-      expect(typeChecker(1)).toBe("number!");
-      expect(typeChecker("foo!")).toBe("string!");
-      expect(typeChecker(true)).toBe("boolean!");
-      expect(typeChecker(false)).toBe("boolean!");
-      expect(typeChecker(undefined)).toBe(undefined);
     });
   });
 

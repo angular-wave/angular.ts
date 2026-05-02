@@ -12,8 +12,8 @@ function createHook({
     _eventType: {
       hookPhase: TransitionHookPhase._BEFORE,
       synchronous: false,
-      getErrorHandler: () => (error) => error,
-      getResultHandler: () => (transitionHook) => (result) =>
+      _handleError: (_hook, error) => error,
+      _handleResult: (transitionHook, result) =>
         transitionHook.handleHookResult(result),
       ...eventType,
     },
@@ -136,7 +136,7 @@ describe("TransitionHook", () => {
   it("logs rejected hook results", async () => {
     const logError = jasmine.createSpy("logError");
 
-    TransitionHook.LOG_REJECTED_RESULT({ logError })(Promise.reject("nope"));
+    TransitionHook._logRejectedResult({ logError }, Promise.reject("nope"));
 
     await new Promise((resolve) => setTimeout(resolve));
 
@@ -144,13 +144,15 @@ describe("TransitionHook", () => {
   });
 
   it("exposes default error handlers", async () => {
-    TransitionHook.LOG_ERROR()("ignored");
+    TransitionHook._logError(undefined, "ignored");
 
     await expectAsync(
-      TransitionHook.REJECT_ERROR()("rejected"),
+      TransitionHook._rejectError(undefined, "rejected"),
     ).toBeRejectedWith("rejected");
 
-    expect(() => TransitionHook.THROW_ERROR()("thrown")).toThrow("thrown");
+    expect(() => TransitionHook._throwError(undefined, "thrown")).toThrow(
+      "thrown",
+    );
   });
 
   it("formats debug strings using available hook context", () => {

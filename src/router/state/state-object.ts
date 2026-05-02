@@ -11,6 +11,7 @@ import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type {
   BuiltStateDeclaration,
+  RouterInjectable,
   StateDeclaration,
   ViewDeclaration,
 } from "./interface.ts";
@@ -56,6 +57,14 @@ export class StateObject {
   onEnter: TransitionStateHookFn | undefined;
   onRetain: TransitionStateHookFn | undefined;
   onExit: TransitionStateHookFn | undefined;
+  /** @internal */
+  _onEnter: RouterInjectable | undefined;
+  /** @internal */
+  _onRetain: RouterInjectable | undefined;
+  /** @internal */
+  _onExit: RouterInjectable | undefined;
+  /** @internal */
+  _hookContext: unknown;
   self: StateDeclaration;
   /** @internal */
   _stateObjectCache: { nameGlob: Glob | null };

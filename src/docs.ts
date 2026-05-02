@@ -156,7 +156,8 @@ export { NgModelController } from "./directive/model/model.ts";
 export type { ParamDeclaration, RawParams } from "./router/params/interface.ts";
 export type {
   HrefOptions,
-  OnInvalidCallback,
+  LazyStateLoader,
+  LazyStateLoadResult,
   RedirectToResult,
   StateDeclaration,
   StateOrName,
