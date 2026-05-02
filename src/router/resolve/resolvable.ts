@@ -28,9 +28,9 @@ async function resolveResolvable(
 
   const dependencyPromises = new Array(dependencies.length);
 
-  for (let i = 0; i < dependencies.length; i++) {
-    dependencyPromises[i] = dependencies[i].get(resolveContext, trans);
-  }
+  dependencies.forEach((dependency, index) => {
+    dependencyPromises[index] = dependency.get(resolveContext, trans);
+  });
 
   const resolvedDeps = await Promise.all(dependencyPromises);
 
@@ -120,9 +120,7 @@ export class Resolvable {
     resolveContext: ResolveContext,
     trans?: Transition,
   ): Promise<ResolvableData> {
-    this.promise = Promise.resolve().then(() =>
-      resolveResolvable(this, resolveContext, trans),
-    );
+    this.promise = resolveResolvable(this, resolveContext, trans);
 
     return this.promise;
   }
@@ -145,9 +143,9 @@ export class Resolvable {
 
     const depStrings = new Array(deps.length);
 
-    for (let i = 0; i < deps.length; i++) {
-      depStrings[i] = stringify(deps[i]);
-    }
+    deps.forEach((dep, index) => {
+      depStrings[index] = stringify(dep);
+    });
 
     return `Resolvable(token: ${stringify(this.token)}, requires: [${depStrings}])`;
   }

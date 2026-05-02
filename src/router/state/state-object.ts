@@ -150,21 +150,17 @@ export class StateObject {
 
     const result: Param[] = [];
 
-    for (let i = 0; i < inherited.length; i++) {
-      const param = inherited[i];
-
+    inherited.forEach((param) => {
       if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
         result.push(param);
       }
-    }
+    });
 
-    for (let i = 0; i < ownParams.length; i++) {
-      const param = ownParams[i];
-
+    ownParams.forEach((param) => {
       if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
         result.push(param);
       }
-    }
+    });
 
     return result;
   }

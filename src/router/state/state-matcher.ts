@@ -50,20 +50,18 @@ export class StateMatcher {
 
       const matches: StateObject[] = [];
 
-      for (let i = 0; i < states.length; i++) {
-        const stateObj = states[i];
-
+      states.forEach((stateObj) => {
         if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
           matches.push(stateObj);
         }
-      }
+      });
 
       if (matches.length > 1) {
         const names: string[] = [];
 
-        for (let i = 0; i < matches.length; i++) {
-          names.push(matches[i].name);
-        }
+        matches.forEach((match) => {
+          names.push(match.name);
+        });
 
         throw new Error(
           `stateMatcher.find: Found multiple matches for ${name} using glob: ${names}`,

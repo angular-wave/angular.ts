@@ -47,9 +47,9 @@ export class PathNode {
 
       const resolvables = state.resolvables || [];
 
-      for (let i = 0; i < resolvables.length; i++) {
-        this.resolvables.push(resolvables[i].clone());
-      }
+      resolvables.forEach((resolvable) =>
+        this.resolvables.push(resolvable.clone()),
+      );
     }
   }
 
@@ -65,11 +65,9 @@ export class PathNode {
   applyRawParams(params: RawParams): PathNode {
     const paramValues: RawParams = {};
 
-    for (let i = 0; i < this.paramSchema.length; i++) {
-      const paramDef = this.paramSchema[i];
-
+    this.paramSchema.forEach((paramDef) => {
       paramValues[paramDef.id] = paramDef.value(params[paramDef.id]);
-    }
+    });
 
     this.paramValues = paramValues;
 

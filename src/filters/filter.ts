@@ -1,6 +1,7 @@
 import {
   equals,
   arrayFrom,
+  hasOwn,
   hasCustomToString,
   isArray,
   isArrayLike,
@@ -213,6 +214,8 @@ function deepCompare(
         const actualObj = actual as Record<string, any>;
 
         for (const key in actualObj) {
+          if (!hasOwn(actualObj, key)) continue;
+
           // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
           // See: https://github.com/angular/angular.ts/issues/15644
           if (
@@ -241,6 +244,7 @@ function deepCompare(
         const actualObj = actual as Record<string, any>;
 
         for (const key in expectedObj) {
+          if (!hasOwn(expectedObj, key)) continue;
           const expectedVal = expectedObj[key];
 
           if (isFunction(expectedVal) || isUndefined(expectedVal)) {

@@ -215,13 +215,11 @@ export class ControllerProvider {
     if (isObject(name)) {
       const controllerNames = keys(name);
 
-      for (let i = 0, l = controllerNames.length; i < l; i++) {
-        const key = controllerNames[i];
-
+      controllerNames.forEach((key) => {
         const value = name[key];
 
         this._controllers.set(key, normalizeControllerDef(value, key));
-      }
+      });
     }
   }
 

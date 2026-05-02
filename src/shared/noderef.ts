@@ -140,7 +140,11 @@ export class NodeRef {
   get fragment(): DocumentFragment {
     const fragment = createDocumentFragment();
 
-    this._collection().forEach((el) => fragment.appendChild(el));
+    const collection = this._collection();
+
+    for (let i = 0; i < collection.length; i++) {
+      fragment.appendChild(collection[i]);
+    }
 
     return fragment;
   }
@@ -231,9 +235,17 @@ export class NodeRef {
    */
   /** @internal */
   _clone(): NodeRef {
-    const cloned = this._isList
-      ? this._collection().map((el: Node) => el.cloneNode(true) as Node)
-      : this.node.cloneNode(true);
+    if (!this._isList) {
+      return new NodeRef(this.node.cloneNode(true));
+    }
+
+    const collection = this._collection();
+
+    const cloned = new Array<Node>(collection.length);
+
+    for (let i = 0; i < collection.length; i++) {
+      cloned[i] = collection[i].cloneNode(true);
+    }
 
     return new NodeRef(cloned);
   }

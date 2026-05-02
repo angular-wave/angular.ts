@@ -86,19 +86,15 @@ export class StateRegistryProvider {
   _annotateDeferredResolvables(strictDi: boolean | undefined): void {
     const states = this.getAll();
 
-    for (let i = 0; i < states.length; i++) {
-      const state = states[i];
-
+    states.forEach((state) => {
       const resolvables = state._state().resolvables || [];
 
-      for (let j = 0; j < resolvables.length; j++) {
-        const resolvable = resolvables[j];
-
+      resolvables.forEach((resolvable) => {
         if (resolvable.deps === "deferred") {
           resolvable.deps = annotate(resolvable.resolveFn, strictDi);
         }
-      }
-    }
+      });
+    });
   }
 
   /**
@@ -283,9 +279,7 @@ export class StateRegistryProvider {
 
     const declarations: StateDeclaration[] = [];
 
-    for (let i = 0; i < registered.length; i++) {
-      declarations.push(registered[i].self);
-    }
+    registered.forEach((state) => declarations.push(state.self));
 
     this._notifyListeners("registered", declarations);
   }
@@ -295,9 +289,7 @@ export class StateRegistryProvider {
     event: "registered" | "deregistered",
     states: StateDeclaration[],
   ): void {
-    for (let i = 0; i < this._listeners.length; i++) {
-      this._listeners[i](event, states);
-    }
+    this._listeners.forEach((listener) => listener(event, states));
   }
 
   /** @internal */
@@ -321,11 +313,9 @@ export class StateRegistryProvider {
 
     const all: BuiltStateDeclaration[] = [];
 
-    for (let i = 0; i < allDeclarations.length; i++) {
-      const declaration = allDeclarations[i];
-
+    allDeclarations.forEach((declaration) => {
       all.push(declaration._state());
-    }
+    });
 
     const children: BuiltStateDeclaration[] = [];
 
@@ -346,13 +336,11 @@ export class StateRegistryProvider {
 
     const deregistered = [state].concat(children).reverse();
 
-    for (let i = 0; i < deregistered.length; i++) {
-      const _state = deregistered[i];
-
+    deregistered.forEach((_state) => {
       this._urlService._removeStateRoute(_state as StateObject);
       // Remove state from registry
       delete this._states[_state.name];
-    }
+    });
 
     return deregistered;
   }
@@ -375,11 +363,9 @@ export class StateRegistryProvider {
 
     const deregisteredDeclarations: StateDeclaration[] = [];
 
-    for (let i = 0; i < deregisteredStates.length; i++) {
-      const stateDeclaration = deregisteredStates[i];
-
+    deregisteredStates.forEach((stateDeclaration) => {
       deregisteredDeclarations.push(stateDeclaration.self);
-    }
+    });
 
     this._notifyListeners("deregistered", deregisteredDeclarations);
 
@@ -394,11 +380,9 @@ export class StateRegistryProvider {
 
     const states: BuiltStateDeclaration[] = [];
 
-    for (let i = 0; i < stateNames.length; i++) {
-      const name = stateNames[i];
-
+    stateNames.forEach((name) => {
       states.push(this._states[name].self as BuiltStateDeclaration);
-    }
+    });
 
     return states;
   }
@@ -418,11 +402,9 @@ export class StateRegistryProvider {
 
       const states: StateDeclaration[] = [];
 
-      for (let i = 0; i < stateNames.length; i++) {
-        const name = stateNames[i];
-
+      stateNames.forEach((name) => {
         states.push(this._states[name].self);
-      }
+      });
 
       return states;
     }
@@ -433,18 +415,16 @@ export class StateRegistryProvider {
   }
 }
 
-export const getLocals = (ctx: ResolveContext): Record<string, unknown> => {
+export function getLocals(ctx: ResolveContext): Record<string, unknown> {
   const tokens = ctx.getTokens();
 
   const locals: Record<string, unknown> = {};
 
-  for (let i = 0; i < tokens.length; i++) {
-    const key = tokens[i];
-
+  tokens.forEach((key) => {
     if (isString(key)) {
       locals[key] = ctx.getResolvable(key).data;
     }
-  }
+  });
 
   return locals;
-};
+}

@@ -419,7 +419,7 @@ describe("Filter: filter", () => {
     expect(filter(items, expr, true)[0]).toBe(items[0]);
   });
 
-  it("should consider inherited properties in expression", () => {
+  it("should ignore inherited properties in expression", () => {
     class Expr {
       constructor(text) {
         this.text = text;
@@ -435,13 +435,12 @@ describe("Filter: filter", () => {
     ];
     let expr = new Expr("e");
 
-    expect(filter(items, expr).length).toBe(1);
-    expect(filter(items, expr)[0]).toBe(items[0]);
+    expect(filter(items, expr).length).toBe(4);
 
     expr = new Expr("hello");
 
     expect(filter(items, expr, true).length).toBe(1);
-    expect(filter(items, expr)[0]).toBe(items[0]);
+    expect(filter(items, expr, true)[0]).toBe(items[0]);
   });
 
   it("should not be affected by `Object.prototype` when using a string expression", () => {
@@ -458,11 +457,11 @@ describe("Filter: filter", () => {
     items[2].someProp = "kittens";
     items[3].someProp = "puppies";
 
-    // Affected by `Object.prototype`
-    expect(filter(items, {}).length).toBe(1);
-    expect(filter(items, {})[0]).toBe(items[1]);
+    // Object expression matching ignores inherited properties.
+    expect(filter(items, {}).length).toBe(4);
 
-    expect(filter(items, { $: "ll" }).length).toBe(0);
+    expect(filter(items, { $: "ll" }).length).toBe(1);
+    expect(filter(items, { $: "ll" })[0]).toBe(items[0]);
 
     // Not affected by `Object.prototype`
     expect(filter(items, "ll").length).toBe(1);

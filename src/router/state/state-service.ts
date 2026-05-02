@@ -59,11 +59,11 @@ type LazyStateRegistration = {
  * @param {Promise<T>} promise
  * @returns {Promise<T>}
  */
-const silenceUncaughtInPromise = <T>(promise: Promise<T>): Promise<T> => {
+function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
   promise.catch(() => undefined);
 
   return promise;
-};
+}
 
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
@@ -72,8 +72,9 @@ const silenceUncaughtInPromise = <T>(promise: Promise<T>): Promise<T> => {
  * @param {E} error
  * @returns {Promise<never>}
  */
-export const silentRejection = <E = unknown>(error: E): Promise<never> =>
-  silenceUncaughtInPromise(Promise.reject(error));
+export function silentRejection<E = unknown>(error: E): Promise<never> {
+  return silenceUncaughtInPromise(Promise.reject(error));
+}
 
 /**
  * Provides services related to ng-router states.
@@ -208,9 +209,7 @@ export class StateProvider {
 
     const states = isArray(result) ? result : [result];
 
-    for (let i = 0; i < states.length; i++) {
-      this.state(states[i]);
-    }
+    states.forEach((state) => this.state(state));
   }
 
   /** @internal */
@@ -231,7 +230,9 @@ export class StateProvider {
   }
 
   /** @internal */
-  _loadLazyTargetState(toState: TargetState): Promise<StateTransitionResult> {
+  async _loadLazyTargetState(
+    toState: TargetState,
+  ): Promise<StateTransitionResult> {
     const routerState = this._routerState;
 
     const latest = routerState._lastStartedTransition;
@@ -243,38 +244,44 @@ export class StateProvider {
     }
 
     if (!lazy.promise) {
-      lazy.promise = Promise.resolve(lazy.loader(toState, this._$injector))
-        .then((result) => {
-          this._registerLazyResult(result);
-          lazy.loaded = true;
-        })
-        .catch((error) => {
-          lazy.promise = undefined;
-          throw error;
-        });
+      lazy.promise = this._loadLazyRegistration(lazy, toState);
     }
 
-    return lazy.promise.then(() => {
-      if (routerState._lastStartedTransition !== latest) {
-        return Rejection.superseded()._toPromise();
-      }
+    await lazy.promise;
 
-      const target = this.target(
-        toState.identifier(),
-        toState.params(),
-        toState.options(),
-      );
+    if (routerState._lastStartedTransition !== latest) {
+      return Rejection.superseded()._toPromise();
+    }
 
-      if (!target.valid()) {
-        return Rejection.invalid(target.error())._toPromise();
-      }
+    const target = this.target(
+      toState.identifier(),
+      toState.params(),
+      toState.options(),
+    );
 
-      return this.transitionTo(
-        target.identifier(),
-        target.params(),
-        target.options(),
-      );
-    });
+    if (!target.valid()) {
+      return Rejection.invalid(target.error())._toPromise();
+    }
+
+    return this.transitionTo(
+      target.identifier(),
+      target.params(),
+      target.options(),
+    );
+  }
+
+  /** @internal */
+  async _loadLazyRegistration(
+    lazy: LazyStateRegistration,
+    toState: TargetState,
+  ): Promise<void> {
+    try {
+      this._registerLazyResult(await lazy.loader(toState, this._$injector));
+      lazy.loaded = true;
+    } catch (error) {
+      lazy.promise = undefined;
+      throw error;
+    }
   }
 
   /**
@@ -474,9 +481,7 @@ export class StateProvider {
       ) {
         const redirect = trans.redirect(detail);
 
-        return redirect
-          .run()
-          .catch((reason) => this._handleTransitionRejection(redirect, reason));
+        return this._runRedirectTransition(redirect);
       }
 
       if (error.type === RejectType._ABORTED) {
@@ -489,6 +494,17 @@ export class StateProvider {
     this.defaultErrorHandler()(error);
 
     return Promise.reject(error);
+  }
+
+  /** @internal */
+  async _runRedirectTransition(
+    redirect: Transition,
+  ): Promise<StateTransitionResult> {
+    try {
+      return await redirect.run();
+    } catch (reason) {
+      return this._handleTransitionRejection(redirect, reason);
+    }
   }
 
   /** @internal */

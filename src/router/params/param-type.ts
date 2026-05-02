@@ -176,9 +176,9 @@ class ArrayParamType extends ParamType {
 
     const type = this._type;
 
-    for (let i = 0; i < arr.length; i++) {
-      result.push(type[method](arr[i]));
-    }
+    arr.forEach((item) => {
+      result.push(type[method](item));
+    });
 
     if (allTruthyMode) {
       for (let i = 0; i < result.length; i++) {

@@ -109,23 +109,19 @@ function buildParams(
 
   const params: Record<string, Param> = {};
 
-  for (let i = 0; i < urlParams.length; i++) {
-    const param = urlParams[i];
-
+  urlParams.forEach((param) => {
     params[param.id] = param;
-  }
+  });
 
   const paramConfigs = state.params || {};
 
   const paramConfigKeys = keys(paramConfigs);
 
-  for (let i = 0; i < paramConfigKeys.length; i++) {
-    const id = paramConfigKeys[i];
-
+  paramConfigKeys.forEach((id) => {
     if (!hasOwn(params, id)) {
       params[id] = paramFactory.fromConfig(id, null, state.self);
     }
-  }
+  });
 
   return params;
 }
@@ -149,13 +145,11 @@ function presentViewKeys(
 ): string {
   const present: string[] = [];
 
-  for (let i = 0; i < keyItems.length; i++) {
-    const key = keyItems[i];
-
+  keyItems.forEach((key) => {
     if (isDefined(values[key])) {
       present.push(key);
     }
-  }
+  });
 
   return present.join(", ");
 }
@@ -167,13 +161,11 @@ function assertNoRemovedViewKeys(
 ): void {
   const present: string[] = [];
 
-  for (let i = 0; i < keyItems.length; i++) {
-    const key = keyItems[i];
-
+  keyItems.forEach((key) => {
     if (isDefined(values[key])) {
       present.push(key);
     }
-  }
+  });
 
   if (present.length) {
     throw new Error(
@@ -207,13 +199,11 @@ function viewsBuilder(
 
   const stateValues: ViewDeclarationValueMap = state;
 
-  for (let i = 0; i < ALL_VIEW_KEYS.length; i++) {
-    const key = ALL_VIEW_KEYS[i];
-
+  ALL_VIEW_KEYS.forEach((key) => {
     if (isDefined(stateValues[key])) {
       defaultViewConfig[key] = stateValues[key];
     }
-  }
+  });
 
   const viewsObject = (state.views || {
     $default: defaultViewConfig,
@@ -221,9 +211,7 @@ function viewsBuilder(
 
   const viewEntries = entries(viewsObject);
 
-  for (let i = 0; i < viewEntries.length; i++) {
-    const [entryName, entryConfig] = viewEntries[i];
-
+  viewEntries.forEach(([entryName, entryConfig]) => {
     let name = entryName as string;
 
     let config = entryConfig as ViewDeclaration | string;
@@ -263,7 +251,7 @@ function viewsBuilder(
     config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
 
     views[name] = config;
-  }
+  });
 
   return views;
 }
@@ -273,15 +261,11 @@ function getResolveLocals(ctx: ResolveContext): Record<string, unknown> {
 
   const locals: Record<string, unknown> = {};
 
-  for (let i = 0; i < tokens.length; i++) {
-    const key = tokens[i];
-
-    if (!isString(key)) {
-      continue;
+  tokens.forEach((key) => {
+    if (isString(key)) {
+      locals[key] = ctx.getResolvable(key).data;
     }
-
-    locals[key] = ctx.getResolvable(key).data;
-  }
+  });
 
   return locals;
 }
@@ -367,11 +351,9 @@ function resolvablesBuilder(
   const resolvables: Resolvable[] = [];
 
   if (isArray(decl)) {
-    for (let i = 0; i < decl.length; i++) {
-      const literal = decl[i];
-
+    decl.forEach((literal) => {
       resolvables.push(literalToResolvable(literal));
-    }
+    });
 
     return resolvables;
   }
@@ -380,11 +362,9 @@ function resolvablesBuilder(
 
   const resolveKeys = keys(resolveObj);
 
-  for (let i = 0; i < resolveKeys.length; i++) {
-    const token = resolveKeys[i];
-
+  resolveKeys.forEach((token) => {
     resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
-  }
+  });
 
   return resolvables;
 }

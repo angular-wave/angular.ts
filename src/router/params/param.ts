@@ -178,23 +178,21 @@ function getReplace(
 
   const configuredKeys: Array<string | null> = [];
 
-  for (let i = 0; i < replace.length; i++) {
-    configuredKeys.push(replace[i].from);
-  }
+  replace.forEach((item) => {
+    configuredKeys.push(item.from);
+  });
 
   const result: Replace[] = [];
 
-  for (let i = 0; i < defaultPolicy.length; i++) {
-    const item = defaultPolicy[i];
-
+  defaultPolicy.forEach((item) => {
     if (configuredKeys.indexOf(item.from) === -1) {
       result.push(item);
     }
-  }
+  });
 
-  for (let i = 0; i < replace.length; i++) {
-    result.push(replace[i]);
-  }
+  replace.forEach((item) => {
+    result.push(item);
+  });
 
   return result;
 }
@@ -407,13 +405,11 @@ export class Param {
   ): Param[] {
     const changed: Param[] = [];
 
-    for (let i = 0; i < params.length; i++) {
-      const param = params[i];
-
+    params.forEach((param) => {
       if (!param.type.equals(values1[param.id], values2[param.id])) {
         changed.push(param);
       }
-    }
+    });
 
     return changed;
   }

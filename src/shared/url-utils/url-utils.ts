@@ -122,9 +122,11 @@ export function urlIsSameOriginAsBaseUrl(requestUrl: ResolvableUrl): boolean {
 export function urlIsAllowedOriginFactory(
   trustedOriginUrls: string[],
 ): (url: ResolvableUrl) => boolean {
-  const parsedAllowedOriginUrls = [originUrl].concat(
-    trustedOriginUrls.map(urlResolve),
-  );
+  const parsedAllowedOriginUrls = [originUrl];
+
+  trustedOriginUrls.forEach((url) => {
+    parsedAllowedOriginUrls.push(urlResolve(url));
+  });
 
   /**
    * Check whether the specified URL (string or parsed URL object) has an origin that is allowed
@@ -139,9 +141,13 @@ export function urlIsAllowedOriginFactory(
   return function urlIsAllowedOrigin(requestUrl: ResolvableUrl): boolean {
     const parsedUrl = urlResolve(requestUrl);
 
-    return parsedAllowedOriginUrls.some(
-      urlsAreSameOrigin.bind(null, parsedUrl),
-    );
+    for (let i = 0; i < parsedAllowedOriginUrls.length; i++) {
+      if (urlsAreSameOrigin(parsedUrl, parsedAllowedOriginUrls[i])) {
+        return true;
+      }
+    }
+
+    return false;
   };
 }
 

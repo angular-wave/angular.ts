@@ -1,5 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
-import { assign, isObject, isUndefined } from "../../shared/utils.ts";
+import { assign, isObject, isUndefined, keys } from "../../shared/utils.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { buildHooksForPhase } from "./hook-builder.ts";
 import {
@@ -83,11 +83,11 @@ function sameReloadAwarePath(
 
   let retainedCount = 0;
 
-  for (let i = 0; i < pathPrefix.length; i++) {
-    if (!nodeIsReloading(pathPrefix[i], reloadState)) {
+  pathPrefix.forEach((node) => {
+    if (!nodeIsReloading(node, reloadState)) {
       retainedCount++;
     }
-  }
+  });
 
   return pathA.length === retainedCount;
 }
@@ -99,11 +99,11 @@ function avoidEmptyHash(params: RawParams): RawParams {
 
   const cleanParams: RawParams = {};
 
-  for (const key in params) {
+  keys(params).forEach((key) => {
     if (key !== "#") {
       cleanParams[key] = params[key];
     }
-  }
+  });
 
   return cleanParams;
 }
@@ -195,9 +195,9 @@ export class Transition {
 
     const { entering } = this._treeChanges;
 
-    for (let i = 0; i < entering.length; i++) {
-      enteringStates.push(entering[i].state);
-    }
+    entering.forEach((node) => {
+      enteringStates.push(node.state);
+    });
 
     applyViewConfigs(
       this._transitionService._view,
@@ -263,9 +263,9 @@ export class Transition {
 
     const params: RawParams = {};
 
-    for (let i = 0; i < path.length; i++) {
-      assign(params, path[i].paramValues);
-    }
+    path.forEach((node) => {
+      assign(params, node.paramValues);
+    });
 
     return Object.freeze(params);
   }
@@ -364,20 +364,18 @@ export class Transition {
 
     const { reloadState } = targetState.options();
 
-    for (let i = 0; i < params.length; i++) {
-      if (!nodeIsReloading(params[i], reloadState)) {
-        matchingEnteringNodes.push(params[i]);
+    params.forEach((node) => {
+      if (!nodeIsReloading(node, reloadState)) {
+        matchingEnteringNodes.push(node);
       }
-    }
+    });
 
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
-    for (let i = 0; i < matchingEnteringNodes.length; i++) {
-      const node = matchingEnteringNodes[i];
-
+    matchingEnteringNodes.forEach((node, i) => {
       if (originalEnteringNodes[i]) {
         node.resolvables = originalEnteringNodes[i].resolvables;
       }
-    }
+    });
 
     return newTransition;
   }
@@ -409,17 +407,17 @@ export class Transition {
 
     const changes: Param[] = [];
 
-    for (let i = 0; i < tc.to.length; i++) {
+    tc.to.forEach((node, i) => {
       const nodeChanges = Param.changed(
-        tc.to[i].paramSchema,
-        tc.to[i].paramValues,
+        node.paramSchema,
+        node.paramValues,
         tc.from[i].paramValues,
       );
 
-      for (let j = 0; j < nodeChanges.length; j++) {
-        changes.push(nodeChanges[j]);
-      }
-    }
+      nodeChanges.forEach((changedParam) => {
+        changes.push(changedParam);
+      });
+    });
 
     return changes;
   }
@@ -529,9 +527,9 @@ export class Transition {
 
     const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
 
-    for (let i = 0; i < hooks.length; i++) {
-      hooks[i].invokeHook();
-    }
+    hooks.forEach((hook) => {
+      hook.invokeHook();
+    });
   }
 
   /**
@@ -611,22 +609,18 @@ export class Transition {
 
     const invalidParams: Param[] = [];
 
-    for (let i = 0; i < paramDefs.length; i++) {
-      const param = paramDefs[i];
-
+    paramDefs.forEach((param) => {
       if (!param.validates(values[param.id])) {
         invalidParams.push(param);
       }
-    }
+    });
 
     if (invalidParams.length) {
       const invalidValueParts: string[] = [];
 
-      for (let i = 0; i < invalidParams.length; i++) {
-        const param = invalidParams[i];
-
+      invalidParams.forEach((param) => {
         invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
-      }
+      });
 
       const invalidValues = invalidValueParts.join(", ");
 
@@ -667,9 +661,9 @@ export class Transition {
 function pathStates(path: PathNode[]): StateDeclaration[] {
   const states: StateDeclaration[] = [];
 
-  for (let i = 0; i < path.length; i++) {
-    states.push(path[i].state.self);
-  }
+  path.forEach((node) => {
+    states.push(node.state.self);
+  });
 
   return states;
 }
@@ -677,9 +671,9 @@ function pathStates(path: PathNode[]): StateDeclaration[] {
 function pathParams(path: PathNode[]): RawParams {
   const params: RawParams = {};
 
-  for (let i = 0; i < path.length; i++) {
-    assign(params, path[i].paramValues);
-  }
+  path.forEach((node) => {
+    assign(params, node.paramValues);
+  });
 
   return params;
 }

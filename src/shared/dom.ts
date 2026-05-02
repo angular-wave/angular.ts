@@ -318,7 +318,7 @@ export function getOrSetCacheData(
   } else if (key && typeof key === "object") {
     // key is now narrowed to object
     for (const prop in key) {
-      if (Object.prototype.hasOwnProperty.call(key, prop)) {
+      if (hasOwn(key, prop)) {
         expandoStore[kebabToCamel(prop)] = key[prop];
       }
     }

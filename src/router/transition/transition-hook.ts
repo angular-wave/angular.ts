@@ -185,9 +185,9 @@ export class TransitionHook {
   }
 
   static runAllHooks(hooks: TransitionHook[]): void {
-    for (let i = 0; i < hooks.length; i++) {
-      hooks[i].invokeHook();
-    }
+    hooks.forEach((hook) => {
+      hook.invokeHook();
+    });
   }
 
   /**

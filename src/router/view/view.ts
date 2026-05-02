@@ -89,9 +89,7 @@ export async function loadViewConfig(
 ): Promise<_ViewConfig> {
   const params: RawParams = {};
 
-  for (let i = 0; i < config.path.length; i++) {
-    assign(params, config.path[i].paramValues);
-  }
+  config.path.forEach((node) => assign(params, node.paramValues));
 
   const viewResult = await config.factory.fromConfig(config.viewDecl, params);
 
@@ -281,11 +279,9 @@ export class ViewService {
   _sync(): void {
     const ngViewsByFqn: Record<string, ActiveNgView> = {};
 
-    for (let i = 0; i < this._ngViews.length; i++) {
-      const ngView = this._ngViews[i];
-
+    this._ngViews.forEach((ngView) => {
       ngViewsByFqn[ngView.fqn] = ngView;
-    }
+    });
 
     const ngViewDepthCache = new Map<ActiveNgView, number>();
 
@@ -297,17 +293,13 @@ export class ViewService {
         ngViewDepth(ngViewDepthCache, right),
     );
 
-    for (let i = 0; i < this._ngViews.length; i++) {
-      const ngView = this._ngViews[i];
-
+    this._ngViews.forEach((ngView) => {
       let selectedViewConfig: _ViewConfig | undefined = undefined;
 
       let bestDepth = Number.NEGATIVE_INFINITY;
 
-      for (let j = 0; j < this._viewConfigs.length; j++) {
-        const candidate = this._viewConfigs[j];
-
-        if (!ViewService._matches(ngViewsByFqn, ngView, candidate)) continue;
+      this._viewConfigs.forEach((candidate) => {
+        if (!ViewService._matches(ngViewsByFqn, ngView, candidate)) return;
 
         const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
 
@@ -315,12 +307,12 @@ export class ViewService {
           selectedViewConfig = candidate;
           bestDepth = candidateDepth;
         }
-      }
+      });
 
       if (this._ngViews.indexOf(ngView) !== -1) {
         ngView.configUpdated(selectedViewConfig);
       }
-    }
+    });
   }
 
   /**

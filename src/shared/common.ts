@@ -20,7 +20,9 @@ export function defaults(opts: any, ...defaultsList: any[]): any {
 
   opts = opts || {};
 
-  keys(defaultVals).forEach((key) => {
+  const defaultKeys = keys(defaultVals);
+
+  defaultKeys.forEach((key) => {
     if (key in opts) defaultVals[key] = opts[key];
   });
 

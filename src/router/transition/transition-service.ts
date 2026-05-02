@@ -9,6 +9,7 @@ import {
   isInstanceOf,
   isObject,
   isString,
+  keys,
   values,
 } from "../../shared/utils.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
@@ -384,13 +385,11 @@ export class TransitionProvider implements TransitionService {
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[] {
     const transitionHookTypes: TransitionEventType[] = [];
 
-    for (let i = 0; i < this._eventTypes.length; i++) {
-      const eventType = this._eventTypes[i];
-
+    this._eventTypes.forEach((eventType) => {
       if (!isDefined(phase) || eventType.hookPhase === phase) {
         transitionHookTypes.push(eventType);
       }
-    }
+    });
 
     return transitionHookTypes.sort((left, right) => {
       const cmpByPhase = left.hookPhase - right.hookPhase;
@@ -600,15 +599,13 @@ function registerAddCoreResolvables(
 
       const entering = trans.entering();
 
-      for (let i = 0; i < entering.length; i++) {
-        const state = entering[i];
-
+      entering.forEach((state) => {
         addTransitionResolvable(
           trans,
           Resolvable.fromData("$state$", state),
           state.name,
         );
-      }
+      });
     },
   );
 }
@@ -648,13 +645,13 @@ function transitionViews(trans: Transition, pathname: string): _ViewConfig[] {
 
   const viewConfigs: _ViewConfig[] = [];
 
-  for (let i = 0; i < path.length; i++) {
-    const views = path[i]._views || [];
+  path.forEach((node) => {
+    const views = node._views || [];
 
-    for (let j = 0; j < views.length; j++) {
-      viewConfigs.push(views[j]);
-    }
-  }
+    views.forEach((view) => {
+      viewConfigs.push(view);
+    });
+  });
 
   return viewConfigs;
 }
@@ -664,31 +661,23 @@ function treeChangesCleanup(trans: Transition): void {
 
   const nodes: PathNode[] = [];
 
-  for (let i = 0; i < paths.length; i++) {
-    const path = paths[i];
-
-    for (let j = 0; j < path.length; j++) {
-      const node = path[j];
-
+  paths.forEach((path: PathNode[]) => {
+    path.forEach((node) => {
       if (nodes.indexOf(node) === -1) {
         nodes.push(node);
       }
-    }
-  }
+    });
+  });
 
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-
+  nodes.forEach((node) => {
     const { resolvables } = node;
 
-    for (let j = 0; j < resolvables.length; j++) {
-      const resolve = resolvables[j];
-
+    resolvables.forEach((resolve, i) => {
       if (TRANSITION_TOKENS.some((token) => token === resolve.token)) {
-        resolvables[j] = Resolvable.fromData(resolve.token, null);
+        resolvables[i] = Resolvable.fromData(resolve.token, null);
       }
-    }
-  }
+    });
+  });
 }
 
 function ignoredHook(trans: Transition) {
@@ -901,9 +890,9 @@ function loadEnteringViews(transition: Transition): Promise<void> | undefined {
   if (!enteringViews.length) return undefined;
   const promises = new Array(enteringViews.length);
 
-  for (let i = 0; i < enteringViews.length; i++) {
-    promises[i] = Promise.resolve(loadViewConfig(enteringViews[i]));
-  }
+  enteringViews.forEach((view, i) => {
+    promises[i] = Promise.resolve(loadViewConfig(view));
+  });
 
   return Promise.all(promises).then(noop);
 }
@@ -919,13 +908,13 @@ function updateViewConfigs(
   enteringViews: _ViewConfig[],
   exitingViews: _ViewConfig[],
 ): void {
-  for (let i = 0; i < exitingViews.length; i++) {
-    viewService._deactivateViewConfig(exitingViews[i]);
-  }
+  exitingViews.forEach((view) => {
+    viewService._deactivateViewConfig(view);
+  });
 
-  for (let i = 0; i < enteringViews.length; i++) {
-    viewService._activateViewConfig(enteringViews[i]);
-  }
+  enteringViews.forEach((view) => {
+    viewService._activateViewConfig(view);
+  });
 
   viewService._sync();
 }
@@ -1021,9 +1010,9 @@ function registerUpdateGlobalState(
     routerState._current = current?.self;
     const params = routerState._params;
 
-    for (const key in params) {
+    keys(params).forEach((key) => {
       delete params[key];
-    }
+    });
 
     assign(params, trans.params());
   };

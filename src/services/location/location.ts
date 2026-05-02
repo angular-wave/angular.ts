@@ -9,6 +9,7 @@ import {
   encodeUriSegment,
   entries,
   equals,
+  hasOwn,
   isDefined,
   isFunction,
   isNull,
@@ -596,10 +597,7 @@ export class LocationProvider {
   }
 
   set html5ModeConf(value: Html5Mode) {
-    this._rewriteLinksConfigured = Object.prototype.hasOwnProperty.call(
-      value,
-      "rewriteLinks",
-    );
+    this._rewriteLinksConfigured = hasOwn(value, "rewriteLinks");
     this._html5ModeConf = createHtml5ModeConfig(value, () => {
       this._rewriteLinksConfigured = true;
     });

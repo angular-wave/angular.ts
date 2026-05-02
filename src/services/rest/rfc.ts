@@ -171,6 +171,7 @@ export function expandExpression(
             expandedParts.push(pctEncode(varname, conf.allowReserved));
           }
         }
+
         continue;
       }
 
@@ -209,6 +210,7 @@ export function expandExpression(
           expandedParts.push(joined);
         }
       }
+
       continue;
     }
 
@@ -225,6 +227,7 @@ export function expandExpression(
               (conf.ifEmpty === "=" ? conf.ifEmpty : ""),
           );
         }
+
         continue;
       }
 
@@ -263,6 +266,7 @@ export function expandExpression(
           expandedParts.push(pairs);
         }
       }
+
       continue;
     }
 
@@ -295,6 +299,7 @@ export function expandExpression(
           expandedParts.push(pctEncode(str, conf.allowReserved));
         }
       }
+
       continue;
     }
 
