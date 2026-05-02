@@ -212,14 +212,9 @@ describe("$state", () => {
           .state({
             name: "dynamicTemplate",
             url: "/dynamicTemplate/:type",
-            templateProvider: function ($stateParams, foo) {
-              template = $stateParams.type + foo + "Template";
+            template: function (params) {
+              template = params.type + "Template";
               return template;
-            },
-            resolve: {
-              foo: function () {
-                return "Foo";
-              },
             },
           })
           .state({
@@ -614,9 +609,9 @@ describe("$state", () => {
           await promise;
           await wait(100);
           expect(promise.transition.dynamic()).toBeTruthy();
-          expect(promise.transition.treeChanges().entering.length).toBe(0);
-          expect(promise.transition.treeChanges().exiting.length).toBe(0);
-          expect(promise.transition.treeChanges().retained.length).toBe(2);
+          expect(promise.transition._treeChanges.entering.length).toBe(0);
+          expect(promise.transition._treeChanges.exiting.length).toBe(0);
+          expect(promise.transition._treeChanges.retained.length).toBe(2);
           expect(dynlog).toBe("success;[searchDyn=sd2];");
           Object.entries({
             path: "p1",
@@ -963,10 +958,10 @@ describe("$state", () => {
       expect(actual.detail).toEqual(err);
     });
 
-    it("uses the templateProvider to get template dynamically", async () => {
+    it("uses the template function to get template dynamically", async () => {
       await $state.transitionTo("dynamicTemplate", { type: "Acme" });
 
-      expect(template).toEqual("AcmeFooTemplate");
+      expect(template).toEqual("AcmeTemplate");
     });
 
     it("updates the location #fragment", async () => {

@@ -84,11 +84,10 @@ describe("ngView", () => {
     },
     kState = {
       name: "k",
-      controller: function () {
-        this.someProperty = "value";
+      controller: function ($scope) {
+        $scope.someProperty = "value";
       },
-      template: "{{vm.someProperty}}",
-      controllerAs: "vm",
+      template: "{{someProperty}}",
     },
     lState = {
       name: "l",
@@ -399,7 +398,7 @@ describe("ngView", () => {
     });
   });
 
-  it("should instantiate a controller with controllerAs", async () => {
+  it("should instantiate a controller for a view", async () => {
     elem.innerHTML = "<div><ng-view></ng-view></div>";
     $compile(elem)(scope);
     $state.transitionTo(kState);
@@ -647,28 +646,6 @@ describe("ngView", () => {
       };
     });
 
-    it("should put the resolved data on the controllerAs", async () => {
-      const state = Object.assign(_state, {
-        template: "{{$ctrl.$resolve.user}}",
-        controllerAs: "$ctrl",
-        controller: function ($scope) {
-          _scope = $scope;
-        },
-      });
-      $stateProvider.state(state);
-      elem.innerHTML = "<div><ng-view></ng-view></div>";
-      $compile(elem)(scope);
-
-      await $state.transitionTo("resolve");
-      await wait(100);
-
-      expect(elem.textContent).toBe("joeschmoe");
-      expect(_scope.$resolve).toBeDefined();
-      expect(_scope.$ctrl).toBeDefined();
-      expect(_scope.$ctrl.$resolve).toBeDefined();
-      expect(_scope.$ctrl.$resolve.user).toBe("joeschmoe");
-    });
-
     it("should provide the resolved data on the $scope", async () => {
       const state = Object.assign(_state, {
         template: "{{$resolve.user}}",
@@ -703,34 +680,9 @@ describe("ngView", () => {
       expect(elem.textContent).toBe("joeschmoe");
     });
 
-    it("should put the resolved data on the resolveAs variable", async () => {
-      const state = Object.assign(_state, {
-        template: "{{$$$resolve.user}}",
-        resolveAs: "$$$resolve",
-        controller: controller,
-      });
-      $stateProvider.state(state);
-      elem.innerHTML = "<div><ng-view></ng-view></div>";
-      $compile(elem)(scope);
-
-      await $state.transitionTo("resolve");
-      await wait(100);
-
-      expect(elem.textContent).toBe("joeschmoe");
-      expect(_scope.$$$resolve).toBeDefined();
-      expect(_scope.$$$resolve.user).toBe("joeschmoe");
-    });
-
-    it("should not allow both view-level resolveAs and state-level resolveAs on the same state", async () => {
+    it("should reject the removed resolveAs view option", async () => {
       const state = Object.assign(_state, {
         resolveAs: "foo",
-        views: {
-          $default: {
-            controller: controller,
-            template: "{{$$$resolve.user}}",
-            resolveAs: "$$$resolve",
-          },
-        },
       });
       expect(() => $stateProvider.state(state)).toThrowError(/resolveAs/);
     });
@@ -744,7 +696,6 @@ describe("ngView", () => {
         this.$onInit = $onInit;
       },
       template: "hi",
-      controllerAs: "vm",
     });
     elem.innerHTML = "<div><ng-view></ng-view></div>";
     $compile(elem)(scope);
@@ -1053,13 +1004,6 @@ describe("angular 1.5+ style .component()", () => {
         bindings: { evt: "&" },
         template: "eventCmp",
       })
-      .component("mydataComponent", {
-        bindings: { dataUser: "<" },
-        template: "-{{ $ctrl.dataUser }}-",
-      })
-      .component("dataComponent", {
-        template: "DataComponent",
-      })
       .component("parentCallbackComponent", {
         controller: function ($rootScope) {
           this.handleEvent = function (foo, bar) {
@@ -1185,7 +1129,7 @@ describe("angular 1.5+ style .component()", () => {
       const stateDef = {
         name: "route2cmp",
         url: "/route2cmp",
-        component: "ng12Directive",
+        component: "ngComponent",
         resolve: {
           data: function () {
             return "DATA!";
@@ -1236,76 +1180,6 @@ describe("angular 1.5+ style .component()", () => {
       expect(() => {
         $stateProvider.state(stateDef);
       }).not.toThrow();
-    });
-
-    it("should work with angular 1.2+ directives", async () => {
-      $stateProvider.state({
-        name: "route2cmp",
-        url: "/route2cmp",
-        component: "ng12Directive",
-        resolve: {
-          data: () => {
-            return "DATA!";
-          },
-        },
-      });
-
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      const directiveEl = el.querySelector("div ng-view ng12-directive");
-      expect(directiveEl).toBeDefined();
-      expect($state.current.name).toBe("route2cmp");
-      expect(el.textContent).toBe("-DATA!-");
-    });
-
-    it("should work with angular 1.3+ bindToComponent directives", async () => {
-      $stateProvider.state({
-        name: "route2cmp",
-        url: "/route2cmp",
-        component: "ng13Directive",
-        resolve: {
-          data: () => {
-            return "DATA!";
-          },
-        },
-      });
-
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      const directiveEl = el.querySelector("div ng-view ng13-directive");
-      expect(directiveEl).toBeDefined();
-      expect($state.current.name).toBe("route2cmp");
-      expect(el.textContent).toBe("-DATA!-");
-    });
-
-    it("should call $onInit() once", async () => {
-      log = "";
-      $stateProvider.state({
-        name: "route2cmp",
-        url: "/route2cmp",
-        component: "ng13Directive",
-        resolve: {
-          data: () => {
-            return "DATA!";
-          },
-        },
-      });
-
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      expect(log).toBe("onInit;");
     });
 
     it("should work with angular 1.5+ .component()s", async () => {
@@ -1470,35 +1344,6 @@ describe("angular 1.5+ style .component()", () => {
       await wait(100);
 
       expect(el.textContent).toBe("eventCmp");
-    });
-
-    // Test for #3276
-    it('should route to a component that is prefixed with "data"', async () => {
-      $stateProvider.state({
-        name: "data",
-        component: "dataComponent",
-      });
-
-      const $state = svcs.$state;
-      $state.transitionTo("data");
-      await wait(100);
-
-      expect(el.textContent).toBe("DataComponent");
-    });
-
-    // Test for #3276
-    it('should bind a resolve that is prefixed with "data"', async () => {
-      $stateProvider.state({
-        name: "data",
-        component: "mydataComponent",
-        resolve: { dataUser: () => "user" },
-      });
-
-      const $state = svcs.$state;
-      $state.transitionTo("data");
-      await wait(100);
-
-      expect(el.textContent).toBe("-user-");
     });
 
     // Test for #3239
@@ -1672,7 +1517,7 @@ describe("angular 1.5+ style .component()", () => {
       $stateProvider.state({
         name: "route2cmp",
         url: "/route2cmp",
-        component: "ng12Directive",
+        component: "ngComponent",
         bindings: { data: "foo" },
         resolve: {
           foo: () => {
@@ -1687,7 +1532,7 @@ describe("angular 1.5+ style .component()", () => {
       $state.transitionTo("route2cmp");
       await wait(100);
 
-      const directiveEl = el.querySelector("div ng-view ng12-directive");
+      const directiveEl = el.querySelector("div ng-view ng-component");
       expect(directiveEl).toBeDefined();
       expect($state.current.name).toBe("route2cmp");
       expect(el.textContent).toBe("-DATA!-");

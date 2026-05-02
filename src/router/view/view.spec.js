@@ -114,7 +114,7 @@ describe("view", () => {
   });
 
   describe("service helpers", () => {
-    it("creates view configs through ViewService._createViewConfig", () => {
+    it("creates view configs for entered states", () => {
       const state = register({
         name: "withView",
         template: "test",
@@ -123,18 +123,13 @@ describe("view", () => {
 
       viewService._templateFactory = $injector.get("$templateFactory");
 
-      spyOn(viewService, "_createViewConfig").and.callThrough();
-
       const path = [root, state].map((_state) => new PathNode(_state));
 
       applyViewConfigs(viewService, path, [state]);
 
-      expect(viewService._createViewConfig).toHaveBeenCalledTimes(1);
-      expect(viewService._createViewConfig).toHaveBeenCalledWith(
-        jasmine.arrayContaining(path),
-        state._views.$default,
-      );
       expect(path[1]._views.length).toBe(1);
+      expect(path[1]._views[0].path).toEqual(jasmine.arrayContaining(path));
+      expect(path[1]._views[0].viewDecl).toBe(state._views.$default);
     });
   });
 });

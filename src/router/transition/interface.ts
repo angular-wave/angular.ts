@@ -123,7 +123,7 @@ export interface TransitionHookOptions {
 /**
  * TreeChanges encapsulates the various Paths that are involved in a Transition.
  *
- * Get a TreeChanges object using [[Transition.treeChanges]]
+ * Tree changes are stored internally on the transition and consumed by router hooks.
  *
  * A Transition is from one Path in a State Tree to another Path. For a given Transition,
  * this object stores the "to" and "from" paths, as well as subsets of those: the "retained",
@@ -310,7 +310,7 @@ export type IStateMatch = PredicateBinary<StateObject, Transition>;
 /**
  * Hook Criterion used to match a transition.
  *
- * A [[Glob]] string that matches the name of a state.
+ * A string that exactly matches the name of a state.
  *
  * Or, a function with the signature `function(state, transition) { return matches; }`
  * which should return a boolean to indicate if a state matches.
@@ -323,7 +323,7 @@ export type HookMatchCriterion = string | IStateMatch | boolean;
  * This object is used to configure whether or not a Transition Hook is invoked for a particular transition,
  * based on the Transition's "to state" and "from state".
  *
- * Each property (`to`, `from`, `exiting`, `retained`, and `entering`) can be a state [[Glob]] string,
+ * Each property (`to`, `from`, `exiting`, `retained`, and `entering`) can be a state name string,
  * a boolean, or a function that takes a state and returns a boolean (see [[HookMatchCriterion]])
  *
  * All properties are optional.  If any property is omitted, it is replaced with the value `true`, and always matches.
@@ -335,23 +335,6 @@ export type HookMatchCriterion = string | IStateMatch | boolean;
  * var match = {
  *   to: 'parent',
  *   from: 'parent.child'
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from any substate of `parent` and going directly to the `parent` state.
- * var match = {
- *   to: 'parent',
- *   from: 'parent.**'
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from any state and going to any substate of `mymodule`
- * var match = {
- *   to: 'mymodule.**'
  * }
  * ```
  *
@@ -370,7 +353,7 @@ export type HookMatchCriterion = string | IStateMatch | boolean;
  * // This will match when route is just entered (initial load) or when the state is hard-refreshed
  * // by specifying `{refresh: true}` as transition options.
  * var match = {
- *   from: (state, transition) => state.self.name === '' || transition.options().reload
+ *   from: (state, transition) => state.self.name === '' || transition._options.reload
  * }
  * ```
  *
@@ -515,12 +498,12 @@ export interface HookRegistry {
    *
    * This example cancels a transition to a state which requires authentication, if the user is not currently authenticated.
    *
-   * This example assumes a state tree where all states which require authentication are children of a parent `'requireauth'` state.
+   * This example assumes authenticated states are marked using `data.requiresAuth`.
    * This example assumes `MyAuthService` synchronously returns a boolean from `isAuthenticated()`.
    *
    * #### Example:
    * ```js
-   * $transitions.onBefore( { to: 'requireauth.**' }, function(trans) {
+   * $transitions.onBefore( { to: state => state.data?.requiresAuth }, function(trans) {
    *   var myAuthService = trans.injector().get('MyAuthService');
    *   // If isAuthenticated returns false, the transition is cancelled.
    *   return myAuthService.isAuthenticated();
@@ -572,14 +555,14 @@ export interface HookRegistry {
    * does not require authentication.
    *
    * This example assumes:
-   * - a state tree where all states which require authentication are children of a parent `'auth'` state.
+   * - authenticated states are marked using `data.requiresAuth`.
    * - `MyAuthService.isAuthenticated()` synchronously returns a boolean.
    * - `MyAuthService.authenticate()` presents a login dialog, and returns a promise which is resolved
    *   or rejected, whether or not the login attempt was successful.
    *
    * #### Example:
    * ```js
-   * $transitions.onStart( { to: 'auth.**' }, function(trans) {
+   * $transitions.onStart( { to: state => state.data?.requiresAuth }, function(trans) {
    *   var $state = trans.router.stateService;
    *   var MyAuthService = trans.injector().get('MyAuthService');
    *

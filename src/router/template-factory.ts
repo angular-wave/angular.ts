@@ -10,14 +10,11 @@ import {
 import { annotate } from "../core/di/di.ts";
 import { DirectiveSuffix } from "../core/compile/compile.ts";
 import { kebobString } from "../shared/strings.ts";
-import { Resolvable } from "./resolve/resolvable.ts";
 import type { ResolveContext } from "./resolve/resolve-context.ts";
-import type { ResolveFn } from "./resolve/interface.ts";
 import type { RawParams } from "./params/interface.ts";
 import type {
   RouterInjectable,
   TemplateFactory,
-  TemplateProvider,
   TemplateUrlFactory,
   ViewDeclarationCommon,
 } from "./state/interface.ts";
@@ -35,14 +32,7 @@ const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 
 const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
 
-const PREFIXED_COMPONENT_ELEMENT = /^(x|data)-/;
-
-type TemplateConfigType =
-  | "template"
-  | "templateUrl"
-  | "templateProvider"
-  | "component"
-  | "default";
+type TemplateConfigType = "template" | "templateUrl" | "component" | "default";
 
 function asTemplate(
   result: string | Promise<string> | null,
@@ -63,17 +53,13 @@ function getConfigType(config: ViewDeclarationCommon): TemplateConfigType {
 
   if (isDefined(config.templateUrl)) return "templateUrl";
 
-  if (isDefined(config.templateProvider)) return "templateProvider";
-
   if (isDefined(config.component)) return "component";
 
   return "default";
 }
 
 function componentElementName(camelCase: string): string {
-  const kebobed = kebobString(camelCase);
-
-  return PREFIXED_COMPONENT_ELEMENT.exec(kebobed) ? `x-${kebobed}` : kebobed;
+  return kebobString(camelCase);
 }
 
 /**
@@ -105,18 +91,12 @@ export class TemplateFactoryProvider {
   /**
    * Resolves a state's view config into either concrete template HTML or a component name.
    */
-  fromConfig(
-    config: ViewDeclarationCommon,
-    params: RawParams,
-    context: ResolveContext,
-  ): TemplateResult {
+  fromConfig(config: ViewDeclarationCommon, params: RawParams): TemplateResult {
     switch (getConfigType(config)) {
       case "template":
         return asTemplate(this.fromString(config.template!, params));
       case "templateUrl":
         return asTemplate(this.fromUrl(config.templateUrl!, params));
-      case "templateProvider":
-        return asTemplate(this.fromProvider(config.templateProvider!, context));
       case "component":
         return asComponent(config.component as string);
       default:
@@ -143,21 +123,6 @@ export class TemplateFactoryProvider {
     if (isNullOrUndefined(templateUrl)) return null;
 
     return this._templateRequest!(templateUrl);
-  }
-
-  fromProvider(
-    provider: TemplateProvider,
-    context: ResolveContext,
-  ): string | Promise<string> {
-    const deps = annotate(provider);
-
-    const providerFn = (
-      isArray(provider) ? provider[provider.length - 1] : provider
-    ) as ResolveFn;
-
-    const resolvable = new Resolvable("", providerFn, deps);
-
-    return resolvable.get(context) as Promise<string>;
   }
 
   /**
@@ -260,11 +225,17 @@ function getComponentBindings(
 }
 
 const getBindings = (def: ng.Directive): BindingTuple[] => {
-  if (isObject(def.bindToController)) {
-    return scopeBindings(def.bindToController as Record<string, string>);
+  const componentBindings = def.bindToController;
+
+  if (
+    isObject(componentBindings) &&
+    isObject(def.scope) &&
+    !keys(def.scope).length
+  ) {
+    return scopeBindings(componentBindings as Record<string, string>);
   }
 
-  return scopeBindings(def.scope as Record<string, string>);
+  return [];
 };
 
 const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {

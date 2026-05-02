@@ -13,7 +13,7 @@ import { stringify } from "../../shared/strings.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
-import { ViewConfig } from "./views.ts";
+import { normalizeNgViewTarget } from "../view/view.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
@@ -34,24 +34,21 @@ type ViewDeclarationKey = keyof ViewDeclaration | "notify" | "async";
 type ViewDeclarationValueMap = Partial<Record<ViewDeclarationKey, unknown>>;
 
 const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = [
-  "templateProvider",
   "templateUrl",
   "template",
   "notify",
   "async",
 ];
 
-const CONTROLLER_VIEW_KEYS: ViewDeclarationKey[] = [
-  "controller",
-  "controllerAs",
-  "resolveAs",
-];
+const CONTROLLER_VIEW_KEYS: ViewDeclarationKey[] = ["controller"];
 
 const COMPONENT_VIEW_KEYS: ViewDeclarationKey[] = ["component", "bindings"];
 
 const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
 
 const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
+
+const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
 
 /**
  * @param {unknown} url
@@ -151,12 +148,40 @@ function presentViewKeys(
   return present.join(", ");
 }
 
+function assertNoRemovedViewKeys(
+  keyItems: string[],
+  values: Record<string, unknown>,
+  description: string,
+): void {
+  const present: string[] = [];
+
+  for (let i = 0; i < keyItems.length; i++) {
+    const key = keyItems[i];
+
+    if (isDefined(values[key])) {
+      present.push(key);
+    }
+  }
+
+  if (present.length) {
+    throw new Error(
+      `${description} uses unsupported view properties: ${present.join(", ")}`,
+    );
+  }
+}
+
 function viewsBuilder(
   state: StateObject & StateDeclaration,
 ): Record<string, ViewDeclaration> {
   if (!state.parent) {
     return {};
   }
+
+  assertNoRemovedViewKeys(
+    REMOVED_VIEW_KEYS,
+    state as unknown as Record<string, unknown>,
+    `State '${state.name}'`,
+  );
 
   if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
     throw new Error(
@@ -199,6 +224,12 @@ function viewsBuilder(
 
     config = assign({}, config) as ViewDeclaration;
 
+    assertNoRemovedViewKeys(
+      REMOVED_VIEW_KEYS,
+      config as Record<string, unknown>,
+      `State view '${name}@${state.name}'`,
+    );
+
     if (
       hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
       hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)
@@ -208,11 +239,10 @@ function viewsBuilder(
       );
     }
 
-    config.resolveAs = config.resolveAs || "$resolve";
     config.$context = state;
     config.$name = name;
 
-    const normalized = ViewConfig.normalizeNgViewTarget(
+    const normalized = normalizeNgViewTarget(
       config.$context as StateObject,
       config.$name as string,
     );
@@ -391,7 +421,7 @@ export class StateBuilder {
       const $injector = this._$injector as InjectorService;
 
       const resolveContext = new ResolveContext(
-        trans.treeChanges(pathname) as PathNode[],
+        (trans._treeChanges[pathname] || []) as PathNode[],
         $injector,
       );
 

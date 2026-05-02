@@ -1,4 +1,3 @@
-import { Queue } from "../shared/queue.ts";
 import { StateParams } from "./params/state-params.ts";
 import type { StateDeclaration } from "./state/interface.ts";
 import type { StateObject } from "./state/state-object.ts";
@@ -17,9 +16,11 @@ export class _RouterProvider {
   /** @internal */
   _lastStartedTransitionId: number;
   /** @internal */
-  _transitionHistory: Queue<Transition>;
+  _lastStartedTransition: Transition | undefined;
   /** @internal */
-  _successfulTransitions: Queue<Transition>;
+  _lastSuccessfulTransition: Transition | undefined;
+  /** @internal */
+  _successfulTransitionCleanup: ((trans: Transition) => void) | undefined;
   /** @internal */
   _injector: ng.InjectorService | undefined;
   /** @internal */
@@ -36,8 +37,9 @@ export class _RouterProvider {
     this._params = new StateParams();
     this._configuredRouting = false;
     this._lastStartedTransitionId = -1;
-    this._transitionHistory = new Queue<Transition>([], 1);
-    this._successfulTransitions = new Queue<Transition>([], 1);
+    this._lastStartedTransition = undefined;
+    this._lastSuccessfulTransition = undefined;
+    this._successfulTransitionCleanup = undefined;
     this._injector = undefined;
     this._current = undefined;
     this._currentState = undefined;
@@ -58,6 +60,15 @@ export class _RouterProvider {
   /** @internal */
   _hasConfiguredRouting(): boolean {
     return this._configuredRouting;
+  }
+
+  /** @internal */
+  _setSuccessfulTransition(trans: Transition): void {
+    if (this._lastSuccessfulTransition && this._successfulTransitionCleanup) {
+      this._successfulTransitionCleanup(this._lastSuccessfulTransition);
+    }
+
+    this._lastSuccessfulTransition = trans;
   }
 
   /**

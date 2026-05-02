@@ -19,7 +19,6 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { ViewConfig } from "../state/views.ts";
 import {
   dealoc,
   getCacheData,
@@ -28,7 +27,13 @@ import {
   setCacheData,
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
-import type { ActiveNgView, ViewContext, ViewService } from "../view/view.ts";
+import {
+  getViewTemplate,
+  type _ViewConfig,
+  type ActiveNgView,
+  type ViewContext,
+  type ViewService,
+} from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
 
@@ -91,7 +96,7 @@ type NgViewAnimData = {
 };
 
 type NgViewData = {
-  $cfg?: ViewConfig;
+  $cfg?: _ViewConfig;
   $ngView: ActiveNgView;
 };
 
@@ -186,7 +191,6 @@ function getComponentController(
 
   const camelNameFromTag = directiveEl.tagName
     .toLowerCase()
-    .replace(/^(x-|data-)/, "")
     .replace(/-([a-z])/g, (_all, letter: string) => letter.toUpperCase());
 
   const scopeWithCtrl =
@@ -259,12 +263,7 @@ function getComponentController(
  *
  * Resolve data:
  *
- * The resolved data from the state's `resolve` block is placed on the scope as `$resolve` (this
- * can be customized using [[ViewDeclaration.resolveAs]]).  This can be then accessed from the template.
- *
- * Note that when `controllerAs` is being used, `$resolve` is set on the controller instance *after* the
- * controller is instantiated.  The `$onInit()` hook can be used to perform initialization code which
- * depends on `$resolve` data.
+ * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
  *
  * #### Example:
  * ```js
@@ -334,7 +333,7 @@ export function ViewDirective(
 
         let currentScope: ng.Scope | null = null;
 
-        let viewConfig: ViewConfig | undefined;
+        let viewConfig: _ViewConfig | undefined;
 
         let configUpdateVersion = 0;
 
@@ -346,8 +345,8 @@ export function ViewDirective(
           element: $element,
           name, // ng-view name, retained internally for nested view matching
           fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-          config: null, // The active ViewConfig loaded for this ng-view
-          configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
+          config: null,
+          configUpdated: configUpdatedCallback,
           get creationContext(): ViewContext {
             // Inherit the parent view context for nested ng-view elements.
             const fromParentTag = inherited.$ngView.creationContext as
@@ -362,9 +361,7 @@ export function ViewDirective(
           },
         };
 
-        function configUpdatedCallback(config: ViewConfig | undefined): void {
-          if (config && !isInstanceOf(config, ViewConfig)) return;
-
+        function configUpdatedCallback(config: _ViewConfig | undefined): void {
           const updateVersion = ++configUpdateVersion;
 
           if (!config) {
@@ -420,7 +417,7 @@ export function ViewDirective(
           }
         }
 
-        function updateView(config?: ViewConfig): void {
+        function updateView(config?: _ViewConfig): void {
           const newScope = scope.$new();
 
           const animEnter = withResolvers<void>();
@@ -529,14 +526,20 @@ export function ViewDirectiveFill(
         }
         const cfg = (data.$cfg || {
           viewDecl: {},
-          _getTemplate: () => undefined,
-        }) as Pick<ViewConfig, "viewDecl" | "_getTemplate" | "controller"> &
-          Partial<Pick<ViewConfig, "path">>;
+        }) as Pick<_ViewConfig, "viewDecl" | "controller"> &
+          Partial<
+            Pick<_ViewConfig, "path" | "component" | "factory" | "template">
+          >;
 
         const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
 
-        $element.innerHTML =
-          cfg._getTemplate($element, resolveCtx as ResolveContext) || initial;
+        $element.innerHTML = data.$cfg
+          ? getViewTemplate(
+              data.$cfg,
+              $element,
+              resolveCtx as ResolveContext,
+            ) || initial
+          : initial;
         const link = $compile(
           ($element as HTMLIFrameElement).contentDocument ||
             $element.childNodes,
@@ -544,17 +547,11 @@ export function ViewDirectiveFill(
 
         const { controller } = cfg;
 
-        const { controllerAs } = cfg.viewDecl;
-
-        const { resolveAs } = cfg.viewDecl;
-
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
 
         const targetScope = scope.$target as Record<string, unknown>;
 
-        if (resolveAs) {
-          targetScope[resolveAs as string] = locals;
-        }
+        targetScope.$resolve = locals;
 
         if (controller) {
           const controllerInstance = $controller(
@@ -562,15 +559,6 @@ export function ViewDirectiveFill(
             assign({}, locals, { $scope: scope, $element }),
           ) as ViewControllerInstance;
 
-          if (controllerAs) {
-            targetScope[controllerAs as string] = controllerInstance;
-
-            if (resolveAs) {
-              (targetScope[controllerAs as string] as Record<string, unknown>)[
-                resolveAs as string
-              ] = locals;
-            }
-          }
           // TODO: Use $view service as a central point for registering component-level hooks
           // Then, when a component is created, tell the $view service, so it can invoke hooks
           // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
@@ -589,16 +577,16 @@ export function ViewDirectiveFill(
             $transitions,
             controllerInstance,
             scope,
-            cfg as Pick<ViewConfig, "viewDecl" | "path">,
+            cfg as Pick<_ViewConfig, "viewDecl" | "path">,
           );
         }
         link(scope);
 
-        const componentName = (cfg as ViewConfig & { component?: string })
+        const componentName = (cfg as _ViewConfig & { component?: string })
           .component;
 
-        const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path"> &
-          Partial<Pick<ViewConfig, "factory">>;
+        const callbackConfig = cfg as Pick<_ViewConfig, "viewDecl" | "path"> &
+          Partial<Pick<_ViewConfig, "factory">>;
 
         if (isString(componentName)) {
           const kebobName = componentName
@@ -606,7 +594,7 @@ export function ViewDirectiveFill(
             .replace(/^-/, "")
             .toLowerCase();
 
-          const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
+          const tagRegexp = new RegExp(`^${kebobName}$`, "i");
 
           const registerComponentCallbacks = (attempt = 0) => {
             if (scope.$handler._destroyed) {
@@ -654,8 +642,8 @@ function registerControllerCallbacks(
   $transitions: ng.TransitionService,
   controllerInstance: ViewControllerInstance,
   $scope: ng.Scope,
-  cfg: Pick<ViewConfig, "viewDecl" | "path"> &
-    Partial<Pick<ViewConfig, "factory">>,
+  cfg: Pick<_ViewConfig, "viewDecl" | "path"> &
+    Partial<Pick<_ViewConfig, "factory">>,
 ): void {
   let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
 
@@ -721,19 +709,9 @@ function registerControllerCallbacks(
 
       const fromParams = $transition$.params("from");
 
-      const treeChanges = $transition$ && $transition$.treeChanges;
+      const toNodes = ($transition$._treeChanges.to || []) as PathNode[];
 
-      const toNodes = (
-        isFunction(treeChanges)
-          ? (treeChanges.call($transition$, "to") ?? [])
-          : []
-      ) as PathNode[];
-
-      const fromNodes = (
-        isFunction(treeChanges)
-          ? (treeChanges.call($transition$, "from") ?? [])
-          : []
-      ) as PathNode[];
+      const fromNodes = ($transition$._treeChanges.from || []) as PathNode[];
 
       const toSchema: ParamSchemaEntry[] = [];
 
@@ -825,7 +803,10 @@ function registerControllerCallbacks(
 
       const cache = (trans as NgCanExitTransition)._ngCanExitIds;
 
-      return cache?.[id] === true || prevTruthyAnswer(trans.redirectedFrom());
+      return (
+        cache?.[id] === true ||
+        prevTruthyAnswer(trans._options.redirectedFrom || null)
+      );
     };
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition

@@ -1,7 +1,11 @@
-import { assign, isArray, keys, values } from "../../shared/utils.ts";
+import { assign, keys, values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
-import type { ViewService } from "../view/view.ts";
+import {
+  createViewConfig,
+  type _ViewConfig,
+  type ViewService,
+} from "../view/view.ts";
 import type { Param } from "../params/param.ts";
 import type { GetParamsFn } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -46,7 +50,7 @@ export function buildToPath(
 }
 
 /**
- * Creates ViewConfig objects and adds them to the nodes for the specified states.
+ * Creates internal view records and adds them to the nodes for the specified states.
  */
 export function applyViewConfigs(
   $view: ViewService,
@@ -68,16 +72,18 @@ export function applyViewConfigs(
       continue;
     }
 
-    const viewConfigs = [];
+    const viewConfigs: _ViewConfig[] = [];
 
     for (let j = 0; j < viewDecls.length; j++) {
-      const viewConfig = $view._createViewConfig(viewSubPath, viewDecls[j]);
+      const templateFactory = $view._templateFactory;
 
-      if (isArray(viewConfig)) {
-        viewConfigs.push(...viewConfig);
-      } else {
-        viewConfigs.push(viewConfig);
+      if (!templateFactory) {
+        throw new Error("ViewService: No template factory registered");
       }
+
+      viewConfigs.push(
+        createViewConfig(viewSubPath, viewDecls[j], templateFactory),
+      );
     }
 
     node._views = viewConfigs;

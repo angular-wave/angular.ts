@@ -39,10 +39,6 @@ export type TemplateUrlFactory = (
   params?: RawParams,
 ) => string | null | undefined;
 
-export type TemplateProvider = Injectable<
-  (...args: unknown[]) => string | Promise<string>
->;
-
 /**
  * Object-style state resolves.
  *
@@ -89,14 +85,11 @@ export interface ViewDeclarationCommon {
   /**
    * The name of the component to use for this view.
    *
-   * The name of an [angular 1.5+ `.component()`](https://docs.angularjs.org/guide/component) (or directive with
-   * bindToController and/or scope declaration) which will be used for this view.
+   * The name of an AngularTS `.component()` which will be used for this view.
    *
-   * Resolve data can be provided to the component via the component's `bindings` object (for 1.3+ directives, the
-   * `bindToController` is used; for other directives, the `scope` declaration is used).  For each binding declared
-   * on the component, any resolve with the same name is set on the component's controller instance.  The binding
-   * is provided to the component as a one-time-binding.  In general, components should likewise declare their
-   * input bindings as [one-way ("&lt;")](https://docs.angularjs.org/api/ng/service/$compile#-scope-).
+   * Resolve data can be provided to the component via the component's `bindings` object.
+   * For each binding declared on the component, any resolve with the same name is set on
+   * the component's controller instance.
    *
    * Note: Mapping from resolve names to component inputs may be specified using [[bindings]].
    *
@@ -109,11 +102,7 @@ export interface ViewDeclarationCommon {
    * ```
    *
    *
-   * Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`,
-   * `templateProvider`, `controller`, `controllerAs`.
-   *
-   *
-   * See also: Todd Motto's angular 1.3 and 1.4 [backport of .component()](https://github.com/toddmotto/angular-component)
+   * Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.
    */
   component?: string;
 
@@ -163,30 +152,9 @@ export interface ViewDeclarationCommon {
    * The controller function, or the name of a registered controller.  The controller function will be used
    * to control the contents of the [[directives.ngVIew]] directive.
    *
-   * If specified as a string, controllerAs can be declared here, i.e., "FooController as foo" instead of in
-   * a separate [[controllerAs]] property.
-   *
    * See: [[Ng1Controller]] for information about component-level router hooks.
    */
   controller?: Injectable<ControllerConstructor> | string;
-
-  /**
-   * A controller alias name.
-   *
-   * If present, the controller will be published to scope under the `controllerAs` name.
-   * See: https://docs.angularjs.org/api/ng/directive/ngController
-   */
-  controllerAs?: string;
-
-  /**
-   * The scope variable name to use for resolve data.
-   *
-   * When a view is activated, the resolved data for the state which the view belongs to is put on the scope.
-   * This property sets the name of the scope variable to use for the resolved data.
-   *
-   * Defaults to `$resolve`.
-   */
-  resolveAs?: string;
 
   /**
    * The HTML template for the view.
@@ -233,19 +201,6 @@ export interface ViewDeclarationCommon {
    * ```
    */
   templateUrl?: string | TemplateUrlFactory;
-
-  /**
-   * Injected function which returns the HTML template.
-   * The template will be used to render the corresponding [[directives.ngVIew]] directive.
-   *
-   * #### Example:
-   * ```js
-   * templateProvider: function(MyTemplateService, $transition$) {
-   *   return MyTemplateService.getTemplate($transition$.params().pageId);
-   * }
-   * ```
-   */
-  templateProvider?: TemplateProvider;
 }
 
 /**
@@ -260,9 +215,9 @@ export interface ViewDeclaration extends ViewDeclarationCommon {
   $name?: string;
 
   /**
-   * The normalized address for the `ng-view` which this ViewConfig targets.
+   * The normalized address for the targeted `ng-view`.
    *
-   * A ViewConfig targets an `ng-view` in the DOM relative to the `$ngViewContextAnchor`.
+   * A view target is matched relative to the `$ngViewContextAnchor`.
    * @example `header`, `messagecontent`, or `$default`
    */
   $ngViewName?: string;
