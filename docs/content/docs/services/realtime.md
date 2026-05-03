@@ -18,7 +18,7 @@ Exact service and connection signatures live in TypeDoc:
 - [`SseConnection`](../../../typedoc/interfaces/SseConnection.html)
 - [`WebSocketService`](../../../typedoc/types/WebSocketService.html)
 - [`WebSocketConfig`](../../../typedoc/interfaces/WebSocketConfig.html)
-- [`StreamConnection`](../../../typedoc/classes/StreamConnection.html)
+- [`WebSocketConnection`](../../../typedoc/interfaces/WebSocketConnection.html)
 - [`WorkerConfig`](../../../typedoc/interfaces/WorkerConfig.html)
 - [`WorkerConnection`](../../../typedoc/interfaces/WorkerConnection.html)
 
@@ -58,19 +58,18 @@ class NewsFeedController {
 
 ## WebSockets
 
-`$websocket` uses the shared `StreamConnection` manager for reconnects, heartbeat handling, message transforms, and send support.
+`$websocket` returns a managed WebSocket connection with reconnects, heartbeat handling, message transforms, and send support.
 
 ```typescript
 class ChatController {
   static $inject = ["$websocket", "$scope"];
 
   messages: ChatMessage[] = [];
-  private socket: ng.StreamConnection;
+  private socket: ng.WebSocketConnection;
 
   constructor($websocket: ng.WebSocketService, $scope: ng.Scope) {
     this.socket = $websocket("wss://api.example.com/chat", ["v1"], {
-      autoReconnect: true,
-      reconnectInterval: 2000,
+      retryDelay: 2000,
       maxRetries: 20,
       onMessage: (message: ChatMessage) => {
         this.messages.push(message);

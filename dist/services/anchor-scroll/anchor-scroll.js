@@ -100,7 +100,7 @@ class AnchorScrollProvider {
                         if (document.readyState === "complete") {
                             // Force the action to be run async for consistent behavior
                             // from the action's point of view
-                            // i.e. it will definitely not be in a $apply
+                            // i.e. it will definitely run after the current event stack.
                             queueMicrotask(() => action());
                         }
                         else {

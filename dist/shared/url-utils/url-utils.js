@@ -58,7 +58,10 @@ function urlIsSameOriginAsBaseUrl(requestUrl) {
  *     whether it is of an allowed origin.
  */
 function urlIsAllowedOriginFactory(trustedOriginUrls) {
-    const parsedAllowedOriginUrls = [originUrl].concat(trustedOriginUrls.map(urlResolve));
+    const parsedAllowedOriginUrls = [originUrl];
+    trustedOriginUrls.forEach((url) => {
+        parsedAllowedOriginUrls.push(urlResolve(url));
+    });
     /**
      * Check whether the specified URL (string or parsed URL object) has an origin that is allowed
      * based on a list of trusted-origin URLs. The current location's origin is implicitly
@@ -71,7 +74,12 @@ function urlIsAllowedOriginFactory(trustedOriginUrls) {
      */
     return function urlIsAllowedOrigin(requestUrl) {
         const parsedUrl = urlResolve(requestUrl);
-        return parsedAllowedOriginUrls.some(urlsAreSameOrigin.bind(null, parsedUrl));
+        for (let i = 0; i < parsedAllowedOriginUrls.length; i++) {
+            if (urlsAreSameOrigin(parsedUrl, parsedAllowedOriginUrls[i])) {
+                return true;
+            }
+        }
+        return false;
     };
 }
 /**

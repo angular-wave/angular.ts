@@ -1,3 +1,5 @@
+import { keys } from '../../shared/utils.js';
+
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
  */
@@ -10,17 +12,18 @@ function ngStyleDirective() {
             scope.$watch(attrMap.ngStyle, (newStyles) => {
                 const target = newStyles?.$target || newStyles;
                 if (oldStyles) {
-                    for (const key in oldStyles) {
+                    keys(oldStyles).forEach((key) => {
                         element.style.removeProperty(key);
-                    }
+                    });
                 }
                 if (target) {
-                    oldStyles = {};
-                    for (const key in target) {
+                    const nextStyles = {};
+                    keys(target).forEach((key) => {
                         const value = target[key];
                         element.style.setProperty(key, value);
-                        oldStyles[key] = value;
-                    }
+                        nextStyles[key] = value;
+                    });
+                    oldStyles = nextStyles;
                 }
                 else {
                     oldStyles = null;

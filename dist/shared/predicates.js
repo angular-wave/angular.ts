@@ -1,4 +1,4 @@
-import { isFunction, isArray, isString } from './utils.js';
+import { isArray, isString, isFunction } from './utils.js';
 
 /**
  * A value is "injectable" if it is a function, or if it is an ng1
@@ -7,10 +7,12 @@ import { isFunction, isArray, isString } from './utils.js';
  */
 function isInjectable(val) {
     if (isArray(val) && val.length > 0) {
-        const head = val.slice(0, -1);
-        const tail = val.slice(-1);
-        return !(head.some((injectable) => !isString(injectable)) ||
-            tail.some((injectable) => !isFunction(injectable)));
+        const lastIndex = val.length - 1;
+        for (let i = 0; i < lastIndex; i++) {
+            if (!isString(val[i]))
+                return false;
+        }
+        return isFunction(val[lastIndex]);
     }
     return isFunction(val);
 }

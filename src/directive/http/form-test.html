@@ -2,17 +2,38 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS URL Encoded Form Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
     <script type="module" src="/src/index.ts"></script>
   </head>
   <body ng-app>
-    <form
-      ng-post="/mock/urlencoded"
-      enctype="application/x-www-form-urlencoded"
-    >
-      <input type="text" name="name" />
-      <button type="submit">Add</button>
-    </form>
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>URL-encoded form</h1>
+        <p>
+          Adding <code>enctype="application/x-www-form-urlencoded"</code>
+          sends the collected form data with the matching content type.
+        </p>
+      </header>
+
+      <section class="demo-content">
+        <section class="demo-panel">
+          <form
+            ng-post="/mock/urlencoded"
+            enctype="application/x-www-form-urlencoded"
+            target="#output"
+          >
+            <input type="text" name="name" placeholder="Name" />
+            <button type="submit">Submit encoded form</button>
+          </form>
+        </section>
+
+        <section class="demo-panel">
+          <h2>Output</h2>
+          <div id="output" class="demo-output"></div>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

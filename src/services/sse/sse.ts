@@ -1,15 +1,15 @@
 import { _log } from "../../injection-tokens.ts";
 import { entries } from "../../shared/utils.ts";
 import {
-  StreamConnection,
-  type StreamConnectionConfig,
-} from "../stream/stream.ts";
+  ConnectionManager,
+  type ConnectionConfig,
+} from "../connection/connection-manager.ts";
 import type { LogService } from "../log/log.ts";
 
 /**
  * SSE-specific configuration
  */
-export interface SseConfig extends StreamConnectionConfig {
+export interface SseConfig extends ConnectionConfig {
   /** Include cookies/credentials when connecting */
   withCredentials?: boolean;
 
@@ -81,7 +81,7 @@ export class SseProvider {
 
         const finalUrl = this._buildUrl(url, mergedConfig.params);
 
-        return new StreamConnection(
+        return new ConnectionManager(
           () =>
             new EventSource(finalUrl, {
               withCredentials: !!mergedConfig.withCredentials,

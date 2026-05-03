@@ -1,26 +1,37 @@
 import { _log } from "../../injection-tokens.ts";
 import {
-  StreamConnection,
-  type StreamConnectionConfig,
-} from "../stream/stream.ts";
+  ConnectionManager,
+  type ConnectionConfig,
+} from "../connection/connection-manager.ts";
 import type { LogService } from "../log/log.ts";
 
 /**
  * WebSocket-specific configuration
  */
-export interface WebSocketConfig extends StreamConnectionConfig {
+export interface WebSocketConfig extends ConnectionConfig {
   /** Optional WebSocket subprotocols */
   protocols?: string[];
+}
 
-  /** Called when the WebSocket connection closes */
-  onClose?: (event: CloseEvent) => void;
+/**
+ * Managed WebSocket connection returned by $websocket.
+ */
+export interface WebSocketConnection {
+  /** Manually restart the WebSocket connection. */
+  connect(): void;
+
+  /** Send a JSON-serialized message through the native WebSocket. */
+  send(data: any): void;
+
+  /** Close the WebSocket connection and stop reconnect attempts. */
+  close(): void;
 }
 
 export type WebSocketService = (
   url: string,
   protocols?: string[],
   config?: WebSocketConfig,
-) => StreamConnection;
+) => WebSocketConnection;
 
 /**
  * WebSocketProvider
@@ -37,10 +48,9 @@ export class WebSocketProvider {
   constructor() {
     this.defaults = {
       protocols: [],
-      autoReconnect: true,
-      reconnectInterval: 1000,
+      retryDelay: 1000,
       maxRetries: Infinity,
-      heartbeatInterval: 0, // ms, 0 = disabled
+      heartbeatTimeout: 0,
       transformMessage(data: string) {
         try {
           return JSON.parse(data);
@@ -70,7 +80,7 @@ export class WebSocketProvider {
           ? protocols
           : mergedConfig.protocols;
 
-        return new StreamConnection(
+        return new ConnectionManager(
           () => new WebSocket(url, mergedConfig.protocols),
           {
             ...mergedConfig,

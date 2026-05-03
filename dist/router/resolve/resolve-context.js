@@ -1,8 +1,13 @@
 import { stringify } from '../../shared/strings.js';
-import { isInstanceOf, isArray, isUndefined } from '../../shared/utils.js';
-import { subPath } from '../path/path-utils.js';
+import { isInstanceOf, isArray, isString, isUndefined } from '../../shared/utils.js';
 import { Resolvable } from './resolvable.js';
 
+async function resolveToken(resolvable, context, trans) {
+    return {
+        token: resolvable.token,
+        value: await resolvable.get(context, trans),
+    };
+}
 /**
  * Provides resolve lookup and execution helpers for a specific transition path.
  */
@@ -19,39 +24,40 @@ class ResolveContext {
      * Returns the unique tokens available from all resolvables in this path.
      */
     getTokens() {
-        const tokens = [];
-        for (let i = 0; i < this._path.length; i++) {
-            const { resolvables } = this._path[i];
-            for (let j = 0; j < resolvables.length; j++) {
-                const { token } = resolvables[j];
-                if (!tokens.includes(token)) {
-                    tokens.push(token);
-                }
-            }
-        }
-        return tokens;
+        const tokenSet = new Set();
+        this._path.forEach(({ resolvables }) => {
+            resolvables.forEach(({ token }) => {
+                tokenSet.add(token);
+            });
+        });
+        return Array.from(tokenSet);
     }
     /**
      * Returns the most local resolvable registered for the specified token.
      */
     getResolvable(token) {
-        let matching;
-        for (let i = 0; i < this._path.length; i++) {
+        for (let i = this._path.length - 1; i >= 0; i--) {
             const { resolvables } = this._path[i];
-            for (let j = 0; j < resolvables.length; j++) {
+            for (let j = resolvables.length - 1; j >= 0; j--) {
                 const candidate = resolvables[j];
                 if (candidate.token === token) {
-                    matching = candidate;
+                    return candidate;
                 }
             }
         }
-        return matching;
+        return undefined;
     }
     /**
      * Returns a child resolve context scoped to the specified state.
      */
     subContext(state) {
-        const contextPath = subPath(this._path, (node) => node?.state.name === state.name);
+        let contextPath;
+        for (let i = 0; i < this._path.length; i++) {
+            if (this._path[i].state.name === state.name) {
+                contextPath = this._path.slice(0, i + 1);
+                break;
+            }
+        }
         return new ResolveContext((contextPath || this._path), this._injector);
     }
     /**
@@ -70,25 +76,21 @@ class ResolveContext {
             throw new Error(`Could not find path node for state: ${state.name}`);
         }
         const resolvables = [];
-        const keys = [];
-        for (let i = 0; i < newResolvables.length; i++) {
-            const resolvable = newResolvables[i];
+        const tokens = new Set();
+        newResolvables.forEach((resolvable) => {
             const normalized = isInstanceOf(resolvable, Resolvable)
                 ? resolvable
                 : new Resolvable(resolvable);
             resolvables.push(normalized);
-            keys.push(normalized.token);
-        }
+            tokens.add(normalized.token);
+        });
         const nextResolvables = [];
-        for (let i = 0; i < node.resolvables.length; i++) {
-            const existing = node.resolvables[i];
-            if (!keys.includes(existing.token)) {
+        node.resolvables.forEach((existing) => {
+            if (!tokens.has(existing.token)) {
                 nextResolvables.push(existing);
             }
-        }
-        for (let i = 0; i < resolvables.length; i++) {
-            nextResolvables.push(resolvables[i]);
-        }
+        });
+        resolvables.forEach((resolvable) => nextResolvables.push(resolvable));
         node.resolvables = nextResolvables;
     }
     /**
@@ -96,67 +98,60 @@ class ResolveContext {
      */
     resolvePath(eagerOnly = false, trans) {
         const promises = [];
-        for (let i = 0; i < this._path.length; i++) {
-            const node = this._path[i];
-            const subContext = this.subContext(node.state);
-            for (let j = 0; j < node.resolvables.length; j++) {
-                const resolvable = node.resolvables[j];
-                if (eagerOnly && !resolvable.eager) {
-                    continue;
+        this._path.forEach((node, index) => {
+            const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
+            node.resolvables.forEach((resolvable) => {
+                if (!eagerOnly || resolvable.eager) {
+                    promises.push(resolveToken(resolvable, subContext, trans));
                 }
-                const promise = resolvable
-                    .get(subContext, trans)
-                    .then((value) => ({ token: resolvable.token, value }));
-                promises.push(promise);
-            }
-        }
+            });
+        });
         return Promise.all(promises);
     }
     /**
      * Finds the path node that owns the provided resolvable.
      */
     findNode(resolvable) {
+        const index = this._findNodeIndex(resolvable);
+        return index === -1 ? undefined : this._path[index];
+    }
+    /** @internal */
+    _findNodeIndex(resolvable) {
         for (let i = 0; i < this._path.length; i++) {
             const node = this._path[i];
-            if (node.resolvables.includes(resolvable)) {
-                return node;
+            for (let j = 0; j < node.resolvables.length; j++) {
+                if (node.resolvables[j] === resolvable) {
+                    return i;
+                }
             }
         }
-        return undefined;
+        return -1;
     }
     /**
      * Resolves the dependency tokens required by a resolvable from either
      * the current path or the injector fallback.
      */
     getDependencies(resolvable) {
-        const node = this.findNode(resolvable);
-        const dependencyPath = subPath(this._path, (x) => x === node) || this._path;
-        const availableResolvables = [];
-        for (let i = 0; i < dependencyPath.length; i++) {
-            const { resolvables } = dependencyPath[i];
-            for (let j = 0; j < resolvables.length; j++) {
-                const candidate = resolvables[j];
-                if (candidate !== resolvable) {
-                    availableResolvables.push(candidate);
-                }
-            }
-        }
+        const nodeIndex = this._findNodeIndex(resolvable);
+        const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
         const latestByToken = new Map();
-        for (let i = 0; i < availableResolvables.length; i++) {
-            const candidate = availableResolvables[i];
-            latestByToken.set(candidate.token, candidate);
-        }
+        dependencyPath.forEach(({ resolvables }) => {
+            resolvables.forEach((candidate) => {
+                if (candidate !== resolvable) {
+                    latestByToken.set(candidate.token, candidate);
+                }
+            });
+        });
         const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
         const dependencies = [];
-        for (let i = 0; i < deps.length; i++) {
-            const token = deps[i];
+        deps.forEach((token) => {
             const matching = latestByToken.get(token);
             if (matching) {
                 dependencies.push(matching);
-                continue;
+                return;
             }
             let fromInjector;
-            if (this._injector) {
+            if (this._injector && isString(token)) {
                 try {
                     fromInjector = this._injector.get(token);
                 }
@@ -167,8 +162,8 @@ class ResolveContext {
             if (isUndefined(fromInjector)) {
                 throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
             }
-            dependencies.push(new Resolvable(token, () => fromInjector, [], undefined, fromInjector));
-        }
+            dependencies.push(new Resolvable({ token, data: fromInjector }));
+        });
         return dependencies;
     }
 }

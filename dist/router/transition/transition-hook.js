@@ -6,6 +6,8 @@ import { Rejection } from './reject-factory.js';
 
 /**
  * Transition lifecycle phases used to group and order hook execution.
+ *
+ * @internal
  */
 const TransitionHookPhase = {
     _CREATE: 0,
@@ -14,112 +16,167 @@ const TransitionHookPhase = {
     _SUCCESS: 3,
     _ERROR: 4,
 };
-/**
- * Declares whether a hook operates on a whole transition or on individual states.
- */
-const TransitionHookScope = {
-    _TRANSITION: 0,
-    _STATE: 1,
-};
+function isDoneTask(doneCallback) {
+    return "_startTransition" in doneCallback;
+}
 const defaultOptions = {
-    current: () => undefined,
-    transition: null,
-    bind: null,
+    _current: () => undefined,
+    _transition: null,
+    _bind: null,
 };
 /**
  * Runtime wrapper around one registered transition hook invocation.
+ *
+ * @internal
  */
 class TransitionHook {
     /**
      * Runs hooks in sequence, waiting for each async hook before invoking the next.
      */
-    static chain(hooks, waitFor) {
-        let promise = waitFor || Promise.resolve();
-        for (let i = 0; i < hooks.length; i++) {
-            const hook = hooks[i];
-            promise = promise.then(() => hook.invokeHook());
-        }
-        return promise;
+    /** @internal */
+    static _chain(hooks, waitFor) {
+        return TransitionHook._chainFrom(hooks, 0, waitFor);
     }
-    static invokeHooks(hooks, doneCallback) {
+    /** @internal */
+    static async _chainFrom(hooks, start, waitFor) {
+        if (waitFor)
+            await waitFor;
+        for (let i = start; i < hooks.length; i++) {
+            await hooks[i]._invokeHook();
+        }
+    }
+    /** @internal */
+    static _invokeHooks(hooks, doneCallback) {
         for (let idx = 0; idx < hooks.length; idx++) {
-            const hookResult = hooks[idx].invokeHook();
+            const hookResult = hooks[idx]._invokeHook();
             if (isPromise(hookResult)) {
-                const remainingHooks = hooks.slice(idx + 1);
-                return TransitionHook.chain(remainingHooks, hookResult).then(() => {
-                    doneCallback();
-                });
+                return TransitionHook._chainThenDone(hooks, idx + 1, Promise.resolve(hookResult), doneCallback);
             }
         }
-        return doneCallback();
+        return TransitionHook._runDoneCallback(doneCallback);
     }
-    static runAllHooks(hooks) {
+    /** @internal */
+    static async _chainThenDone(hooks, start, waitFor, doneCallback) {
+        await TransitionHook._chainFrom(hooks, start, waitFor);
+        return TransitionHook._runDoneCallback(doneCallback);
+    }
+    /** @internal */
+    static _runDoneCallback(doneCallback) {
+        return isDoneTask(doneCallback)
+            ? doneCallback._startTransition()
+            : doneCallback();
+    }
+    /** @internal */
+    static _handleResult(hook, result) {
+        return hook._handleHookResult(result);
+    }
+    /** @internal */
+    static _logRejectedResult(hook, result) {
+        if (isPromise(result)) {
+            Promise.resolve(result).catch((err) => {
+                hook._logError(Rejection.normalize(err));
+            });
+        }
+        return undefined;
+    }
+    /** @internal */
+    static _logError(hook, error) {
+        return hook?._logError(error);
+    }
+    /** @internal */
+    static _rejectError(_hook, error) {
+        const promise = Promise.reject(error);
+        promise.catch(() => 0);
+        return promise;
+    }
+    /** @internal */
+    static _throwError(_hook, error) {
+        throw error;
+    }
+    /** @internal */
+    static _runAllHooks(hooks) {
         for (let i = 0; i < hooks.length; i++) {
-            hooks[i].invokeHook();
+            hooks[i]._invokeHook();
         }
     }
     /**
      * Creates one executable hook wrapper bound to a transition and state context.
      */
     constructor(transition, stateContext, registeredHook, options, exceptionHandler) {
-        this.transition = transition;
-        this.stateContext = stateContext;
-        this.registeredHook = registeredHook;
-        this.options = assign({}, defaultOptions, options);
+        this._transition = transition;
+        this._stateContext = stateContext;
+        this._registeredHook = registeredHook;
+        this._options = assign({}, defaultOptions, options);
         this._type = registeredHook._eventType;
-        this.isSuperseded = () => this._type.hookPhase === TransitionHookPhase._RUN &&
-            !this.options.transition?.isActive();
         this._exceptionHandler = exceptionHandler;
     }
-    /**
-     * Sends hook execution errors to the configured exception handler.
-     */
-    logError(err) {
+    /** @internal */
+    _isSuperseded() {
+        return (this._type._hookPhase === TransitionHookPhase._RUN &&
+            !this._options._transition?.isActive());
+    }
+    /** @internal */
+    _logError(err) {
         this._exceptionHandler(err);
+    }
+    /** @internal */
+    _invokeCallback(hook) {
+        const { _options } = this;
+        return hook._callback.call(_options._bind, this._transition, this._stateContext);
+    }
+    /** @internal */
+    _handleError(err) {
+        return this._registeredHook._eventType._handleError(this, err);
+    }
+    /** @internal */
+    _handleResult(result) {
+        return this._registeredHook._eventType._handleResult(this, result);
+    }
+    /** @internal */
+    async _handleAsyncResult(result) {
+        try {
+            return this._handleResult(await result);
+        }
+        catch (err) {
+            return this._handleError(Rejection.normalize(err));
+        }
     }
     /**
      * Executes the underlying hook callback and normalizes its result into
      * the router's rejection / redirect model.
      */
-    invokeHook() {
-        const hook = this.registeredHook;
+    _invokeHook() {
+        const hook = this._registeredHook;
         if (hook._deregistered)
             return undefined;
-        const notCurrent = this.getNotCurrentRejection();
+        const notCurrent = this._getNotCurrentRejection();
         if (notCurrent)
             return notCurrent;
-        const { options } = this;
-        const invokeCallback = () => hook.callback.call(options.bind, this.transition, this.stateContext);
-        const normalizeErr = (err) => Rejection.normalize(err)._toPromise();
-        const handleError = (err) => hook._eventType.getErrorHandler()(err);
-        const handleResult = (result) => hook._eventType.getResultHandler(this)(result);
         try {
-            const result = invokeCallback();
-            if (!this._type.synchronous && isPromise(result)) {
-                return result
-                    .catch(normalizeErr)
-                    .then(handleResult, handleError);
+            const result = this._invokeCallback(hook);
+            if (!this._type._synchronous && isPromise(result)) {
+                return this._handleAsyncResult(result);
             }
-            return handleResult(result);
+            return this._handleResult(result);
         }
         catch (err) {
-            return handleError(Rejection.normalize(err));
+            return this._handleError(Rejection.normalize(err));
         }
         finally {
-            if (hook.invokeLimit && ++hook.invokeCount >= hook.invokeLimit) {
-                hook.deregister();
+            if (hook._invokeLimit && ++hook._invokeCount >= hook._invokeLimit) {
+                hook._deregister();
             }
         }
     }
     /**
      * Converts raw hook return values into transition outcomes.
      */
-    handleHookResult(result) {
-        const notCurrent = this.getNotCurrentRejection();
+    _handleHookResult(result) {
+        const notCurrent = this._getNotCurrentRejection();
         if (notCurrent)
             return notCurrent;
         if (isPromise(result)) {
-            return result.then((val) => this.handleHookResult(val));
+            return this._handleAsyncHookResult(Promise.resolve(result));
         }
         if (result === false) {
             return Rejection.aborted("Hook aborted transition")._toPromise();
@@ -129,47 +186,28 @@ class TransitionHook {
         }
         return undefined;
     }
-    /**
-     * Returns a rejection when the transition was aborted or superseded.
-     */
-    getNotCurrentRejection() {
-        if (this.transition._aborted) {
+    /** @internal */
+    async _handleAsyncHookResult(result) {
+        return this._handleHookResult(await result);
+    }
+    /** @internal */
+    _getNotCurrentRejection() {
+        if (this._transition._aborted) {
             return Rejection.aborted()._toPromise();
         }
-        if (this.isSuperseded()) {
-            return Rejection.superseded(this.options.current())._toPromise();
+        if (this._isSuperseded()) {
+            return Rejection.superseded(this._options._current())._toPromise();
         }
         return undefined;
     }
     toString() {
-        const { options, registeredHook } = this;
-        const event = options.hookType || "internal";
-        const target = options.target;
+        const { _options, _registeredHook } = this;
+        const event = _options._hookType || "internal";
+        const target = _options._target;
         const context = target?.state?.name || target?.name || "unknown";
-        const name = fnToString(registeredHook.callback);
+        const name = fnToString(_registeredHook._callback);
         return `${event} context: ${context}, ${maxLength(200, name)}`;
     }
 }
-TransitionHook.HANDLE_RESULT =
-    (hook) => (result) => hook.handleHookResult(result);
-TransitionHook.LOG_REJECTED_RESULT =
-    (hook) => (result) => {
-        if (isPromise(result)) {
-            result.catch((err) => hook.logError(Rejection.normalize(err)));
-        }
-        return undefined;
-    };
-TransitionHook.LOG_ERROR =
-    (hook) => (error) => hook?.logError(error);
-TransitionHook.REJECT_ERROR =
-    () => (error) => {
-        const promise = Promise.reject(error);
-        promise.catch(() => 0);
-        return promise;
-    };
-TransitionHook.THROW_ERROR =
-    () => (error) => {
-        throw error;
-    };
 
-export { TransitionHook, TransitionHookPhase, TransitionHookScope };
+export { TransitionHook, TransitionHookPhase };

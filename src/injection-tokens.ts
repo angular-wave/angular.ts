@@ -40,6 +40,7 @@ export const _sce = "$sce" as const;
 export const _sceDelegate = "$sceDelegate" as const;
 export const _state = "$state" as const;
 export const _stateRegistry = "$stateRegistry" as const;
+export const _stream = "$stream" as const;
 export const _sse = "$sse" as const;
 export const _templateCache = "$templateCache" as const;
 export const _templateFactory = "$templateFactory" as const;
@@ -77,6 +78,7 @@ export const _sceDelegateProvider = "$sceDelegateProvider" as const;
 export const _sseProvider = "$sseProvider" as const;
 export const _stateProvider = "$stateProvider" as const;
 export const _stateRegistryProvider = "$stateRegistryProvider" as const;
+export const _streamProvider = "$streamProvider" as const;
 export const _templateCacheProvider = "$templateCacheProvider" as const;
 export const _templateFactoryProvider = "$templateFactoryProvider" as const;
 export const _templateRequestProvider = "$templateRequestProvider" as const;
@@ -127,6 +129,7 @@ export const $injectTokens = {
   _sceDelegate,
   _state,
   _stateRegistry,
+  _stream,
   _sse,
   _templateCache,
   _templateFactory,
@@ -163,6 +166,7 @@ export const $injectTokens = {
   _sseProvider,
   _stateProvider,
   _stateRegistryProvider,
+  _streamProvider,
   _templateCacheProvider,
   _templateFactoryProvider,
   _templateRequestProvider,

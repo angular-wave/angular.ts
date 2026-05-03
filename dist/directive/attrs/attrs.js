@@ -1,9 +1,38 @@
 import { _sce } from '../../injection-tokens.js';
 import { BOOLEAN_ATTR } from '../../shared/dom.js';
-import { directiveNormalize, entries, getNodeName, isNullOrUndefined } from '../../shared/utils.js';
+import { directiveNormalize, entries, getNodeName, isString, trim, isNullOrUndefined, minErr } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
 const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
+const $compileMinErr = minErr("$compile");
+function sanitizeSrcset($sce, value, invokeType) {
+    if (!value) {
+        return value;
+    }
+    if (!isString(value)) {
+        throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
+    }
+    let result = "";
+    const trimmedSrcset = trim(value);
+    const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
+    const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+    const rawUris = trimmedSrcset.split(pattern);
+    const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
+    let i;
+    for (i = 0; i < nbrUrisWith2parts; i++) {
+        const innerIdx = i * 2;
+        const uri = trim(rawUris[innerIdx]);
+        result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+        result += ` ${trim(rawUris[innerIdx + 1])}`;
+    }
+    const lastTuple = trim(rawUris[i * 2]).split(/\s/);
+    const uri = trim(lastTuple[0]);
+    result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+    if (lastTuple.length === 2) {
+        result += ` ${trim(lastTuple[1])}`;
+    }
+    return result;
+}
 const ngAttributeAliasDirectives = {};
 // boolean attrs are evaluated
 BOOLEAN_ATTR.forEach((i) => {
@@ -95,7 +124,9 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                     // non-interpolated attribute.
                     const initialValue = attr[normalized];
                     if (initialValue && String(initialValue).indexOf("{{") === -1) {
-                        attr.$set(normalized, sanitize(initialValue));
+                        attr.$set(normalized, attrName === "srcset"
+                            ? sanitizeSrcset($sce, initialValue, "ng-srcset")
+                            : sanitize(initialValue));
                     }
                     attr.$observe(normalized, (value) => {
                         if (!value) {
@@ -108,6 +139,9 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             (attrName === "src" &&
                                 ["img", "video", "audio", "source", "track"].indexOf(nodeName) !== -1)) {
                             attr.$set(attrName, sanitize(value));
+                        }
+                        else if (attrName === "srcset") {
+                            attr.$set(attrName, sanitizeSrcset($sce, value, "ng-srcset"));
                         }
                         else {
                             attr.$set(attrName, value);

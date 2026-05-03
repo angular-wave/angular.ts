@@ -88,6 +88,32 @@ describe("ng-post", () => {
     expect(el.innerText).toBe("Form data: Bob");
   });
 
+  it("should compile and swap streamed HTML responses", async () => {
+    const scope = $rootScope.$new();
+
+    scope.first = "A";
+    scope.second = "B";
+    el.innerHTML =
+      '<button ng-post="/mock/stream-html" response-type="stream" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(200);
+    expect(el.querySelector("#found").textContent).toBe("AB");
+  });
+
+  it("should accept data-response-stream as a responseType shortcut", async () => {
+    const scope = $rootScope.$new();
+
+    scope.first = "C";
+    scope.second = "D";
+    el.innerHTML =
+      '<button ng-post="/mock/stream-html" data-response-stream data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(200);
+    expect(el.querySelector("#found").textContent).toBe("CD");
+  });
+
   // it("should attach parameters of a form and replace innerHTML (default) on click in case of error", async () => {
   //   const scope = $rootScope.$new();
   //   el.innerHTML =

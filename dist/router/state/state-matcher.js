@@ -1,4 +1,4 @@
-import { values, isString } from '../../shared/utils.js';
+import { keys, isString } from '../../shared/utils.js';
 
 class StateMatcher {
     /** @param {StateStore} states */
@@ -31,12 +31,25 @@ class StateMatcher {
             return state;
         }
         else if (isStr && matchGlob) {
-            const states = values(this._states);
-            const matches = states.filter((stateObj) => stateObj._stateObjectCache?.nameGlob?.matches(name));
-            if (matches.length > 1) {
-                throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${matches.map((match) => match.name)}`);
+            const stateNames = keys(this._states);
+            let match;
+            let duplicateNames;
+            stateNames.forEach((stateName) => {
+                const stateObj = this._states[stateName];
+                if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
+                    if (match) {
+                        duplicateNames = duplicateNames || [match.name];
+                        duplicateNames.push(stateObj.name);
+                    }
+                    else {
+                        match = stateObj;
+                    }
+                }
+            });
+            if (duplicateNames) {
+                throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames}`);
             }
-            return matches[0];
+            return match;
         }
         return undefined;
     }

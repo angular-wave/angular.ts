@@ -1,0 +1,145 @@
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --line: #000;
+  --muted: #555;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 0;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.demo-shell {
+  border: 2px solid var(--line);
+  margin: 0 auto;
+  max-width: 920px;
+}
+
+.demo-hero,
+.demo-content,
+.demo-panel {
+  padding: 24px;
+}
+
+.demo-hero {
+  border-bottom: 2px solid var(--line);
+}
+
+.demo-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.demo-panel {
+  border: 1px solid var(--line);
+  margin-top: 16px;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.demo-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.demo-output {
+  border: 1px dashed var(--line);
+  min-height: 64px;
+  padding: 12px;
+}
+
+.demo-note {
+  color: var(--muted);
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 40px;
+  letter-spacing: -0.04em;
+}
+
+button,
+input {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover,
+button.secondary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+code {
+  border: 1px solid var(--line);
+  padding: 1px 4px;
+}
+
+.chunk-card,
+.event-card {
+  border: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.animate {
+  border: 1px solid var(--line);
+  padding: 10px;
+  transition:
+    opacity 0.35s linear,
+    transform 0.35s linear;
+}
+
+.animate.ng-enter,
+.animate.ng-leave.ng-leave-active {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.animate.ng-leave,
+.animate.ng-enter.ng-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 720px) {
+  body {
+    padding: 16px;
+  }
+
+  .demo-grid {
+    grid-template-columns: 1fr;
+  }
+}

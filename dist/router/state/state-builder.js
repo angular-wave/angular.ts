@@ -1,10 +1,18 @@
-import { assign, createObject, isString, isArray, hasOwn, isDefined, entries, keys, isFunction } from '../../shared/utils.js';
+import { assign, createObject, isString, isInstanceOf, isArray, hasOwn, isDefined, keys, isFunction } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { Resolvable } from '../resolve/resolvable.js';
 import { annotate } from '../../core/di/di.js';
-import { ViewConfig } from './views.js';
+import { normalizeNgViewTarget } from '../view/view.js';
+import { DefType } from '../params/param.js';
+import { UrlMatcher } from '../url/url-matcher.js';
 
+const TEMPLATE_VIEW_KEYS = ["templateUrl", "template"];
+const CONTROLLER_VIEW_KEYS = ["controller"];
+const COMPONENT_VIEW_KEYS = ["component", "bindings"];
+const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
+const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
+const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
 /**
  * @param {unknown} url
  */
@@ -14,27 +22,28 @@ function parseUrl(url) {
     const root = url.charAt(0) === "^";
     return { val: root ? url.substring(1) : url, root };
 }
-function buildUrl(stateObject, $url, root) {
+function buildUrl(stateObject, routerState, root) {
     const stateDec = stateObject.self;
     const { parent } = stateObject;
     const parsed = parseUrl(stateDec.url);
-    const url = (!parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec }));
+    const url = parsed
+        ? routerState._compile(parsed.val, { state: stateDec })
+        : null;
     if (!url)
         return null;
-    if (!$url.isMatcher(url))
+    if (!isInstanceOf(url, UrlMatcher))
         throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
-    return parsed && parsed.root
-        ? url
-        : ((parent && parent.navigable) || root).url.append(url);
+    const base = ((parent && parent.navigable) || root);
+    return parsed && parsed.root ? url : base._url._append(url);
 }
 /**
  * @param {ParamFactory} paramFactory
  */
 function buildParams(state, paramFactory) {
-    const urlParams = (state.url && state.url.parameters({ inherit: false })) || [];
     const params = {};
-    urlParams.forEach((param) => {
-        params[param.id] = param;
+    state._url?._params.forEach((param) => {
+        if (param.location === DefType._PATH || param.location === DefType._SEARCH)
+            params[param.id] = param;
     });
     const paramConfigs = state.params || {};
     const paramConfigKeys = keys(paramConfigs);
@@ -45,75 +54,83 @@ function buildParams(state, paramFactory) {
     });
     return params;
 }
-function hasAnyViewKey(keyItems, obj) {
+function hasAnyViewKey(keyItems, values) {
     for (let i = 0; i < keyItems.length; i++) {
-        if (isDefined(obj[keyItems[i]])) {
+        if (isDefined(values[keyItems[i]])) {
             return true;
         }
     }
     return false;
 }
+function presentViewKeys(keyItems, values) {
+    const present = [];
+    keyItems.forEach((key) => {
+        if (isDefined(values[key])) {
+            present.push(key);
+        }
+    });
+    return present.join(", ");
+}
+function assertNoRemovedViewKeys(keyItems, values, description) {
+    const present = [];
+    keyItems.forEach((key) => {
+        if (isDefined(values[key])) {
+            present.push(key);
+        }
+    });
+    if (present.length) {
+        throw new Error(`${description} uses unsupported view properties: ${present.join(", ")}`);
+    }
+}
 function viewsBuilder(state) {
     if (!state.parent) {
         return {};
     }
-    const tplKeys = [
-        "templateProvider",
-        "templateUrl",
-        "template",
-        "notify",
-        "async",
-    ];
-    const ctrlKeys = ["controller", "controllerAs", "resolveAs"];
-    const compKeys = ["component", "bindings"];
-    const nonCompKeys = tplKeys.concat(ctrlKeys);
-    const allViewKeys = compKeys.concat(nonCompKeys);
-    if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
-        throw new Error(`State '${state.name}' has a 'views' object. ` +
-            `It cannot also have view properties at the state level. ` +
-            `Move these properties into a view declaration: ` +
-            `${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
+    assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
+    if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
+        throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
     }
     const views = {};
     const defaultViewConfig = {};
-    allViewKeys.forEach((key) => {
-        if (isDefined(state[key])) {
-            defaultViewConfig[key] = state[key];
+    const stateValues = state;
+    ALL_VIEW_KEYS.forEach((key) => {
+        if (isDefined(stateValues[key])) {
+            defaultViewConfig[key] = stateValues[key];
         }
     });
     const viewsObject = (state.views || {
         $default: defaultViewConfig,
     });
-    const viewEntries = entries(viewsObject);
-    viewEntries.forEach(([entryName, entryConfig]) => {
+    keys(viewsObject).forEach((entryName) => {
         let name = entryName;
-        let config = entryConfig;
+        let config = viewsObject[entryName];
         name = name || "$default";
         if (isString(config)) {
             config = { component: config };
         }
         config = assign({}, config);
-        if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
-            throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`);
+        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
+        if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
+            hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
+            throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
         }
-        config.resolveAs = config.resolveAs || "$resolve";
-        config.$context = state;
-        config.$name = name;
-        const normalized = ViewConfig.normalizeNgViewTarget(config.$context, config.$name);
-        config.$ngViewName = normalized.ngViewName;
-        config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+        config._context = state;
+        config._name = name;
+        const normalized = normalizeNgViewTarget(config._context, config._name);
+        config._ngViewName = normalized.ngViewName;
+        config._ngViewContextAnchor = normalized.ngViewContextAnchor;
         views[name] = config;
     });
     return views;
 }
 function getResolveLocals(ctx) {
-    const tokens = ctx.getTokens().filter(isString);
+    const tokens = ctx.getTokens();
     const locals = {};
-    for (let i = 0; i < tokens.length; i++) {
-        const key = tokens[i];
-        const resolvable = ctx.getResolvable(key);
-        locals[key] = resolvable.data;
-    }
+    tokens.forEach((key) => {
+        if (isString(key)) {
+            locals[key] = ctx.getResolvable(key).data;
+        }
+    });
     return locals;
 }
 function valueToResolvable(token, value, strictDi) {
@@ -189,6 +206,30 @@ function resolvablesBuilder(state, strictDi) {
     });
     return resolvables;
 }
+function invokeStateLifecycleHook(trans, state, hookName, pathname) {
+    const stateObject = state._state();
+    const hook = stateObject[hookName];
+    if (!hook)
+        return undefined;
+    const hookContext = stateObject._hookContext;
+    const $injector = hookContext._$injector;
+    const resolveContext = new ResolveContext((trans._treeChanges[pathname] || []), $injector);
+    const subContext = resolveContext.subContext(stateObject);
+    const locals = assign(getResolveLocals(subContext), {
+        $state$: state,
+        $transition$: trans,
+    });
+    return $injector.invoke(hook, hookContext, locals);
+}
+function invokeOnEnterHook(trans, state) {
+    return invokeStateLifecycleHook(trans, state, "_onEnter", "to");
+}
+function invokeOnRetainHook(trans, state) {
+    return invokeStateLifecycleHook(trans, state, "_onRetain", "to");
+}
+function invokeOnExitHook(trans, state) {
+    return invokeStateLifecycleHook(trans, state, "_onExit", "from");
+}
 /**
  * A internal global service
  *
@@ -202,29 +243,22 @@ function resolvablesBuilder(state, strictDi) {
 class StateBuilder {
     /**
      * @param {StateMatcher} matcher
-     * @param {ng.UrlService} urlService
+     * @param {RouterProvider} routerState
      */
-    constructor(matcher, urlService) {
+    constructor(matcher, routerState) {
         this._matcher = matcher;
         this._$injector = undefined;
-        this._paramFactory = urlService._paramFactory;
-        this._urlService = urlService;
+        this._paramFactory = routerState._paramFactory;
+        this._routerState = routerState;
     }
-    _buildStateHook(stateObject, hookName) {
-        const hook = stateObject[hookName];
+    /** @internal */
+    _assignStateHook(stateObject, publicName, privateName, hookFn) {
+        const hook = stateObject[publicName];
         if (!hook)
-            return undefined;
-        const pathname = hookName === "onExit" ? "from" : "to";
-        return (trans, state) => {
-            const $injector = this._$injector;
-            const resolveContext = new ResolveContext(trans.treeChanges(pathname), $injector);
-            const subContext = resolveContext.subContext(state._state());
-            const locals = assign(getResolveLocals(subContext), {
-                $state$: state,
-                $transition$: trans,
-            });
-            return $injector.invoke(hook, this, locals);
-        };
+            return;
+        stateObject[privateName] = hook;
+        stateObject._hookContext = this;
+        stateObject[publicName] = hookFn;
     }
     /**
      * Builds all of the properties on an essentially blank State object, returning a State object which has all its
@@ -235,7 +269,7 @@ class StateBuilder {
      */
     /** @internal */
     _build(state) {
-        const { _matcher: matcher, _urlService: urlService } = this;
+        const { _matcher: matcher, _routerState: routerState } = this;
         const parent = this._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
@@ -243,13 +277,14 @@ class StateBuilder {
         state.parent = isRoot(state)
             ? null
             : matcher.find(parent) || matcher.find("");
-        state.url = buildUrl(state, urlService, matcher.find(""));
+        state._url =
+            buildUrl(state, routerState, matcher.find("")) || undefined;
         state.resolvables = resolvablesBuilder(state, this._$injector && this._$injector.strictDi);
-        state.onExit = this._buildStateHook(state, "onExit");
-        state.onRetain = this._buildStateHook(state, "onRetain");
-        state.onEnter = this._buildStateHook(state, "onEnter");
+        this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
+        this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
+        this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
         state.navigable =
-            !isRoot(state) && state.url
+            !isRoot(state) && state._url
                 ? state
                 : state.parent
                     ? state.parent.navigable

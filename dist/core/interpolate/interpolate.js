@@ -1,12 +1,13 @@
-import { _parse, _sce } from '../../injection-tokens.js';
+import { _injector, _parse } from '../../injection-tokens.js';
 import { isDefined, stringify, deProxy, isFunction, isUndefined, minErr } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
+import { getSecurityAdapter } from '../security/security-adapter.js';
 
 const $interpolateMinErr = minErr("$interpolate");
 function throwNoconcat(text) {
-    throw $interpolateMinErr("noconcat", "Error while interpolating: {0}\nStrict Contextual Escaping disallows " +
+    throw $interpolateMinErr("noconcat", "Error while interpolating: {0}\nSecurity contexts disallow " +
         "interpolations that concatenate multiple expressions when a trusted value is " +
-        "required.  See http://docs.angularjs.org/api/ng.$sce", text);
+        "required.", text);
 }
 function interr(text, err) {
     throw $interpolateMinErr("interr", "Can't interpolate: {0}\n{1}", text, err.toString());
@@ -16,9 +17,10 @@ class InterpolateProvider {
         this.startSymbol = "{{";
         this.endSymbol = "}}";
         this.$get = [
+            _injector,
             _parse,
-            _sce,
-            ($parse, $sce) => {
+            ($injector, $parse) => {
+                const security = getSecurityAdapter($injector);
                 const provider = this;
                 const startSymbolLength = this.startSymbol.length;
                 const endSymbolLength = this.endSymbol.length;
@@ -41,7 +43,7 @@ class InterpolateProvider {
                         }
                         let unescapedText = unescapeText(text);
                         if (contextAllowsConcatenation) {
-                            unescapedText = $sce.getTrusted(trustedContext, unescapedText);
+                            unescapedText = security.getTrusted(trustedContext, unescapedText);
                         }
                         const constantInterp = (() => unescapedText);
                         constantInterp.exp = text;
@@ -118,7 +120,7 @@ class InterpolateProvider {
                                 concat[expressionPositions[i]] = values[i];
                             }
                             if (contextAllowsConcatenation) {
-                                return $sce.getTrusted(trustedContext, singleExpression ? concat[0] : concat.join(""));
+                                return security.getTrusted(trustedContext, singleExpression ? concat[0] : concat.join(""));
                             }
                             if (trustedContext && concat.length > 1) {
                                 throwNoconcat(text);
@@ -155,8 +157,8 @@ class InterpolateProvider {
                         try {
                             value =
                                 trustedContext && !contextAllowsConcatenation
-                                    ? $sce.getTrusted(trustedContext, value)
-                                    : $sce.valueOf(value);
+                                    ? security.getTrusted(trustedContext, value)
+                                    : security.valueOf(value);
                             return allOrNothing && !isDefined(value)
                                 ? value
                                 : stringify(value);

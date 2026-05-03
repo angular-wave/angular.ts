@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS HTTP Stream Demo</title>
+    <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
+    <script type="module" src="/src/index.ts"></script>
+  </head>
+  <body
+    ng-app
+    ng-init="timestamp = 'stream time'; message = 'AngularTS compiles each streamed fragment'"
+  >
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>HTTP response stream</h1>
+        <p>
+          One fetch request streams HTML fragments from
+          <code>/mock/http-stream-demo</code>. Each complete chunk is decoded,
+          compiled, and inserted with <code>swap="beforeend"</code>.
+        </p>
+      </header>
+
+      <section class="demo-content">
+        <button
+          ng-get="/mock/http-stream-demo"
+          data-response-stream
+          swap="beforeend"
+          target="#stream-output"
+        >
+          Stream HTML response
+        </button>
+
+        <section class="demo-panel">
+          <h2>Output</h2>
+          <div id="stream-output" class="demo-stack"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

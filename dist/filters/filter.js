@@ -1,4 +1,4 @@
-import { isArrayLike, isNullOrUndefined, minErr, arrayFrom, isNull, isObject, isArray, isFunction, isUndefined, equals, hasCustomToString } from '../shared/utils.js';
+import { isArrayLike, isNullOrUndefined, minErr, arrayFrom, isNull, isObject, isArray, hasOwn, isFunction, isUndefined, equals, hasCustomToString } from '../shared/utils.js';
 
 /** Registers the built-in collection filtering function. */
 function filterFilter() {
@@ -111,6 +111,8 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
             if (matchAgainstAnyProp) {
                 const actualObj = actual;
                 for (const key in actualObj) {
+                    if (!hasOwn(actualObj, key))
+                        continue;
                     // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
                     // See: https://github.com/angular/angular.ts/issues/15644
                     if (key.charAt &&
@@ -127,6 +129,8 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
                 const expectedObj = expected;
                 const actualObj = actual;
                 for (const key in expectedObj) {
+                    if (!hasOwn(expectedObj, key))
+                        continue;
                     const expectedVal = expectedObj[key];
                     if (isFunction(expectedVal) || isUndefined(expectedVal)) {
                         continue;

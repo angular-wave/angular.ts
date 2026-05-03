@@ -52,13 +52,11 @@ import { ngWasmDirective } from './directive/wasm/wasm.js';
 import { ngWorkerDirective } from './directive/worker/worker.js';
 import { StateRefDynamicDirective, StateRefActiveDirective, StateRefDirective } from './router/directives/state-directives.js';
 import { ViewDirective, ViewDirectiveFill } from './router/directives/view-directive.js';
-import { _RouterProvider } from './router/router.js';
+import { RouterProvider } from './router/router.js';
 import { StateProvider } from './router/state/state-service.js';
 import { StateRegistryProvider } from './router/state/state-registry.js';
 import { TemplateFactoryProvider } from './router/template-factory.js';
 import { TransitionProvider } from './router/transition/transition-service.js';
-import { UrlConfigProvider } from './router/url/url-config.js';
-import { UrlService } from './router/url/url-service.js';
 import { ViewService } from './router/view/view.js';
 import { AnchorScrollProvider } from './services/anchor-scroll/anchor-scroll.js';
 import { CookieProvider } from './services/cookie/cookie.js';
@@ -70,6 +68,7 @@ import { PubSubProvider } from './services/pubsub/pubsub.js';
 import { RestProvider } from './services/rest/rest.js';
 import { SceDelegateProvider, SceProvider } from './services/sce/sce.js';
 import { SseProvider } from './services/sse/sse.js';
+import { StreamProvider } from './services/stream/readable-stream.js';
 import { TemplateCacheProvider } from './services/template-cache/template-cache.js';
 import { TemplateRequestProvider } from './services/template-request/template-request.js';
 import { WebSocketProvider } from './services/websocket/websocket.js';
@@ -206,17 +205,16 @@ function registerNgModule(angular) {
                 $parse: ParseProvider,
                 $rest: RestProvider,
                 $rootScope: RootScopeProvider,
-                [_router]: _RouterProvider,
+                [_router]: RouterProvider,
                 $sce: SceProvider,
                 $sceDelegate: SceDelegateProvider,
+                $stream: StreamProvider,
                 $sse: SseProvider,
                 $templateCache: TemplateCacheProvider,
                 $templateRequest: TemplateRequestProvider,
-                $urlConfig: UrlConfigProvider,
                 $view: ViewService,
                 $transitions: TransitionProvider,
                 $templateFactory: TemplateFactoryProvider,
-                $url: UrlService,
                 $stateRegistry: StateRegistryProvider,
                 $state: StateProvider,
                 $eventBus: PubSubProvider,

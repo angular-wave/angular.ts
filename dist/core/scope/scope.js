@@ -1,5 +1,5 @@
 import { _exceptionHandler, _parse } from '../../injection-tokens.js';
-import { isProxy, isFunction, isArray, isProxySymbol, isObject, hasOwn, isUndefined, keys, isDefined, isString, assert, createObject, isNullOrUndefined, isNull, isInstanceOf, nextUid, nullObject } from '../../shared/utils.js';
+import { isProxy, isFunction, isArray, isProxySymbol, isObject, hasOwn, isUndefined, keys, isDefined, isString, assert, createObject, isNull, isInstanceOf, nextUid, nullObject } from '../../shared/utils.js';
 import { ASTType } from '../parse/ast-type.js';
 
 let uid = 0;
@@ -510,12 +510,10 @@ class Scope {
         this._arrayMutationWrappers =
             context?._arrayMutationWrappers ?? new WeakMap();
         this._propertyMap = {
-            $apply: this.$apply.bind(this),
             $broadcast: this.$broadcast.bind(this),
             _children: this._children,
             $destroy: this.$destroy.bind(this),
             $emit: this.$emit.bind(this),
-            $eval: this.$eval.bind(this),
             $flushQueue: this.$flushQueue.bind(this),
             $getById: this.$getById.bind(this),
             $handler: this,
@@ -1544,21 +1542,6 @@ class Scope {
             }
         }
     }
-    /** Evaluates an Angular expression in the context of this scope. */
-    $eval(expr, locals) {
-        const fn = $parse(expr);
-        const res = fn(this, locals);
-        if (isNullOrUndefined(res) || res === Object.hasOwnProperty) {
-            return res;
-        }
-        if (isFunction(res)) {
-            return res();
-        }
-        if (Number.isNaN(res)) {
-            return 0;
-        }
-        return res;
-    }
     /** Merges enumerable properties from the provided object into the current scope target. */
     $merge(newTarget) {
         const newTargetRecord = newTarget;
@@ -1566,15 +1549,6 @@ class Scope {
         for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
             this.set(this.$target, key, newTargetRecord[key], this.$proxy);
-        }
-    }
-    /** Evaluates an expression and routes any thrown error through the exception handler. */
-    $apply(expr) {
-        try {
-            return $parse(expr)(this.$proxy);
-        }
-        catch (err) {
-            return $exceptionHandler(err);
         }
     }
     /** Registers an event listener on this scope and returns a deregistration function. */

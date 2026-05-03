@@ -1101,6 +1101,8 @@ function ngModelDirective() {
                 },
                 post: (scope, elementPost, _attr, ctrls) => {
                     const modelCtrl = ctrls[0];
+                    const { change } = elementPost.dataset;
+                    const changeFn = change ? modelCtrl._parse(change) : undefined;
                     modelCtrl._setUpdateOnEvents();
                     function setTouched() {
                         modelCtrl.$setTouched();
@@ -1115,8 +1117,7 @@ function ngModelDirective() {
                         elementPost.removeEventListener("blur", blurListener);
                     });
                     modelCtrl.$viewChangeListeners.push(() => {
-                        const { change } = elementPost.dataset;
-                        change && scope.$eval(change);
+                        changeFn?.(scope);
                     });
                 },
             };

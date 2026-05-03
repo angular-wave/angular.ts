@@ -1,6 +1,6 @@
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
-// import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("ngPut", () => {
   let $compile, $rootScope, el;
@@ -17,7 +17,16 @@ describe("ngPut", () => {
     });
   });
 
-  it("should pass", () => {
-    expect(true).toBeTrue();
+  it("should compile and swap streamed HTML responses", async () => {
+    const scope = $rootScope.$new();
+
+    scope.first = "A";
+    scope.second = "B";
+    el.innerHTML =
+      '<button ng-put="/mock/stream-html" response-type="stream" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(200);
+    expect(el.querySelector("#found").textContent).toBe("AB");
   });
 });

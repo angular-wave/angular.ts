@@ -58,6 +58,19 @@ describe("$sse", () => {
     source.close();
   });
 
+  it("should expose default messages through onEvent", async () => {
+    const received = [];
+    const source = sse("/mock/events", {
+      onEvent: (message) => received.push(message),
+    });
+
+    await wait(1500);
+    expect(received.length).toBeGreaterThan(0);
+    expect(received[0].type).toBe("message");
+    expect(received[0].rawData).toBeDefined();
+    source.close();
+  });
+
   it("should transform messages if transformMessage is provided", async () => {
     const transformed = [];
     const source = sse("/mock/events", {
@@ -69,6 +82,41 @@ describe("$sse", () => {
     expect(transformed.length).toBeGreaterThan(0);
     expect(transformed.every((d) => d.wrapped !== undefined)).toBe(true);
     source.close();
+  });
+
+  it("should expose registered custom events through onEvent", async () => {
+    const RealEventSource = window.EventSource;
+    const received = [];
+
+    window.EventSource = function () {
+      this.listeners = {};
+      this.addEventListener = (type, fn) => {
+        this.listeners[type] = fn;
+      };
+      this.close = () => {
+        /* empty */
+      };
+      setTimeout(() => {
+        this.listeners.open?.({ type: "open" });
+        this.listeners.notice?.({
+          type: "notice",
+          data: '{"ok":true}',
+        });
+      }, 10);
+    };
+
+    const source = sse("/mock/events", {
+      eventTypes: ["notice"],
+      onEvent: (message) => received.push(message),
+    });
+
+    await wait(50);
+    expect(received.length).toBe(1);
+    expect(received[0].type).toBe("notice");
+    expect(received[0].data).toEqual({ ok: true });
+
+    source.close();
+    window.EventSource = RealEventSource;
   });
 
   it("should build URL with query params", () => {

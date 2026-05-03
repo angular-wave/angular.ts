@@ -120,8 +120,18 @@ export type {
   SseConnection,
   SseService,
 } from "./services/sse/sse.ts";
-export { StreamConnection } from "./services/stream/stream.ts";
-export type { StreamConnectionConfig } from "./services/stream/stream.ts";
+export type {
+  ConnectionConfig,
+  ConnectionEvent,
+} from "./services/connection/connection-manager.ts";
+export { StreamProvider } from "./services/stream/readable-stream.ts";
+export type {
+  JsonLineStreamReadOptions,
+  LineStreamReadOptions,
+  StreamReadOptions,
+  StreamService,
+  TextStreamReadOptions,
+} from "./services/stream/readable-stream.ts";
 export { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 export type { TemplateCache } from "./services/template-cache/template-cache.ts";
 export type { TemplateRequestService } from "./services/template-request/template-request.ts";
@@ -131,6 +141,7 @@ export type {
 } from "./services/storage/storage.ts";
 export { WebSocketProvider } from "./services/websocket/websocket.ts";
 export type {
+  WebSocketConnection,
   WebSocketConfig,
   WebSocketService,
 } from "./services/websocket/websocket.ts";

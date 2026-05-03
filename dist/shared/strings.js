@@ -1,7 +1,6 @@
 import { tail, pushR } from './common.js';
-import { pattern, val } from './hof.js';
 import { isPromise, isInjectable } from './predicates.js';
-import { isUndefined, isArray, isObject, isString, isNull, isFunction } from './utils.js';
+import { isArray, isString, isUndefined, isObject, isNull, isFunction } from './utils.js';
 
 /**
  * Functions that manipulate strings
@@ -53,19 +52,6 @@ function stringify(value) {
         !isArray(obj) &&
         obj.constructor !== Object &&
         isFunction(obj.toString);
-    const stringifyPattern = pattern([
-        [isUndefined, val("undefined")],
-        [isNull, val("null")],
-        [isPromise, val("[Promise]")],
-        [
-            isRejection,
-            /** @internal */
-            (reg) => reg._transitionRejection.toString(),
-        ],
-        [hasToString, (str) => str.toString()],
-        [isInjectable, functionToString],
-        [val(true), (bool) => bool],
-    ]);
     /** Formats a single item while tracking circular references. */
     function format(item) {
         if (isObject(item)) {
@@ -73,7 +59,19 @@ function stringify(value) {
                 return "[circular ref]";
             seen.push(item);
         }
-        return stringifyPattern(item);
+        if (isUndefined(item))
+            return "undefined";
+        if (isNull(item))
+            return "null";
+        if (isPromise(item))
+            return "[Promise]";
+        if (isRejection(item))
+            return item._transitionRejection.toString();
+        if (hasToString(item))
+            return item.toString();
+        if (isInjectable(item))
+            return functionToString(item);
+        return item;
     }
     if (isUndefined(value)) {
         // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
@@ -83,21 +81,8 @@ function stringify(value) {
     }
     return JSON.stringify(value, (_key, item) => format(item)).replace(/\\"/g, '"');
 }
-const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
-/**
- * Splits on a delimiter, but returns the delimiters in the array
- *
- * #### Example:
- * ```js
- * var splitOnSlashes = splitOnDelim('/');
- * splitOnSlashes("/foo"); // ["/", "foo"]
- * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
- * ```
- * `delim` is kept in the output array.
- */
-function splitOnDelim(delim) {
-    const re = new RegExp(`(${delim})`, "g");
-    return (str) => str.split(re).filter(Boolean);
+function stripLastPathElement(str) {
+    return str.replace(/\/[^/]*$/, "");
 }
 /**
  * Reduce fn that joins neighboring strings
@@ -118,4 +103,4 @@ function joinNeighborsR(acc, str) {
     return pushR(acc, str);
 }
 
-export { fnToString, joinNeighborsR, kebobString, maxLength, splitOnDelim, stringify, stripLastPathElement };
+export { fnToString, joinNeighborsR, kebobString, maxLength, stringify, stripLastPathElement };

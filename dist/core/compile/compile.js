@@ -1,10 +1,11 @@
-import { _injector, _interpolate, _exceptionHandler, _templateRequest, _parse, _controller, _sce, _scope, _provide } from '../../injection-tokens.js';
+import { _injector, _interpolate, _exceptionHandler, _parse, _controller, _templateRequest, _scope, _provide } from '../../injection-tokens.js';
 import { getBooleanAttrName, createDocumentFragment, emptyElement, isTextNode, createNodelistFromHTML, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { NodeRef } from '../../shared/noderef.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
-import { isDefined, assign, getNodeName, directiveNormalize, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, stringify, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, isScope, equals, simpleCompare } from '../../shared/utils.js';
+import { getSecurityAdapter } from '../security/security-adapter.js';
+import { isDefined, assign, getNodeName, directiveNormalize, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, stringify, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, isScope, equals, simpleCompare } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP } from '../../shared/constants.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
@@ -335,7 +336,7 @@ class CompileProvider {
          *
          * @param elementName - The element name or '*' to match any element.
          * @param propertyName - The DOM property name.
-         * @param ctx - The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
+         * @param ctx - The security context in which this value is safe for use, e.g. `url`
          * @returns `this` for chaining.
          */
         this.addPropertySecurityContext = function (elementName, propertyName, ctx) {
@@ -351,7 +352,7 @@ class CompileProvider {
          *
          * Copy of https://github.com/angular/angular/blob/6.0.6/packages/compiler/src/schema/dom_security_schema.ts#L31-L58
          * Changing:
-         * - SecurityContext.* => SCE_CONTEXTS/$sce.*
+         * - SecurityContext.* => AngularTS security contexts
          * - various URL => MEDIA_URL
          * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
          */
@@ -411,12 +412,32 @@ class CompileProvider {
             _injector,
             _interpolate,
             _exceptionHandler,
-            _templateRequest,
             _parse,
             _controller,
-            _sce,
             /** Creates the runtime `$compile` service and its shared helper closures. */
-            ($injector, $interpolate, $exceptionHandler, $templateRequest, $parse, $controller, $sce) => {
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller) => {
+                const security = getSecurityAdapter($injector);
+                let lazyTemplateRequest;
+                function requestTemplate(templateUrl) {
+                    if (lazyTemplateRequest === undefined) {
+                        lazyTemplateRequest = $injector.has(_templateRequest)
+                            ? $injector.get(_templateRequest)
+                            : null;
+                    }
+                    return lazyTemplateRequest
+                        ? lazyTemplateRequest(templateUrl)
+                        : fetchTemplate(templateUrl);
+                }
+                function fetchTemplate(templateUrl) {
+                    return fetch(templateUrl, {
+                        headers: { Accept: "text/html" },
+                    }).then((response) => {
+                        if (!response.ok) {
+                            return Promise.reject(response);
+                        }
+                        return response.text();
+                    });
+                }
                 const onChangesQueueState = {
                     _exceptionHandler: $exceptionHandler,
                     _queue: [],
@@ -707,7 +728,7 @@ class CompileProvider {
                     let linkFnFound = false;
                     for (let i = 0, l = getCompileNodeListSize(nodeRefList); i < l; i++) {
                         const compileNode = getCompileNodeAt(nodeRefList, i);
-                        const attrs = new Attributes($injector, $exceptionHandler, $sce);
+                        const attrs = new Attributes($injector, $exceptionHandler);
                         const directives = collectDirectives(compileNode, attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
                         let nodeLinkFnCtx;
                         if (directives.length) {
@@ -980,14 +1001,18 @@ class CompileProvider {
                         attr.$updateClass(value, element.classList.value);
                         return;
                     }
+                    if (linkState._name === "srcset") {
+                        attr.$set(linkState._name, linkState._isNgAttr
+                            ? value
+                            : sanitizeSrcset(security.valueOf(value), "srcset"));
+                        return;
+                    }
                     if ((linkState._trustedContext === SCE_CONTEXTS._URL ||
                         linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
                         !(isString(value) && value.startsWith("unsafe:"))) {
-                        value = $sce.getTrusted(linkState._trustedContext, value);
+                        value = security.getTrusted(linkState._trustedContext, value);
                     }
-                    attr.$set(linkState._name, linkState._name === "srcset"
-                        ? $sce.getTrustedMediaUrl(value)
-                        : value);
+                    attr.$set(linkState._name, value);
                 }
                 /** Re-applies the current interpolated attribute value from explicit per-link state. */
                 function handleAttrInterpolationWatch(bindingState) {
@@ -1048,7 +1073,7 @@ class CompileProvider {
                 }
                 /** Shared watch callback for backing attribute-expression watchers. */
                 function handlePropertyDirectiveAttrWatch(bindingState, value) {
-                    $sce.valueOf(value);
+                    security.valueOf(value);
                     updatePropertyDirectiveValue(bindingState);
                 }
                 /** Invokes an expression binding against the stored parent getter and scope target. */
@@ -1319,7 +1344,7 @@ class CompileProvider {
                     else {
                         $element = new NodeRef(linkNode);
                         registerScopeOwnedNodeRef(scope, $element);
-                        attrs = new Attributes($injector, $exceptionHandler, $sce, $element, nodeLinkState._templateAttrs);
+                        attrs = new Attributes($injector, $exceptionHandler, $element, nodeLinkState._templateAttrs);
                     }
                     controllerScope = scope;
                     if (nodeLinkState._newIsolateScopeDirective) {
@@ -2012,7 +2037,11 @@ class CompileProvider {
                         templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, $compileNode.element, tAttrs);
                     }
                     else {
-                        templateUrl = origAsyncDirective.templateUrl || "";
+                        ({ templateUrl } = origAsyncDirective);
+                    }
+                    templateUrl = stringify(templateUrl);
+                    if (!isString(templateUrl) || !templateUrl) {
+                        throw $compileMinErr("tplurl", "Directive '{0}' produced an invalid templateUrl: {1}", origAsyncDirective.name, stringify(templateUrl));
                     }
                     const { templateNamespace } = origAsyncDirective;
                     const delayedState = {
@@ -2033,7 +2062,7 @@ class CompileProvider {
                         _templateNamespace: templateNamespace,
                     };
                     emptyElement($compileNode.element);
-                    $templateRequest(templateUrl || "")
+                    requestTemplate(templateUrl)
                         .then((content) => {
                         handleDelayedTemplateLoaded(delayedState, content);
                     })
@@ -2081,7 +2110,7 @@ class CompileProvider {
                         _postLinkCtx: this._compileState,
                     };
                 }
-                /** Determines the SCE trust context required for a DOM attribute binding. */
+                /** Determines the trust context required for a DOM attribute binding. */
                 function getTrustedAttrContext(nodeName, attrNormalizedName) {
                     if (attrNormalizedName === "srcdoc") {
                         return SCE_CONTEXTS._HTML;
@@ -2115,7 +2144,7 @@ class CompileProvider {
                     }
                     return undefined;
                 }
-                /** Determines the SCE trust context required for a DOM property binding. */
+                /** Determines the trust context required for a DOM property binding. */
                 function getTrustedPropContext(nodeName, propNormalizedName) {
                     const prop = propNormalizedName.toLowerCase();
                     return (PROP_CONTEXTS[`${nodeName}|${prop}`] || PROP_CONTEXTS[`*|${prop}`]);
@@ -2128,11 +2157,11 @@ class CompileProvider {
                     if (!isString(value)) {
                         throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
                     }
-                    // Such values are a bit too complex to handle automatically inside $sce.
+                    // Such values are a bit too complex to handle automatically inside the security adapter.
                     // Instead, we sanitize each of the URIs individually, which works, even dynamically.
-                    // It's not possible to work around this using `$sce.trustAsMediaUrl`.
+                    // A single trusted media URL cannot represent a whole srcset list.
                     // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-                    // `$sce.trustAsHtml` on the whole `img` tag and inject it into the DOM using the
+                    // a trusted/sanitized HTML binding for the whole `img` tag and inject it using the
                     // `ng-bind-html` directive.
                     let result = "";
                     // first check if there are spaces because it's not the same pattern
@@ -2149,15 +2178,21 @@ class CompileProvider {
                     let i;
                     for (i = 0; i < nbrUrisWith2parts; i++) {
                         const innerIdx = i * 2;
+                        const uri = trim(rawUris[innerIdx]);
                         // sanitize the uri
-                        result += $sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
+                        result += uri.startsWith("unsafe:")
+                            ? uri
+                            : security.getTrustedMediaUrl(uri);
                         // add the descriptor
                         result += ` ${trim(rawUris[innerIdx + 1])}`;
                     }
                     // split the last item into uri and descriptor
                     const lastTuple = trim(rawUris[i * 2]).split(/\s/);
                     // sanitize the last uri
-                    result += $sce.getTrustedMediaUrl(trim(lastTuple[0]));
+                    const uri = trim(lastTuple[0]);
+                    result += uri.startsWith("unsafe:")
+                        ? uri
+                        : security.getTrustedMediaUrl(uri);
                     // and add the last descriptor if any
                     if (lastTuple.length === 2) {
                         result += ` ${trim(lastTuple[1])}`;
@@ -2175,10 +2210,10 @@ class CompileProvider {
                     // Sanitize img[srcset] + source[srcset] values.
                     if (propName === "srcset" &&
                         (nodeName === "img" || nodeName === "source")) {
-                        sanitizer = (value) => sanitizeSrcset($sce.valueOf(value), "ng-prop-srcset");
+                        sanitizer = (value) => sanitizeSrcset(security.valueOf(value), "ng-prop-srcset");
                     }
                     else if (trustedContext) {
-                        sanitizer = $sce.getTrusted.bind($sce, trustedContext);
+                        sanitizer = (value) => security.getTrusted(trustedContext, value);
                     }
                     const directive = {
                         priority: 100,
@@ -2229,6 +2264,7 @@ class CompileProvider {
                             _value: value,
                             _trustedContext: trustedContext,
                             _allOrNothing: allOrNothing,
+                            _isNgAttr: isNgAttr,
                             _interpolateFn: interpolateFn,
                         },
                     };

@@ -1,10 +1,28 @@
-import { _state, _rootScope, _stateRegistry, _transitions, _router, _interpolate } from '../../injection-tokens.js';
+import { _state, _rootScope, _stateRegistry, _transitions, _parse, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { isObject, entries, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
+import { isObject, keys, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
 import { getInheritedData } from '../../shared/dom.js';
 
 const noopDeregister = () => undefined;
 const uniqueStrings = (classes) => arrayFrom(new Set(classes));
+function appendSplitClasses(classes, value) {
+    const split = value.split(/\s/);
+    split.forEach((className) => {
+        if (className)
+            classes.push(className);
+    });
+}
+function getClasses(stateList) {
+    const classes = [];
+    stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
+    return classes;
+}
+function appendUniqueClasses(target, source) {
+    source.forEach((className) => {
+        if (!target.includes(className))
+            target.push(className);
+    });
+}
 /**
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
@@ -25,16 +43,18 @@ function parseStateRef(ref) {
 function stateContext(el) {
     const $ngView = getInheritedData(el, "$ngView");
     const path = $ngView?.$cfg
-        ?.path;
+        ?._path;
     return path ? path[path.length - 1].state.name : undefined;
 }
 /**
  * Computes the current state-ref definition, href, and navigation options.
  */
 function processedDef($state, $element, def) {
-    const ngState = def._ngState || $state.current?.name;
+    const ngState = (def._ngState || $state.current?.name);
     const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts || {});
-    const href = $state.href(ngState, def._ngStateParams, ngStateOpts);
+    const href = ngState
+        ? $state.href(ngState, def._ngStateParams, ngStateOpts)
+        : undefined;
     return {
         _ngState: ngState,
         _ngStateParams: def._ngStateParams,
@@ -57,11 +77,11 @@ function getTypeInfo(el) {
 /**
  * Creates the click handler that triggers a state transition for a state ref.
  */
-function clickHook(el, $state, type, getDef, scope) {
+function clickHook(el, $state, type, rawDef, scope) {
     return function (event) {
         const mouseEvent = event;
         const { button } = mouseEvent;
-        const target = getDef();
+        const target = processedDef($state, el, rawDef);
         const res = button > 1 ||
             mouseEvent.ctrlKey ||
             mouseEvent.metaKey ||
@@ -84,7 +104,7 @@ function clickHook(el, $state, type, getDef, scope) {
                 if (cancelled) {
                     return;
                 }
-                if (!el.getAttribute("disabled")) {
+                if (!el.getAttribute("disabled") && target._ngState) {
                     $state
                         .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                         .then(() => {
@@ -131,11 +151,17 @@ function bindEvents(element, scope, hookFn, ngStateOpts) {
     });
 }
 // // TODO: SEPARATE THESE OUT
-StateRefDirective.$inject = [_state, _rootScope, _stateRegistry, _transitions];
+StateRefDirective.$inject = [
+    _state,
+    _rootScope,
+    _stateRegistry,
+    _transitions,
+    _parse,
+];
 /**
  * Generates `ng-sref` links and keeps their href/state data in sync.
  */
-function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions) {
+function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse) {
     const $state = $stateService;
     return {
         restrict: "A",
@@ -145,20 +171,21 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
             const active = ngSrefActive[1] || ngSrefActive[0];
             let unlinkInfoFn;
             const rawDef = {};
-            const getDef = () => processedDef($state, element, rawDef);
             const ref = parseStateRef(attrs.ngSref);
+            const ngStateOptsFn = attrs.ngSrefOpts
+                ? $parse(attrs.ngSrefOpts)
+                : undefined;
+            const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
             rawDef._ngState = ref._state;
-            rawDef._ngStateOpts = attrs.ngSrefOpts
-                ? scope.$eval(attrs.ngSrefOpts)
-                : {};
+            rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
             function update() {
-                rawDef._ngStateParams = assign({}, ref._paramExpr && scope.$eval(ref._paramExpr));
-                const def = getDef();
+                rawDef._ngStateParams = assign({}, paramFn && paramFn(scope));
+                const def = processedDef($state, element, rawDef);
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
                 }
                 if (active) {
-                    unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                    unlinkInfoFn = active?._addStateInfo?.(def._ngState || null, def._ngStateParams);
                 }
                 if (!isNullOrUndefined(def._href)) {
                     attrs.$set(type._attr, def._href);
@@ -169,7 +196,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
                     rawDef._ngStateParams = assign({}, val);
                     update();
                 }, true);
-                rawDef._ngStateParams = assign({}, scope.$eval(ref._paramExpr));
+                rawDef._ngStateParams = assign({}, paramFn?.(scope));
             }
             update();
             scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -177,7 +204,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
             if (!type._clickable) {
                 return;
             }
-            bindEvents(element, scope, clickHook(element, $state, type, getDef, $rootScope), rawDef._ngStateOpts);
+            bindEvents(element, scope, clickHook(element, $state, type, rawDef, $rootScope), rawDef._ngStateOpts);
         },
     };
 }
@@ -186,11 +213,12 @@ StateRefDynamicDirective.$inject = [
     _rootScope,
     _stateRegistry,
     _transitions,
+    _parse,
 ];
 /**
  * Generates dynamic `ui-state` links whose target state is read from an expression.
  */
-function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions) {
+function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse) {
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
@@ -199,7 +227,6 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             const active = ngSrefActive[1] || ngSrefActive[0];
             let unlinkInfoFn;
             const rawDef = {};
-            const getDef = () => processedDef($state, element, rawDef);
             const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
             const rawDefKeyByAttr = {
                 ngState: "_ngState",
@@ -213,12 +240,12 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
                 };
             });
             function update() {
-                const def = getDef();
+                const def = processedDef($state, element, rawDef);
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
                 }
                 if (active) {
-                    unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                    unlinkInfoFn = active?._addStateInfo?.(def._ngState || null, def._ngStateParams);
                 }
                 if (!isNullOrUndefined(def._href)) {
                     attrs.$set(type._attr, def._href);
@@ -226,7 +253,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             }
             inputAttrs.forEach((field) => {
                 rawDef[rawDefKeyByAttr[field]] = attrs[field]
-                    ? scope.$eval(attrs[field])
+                    ? $parse(attrs[field])(scope)
                     : null;
                 attrs.$observe(field, (expr) => {
                     watchDeregFns[field]();
@@ -244,7 +271,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             scope.$on("$destroy", $transitions.onSuccess({}, update));
             if (!type._clickable)
                 return;
-            const hookFn = clickHook(element, $state, type, getDef, $rootScope);
+            const hookFn = clickHook(element, $state, type, rawDef, $rootScope);
             bindEvents(element, scope, hookFn, rawDef._ngStateOpts);
         },
     };
@@ -255,11 +282,12 @@ StateRefActiveDirective.$inject = [
     _interpolate,
     _stateRegistry,
     _transitions,
+    _parse,
 ];
 /**
  * Toggles active CSS classes based on the current router state.
  */
-function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions) {
+function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse) {
     return {
         restrict: "A",
         controller($scope, $element, $attrs) {
@@ -270,7 +298,9 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
             // slight difference in logic routing
             const activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope) || "";
             try {
-                ngSrefActive = $scope.$eval($attrs.ngSrefActive);
+                ngSrefActive = $attrs.ngSrefActive
+                    ? $parse($attrs.ngSrefActive)($scope)
+                    : undefined;
             }
             catch {
                 // Do nothing. ngSrefActive is not a valid expression.
@@ -321,30 +351,35 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
             function setStatesFromDefinitionObject(statesDefinition) {
                 if (isObject(statesDefinition)) {
                     states = [];
-                    entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
-                        // Helper function to abstract adding state.
-                        const addStateForClass = function (stateOrNameParam, activeClassParam) {
-                            const ref = parseStateRef(stateOrNameParam);
-                            addState(ref._state, ref._paramExpr && $scope.$eval(ref._paramExpr), activeClassParam);
-                        };
+                    const definition = statesDefinition;
+                    keys(definition).forEach((activeClass) => {
+                        const stateOrName = definition[activeClass];
                         if (isString(stateOrName)) {
-                            // If state is string, just add it.
                             addStateForClass(stateOrName, activeClass);
                         }
                         else if (isArray(stateOrName)) {
-                            // If state is an array, iterate over it and add each array item individually.
-                            stateOrName.forEach((stateOrNameParam) => {
-                                addStateForClass(stateOrNameParam, activeClass);
+                            stateOrName.forEach((stateName) => {
+                                addStateForClass(stateName, activeClass);
                             });
                         }
                     });
                 }
             }
+            function addStateForClass(stateOrNameParam, activeClassParam) {
+                const ref = parseStateRef(stateOrNameParam);
+                addState(ref._state, ref._paramExpr && $parse(ref._paramExpr)($scope), activeClassParam);
+            }
             function addState(stateName, stateParams, activeClass) {
-                const state = $state.get(stateName, stateContext($element));
+                const state = stateName
+                    ? $state.get(stateName, stateContext($element))
+                    : undefined;
+                const foundState = !isArray(state) ? state : undefined;
                 const stateInfo = {
                     _state: {
-                        name: state?.name || String(stateName?.name || stateName),
+                        name: foundState?.name ||
+                            (isObject(stateName) && "name" in stateName
+                                ? String(stateName.name)
+                                : String(stateName)),
                     },
                     _params: stateParams,
                     _activeClass: activeClass,
@@ -356,12 +391,8 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
             }
             // Update route state
             function update() {
-                const splitClasses = (str) => str.split(/\s/).filter(Boolean);
-                const getClasses = (stateList) => stateList
-                    .map((x) => x._activeClass)
-                    .map(splitClasses)
-                    .flat();
-                const allClasses = getClasses(states).concat(splitClasses(activeEqClass));
+                const allClasses = getClasses(states);
+                appendSplitClasses(allClasses, activeEqClass);
                 const fuzzyStates = [];
                 let exactlyMatchesAny = false;
                 states.forEach((state) => {
@@ -373,12 +404,15 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
                     }
                 });
                 const fuzzyClasses = getClasses(fuzzyStates);
-                const exactClasses = exactlyMatchesAny
-                    ? splitClasses(activeEqClass)
-                    : [];
-                const addClasses = uniqueStrings(fuzzyClasses.concat(exactClasses));
+                const exactClasses = [];
+                if (exactlyMatchesAny) {
+                    appendSplitClasses(exactClasses, activeEqClass);
+                }
+                const addClasses = uniqueStrings(fuzzyClasses);
+                appendUniqueClasses(addClasses, exactClasses);
                 const removeClasses = [];
-                uniqueStrings(allClasses).forEach((cls) => {
+                const uniqueClasses = uniqueStrings(allClasses);
+                uniqueClasses.forEach((cls) => {
                     if (!addClasses.includes(cls)) {
                         removeClasses.push(cls);
                     }

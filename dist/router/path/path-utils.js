@@ -1,6 +1,6 @@
-import { keys, values, assign, isArray } from '../../shared/utils.js';
-import { TargetState } from '../state/target-state.js';
+import { keys, assign } from '../../shared/utils.js';
 import { PathNode } from './path-node.js';
+import { createViewConfig } from '../view/view.js';
 
 /**
  * Converts a TargetState into the concrete path nodes used by a transition.
@@ -10,9 +10,7 @@ function buildPath(targetState) {
     const stateObject = targetState.$state();
     const states = stateObject.path || [];
     const path = [];
-    for (let i = 0; i < states.length; i++) {
-        path.push(new PathNode(states[i]).applyRawParams(toParams));
-    }
+    states.forEach((state) => path.push(new PathNode(state).applyRawParams(toParams)));
     return path;
 }
 /**
@@ -26,29 +24,24 @@ function buildToPath(fromPath, targetState) {
     return toPath;
 }
 /**
- * Creates ViewConfig objects and adds them to the nodes for the specified states.
+ * Creates internal view records and adds them to the nodes for the specified states.
  */
 function applyViewConfigs($view, path, states) {
+    const stateSet = states instanceof Set ? states : new Set(states);
     for (let i = 0; i < path.length; i++) {
         const node = path[i];
-        if (!states.includes(node.state))
+        if (!stateSet.has(node.state))
             continue;
-        const viewDecls = values(node.state._views || {});
-        const viewSubPath = subPath(path, (x) => x === node);
-        if (!viewSubPath) {
-            node._views = [];
-            continue;
-        }
+        const viewDecls = node.state._views || {};
+        const viewSubPath = path.slice(0, i + 1);
         const viewConfigs = [];
-        for (let j = 0; j < viewDecls.length; j++) {
-            const viewConfig = $view._createViewConfig(viewSubPath, viewDecls[j]);
-            if (isArray(viewConfig)) {
-                viewConfigs.push(...viewConfig);
+        keys(viewDecls).forEach((name) => {
+            const templateFactory = $view._templateFactory;
+            if (!templateFactory) {
+                throw new Error("ViewService: No template factory registered");
             }
-            else {
-                viewConfigs.push(viewConfig);
-            }
-        }
+            viewConfigs.push(createViewConfig(viewSubPath, viewDecls[name], templateFactory));
+        });
         node._views = viewConfigs;
     }
 }
@@ -56,16 +49,15 @@ function applyViewConfigs($view, path, states) {
  * Returns a new to path which inherits parameters from the from path.
  */
 function inheritParams(fromPath, toPath, toKeys = []) {
-    const noInherit = [];
-    for (let i = 0; i < fromPath.length; i++) {
-        const { paramSchema } = fromPath[i];
-        for (let j = 0; j < paramSchema.length; j++) {
-            const param = paramSchema[j];
+    const noInherit = new Set();
+    const incomingKeys = new Set(toKeys);
+    fromPath.forEach(({ paramSchema }) => {
+        paramSchema.forEach((param) => {
             if (!param.inherit) {
-                noInherit.push(param.id);
+                noInherit.add(param.id);
             }
-        }
-    }
+        });
+    });
     const inheritedPath = [];
     for (let i = 0; i < toPath.length; i++) {
         const toNode = toPath[i];
@@ -77,20 +69,18 @@ function inheritParams(fromPath, toPath, toKeys = []) {
                 break;
             }
         }
-        for (let j = 0; j < noInherit.length; j++) {
-            delete fromParamVals[noInherit[j]];
-        }
+        noInherit.forEach((key) => delete fromParamVals[key]);
         const toParamVals = {};
         const incomingParamVals = {};
         const toNodeParamValues = toNode.paramValues;
-        for (const key in toNodeParamValues) {
-            if (toKeys.indexOf(key) === -1) {
+        keys(toNodeParamValues).forEach((key) => {
+            if (!incomingKeys.has(key)) {
                 toParamVals[key] = toNodeParamValues[key];
             }
             else {
                 incomingParamVals[key] = toNodeParamValues[key];
             }
-        }
+        });
         const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
         inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
     }
@@ -102,24 +92,20 @@ function inheritParams(fromPath, toPath, toKeys = []) {
 function treeChanges(fromPath, toPath, reloadState) {
     const max = Math.min(fromPath.length, toPath.length);
     let keep = 0;
-    const nodesMatch = (node1, node2) => node1.equals(node2, nonDynamicParams);
     while (keep < max &&
         fromPath[keep].state !== reloadState &&
-        nodesMatch(fromPath[keep], toPath[keep])) {
+        fromPath[keep].equals(toPath[keep], nonDynamicParams)) {
         keep++;
-    }
-    function applyToParams(retainedNode, idx) {
-        const cloned = retainedNode.clone();
-        cloned.paramValues = toPath[idx].paramValues;
-        return cloned;
     }
     const from = fromPath;
     const retained = from.slice(0, keep);
     const exiting = from.slice(keep);
     const retainedWithToParams = [];
-    for (let i = 0; i < retained.length; i++) {
-        retainedWithToParams.push(applyToParams(retained[i], i));
-    }
+    retained.forEach((node, idx) => {
+        const cloned = node.clone();
+        cloned.paramValues = toPath[idx].paramValues;
+        retainedWithToParams.push(cloned);
+    });
     const entering = toPath.slice(keep);
     const to = retainedWithToParams.concat(entering);
     return { from, to, retained, retainedWithToParams, exiting, entering };
@@ -139,46 +125,13 @@ function matching(pathA, pathB, paramsFn) {
     }
     return matchingPath;
 }
-/**
- * Return a subpath of a path which stops at the first matching node.
- */
-function subPath(path, predicate) {
-    let elementIdx = -1;
-    for (let i = 0; i < path.length; i++) {
-        if (predicate(path[i])) {
-            elementIdx = i;
-            break;
-        }
-    }
-    return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
-}
 function nonDynamicParams(node) {
-    const params = node.state.parameters({ inherit: false });
     const nonDynamic = [];
-    for (let i = 0; i < params.length; i++) {
-        const param = params[i];
+    node.paramSchema.forEach((param) => {
         if (!param.dynamic)
             nonDynamic.push(param);
-    }
+    });
     return nonDynamic;
 }
-/** Given a PathNode[], create an TargetState
- * @param {StateRegistryProvider} registry
- * @param {Array<PathNode>} path
- * @returns {TargetState}
- */
-function makeTargetState(registry, path) {
-    const tailNode = path.at(-1);
-    if (!tailNode)
-        throw new Error("Cannot create TargetState from an empty path");
-    return new TargetState(registry, tailNode.state, pathToParams(path), {});
-}
-function pathToParams(path) {
-    const params = {};
-    for (let i = 0; i < path.length; i++) {
-        assign(params, path[i].paramValues);
-    }
-    return params;
-}
 
-export { applyViewConfigs, buildPath, buildToPath, inheritParams, makeTargetState, matching, nonDynamicParams, subPath, treeChanges };
+export { applyViewConfigs, buildPath, buildToPath, inheritParams, matching, nonDynamicParams, treeChanges };

@@ -133,6 +133,7 @@ import { PubSubProvider } from "./services/pubsub/pubsub.ts";
 import { RestProvider } from "./services/rest/rest.ts";
 import { SceDelegateProvider, SceProvider } from "./services/sce/sce.ts";
 import { SseProvider } from "./services/sse/sse.ts";
+import { StreamProvider } from "./services/stream/readable-stream.ts";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
@@ -276,6 +277,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             [_router]: RouterProvider,
             $sce: SceProvider,
             $sceDelegate: SceDelegateProvider,
+            $stream: StreamProvider,
             $sse: SseProvider,
             $templateCache: TemplateCacheProvider,
             $templateRequest: TemplateRequestProvider,
