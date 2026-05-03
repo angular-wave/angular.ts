@@ -1,7 +1,6 @@
 import {
   assign,
   createObject,
-  entries,
   hasOwn,
   isArray,
   isDefined,
@@ -25,7 +24,7 @@ import type {
   ViewDeclaration,
 } from "./interface.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { Param } from "../params/param.ts";
+import { DefType, type Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import { UrlMatcher } from "../url/url-matcher.ts";
@@ -106,13 +105,11 @@ function buildParams(
   state: StateObject & BuiltStateDeclaration,
   paramFactory: ParamFactory,
 ): Record<string, Param> {
-  const urlParams =
-    (state._url && state._url._parameters({ inherit: false })) || [];
-
   const params: Record<string, Param> = {};
 
-  urlParams.forEach((param) => {
-    params[param.id] = param;
+  state._url?._params.forEach((param) => {
+    if (param.location === DefType._PATH || param.location === DefType._SEARCH)
+      params[param.id] = param;
   });
 
   const paramConfigs = state.params || {};
@@ -211,12 +208,10 @@ function viewsBuilder(
     $default: defaultViewConfig,
   }) as Record<string, ViewDeclaration | string>;
 
-  const viewEntries = entries(viewsObject);
+  keys(viewsObject).forEach((entryName) => {
+    let name = entryName;
 
-  viewEntries.forEach(([entryName, entryConfig]) => {
-    let name = entryName as string;
-
-    let config = entryConfig as ViewDeclaration | string;
+    let config = viewsObject[entryName] as ViewDeclaration | string;
 
     name = name || "$default";
 

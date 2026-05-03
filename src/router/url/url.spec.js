@@ -12,6 +12,15 @@ describe("UrlMatcher", () => {
     $location.setUrl(decodeURIComponent(url));
   }
 
+  function matcherParams(matcher) {
+    const path = matcher._cache._path || [matcher];
+    const params = [];
+
+    path.forEach((pathMatcher) => params.push(...pathMatcher._params));
+
+    return params;
+  }
+
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
@@ -76,7 +85,7 @@ describe("UrlMatcher", () => {
     const matcher = router._compile(
       "/users/:id/details/{type}/{repeat:[0-9]+}?from&to",
     );
-    expect(matcher._parameters().map((x) => x.id)).toEqual([
+    expect(matcherParams(matcher).map((x) => x.id)).toEqual([
       "id",
       "type",
       "repeat",
@@ -97,7 +106,7 @@ describe("UrlMatcher", () => {
       const matcher = router._compile(
         "/users/?from&to&snake-case&snake-case-triple",
       );
-      expect(matcher._parameters().map((x) => x.id)).toEqual([
+      expect(matcherParams(matcher).map((x) => x.id)).toEqual([
         "from",
         "to",
         "snake-case",
@@ -125,7 +134,7 @@ describe("UrlMatcher", () => {
       const matcher = router._compile(
         "/users/?from&to&with.periods&with.periods.also",
       );
-      const params = matcher._parameters().map(function (p) {
+      const params = matcherParams(matcher).map(function (p) {
         return p.id;
       });
 
@@ -319,7 +328,7 @@ describe("UrlMatcher", () => {
       const matcher = router
         ._compile("/users/:id/details/{type}?from")
         ._append(router._compile("/{repeat:[0-9]+}?to"));
-      const params = matcher._parameters();
+      const params = matcherParams(matcher);
       expect(params.map((x) => x.id)).toEqual([
         "id",
         "type",
@@ -355,7 +364,7 @@ describe("UrlMatcher", () => {
       let m = router._compile("/");
       router._isCaseInsensitive = true;
       m = m._append(router._compile("foo/{param:bar}"));
-      expect(m._validates({ param: "BAR" })).toEqual(true);
+      expect(m._exec("/FOO/BAR")).toEqual({ param: "BAR" });
     });
 
     it("should generate/match params in the proper order", () => {
@@ -547,7 +556,7 @@ describe("UrlMatcher", () => {
       expect(parsed).toEqual(expected);
 
       // Pass again through Param.value() for normalization (like transitionTo)
-      const paramDefs = m._parameters();
+      const paramDefs = matcherParams(m);
       const values = {};
 
       Object.entries(parsed).forEach(([key, val]) => {
@@ -590,109 +599,50 @@ describe("UrlMatcher", () => {
 
       expect(m._exec("/foo/bar")).toEqual({ param1: "bar" });
       expect(m._format({ param1: "bar" })).toBe("/foo/bar");
-      expect(m._format({ param1: ["bar", "baz"] })).toBe("/foo/bar%2Cbaz"); // coerced to string
+      expect(m._format({ param1: ["bar", "baz"] })).toBeNull();
     });
 
-    it("should be split on - in url and wrapped in an array if array: true", () => {
+    it("should ignore array mode for path parameters", () => {
       const m = router._compile("/foo/:param1", {
         state: { params: { param1: { array: true } } },
       });
 
-      expect(m._exec("/foo/")).toEqual({ param1: undefined });
-      expect(m._exec("/foo/bar")).toEqual({ param1: ["bar"] });
-      setUrl("/foo/bar-baz");
-      expect(m._exec($location.getUrl())).toEqual({
-        param1: ["bar", "baz"],
-      });
+      expect(m._exec("/foo/")).toEqual({ param1: "" });
+      expect(m._exec("/foo/bar")).toEqual({ param1: "bar" });
+      expect(m._exec("/foo/bar-baz")).toEqual({ param1: "bar-baz" });
 
-      expect(m._format({ param1: [] })).toEqual("/foo/");
-      expect(m._format({ param1: ["bar"] })).toEqual("/foo/bar");
-      expect(m._format({ param1: ["bar", "baz"] })).toEqual("/foo/bar-baz");
+      expect(m._format({ param1: [] })).toBeNull();
+      expect(m._format({ param1: ["bar"] })).toBeNull();
+      expect(m._format({ param1: ["bar", "baz"] })).toBeNull();
     });
 
-    it("should behave similar to multi-value query params", () => {
+    it("should treat path params named with [] as single values", () => {
       const m = router._compile("/foo/:param1[]");
 
-      // empty array [] is treated like "undefined"
-      expect(m._format({ "param1[]": undefined })).toBe("/foo/");
-      expect(m._format({ "param1[]": [] })).toBe("/foo/");
-      expect(m._format({ "param1[]": "" })).toBe("/foo/");
       expect(m._format({ "param1[]": "1" })).toBe("/foo/1");
-      expect(m._format({ "param1[]": ["1"] })).toBe("/foo/1");
-      expect(m._format({ "param1[]": ["1", "2"] })).toBe("/foo/1-2");
+      expect(m._format({ "param1[]": ["1"] })).toBeNull();
+      expect(m._format({ "param1[]": ["1", "2"] })).toBeNull();
 
-      expect(m._exec("/foo/")).toEqual({ "param1[]": undefined });
-      expect(m._exec("/foo/1")).toEqual({ "param1[]": ["1"] });
-      expect(m._exec("/foo/1-2")).toEqual({ "param1[]": ["1", "2"] });
+      expect(m._exec("/foo/")).toEqual({ "param1[]": "" });
+      expect(m._exec("/foo/1")).toEqual({ "param1[]": "1" });
+      expect(m._exec("/foo/1-2")).toEqual({ "param1[]": "1-2" });
 
       setUrl("/foo/");
       expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": undefined,
+        "param1[]": "",
       });
       setUrl("/foo/bar");
       expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": ["bar"],
+        "param1[]": "bar",
       });
       setUrl("/foo/bar-baz");
       expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": ["bar", "baz"],
+        "param1[]": "bar-baz",
       });
 
-      expect(m._format({})).toBe("/foo/");
-      expect(m._format({ "param1[]": undefined })).toBe("/foo/");
-      expect(m._format({ "param1[]": "" })).toBe("/foo/");
       expect(m._format({ "param1[]": "bar" })).toBe("/foo/bar");
-      expect(m._format({ "param1[]": ["bar"] })).toBe("/foo/bar");
-      expect(m._format({ "param1[]": ["bar", "baz"] })).toBe("/foo/bar-baz");
-    });
-
-    it("should be split on - in url and wrapped in an array if paramname looks like param[]", () => {
-      const m = router._compile("/foo/:param1[]");
-
-      expect(m._exec("/foo/")).toEqual({ "param1[]": undefined });
-      expect(m._exec("/foo/bar")).toEqual({ "param1[]": ["bar"] });
-      expect(m._exec("/foo/bar-baz")).toEqual({ "param1[]": ["bar", "baz"] });
-
-      expect(m._format({ "param1[]": [] })).toEqual("/foo/");
-      expect(m._format({ "param1[]": ["bar"] })).toEqual("/foo/bar");
-      expect(m._format({ "param1[]": ["bar", "baz"] })).toEqual("/foo/bar-baz");
-    });
-
-    it("should allow path param arrays with '-' in the values", () => {
-      const m = router._compile("/foo/:param1[]");
-
-      expect(m._exec("/foo/")).toEqual({ "param1[]": undefined });
-      expect(m._exec("/foo/bar\\-")).toEqual({ "param1[]": ["bar-"] });
-      expect(m._exec("/foo/bar\\--\\-baz")).toEqual({
-        "param1[]": ["bar-", "-baz"],
-      });
-
-      expect(m._format({ "param1[]": [] })).toEqual("/foo/");
-      expect(m._format({ "param1[]": ["bar-"] })).toEqual("/foo/bar%5C%2D");
-      expect(m._format({ "param1[]": ["bar-", "-baz"] })).toEqual(
-        "/foo/bar%5C%2D-%5C%2Dbaz",
-      );
-      expect(
-        m._format({ "param1[]": ["bar-bar-bar-", "-baz-baz-baz"] }),
-      ).toEqual("/foo/bar%5C%2Dbar%5C%2Dbar%5C%2D-%5C%2Dbaz%5C%2Dbaz%5C%2Dbaz");
-
-      // check that we handle $location.url decodes correctly
-      setUrl(m._format({ "param1[]": ["bar-", "-baz"] }));
-      expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": ["bar-", "-baz"],
-      });
-
-      // check that we handle $location.url decodes correctly for multiple hyphens
-      setUrl(m._format({ "param1[]": ["bar-bar-bar-", "-baz-baz-baz"] }));
-      expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": ["bar-bar-bar-", "-baz-baz-baz"],
-      });
-
-      // check that pre-encoded values are passed correctly
-      setUrl(m._format({ "param1[]": ["%2C%20%5C%2C", "-baz"] }));
-      expect(m._exec($location.getPath(), $location.getSearch())).toEqual({
-        "param1[]": ["%2C%20%5C%2C", "-baz"],
-      });
+      expect(m._format({ "param1[]": ["bar"] })).toBeNull();
+      expect(m._format({ "param1[]": ["bar", "baz"] })).toBeNull();
     });
   });
   describe("UrlMatcher parameter types", () => {

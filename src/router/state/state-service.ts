@@ -611,11 +611,10 @@ export class StateProvider {
     params?: RawParams,
     options?: { relative: StateOrName | undefined },
   ): boolean | undefined {
-    options = defaults(options, { relative: this.$current });
-    const state = this._stateRegistry?._matcher.find(
-      stateOrName,
-      options?.relative,
-    );
+    const relative =
+      options?.relative === undefined ? this.$current : options.relative;
+
+    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
 
     if (!isDefined(state)) return undefined;
 
@@ -672,7 +671,9 @@ export class StateProvider {
     params?: RawParams,
     options?: TransitionOptions,
   ): boolean | undefined {
-    options = defaults(options, { relative: this.$current });
+    const relative =
+      options?.relative === undefined ? this.$current : options.relative;
+
     const glob = isString(stateOrName) && Glob.fromString(stateOrName);
 
     if (glob) {
@@ -681,10 +682,7 @@ export class StateProvider {
       if (!currentName || !glob.matches(currentName)) return false;
       stateOrName = currentName;
     }
-    const state = this._stateRegistry?._matcher.find(
-      stateOrName,
-      options?.relative,
-    );
+    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
 
     const include = this.$current?.includes;
 
@@ -724,29 +722,21 @@ export class StateProvider {
     params?: RawParams,
     options?: HrefOptions,
   ): string | null {
-    const defaultHrefOpts = {
-      lossy: true,
-      inherit: true,
-      absolute: false,
-      relative: this.$current,
-    };
-
-    options = defaults(options, defaultHrefOpts);
     params = params || {};
-    const state = this._stateRegistry?._matcher.find(
-      stateOrName,
-      options?.relative,
-    );
+    const relative =
+      options?.relative === undefined ? this.$current : options.relative;
+
+    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
 
     if (!isDefined(state)) return null;
 
-    if (options?.inherit)
+    if (options?.inherit !== false)
       params = this._routerState._params.$inherit(
         params,
         this.$current as StateObject,
         state,
       );
-    const nav = state && options?.lossy ? state.navigable : state;
+    const nav = state && options?.lossy !== false ? state.navigable : state;
 
     if (!nav || isNullOrUndefined(nav._url)) {
       return null;

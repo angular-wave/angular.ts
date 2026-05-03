@@ -1,4 +1,4 @@
-import { assign, keys, values } from "../../shared/utils.ts";
+import { assign, keys } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import {
@@ -54,20 +54,22 @@ export function buildToPath(
 export function applyViewConfigs(
   $view: ViewService,
   path: PathNode[],
-  states: StateObject[],
+  states: StateObject[] | Set<StateObject>,
 ): void {
+  const stateSet = states instanceof Set ? states : new Set(states);
+
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
 
-    if (!states.includes(node.state)) continue;
+    if (!stateSet.has(node.state)) continue;
 
-    const viewDecls = values(node.state._views || {});
+    const viewDecls = node.state._views || {};
 
     const viewSubPath = path.slice(0, i + 1);
 
     const viewConfigs: _ViewConfig[] = [];
 
-    viewDecls.forEach((viewDecl) => {
+    keys(viewDecls).forEach((name) => {
       const templateFactory = $view._templateFactory;
 
       if (!templateFactory) {
@@ -75,7 +77,7 @@ export function applyViewConfigs(
       }
 
       viewConfigs.push(
-        createViewConfig(viewSubPath, viewDecl, templateFactory),
+        createViewConfig(viewSubPath, viewDecls[name], templateFactory),
       );
     });
 
@@ -91,12 +93,14 @@ export function inheritParams(
   toPath: PathNode[],
   toKeys: string[] = [],
 ): PathNode[] {
-  const noInherit: string[] = [];
+  const noInherit = new Set<string>();
+
+  const incomingKeys = new Set(toKeys);
 
   fromPath.forEach(({ paramSchema }) => {
     paramSchema.forEach((param) => {
       if (!param.inherit) {
-        noInherit.push(param.id);
+        noInherit.add(param.id);
       }
     });
   });
@@ -127,7 +131,7 @@ export function inheritParams(
     const toNodeParamValues = toNode.paramValues;
 
     keys(toNodeParamValues).forEach((key) => {
-      if (toKeys.indexOf(key) === -1) {
+      if (!incomingKeys.has(key)) {
         toParamVals[key] = toNodeParamValues[key];
       } else {
         incomingParamVals[key] = toNodeParamValues[key];
@@ -162,14 +166,6 @@ export function treeChanges(
     keep++;
   }
 
-  function applyToParams(retainedNode: PathNode, idx: number): PathNode {
-    const cloned = retainedNode.clone();
-
-    cloned.paramValues = toPath[idx].paramValues;
-
-    return cloned;
-  }
-
   const from = fromPath;
 
   const retained = from.slice(0, keep);
@@ -178,9 +174,12 @@ export function treeChanges(
 
   const retainedWithToParams: PathNode[] = [];
 
-  retained.forEach((node, idx) =>
-    retainedWithToParams.push(applyToParams(node, idx)),
-  );
+  retained.forEach((node, idx) => {
+    const cloned = node.clone();
+
+    cloned.paramValues = toPath[idx].paramValues;
+    retainedWithToParams.push(cloned);
+  });
 
   const entering = toPath.slice(keep);
 
@@ -215,11 +214,9 @@ export function matching(
 }
 
 export function nonDynamicParams(node: PathNode): Param[] {
-  const params = node.state.parameters({ inherit: false });
-
   const nonDynamic: Param[] = [];
 
-  params.forEach((param) => {
+  node.paramSchema.forEach((param) => {
     if (!param.dynamic) nonDynamic.push(param);
   });
 

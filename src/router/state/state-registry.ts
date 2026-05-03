@@ -327,7 +327,9 @@ export class StateRegistryProvider {
       }
     }
 
-    const deregistered = [state].concat(children).reverse();
+    const deregistered = children.slice().reverse();
+
+    deregistered.push(state);
 
     deregistered.forEach((_state) => {
       this._routerState._removeStateRoute(_state as StateObject);

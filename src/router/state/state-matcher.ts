@@ -1,4 +1,4 @@
-import { values, isString } from "../../shared/utils.ts";
+import { isString, keys } from "../../shared/utils.ts";
 import type { StateObject } from "./state-object.ts";
 import type { StateOrName, StateStore } from "./interface.ts";
 
@@ -46,29 +46,32 @@ export class StateMatcher {
     ) {
       return state as StateObject;
     } else if (isStr && matchGlob) {
-      const states = values(this._states);
+      const stateNames = keys(this._states);
 
-      const matches: StateObject[] = [];
+      let match: StateObject | undefined;
 
-      states.forEach((stateObj) => {
+      let duplicateNames: string[] | undefined;
+
+      stateNames.forEach((stateName) => {
+        const stateObj = this._states[stateName] as StateObject;
+
         if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
-          matches.push(stateObj);
+          if (match) {
+            duplicateNames = duplicateNames || [match.name];
+            duplicateNames.push(stateObj.name);
+          } else {
+            match = stateObj;
+          }
         }
       });
 
-      if (matches.length > 1) {
-        const names: string[] = [];
-
-        matches.forEach((match) => {
-          names.push(match.name);
-        });
-
+      if (duplicateNames) {
         throw new Error(
-          `stateMatcher.find: Found multiple matches for ${name} using glob: ${names}`,
+          `stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames}`,
         );
       }
 
-      return matches[0] as StateObject | undefined;
+      return match;
     }
 
     return undefined;

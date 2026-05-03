@@ -1,6 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
 import {
-  assign,
   assert,
   hasOwn,
   isArray,
@@ -85,7 +84,13 @@ export class Resolvable {
     this.promise = undefined;
 
     if (isInstanceOf(arg1, Resolvable)) {
-      assign(this, arg1);
+      this.token = arg1.token;
+      this.resolveFn = arg1.resolveFn;
+      this.deps = arg1.deps;
+      this.eager = arg1.eager;
+      this.data = arg1.data;
+      this.resolved = arg1.resolved;
+      this.promise = arg1.promise;
     } else if (isFunction(resolveFn)) {
       assert(!isNullOrUndefined(arg1), "token argument is required");
       this.token = arg1;
@@ -141,13 +146,7 @@ export class Resolvable {
   toString(): string {
     const deps = isArray(this.deps) ? this.deps : [this.deps];
 
-    const depStrings = new Array(deps.length);
-
-    deps.forEach((dep, index) => {
-      depStrings[index] = stringify(dep);
-    });
-
-    return `Resolvable(token: ${stringify(this.token)}, requires: [${depStrings}])`;
+    return `Resolvable(token: ${stringify(this.token)}, requires: [${deps.map(stringify)}])`;
   }
 
   /**

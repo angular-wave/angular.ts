@@ -79,15 +79,16 @@ function sameReloadAwarePath(
   reloadState?: StateObject,
 ): boolean {
   if (pathA.length !== pathB.length) return false;
-  const pathPrefix = matching(pathA, pathB);
 
   let retainedCount = 0;
 
-  pathPrefix.forEach((node) => {
-    if (!nodeIsReloading(node, reloadState)) {
+  for (let i = 0; i < pathA.length; i++) {
+    if (!pathA[i].equals(pathB[i])) break;
+
+    if (!nodeIsReloading(pathA[i], reloadState)) {
       retainedCount++;
     }
-  });
+  }
 
   return pathA.length === retainedCount;
 }
@@ -106,6 +107,20 @@ function avoidEmptyHash(params: RawParams): RawParams {
   });
 
   return cleanParams;
+}
+
+function collectPathParams(path: PathNode[]): RawParams {
+  const params: RawParams = {};
+
+  path.forEach((node) => {
+    const nodeParams = node.paramValues;
+
+    keys(nodeParams).forEach((key) => {
+      params[key] = nodeParams[key];
+    });
+  });
+
+  return params;
 }
 
 /**
@@ -191,12 +206,12 @@ export class Transition {
   }
 
   applyViewConfigs() {
-    const enteringStates: StateObject[] = [];
+    const enteringStates = new Set<StateObject>();
 
     const { entering } = this._treeChanges;
 
     entering.forEach((node) => {
-      enteringStates.push(node.state);
+      enteringStates.add(node.state);
     });
 
     applyViewConfigs(
@@ -261,13 +276,7 @@ export class Transition {
   params(pathname = "to"): RawParams {
     const path = (this._treeChanges[pathname] || []) as PathNode[];
 
-    const params: RawParams = {};
-
-    path.forEach((node) => {
-      assign(params, node.paramValues);
-    });
-
-    return Object.freeze(params);
+    return Object.freeze(collectPathParams(path));
   }
 
   /**
@@ -285,9 +294,13 @@ export class Transition {
    * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
    */
   exiting(): StateDeclaration[] {
-    const states = pathStates(this._treeChanges.exiting);
+    const path = this._treeChanges.exiting;
 
-    states.reverse();
+    const states: StateDeclaration[] = [];
+
+    for (let i = path.length - 1; i >= 0; i--) {
+      states.push(path[i].state.self);
+    }
 
     return states;
   }
@@ -408,14 +421,17 @@ export class Transition {
     const changes: Param[] = [];
 
     tc.to.forEach((node, i) => {
-      const nodeChanges = Param.changed(
-        node.paramSchema,
-        node.paramValues,
-        tc.from[i].paramValues,
-      );
+      const fromParamValues = tc.from[i].paramValues;
 
-      nodeChanges.forEach((changedParam) => {
-        changes.push(changedParam);
+      node.paramSchema.forEach((param) => {
+        if (
+          !param.type.equals(
+            node.paramValues[param.id],
+            fromParamValues[param.id],
+          )
+        ) {
+          changes.push(param);
+        }
       });
     });
 
@@ -607,21 +623,15 @@ export class Transition {
 
     const values = this.params();
 
-    const invalidParams: Param[] = [];
+    const invalidValueParts: string[] = [];
 
     paramDefs.forEach((param) => {
       if (!param.validates(values[param.id])) {
-        invalidParams.push(param);
+        invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
       }
     });
 
-    if (invalidParams.length) {
-      const invalidValueParts: string[] = [];
-
-      invalidParams.forEach((param) => {
-        invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
-      });
-
+    if (invalidValueParts.length) {
       const invalidValues = invalidValueParts.join(", ");
 
       const detail = `The following parameter values are not valid for state '${state.name}': ${invalidValues}`;
@@ -669,13 +679,7 @@ function pathStates(path: PathNode[]): StateDeclaration[] {
 }
 
 function pathParams(path: PathNode[]): RawParams {
-  const params: RawParams = {};
-
-  path.forEach((node) => {
-    assign(params, node.paramValues);
-  });
-
-  return params;
+  return collectPathParams(path);
 }
 
 Transition.diToken = Transition;

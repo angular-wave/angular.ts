@@ -11,11 +11,11 @@ import { removeFrom } from "../../shared/common.ts";
 import {
   assign,
   arrayFrom,
-  entries,
   isArray,
   isNullOrUndefined,
   isObject,
   isString,
+  keys,
 } from "../../shared/utils.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import type { RawParams } from "../params/interface.ts";
@@ -82,6 +82,12 @@ function getClasses(stateList: ActiveClassState[]): string[] {
   stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
 
   return classes;
+}
+
+function appendUniqueClasses(target: string[], source: string[]): void {
+  source.forEach((className) => {
+    if (!target.includes(className)) target.push(className);
+  });
 }
 
 /**
@@ -573,11 +579,11 @@ export function StateRefActiveDirective(
       function setStatesFromDefinitionObject(statesDefinition: unknown): void {
         if (isObject(statesDefinition)) {
           states = [];
-          const stateEntries = entries(
-            statesDefinition as Record<string, unknown>,
-          );
+          const definition = statesDefinition as Record<string, unknown>;
 
-          stateEntries.forEach(([activeClass, stateOrName]) => {
+          keys(definition).forEach((activeClass) => {
+            const stateOrName = definition[activeClass];
+
             if (isString(stateOrName)) {
               addStateForClass(stateOrName, activeClass);
             } else if (isArray(stateOrName)) {
@@ -657,7 +663,9 @@ export function StateRefActiveDirective(
           appendSplitClasses(exactClasses, activeEqClass);
         }
 
-        const addClasses = uniqueStrings(fuzzyClasses.concat(exactClasses));
+        const addClasses = uniqueStrings(fuzzyClasses);
+
+        appendUniqueClasses(addClasses, exactClasses);
 
         const removeClasses: string[] = [];
 

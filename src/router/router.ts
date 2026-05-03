@@ -208,16 +208,19 @@ export class RouterProvider {
 
       const match = urlMatcher._exec(path, search, hash || "");
 
-      if (match === null || !urlMatcher._validates(match)) return;
+      if (match === null) return;
 
       const weight = stateRouteMatchPriority(urlMatcher, match);
 
-      if (
-        !best ||
-        compareUrlMatchers(urlMatcher, best.urlMatcher) < 0 ||
-        (compareUrlMatchers(urlMatcher, best.urlMatcher) === 0 &&
-          weight > best.weight)
-      ) {
+      if (!best) {
+        best = { match, state, urlMatcher, weight };
+
+        return;
+      }
+
+      const specificity = compareUrlMatchers(urlMatcher, best.urlMatcher);
+
+      if (specificity < 0 || (specificity === 0 && weight > best.weight)) {
         best = { match, state, urlMatcher, weight };
       }
     });
@@ -283,6 +286,7 @@ export class RouterProvider {
   /** @internal */
   _compile(urlPattern: string, config?: UrlMatcherCompileConfig): UrlMatcher {
     const globalConfig = {
+      state: { params: {} },
       strict: this._isStrictMode,
       caseInsensitive: this._isCaseInsensitive,
     };
@@ -300,17 +304,19 @@ function stateRouteMatchPriority(
   urlMatcher: UrlMatcher,
   params: RawParams,
 ): number {
-  const parameters = urlMatcher._parameters();
+  const path = urlMatcher._cache._path || [urlMatcher];
 
   let optionalCount = 0;
 
   let matched = 0;
 
-  parameters.forEach((param) => {
-    if (!param.isOptional) return;
-    optionalCount++;
+  path.forEach((matcher) => {
+    matcher._params.forEach((param) => {
+      if (!param.isOptional) return;
+      optionalCount++;
 
-    if (params[param.id]) matched++;
+      if (params[param.id]) matched++;
+    });
   });
 
   return optionalCount ? matched / optionalCount : EXACT_ROUTE_MATCH_PRIORITY;

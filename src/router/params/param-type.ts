@@ -31,7 +31,6 @@ export class ParamType {
     this.pattern = /.*/;
     this.inherit = true;
     assign(this, def);
-    this.name = undefined;
   }
   // consider these four methods to be "abstract methods" that should be overridden
 
@@ -86,13 +85,9 @@ export class ParamType {
    * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
    * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
    * @param {boolean |'auto'} mode
-   * @param {boolean} isSearch
    */
-  $asArray(mode: boolean | "auto", isSearch: boolean): ParamType {
+  $asArray(mode: boolean | "auto"): ParamType {
     if (!mode) return this;
-
-    if (mode === "auto" && !isSearch)
-      throw new Error("'auto' array mode is for query parameters only");
 
     return new ArrayParamType(this, mode);
   }
@@ -122,15 +117,12 @@ class ArrayParamType extends ParamType {
 
     this._type = type;
     this._arrayMode = mode;
-
-    assign(this, {
-      dynamic: type.dynamic,
-      name: type.name,
-      pattern: type.pattern,
-      inherit: type.inherit,
-      raw: type.raw,
-      $arrayMode: mode,
-    });
+    this.dynamic = type.dynamic;
+    this.name = type.name as string | undefined;
+    this.pattern = type.pattern;
+    this.inherit = type.inherit;
+    this.raw = type.raw;
+    this.$arrayMode = mode;
   }
 
   /** @internal */
@@ -156,21 +148,21 @@ class ArrayParamType extends ParamType {
 
     const arr = this._arrayWrap(val);
 
-    const result: unknown[] = [];
-
     const type = this._type;
 
-    arr.forEach((item) => {
-      result.push(type[method](item));
-    });
-
     if (allTruthyMode) {
-      for (let i = 0; i < result.length; i++) {
-        if (!result[i]) return false;
+      for (let i = 0; i < arr.length; i++) {
+        if (!type[method](arr[i])) return false;
       }
 
       return true;
     }
+
+    const result: unknown[] = [];
+
+    arr.forEach((item) => {
+      result.push(type[method](item));
+    });
 
     return this._arrayUnwrap(result);
   }

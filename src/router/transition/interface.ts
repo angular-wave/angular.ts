@@ -898,9 +898,7 @@ export interface TransitionService extends HookRegistry {
   /** @internal path type metadata used for matching */
   _criteriaPaths: PathTypes;
 
-  /**
-   * @internal Return event types, optionally filtered by phase, sorted by phase/order.
-   */
+  /** @internal Return event types, optionally filtered by phase. */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
 
   /** @internal Return the defined path types */

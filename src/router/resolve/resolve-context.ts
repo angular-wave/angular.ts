@@ -50,34 +50,34 @@ export class ResolveContext {
    * Returns the unique tokens available from all resolvables in this path.
    */
   getTokens(): ResolvableToken[] {
-    const tokens: ResolvableToken[] = [];
+    const tokenSet = new Set<ResolvableToken>();
 
     this._path.forEach(({ resolvables }) => {
       resolvables.forEach(({ token }) => {
-        if (!tokens.includes(token)) {
-          tokens.push(token);
-        }
+        tokenSet.add(token);
       });
     });
 
-    return tokens;
+    return Array.from(tokenSet);
   }
 
   /**
    * Returns the most local resolvable registered for the specified token.
    */
   getResolvable(token: ResolvableToken): Resolvable {
-    let matching: Resolvable | undefined;
+    for (let i = this._path.length - 1; i >= 0; i--) {
+      const { resolvables } = this._path[i];
 
-    this._path.forEach(({ resolvables }) => {
-      resolvables.forEach((candidate) => {
+      for (let j = resolvables.length - 1; j >= 0; j--) {
+        const candidate = resolvables[j];
+
         if (candidate.token === token) {
-          matching = candidate as Resolvable;
+          return candidate;
         }
-      });
-    });
+      }
+    }
 
-    return matching as Resolvable;
+    return undefined as unknown as Resolvable;
   }
 
   /**
@@ -123,7 +123,7 @@ export class ResolveContext {
 
     const resolvables: Resolvable[] = [];
 
-    const keys: ResolvableToken[] = [];
+    const tokens = new Set<ResolvableToken>();
 
     newResolvables.forEach((resolvable) => {
       const normalized = isInstanceOf(resolvable, Resolvable)
@@ -131,13 +131,13 @@ export class ResolveContext {
         : new Resolvable(resolvable);
 
       resolvables.push(normalized);
-      keys.push(normalized.token);
+      tokens.add(normalized.token);
     });
 
     const nextResolvables: Resolvable[] = [];
 
     node.resolvables.forEach((existing) => {
-      if (!keys.includes(existing.token)) {
+      if (!tokens.has(existing.token)) {
         nextResolvables.push(existing);
       }
     });
@@ -153,8 +153,11 @@ export class ResolveContext {
   resolvePath(eagerOnly = false, trans: Transition): Promise<ResolvedToken[]> {
     const promises: Promise<ResolvedToken>[] = [];
 
-    this._path.forEach((node) => {
-      const subContext = this.subContext(node.state);
+    this._path.forEach((node, index) => {
+      const subContext = new ResolveContext(
+        this._path.slice(0, index + 1),
+        this._injector,
+      );
 
       node.resolvables.forEach((resolvable) => {
         if (!eagerOnly || resolvable.eager) {
@@ -170,15 +173,24 @@ export class ResolveContext {
    * Finds the path node that owns the provided resolvable.
    */
   findNode(resolvable: Resolvable): PathNode | undefined {
+    const index = this._findNodeIndex(resolvable);
+
+    return index === -1 ? undefined : this._path[index];
+  }
+
+  /** @internal */
+  _findNodeIndex(resolvable: Resolvable): number {
     for (let i = 0; i < this._path.length; i++) {
       const node = this._path[i];
 
-      if (node.resolvables.includes(resolvable)) {
-        return node;
+      for (let j = 0; j < node.resolvables.length; j++) {
+        if (node.resolvables[j] === resolvable) {
+          return i;
+        }
       }
     }
 
-    return undefined;
+    return -1;
   }
 
   /**
@@ -186,33 +198,19 @@ export class ResolveContext {
    * the current path or the injector fallback.
    */
   getDependencies(resolvable: Resolvable): Resolvable[] {
-    const node = this.findNode(resolvable);
+    const nodeIndex = this._findNodeIndex(resolvable);
 
-    let dependencyPath = this._path;
+    const dependencyPath =
+      nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
 
-    if (node) {
-      for (let i = 0; i < this._path.length; i++) {
-        if (this._path[i] === node) {
-          dependencyPath = this._path.slice(0, i + 1);
-          break;
-        }
-      }
-    }
-
-    const availableResolvables: Resolvable[] = [];
+    const latestByToken = new Map<ResolvableToken, Resolvable>();
 
     dependencyPath.forEach(({ resolvables }) => {
       resolvables.forEach((candidate) => {
         if (candidate !== resolvable) {
-          availableResolvables.push(candidate as Resolvable);
+          latestByToken.set(candidate.token, candidate);
         }
       });
-    });
-
-    const latestByToken = new Map<ResolvableToken, Resolvable>();
-
-    availableResolvables.forEach((candidate) => {
-      latestByToken.set(candidate.token, candidate);
     });
 
     const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];

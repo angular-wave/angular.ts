@@ -139,37 +139,38 @@ export interface ParamDeclaration {
   /**
    * The parameter's `array` mode
    *
-   * Explicitly specifies the array mode of a URL parameter
+   * Explicitly specifies the array mode of a query parameter. Path parameters
+   * are always treated as single values.
    *
    * - If `false`, the parameter value will be treated (encoded/decoded) as a single value
-   * - If `true`, the parameter value will be treated (encoded/decoded) as an array of values.
+   * - If `true`, a query parameter value will be treated (encoded/decoded) as an array of values.
    * - If `auto` (for query parameters only), if multiple values for a single parameter are present
    * in the URL (e.g.: /foo?bar=1&bar=2&bar=3) then the values are mapped to an array (e.g.:
    * `{ foo: [ '1', '2', '3' ] }`). However, if only one value is present (e.g.: /foo?bar=1)
    * then the value is treated as single value (e.g.: { foo: '1' }).
    *
-   * If you specified a [[type]] for the parameter, the value will be treated as an array
-   * of the specified [[ParamType]].
+   * If you specified a [[type]] for a query parameter, the value will be treated
+   * as an array of the specified [[ParamType]].
    *
    * #### Example:
    * ```js
    * {
    *   name: 'foo',
-   *   url: '/foo/{arrayParam:int}`,
+   *   url: '/foo?arrayParam',
    *   params: {
    *     arrayParam: { array: true }
    *   }
    * }
    *
-   * // After the transition, URL should be '/foo/1-2-3'
+   * // After the transition, URL should be '/foo?arrayParam=1&arrayParam=2&arrayParam=3'
    * $state.go("foo", { arrayParam: [ 1, 2, 3 ] });
    * ```
    *
    * @default `false` for path parameters, such as `url: '/foo/:pathParam'`
    * @default `auto` for query parameters, such as `url: '/foo?queryParam'`
-   * @default `true` if the parameter name ends in `[]`, such as `url: '/foo/{implicitArrayParam:int[]}'`
+   * @default `true` for query parameters if the parameter name ends in `[]`, such as `url: '/foo?implicitArrayParam[]'`
    */
-  array?: boolean;
+  array?: boolean | "auto";
 
   /**
    * Squash mode: omit default parameter values in URL
