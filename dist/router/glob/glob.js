@@ -53,17 +53,20 @@ class Glob {
     }
     constructor(text) {
         this._text = text;
-        const regexpString = this._text
-            .split(".")
-            .map((seg) => {
-            if (seg === "**")
-                return "(?:|(?:\\.[^.]*)*)";
-            if (seg === "*")
-                return "\\.[^.]*";
-            return `\\.${seg}`;
-        })
-            .join("");
-        this._regexp = new RegExp(`^${regexpString}$`);
+        const segments = this._text.split(".");
+        const regexpParts = [];
+        segments.forEach((segment) => {
+            if (segment === "**") {
+                regexpParts.push("(?:|(?:\\.[^.]*)*)");
+            }
+            else if (segment === "*") {
+                regexpParts.push("\\.[^.]*");
+            }
+            else {
+                regexpParts.push(`\\.${segment}`);
+            }
+        });
+        this._regexp = new RegExp(`^${regexpParts.join("")}$`);
     }
     matches(name) {
         return this._regexp.test(`.${name}`);

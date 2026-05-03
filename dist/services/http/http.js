@@ -1,6 +1,6 @@
-import { _httpParamSerializer, _injector, _sce, _cookie } from '../../injection-tokens.js';
+import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isDefined, isString, extend, fromJson, entries, isUndefined, isPromiseLike, isDate, minErr, uppercase, lowercase, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, minErr, hasOwn, lowercase, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -226,27 +226,6 @@ function HttpProvider() {
         xsrfHeaderName: "X-XSRF-TOKEN",
         paramSerializer: _httpParamSerializer,
     });
-    let useApplyAsync = false;
-    /**
-     * Configure $http service to combine processing of multiple http responses received at around
-     * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
-     * significant performance improvement for bigger applications that make many HTTP requests
-     * concurrently (common during application bootstrap).
-     *
-     * Defaults to false. If no value is specified, returns the current configured value.
-     *
-     * @param value - If true, completed requests schedule a deferred apply on the next tick,
-     *   allowing nearby responses to share the same digest cycle.
-     *
-     * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
-     */
-    this.useApplyAsync = function (value) {
-        if (isDefined(value)) {
-            useApplyAsync = !!value;
-            return this;
-        }
-        return useApplyAsync;
-    };
     /**
      * Array containing service factories for all synchronous or asynchronous `$http`
      * pre-processing of request or postprocessing of responses.
@@ -299,8 +278,9 @@ function HttpProvider() {
         _injector,
         _sce,
         _cookie,
+        _stream,
         /** Creates the runtime `$http` service. */
-        function ($injector, $sce, $cookie) {
+        function ($injector, $sce, $cookie, $stream) {
             const defaultCache = new Map();
             /**
              * Resolves the configured default param serializer to a callable function.
@@ -332,12 +312,16 @@ function HttpProvider() {
                 if (!isString($sce.valueOf(requestConfig.url))) {
                     throw minErr("$http")("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
                 }
+                const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
                 const config = extend({
                     method: "get",
                     transformRequest: defaults.transformRequest,
                     transformResponse: defaults.transformResponse,
                     paramSerializer: defaults.paramSerializer,
                 }, requestConfig);
+                if (config.responseType === "stream" && !hasCustomResponseTransform) {
+                    config.transformResponse = [];
+                }
                 config.headers = mergeHeaders(requestConfig);
                 config.method = uppercase(config.method);
                 config.paramSerializer = isString(config.paramSerializer)
@@ -434,8 +418,12 @@ function HttpProvider() {
                 }
             };
             $http.pendingRequests = [];
-            createShortMethods("get", "delete", "head");
-            createShortMethodsWithData("post", "put", "patch");
+            $http.get = createShortMethod("GET");
+            $http.delete = createShortMethod("DELETE");
+            $http.head = createShortMethod("HEAD");
+            $http.post = createShortMethodWithData("POST");
+            $http.put = createShortMethodWithData("PUT");
+            $http.patch = createShortMethodWithData("PATCH");
             /**
              * Exposes the runtime equivalent of `$httpProvider.defaults`.
              * It allows configuration of default headers, `withCredentials`, and request/response transforms.
@@ -444,28 +432,24 @@ function HttpProvider() {
              */
             $http.defaults = defaults;
             return $http;
-            /** Generates shorthand methods for requests that do not send a request body. */
-            function createShortMethods(...names) {
-                names.forEach((name) => {
-                    $http[name] = function (url, config) {
-                        return $http(extend({}, config || {}, {
-                            method: name,
-                            url,
-                        }));
-                    };
-                });
+            /** Creates one shorthand method for requests that do not send a request body. */
+            function createShortMethod(method) {
+                return function (url, config) {
+                    return $http(extend({}, config || {}, {
+                        method,
+                        url,
+                    }));
+                };
             }
-            /** Generates shorthand methods for requests that send a request body. */
-            function createShortMethodsWithData(...names) {
-                names.forEach((name) => {
-                    $http[name] = function (url, data, config) {
-                        return $http(extend({}, config || {}, {
-                            method: name,
-                            url,
-                            data,
-                        }));
-                    };
-                });
+            /** Creates one shorthand method for requests that send a request body. */
+            function createShortMethodWithData(method) {
+                return function (url, data, config) {
+                    return $http(extend({}, config || {}, {
+                        method,
+                        url,
+                        data,
+                    }));
+                };
             }
             /** Sends the request through the low-level HTTP backend and cache layer. */
             function sendReq(config, reqData) {
@@ -528,40 +512,32 @@ function HttpProvider() {
                             reqHeaders[xsrfHeaderName] = xsrfValue;
                         }
                     }
-                    http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createApplyHandlers(config.eventHandlers), createApplyHandlers(config.uploadEventHandlers));
+                    http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createEventHandlers(config.eventHandlers), createEventHandlers(config.uploadEventHandlers), $stream);
                 }
                 return promise;
-                /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
-                function createApplyHandlers(eventHandlers) {
+                /** Wraps raw transport event handlers with function/object listener support. */
+                function createEventHandlers(eventHandlers) {
                     if (eventHandlers) {
-                        const applyHandlers = {};
+                        const handlers = {};
                         entries(eventHandlers).forEach(([key, eventHandler]) => {
-                            applyHandlers[key] = function (event) {
-                                if (useApplyAsync) {
-                                    setTimeout(() => callEventHandler());
+                            handlers[key] = function (event) {
+                                if (isFunction(eventHandler)) {
+                                    eventHandler(event);
                                 }
-                                else {
-                                    callEventHandler();
-                                }
-                                function callEventHandler() {
-                                    if (isFunction(eventHandler)) {
-                                        eventHandler(event);
-                                    }
-                                    else if (eventHandler &&
-                                        typeof eventHandler === "object" &&
-                                        "handleEvent" in eventHandler) {
-                                        eventHandler.handleEvent(event);
-                                    }
+                                else if (eventHandler &&
+                                    typeof eventHandler === "object" &&
+                                    "handleEvent" in eventHandler) {
+                                    eventHandler.handleEvent(event);
                                 }
                             };
                         });
-                        return applyHandlers;
+                        return handlers;
                     }
                     else {
                         return {};
                     }
                 }
-                /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
+                /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
                 function done(status, response, headersString, statusText, xhrStatus) {
                     if (cache) {
                         if (isSuccess(status)) {
@@ -578,17 +554,9 @@ function HttpProvider() {
                             cache.delete(url);
                         }
                     }
-                    function resolveHttpPromise() {
-                        resolvePromise(response, status, headersString, statusText, xhrStatus);
-                    }
-                    if (useApplyAsync) {
-                        setTimeout(resolveHttpPromise);
-                    }
-                    else {
-                        resolveHttpPromise();
-                    }
+                    resolvePromise(response, status, headersString, statusText, xhrStatus);
                 }
-                /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
+                /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
                 function resolvePromise(response, status, headers, statusText, xhrStatus) {
                     // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
                     status = status >= -1 ? status : 0;
@@ -623,7 +591,7 @@ function HttpProvider() {
     ];
 }
 /**
- * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
+ * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
  *
  * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
  * @param [url] - The request URL. Defaults to the current page URL.
@@ -632,63 +600,34 @@ function HttpProvider() {
  * @param [headers] - Request headers to apply before sending.
  * @param [timeout] - Timeout in milliseconds or a cancellable promise.
  * @param [withCredentials] - Whether to send credentials with the request.
- * @param [responseType] - The expected XHR response type.
- * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
- * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
+ * @param [responseType] - The response body reader hint.
+ * @param [eventHandlers] - Event listeners notified by the fetch transport.
+ * @param [uploadEventHandlers] - Currently ignored by the fetch transport.
+ * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
  */
-function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
+function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers, streamService) {
     url = url || trimEmptyHash(window.location.href);
-    const xhr = new XMLHttpRequest();
-    let abortedByTimeout = false;
+    const abortController = new AbortController();
+    let abortReason = "abort";
     let timeoutId;
-    xhr.open(method, url, true);
+    const requestHeaders = new Headers();
     if (headers) {
         for (const [key, value] of entries(headers)) {
             if (isDefined(value)) {
-                xhr.setRequestHeader(key, value);
+                requestHeaders.set(key, value);
             }
         }
     }
-    xhr.onload = () => {
-        let status = xhr.status || 0;
-        const statusText = xhr.statusText || "";
-        if (status === 0) {
-            status = xhr.response
-                ? Http._OK
-                : new URL(url).protocol === "file:"
-                    ? Http._NotFound
-                    : 0;
-        }
-        completeRequest(status, xhr.response, xhr.getAllResponseHeaders(), statusText, "complete");
+    const upperMethod = uppercase(method);
+    const init = {
+        method: upperMethod,
+        headers: requestHeaders,
+        signal: abortController.signal,
+        credentials: withCredentials ? "include" : "same-origin",
     };
-    xhr.onerror = () => completeRequest(-1, null, null, "", "error");
-    xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
-    xhr.onabort = () => {
-        completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
-    };
-    if (eventHandlers) {
-        for (const [key, handler] of entries(eventHandlers)) {
-            xhr.addEventListener(key, handler);
-        }
+    if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
+        init.body = normalizeFetchBody(post);
     }
-    if (uploadEventHandlers) {
-        for (const [key, handler] of entries(uploadEventHandlers)) {
-            xhr.upload.addEventListener(key, handler);
-        }
-    }
-    if (withCredentials) {
-        xhr.withCredentials = true;
-    }
-    if (responseType) {
-        try {
-            xhr.responseType = responseType;
-        }
-        catch (err) {
-            if (responseType !== "json")
-                throw err;
-        }
-    }
-    xhr.send(isUndefined(post) ? null : post);
     if (typeof timeout === "number" && timeout > 0) {
         timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
     }
@@ -697,11 +636,28 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
             timeoutRequest("abort");
         });
     }
-    /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
+    fetch(url, init).then((response) => {
+        const status = response.status || 0;
+        responseBody(response, responseType, streamService).then((body) => {
+            notifyEvent("load", eventHandlers);
+            completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
+        }, () => {
+            notifyEvent("error", eventHandlers);
+            completeRequest(-1, null, null, "", "error");
+        });
+    }, (error) => {
+        if (error?.name === "AbortError") {
+            notifyEvent(abortReason, eventHandlers);
+            completeRequest(-1, null, null, "", abortReason);
+            return;
+        }
+        notifyEvent("error", eventHandlers);
+        completeRequest(-1, null, null, "", "error");
+    });
+    /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
     function timeoutRequest(reason) {
-        abortedByTimeout = reason === "timeout";
-        if (xhr)
-            xhr.abort();
+        abortReason = reason;
+        abortController.abort();
     }
     /**
      * Finalizes the request, clears timeout state, and notifies the caller.
@@ -719,6 +675,74 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
         if (callback) {
             callback(status, response, headersString, statusText, xhrStatus);
         }
+    }
+}
+/** Normalizes AngularTS request data into a fetch-compatible body. */
+function normalizeFetchBody(post) {
+    if (post === null)
+        return null;
+    if (isString(post) ||
+        isBlob(post) ||
+        isFormData(post) ||
+        post instanceof URLSearchParams ||
+        post instanceof ArrayBuffer ||
+        ArrayBuffer.isView(post)) {
+        return post;
+    }
+    return String(post);
+}
+/** Reads a fetch response body using the closest `$http` responseType equivalent. */
+function responseBody(response, responseType, streamService) {
+    switch (responseType) {
+        case "arraybuffer":
+            return response.arrayBuffer();
+        case "blob":
+            return response.blob();
+        case "json":
+            return responseText(response, streamService).then((text) => text ? fromJson(text) : null);
+        case "stream":
+            return Promise.resolve(response.body);
+        case "document":
+            return responseText(response, streamService).then((text) => {
+                return new DOMParser().parseFromString(text, "text/html");
+            });
+        case "text":
+        case "":
+        case undefined:
+            return responseText(response, streamService);
+        default:
+            return responseText(response, streamService);
+    }
+}
+/** Reads text via `$stream` when available, falling back to the native response reader. */
+function responseText(response, streamService) {
+    return response.body && streamService
+        ? streamService.readText(response.body)
+        : response.text();
+}
+/** Converts fetch headers into the raw header string shape expected by `$http`. */
+function responseHeadersString(headers) {
+    const headerLines = [];
+    headers.forEach((value, key) => {
+        headerLines.push(`${key}: ${value}`);
+    });
+    return headerLines.join("\n");
+}
+/** Notifies configured transport event handlers for compatibility. */
+function notifyEvent(eventName, eventHandlers) {
+    if (!eventHandlers)
+        return;
+    const handler = eventHandlers[eventName];
+    if (!handler)
+        return;
+    const event = new Event(eventName);
+    if (isFunction(handler)) {
+        handler(event);
+    }
+    else if (handler &&
+        typeof handler === "object" &&
+        "handleEvent" in handler) {
+        handler.handleEvent(event);
     }
 }
 

@@ -1,4 +1,4 @@
-import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _compile } from '../../injection-tokens.js';
+import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
 import { isInstanceOf, isDefined } from '../../shared/utils.js';
 import { removeElement } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -8,11 +8,12 @@ ngIncludeDirective.$inject = [
     _anchorScroll,
     _injector,
     _exceptionHandler,
+    _parse,
 ];
 /**
  * Loads external template content, transcludes it, and swaps it into the DOM.
  */
-function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler) {
+function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse) {
     const getAnimate = createLazyAnimate($injector);
     return {
         priority: 400,
@@ -25,13 +26,15 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
             const srcExp = attr.ngInclude || attr.src;
             const onloadExp = attr.onload || "";
             const autoScrollExp = attr.autoscroll;
+            const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+            const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
             return (scope, $element, _$attr, ctrl, $transclude) => {
                 if (!$transclude) {
                     return;
                 }
                 function maybeScroll() {
                     if (isDefined(autoScrollExp) &&
-                        (!autoScrollExp || scope.$eval(autoScrollExp))) {
+                        (!autoScrollExp || autoScrollFn?.(scope))) {
                         $anchorScroll();
                     }
                 }
@@ -100,7 +103,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             currentScope = newScope;
                             currentElement = clone;
                             currentScope.$emit("$includeContentLoaded", src);
-                            scope.$eval(onloadExp);
+                            onloadFn?.(scope);
                         })
                             .catch((err) => {
                             if (scope._destroyed)

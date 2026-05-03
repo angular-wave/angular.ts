@@ -15,7 +15,7 @@ class StateParams {
     $inherit(newParams, $current, $to) {
         const parents = ancestors($current, $to);
         const inherited = {};
-        const inheritList = [];
+        const inheritList = new Set();
         for (const parent of parents) {
             if (!parent || !parent.params)
                 continue;
@@ -24,15 +24,14 @@ class StateParams {
             if (!parentParamsKeys.length)
                 continue;
             for (const key of parentParamsKeys) {
-                if (parentParams[key].inherit === false ||
-                    inheritList.indexOf(key) >= 0) {
+                if (parentParams[key].inherit === false || inheritList.has(key)) {
                     continue;
                 }
-                inheritList.push(key);
+                inheritList.add(key);
                 inherited[key] = this[key];
             }
         }
-        return assign({}, inherited, newParams);
+        return assign(inherited, newParams);
     }
 }
 /**

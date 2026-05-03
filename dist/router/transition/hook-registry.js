@@ -1,43 +1,36 @@
 import { removeFrom } from '../../shared/common.js';
-import { assign, values, isFunction, isString } from '../../shared/utils.js';
-import { Glob } from '../glob/glob.js';
-import { TransitionHookScope } from './transition-hook.js';
+import { hasOwn, isString, isFunction } from '../../shared/utils.js';
+import { PATH_TYPES } from './path-types.js';
 
 /**
  * Tests a state against one hook match criterion.
  */
 function matchState(state, criterion, transition) {
-    const toMatch = isString(criterion) ? [criterion] : criterion;
-    const matchGlobs = (_state) => {
-        const globStrings = toMatch;
-        for (let i = 0; i < globStrings.length; i++) {
-            const glob = new Glob(globStrings[i]);
-            if ((glob && glob.matches(_state.name)) ||
-                (!glob && globStrings[i] === _state.name)) {
-                return true;
-            }
-        }
-        return false;
-    };
-    const matchFn = (isFunction(toMatch) ? toMatch : matchGlobs);
-    return !!matchFn(state, transition);
+    if (isString(criterion)) {
+        return criterion === state.name;
+    }
+    if (isFunction(criterion)) {
+        return !!criterion(state, transition);
+    }
+    return false;
 }
 /**
  * Stores one registered transition hook and evaluates whether it matches
  * a specific transition tree change set.
  */
+/** @internal */
 class RegisteredHook {
-    constructor(tranSvc, eventType, callback, matchCriteria, removeHookFromRegistry, options = {}) {
-        this.tranSvc = tranSvc;
+    constructor(tranSvc, eventType, callback, matchCriteria, hooks, options = {}) {
+        this._tranSvc = tranSvc;
         this._eventType = eventType;
-        this.callback = callback;
-        this.matchCriteria = matchCriteria;
-        this.removeHookFromRegistry = removeHookFromRegistry;
-        this.invokeCount = 0;
+        this._callback = callback;
+        this._matchCriteria = matchCriteria;
+        this._hooks = hooks;
+        this._invokeCount = 0;
         this._deregistered = false;
-        this.priority = options.priority || 0;
-        this.bind = options.bind || null;
-        this.invokeLimit = options.invokeLimit;
+        this._priority = options.priority || 0;
+        this._bind = options.bind || null;
+        this._invokeLimit = options.invokeLimit;
     }
     /** @internal */
     _matchingNodes(nodes, criterion, transition) {
@@ -53,85 +46,76 @@ class RegisteredHook {
         return matching.length ? matching : null;
     }
     /** @internal */
-    _getDefaultMatchCriteria() {
-        const pathTypes = this.tranSvc._getPathTypes();
-        const criteria = {};
-        for (const key in pathTypes) {
-            criteria[key] = true;
-        }
-        return criteria;
-    }
-    /** @internal */
     _getMatchingNodes(treeChanges, transition) {
-        const criteria = assign(this._getDefaultMatchCriteria(), this.matchCriteria);
-        const pathTypes = values(this.tranSvc._getPathTypes());
         const matchingNodes = {};
-        for (let i = 0; i < pathTypes.length; i++) {
-            const pathType = pathTypes[i];
-            const isStateHook = pathType.scope === TransitionHookScope._STATE;
-            const path = (treeChanges[pathType.name] || []);
+        for (const name in PATH_TYPES) {
+            const pathType = PATH_TYPES[name];
+            const path = (treeChanges[pathType._name] || []);
             const transitionNode = path.length ? path[path.length - 1] : undefined;
-            const nodes = isStateHook
-                ? path
-                : transitionNode
+            const criterion = hasOwn(this._matchCriteria, pathType._name)
+                ? this._matchCriteria[pathType._name]
+                : true;
+            if (criterion === true) {
+                matchingNodes[pathType._name] = pathType._stateHook
+                    ? path
+                    : transitionNode
+                        ? [transitionNode]
+                        : [];
+                continue;
+            }
+            const matching = pathType._stateHook
+                ? this._matchingNodes(path, criterion, transition)
+                : transitionNode &&
+                    matchState(transitionNode.state, criterion, transition)
                     ? [transitionNode]
-                    : [];
-            matchingNodes[pathType.name] = this._matchingNodes(nodes, criteria[pathType.name], transition);
+                    : null;
+            if (!matching) {
+                return null;
+            }
+            matchingNodes[pathType._name] = matching;
         }
         return matchingNodes;
     }
-    matches(treeChanges, transition) {
-        const matches = this._getMatchingNodes(treeChanges, transition);
-        const matchedPaths = values(matches);
-        let allMatched = true;
-        for (let i = 0; i < matchedPaths.length; i++) {
-            if (!matchedPaths[i]) {
-                allMatched = false;
-                break;
-            }
-        }
-        return allMatched ? matches : null;
+    /** @internal */
+    _matches(treeChanges, transition) {
+        return this._getMatchingNodes(treeChanges, transition);
     }
-    deregister() {
-        this.removeHookFromRegistry(this);
+    /** @internal */
+    _deregister() {
+        removeFrom(this._hooks, this);
         this._deregistered = true;
     }
 }
 /**
  * Registers a hook on either the transition service or a single transition.
+ *
+ * @internal
  */
 function registerHook(hookSource, transitionService, eventType, matchCriteria, callback, options = {}) {
-    const typedEventType = eventType;
     const _registeredHooks = (hookSource._registeredHooks =
         hookSource._registeredHooks || {});
-    const hooks = (_registeredHooks[typedEventType.name] =
-        _registeredHooks[typedEventType.name] || []);
-    const removeHookFn = (hook) => {
-        removeFrom(hooks, hook);
-    };
-    const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchCriteria, removeHookFn, options);
+    const hooks = (_registeredHooks[eventType._name] =
+        _registeredHooks[eventType._name] || []);
+    const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchCriteria, hooks, options);
     hooks.push(registeredHook);
-    return registeredHook.deregister.bind(registeredHook);
+    return registeredHook._deregister.bind(registeredHook);
 }
 /**
  * Creates a convenience `onX` registration function for a transition event.
+ *
+ * @internal
  */
 function makeEvent(hookSource, transitionService, eventType) {
     const _registeredHooks = (hookSource._registeredHooks =
         hookSource._registeredHooks || {});
-    const typedEventType = eventType;
-    const hooks = (_registeredHooks[typedEventType.name] =
-        []);
-    const removeHookFn = (hook) => {
-        removeFrom(hooks, hook);
-    };
+    const hooks = (_registeredHooks[eventType._name] = []);
     function hookRegistrationFn(matchObject, callback, options = {}) {
-        const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchObject, removeHookFn, options);
+        const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchObject, hooks, options);
         hooks.push(registeredHook);
-        return registeredHook.deregister.bind(registeredHook);
+        return registeredHook._deregister.bind(registeredHook);
     }
-    hookSource[typedEventType.name] = hookRegistrationFn;
+    hookSource[eventType._name] = hookRegistrationFn;
     return hookRegistrationFn;
 }
 
-export { RegisteredHook, makeEvent, matchState, registerHook };
+export { RegisteredHook, makeEvent, registerHook };

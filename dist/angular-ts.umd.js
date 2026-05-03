@@ -1,4 +1,4 @@
-/* Version: 0.26.0 - April 29, 2026 00:52:38 */
+/* Version: 0.26.0 - May 4, 2026 00:05:58 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -47,13 +47,12 @@
     const _sceDelegate = "$sceDelegate";
     const _state = "$state";
     const _stateRegistry = "$stateRegistry";
+    const _stream = "$stream";
     const _sse = "$sse";
     const _templateCache = "$templateCache";
     const _templateFactory = "$templateFactory";
     const _templateRequest = "$templateRequest";
     const _transitions = "$transitions";
-    const _urlConfig = "$urlConfig";
-    const _url = "$url";
     const _view = "$view";
     const _window = "$window";
     const _websocket = "$websocket";
@@ -85,12 +84,11 @@
     const _sseProvider = "$sseProvider";
     const _stateProvider = "$stateProvider";
     const _stateRegistryProvider = "$stateRegistryProvider";
+    const _streamProvider = "$streamProvider";
     const _templateCacheProvider = "$templateCacheProvider";
     const _templateFactoryProvider = "$templateFactoryProvider";
     const _templateRequestProvider = "$templateRequestProvider";
     const _transitionsProvider = "$transitionsProvider";
-    const _urlConfigProvider = "$urlConfigProvider";
-    const _urlProvider = "$urlProvider";
     const _viewProvider = "$viewProvider";
     const _websocketProvider = "$websocketProvider";
     const _workerProvider = "$workerProvider";
@@ -136,13 +134,12 @@
         _sceDelegate,
         _state,
         _stateRegistry,
+        _stream,
         _sse,
         _templateCache,
         _templateFactory,
         _templateRequest,
         _transitions,
-        _urlConfig,
-        _url,
         _view,
         _window,
         _websocket,
@@ -174,12 +171,11 @@
         _sseProvider,
         _stateProvider,
         _stateRegistryProvider,
+        _streamProvider,
         _templateCacheProvider,
         _templateFactoryProvider,
         _templateRequestProvider,
         _transitionsProvider,
-        _urlConfigProvider,
-        _urlProvider,
         _viewProvider,
         _websocketProvider,
         _workerProvider,
@@ -707,6 +703,8 @@
         // Handle general objects
         const keySet = nullObject();
         for (const key in o1) {
+            if (!hasOwn(o1, key))
+                continue;
             if (key.charAt(0) === "$" || isFunction(o1[key]))
                 continue;
             if (!equals(o1[key], o2[key]))
@@ -714,6 +712,8 @@
             keySet[key] = true;
         }
         for (const key in o2) {
+            if (!hasOwn(o2, key))
+                continue;
             if (!(key in keySet) &&
                 key.charAt(0) !== "$" &&
                 isDefined(o2[key]) &&
@@ -813,7 +813,9 @@
     function parseKeyValue(value) {
         const obj = {};
         const res = value || "";
-        res.split("&").forEach((keyValue) => {
+        const keyValues = res.split("&");
+        for (let i = 0; i < keyValues.length; i++) {
+            let keyValue = keyValues[i];
             let splitPoint;
             let key;
             let val;
@@ -841,7 +843,7 @@
                     }
                 }
             }
-        });
+        }
         return obj;
     }
     /**
@@ -849,21 +851,25 @@
      */
     function toKeyValue(obj) {
         const parts = [];
-        obj &&
-            entries(obj).forEach(([key, value]) => {
+        if (obj) {
+            const keyValues = entries(obj);
+            for (let i = 0; i < keyValues.length; i++) {
+                const [key, value] = keyValues[i];
                 if (isArray(value)) {
-                    value.forEach((arrayValue) => {
+                    for (let j = 0; j < value.length; j++) {
+                        const arrayValue = value[j];
                         parts.push(encodeUriQuery(key, true) +
                             (arrayValue === true
                                 ? ""
                                 : `=${encodeUriQuery(arrayValue, true)}`));
-                    });
+                    }
                 }
                 else {
                     parts.push(encodeUriQuery(key, true) +
                         (value === true ? "" : `=${encodeUriQuery(value, true)}`));
                 }
-            });
+            }
+        }
         return parts.length ? parts.join("&") : "";
     }
     /**
@@ -930,6 +936,8 @@
         if (isObject(src)) {
             const out = dst || {};
             for (const key in src) {
+                if (!hasOwn(src, key))
+                    continue;
                 // Copy all properties except $$-prefixed
                 if (!key.startsWith("$$")) {
                     out[key] = src[key];
@@ -1520,7 +1528,7 @@
         else if (key && typeof key === "object") {
             // key is now narrowed to object
             for (const prop in key) {
-                if (Object.prototype.hasOwnProperty.call(key, prop)) {
+                if (hasOwn(key, prop)) {
                     expandoStore[kebabToCamel(prop)] = key[prop];
                 }
             }
@@ -1972,13 +1980,12 @@
         _injectionArgs(fn, locals, serviceName) {
             const args = [];
             const $inject = annotate(fn, this.strictDi, serviceName);
-            for (let i = 0; i < $inject.length; i++) {
-                const key = $inject[i];
+            $inject.forEach((key) => {
                 if (!isString(key)) {
                     throw $injectorMinErr$2("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
                 }
                 args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
-            }
+            });
             return args;
         }
         /**
@@ -2141,10 +2148,12 @@
      */
     function isInjectable(val) {
         if (isArray(val) && val.length > 0) {
-            const head = val.slice(0, -1);
-            const tail = val.slice(-1);
-            return !(head.some((injectable) => !isString(injectable)) ||
-                tail.some((injectable) => !isFunction(injectable)));
+            const lastIndex = val.length - 1;
+            for (let i = 0; i < lastIndex; i++) {
+                if (!isString(val[i]))
+                    return false;
+            }
+            return isFunction(val[lastIndex]);
         }
         return isFunction(val);
     }
@@ -4411,8 +4420,8 @@
                      *     * from - `{Object|null}` - CSS properties & values at the beginning of the animation
                      *     * to - `{Object|null}` - CSS properties & values at the end of the animation
                      *
-                     * Note that the callback does not trigger a scope digest. Wrap your call into a
-                     * {@link $rootScope.Scope#$apply scope.$apply} to propagate changes to the scope.
+                     * Scope assignments made from this callback are reactive; use `$postUpdate` when
+                     * follow-up work must run after listeners flush.
                      */
                     on: $$animateQueue.on,
                     /**
@@ -6684,7 +6693,10 @@
         /** @returns A detached fragment containing the wrapped node list. */
         get fragment() {
             const fragment = createDocumentFragment();
-            this._collection().forEach((el) => fragment.appendChild(el));
+            const collection = this._collection();
+            for (let i = 0; i < collection.length; i++) {
+                fragment.appendChild(collection[i]);
+            }
             return fragment;
         }
         /** @returns The wrapped DOM value. */
@@ -6765,9 +6777,14 @@
          */
         /** @internal */
         _clone() {
-            const cloned = this._isList
-                ? this._collection().map((el) => el.cloneNode(true))
-                : this.node.cloneNode(true);
+            if (!this._isList) {
+                return new NodeRef(this.node.cloneNode(true));
+            }
+            const collection = this._collection();
+            const cloned = new Array(collection.length);
+            for (let i = 0; i < collection.length; i++) {
+                cloned[i] = collection[i].cloneNode(true);
+            }
             return new NodeRef(cloned);
         }
         /** @internal */
@@ -6883,11 +6900,10 @@
             }
             if (isObject(name)) {
                 const controllerNames = keys(name);
-                for (let i = 0, l = controllerNames.length; i < l; i++) {
-                    const key = controllerNames[i];
+                controllerNames.forEach((key) => {
                     const value = name[key];
                     this._controllers.set(key, normalizeControllerDef(value, key));
-                }
+                });
             }
         }
         /** @internal */
@@ -7429,12 +7445,10 @@
             this._arrayMutationWrappers =
                 context?._arrayMutationWrappers ?? new WeakMap();
             this._propertyMap = {
-                $apply: this.$apply.bind(this),
                 $broadcast: this.$broadcast.bind(this),
                 _children: this._children,
                 $destroy: this.$destroy.bind(this),
                 $emit: this.$emit.bind(this),
-                $eval: this.$eval.bind(this),
                 $flushQueue: this.$flushQueue.bind(this),
                 $getById: this.$getById.bind(this),
                 $handler: this,
@@ -8463,21 +8477,6 @@
                 }
             }
         }
-        /** Evaluates an Angular expression in the context of this scope. */
-        $eval(expr, locals) {
-            const fn = $parse(expr);
-            const res = fn(this, locals);
-            if (isNullOrUndefined(res) || res === Object.hasOwnProperty) {
-                return res;
-            }
-            if (isFunction(res)) {
-                return res();
-            }
-            if (Number.isNaN(res)) {
-                return 0;
-            }
-            return res;
-        }
         /** Merges enumerable properties from the provided object into the current scope target. */
         $merge(newTarget) {
             const newTargetRecord = newTarget;
@@ -8485,15 +8484,6 @@
             for (let i = 0, l = keyList.length; i < l; i++) {
                 const key = keyList[i];
                 this.set(this.$target, key, newTargetRecord[key], this.$proxy);
-            }
-        }
-        /** Evaluates an expression and routes any thrown error through the exception handler. */
-        $apply(expr) {
-            try {
-                return $parse(expr)(this.$proxy);
-            }
-            catch (err) {
-                return $exceptionHandler(err);
             }
         }
         /** Registers an event listener on this scope and returns a deregistration function. */
@@ -8822,6 +8812,20 @@
         return ids;
     }
 
+    const passThroughSecurity = {
+        getTrusted: (_context, value) => value,
+        getTrustedMediaUrl: (value) => value,
+        valueOf: (value) => value,
+    };
+    function getSecurityAdapter($injector) {
+        const providerCache = $injector._providerInjector?._cache;
+        if (!providerCache ||
+            (!hasOwn(providerCache, _sce) && !hasOwn(providerCache, `${_sce}Provider`))) {
+            return passThroughSecurity;
+        }
+        return $injector.get(_sce);
+    }
+
     const SCE_CONTEXTS = {
         // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
         _HTML: "html",
@@ -8950,7 +8954,6 @@
         return hasAnimate(node) ? getAnimate() : undefined;
     }
 
-    const $compileMinErr$1 = minErr("$compile");
     const SIMPLE_ATTR_NAME = /^\w/;
     const specialAttrHolder = document.createElement("div");
     const lazyAnimateByInjector = new WeakMap();
@@ -8963,7 +8966,7 @@
         return getAnimate;
     }
     class Attributes {
-        constructor($injector, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
+        constructor($injector, $exceptionHandler, nodeRef, attributesToCopy) {
             /**
              * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
              * `data-`) to its normalized, camelCase form.
@@ -8977,7 +8980,6 @@
             this.$normalize = directiveNormalize;
             this._getAnimate = getLazyAnimate($injector);
             this._exceptionHandler = $exceptionHandler;
-            this._sce = $sce;
             this.$attr = {};
             if (attributesToCopy) {
                 const attributeKeys = keys(attributesToCopy);
@@ -9068,35 +9070,26 @@
                     this.$attr[key] = attrName = snakeCase(key, "-");
                 }
             }
-            const elementNode = this._nodeRef?.node;
-            const nodeName = elementNode && getNodeName$1(elementNode);
-            let maybeSanitizedValue;
-            if (nodeName === "img" && key === "srcset") {
-                this[key] = maybeSanitizedValue = this._sanitizeSrcset(value, "$set('srcset', value)");
-            }
-            else {
-                maybeSanitizedValue = value;
-            }
             if (writeAttr !== false) {
                 if (!attrName)
                     return;
                 const elem = this._element();
-                if (isNullOrUndefined(maybeSanitizedValue)) {
+                if (isNullOrUndefined(value)) {
                     elem.removeAttribute(attrName);
                 }
                 else if (SIMPLE_ATTR_NAME.test(attrName)) {
-                    if (booleanKey && maybeSanitizedValue === false) {
+                    if (booleanKey && value === false) {
                         elem.removeAttribute(attrName);
                     }
                     else if (booleanKey) {
-                        elem.toggleAttribute(attrName, maybeSanitizedValue);
+                        elem.toggleAttribute(attrName, value);
                     }
                     else {
-                        elem.setAttribute(attrName, maybeSanitizedValue);
+                        elem.setAttribute(attrName, value);
                     }
                 }
                 else {
-                    this._setSpecialAttr(elem, attrName, maybeSanitizedValue);
+                    this._setSpecialAttr(elem, attrName, value);
                 }
             }
             const { _observers } = this;
@@ -9104,7 +9097,7 @@
                 const observerListeners = _observers[observer];
                 for (let i = 0, l = observerListeners.length; i < l; i++) {
                     try {
-                        observerListeners[i](maybeSanitizedValue);
+                        observerListeners[i](value);
                     }
                     catch (err) {
                         this._exceptionHandler(err);
@@ -9131,33 +9124,6 @@
             attributes.removeNamedItem(attribute.name);
             attribute.value = value ?? "";
             element.attributes.setNamedItem(attribute);
-        }
-        /** @internal */
-        _sanitizeSrcset(value, invokeType) {
-            let i;
-            if (!value) {
-                return value;
-            }
-            if (!isString(value)) {
-                throw $compileMinErr$1("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, value.toString());
-            }
-            let result = "";
-            const trimmedSrcset = trim(value);
-            const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
-            const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
-            const rawUris = trimmedSrcset.split(pattern);
-            const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
-            for (i = 0; i < nbrUrisWith2parts; i++) {
-                const innerIdx = i * 2;
-                result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
-                result += ` ${trim(rawUris[innerIdx + 1])}`;
-            }
-            const lastTuple = trim(rawUris[i * 2]).split(/\s/);
-            result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
-            if (lastTuple.length === 2) {
-                result += ` ${trim(lastTuple[1])}`;
-            }
-            return result.replace(/unsafe:unsafe/g, "unsafe");
         }
     }
     Attributes.$nonscope = true;
@@ -9273,7 +9239,7 @@
         transcludeState._elementControllers = elementControllers;
         transcludeState._elementRef = elementRef;
     }
-    const $compileMinErr = minErr("$compile");
+    const $compileMinErr$1 = minErr("$compile");
     const EXCLUDED_DIRECTIVES = ["ngIf", "ngRepeat"];
     const ALL_OR_NOTHING_ATTRS = ["ngSrc", "ngSrcset", "src", "srcset"];
     const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
@@ -9306,7 +9272,7 @@
                     }
                     const match = definition.match(LOCAL_REGEXP);
                     if (!match) {
-                        throw $compileMinErr("iscp", "Invalid {3} for directive '{0}'." +
+                        throw $compileMinErr$1("iscp", "Invalid {3} for directive '{0}'." +
                             " Definition: {... {1}: '{2}' ...}", directiveName, scopeName, definition, isController
                             ? "controller bindings definition"
                             : "isolate scope definition");
@@ -9343,7 +9309,7 @@
                 }
                 if (bindings._bindToController && !directive.controller) {
                     // There is no controller
-                    throw $compileMinErr("noctrl", "Cannot bind to controller without directive '{0}'s controller.", directiveName);
+                    throw $compileMinErr$1("noctrl", "Cannot bind to controller without directive '{0}'s controller.", directiveName);
                 }
                 return bindings;
             }
@@ -9557,14 +9523,14 @@
              *
              * @param elementName - The element name or '*' to match any element.
              * @param propertyName - The DOM property name.
-             * @param ctx - The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
+             * @param ctx - The security context in which this value is safe for use, e.g. `url`
              * @returns `this` for chaining.
              */
             this.addPropertySecurityContext = function (elementName, propertyName, ctx) {
                 const normalizedCtx = LEGACY_SCE_CONTEXTS[ctx] || ctx;
                 const key = `${elementName.toLowerCase()}|${propertyName.toLowerCase()}`;
                 if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== normalizedCtx) {
-                    throw $compileMinErr("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], normalizedCtx);
+                    throw $compileMinErr$1("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], normalizedCtx);
                 }
                 PROP_CONTEXTS[key] = normalizedCtx;
                 return this;
@@ -9573,7 +9539,7 @@
              *
              * Copy of https://github.com/angular/angular/blob/6.0.6/packages/compiler/src/schema/dom_security_schema.ts#L31-L58
              * Changing:
-             * - SecurityContext.* => SCE_CONTEXTS/$sce.*
+             * - SecurityContext.* => AngularTS security contexts
              * - various URL => MEDIA_URL
              * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
              */
@@ -9633,12 +9599,32 @@
                 _injector,
                 _interpolate,
                 _exceptionHandler,
-                _templateRequest,
                 _parse,
                 _controller,
-                _sce,
                 /** Creates the runtime `$compile` service and its shared helper closures. */
-                ($injector, $interpolate, $exceptionHandler, $templateRequest, $parse, $controller, $sce) => {
+                ($injector, $interpolate, $exceptionHandler, $parse, $controller) => {
+                    const security = getSecurityAdapter($injector);
+                    let lazyTemplateRequest;
+                    function requestTemplate(templateUrl) {
+                        if (lazyTemplateRequest === undefined) {
+                            lazyTemplateRequest = $injector.has(_templateRequest)
+                                ? $injector.get(_templateRequest)
+                                : null;
+                        }
+                        return lazyTemplateRequest
+                            ? lazyTemplateRequest(templateUrl)
+                            : fetchTemplate(templateUrl);
+                    }
+                    function fetchTemplate(templateUrl) {
+                        return fetch(templateUrl, {
+                            headers: { Accept: "text/html" },
+                        }).then((response) => {
+                            if (!response.ok) {
+                                return Promise.reject(response);
+                            }
+                            return response.text();
+                        });
+                    }
                     const onChangesQueueState = {
                         _exceptionHandler: $exceptionHandler,
                         _queue: [],
@@ -9693,7 +9679,7 @@
                         }
                     }
                     function throwNonassignBindingError(state) {
-                        throw $compileMinErr("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", state._attrsAny[state._attrName], state._attrName, state._directiveName);
+                        throw $compileMinErr$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", state._attrsAny[state._attrName], state._attrName, state._directiveName);
                     }
                     function syncTwoWayParentValue(state, parentValue) {
                         const destValue = state._destAny[state._scopeName];
@@ -9773,7 +9759,7 @@
                     function invokePublicLink(state, scope, cloneConnectFn, options) {
                         const { _nodeRef: nodeRef } = state;
                         if (!nodeRef) {
-                            throw $compileMinErr("multilink", "This element has already been linked.");
+                            throw $compileMinErr$1("multilink", "This element has already been linked.");
                         }
                         if (state._previousCompileContext?._needsNewScope) {
                             // A parent directive did a replace and a directive on this element asked
@@ -9929,7 +9915,7 @@
                         let linkFnFound = false;
                         for (let i = 0, l = getCompileNodeListSize(nodeRefList); i < l; i++) {
                             const compileNode = getCompileNodeAt(nodeRefList, i);
-                            const attrs = new Attributes($injector, $exceptionHandler, $sce);
+                            const attrs = new Attributes($injector, $exceptionHandler);
                             const directives = collectDirectives(compileNode, attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
                             let nodeLinkFnCtx;
                             if (directives.length) {
@@ -10202,14 +10188,18 @@
                             attr.$updateClass(value, element.classList.value);
                             return;
                         }
+                        if (linkState._name === "srcset") {
+                            attr.$set(linkState._name, linkState._isNgAttr
+                                ? value
+                                : sanitizeSrcset(security.valueOf(value), "srcset"));
+                            return;
+                        }
                         if ((linkState._trustedContext === SCE_CONTEXTS._URL ||
                             linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
                             !(isString(value) && value.startsWith("unsafe:"))) {
-                            value = $sce.getTrusted(linkState._trustedContext, value);
+                            value = security.getTrusted(linkState._trustedContext, value);
                         }
-                        attr.$set(linkState._name, linkState._name === "srcset"
-                            ? $sce.getTrustedMediaUrl(value)
-                            : value);
+                        attr.$set(linkState._name, value);
                     }
                     /** Re-applies the current interpolated attribute value from explicit per-link state. */
                     function handleAttrInterpolationWatch(bindingState) {
@@ -10270,7 +10260,7 @@
                     }
                     /** Shared watch callback for backing attribute-expression watchers. */
                     function handlePropertyDirectiveAttrWatch(bindingState, value) {
-                        $sce.valueOf(value);
+                        security.valueOf(value);
                         updatePropertyDirectiveValue(bindingState);
                     }
                     /** Invokes an expression binding against the stored parent getter and scope target. */
@@ -10425,7 +10415,7 @@
                             compileNode = templateNodes[0];
                             if (templateNodes.length !== 1 ||
                                 compileNode.nodeType !== NodeType._ELEMENT_NODE) {
-                                throw $compileMinErr("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", delayedState._origAsyncDirective.name, delayedState._templateUrl);
+                                throw $compileMinErr$1("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", delayedState._origAsyncDirective.name, delayedState._templateUrl);
                             }
                             replacementState = {
                                 _templateNodes: templateNodes,
@@ -10500,7 +10490,7 @@
                                 return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
                             }
                             if (isUndefined(slotTranscludeFn)) {
-                                throw $compileMinErr("noslot", 'No parent directive that requires a transclusion with slot name "{0}". ' +
+                                throw $compileMinErr$1("noslot", 'No parent directive that requires a transclusion with slot name "{0}". ' +
                                     "Element: {1}", requestedSlotName, startingTag(transcludeState._elementRef.element));
                             }
                             return undefined;
@@ -10541,7 +10531,7 @@
                         else {
                             $element = new NodeRef(linkNode);
                             registerScopeOwnedNodeRef(scope, $element);
-                            attrs = new Attributes($injector, $exceptionHandler, $sce, $element, nodeLinkState._templateAttrs);
+                            attrs = new Attributes($injector, $exceptionHandler, $element, nodeLinkState._templateAttrs);
                         }
                         controllerScope = scope;
                         if (nodeLinkState._newIsolateScopeDirective) {
@@ -10881,7 +10871,7 @@
                                             const slotName = filledSlotNames[slotIndex];
                                             const filled = filledSlots[slotName];
                                             if (!filled) {
-                                                throw $compileMinErr("reqslot", "Required transclusion slot `{0}` was not filled.", slotName);
+                                                throw $compileMinErr$1("reqslot", "Required transclusion slot `{0}` was not filled.", slotName);
                                             }
                                         }
                                         for (const slotName in slots) {
@@ -10924,7 +10914,7 @@
                                     compileNode = $template[0];
                                     if ($template.length !== 1 ||
                                         compileNode.nodeType !== NodeType._ELEMENT_NODE) {
-                                        throw $compileMinErr("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", directiveName, "");
+                                        throw $compileMinErr$1("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", directiveName, "");
                                     }
                                     replaceWith(compileNodeRef, compileNode);
                                     if (_parentNodeRef && _index !== undefined) {
@@ -11075,7 +11065,7 @@
                                 }
                             }
                             if (!value && !optional) {
-                                throw $compileMinErr("ctreq", "Controller '{0}', required by directive '{1}', can't be found!", name, directiveName);
+                                throw $compileMinErr$1("ctreq", "Controller '{0}', required by directive '{1}', can't be found!", name, directiveName);
                             }
                         }
                         else if (isArray(require)) {
@@ -11234,7 +11224,11 @@
                             templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, $compileNode.element, tAttrs);
                         }
                         else {
-                            templateUrl = origAsyncDirective.templateUrl || "";
+                            ({ templateUrl } = origAsyncDirective);
+                        }
+                        templateUrl = stringify$1(templateUrl);
+                        if (!isString(templateUrl) || !templateUrl) {
+                            throw $compileMinErr$1("tplurl", "Directive '{0}' produced an invalid templateUrl: {1}", origAsyncDirective.name, stringify$1(templateUrl));
                         }
                         const { templateNamespace } = origAsyncDirective;
                         const delayedState = {
@@ -11255,7 +11249,7 @@
                             _templateNamespace: templateNamespace,
                         };
                         emptyElement($compileNode.element);
-                        $templateRequest(templateUrl || "")
+                        requestTemplate(templateUrl)
                             .then((content) => {
                             handleDelayedTemplateLoaded(delayedState, content);
                         })
@@ -11270,7 +11264,7 @@
                     /** Throws when multiple directives request an incompatible exclusive feature on the same node. */
                     function assertNoDuplicate(what, previousDirective, directive, element) {
                         if (previousDirective) {
-                            throw $compileMinErr("multidir", "Multiple directives [{0}, {1}] asking for {3} on: {4}", previousDirective.name, directive.name, what, startingTag(element._getAny()));
+                            throw $compileMinErr$1("multidir", "Multiple directives [{0}, {1}] asking for {3} on: {4}", previousDirective.name, directive.name, what, startingTag(element._getAny()));
                         }
                     }
                     /** Adds a synthetic text-interpolation directive for a text node. */
@@ -11303,7 +11297,7 @@
                             _postLinkCtx: this._compileState,
                         };
                     }
-                    /** Determines the SCE trust context required for a DOM attribute binding. */
+                    /** Determines the trust context required for a DOM attribute binding. */
                     function getTrustedAttrContext(nodeName, attrNormalizedName) {
                         if (attrNormalizedName === "srcdoc") {
                             return SCE_CONTEXTS._HTML;
@@ -11337,7 +11331,7 @@
                         }
                         return undefined;
                     }
-                    /** Determines the SCE trust context required for a DOM property binding. */
+                    /** Determines the trust context required for a DOM property binding. */
                     function getTrustedPropContext(nodeName, propNormalizedName) {
                         const prop = propNormalizedName.toLowerCase();
                         return (PROP_CONTEXTS[`${nodeName}|${prop}`] || PROP_CONTEXTS[`*|${prop}`]);
@@ -11348,13 +11342,13 @@
                             return value;
                         }
                         if (!isString(value)) {
-                            throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
+                            throw $compileMinErr$1("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
                         }
-                        // Such values are a bit too complex to handle automatically inside $sce.
+                        // Such values are a bit too complex to handle automatically inside the security adapter.
                         // Instead, we sanitize each of the URIs individually, which works, even dynamically.
-                        // It's not possible to work around this using `$sce.trustAsMediaUrl`.
+                        // A single trusted media URL cannot represent a whole srcset list.
                         // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-                        // `$sce.trustAsHtml` on the whole `img` tag and inject it into the DOM using the
+                        // a trusted/sanitized HTML binding for the whole `img` tag and inject it using the
                         // `ng-bind-html` directive.
                         let result = "";
                         // first check if there are spaces because it's not the same pattern
@@ -11371,15 +11365,21 @@
                         let i;
                         for (i = 0; i < nbrUrisWith2parts; i++) {
                             const innerIdx = i * 2;
+                            const uri = trim(rawUris[innerIdx]);
                             // sanitize the uri
-                            result += $sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
+                            result += uri.startsWith("unsafe:")
+                                ? uri
+                                : security.getTrustedMediaUrl(uri);
                             // add the descriptor
                             result += ` ${trim(rawUris[innerIdx + 1])}`;
                         }
                         // split the last item into uri and descriptor
                         const lastTuple = trim(rawUris[i * 2]).split(/\s/);
                         // sanitize the last uri
-                        result += $sce.getTrustedMediaUrl(trim(lastTuple[0]));
+                        const uri = trim(lastTuple[0]);
+                        result += uri.startsWith("unsafe:")
+                            ? uri
+                            : security.getTrustedMediaUrl(uri);
                         // and add the last descriptor if any
                         if (lastTuple.length === 2) {
                             result += ` ${trim(lastTuple[1])}`;
@@ -11389,7 +11389,7 @@
                     /** Adds an `ng-prop-*` directive for the given property binding. */
                     function addPropertyDirective(node, directives, attrName, propName) {
                         if (EVENT_HANDLER_ATTR_REGEXP.test(propName)) {
-                            throw $compileMinErr("nodomevents", "Property bindings for HTML DOM event properties are disallowed");
+                            throw $compileMinErr$1("nodomevents", "Property bindings for HTML DOM event properties are disallowed");
                         }
                         const nodeName = getNodeName$1(node);
                         const trustedContext = getTrustedPropContext(nodeName, propName);
@@ -11397,10 +11397,10 @@
                         // Sanitize img[srcset] + source[srcset] values.
                         if (propName === "srcset" &&
                             (nodeName === "img" || nodeName === "source")) {
-                            sanitizer = (value) => sanitizeSrcset($sce.valueOf(value), "ng-prop-srcset");
+                            sanitizer = (value) => sanitizeSrcset(security.valueOf(value), "ng-prop-srcset");
                         }
                         else if (trustedContext) {
-                            sanitizer = $sce.getTrusted.bind($sce, trustedContext);
+                            sanitizer = (value) => security.getTrusted(trustedContext, value);
                         }
                         const directive = {
                             priority: 100,
@@ -11438,10 +11438,10 @@
                             return;
                         }
                         if (name === "multiple" && nodeName === "select") {
-                            throw $compileMinErr("selmulti", "Binding to the 'multiple' attribute is not supported. Element: {0}", startingTag(node.outerHTML));
+                            throw $compileMinErr$1("selmulti", "Binding to the 'multiple' attribute is not supported. Element: {0}", startingTag(node.outerHTML));
                         }
                         if (EVENT_HANDLER_ATTR_REGEXP.test(name)) {
-                            throw $compileMinErr("nodomevents", "Interpolations for HTML DOM event attributes are disallowed");
+                            throw $compileMinErr$1("nodomevents", "Interpolations for HTML DOM event attributes are disallowed");
                         }
                         const directive = {
                             priority: 100,
@@ -11451,6 +11451,7 @@
                                 _value: value,
                                 _trustedContext: trustedContext,
                                 _allOrNothing: allOrNothing,
+                                _isNgAttr: isNgAttr,
                                 _interpolateFn: interpolateFn,
                             },
                         };
@@ -11466,7 +11467,7 @@
                     /** Enforces strict component binding requirements for required attributes. */
                     function strictBindingsCheck(attrName, directiveName) {
                         if (strictComponentBindingsEnabled) {
-                            throw $compileMinErr("missingattr", "Attribute '{0}' of '{1}' is non-optional and must be set!", attrName, directiveName);
+                            throw $compileMinErr$1("missingattr", "Attribute '{0}' of '{1}' is non-optional and must be set!", attrName, directiveName);
                         }
                     }
                     /**
@@ -11551,7 +11552,7 @@
                                         parentSet =
                                             (parentGet && parentGet._assign) ||
                                                 function () {
-                                                    throw $compileMinErr("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", attrsAny[attrName], attrName, directive.name);
+                                                    throw $compileMinErr$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", attrsAny[attrName], attrName, directive.name);
                                                 };
                                         // store the value that the parent scope had after the last check:
                                         const initialValue = parentGet && parentGet(scopeTarget);
@@ -11651,10 +11652,10 @@
     function assertValidDirectiveName(name) {
         const letter = name.charAt(0);
         if (!letter || letter !== letter.toLowerCase()) {
-            throw $compileMinErr("baddir", "Directive/Component name '{0}' is invalid. The first character must be a lowercase letter", name);
+            throw $compileMinErr$1("baddir", "Directive/Component name '{0}' is invalid. The first character must be a lowercase letter", name);
         }
         if (name !== name.trim()) {
-            throw $compileMinErr("baddir", "Directive/Component name '{0}' is invalid. The name should not contain leading or trailing whitespaces", name);
+            throw $compileMinErr$1("baddir", "Directive/Component name '{0}' is invalid. The name should not contain leading or trailing whitespaces", name);
         }
     }
     /**
@@ -11684,7 +11685,7 @@
      */
     function getDirectiveRestrict(restrict, name) {
         if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
-            throw $compileMinErr("badrestrict", "Restrict property '{0}' of directive '{1}' is invalid", restrict, name);
+            throw $compileMinErr$1("badrestrict", "Restrict property '{0}' of directive '{1}' is invalid", restrict, name);
         }
         return isString(restrict) ? restrict : "EA";
     }
@@ -11919,6 +11920,8 @@
                 if (matchAgainstAnyProp) {
                     const actualObj = actual;
                     for (const key in actualObj) {
+                        if (!hasOwn(actualObj, key))
+                            continue;
                         // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
                         // See: https://github.com/angular/angular.ts/issues/15644
                         if (key.charAt &&
@@ -11935,6 +11938,8 @@
                     const expectedObj = expected;
                     const actualObj = actual;
                     for (const key in expectedObj) {
+                        if (!hasOwn(expectedObj, key))
+                            continue;
                         const expectedVal = expectedObj[key];
                         if (isFunction(expectedVal) || isUndefined(expectedVal)) {
                             continue;
@@ -12298,9 +12303,9 @@
 
     const $interpolateMinErr = minErr("$interpolate");
     function throwNoconcat(text) {
-        throw $interpolateMinErr("noconcat", "Error while interpolating: {0}\nStrict Contextual Escaping disallows " +
+        throw $interpolateMinErr("noconcat", "Error while interpolating: {0}\nSecurity contexts disallow " +
             "interpolations that concatenate multiple expressions when a trusted value is " +
-            "required.  See http://docs.angularjs.org/api/ng.$sce", text);
+            "required.", text);
     }
     function interr(text, err) {
         throw $interpolateMinErr("interr", "Can't interpolate: {0}\n{1}", text, err.toString());
@@ -12310,9 +12315,10 @@
             this.startSymbol = "{{";
             this.endSymbol = "}}";
             this.$get = [
+                _injector,
                 _parse,
-                _sce,
-                ($parse, $sce) => {
+                ($injector, $parse) => {
+                    const security = getSecurityAdapter($injector);
                     const provider = this;
                     const startSymbolLength = this.startSymbol.length;
                     const endSymbolLength = this.endSymbol.length;
@@ -12335,7 +12341,7 @@
                             }
                             let unescapedText = unescapeText(text);
                             if (contextAllowsConcatenation) {
-                                unescapedText = $sce.getTrusted(trustedContext, unescapedText);
+                                unescapedText = security.getTrusted(trustedContext, unescapedText);
                             }
                             const constantInterp = (() => unescapedText);
                             constantInterp.exp = text;
@@ -12412,7 +12418,7 @@
                                     concat[expressionPositions[i]] = values[i];
                                 }
                                 if (contextAllowsConcatenation) {
-                                    return $sce.getTrusted(trustedContext, singleExpression ? concat[0] : concat.join(""));
+                                    return security.getTrusted(trustedContext, singleExpression ? concat[0] : concat.join(""));
                                 }
                                 if (trustedContext && concat.length > 1) {
                                     throwNoconcat(text);
@@ -12449,8 +12455,8 @@
                             try {
                                 value =
                                     trustedContext && !contextAllowsConcatenation
-                                        ? $sce.getTrusted(trustedContext, value)
-                                        : $sce.valueOf(value);
+                                        ? security.getTrusted(trustedContext, value)
+                                        : security.valueOf(value);
                                 return allOrNothing && !isDefined(value)
                                     ? value
                                     : stringify$1(value);
@@ -14694,6 +14700,35 @@
     }
 
     const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
+    const $compileMinErr = minErr("$compile");
+    function sanitizeSrcset($sce, value, invokeType) {
+        if (!value) {
+            return value;
+        }
+        if (!isString(value)) {
+            throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
+        }
+        let result = "";
+        const trimmedSrcset = trim(value);
+        const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
+        const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+        const rawUris = trimmedSrcset.split(pattern);
+        const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
+        let i;
+        for (i = 0; i < nbrUrisWith2parts; i++) {
+            const innerIdx = i * 2;
+            const uri = trim(rawUris[innerIdx]);
+            result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+            result += ` ${trim(rawUris[innerIdx + 1])}`;
+        }
+        const lastTuple = trim(rawUris[i * 2]).split(/\s/);
+        const uri = trim(lastTuple[0]);
+        result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+        if (lastTuple.length === 2) {
+            result += ` ${trim(lastTuple[1])}`;
+        }
+        return result;
+    }
     const ngAttributeAliasDirectives = {};
     // boolean attrs are evaluated
     BOOLEAN_ATTR.forEach((i) => {
@@ -14785,7 +14820,9 @@
                         // non-interpolated attribute.
                         const initialValue = attr[normalized];
                         if (initialValue && String(initialValue).indexOf("{{") === -1) {
-                            attr.$set(normalized, sanitize(initialValue));
+                            attr.$set(normalized, attrName === "srcset"
+                                ? sanitizeSrcset($sce, initialValue, "ng-srcset")
+                                : sanitize(initialValue));
                         }
                         attr.$observe(normalized, (value) => {
                             if (!value) {
@@ -14798,6 +14835,9 @@
                                 (attrName === "src" &&
                                     ["img", "video", "audio", "source", "track"].indexOf(nodeName) !== -1)) {
                                 attr.$set(attrName, sanitize(value));
+                            }
+                            else if (attrName === "srcset") {
+                                attr.$set(attrName, sanitizeSrcset($sce, value, "ng-srcset"));
                             }
                             else {
                                 attr.$set(attrName, value);
@@ -15790,7 +15830,10 @@
      *     whether it is of an allowed origin.
      */
     function urlIsAllowedOriginFactory(trustedOriginUrls) {
-        const parsedAllowedOriginUrls = [originUrl].concat(trustedOriginUrls.map(urlResolve));
+        const parsedAllowedOriginUrls = [originUrl];
+        trustedOriginUrls.forEach((url) => {
+            parsedAllowedOriginUrls.push(urlResolve(url));
+        });
         /**
          * Check whether the specified URL (string or parsed URL object) has an origin that is allowed
          * based on a list of trusted-origin URLs. The current location's origin is implicitly
@@ -15803,7 +15846,12 @@
          */
         return function urlIsAllowedOrigin(requestUrl) {
             const parsedUrl = urlResolve(requestUrl);
-            return parsedAllowedOriginUrls.some(urlsAreSameOrigin.bind(null, parsedUrl));
+            for (let i = 0; i < parsedAllowedOriginUrls.length; i++) {
+                if (urlsAreSameOrigin(parsedUrl, parsedAllowedOriginUrls[i])) {
+                    return true;
+                }
+            }
+            return false;
         };
     }
     /**
@@ -15845,7 +15893,6 @@
         _OK: 200,
         _MultipleChoices: 300,
         _BadRequest: 400,
-        _NotFound: 404,
         _ErrorMax: 599,
     };
     const CONTENT_TYPE_APPLICATION_JSON = {
@@ -16052,27 +16099,6 @@
             xsrfHeaderName: "X-XSRF-TOKEN",
             paramSerializer: _httpParamSerializer,
         });
-        let useApplyAsync = false;
-        /**
-         * Configure $http service to combine processing of multiple http responses received at around
-         * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
-         * significant performance improvement for bigger applications that make many HTTP requests
-         * concurrently (common during application bootstrap).
-         *
-         * Defaults to false. If no value is specified, returns the current configured value.
-         *
-         * @param value - If true, completed requests schedule a deferred apply on the next tick,
-         *   allowing nearby responses to share the same digest cycle.
-         *
-         * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
-         */
-        this.useApplyAsync = function (value) {
-            if (isDefined(value)) {
-                useApplyAsync = !!value;
-                return this;
-            }
-            return useApplyAsync;
-        };
         /**
          * Array containing service factories for all synchronous or asynchronous `$http`
          * pre-processing of request or postprocessing of responses.
@@ -16125,8 +16151,9 @@
             _injector,
             _sce,
             _cookie,
+            _stream,
             /** Creates the runtime `$http` service. */
-            function ($injector, $sce, $cookie) {
+            function ($injector, $sce, $cookie, $stream) {
                 const defaultCache = new Map();
                 /**
                  * Resolves the configured default param serializer to a callable function.
@@ -16158,12 +16185,16 @@
                     if (!isString($sce.valueOf(requestConfig.url))) {
                         throw minErr("$http")("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
                     }
+                    const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
                     const config = extend({
                         method: "get",
                         transformRequest: defaults.transformRequest,
                         transformResponse: defaults.transformResponse,
                         paramSerializer: defaults.paramSerializer,
                     }, requestConfig);
+                    if (config.responseType === "stream" && !hasCustomResponseTransform) {
+                        config.transformResponse = [];
+                    }
                     config.headers = mergeHeaders(requestConfig);
                     config.method = uppercase(config.method);
                     config.paramSerializer = isString(config.paramSerializer)
@@ -16260,8 +16291,12 @@
                     }
                 };
                 $http.pendingRequests = [];
-                createShortMethods("get", "delete", "head");
-                createShortMethodsWithData("post", "put", "patch");
+                $http.get = createShortMethod("GET");
+                $http.delete = createShortMethod("DELETE");
+                $http.head = createShortMethod("HEAD");
+                $http.post = createShortMethodWithData("POST");
+                $http.put = createShortMethodWithData("PUT");
+                $http.patch = createShortMethodWithData("PATCH");
                 /**
                  * Exposes the runtime equivalent of `$httpProvider.defaults`.
                  * It allows configuration of default headers, `withCredentials`, and request/response transforms.
@@ -16270,28 +16305,24 @@
                  */
                 $http.defaults = defaults;
                 return $http;
-                /** Generates shorthand methods for requests that do not send a request body. */
-                function createShortMethods(...names) {
-                    names.forEach((name) => {
-                        $http[name] = function (url, config) {
-                            return $http(extend({}, config || {}, {
-                                method: name,
-                                url,
-                            }));
-                        };
-                    });
+                /** Creates one shorthand method for requests that do not send a request body. */
+                function createShortMethod(method) {
+                    return function (url, config) {
+                        return $http(extend({}, config || {}, {
+                            method,
+                            url,
+                        }));
+                    };
                 }
-                /** Generates shorthand methods for requests that send a request body. */
-                function createShortMethodsWithData(...names) {
-                    names.forEach((name) => {
-                        $http[name] = function (url, data, config) {
-                            return $http(extend({}, config || {}, {
-                                method: name,
-                                url,
-                                data,
-                            }));
-                        };
-                    });
+                /** Creates one shorthand method for requests that send a request body. */
+                function createShortMethodWithData(method) {
+                    return function (url, data, config) {
+                        return $http(extend({}, config || {}, {
+                            method,
+                            url,
+                            data,
+                        }));
+                    };
                 }
                 /** Sends the request through the low-level HTTP backend and cache layer. */
                 function sendReq(config, reqData) {
@@ -16354,40 +16385,32 @@
                                 reqHeaders[xsrfHeaderName] = xsrfValue;
                             }
                         }
-                        http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createApplyHandlers(config.eventHandlers), createApplyHandlers(config.uploadEventHandlers));
+                        http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createEventHandlers(config.eventHandlers), createEventHandlers(config.uploadEventHandlers), $stream);
                     }
                     return promise;
-                    /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
-                    function createApplyHandlers(eventHandlers) {
+                    /** Wraps raw transport event handlers with function/object listener support. */
+                    function createEventHandlers(eventHandlers) {
                         if (eventHandlers) {
-                            const applyHandlers = {};
+                            const handlers = {};
                             entries(eventHandlers).forEach(([key, eventHandler]) => {
-                                applyHandlers[key] = function (event) {
-                                    if (useApplyAsync) {
-                                        setTimeout(() => callEventHandler());
+                                handlers[key] = function (event) {
+                                    if (isFunction(eventHandler)) {
+                                        eventHandler(event);
                                     }
-                                    else {
-                                        callEventHandler();
-                                    }
-                                    function callEventHandler() {
-                                        if (isFunction(eventHandler)) {
-                                            eventHandler(event);
-                                        }
-                                        else if (eventHandler &&
-                                            typeof eventHandler === "object" &&
-                                            "handleEvent" in eventHandler) {
-                                            eventHandler.handleEvent(event);
-                                        }
+                                    else if (eventHandler &&
+                                        typeof eventHandler === "object" &&
+                                        "handleEvent" in eventHandler) {
+                                        eventHandler.handleEvent(event);
                                     }
                                 };
                             });
-                            return applyHandlers;
+                            return handlers;
                         }
                         else {
                             return {};
                         }
                     }
-                    /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
+                    /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
                     function done(status, response, headersString, statusText, xhrStatus) {
                         if (cache) {
                             if (isSuccess(status)) {
@@ -16404,17 +16427,9 @@
                                 cache.delete(url);
                             }
                         }
-                        function resolveHttpPromise() {
-                            resolvePromise(response, status, headersString, statusText, xhrStatus);
-                        }
-                        if (useApplyAsync) {
-                            setTimeout(resolveHttpPromise);
-                        }
-                        else {
-                            resolveHttpPromise();
-                        }
+                        resolvePromise(response, status, headersString, statusText, xhrStatus);
                     }
-                    /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
+                    /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
                     function resolvePromise(response, status, headers, statusText, xhrStatus) {
                         // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
                         status = status >= -1 ? status : 0;
@@ -16449,7 +16464,7 @@
         ];
     }
     /**
-     * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
+     * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
      *
      * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
      * @param [url] - The request URL. Defaults to the current page URL.
@@ -16458,63 +16473,34 @@
      * @param [headers] - Request headers to apply before sending.
      * @param [timeout] - Timeout in milliseconds or a cancellable promise.
      * @param [withCredentials] - Whether to send credentials with the request.
-     * @param [responseType] - The expected XHR response type.
-     * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
-     * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
+     * @param [responseType] - The response body reader hint.
+     * @param [eventHandlers] - Event listeners notified by the fetch transport.
+     * @param [uploadEventHandlers] - Currently ignored by the fetch transport.
+     * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
      */
-    function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
+    function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers, streamService) {
         url = url || trimEmptyHash(window.location.href);
-        const xhr = new XMLHttpRequest();
-        let abortedByTimeout = false;
+        const abortController = new AbortController();
+        let abortReason = "abort";
         let timeoutId;
-        xhr.open(method, url, true);
+        const requestHeaders = new Headers();
         if (headers) {
             for (const [key, value] of entries(headers)) {
                 if (isDefined(value)) {
-                    xhr.setRequestHeader(key, value);
+                    requestHeaders.set(key, value);
                 }
             }
         }
-        xhr.onload = () => {
-            let status = xhr.status || 0;
-            const statusText = xhr.statusText || "";
-            if (status === 0) {
-                status = xhr.response
-                    ? Http._OK
-                    : new URL(url).protocol === "file:"
-                        ? Http._NotFound
-                        : 0;
-            }
-            completeRequest(status, xhr.response, xhr.getAllResponseHeaders(), statusText, "complete");
+        const upperMethod = uppercase(method);
+        const init = {
+            method: upperMethod,
+            headers: requestHeaders,
+            signal: abortController.signal,
+            credentials: withCredentials ? "include" : "same-origin",
         };
-        xhr.onerror = () => completeRequest(-1, null, null, "", "error");
-        xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
-        xhr.onabort = () => {
-            completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
-        };
-        if (eventHandlers) {
-            for (const [key, handler] of entries(eventHandlers)) {
-                xhr.addEventListener(key, handler);
-            }
+        if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
+            init.body = normalizeFetchBody(post);
         }
-        if (uploadEventHandlers) {
-            for (const [key, handler] of entries(uploadEventHandlers)) {
-                xhr.upload.addEventListener(key, handler);
-            }
-        }
-        if (withCredentials) {
-            xhr.withCredentials = true;
-        }
-        if (responseType) {
-            try {
-                xhr.responseType = responseType;
-            }
-            catch (err) {
-                if (responseType !== "json")
-                    throw err;
-            }
-        }
-        xhr.send(isUndefined(post) ? null : post);
         if (typeof timeout === "number" && timeout > 0) {
             timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
         }
@@ -16523,11 +16509,28 @@
                 timeoutRequest("abort");
             });
         }
-        /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
+        fetch(url, init).then((response) => {
+            const status = response.status || 0;
+            responseBody(response, responseType, streamService).then((body) => {
+                notifyEvent("load", eventHandlers);
+                completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
+            }, () => {
+                notifyEvent("error", eventHandlers);
+                completeRequest(-1, null, null, "", "error");
+            });
+        }, (error) => {
+            if (error?.name === "AbortError") {
+                notifyEvent(abortReason, eventHandlers);
+                completeRequest(-1, null, null, "", abortReason);
+                return;
+            }
+            notifyEvent("error", eventHandlers);
+            completeRequest(-1, null, null, "", "error");
+        });
+        /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
         function timeoutRequest(reason) {
-            abortedByTimeout = reason === "timeout";
-            if (xhr)
-                xhr.abort();
+            abortReason = reason;
+            abortController.abort();
         }
         /**
          * Finalizes the request, clears timeout state, and notifies the caller.
@@ -16545,6 +16548,74 @@
             if (callback) {
                 callback(status, response, headersString, statusText, xhrStatus);
             }
+        }
+    }
+    /** Normalizes AngularTS request data into a fetch-compatible body. */
+    function normalizeFetchBody(post) {
+        if (post === null)
+            return null;
+        if (isString(post) ||
+            isBlob(post) ||
+            isFormData(post) ||
+            post instanceof URLSearchParams ||
+            post instanceof ArrayBuffer ||
+            ArrayBuffer.isView(post)) {
+            return post;
+        }
+        return String(post);
+    }
+    /** Reads a fetch response body using the closest `$http` responseType equivalent. */
+    function responseBody(response, responseType, streamService) {
+        switch (responseType) {
+            case "arraybuffer":
+                return response.arrayBuffer();
+            case "blob":
+                return response.blob();
+            case "json":
+                return responseText(response, streamService).then((text) => text ? fromJson(text) : null);
+            case "stream":
+                return Promise.resolve(response.body);
+            case "document":
+                return responseText(response, streamService).then((text) => {
+                    return new DOMParser().parseFromString(text, "text/html");
+                });
+            case "text":
+            case "":
+            case undefined:
+                return responseText(response, streamService);
+            default:
+                return responseText(response, streamService);
+        }
+    }
+    /** Reads text via `$stream` when available, falling back to the native response reader. */
+    function responseText(response, streamService) {
+        return response.body && streamService
+            ? streamService.readText(response.body)
+            : response.text();
+    }
+    /** Converts fetch headers into the raw header string shape expected by `$http`. */
+    function responseHeadersString(headers) {
+        const headerLines = [];
+        headers.forEach((value, key) => {
+            headerLines.push(`${key}: ${value}`);
+        });
+        return headerLines.join("\n");
+    }
+    /** Notifies configured transport event handlers for compatibility. */
+    function notifyEvent(eventName, eventHandlers) {
+        if (!eventHandlers)
+            return;
+        const handler = eventHandlers[eventName];
+        if (!handler)
+            return;
+        const event = new Event(eventName);
+        if (isFunction(handler)) {
+            handler(event);
+        }
+        else if (handler &&
+            typeof handler === "object" &&
+            "handleEvent" in handler) {
+            handler.handleEvent(event);
         }
     }
 
@@ -16567,7 +16638,16 @@
     function defineDirective(method, attrOverride) {
         const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
         const directive = createHttpDirective(method, attrName);
-        directive.$inject = [_http, _compile, _log, _parse, _state, _sse, _injector];
+        directive.$inject = [
+            _http,
+            _compile,
+            _log,
+            _parse,
+            _state,
+            _sse,
+            _injector,
+            _stream,
+        ];
         return directive;
     }
     const ngGetDirective = defineDirective("get");
@@ -16578,7 +16658,7 @@
     /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
     function createHttpDirective(method, attrName) {
         /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-        return function ($http, $compile, $log, $parse, $state, $sse, $injector) {
+        return function ($http, $compile, $log, $parse, $state, $sse, $injector, $stream) {
             const getAnimate = createLazyAnimate($injector);
             /** Collects form data from the element or its associated form. */
             function collectFormData(element) {
@@ -16632,6 +16712,18 @@
                     }
                     let throttled = false;
                     let intervalId;
+                    let resolveDestroy;
+                    const destroyPromise = new Promise((resolve) => {
+                        resolveDestroy = resolve;
+                    });
+                    const destroyController = new AbortController();
+                    scope.$on("$destroy", () => {
+                        resolveDestroy?.();
+                        resolveDestroy = undefined;
+                        destroyController.abort("scope destroyed");
+                        if (intervalId)
+                            clearInterval(intervalId);
+                    });
                     if (isDefined(attrs.interval)) {
                         element.dispatchEvent(new Event(eventName));
                         intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval) || 1000);
@@ -16821,6 +16913,76 @@
                                 break;
                         }
                     }
+                    async function handleStreamResponse(stream, swap) {
+                        await $stream.consumeText(stream, {
+                            signal: destroyController.signal,
+                            onChunk(chunk) {
+                                if (chunk)
+                                    handleSwapResponse(chunk, swap, scope, attrs, element);
+                            },
+                        });
+                    }
+                    function createRequestConfig() {
+                        const config = {};
+                        if (attrs.enctype) {
+                            config.headers = {
+                                "Content-Type": attrs.enctype,
+                            };
+                        }
+                        if (attrs.responseType === "stream" ||
+                            isDefined(attrs.stream) ||
+                            isDefined(attrs.responseStream)) {
+                            config.responseType = "stream";
+                        }
+                        config.timeout = destroyPromise;
+                        return config;
+                    }
+                    function dispatchSseEvent(name, detail) {
+                        return element.dispatchEvent(new CustomEvent(`ng:sse:${name}`, {
+                            bubbles: true,
+                            cancelable: true,
+                            detail,
+                        }));
+                    }
+                    function parseSseEventTypes() {
+                        if (!isString(attrs.sseEvents))
+                            return [];
+                        return attrs.sseEvents
+                            .split(",")
+                            .map((eventType) => eventType.trim())
+                            .filter(Boolean);
+                    }
+                    function isSseProtocolMessage(data) {
+                        return (isObject(data) &&
+                            ("html" in data || "target" in data || "swap" in data));
+                    }
+                    function handleSseProtocolMessage(data, swap, event, source) {
+                        const html = "html" in data ? data.html : data.data;
+                        const nextSwap = data.swap || swap;
+                        const previousTarget = attrs.target;
+                        if (!dispatchSseEvent("message", { data, event, source })) {
+                            source.close();
+                            return;
+                        }
+                        if (isDefined(html)) {
+                            if (data.target)
+                                attrs.target = data.target;
+                            try {
+                                handleSwapResponse(isString(html) || isObject(html) ? html : String(html), nextSwap, scope, attrs, element);
+                                dispatchSseEvent("swapped", { data, event, source });
+                            }
+                            finally {
+                                if (data.target) {
+                                    if (isDefined(previousTarget)) {
+                                        attrs.target = previousTarget;
+                                    }
+                                    else {
+                                        delete attrs.target;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     element.addEventListener(eventName, async (event) => {
                         if (element.disabled)
                             return;
@@ -16858,9 +17020,14 @@
                                     $state.go(attrs.stateError);
                                 }
                             }
-                            if (isObject(html)) {
+                            if ($stream.isReadableStream(html)) {
+                                handleStreamResponse(html, swap).catch((error) => {
+                                    $log.error(`${attrName}: stream error`, error);
+                                });
+                            }
+                            else if (isObject(html)) {
                                 if (attrs.target) {
-                                    scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
+                                    $parse(attrs.target)._assign?.(scope, html);
                                 }
                                 else {
                                     scope.$merge(html);
@@ -16873,6 +17040,8 @@
                         if (isDefined(attrs.delay)) {
                             await wait(parseInt(attrs.delay) | 0);
                         }
+                        if (scope._destroyed)
+                            return;
                         if (throttled)
                             return;
                         if (isDefined(attrs.throttle)) {
@@ -16891,11 +17060,8 @@
                         }
                         if (method === "post" || method === "put") {
                             let data;
-                            const config = {};
+                            const config = createRequestConfig();
                             if (attrs.enctype) {
-                                config.headers = {
-                                    "Content-Type": attrs.enctype,
-                                };
                                 data = toKeyValue(collectFormData(element));
                             }
                             else {
@@ -16906,8 +17072,10 @@
                         else {
                             if (method === "get" && attrs.ngSse) {
                                 const sseUrl = url;
+                                const sourceRef = {};
                                 const config = {
                                     withCredentials: attrs.withCredentials === "true",
+                                    eventTypes: parseSseEventTypes(),
                                     transformMessage: (data) => {
                                         try {
                                             return JSON.parse(data);
@@ -16918,16 +17086,55 @@
                                     },
                                     onOpen: () => {
                                         $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
+                                        if (!dispatchSseEvent("open", { url: sseUrl })) {
+                                            sourceRef.current?.close();
+                                            return;
+                                        }
                                         if (isDefined(attrs.loading))
                                             attrs.$set("loading", false);
                                         if (isDefined(attrs.loadingClass))
                                             attrs.$removeClass(attrs.loadingClass);
                                     },
-                                    onMessage: (data) => {
+                                    onEvent: ({ data, event: messageEvent, type, }) => {
+                                        const source = sourceRef.current;
+                                        if (!source)
+                                            return;
+                                        if (type !== "message") {
+                                            const proceed = dispatchSseEvent(type, {
+                                                data,
+                                                event: messageEvent,
+                                                source,
+                                            });
+                                            if (!proceed) {
+                                                source.close();
+                                                return;
+                                            }
+                                            if (!isSseProtocolMessage(data))
+                                                return;
+                                        }
+                                        if (isSseProtocolMessage(data)) {
+                                            handleSseProtocolMessage(data, swap, messageEvent, source);
+                                            return;
+                                        }
+                                        if (!dispatchSseEvent("message", {
+                                            data,
+                                            event: messageEvent,
+                                            source,
+                                        })) {
+                                            source.close();
+                                            return;
+                                        }
                                         const res = { status: 200, data };
                                         handler(res);
+                                        dispatchSseEvent("swapped", {
+                                            data,
+                                            event: messageEvent,
+                                            source,
+                                        });
                                     },
                                     onError: (err) => {
+                                        const source = sourceRef.current;
+                                        dispatchSseEvent("error", { error: err, source });
                                         $log.error(`${attrName}: SSE error`, err);
                                         const res = { status: 500, data: err };
                                         handler(res);
@@ -16939,19 +17146,20 @@
                                     },
                                 };
                                 const source = $sse(sseUrl, config);
+                                sourceRef.current = source;
                                 scope.$on("$destroy", () => {
                                     $log.info(`${attrName}: closing SSE connection`);
+                                    dispatchSseEvent("close", { source });
                                     source.close();
                                 });
                             }
                             else {
-                                $http[method](url).then(handler).catch(handler);
+                                $http[method](url, createRequestConfig())
+                                    .then(handler)
+                                    .catch(handler);
                             }
                         }
                     });
-                    if (intervalId) {
-                        scope.$on("$destroy", () => clearInterval(intervalId));
-                    }
                     if (eventName === "load") {
                         element.dispatchEvent(new Event("load"));
                     }
@@ -17032,11 +17240,12 @@
         _anchorScroll,
         _injector,
         _exceptionHandler,
+        _parse,
     ];
     /**
      * Loads external template content, transcludes it, and swaps it into the DOM.
      */
-    function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler) {
+    function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             priority: 400,
@@ -17049,13 +17258,15 @@
                 const srcExp = attr.ngInclude || attr.src;
                 const onloadExp = attr.onload || "";
                 const autoScrollExp = attr.autoscroll;
+                const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+                const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 return (scope, $element, _$attr, ctrl, $transclude) => {
                     if (!$transclude) {
                         return;
                     }
                     function maybeScroll() {
                         if (isDefined(autoScrollExp) &&
-                            (!autoScrollExp || scope.$eval(autoScrollExp))) {
+                            (!autoScrollExp || autoScrollFn?.(scope))) {
                             $anchorScroll();
                         }
                     }
@@ -17124,7 +17335,7 @@
                                 currentScope = newScope;
                                 currentElement = clone;
                                 currentScope.$emit("$includeContentLoaded", src);
-                                scope.$eval(onloadExp);
+                                onloadFn?.(scope);
                             })
                                 .catch((err) => {
                                 if (scope._destroyed)
@@ -17167,9 +17378,10 @@
 
     const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
     class NgModelOptionsController {
-        constructor($attrs, $scope) {
+        constructor($attrs, $scope, $parse) {
             this._attrs = $attrs;
             this._scope = $scope;
+            this._parse = $parse;
             this.parentCtrl = null;
             this.$options = defaultModelOptions;
         }
@@ -17177,12 +17389,12 @@
             const parentOptions = this.parentCtrl
                 ? this.parentCtrl.$options
                 : defaultModelOptions;
-            const modelOptionsDefinition = this._scope.$eval(this._attrs.ngModelOptions);
+            const modelOptionsDefinition = this._parse(this._attrs.ngModelOptions)(this._scope);
             this.$options = parentOptions.createChild(modelOptionsDefinition);
         }
     }
     NgModelOptionsController.$nonscope = true;
-    NgModelOptionsController.$inject = [_attrs, _scope];
+    NgModelOptionsController.$inject = [_attrs, _scope, _parse];
     /**
      * A container for the options set by the {@link ngModelOptions} directive
      */
@@ -18346,6 +18558,8 @@
                     },
                     post: (scope, elementPost, _attr, ctrls) => {
                         const modelCtrl = ctrls[0];
+                        const { change } = elementPost.dataset;
+                        const changeFn = change ? modelCtrl._parse(change) : undefined;
                         modelCtrl._setUpdateOnEvents();
                         function setTouched() {
                             modelCtrl.$setTouched();
@@ -18360,8 +18574,7 @@
                             elementPost.removeEventListener("blur", blurListener);
                         });
                         modelCtrl.$viewChangeListeners.push(() => {
-                            const { change } = elementPost.dataset;
-                            change && scope.$eval(change);
+                            changeFn?.(scope);
                         });
                     },
                 };
@@ -19005,6 +19218,13 @@
         };
     }
     const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
+    function parseConstantValue(value) {
+        if (value === "true")
+            return true;
+        if (value === "false")
+            return false;
+        return Number(value);
+    }
     /**
      * Keeps an input element's `value` attribute and property synchronized with `ngValue`.
      */
@@ -19022,8 +19242,8 @@
             priority: 100,
             compile(_, tplAttr) {
                 if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
-                    return function (scope, elm, attr) {
-                        const value = scope.$eval(attr.ngValue);
+                    return function (_scope, elm, attr) {
+                        const value = parseConstantValue(attr.ngValue);
                         updateElementValue(elm, attr, value);
                     };
                 }
@@ -19036,18 +19256,20 @@
         };
     }
 
-    function ngInitDirective() {
+    ngInitDirective.$inject = [_parse];
+    function ngInitDirective($parse) {
         return {
             priority: 450,
-            compile() {
+            compile(_element, attrs) {
+                const initFn = $parse(attrs.ngInit);
                 return {
-                    pre(scope, element, attrs) {
+                    pre(scope, element) {
                         const controller = getController(element);
                         if (controller) {
-                            controller.$eval(attrs.ngInit);
+                            initFn(controller);
                         }
                         else {
-                            scope.$eval(attrs.ngInit);
+                            initFn(scope);
                         }
                     },
                 };
@@ -19114,7 +19336,7 @@
         /**
          * Creates a controller that manages message matching and attachment state.
          */
-        constructor($element, $scope, $attrs, getAnimate) {
+        constructor($element, $scope, $attrs, getAnimate, $parse) {
             this._element = $element;
             this._scope = $scope;
             this._attrs = $attrs;
@@ -19126,6 +19348,8 @@
             this._renderLater = false;
             this._cachedCollection = null;
             this._default = undefined;
+            this._multipleExpression = parseAttrTruthy($parse, this._attrs.multiple);
+            this._ngMessagesMultipleExpression = parseAttrTruthy($parse, this._attrs.ngMessagesMultiple);
             this._scope.$watch(this._attrs.ngMessages || this._attrs.for, this._render.bind(this));
         }
         /** @internal */
@@ -19136,8 +19360,8 @@
         _render(collection = {}) {
             this._renderLater = false;
             this._cachedCollection = collection;
-            const multiple = isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
-                isAttrTruthy(this._scope, this._attrs.multiple);
+            const multiple = evalAttrTruthy(this._scope, this._ngMessagesMultipleExpression) ||
+                evalAttrTruthy(this._scope, this._multipleExpression);
             const unmatchedMessages = [];
             const matchedKeys = {};
             let truthyKeys = 0;
@@ -19247,24 +19471,28 @@
             this.reRender();
         }
     }
-    ngMessagesDirective.$inject = [_injector];
+    ngMessagesDirective.$inject = [_injector, _parse];
     /**
      * Builds the root `ngMessages` directive.
      */
-    function ngMessagesDirective($injector) {
+    function ngMessagesDirective($injector, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             require: "ngMessages",
             restrict: "AE",
-            controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate),
+            controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate, $parse),
         };
     }
     /**
      * Evaluates whether an `ngMessages` boolean-style attribute should be treated as enabled.
      */
-    function isAttrTruthy(scope, attr) {
-        return ((isString(attr) && attr.length === 0) || // empty attribute
-            truthy(attr && scope.$eval(attr)));
+    function parseAttrTruthy($parse, attr) {
+        if (!isString(attr))
+            return undefined;
+        return attr.length === 0 ? true : $parse(attr);
+    }
+    function evalAttrTruthy(scope, expr) {
+        return expr === true || truthy(expr && expr(scope));
     }
     /**
      * Normalizes message values into a simple truthy check.
@@ -19304,11 +19532,11 @@
      * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
      */
     function ngMessageDirectiveFactory(isDefault) {
-        ngMessageDirectiveFn.$inject = [_injector];
+        ngMessageDirectiveFn.$inject = [_injector, _parse];
         /**
          * Builds a concrete `ngMessage` directive definition.
          */
-        function ngMessageDirectiveFn($injector) {
+        function ngMessageDirectiveFn($injector, $parse) {
             const getAnimate = createLazyAnimate($injector);
             return {
                 restrict: "AE",
@@ -19334,7 +19562,8 @@
                             ngMessagesCtrl.reRender();
                         };
                         if (dynamicExp) {
-                            assignRecords(scope.$eval(dynamicExp));
+                            const dynamicFn = $parse(dynamicExp);
+                            assignRecords(dynamicFn(scope));
                             scope.$watch(dynamicExp, assignRecords);
                         }
                         else {
@@ -20920,17 +21149,18 @@
                 scope.$watch(attrMap.ngStyle, (newStyles) => {
                     const target = newStyles?.$target || newStyles;
                     if (oldStyles) {
-                        for (const key in oldStyles) {
+                        keys(oldStyles).forEach((key) => {
                             element.style.removeProperty(key);
-                        }
+                        });
                     }
                     if (target) {
-                        oldStyles = {};
-                        for (const key in target) {
+                        const nextStyles = {};
+                        keys(target).forEach((key) => {
                             const value = target[key];
                             element.style.setProperty(key, value);
-                            oldStyles[key] = value;
-                        }
+                            nextStyles[key] = value;
+                        });
+                        oldStyles = nextStyles;
                     }
                     else {
                         oldStyles = null;
@@ -21433,23 +21663,24 @@
         return isNumberNaN(intVal) ? -1 : intVal;
     }
 
+    ngViewportDirective.$inject = [_parse];
     /** Evaluates expressions when an element enters or leaves the viewport. */
-    function ngViewportDirective() {
+    function ngViewportDirective($parse) {
         return {
             restrict: "A",
             link(scope, element, attrs) {
                 const attrMap = attrs;
                 const enterExpr = attrMap.onEnter;
                 const leaveExpr = attrMap.onLeave;
+                const enterFn = enterExpr ? $parse(enterExpr) : undefined;
+                const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach((entry) => {
                         if (entry.isIntersecting) {
-                            if (enterExpr)
-                                scope.$eval(enterExpr);
+                            enterFn?.(scope);
                         }
                         else {
-                            if (leaveExpr)
-                                scope.$eval(leaveExpr);
+                            leaveFn?.(scope);
                         }
                     });
                 }, {
@@ -21609,6 +21840,7 @@
                     return;
                 }
                 const eventName = attrs.trigger || getEventNameForElement(element);
+                const paramsFn = attrs.params ? $parse(attrs.params) : undefined;
                 let throttled = false;
                 let intervalId;
                 if (isDefined(attrs.latch)) {
@@ -21657,7 +21889,7 @@
                     }
                     let params;
                     try {
-                        params = attrs.params ? scope.$eval(attrs.params) : undefined;
+                        params = paramsFn?.(scope);
                     }
                     catch (err) {
                         $log.error("ngWorker: failed to evaluate data-params", err);
@@ -21728,28 +21960,34 @@
     function defaults(opts, ...defaultsList) {
         const defaultVals = assign({}, ...defaultsList.reverse());
         opts = opts || {};
-        keys(defaultVals).forEach((key) => {
+        const defaultKeys = keys(defaultVals);
+        defaultKeys.forEach((key) => {
             if (key in opts)
                 defaultVals[key] = opts[key];
         });
         return defaultVals;
     }
-    /**
-     * Reduce helper that pushes an item to an array, then returns the array.
-     */
-    function pushR(arr, obj) {
-        arr.push(obj);
-        return arr;
-    }
-    /**
-     * Returns the last element of an array or string.
-     */
-    function tail(arr) {
-        return arr.length > 0 ? arr[arr.length - 1] : undefined;
-    }
 
     const noopDeregister = () => undefined;
     const uniqueStrings = (classes) => arrayFrom(new Set(classes));
+    function appendSplitClasses(classes, value) {
+        const split = value.split(/\s/);
+        split.forEach((className) => {
+            if (className)
+                classes.push(className);
+        });
+    }
+    function getClasses(stateList) {
+        const classes = [];
+        stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
+        return classes;
+    }
+    function appendUniqueClasses(target, source) {
+        source.forEach((className) => {
+            if (!target.includes(className))
+                target.push(className);
+        });
+    }
     /**
      * Parses an `ng-sref` expression into a target state name and parameter expression.
      */
@@ -21770,16 +22008,18 @@
     function stateContext(el) {
         const $ngView = getInheritedData(el, "$ngView");
         const path = $ngView?.$cfg
-            ?.path;
+            ?._path;
         return path ? path[path.length - 1].state.name : undefined;
     }
     /**
      * Computes the current state-ref definition, href, and navigation options.
      */
     function processedDef($state, $element, def) {
-        const ngState = def._ngState || $state.current?.name;
+        const ngState = (def._ngState || $state.current?.name);
         const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts || {});
-        const href = $state.href(ngState, def._ngStateParams, ngStateOpts);
+        const href = ngState
+            ? $state.href(ngState, def._ngStateParams, ngStateOpts)
+            : undefined;
         return {
             _ngState: ngState,
             _ngStateParams: def._ngStateParams,
@@ -21802,11 +22042,11 @@
     /**
      * Creates the click handler that triggers a state transition for a state ref.
      */
-    function clickHook(el, $state, type, getDef, scope) {
+    function clickHook(el, $state, type, rawDef, scope) {
         return function (event) {
             const mouseEvent = event;
             const { button } = mouseEvent;
-            const target = getDef();
+            const target = processedDef($state, el, rawDef);
             const res = button > 1 ||
                 mouseEvent.ctrlKey ||
                 mouseEvent.metaKey ||
@@ -21829,7 +22069,7 @@
                     if (cancelled) {
                         return;
                     }
-                    if (!el.getAttribute("disabled")) {
+                    if (!el.getAttribute("disabled") && target._ngState) {
                         $state
                             .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                             .then(() => {
@@ -21876,11 +22116,17 @@
         });
     }
     // // TODO: SEPARATE THESE OUT
-    StateRefDirective.$inject = [_state, _rootScope, _stateRegistry, _transitions];
+    StateRefDirective.$inject = [
+        _state,
+        _rootScope,
+        _stateRegistry,
+        _transitions,
+        _parse,
+    ];
     /**
      * Generates `ng-sref` links and keeps their href/state data in sync.
      */
-    function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions) {
+    function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse) {
         const $state = $stateService;
         return {
             restrict: "A",
@@ -21890,20 +22136,21 @@
                 const active = ngSrefActive[1] || ngSrefActive[0];
                 let unlinkInfoFn;
                 const rawDef = {};
-                const getDef = () => processedDef($state, element, rawDef);
                 const ref = parseStateRef(attrs.ngSref);
+                const ngStateOptsFn = attrs.ngSrefOpts
+                    ? $parse(attrs.ngSrefOpts)
+                    : undefined;
+                const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
                 rawDef._ngState = ref._state;
-                rawDef._ngStateOpts = attrs.ngSrefOpts
-                    ? scope.$eval(attrs.ngSrefOpts)
-                    : {};
+                rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
                 function update() {
-                    rawDef._ngStateParams = assign({}, ref._paramExpr && scope.$eval(ref._paramExpr));
-                    const def = getDef();
+                    rawDef._ngStateParams = assign({}, paramFn && paramFn(scope));
+                    const def = processedDef($state, element, rawDef);
                     if (unlinkInfoFn) {
                         unlinkInfoFn();
                     }
                     if (active) {
-                        unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                        unlinkInfoFn = active?._addStateInfo?.(def._ngState || null, def._ngStateParams);
                     }
                     if (!isNullOrUndefined(def._href)) {
                         attrs.$set(type._attr, def._href);
@@ -21914,7 +22161,7 @@
                         rawDef._ngStateParams = assign({}, val);
                         update();
                     }, true);
-                    rawDef._ngStateParams = assign({}, scope.$eval(ref._paramExpr));
+                    rawDef._ngStateParams = assign({}, paramFn?.(scope));
                 }
                 update();
                 scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -21922,7 +22169,7 @@
                 if (!type._clickable) {
                     return;
                 }
-                bindEvents(element, scope, clickHook(element, $state, type, getDef, $rootScope), rawDef._ngStateOpts);
+                bindEvents(element, scope, clickHook(element, $state, type, rawDef, $rootScope), rawDef._ngStateOpts);
             },
         };
     }
@@ -21931,11 +22178,12 @@
         _rootScope,
         _stateRegistry,
         _transitions,
+        _parse,
     ];
     /**
      * Generates dynamic `ui-state` links whose target state is read from an expression.
      */
-    function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions) {
+    function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse) {
         return {
             restrict: "A",
             require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
@@ -21944,7 +22192,6 @@
                 const active = ngSrefActive[1] || ngSrefActive[0];
                 let unlinkInfoFn;
                 const rawDef = {};
-                const getDef = () => processedDef($state, element, rawDef);
                 const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
                 const rawDefKeyByAttr = {
                     ngState: "_ngState",
@@ -21958,12 +22205,12 @@
                     };
                 });
                 function update() {
-                    const def = getDef();
+                    const def = processedDef($state, element, rawDef);
                     if (unlinkInfoFn) {
                         unlinkInfoFn();
                     }
                     if (active) {
-                        unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                        unlinkInfoFn = active?._addStateInfo?.(def._ngState || null, def._ngStateParams);
                     }
                     if (!isNullOrUndefined(def._href)) {
                         attrs.$set(type._attr, def._href);
@@ -21971,7 +22218,7 @@
                 }
                 inputAttrs.forEach((field) => {
                     rawDef[rawDefKeyByAttr[field]] = attrs[field]
-                        ? scope.$eval(attrs[field])
+                        ? $parse(attrs[field])(scope)
                         : null;
                     attrs.$observe(field, (expr) => {
                         watchDeregFns[field]();
@@ -21989,7 +22236,7 @@
                 scope.$on("$destroy", $transitions.onSuccess({}, update));
                 if (!type._clickable)
                     return;
-                const hookFn = clickHook(element, $state, type, getDef, $rootScope);
+                const hookFn = clickHook(element, $state, type, rawDef, $rootScope);
                 bindEvents(element, scope, hookFn, rawDef._ngStateOpts);
             },
         };
@@ -22000,11 +22247,12 @@
         _interpolate,
         _stateRegistry,
         _transitions,
+        _parse,
     ];
     /**
      * Toggles active CSS classes based on the current router state.
      */
-    function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions) {
+    function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse) {
         return {
             restrict: "A",
             controller($scope, $element, $attrs) {
@@ -22015,7 +22263,9 @@
                 // slight difference in logic routing
                 const activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope) || "";
                 try {
-                    ngSrefActive = $scope.$eval($attrs.ngSrefActive);
+                    ngSrefActive = $attrs.ngSrefActive
+                        ? $parse($attrs.ngSrefActive)($scope)
+                        : undefined;
                 }
                 catch {
                     // Do nothing. ngSrefActive is not a valid expression.
@@ -22066,30 +22316,35 @@
                 function setStatesFromDefinitionObject(statesDefinition) {
                     if (isObject(statesDefinition)) {
                         states = [];
-                        entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
-                            // Helper function to abstract adding state.
-                            const addStateForClass = function (stateOrNameParam, activeClassParam) {
-                                const ref = parseStateRef(stateOrNameParam);
-                                addState(ref._state, ref._paramExpr && $scope.$eval(ref._paramExpr), activeClassParam);
-                            };
+                        const definition = statesDefinition;
+                        keys(definition).forEach((activeClass) => {
+                            const stateOrName = definition[activeClass];
                             if (isString(stateOrName)) {
-                                // If state is string, just add it.
                                 addStateForClass(stateOrName, activeClass);
                             }
                             else if (isArray(stateOrName)) {
-                                // If state is an array, iterate over it and add each array item individually.
-                                stateOrName.forEach((stateOrNameParam) => {
-                                    addStateForClass(stateOrNameParam, activeClass);
+                                stateOrName.forEach((stateName) => {
+                                    addStateForClass(stateName, activeClass);
                                 });
                             }
                         });
                     }
                 }
+                function addStateForClass(stateOrNameParam, activeClassParam) {
+                    const ref = parseStateRef(stateOrNameParam);
+                    addState(ref._state, ref._paramExpr && $parse(ref._paramExpr)($scope), activeClassParam);
+                }
                 function addState(stateName, stateParams, activeClass) {
-                    const state = $state.get(stateName, stateContext($element));
+                    const state = stateName
+                        ? $state.get(stateName, stateContext($element))
+                        : undefined;
+                    const foundState = !isArray(state) ? state : undefined;
                     const stateInfo = {
                         _state: {
-                            name: state?.name || String(stateName?.name || stateName),
+                            name: foundState?.name ||
+                                (isObject(stateName) && "name" in stateName
+                                    ? String(stateName.name)
+                                    : String(stateName)),
                         },
                         _params: stateParams,
                         _activeClass: activeClass,
@@ -22101,12 +22356,8 @@
                 }
                 // Update route state
                 function update() {
-                    const splitClasses = (str) => str.split(/\s/).filter(Boolean);
-                    const getClasses = (stateList) => stateList
-                        .map((x) => x._activeClass)
-                        .map(splitClasses)
-                        .flat();
-                    const allClasses = getClasses(states).concat(splitClasses(activeEqClass));
+                    const allClasses = getClasses(states);
+                    appendSplitClasses(allClasses, activeEqClass);
                     const fuzzyStates = [];
                     let exactlyMatchesAny = false;
                     states.forEach((state) => {
@@ -22118,12 +22369,15 @@
                         }
                     });
                     const fuzzyClasses = getClasses(fuzzyStates);
-                    const exactClasses = exactlyMatchesAny
-                        ? splitClasses(activeEqClass)
-                        : [];
-                    const addClasses = uniqueStrings(fuzzyClasses.concat(exactClasses));
+                    const exactClasses = [];
+                    if (exactlyMatchesAny) {
+                        appendSplitClasses(exactClasses, activeEqClass);
+                    }
+                    const addClasses = uniqueStrings(fuzzyClasses);
+                    appendUniqueClasses(addClasses, exactClasses);
                     const removeClasses = [];
-                    uniqueStrings(allClasses).forEach((cls) => {
+                    const uniqueClasses = uniqueStrings(allClasses);
+                    uniqueClasses.forEach((cls) => {
                         if (!addClasses.includes(cls)) {
                             removeClasses.push(cls);
                         }
@@ -22137,58 +22391,6 @@
                 }
                 update();
             },
-        };
-    }
-
-    /**
-     * Given a value, returns a function which returns that value.
-     * @template T
-     * @param value - The value to wrap in a function.
-     * @returns A function that returns the given value.
-     */
-    const val = (value) => () => value;
-    /**
-     * Sorta like Pattern Matching (a functional programming conditional construct)
-     *
-     * See http://c2.com/cgi/wiki?PatternMatching
-     *
-     * This is a conditional construct which allows a series of predicates and output functions
-     * to be checked and then applied.  Each predicate receives the input.  If the predicate
-     * returns truthy, then its matching output function (mapping function) is provided with
-     * the input and, then the result is returned.
-     *
-     * Each combination (2-tuple) of predicate + output function should be placed in an array
-     * of size 2: [ predicate, mapFn ]
-     *
-     * These 2-tuples should be put in an outer array.
-     * @example ```
-
-    // Here's a 2-tuple where the first element is the isString predicate
-    // and the second element is a function that returns a description of the input
-    let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
-
-    // Second tuple: predicate "isNumber", mapfn returns a description
-    let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
-
-    let third = [ (input) => input === null,  (input) => `Oh, null...` ];
-
-    let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
-
-    let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
-
-    console.log(descriptionOf(undefined)); // 'notdefined'
-    console.log(descriptionOf(55)); // '(55) That's a number!'
-    console.log(descriptionOf("foo")); // 'Here's your string foo'
-    ```
-     * `struct` is a 2D array of predicate/mapper tuples.
-     */
-    function pattern(struct) {
-        return function (item) {
-            for (let i = 0; i < struct.length; i++) {
-                if (struct[i][0](item))
-                    return struct[i][1](item);
-            }
-            return undefined;
         };
     }
 
@@ -22242,19 +22444,6 @@
             !isArray(obj) &&
             obj.constructor !== Object &&
             isFunction(obj.toString);
-        const stringifyPattern = pattern([
-            [isUndefined, val("undefined")],
-            [isNull, val("null")],
-            [isPromise, val("[Promise]")],
-            [
-                isRejection,
-                /** @internal */
-                (reg) => reg._transitionRejection.toString(),
-            ],
-            [hasToString, (str) => str.toString()],
-            [isInjectable, functionToString],
-            [val(true), (bool) => bool],
-        ]);
         /** Formats a single item while tracking circular references. */
         function format(item) {
             if (isObject(item)) {
@@ -22262,7 +22451,19 @@
                     return "[circular ref]";
                 seen.push(item);
             }
-            return stringifyPattern(item);
+            if (isUndefined(item))
+                return "undefined";
+            if (isNull(item))
+                return "null";
+            if (isPromise(item))
+                return "[Promise]";
+            if (isRejection(item))
+                return item._transitionRejection.toString();
+            if (hasToString(item))
+                return item.toString();
+            if (isInjectable(item))
+                return functionToString(item);
+            return item;
         }
         if (isUndefined(value)) {
             // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
@@ -22272,916 +22473,23 @@
         }
         return JSON.stringify(value, (_key, item) => format(item)).replace(/\\"/g, '"');
     }
-    const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
-    /**
-     * Splits on a delimiter, but returns the delimiters in the array
-     *
-     * #### Example:
-     * ```js
-     * var splitOnSlashes = splitOnDelim('/');
-     * splitOnSlashes("/foo"); // ["/", "foo"]
-     * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
-     * ```
-     * `delim` is kept in the output array.
-     */
-    function splitOnDelim(delim) {
-        const re = new RegExp(`(${delim})`, "g");
-        return (str) => str.split(re).filter(Boolean);
-    }
-    /**
-     * Reduce fn that joins neighboring strings
-     *
-     * Given an array of strings, returns a new array
-     * where all neighboring strings have been joined.
-     *
-     * #### Example:
-     * ```js
-     * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
-     * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
-     * ```
-     * Joins neighboring string entries while leaving other values untouched.
-     */
-    function joinNeighborsR(acc, str) {
-        if (isString(tail(acc)) && isString(str))
-            return acc.slice(0, -1).concat(tail(acc) + str);
-        return pushR(acc, str);
+    function stripLastPathElement(str) {
+        return str.replace(/\/[^/]*$/, "");
     }
 
-    /**
-     * Encapsulate the target (destination) state/params/options of a [[Transition]].
-     *
-     * This class is frequently used to redirect a transition to a new destination.
-     *
-     * See:
-     *
-     * - [[HookResult]]
-     * - [[TransitionHookFn]]
-     * - [[TransitionService.onStart]]
-     *
-     * To create a `TargetState`, use [[StateService.target]].
-     *
-     * ---
-     *
-     * This class wraps:
-     *
-     * 1) an identifier for a state
-     * 2) a set of parameters
-     * 3) and transition options
-     * 4) the registered state object (the [[StateDeclaration]])
-     *
-     * Many ng-router APIs such as [[StateService.go]] take a [[StateOrName]] argument which can
-     * either be a *state object* (a [[StateDeclaration]] or [[StateObject]]) or a *state name* (a string).
-     * The `TargetState` class normalizes those options.
-     *
-     * A `TargetState` may be valid (the state being targeted exists in the registry)
-     * or invalid (the state being targeted is not registered).
-     */
-    class TargetState {
-        static isDef(obj) {
-            return (obj &&
-                obj.state &&
-                (isString(obj.state) || (isObject(obj.state) && isString(obj.state.name))));
-        }
-        /**
-         * The TargetState constructor
-         *
-         * Note: Do not construct a `TargetState` manually.
-         * To create a `TargetState`, use the [[StateService.target]] factory method.
-         *
-         * @param {StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
-         * @param {StateOrName} _identifier An identifier for a state.
-         *    Either a fully-qualified state name, or the object used to define the state.
-         * @param {RawParams} _params Parameters for the target state
-         * @param {TransitionOptions} _options Transition options.
-         *
-         * @internal
-         */
-        constructor(_stateRegistry, _identifier, _params, _options) {
-            this._stateRegistry = _stateRegistry;
-            this._identifier = _identifier;
-            this._params = assign({}, _params || {});
-            this._options = assign({}, _options || {});
-            this._definition = _stateRegistry._matcher.find(_identifier, this._options.relative);
-        }
-        /** The name of the state this object targets */
-        name() {
-            return (this._definition && this._definition.name) || this._identifier;
-        }
-        /** The identifier used when creating this TargetState */
-        identifier() {
-            return this._identifier;
-        }
-        /** The target parameter values */
-        params() {
-            return this._params;
-        }
-        /** The internal state object (if it was found) */
-        $state() {
-            return this._definition;
-        }
-        /** The internal state declaration (if it was found) */
-        state() {
-            return this._definition && this._definition.self;
-        }
-        /** The target options */
-        options() {
-            return this._options;
-        }
-        /** True if the target state was found */
-        exists() {
-            return !!(this._definition && this._definition.self);
-        }
-        /** True if the object is valid */
-        valid() {
-            return !this.error();
-        }
-        /** If the object is invalid, returns the reason why */
-        error() {
-            const base = this.options().relative;
-            if (!this._definition && !!base) {
-                const stateName = isObject(base) && isString(base.name)
-                    ? base.name
-                    : base;
-                return `Could not resolve '${this.name()}' from state '${stateName}'`;
-            }
-            if (!this._definition)
-                return `No such state '${this.name()}'`;
-            if (!this._definition.self)
-                return `State '${this.name()}' has an invalid definition`;
-            return undefined;
-        }
-        toString() {
-            return `'${this.name()}'${stringify(this.params())}`;
-        }
-        /**
-         * Returns a copy of this TargetState which targets a different state.
-         * The new TargetState has the same parameter values and transition options.
-         *
-         * @param {StateOrName} state The new state that should be targeted
-         * @returns {TargetState} A new TargetState instance which targets the desired state
-         */
-        withState(state) {
-            return new TargetState(this._stateRegistry, state, this._params, this._options);
-        }
-        /**
-         * Returns a copy of this TargetState, using the specified parameter values.
-         *
-         * @param {RawParams} params the new parameter values to use
-         * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
-         *                When true the parameter values will be used instead of the current values.
-         * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
-         */
-        withParams(params, replace = false) {
-            const newParams = replace ? params : assign({}, this._params, params);
-            return new TargetState(this._stateRegistry, this._identifier, newParams, this._options);
-        }
-        /**
-         * Returns a copy of this TargetState, using the specified Transition Options.
-         *
-         * @param {TransitionOptions} options the new options to use
-         * @param {boolean} replace When false (default) the new options will be merged with the current options.
-         *                When true the options will be used instead of the current options.
-         * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
-         */
-        withOptions(options, replace = false) {
-            const newOpts = replace ? options : assign({}, this._options, options);
-            return new TargetState(this._stateRegistry, this._identifier, this._params, newOpts);
-        }
-    }
-
-    /**
-     * An internal class which implements [[ParamTypeDefinition]].
-     *
-     * A [[ParamTypeDefinition]] is a plain javascript object used to register custom parameter types.
-     * When a param type definition is registered, an instance of this class is created internally.
-     *
-     * This class has naive implementations for all the [[ParamTypeDefinition]] methods.
-     *
-     * Used by [[UrlMatcher]] when matching or formatting URLs, or comparing and validating parameter values.
-     *
-     * #### Example:
-     * ```js
-     * var paramTypeDef = {
-     *   decode: function(val) { return parseInt(val, 10); },
-     *   encode: function(val) { return val && val.toString(); },
-     *   equals: function(a, b) { return this.is(a) && a === b; },
-     *   is: function(val) { return angular.isNumber(val) && isFinite(val) && val % 1 === 0; },
-     *   pattern: /\d+/
-     * }
-     *
-     * var paramType = new ParamType(paramTypeDef);
-     * ```
-     */
-    class ParamType {
-        /**
-           * @param {any} def A configuration object which contains the custom type definition.  The object's
-          properties will override the default methods and/or pattern in `ParamType`'s public interface.
-           */
-        constructor(def) {
-            this.pattern = /.*/;
-            this.inherit = true;
-            assign(this, def);
-            this.name = undefined;
-        }
-        // consider these four methods to be "abstract methods" that should be overridden
-        /**
-         * @param {any} val
-         */
-        is(val) {
-            return !!val;
-        }
-        /**
-         * @param {any} val
-         */
-        encode(val) {
-            return val;
-        }
-        /**
-         * @param {any} val
-         */
-        decode(val) {
-            return val;
-        }
-        /**
-         * @param {any} a
-         * @param {any} b
-         */
-        equals(a, b) {
-            return a === b;
-        }
-        toString() {
-            return `{ParamType:${this.name}}`;
-        }
-        /**
-         * Given an encoded string, or a decoded object, returns a decoded object
-         * @param {any} val
-         */
-        $normalize(val) {
-            return this.is(val) ? val : this.decode(val);
-        }
-        /**
-         * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
-         * e.g.:
-         * - urlmatcher pattern "/path?{queryParam[]:int}"
-         * - url: "/path?queryParam=1&queryParam=2
-         * - $stateParams.queryParam will be [1, 2]
-         * if `mode` is "auto", then
-         * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
-         * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
-         * @param {boolean |'auto'} mode
-         * @param {any} isSearch
-         */
-        $asArray(mode, isSearch) {
-            if (!mode)
-                return this;
-            if (mode === "auto" && !isSearch)
-                throw new Error("'auto' array mode is for query parameters only");
-            return new ArrayType(this, mode);
-        }
-    }
-    /**
-     * Wraps up a `ParamType` object to handle array values.
-     * @this {Record<string, any>}
-     * @param {ParamType & Record<string, any>} type
-     * @param {boolean | 'auto'} mode
-     */
-    function ArrayType(type, mode) {
-        // Wrap non-array value as array
-        /**
-         * @param {any} val
-         */
-        function arrayWrap(val) {
-            return isArray(val) ? val : isDefined(val) ? [val] : [];
-        }
-        // Unwrap array value for "auto" mode. Return undefined for empty array.
-        /**
-         * @param {any} val
-         */
-        function arrayUnwrap(val) {
-            switch (val.length) {
-                case 0:
-                    return undefined;
-                case 1:
-                    return mode === "auto" ? val[0] : val;
-                default:
-                    return val;
-            }
-        }
-        // Wraps type (.is/.encode/.decode) functions to operate on each value of an array
-        /**
-         * @param {(value: any) => any} callback
-         * @param {boolean} [allTruthyMode]
-         */
-        function arrayHandler(callback, allTruthyMode) {
-            return function handleArray(val) {
-                if (isArray(val) && val.length === 0)
-                    return val;
-                const arr = arrayWrap(val);
-                const result = [];
-                for (let i = 0; i < arr.length; i++) {
-                    result.push(callback(arr[i]));
-                }
-                if (allTruthyMode === true) {
-                    for (let i = 0; i < result.length; i++) {
-                        if (!result[i])
-                            return false;
-                    }
-                    return true;
-                }
-                return arrayUnwrap(result);
-            };
-        }
-        // Wraps type (.equals) functions to operate on each value of an array
-        /**
-         * @param {(arg0: any, arg1: any) => any} callback
-         */
-        function arrayEqualsHandler(callback) {
-            return function handleArray(val1, val2) {
-                const left = arrayWrap(val1), right = arrayWrap(val2);
-                if (left.length !== right.length)
-                    return false;
-                for (let i = 0; i < left.length; i++) {
-                    if (!callback(left[i], right[i]))
-                        return false;
-                }
-                return true;
-            };
-        }
-        const wrappedMethods = ["encode", "decode", "equals", "$normalize"];
-        for (let i = 0; i < wrappedMethods.length; i++) {
-            const name = wrappedMethods[i];
-            const paramTypeFn = type[name].bind(type);
-            const wrapperFn = name === "equals" ? arrayEqualsHandler : arrayHandler;
-            this[name] = wrapperFn(paramTypeFn);
-        }
-        assign(this, {
-            dynamic: type.dynamic,
-            name: type.name,
-            pattern: type.pattern,
-            inherit: type.inherit,
-            raw: type.raw,
-            is: arrayHandler(type.is.bind(type), true),
-            $arrayMode: mode,
+    async function resolveResolvable(resolvable, resolveContext, trans) {
+        const dependencies = resolveContext.getDependencies(resolvable);
+        const dependencyPromises = new Array(dependencies.length);
+        dependencies.forEach((dependency, index) => {
+            dependencyPromises[index] = dependency.get(resolveContext, trans);
         });
+        const resolvedDeps = await Promise.all(dependencyPromises);
+        const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
+        resolvable.data = resolvedValue;
+        resolvable.resolved = true;
+        resolvable.resolveFn = null;
+        return resolvable.data;
     }
-
-    const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
-    function isShorthand(cfg) {
-        const config = cfg || {};
-        for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
-            if (hasOwn(config, SHORTHAND_KEYS[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-    /**
-     * @enum {number}
-     */
-    const DefType = {
-        _PATH: 0,
-        _SEARCH: 1,
-        _CONFIG: 2,
-    };
-    /**
-     * @param {string} paramName
-     * @param {DefType} location
-     * @param {ng.StateDeclaration} state
-     * @return {ParamDeclaration}
-     */
-    function getParamDeclaration(paramName, location, state) {
-        const { dynamic } = state;
-        const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
-        const paramConfig = unwrapShorthand(state?.params?.[paramName]);
-        return assign(defaultConfig, paramConfig);
-    }
-    /**
-     * @param {ParamDeclaration} cfg
-     * @return {ParamDeclaration}
-     */
-    function unwrapShorthand(cfg) {
-        cfg = isShorthand(cfg) ? { value: cfg } : cfg;
-        getStaticDefaultValue._cacheable = true;
-        function getStaticDefaultValue() {
-            return cfg.value;
-        }
-        const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
-        return assign(cfg, { _fn });
-    }
-    /**
-     * @param {ParamDeclaration} cfg
-     * @param {ParamType | null} urlType
-     * @param {DefType} location
-     * @param {string} id
-     * @param {ParamTypes} paramTypes
-     */
-    function getType(cfg, urlType, location, id, paramTypes) {
-        if (cfg.type && urlType && urlType.name !== "string")
-            throw new Error(`Param '${id}' has two type configurations.`);
-        if (cfg.type &&
-            urlType &&
-            urlType.name === "string" &&
-            isString(cfg.type) &&
-            paramTypes.type(cfg.type))
-            return paramTypes.type(cfg.type);
-        if (urlType)
-            return urlType;
-        if (!cfg.type) {
-            const type = location === DefType._CONFIG
-                ? "any"
-                : location === DefType._PATH
-                    ? "path"
-                    : location === DefType._SEARCH
-                        ? "query"
-                        : "string";
-            return paramTypes.type(type);
-        }
-        return isInstanceOf(cfg.type, ParamType)
-            ? cfg.type
-            : paramTypes.type(cfg.type);
-    }
-    /**
-     * returns false, true, or the squash value to indicate the "default parameter url squash policy".
-     * @param {ParamDeclaration} config
-     * @param {boolean} isOptional
-     * @param {boolean | string} defaultPolicy
-     */
-    function getSquashPolicy(config, isOptional, defaultPolicy) {
-        const { squash } = config;
-        if (!isOptional || squash === false)
-            return false;
-        if (!isDefined(squash) || isNullOrUndefined(squash))
-            return defaultPolicy;
-        if (squash === true || isString(squash))
-            return squash;
-        throw new Error(`Invalid squash policy: '${squash}'. Valid policies: false, true, or arbitrary string`);
-    }
-    /**
-     * @param {ParamDeclaration} config
-     * @param {boolean} arrayMode
-     * @param {boolean} isOptional
-     * @param {string | boolean} squash
-     */
-    function getReplace(config, arrayMode, isOptional, squash) {
-        const defaultPolicy = [
-            { from: "", to: isOptional || arrayMode ? undefined : "" },
-            { from: null, to: isOptional || arrayMode ? undefined : "" },
-        ];
-        const replace = isArray(config.replace) ? config.replace : [];
-        if (isString(squash))
-            replace.push({ from: squash, to: undefined });
-        const configuredKeys = [];
-        for (let i = 0; i < replace.length; i++) {
-            configuredKeys.push(replace[i].from);
-        }
-        const result = [];
-        for (let i = 0; i < defaultPolicy.length; i++) {
-            const item = defaultPolicy[i];
-            if (configuredKeys.indexOf(item.from) === -1) {
-                result.push(item);
-            }
-        }
-        for (let i = 0; i < replace.length; i++) {
-            result.push(replace[i]);
-        }
-        return result;
-    }
-    class Param {
-        /**
-         *
-         * @param {string} id
-         * @param {ParamType | null} type
-         * @param {DefType} location
-         * @param {UrlConfigProvider} urlConfig
-         * @param {ng.StateDeclaration} state
-         */
-        constructor(id, type, location, urlConfig, state) {
-            const config = getParamDeclaration(id, location, state);
-            type = getType(config, type, location, id, urlConfig.paramTypes);
-            const arrayMode = getArrayMode();
-            type = arrayMode
-                ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
-                : type;
-            const isOptional = config.value !== undefined || location === DefType._SEARCH;
-            const dynamic = !!config.dynamic;
-            const raw = !!config.raw;
-            const squash = getSquashPolicy(config, isOptional, urlConfig.defaultSquashPolicy());
-            const replace = getReplace(config, arrayMode, isOptional, squash);
-            const inherit = isDefined(config.inherit)
-                ? !!config.inherit
-                : !!type.inherit;
-            // array config: param name (param[]) overrides default settings.  explicit config overrides param name.
-            function getArrayMode() {
-                const arrayDefaults = {
-                    array: location === DefType._SEARCH ? "auto" : false,
-                };
-                const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
-                return assign(arrayDefaults, arrayParamNomenclature, config).array;
-            }
-            this.isOptional = isOptional;
-            this.type = type;
-            this.location = location;
-            this.id = id;
-            this.dynamic = dynamic;
-            this.raw = raw;
-            this.squash = squash;
-            this.replace = replace;
-            this.inherit = inherit;
-            this.array = arrayMode;
-            this.config = config;
-            this.matchingKeys = undefined;
-            this._getInjector = () => urlConfig.paramTypes._getInjector();
-        }
-        /**
-         * @param {any} value
-         */
-        isDefaultValue(value) {
-            return this.isOptional && this.type.equals(this.value(), value);
-        }
-        /**
-         * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
-         * default value, which may be the result of an injectable function.
-         * @param {undefined} [value]
-         */
-        value(value) {
-            /**
-             * [Internal] Get the default value of a parameter, which may be an injectable function.
-             */
-            const getDefaultValue = () => {
-                if (this._defaultValueCache)
-                    return this._defaultValueCache.defaultValue;
-                const injector = this._getInjector();
-                if (!injector)
-                    throw new Error("Injectable functions cannot be called at configuration time");
-                const defaultValue = injector.invoke(this.config._fn);
-                if (defaultValue !== null &&
-                    defaultValue !== undefined &&
-                    !this.type.is(defaultValue))
-                    throw new Error(`Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`);
-                if (this.config._fn._cacheable) {
-                    this._defaultValueCache = { defaultValue };
-                }
-                return defaultValue;
-            };
-            const replaceSpecialValues = (val) => {
-                for (const tuple of this.replace) {
-                    if (tuple.from === val)
-                        return tuple.to;
-                }
-                return val;
-            };
-            value = replaceSpecialValues(value);
-            return isUndefined(value) ? getDefaultValue() : this.type.$normalize(value);
-        }
-        isSearch() {
-            return this.location === DefType._SEARCH;
-        }
-        /**
-         * @param {null} value
-         */
-        validates(value) {
-            // There was no parameter value, but the param is optional
-            if ((isUndefined(value) || value === null) && this.isOptional)
-                return true;
-            // The value was not of the correct ParamType, and could not be decoded to the correct ParamType
-            const normalized = this.type.$normalize(value);
-            if (!this.type.is(normalized))
-                return false;
-            // The value was of the correct type, but when encoded, did not match the ParamType's regexp
-            const encoded = normalized; // this.type.encode(normalized);
-            return !(isString(encoded) && !this.type.pattern.exec(encoded));
-        }
-        toString() {
-            return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
-        }
-        /**
-         * @param {Param[]} params
-         * @param {Record<string, any>} values
-         * @return {RawParams}
-         */
-        static values(params, values = {}) {
-            const paramValues = {};
-            for (const param of params) {
-                paramValues[param.id] = param.value(values[param.id]);
-            }
-            return paramValues;
-        }
-        /**
-         * Finds [[Param]] objects which have different param values
-         *
-         * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
-         * @param {Param[]} params : The list of Param objects to filter
-         * @param {Record<string, any>} values1 : The first set of parameter values
-         * @param {Record<string, any>} values2 : the second set of parameter values
-         * @returns {Param[]} any Param objects whose values were different between values1 and values2
-         */
-        static changed(params, values1 = {}, values2 = {}) {
-            const changed = [];
-            for (let i = 0; i < params.length; i++) {
-                const param = params[i];
-                if (!param.type.equals(values1[param.id], values2[param.id])) {
-                    changed.push(param);
-                }
-            }
-            return changed;
-        }
-        /**
-         * Checks if two param value objects are equal (for a set of [[Param]] objects)
-         * @param {any[]} params The list of [[Param]] objects to check
-         * @param values1 The first set of param values
-         * @param values2 The second set of param values
-         * @returns true if the param values in values1 and values2 are equal
-         */
-        static equals(params, values1 = {}, values2 = {}) {
-            return Param.changed(params, values1, values2).length === 0;
-        }
-        /**
-         * Returns true if a the parameter values are valid, according to the Param definitions
-         * @param {any[]} params
-         * @param {Record<string, any>} values
-         * @return {boolean}
-         */
-        static validates(params, values = {}) {
-            for (let i = 0; i < params.length; i++) {
-                const param = params[i];
-                if (!param.validates(values[param.id])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    /**
-     * A node in a [[TreeChanges]] path
-     *
-     * For a [[TreeChanges]] path, this class holds the stateful information for a single node in the path.
-     * Each PathNode corresponds to a state being entered, exited, or retained.
-     * The stateful information includes parameter values and resolve data.
-     */
-    class PathNode {
-        /**
-         * @param {PathNode | ng.StateObject | undefined} stateOrNode
-         */
-        constructor(stateOrNode) {
-            if (isInstanceOf(stateOrNode, PathNode)) {
-                const node = stateOrNode;
-                this.state = node.state;
-                this.paramSchema = node.paramSchema.slice();
-                this.paramValues = assign({}, node.paramValues);
-                this.resolvables = node.resolvables.slice();
-                this._views = node._views && node._views.slice();
-            }
-            else {
-                const state = stateOrNode;
-                if (!state)
-                    throw new Error("PathNode requires a state");
-                this.state = state;
-                this.paramSchema = state.parameters({
-                    inherit: false,
-                });
-                this.paramValues = {};
-                this.resolvables = state.resolvables?.map((res) => res.clone()) || [];
-            }
-        }
-        clone() {
-            return new PathNode(this);
-        }
-        /**
-         * Sets [[paramValues]] for the node, from the values of an object hash
-         * @param {RawParams} params
-         * @returns {PathNode}
-         */
-        applyRawParams(params) {
-            const paramValues = {};
-            for (let i = 0; i < this.paramSchema.length; i++) {
-                const paramDef = this.paramSchema[i];
-                paramValues[paramDef.id] = paramDef.value(params[paramDef.id]);
-            }
-            this.paramValues = paramValues;
-            return this;
-        }
-        /**
-         * Gets a specific [[Param]] metadata that belongs to the node
-         * @param {string} name
-         * @returns {Param | undefined}
-         */
-        parameter(name) {
-            for (let i = 0; i < this.paramSchema.length; i++) {
-                const param = this.paramSchema[i];
-                if (param.id === name)
-                    return param;
-            }
-            return undefined;
-        }
-        /**
-         * @param {PathNode} node
-         * @param {GetParamsFn} paramsFn
-         * @returns {boolean} true if the state and parameter values for another PathNode are
-        equal to the state and param values for this PathNode
-         */
-        equals(node, paramsFn) {
-            const diff = this.diff(node, paramsFn);
-            return diff !== false && diff.length === 0;
-        }
-        /**
-         * Finds Params with different parameter values on another PathNode.
-         *
-         * Given another node (of the same state), finds the parameter values which differ.
-         * Returns the [[Param]] (schema objects) whose parameter values differ.
-         *
-         * Given another node for a different state, returns `false`
-         * @param {PathNode} node The node to compare to
-         * @param {GetParamsFn} paramsFn A function that returns which parameters should be compared.
-         * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
-         */
-        diff(node, paramsFn) {
-            if (this.state !== node.state)
-                return false;
-            const params = paramsFn ? paramsFn(this) : this.paramSchema;
-            return Param.changed(params, this.paramValues, node.paramValues);
-        }
-    }
-
-    /**
-     * Converts a TargetState into the concrete path nodes used by a transition.
-     */
-    function buildPath(targetState) {
-        const toParams = targetState.params();
-        const stateObject = targetState.$state();
-        const states = stateObject.path || [];
-        const path = [];
-        for (let i = 0; i < states.length; i++) {
-            path.push(new PathNode(states[i]).applyRawParams(toParams));
-        }
-        return path;
-    }
-    /**
-     * Given a fromPath and a TargetState, builds a toPath.
-     */
-    function buildToPath(fromPath, targetState) {
-        const toPath = buildPath(targetState);
-        if (targetState.options().inherit) {
-            return inheritParams(fromPath, toPath, keys(targetState.params()));
-        }
-        return toPath;
-    }
-    /**
-     * Creates ViewConfig objects and adds them to the nodes for the specified states.
-     */
-    function applyViewConfigs($view, path, states) {
-        for (let i = 0; i < path.length; i++) {
-            const node = path[i];
-            if (!states.includes(node.state))
-                continue;
-            const viewDecls = values(node.state._views || {});
-            const viewSubPath = subPath(path, (x) => x === node);
-            if (!viewSubPath) {
-                node._views = [];
-                continue;
-            }
-            const viewConfigs = [];
-            for (let j = 0; j < viewDecls.length; j++) {
-                const viewConfig = $view._createViewConfig(viewSubPath, viewDecls[j]);
-                if (isArray(viewConfig)) {
-                    viewConfigs.push(...viewConfig);
-                }
-                else {
-                    viewConfigs.push(viewConfig);
-                }
-            }
-            node._views = viewConfigs;
-        }
-    }
-    /**
-     * Returns a new to path which inherits parameters from the from path.
-     */
-    function inheritParams(fromPath, toPath, toKeys = []) {
-        const noInherit = [];
-        for (let i = 0; i < fromPath.length; i++) {
-            const { paramSchema } = fromPath[i];
-            for (let j = 0; j < paramSchema.length; j++) {
-                const param = paramSchema[j];
-                if (!param.inherit) {
-                    noInherit.push(param.id);
-                }
-            }
-        }
-        const inheritedPath = [];
-        for (let i = 0; i < toPath.length; i++) {
-            const toNode = toPath[i];
-            let fromParamVals = {};
-            for (let j = 0; j < fromPath.length; j++) {
-                const fromNode = fromPath[j];
-                if (fromNode.state === toNode.state) {
-                    fromParamVals = assign({}, fromNode.paramValues);
-                    break;
-                }
-            }
-            for (let j = 0; j < noInherit.length; j++) {
-                delete fromParamVals[noInherit[j]];
-            }
-            const toParamVals = {};
-            const incomingParamVals = {};
-            const toNodeParamValues = toNode.paramValues;
-            for (const key in toNodeParamValues) {
-                if (toKeys.indexOf(key) === -1) {
-                    toParamVals[key] = toNodeParamValues[key];
-                }
-                else {
-                    incomingParamVals[key] = toNodeParamValues[key];
-                }
-            }
-            const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
-            inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
-        }
-        return inheritedPath;
-    }
-    /**
-     * Computes the tree changes between a fromPath and toPath.
-     */
-    function treeChanges(fromPath, toPath, reloadState) {
-        const max = Math.min(fromPath.length, toPath.length);
-        let keep = 0;
-        const nodesMatch = (node1, node2) => node1.equals(node2, nonDynamicParams);
-        while (keep < max &&
-            fromPath[keep].state !== reloadState &&
-            nodesMatch(fromPath[keep], toPath[keep])) {
-            keep++;
-        }
-        function applyToParams(retainedNode, idx) {
-            const cloned = retainedNode.clone();
-            cloned.paramValues = toPath[idx].paramValues;
-            return cloned;
-        }
-        const from = fromPath;
-        const retained = from.slice(0, keep);
-        const exiting = from.slice(keep);
-        const retainedWithToParams = [];
-        for (let i = 0; i < retained.length; i++) {
-            retainedWithToParams.push(applyToParams(retained[i], i));
-        }
-        const entering = toPath.slice(keep);
-        const to = retainedWithToParams.concat(entering);
-        return { from, to, retained, retainedWithToParams, exiting, entering };
-    }
-    /**
-     * Returns the path prefix whose nodes match both paths.
-     */
-    function matching(pathA, pathB, paramsFn) {
-        const matchingPath = [];
-        const max = Math.min(pathA.length, pathB.length);
-        for (let i = 0; i < max; i++) {
-            const nodeA = pathA[i];
-            const nodeB = pathB[i];
-            if (!nodeA.equals(nodeB, paramsFn))
-                break;
-            matchingPath.push(nodeA);
-        }
-        return matchingPath;
-    }
-    /**
-     * Return a subpath of a path which stops at the first matching node.
-     */
-    function subPath(path, predicate) {
-        let elementIdx = -1;
-        for (let i = 0; i < path.length; i++) {
-            if (predicate(path[i])) {
-                elementIdx = i;
-                break;
-            }
-        }
-        return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
-    }
-    function nonDynamicParams(node) {
-        const params = node.state.parameters({ inherit: false });
-        const nonDynamic = [];
-        for (let i = 0; i < params.length; i++) {
-            const param = params[i];
-            if (!param.dynamic)
-                nonDynamic.push(param);
-        }
-        return nonDynamic;
-    }
-    /** Given a PathNode[], create an TargetState
-     * @param {StateRegistryProvider} registry
-     * @param {Array<PathNode>} path
-     * @returns {TargetState}
-     */
-    function makeTargetState(registry, path) {
-        const tailNode = path.at(-1);
-        if (!tailNode)
-            throw new Error("Cannot create TargetState from an empty path");
-        return new TargetState(registry, tailNode.state, pathToParams(path), {});
-    }
-    function pathToParams(path) {
-        const params = {};
-        for (let i = 0; i < path.length; i++) {
-            assign(params, path[i].paramValues);
-        }
-        return params;
-    }
-
     /**
      * # The Resolve subsystem
      *
@@ -23208,7 +22516,13 @@
             this.resolved = false;
             this.promise = undefined;
             if (isInstanceOf(arg1, Resolvable)) {
-                assign(this, arg1);
+                this.token = arg1.token;
+                this.resolveFn = arg1.resolveFn;
+                this.deps = arg1.deps;
+                this.eager = arg1.eager;
+                this.data = arg1.data;
+                this.resolved = arg1.resolved;
+                this.promise = arg1.promise;
             }
             else if (isFunction(resolveFn)) {
                 assert(!isNullOrUndefined(arg1), "token argument is required");
@@ -23221,7 +22535,7 @@
                 this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
             }
             else if (isObject(arg1) &&
-                arg1.token &&
+                hasOwn(arg1, "token") &&
                 (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
                 const literal = arg1;
                 this.token = literal.token;
@@ -23238,20 +22552,7 @@
          * the resolve function and caching the resulting value.
          */
         resolve(resolveContext, trans) {
-            const getResolvableDependencies = () => Promise.all(resolveContext
-                .getDependencies(this)
-                .map((resolvable) => resolvable.get(resolveContext, trans)));
-            const invokeResolveFn = (resolvedDeps) => this.resolveFn?.apply(null, resolvedDeps);
-            const applyResolvedValue = (resolvedValue) => {
-                this.data = resolvedValue;
-                this.resolved = true;
-                this.resolveFn = null;
-                return this.data;
-            };
-            this.promise = Promise.resolve()
-                .then(getResolvableDependencies)
-                .then(invokeResolveFn)
-                .then(applyResolvedValue);
+            this.promise = resolveResolvable(this, resolveContext, trans);
             return this.promise;
         }
         /**
@@ -23281,6 +22582,12 @@
         }
     }
 
+    async function resolveToken(resolvable, context, trans) {
+        return {
+            token: resolvable.token,
+            value: await resolvable.get(context, trans),
+        };
+    }
     /**
      * Provides resolve lookup and execution helpers for a specific transition path.
      */
@@ -23297,39 +22604,40 @@
          * Returns the unique tokens available from all resolvables in this path.
          */
         getTokens() {
-            const tokens = [];
-            for (let i = 0; i < this._path.length; i++) {
-                const { resolvables } = this._path[i];
-                for (let j = 0; j < resolvables.length; j++) {
-                    const { token } = resolvables[j];
-                    if (!tokens.includes(token)) {
-                        tokens.push(token);
-                    }
-                }
-            }
-            return tokens;
+            const tokenSet = new Set();
+            this._path.forEach(({ resolvables }) => {
+                resolvables.forEach(({ token }) => {
+                    tokenSet.add(token);
+                });
+            });
+            return Array.from(tokenSet);
         }
         /**
          * Returns the most local resolvable registered for the specified token.
          */
         getResolvable(token) {
-            let matching;
-            for (let i = 0; i < this._path.length; i++) {
+            for (let i = this._path.length - 1; i >= 0; i--) {
                 const { resolvables } = this._path[i];
-                for (let j = 0; j < resolvables.length; j++) {
+                for (let j = resolvables.length - 1; j >= 0; j--) {
                     const candidate = resolvables[j];
                     if (candidate.token === token) {
-                        matching = candidate;
+                        return candidate;
                     }
                 }
             }
-            return matching;
+            return undefined;
         }
         /**
          * Returns a child resolve context scoped to the specified state.
          */
         subContext(state) {
-            const contextPath = subPath(this._path, (node) => node?.state.name === state.name);
+            let contextPath;
+            for (let i = 0; i < this._path.length; i++) {
+                if (this._path[i].state.name === state.name) {
+                    contextPath = this._path.slice(0, i + 1);
+                    break;
+                }
+            }
             return new ResolveContext((contextPath || this._path), this._injector);
         }
         /**
@@ -23348,25 +22656,21 @@
                 throw new Error(`Could not find path node for state: ${state.name}`);
             }
             const resolvables = [];
-            const keys = [];
-            for (let i = 0; i < newResolvables.length; i++) {
-                const resolvable = newResolvables[i];
+            const tokens = new Set();
+            newResolvables.forEach((resolvable) => {
                 const normalized = isInstanceOf(resolvable, Resolvable)
                     ? resolvable
                     : new Resolvable(resolvable);
                 resolvables.push(normalized);
-                keys.push(normalized.token);
-            }
+                tokens.add(normalized.token);
+            });
             const nextResolvables = [];
-            for (let i = 0; i < node.resolvables.length; i++) {
-                const existing = node.resolvables[i];
-                if (!keys.includes(existing.token)) {
+            node.resolvables.forEach((existing) => {
+                if (!tokens.has(existing.token)) {
                     nextResolvables.push(existing);
                 }
-            }
-            for (let i = 0; i < resolvables.length; i++) {
-                nextResolvables.push(resolvables[i]);
-            }
+            });
+            resolvables.forEach((resolvable) => nextResolvables.push(resolvable));
             node.resolvables = nextResolvables;
         }
         /**
@@ -23374,67 +22678,60 @@
          */
         resolvePath(eagerOnly = false, trans) {
             const promises = [];
-            for (let i = 0; i < this._path.length; i++) {
-                const node = this._path[i];
-                const subContext = this.subContext(node.state);
-                for (let j = 0; j < node.resolvables.length; j++) {
-                    const resolvable = node.resolvables[j];
-                    if (eagerOnly && !resolvable.eager) {
-                        continue;
+            this._path.forEach((node, index) => {
+                const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
+                node.resolvables.forEach((resolvable) => {
+                    if (!eagerOnly || resolvable.eager) {
+                        promises.push(resolveToken(resolvable, subContext, trans));
                     }
-                    const promise = resolvable
-                        .get(subContext, trans)
-                        .then((value) => ({ token: resolvable.token, value }));
-                    promises.push(promise);
-                }
-            }
+                });
+            });
             return Promise.all(promises);
         }
         /**
          * Finds the path node that owns the provided resolvable.
          */
         findNode(resolvable) {
+            const index = this._findNodeIndex(resolvable);
+            return index === -1 ? undefined : this._path[index];
+        }
+        /** @internal */
+        _findNodeIndex(resolvable) {
             for (let i = 0; i < this._path.length; i++) {
                 const node = this._path[i];
-                if (node.resolvables.includes(resolvable)) {
-                    return node;
+                for (let j = 0; j < node.resolvables.length; j++) {
+                    if (node.resolvables[j] === resolvable) {
+                        return i;
+                    }
                 }
             }
-            return undefined;
+            return -1;
         }
         /**
          * Resolves the dependency tokens required by a resolvable from either
          * the current path or the injector fallback.
          */
         getDependencies(resolvable) {
-            const node = this.findNode(resolvable);
-            const dependencyPath = subPath(this._path, (x) => x === node) || this._path;
-            const availableResolvables = [];
-            for (let i = 0; i < dependencyPath.length; i++) {
-                const { resolvables } = dependencyPath[i];
-                for (let j = 0; j < resolvables.length; j++) {
-                    const candidate = resolvables[j];
-                    if (candidate !== resolvable) {
-                        availableResolvables.push(candidate);
-                    }
-                }
-            }
+            const nodeIndex = this._findNodeIndex(resolvable);
+            const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
             const latestByToken = new Map();
-            for (let i = 0; i < availableResolvables.length; i++) {
-                const candidate = availableResolvables[i];
-                latestByToken.set(candidate.token, candidate);
-            }
+            dependencyPath.forEach(({ resolvables }) => {
+                resolvables.forEach((candidate) => {
+                    if (candidate !== resolvable) {
+                        latestByToken.set(candidate.token, candidate);
+                    }
+                });
+            });
             const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
             const dependencies = [];
-            for (let i = 0; i < deps.length; i++) {
-                const token = deps[i];
+            deps.forEach((token) => {
                 const matching = latestByToken.get(token);
                 if (matching) {
                     dependencies.push(matching);
-                    continue;
+                    return;
                 }
                 let fromInjector;
-                if (this._injector) {
+                if (this._injector && isString(token)) {
                     try {
                         fromInjector = this._injector.get(token);
                     }
@@ -23445,97 +22742,9 @@
                 if (isUndefined(fromInjector)) {
                     throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
                 }
-                dependencies.push(new Resolvable(token, () => fromInjector, [], undefined, fromInjector));
-            }
+                dependencies.push(new Resolvable({ token, data: fromInjector }));
+            });
             return dependencies;
-        }
-    }
-
-    let id$1 = 0;
-    class ViewConfig {
-        /**
-         * Stores the declarative view definition plus the runtime path/context needed
-         * to resolve templates and controllers when the view is activated.
-         * @param {PathNode[]} path
-         * @param {ViewDeclaration} viewDecl
-         * @param {TemplateFactoryProvider} factory
-         */
-        constructor(path, viewDecl, factory) {
-            this.$id = -1;
-            this.path = path;
-            this.viewDecl = viewDecl;
-            this.factory = factory;
-            this.component = undefined;
-            this.template = undefined;
-            this.$id = id$1++;
-            this.loaded = false;
-            this.controller = undefined;
-            this.getTemplate = (ngView, context) => this.component
-                ? this.factory.makeComponentTemplate(ngView, context, this.component, this.viewDecl.bindings)
-                : this.template;
-        }
-        /**
-         *
-         * @returns {Promise<ViewConfig>}
-         */
-        async load() {
-            const context = new ResolveContext(this.path, this.factory._injector);
-            const params = {};
-            for (let i = 0; i < this.path.length; i++) {
-                assign(params, this.path[i].paramValues);
-            }
-            const promises = [
-                Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
-                Promise.resolve(this.getController()),
-            ];
-            const results = await Promise.all(promises);
-            this.controller = results[1];
-            assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
-            return this;
-        }
-        /**
-         * Gets the controller for a view configuration.
-         * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
-         */
-        getController() {
-            return this.viewDecl.controller;
-        }
-        /**
-         * Normalizes a view target from a `StateDeclaration.views` key.
-         */
-        static normalizeNgViewTarget(context, rawViewName = "") {
-            const viewAtContext = rawViewName.split("@");
-            let ngViewName = viewAtContext[0] || "$default";
-            let ngViewContextAnchor = isString(viewAtContext[1])
-                ? viewAtContext[1]
-                : "^";
-            const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
-            if (relativeViewNameSugar) {
-                ngViewContextAnchor = relativeViewNameSugar[1];
-                ngViewName = relativeViewNameSugar[2];
-            }
-            if (ngViewName.charAt(0) === "!") {
-                ngViewName = ngViewName.substring(1);
-                ngViewContextAnchor = "";
-            }
-            const relativeMatch = /^(\^(?:\.\^)*)$/;
-            if (relativeMatch.exec(ngViewContextAnchor)) {
-                let anchorState = context;
-                const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
-                for (let i = 0; i < hops; i++) {
-                    anchorState = anchorState && anchorState.parent;
-                }
-                if (!anchorState) {
-                    anchorState = context;
-                    while (anchorState.parent)
-                        anchorState = anchorState.parent;
-                }
-                ngViewContextAnchor = anchorState.name;
-            }
-            else if (ngViewContextAnchor === ".") {
-                ngViewContextAnchor = context.name;
-            }
-            return { ngViewName, ngViewContextAnchor };
         }
     }
 
@@ -23570,12 +22779,25 @@
                 return state;
             }
             else if (isStr && matchGlob) {
-                const states = values(this._states);
-                const matches = states.filter((stateObj) => stateObj._stateObjectCache?.nameGlob?.matches(name));
-                if (matches.length > 1) {
-                    throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${matches.map((match) => match.name)}`);
+                const stateNames = keys(this._states);
+                let match;
+                let duplicateNames;
+                stateNames.forEach((stateName) => {
+                    const stateObj = this._states[stateName];
+                    if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
+                        if (match) {
+                            duplicateNames = duplicateNames || [match.name];
+                            duplicateNames.push(stateObj.name);
+                        }
+                        else {
+                            match = stateObj;
+                        }
+                    }
+                });
+                if (duplicateNames) {
+                    throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames}`);
                 }
-                return matches[0];
+                return match;
             }
             return undefined;
         }
@@ -23610,6 +22832,1105 @@
         }
     }
 
+    const FQN_MULTIPLIER = 10000;
+    let nextViewId = 0;
+    /** @internal */
+    function createViewConfig(path, viewDecl, factory) {
+        return {
+            _id: nextViewId++,
+            _path: path,
+            _viewDecl: viewDecl,
+            _factory: factory,
+            _component: undefined,
+            _template: undefined,
+            _loaded: false,
+            _controller: undefined,
+        };
+    }
+    /** @internal */
+    function getViewTemplate(config, ngView, context) {
+        return config._component
+            ? config._factory._makeComponentTemplate(ngView, context, config._component, config._viewDecl.bindings)
+            : config._template;
+    }
+    /** @internal */
+    async function loadViewConfig(config) {
+        const params = {};
+        config._path.forEach((node) => assign(params, node.paramValues));
+        const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+        config._controller = config._viewDecl.controller;
+        assign(config, viewResult);
+        return config;
+    }
+    /** @internal */
+    function normalizeNgViewTarget(context, rawViewName = "") {
+        const viewAtContext = rawViewName.split("@");
+        let ngViewName = viewAtContext[0] || "$default";
+        let ngViewContextAnchor = isString(viewAtContext[1]) ? viewAtContext[1] : "^";
+        const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+        if (relativeViewNameSugar) {
+            ngViewContextAnchor = relativeViewNameSugar[1];
+            ngViewName = relativeViewNameSugar[2];
+        }
+        if (ngViewName.charAt(0) === "!") {
+            ngViewName = ngViewName.substring(1);
+            ngViewContextAnchor = "";
+        }
+        const relativeMatch = /^(\^(?:\.\^)*)$/;
+        if (relativeMatch.exec(ngViewContextAnchor)) {
+            let anchorState = context;
+            let hops = 0;
+            for (let i = 0; i < ngViewContextAnchor.length; i++) {
+                if (ngViewContextAnchor[i] === "^") {
+                    hops++;
+                }
+            }
+            for (let i = 0; i < hops; i++) {
+                anchorState = anchorState && anchorState.parent;
+            }
+            if (!anchorState) {
+                anchorState = context;
+                while (anchorState.parent)
+                    anchorState = anchorState.parent;
+            }
+            ngViewContextAnchor = anchorState.name;
+        }
+        else if (ngViewContextAnchor === ".") {
+            ngViewContextAnchor = context.name;
+        }
+        return { ngViewName, ngViewContextAnchor };
+    }
+    function contextDepth(context) {
+        let cursor = context;
+        let depth = 1;
+        while (cursor && cursor.parent) {
+            depth += 1;
+            cursor = cursor.parent;
+        }
+        return depth;
+    }
+    function ngViewDepth(cache, ngView) {
+        const cached = cache.get(ngView);
+        if (cached !== undefined)
+            return cached;
+        const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
+            contextDepth(ngView._creationContext);
+        cache.set(ngView, computed);
+        return computed;
+    }
+    function viewConfigDepth(cache, config) {
+        const cached = cache.get(config);
+        if (cached !== undefined)
+            return cached;
+        let context = config._viewDecl._context;
+        let count = 0;
+        while (++count && context.parent) {
+            context = context.parent;
+        }
+        cache.set(config, count);
+        return count;
+    }
+    /**
+     * Tracks active `ng-view` instances and matches them with registered
+     * view configs produced during state transitions.
+     */
+    class ViewService {
+        /**
+         * Creates an empty view registry ready to track active `ng-view` instances.
+         */
+        constructor() {
+            /**
+             * Returns the singleton view service instance.
+             */
+            this.$get = [
+                _templateFactory,
+                _router,
+                ($templateFactory, $routerState) => {
+                    this._templateFactory = $templateFactory;
+                    this._rootViewContext($routerState._currentState || null);
+                    return this;
+                },
+            ];
+            this._ngViews = [];
+            this._viewConfigs = [];
+            this._templateFactory = undefined;
+            this._rootContext = undefined;
+        }
+        /**
+         * Gets or sets the root view context used for relative `ng-view` targeting.
+         */
+        /** @internal */
+        _rootViewContext(context) {
+            return (this._rootContext = context || this._rootContext);
+        }
+        /**
+         * Removes a view config from the active registry.
+         */
+        /** @internal */
+        _deactivateViewConfig(viewConfig) {
+            removeFrom(this._viewConfigs, viewConfig);
+        }
+        /**
+         * Adds a view config to the active registry.
+         */
+        /** @internal */
+        _activateViewConfig(viewConfig) {
+            this._viewConfigs.push(viewConfig);
+        }
+        /**
+         * Re-matches active `ng-view` instances against currently registered view configs
+         * and notifies each view when its config assignment changes.
+         */
+        /** @internal */
+        _sync() {
+            const ngViewsByFqn = {};
+            this._ngViews.forEach((ngView) => {
+                ngViewsByFqn[ngView._fqn] = ngView;
+            });
+            const ngViewDepthCache = new Map();
+            const viewConfigDepthCache = new Map();
+            this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
+                ngViewDepth(ngViewDepthCache, right));
+            this._ngViews.forEach((ngView) => {
+                let selectedViewConfig = undefined;
+                let bestDepth = Number.NEGATIVE_INFINITY;
+                this._viewConfigs.forEach((candidate) => {
+                    if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
+                        return;
+                    const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
+                    if (!selectedViewConfig || candidateDepth > bestDepth) {
+                        selectedViewConfig = candidate;
+                        bestDepth = candidateDepth;
+                    }
+                });
+                if (this._ngViews.indexOf(ngView) !== -1) {
+                    ngView._configUpdated(selectedViewConfig);
+                }
+            });
+        }
+        /**
+         * Registers one active `ng-view` and returns a deregistration function.
+         */
+        /** @internal */
+        _registerNgView(ngView) {
+            const ngViews = this._ngViews;
+            ngViews.push(ngView);
+            this._sync();
+            return () => {
+                removeFrom(ngViews, ngView);
+                this._sync();
+            };
+        }
+        /**
+         * Builds a predicate that determines whether a view config matches
+         * a specific active `ng-view`.
+         */
+        /** @internal */
+        static _matches(ngViewsByFqn, ngView, viewConfig) {
+            if (!viewConfig || !viewConfig._viewDecl)
+                return false;
+            const ngViewContext = ngView._creationContext;
+            const viewDecl = viewConfig._viewDecl;
+            const vcName = viewDecl._ngViewName || "$default";
+            const vcContext = viewDecl._ngViewContextAnchor || "";
+            const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
+            if (normalizedTarget !== ngView._fqn)
+                return false;
+            const viewContext = viewDecl._context;
+            if (viewContext.name !== ngViewContext.name &&
+                vcContext !== ngViewContext.name) {
+                return false;
+            }
+            const childViewFqn = `${normalizedTarget}.${ngView._name}`;
+            return !ngViewsByFqn[childViewFqn];
+        }
+    }
+
+    const emptyParamTypeDefinition = {};
+    function valToString(val) {
+        return !isNullOrUndefined(val) ? val.toString() : undefined;
+    }
+    /**
+     * An internal class which implements [[ParamTypeDefinition]].
+     *
+     * Used internally when matching or formatting URLs, or comparing and validating parameter values.
+     */
+    class ParamType {
+        constructor(def) {
+            this.pattern = /.*/;
+            this.inherit = true;
+            assign(this, def);
+        }
+        // consider these four methods to be "abstract methods" that should be overridden
+        /**
+         * @param {unknown} val
+         */
+        is(val) {
+            return !!val;
+        }
+        /**
+         * @param {unknown} val
+         */
+        encode(val) {
+            return valToString(val);
+        }
+        /**
+         * @param {unknown} val
+         */
+        decode(val) {
+            return valToString(val);
+        }
+        /**
+         * @param {unknown} a
+         * @param {unknown} b
+         */
+        equals(a, b) {
+            return a === b;
+        }
+        toString() {
+            return `{ParamType:${this.name}}`;
+        }
+        /**
+         * Given an encoded string, or a decoded object, returns a decoded object
+         * @param {unknown} val
+         */
+        $normalize(val) {
+            return this.is(val) ? val : this.decode(val);
+        }
+        /**
+         * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
+         * e.g.:
+         * - urlmatcher pattern "/path?{queryParam[]:int}"
+         * - url: "/path?queryParam=1&queryParam=2
+         * - $stateParams.queryParam will be [1, 2]
+         * if `mode` is "auto", then
+         * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
+         * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
+         * @param {boolean |'auto'} mode
+         */
+        $asArray(mode) {
+            if (!mode)
+                return this;
+            return new ArrayParamType(this, mode);
+        }
+    }
+    /**
+     * Wraps up a `ParamType` object to handle array values.
+     * @param {ParamType & Record<string, unknown>} type
+     * @param {boolean | 'auto'} mode
+     */
+    class ArrayParamType extends ParamType {
+        constructor(type, mode) {
+            super(emptyParamTypeDefinition);
+            delete this.is;
+            delete this.encode;
+            delete this.decode;
+            delete this.equals;
+            this._type = type;
+            this._arrayMode = mode;
+            this.dynamic = type.dynamic;
+            this.name = type.name;
+            this.pattern = type.pattern;
+            this.inherit = type.inherit;
+            this.raw = type.raw;
+            this.$arrayMode = mode;
+        }
+        /** @internal */
+        _arrayWrap(val) {
+            return isArray(val) ? val : isDefined(val) ? [val] : [];
+        }
+        /** @internal */
+        _arrayUnwrap(val) {
+            switch (val.length) {
+                case 0:
+                    return undefined;
+                case 1:
+                    return this._arrayMode === "auto" ? val[0] : val;
+                default:
+                    return val;
+            }
+        }
+        /** @internal */
+        _mapArray(method, val, allTruthyMode = false) {
+            if (isArray(val) && val.length === 0)
+                return val;
+            const arr = this._arrayWrap(val);
+            const type = this._type;
+            if (allTruthyMode) {
+                for (let i = 0; i < arr.length; i++) {
+                    if (!type[method](arr[i]))
+                        return false;
+                }
+                return true;
+            }
+            const result = [];
+            arr.forEach((item) => {
+                result.push(type[method](item));
+            });
+            return this._arrayUnwrap(result);
+        }
+        encode(val) {
+            return this._mapArray("encode", val);
+        }
+        decode(val) {
+            return this._mapArray("decode", val);
+        }
+        $normalize(val) {
+            return this._mapArray("$normalize", val);
+        }
+        is(val) {
+            return this._mapArray("is", val, true);
+        }
+        equals(val1, val2) {
+            const left = this._arrayWrap(val1);
+            const right = this._arrayWrap(val2);
+            if (left.length !== right.length)
+                return false;
+            const { _type: type } = this;
+            for (let i = 0; i < left.length; i++) {
+                if (!type.equals(left[i], right[i]))
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
+    function isShorthand(cfg) {
+        const config = (cfg || {});
+        for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
+            if (hasOwn(config, SHORTHAND_KEYS[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    /**
+     * @enum {number}
+     */
+    const DefType = {
+        _PATH: 0,
+        _SEARCH: 1,
+        _CONFIG: 2,
+    };
+    /**
+     * @param {string} paramName
+     * @param {DefType} location
+     * @param {ng.StateDeclaration} state
+     * @return {ParamDeclaration}
+     */
+    function getParamDeclaration(paramName, location, state) {
+        const { dynamic } = state;
+        const paramConfig = unwrapShorthand(state?.params?.[paramName]);
+        if (isDefined(dynamic) && !hasOwn(paramConfig, "dynamic")) {
+            paramConfig.dynamic = dynamic;
+        }
+        return paramConfig;
+    }
+    /**
+     * @param {ParamDeclaration} cfg
+     * @return {ParamDeclaration}
+     */
+    function unwrapShorthand(cfg) {
+        cfg = isShorthand(cfg) ? { value: cfg } : cfg;
+        const getStaticDefaultValue = () => {
+            return cfg.value;
+        };
+        getStaticDefaultValue._cacheable = true;
+        const paramConfig = cfg;
+        const _fn = isInjectable(paramConfig.value)
+            ? paramConfig.value
+            : getStaticDefaultValue;
+        paramConfig._fn = _fn;
+        return paramConfig;
+    }
+    /**
+     * @param {ParamDeclaration} cfg
+     * @param {ParamType | null} urlType
+     * @param {DefType} location
+     * @param {string} id
+     * @param {ParamTypeMap} paramTypes
+     */
+    function getType(cfg, urlType, location, id, paramTypes) {
+        if (cfg.type && urlType && urlType.name !== "string")
+            throw new Error(`Param '${id}' has two type configurations.`);
+        if (cfg.type &&
+            urlType &&
+            urlType.name === "string" &&
+            isString(cfg.type) &&
+            paramTypes[cfg.type])
+            return paramTypes[cfg.type];
+        if (urlType)
+            return urlType;
+        if (!cfg.type) {
+            const type = location === DefType._CONFIG
+                ? "any"
+                : location === DefType._PATH
+                    ? "path"
+                    : location === DefType._SEARCH
+                        ? "query"
+                        : "string";
+            return paramTypes[type];
+        }
+        return isInstanceOf(cfg.type, ParamType)
+            ? cfg.type
+            : paramTypes[cfg.type];
+    }
+    /**
+     * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+     * @param {ParamDeclaration} config
+     * @param {boolean} isOptional
+     * @param {boolean | string} defaultPolicy
+     */
+    function getSquashPolicy(config, isOptional, defaultPolicy) {
+        const { squash } = config;
+        if (!isOptional || squash === false)
+            return false;
+        if (!isDefined(squash) || isNullOrUndefined(squash))
+            return defaultPolicy;
+        if (squash === true || isString(squash))
+            return squash;
+        throw new Error(`Invalid squash policy: '${squash}'. Valid policies: false, true, or arbitrary string`);
+    }
+    /**
+     * @param {ParamDeclaration} config
+     * @param {boolean} arrayMode
+     * @param {boolean} isOptional
+     * @param {string | boolean} squash
+     */
+    function getReplace(config, arrayMode, isOptional, squash) {
+        const replace = isArray(config.replace) ? config.replace : [];
+        const result = [];
+        let hasEmptyReplace = false;
+        let hasNullReplace = false;
+        for (let i = 0; i < replace.length; i++) {
+            const item = replace[i];
+            if (item.from === "") {
+                hasEmptyReplace = true;
+            }
+            else if (item.from === null) {
+                hasNullReplace = true;
+            }
+        }
+        const defaultReplacement = isOptional || arrayMode ? undefined : "";
+        if (!hasEmptyReplace)
+            result.push({ from: "", to: defaultReplacement });
+        if (!hasNullReplace) {
+            result.push({ from: null, to: defaultReplacement });
+        }
+        for (let i = 0; i < replace.length; i++) {
+            const item = replace[i];
+            result.push(item);
+        }
+        if (isString(squash))
+            result.push({ from: squash, to: undefined });
+        return result;
+    }
+    function getArrayMode(id, location, config) {
+        if (location !== DefType._SEARCH)
+            return false;
+        if (isDefined(config.array))
+            return config.array;
+        return id.endsWith("[]") ? true : "auto";
+    }
+    class Param {
+        /**
+         *
+         * @param {string} id
+         * @param {ParamType | null} type
+         * @param {DefType} location
+         * @param {UrlParamConfig} urlConfig
+         * @param {ParamRuntime} runtime
+         * @param {ng.StateDeclaration} state
+         */
+        constructor(id, type, location, urlConfig, runtime, state) {
+            const config = getParamDeclaration(id, location, state);
+            type = getType(config, type, location, id, urlConfig._paramTypes);
+            const arrayMode = getArrayMode(id, location, config);
+            type = arrayMode ? type && type.$asArray(arrayMode) : type;
+            const isOptional = config.value !== undefined || location === DefType._SEARCH;
+            const dynamic = !!config.dynamic;
+            const raw = !!config.raw;
+            const squash = getSquashPolicy(config, isOptional, urlConfig._getDefaultSquashPolicy());
+            const replace = getReplace(config, arrayMode, isOptional, squash);
+            const inherit = isDefined(config.inherit)
+                ? !!config.inherit
+                : !!type.inherit;
+            this.isOptional = isOptional;
+            this.type = type;
+            this.location = location;
+            this.id = id;
+            this.dynamic = dynamic;
+            this.raw = raw;
+            this.squash = squash;
+            this.replace = replace;
+            this.inherit = inherit;
+            this.array = arrayMode;
+            this.config = config;
+            this._runtime = runtime;
+        }
+        /**
+         * @param {unknown} value
+         */
+        isDefaultValue(value) {
+            return this.isOptional && this.type.equals(this.value(), value);
+        }
+        /**
+         * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
+         * default value, which may be the result of an injectable function.
+         * @param {undefined} [value]
+         */
+        value(value) {
+            for (let i = 0; i < this.replace.length; i++) {
+                const tuple = this.replace[i];
+                if (tuple.from === value) {
+                    value = tuple.to;
+                    break;
+                }
+            }
+            return isUndefined(value)
+                ? this._getDefaultValue()
+                : this.type.$normalize(value);
+        }
+        /** @internal */
+        _getDefaultValue() {
+            if (this._defaultValueCache)
+                return this._defaultValueCache.defaultValue;
+            const injector = this._runtime._injector;
+            if (!injector)
+                throw new Error("Injectable functions cannot be called at configuration time");
+            const defaultValueProvider = this.config._fn;
+            const defaultValue = defaultValueProvider
+                ? injector.invoke(defaultValueProvider)
+                : undefined;
+            if (defaultValue !== null &&
+                defaultValue !== undefined &&
+                !this.type.is(defaultValue))
+                throw new Error(`Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`);
+            if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
+                this._defaultValueCache = { defaultValue };
+            }
+            return defaultValue;
+        }
+        /**
+         * @param {null} value
+         */
+        validates(value) {
+            // There was no parameter value, but the param is optional
+            if ((isUndefined(value) || value === null) && this.isOptional)
+                return true;
+            // The value was not of the correct ParamType, and could not be decoded to the correct ParamType
+            const normalized = this.type.$normalize(value);
+            if (!this.type.is(normalized))
+                return false;
+            // The value was of the correct type, but when encoded, did not match the ParamType's regexp
+            const encoded = normalized; // this.type.encode(normalized);
+            return !(isString(encoded) && !this.type.pattern.exec(encoded));
+        }
+        toString() {
+            return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
+        }
+        /**
+         * @param {Param[]} params
+         * @param {RawParams} values
+         * @return {RawParams}
+         */
+        static values(params, values = {}) {
+            const paramValues = {};
+            for (const param of params) {
+                paramValues[param.id] = param.value(values[param.id]);
+            }
+            return paramValues;
+        }
+        /**
+         * Finds [[Param]] objects which have different param values
+         *
+         * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
+         * @param {Param[]} params : The list of Param objects to filter
+         * @param {RawParams} values1 : The first set of parameter values
+         * @param {RawParams} values2 : the second set of parameter values
+         * @returns {Param[]} any Param objects whose values were different between values1 and values2
+         */
+        static changed(params, values1 = {}, values2 = {}) {
+            const changed = [];
+            params.forEach((param) => {
+                if (!param.type.equals(values1[param.id], values2[param.id])) {
+                    changed.push(param);
+                }
+            });
+            return changed;
+        }
+        /**
+         * Checks if two param value objects are equal (for a set of [[Param]] objects)
+         * @param {Param[]} params The list of [[Param]] objects to check
+         * @param values1 The first set of param values
+         * @param values2 The second set of param values
+         * @returns true if the param values in values1 and values2 are equal
+         */
+        static equals(params, values1 = {}, values2 = {}) {
+            for (let i = 0; i < params.length; i++) {
+                const param = params[i];
+                if (!param.type.equals(values1[param.id], values2[param.id])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        /**
+         * Returns true if a the parameter values are valid, according to the Param definitions
+         * @param {Param[]} params
+         * @param {RawParams} values
+         * @return {boolean}
+         */
+        static validates(params, values = {}) {
+            for (let i = 0; i < params.length; i++) {
+                const param = params[i];
+                if (!param.validates(values[param.id])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
+    const MAX_REGEX_LENGTH = 200;
+    const PLACEHOLDER_REGEXP = new RegExp(`([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
+    const SEARCH_PLACEHOLDER_REGEXP = new RegExp(`([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
+    function quoteRegExp(str, param) {
+        let result = str.replace(/[\\[\]^$*+?.()|{}]/g, "\\$&");
+        if (!param)
+            return result;
+        switch (param.squash) {
+            case false:
+                return `${result}(${param.type.pattern.source})${param.isOptional ? "?" : ""}`;
+            case true:
+                result = result.replace(/\/$/, "");
+                return `${result}(?:/(${param.type.pattern.source})|/)?`;
+            default:
+                return `${result}(${param.squash}|${param.type.pattern.source})?`;
+        }
+    }
+    function pushStaticSegmentWeights(weights, segment) {
+        if (!segment)
+            return;
+        let inStaticSegment = false;
+        for (let i = 0; i < segment.length; i++) {
+            if (segment.charAt(i) === "/") {
+                if (inStaticSegment)
+                    weights.push(2);
+                weights.push(1);
+                inStaticSegment = false;
+                continue;
+            }
+            inStaticSegment = true;
+        }
+        if (inStaticSegment)
+            weights.push(2);
+    }
+    function getMatcherWeights(matcher) {
+        if (matcher._cache._weights)
+            return matcher._cache._weights;
+        const path = matcher._cache._path || [matcher];
+        const weights = [];
+        let staticSegment = "";
+        for (let i = 0; i < path.length; i++) {
+            const pathMatcher = path[i];
+            let paramIndex = 0;
+            for (let j = 0; j < pathMatcher._segments.length; j++) {
+                staticSegment += pathMatcher._segments[j];
+                while (paramIndex < pathMatcher._params.length) {
+                    const param = pathMatcher._params[paramIndex++];
+                    if (param.location !== DefType._PATH)
+                        continue;
+                    pushStaticSegmentWeights(weights, staticSegment);
+                    staticSegment = "";
+                    weights.push(3);
+                    break;
+                }
+            }
+        }
+        pushStaticSegmentWeights(weights, staticSegment);
+        return (matcher._cache._weights = weights);
+    }
+    function appendPathParam(path, param, values) {
+        if (isArray(values[param.id]))
+            return null;
+        const value = param.value(values[param.id]);
+        if (!param.validates(value))
+            return null;
+        const isDefaultValue = param.isDefaultValue(value);
+        const squash = isDefaultValue ? param.squash : false;
+        const encoded = param.type.encode(value);
+        if (squash === true)
+            return path.endsWith("/") ? path.slice(0, -1) : path;
+        if (isString(squash))
+            return path + squash;
+        if (squash !== false || isNullOrUndefined(encoded))
+            return path;
+        if (isArray(encoded))
+            return null;
+        return path + (param.raw ? encoded : encodeURIComponent(encoded));
+    }
+    function appendQueryParam(queryParts, param, values) {
+        const value = param.value(values[param.id]);
+        if (!param.validates(value))
+            return false;
+        const isDefaultValue = param.isDefaultValue(value);
+        let encoded = param.type.encode(value);
+        if (isNullOrUndefined(encoded) ||
+            (isDefaultValue && param.squash !== false)) {
+            queryParts.push(undefined);
+            return true;
+        }
+        if (!isArray(encoded))
+            encoded = [encoded];
+        if (encoded.length === 0) {
+            queryParts.push(undefined);
+            return true;
+        }
+        for (let i = 0; i < encoded.length; i++) {
+            const encodedValue = param.raw
+                ? encoded[i]
+                : encodeURIComponent(encoded[i]);
+            queryParts.push(`${param.id}=${encodedValue}`);
+        }
+        return true;
+    }
+    function appendMatcherPath(path, matcher, values) {
+        let paramIndex = 0;
+        for (let i = 0; i < matcher._segments.length; i++) {
+            path += matcher._segments[i];
+            while (paramIndex < matcher._params.length) {
+                const param = matcher._params[paramIndex++];
+                if (param.location !== DefType._PATH)
+                    continue;
+                const nextPath = appendPathParam(path, param, values);
+                if (nextPath === null)
+                    return null;
+                path = nextPath;
+                break;
+            }
+        }
+        return path;
+    }
+    function appendMatcherQueryParams(queryParts, matcher, values) {
+        for (let i = 0; i < matcher._params.length; i++) {
+            const param = matcher._params[i];
+            if (param.location !== DefType._SEARCH)
+                continue;
+            if (!appendQueryParam(queryParts, param, values))
+                return false;
+        }
+        return true;
+    }
+    function formatUrl(matchers, values) {
+        let path = "";
+        const queryParts = [];
+        for (let i = 0; i < matchers.length; i++) {
+            path = appendMatcherPath(path, matchers[i], values);
+            if (path === null)
+                return null;
+            if (!appendMatcherQueryParams(queryParts, matchers[i], values))
+                return null;
+        }
+        const query = queryParts.join("&");
+        return (path + (query ? `?${query}` : "") + (values["#"] ? `#${values["#"]}` : ""));
+    }
+    function getPatternRegExp(matcher, pathMatchers) {
+        if (matcher._cache._pattern)
+            return matcher._cache._pattern;
+        let compiled = "";
+        for (let i = 0; i < pathMatchers.length; i++) {
+            compiled += pathMatchers[i]._compiled;
+        }
+        return (matcher._cache._pattern = new RegExp(`^${compiled}${matcher._config.strict === false ? "/?" : ""}$`, matcher._config.caseInsensitive ? "i" : undefined));
+    }
+    function checkParamErrors(id, pattern, params) {
+        if (!PARAM_NAME_VALIDATOR.test(id))
+            throw new Error(`Invalid parameter name '${id}' in pattern '${pattern}'`);
+        for (let i = 0; i < params.length; i++) {
+            if (params[i].id === id) {
+                throw new Error(`Duplicate parameter name '${id}' in pattern '${pattern}'`);
+            }
+        }
+    }
+    /** @internal */
+    function compareUrlMatchers(a, b) {
+        const weightsA = getMatcherWeights(a);
+        const weightsB = getMatcherWeights(b);
+        const length = Math.max(weightsA.length, weightsB.length);
+        for (let i = 0; i < length; i++) {
+            const cmp = (weightsA[i] || 0) - (weightsB[i] || 0);
+            if (cmp !== 0)
+                return cmp;
+        }
+        return 0;
+    }
+    function makeRegexpType(defaultType, str, caseInsensitive) {
+        return inherit(defaultType, {
+            pattern: new RegExp(str, caseInsensitive ? "i" : undefined),
+        });
+    }
+    function getParamType(pattern, match, isSearch, paramTypes, config) {
+        const defaultType = paramTypes[isSearch ? "query" : "path"];
+        const regexp = isSearch
+            ? match[4]
+            : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
+        if (!defaultType) {
+            throw new Error(`Missing default parameter type for '${isSearch ? "query" : "path"}'`);
+        }
+        return !regexp
+            ? defaultType
+            : paramTypes[regexp] ||
+                makeRegexpType(defaultType, regexp, config.caseInsensitive);
+    }
+    /**
+     * @internal
+     *
+     * Matches URLs against patterns.
+     *
+     * Matches URLs against patterns and extracts named parameters from the path or the search
+     * part of the URL.
+     *
+     * A URL pattern consists of a path pattern, optionally followed by '?' and a list of search (query)
+     * parameters. Multiple search parameter names are separated by '&'. Search parameters
+     * do not influence whether or not a URL is matched, but their values are passed through into
+     * the matched parameters returned by `UrlMatcher`.
+     *
+     * - *Path parameters* are defined using curly brace placeholders (`/somepath/{param}`)
+     * or colon placeholders (`/somePath/:param`).
+     *
+     * - *A parameter RegExp* may be defined for a param after a colon
+     * (`/somePath/{param:[a-zA-Z0-9]+}`) in a curly brace placeholder.
+     * The regexp must match for the url to be matched.
+     * Should the regexp itself contain curly braces, they must be in matched pairs or escaped with a backslash.
+     *
+     * Note: a RegExp parameter will encode its value using either the built-in `path` or `query` type.
+     *
+     * - *Built-in parameter types* may also be specified after a colon (`/somePath/{param:int}`) in curly brace parameters.
+     *
+     * - *Catch-all parameters* are defined using an asterisk placeholder (`/somepath/*catchallparam`).
+     *   A catch-all * parameter value will contain the remainder of the URL.
+     *
+     * ---
+     *
+     * Parameter names may contain only word characters (latin letters, digits, and underscore) and
+     * must be unique within the pattern (across both path and search parameters).
+     * A path parameter matches any number of characters other than '/'. For catch-all
+     * placeholders the path parameter matches any number of characters.
+     *
+     * Examples:
+     *
+     * * `'/hello/'` - Matches only if the path is exactly '/hello/'. There is no special treatment for
+     *   trailing slashes, and patterns have to match the entire path, not just a prefix.
+     * * `'/user/:id'` - Matches '/user/bob' or '/user/1234!!!' or even '/user/' but not '/user' or
+     *   '/user/bob/details'. The second path segment will be captured as the parameter 'id'.
+     * * `'/user/{id}'` - Same as the previous example, but using curly brace syntax.
+     * * `'/user/{id:[^/]*}'` - Same as the previous example.
+     * * `'/user/{id:[0-9a-fA-F]{1,8}}'` - Similar to the previous example, but only matches if the id
+     *   parameter consists of 1 to 8 hex digits.
+     * * `'/files/{path:.*}'` - Matches any URL starting with '/files/' and captures the rest of the
+     *   path into the parameter 'path'.
+     * * `'/files/*path'` - ditto.
+     * * `'/calendar/{start:date}'` - Matches "/calendar/2014-11-12" (because the pattern defined
+     *   in the built-in  `date` ParamType matches `2014-11-12`) and provides a Date object in $stateParams.start
+     *
+     */
+    class UrlMatcher {
+        /**
+         * @param {string} pattern The pattern to compile into a matcher.
+         * @param {ParamTypeMap} paramTypes The built-in parameter type map
+         * @param {ParamFactory} paramFactory A [[ParamFactory]] object
+         * @param {UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
+         */
+        constructor(pattern, paramTypes, paramFactory, config) {
+            this._cache = {
+                _path: [this],
+            };
+            this._params = [];
+            this._segments = [];
+            this._compiled = "";
+            this._config = config;
+            this._pattern = pattern;
+            // Find all placeholders and create a compiled pattern, using either classic or curly syntax:
+            //   '*' name
+            //   ':' name
+            //   '{' name '}'
+            //   '{' name ':' regexp '}'
+            // The regular expression is somewhat complicated due to the need to allow curly braces
+            // inside the regular expression. The placeholder regexp breaks down as follows:
+            //    ([:*])([\w\[\]]+)              - classic placeholder ($1 / $2) (search version has - for snake-case)
+            //    \{([\w\[\]]+)(?:\:\s*( ... ))?\}  - curly brace placeholder ($3) with optional regexp/type ... ($4) (search version has - for snake-case
+            //    (?: ... | ... | ... )+         - the regexp consists of any number of atoms, an atom being either
+            //    [^{}\\]+                       - anything other than curly braces or backslash
+            //    \\.                            - a backslash escape
+            //    \{(?:[^{}\\]+|\\.)*\}          - a matched set of curly braces containing other atoms
+            let last = 0;
+            let matchArray;
+            let segment;
+            PLACEHOLDER_REGEXP.lastIndex = 0;
+            SEARCH_PLACEHOLDER_REGEXP.lastIndex = 0;
+            while ((matchArray = PLACEHOLDER_REGEXP.exec(pattern))) {
+                const id = matchArray[2] || matchArray[3];
+                const paramType = getParamType(pattern, matchArray, false, paramTypes, config);
+                const pathSegment = pattern.substring(last, matchArray.index);
+                if (pathSegment.indexOf("?") >= 0)
+                    break; // we're into the search part
+                checkParamErrors(id, pattern, this._params);
+                this._params.push(paramFactory.fromPath(id, paramType, config.state));
+                this._segments.push(pathSegment);
+                this._compiled += quoteRegExp(pathSegment, this._params[this._params.length - 1]);
+                last = PLACEHOLDER_REGEXP.lastIndex;
+            }
+            segment = pattern.substring(last);
+            // Find any search parameter names and remove them from the last segment
+            const i = segment.indexOf("?");
+            if (i >= 0) {
+                const search = segment.substring(i);
+                segment = segment.substring(0, i);
+                if (search.length > 0) {
+                    last = 0;
+                    while ((matchArray = SEARCH_PLACEHOLDER_REGEXP.exec(search))) {
+                        const id = matchArray[2] || matchArray[3];
+                        const paramType = getParamType(pattern, matchArray, true, paramTypes, config);
+                        checkParamErrors(id, pattern, this._params);
+                        this._params.push(paramFactory.fromSearch(id, paramType, config.state));
+                        last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
+                        // check if ?&
+                    }
+                }
+            }
+            this._segments.push(segment);
+            this._compiled += quoteRegExp(segment);
+        }
+        /**
+         * Creates a new concatenated UrlMatcher
+         *
+         * Builds a new UrlMatcher by appending another UrlMatcher to this one.
+         *
+         * @param {UrlMatcher} url A `UrlMatcher` instance to append as a child of the current `UrlMatcher`.
+         * @returns {UrlMatcher} A new `UrlMatcher` instance representing the concatenation of this `UrlMatcher` and the provided `url` matcher.
+         */
+        /** @internal */
+        _append(url) {
+            url._cache = {
+                _path: (this._cache._path || [this]).concat(url),
+                _parent: this,
+                _pattern: null,
+            };
+            return url;
+        }
+        /**
+         * Tests the specified url/path against this matcher.
+         *
+         * Tests if the given url matches this matcher's pattern, and returns an object containing the captured
+         * parameter values.  Returns null if the path does not match.
+         *
+         * The returned object contains the values
+         * of any search parameters that are mentioned in the pattern, but their value may be null if
+         * they are not present in `search`. This means that search parameters are always treated
+         * as optional.
+         *
+         * #### Example:
+         * ```js
+         * new UrlMatcher('/user/{id}?q&r')._exec('/user/bob', {
+         *   x: '1', q: 'hello'
+         * });
+         * // returns { id: 'bob', q: 'hello', r: null }
+         * ```
+         * @param {string} path The URL path to match, e.g. `$location.getPath()`.
+         * @param {RawParams} search URL search parameters, e.g. `$location.getSearch()`.
+         * @param {string} hash URL hash e.g. `$location.getHash()`.
+         * @returns {RawParams | null} The captured parameter values.
+         */
+        /** @internal */
+        _exec(path, search = {}, hash) {
+            const pathMatchers = this._cache._path || [this];
+            const match = getPatternRegExp(this, pathMatchers).exec(path);
+            if (!match)
+                return null;
+            const values = {};
+            let nPathSegments = 0;
+            for (let i = 0; i < pathMatchers.length; i++) {
+                nPathSegments += pathMatchers[i]._segments.length - 1;
+            }
+            if (nPathSegments !== match.length - 1)
+                throw new Error(`Unbalanced capture group in route '${this._pattern}'`);
+            let pathMatchIndex = 1;
+            for (let i = 0; i < pathMatchers.length; i++) {
+                const matcherParams = pathMatchers[i]._params;
+                for (let j = 0; j < matcherParams.length; j++) {
+                    const param = matcherParams[j];
+                    if (param.location !== DefType._PATH)
+                        continue;
+                    const value = param.value(match[pathMatchIndex++]);
+                    if (!param.validates(value))
+                        return null;
+                    values[param.id] = value;
+                }
+            }
+            for (let i = 0; i < pathMatchers.length; i++) {
+                const matcherParams = pathMatchers[i]._params;
+                for (let j = 0; j < matcherParams.length; j++) {
+                    const param = matcherParams[j];
+                    if (param.location !== DefType._SEARCH)
+                        continue;
+                    const value = param.value(search[param.id]);
+                    if (!param.validates(value))
+                        return null;
+                    values[param.id] = value;
+                }
+            }
+            if (hash)
+                values["#"] = hash;
+            return values;
+        }
+        /**
+         * @internal Returns a single parameter from this UrlMatcher by id
+         * @param {string} id
+         * @param {{ inherit?: boolean }} opts
+         * @returns {Param | null}
+         */
+        _parameter(id, opts) {
+            let matcher = this;
+            while (matcher) {
+                for (let i = 0; i < matcher._params.length; i++) {
+                    const param = matcher._params[i];
+                    if (param.id === id)
+                        return param;
+                }
+                matcher = opts?.inherit !== false ? matcher._cache._parent : undefined;
+            }
+            return null;
+        }
+        /**
+         * Given a set of parameter values, creates a URL from this UrlMatcher.
+         *
+         * Creates a URL that matches this pattern by substituting the specified values
+         * for the path and search parameters.
+         *
+         * #### Example:
+         * ```js
+         * new UrlMatcher('/user/{id}?q')._format({ id:'bob', q:'yes' });
+         * // returns '/user/bob?q=yes'
+         * ```
+         *
+         * @param {RawParams} values  the values to substitute for the parameters in this pattern.
+         * @returns the formatted URL (path and optionally search part).
+         */
+        /** @internal */
+        _format(values = {}) {
+            return formatUrl(this._cache._path || [this], values);
+        }
+    }
+
+    const TEMPLATE_VIEW_KEYS = ["templateUrl", "template"];
+    const CONTROLLER_VIEW_KEYS = ["controller"];
+    const COMPONENT_VIEW_KEYS = ["component", "bindings"];
+    const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
+    const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
+    const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
     /**
      * @param {unknown} url
      */
@@ -23619,27 +23940,28 @@
         const root = url.charAt(0) === "^";
         return { val: root ? url.substring(1) : url, root };
     }
-    function buildUrl(stateObject, $url, root) {
+    function buildUrl(stateObject, routerState, root) {
         const stateDec = stateObject.self;
         const { parent } = stateObject;
         const parsed = parseUrl(stateDec.url);
-        const url = (!parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec }));
+        const url = parsed
+            ? routerState._compile(parsed.val, { state: stateDec })
+            : null;
         if (!url)
             return null;
-        if (!$url.isMatcher(url))
+        if (!isInstanceOf(url, UrlMatcher))
             throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
-        return parsed && parsed.root
-            ? url
-            : ((parent && parent.navigable) || root).url.append(url);
+        const base = ((parent && parent.navigable) || root);
+        return parsed && parsed.root ? url : base._url._append(url);
     }
     /**
      * @param {ParamFactory} paramFactory
      */
     function buildParams(state, paramFactory) {
-        const urlParams = (state.url && state.url.parameters({ inherit: false })) || [];
         const params = {};
-        urlParams.forEach((param) => {
-            params[param.id] = param;
+        state._url?._params.forEach((param) => {
+            if (param.location === DefType._PATH || param.location === DefType._SEARCH)
+                params[param.id] = param;
         });
         const paramConfigs = state.params || {};
         const paramConfigKeys = keys(paramConfigs);
@@ -23650,75 +23972,83 @@
         });
         return params;
     }
-    function hasAnyViewKey(keyItems, obj) {
+    function hasAnyViewKey(keyItems, values) {
         for (let i = 0; i < keyItems.length; i++) {
-            if (isDefined(obj[keyItems[i]])) {
+            if (isDefined(values[keyItems[i]])) {
                 return true;
             }
         }
         return false;
     }
+    function presentViewKeys(keyItems, values) {
+        const present = [];
+        keyItems.forEach((key) => {
+            if (isDefined(values[key])) {
+                present.push(key);
+            }
+        });
+        return present.join(", ");
+    }
+    function assertNoRemovedViewKeys(keyItems, values, description) {
+        const present = [];
+        keyItems.forEach((key) => {
+            if (isDefined(values[key])) {
+                present.push(key);
+            }
+        });
+        if (present.length) {
+            throw new Error(`${description} uses unsupported view properties: ${present.join(", ")}`);
+        }
+    }
     function viewsBuilder(state) {
         if (!state.parent) {
             return {};
         }
-        const tplKeys = [
-            "templateProvider",
-            "templateUrl",
-            "template",
-            "notify",
-            "async",
-        ];
-        const ctrlKeys = ["controller", "controllerAs", "resolveAs"];
-        const compKeys = ["component", "bindings"];
-        const nonCompKeys = tplKeys.concat(ctrlKeys);
-        const allViewKeys = compKeys.concat(nonCompKeys);
-        if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
-            throw new Error(`State '${state.name}' has a 'views' object. ` +
-                `It cannot also have view properties at the state level. ` +
-                `Move these properties into a view declaration: ` +
-                `${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
+        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
+        if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
+            throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
         }
         const views = {};
         const defaultViewConfig = {};
-        allViewKeys.forEach((key) => {
-            if (isDefined(state[key])) {
-                defaultViewConfig[key] = state[key];
+        const stateValues = state;
+        ALL_VIEW_KEYS.forEach((key) => {
+            if (isDefined(stateValues[key])) {
+                defaultViewConfig[key] = stateValues[key];
             }
         });
         const viewsObject = (state.views || {
             $default: defaultViewConfig,
         });
-        const viewEntries = entries(viewsObject);
-        viewEntries.forEach(([entryName, entryConfig]) => {
+        keys(viewsObject).forEach((entryName) => {
             let name = entryName;
-            let config = entryConfig;
+            let config = viewsObject[entryName];
             name = name || "$default";
             if (isString(config)) {
                 config = { component: config };
             }
             config = assign({}, config);
-            if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
-                throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`);
+            assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
+            if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
+                hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
+                throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
             }
-            config.resolveAs = config.resolveAs || "$resolve";
-            config.$context = state;
-            config.$name = name;
-            const normalized = ViewConfig.normalizeNgViewTarget(config.$context, config.$name);
-            config.$ngViewName = normalized.ngViewName;
-            config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+            config._context = state;
+            config._name = name;
+            const normalized = normalizeNgViewTarget(config._context, config._name);
+            config._ngViewName = normalized.ngViewName;
+            config._ngViewContextAnchor = normalized.ngViewContextAnchor;
             views[name] = config;
         });
         return views;
     }
     function getResolveLocals(ctx) {
-        const tokens = ctx.getTokens().filter(isString);
+        const tokens = ctx.getTokens();
         const locals = {};
-        for (let i = 0; i < tokens.length; i++) {
-            const key = tokens[i];
-            const resolvable = ctx.getResolvable(key);
-            locals[key] = resolvable.data;
-        }
+        tokens.forEach((key) => {
+            if (isString(key)) {
+                locals[key] = ctx.getResolvable(key).data;
+            }
+        });
         return locals;
     }
     function valueToResolvable(token, value, strictDi) {
@@ -23794,6 +24124,30 @@
         });
         return resolvables;
     }
+    function invokeStateLifecycleHook(trans, state, hookName, pathname) {
+        const stateObject = state._state();
+        const hook = stateObject[hookName];
+        if (!hook)
+            return undefined;
+        const hookContext = stateObject._hookContext;
+        const $injector = hookContext._$injector;
+        const resolveContext = new ResolveContext((trans._treeChanges[pathname] || []), $injector);
+        const subContext = resolveContext.subContext(stateObject);
+        const locals = assign(getResolveLocals(subContext), {
+            $state$: state,
+            $transition$: trans,
+        });
+        return $injector.invoke(hook, hookContext, locals);
+    }
+    function invokeOnEnterHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onEnter", "to");
+    }
+    function invokeOnRetainHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onRetain", "to");
+    }
+    function invokeOnExitHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onExit", "from");
+    }
     /**
      * A internal global service
      *
@@ -23807,29 +24161,22 @@
     class StateBuilder {
         /**
          * @param {StateMatcher} matcher
-         * @param {ng.UrlService} urlService
+         * @param {RouterProvider} routerState
          */
-        constructor(matcher, urlService) {
+        constructor(matcher, routerState) {
             this._matcher = matcher;
             this._$injector = undefined;
-            this._paramFactory = urlService._paramFactory;
-            this._urlService = urlService;
+            this._paramFactory = routerState._paramFactory;
+            this._routerState = routerState;
         }
-        _buildStateHook(stateObject, hookName) {
-            const hook = stateObject[hookName];
+        /** @internal */
+        _assignStateHook(stateObject, publicName, privateName, hookFn) {
+            const hook = stateObject[publicName];
             if (!hook)
-                return undefined;
-            const pathname = hookName === "onExit" ? "from" : "to";
-            return (trans, state) => {
-                const $injector = this._$injector;
-                const resolveContext = new ResolveContext(trans.treeChanges(pathname), $injector);
-                const subContext = resolveContext.subContext(state._state());
-                const locals = assign(getResolveLocals(subContext), {
-                    $state$: state,
-                    $transition$: trans,
-                });
-                return $injector.invoke(hook, this, locals);
-            };
+                return;
+            stateObject[privateName] = hook;
+            stateObject._hookContext = this;
+            stateObject[publicName] = hookFn;
         }
         /**
          * Builds all of the properties on an essentially blank State object, returning a State object which has all its
@@ -23840,7 +24187,7 @@
          */
         /** @internal */
         _build(state) {
-            const { _matcher: matcher, _urlService: urlService } = this;
+            const { _matcher: matcher, _routerState: routerState } = this;
             const parent = this._parentName(state);
             if (parent && !matcher.find(parent, undefined, false)) {
                 return null;
@@ -23848,13 +24195,14 @@
             state.parent = isRoot(state)
                 ? null
                 : matcher.find(parent) || matcher.find("");
-            state.url = buildUrl(state, urlService, matcher.find(""));
+            state._url =
+                buildUrl(state, routerState, matcher.find("")) || undefined;
             state.resolvables = resolvablesBuilder(state, this._$injector && this._$injector.strictDi);
-            state.onExit = this._buildStateHook(state, "onExit");
-            state.onRetain = this._buildStateHook(state, "onRetain");
-            state.onEnter = this._buildStateHook(state, "onEnter");
+            this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
+            this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
+            this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
             state.navigable =
-                !isRoot(state) && state.url
+                !isRoot(state) && state._url
                     ? state
                     : state.parent
                         ? state.parent.navigable
@@ -23967,17 +24315,20 @@
         }
         constructor(text) {
             this._text = text;
-            const regexpString = this._text
-                .split(".")
-                .map((seg) => {
-                if (seg === "**")
-                    return "(?:|(?:\\.[^.]*)*)";
-                if (seg === "*")
-                    return "\\.[^.]*";
-                return `\\.${seg}`;
-            })
-                .join("");
-            this._regexp = new RegExp(`^${regexpString}$`);
+            const segments = this._text.split(".");
+            const regexpParts = [];
+            segments.forEach((segment) => {
+                if (segment === "**") {
+                    regexpParts.push("(?:|(?:\\.[^.]*)*)");
+                }
+                else if (segment === "*") {
+                    regexpParts.push("\\.[^.]*");
+                }
+                else {
+                    regexpParts.push(`\\.${segment}`);
+                }
+            });
+            this._regexp = new RegExp(`^${regexpParts.join("")}$`);
         }
         matches(name) {
             return this._regexp.test(`.${name}`);
@@ -24004,7 +24355,8 @@
             return isFunction(obj._state);
         }
         static isState(obj) {
-            return isObject(obj._stateObjectCache);
+            return (isObject(obj) &&
+                isObject(obj._stateObjectCache));
         }
         /**
          * @param {StateDeclaration} config
@@ -24029,7 +24381,7 @@
          * reference to the actual `State` instance, the original definition object passed to
          * `$stateProvider.state()`, or the fully-qualified name.
          *
-         * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
+         * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
          *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
          * @returns Returns `true` if `ref` matches the current `State` instance.
          */
@@ -24061,29 +24413,24 @@
          * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
          * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
          *
-         * @param {Partial<Param>} [opts] options
+         * @param {StateParamOptions} [opts] options
          * @returns {Param[]} the list of [[Param]] objects
          */
         parameters(opts) {
-            const params = assign({
-                inherit: true,
-                matchingKeys: null,
-            }, opts || {});
-            const inherited = (params.inherit && this.parent && this.parent.parameters()) || [];
-            const ownParams = values(this.params || {});
-            const result = [];
-            for (let i = 0; i < inherited.length; i++) {
-                const param = inherited[i];
-                if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+            const inherit = opts?.inherit !== false;
+            const matchingKeys = opts?.matchingKeys;
+            const inherited = (inherit && this.parent && this.parent.parameters({ matchingKeys })) ||
+                [];
+            const result = inherited.slice();
+            const { params } = this;
+            if (!params)
+                return result;
+            keys(params).forEach((id) => {
+                const { [id]: param } = params;
+                if (!matchingKeys || hasOwn(matchingKeys, id)) {
                     result.push(param);
                 }
-            }
-            for (let i = 0; i < ownParams.length; i++) {
-                const param = ownParams[i];
-                if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
-                    result.push(param);
-                }
-            }
+            });
             return result;
         }
         /**
@@ -24091,113 +24438,24 @@
          *
          * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
          * @param {string} id the name of the [[Param]] to return
-         * @param {Param} [opts] options
+         * @param {StateParamOptions} [opts] options
          * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
          */
-        parameter(id, opts = {}) {
-            const urlParam = this.url && this.url.parameter(id, opts);
+        parameter(id, opts) {
+            const urlParam = this._url && this._url._parameter(id, opts);
             if (urlParam)
                 return urlParam;
-            const ownParams = values(this.params || {});
-            for (let i = 0; i < ownParams.length; i++) {
-                const param = ownParams[i];
-                if (param.id === id)
-                    return param;
+            const { params } = this;
+            if (params && hasOwn(params, id)) {
+                const { [id]: param } = params;
+                return param;
             }
-            return opts.inherit && this.parent ? this.parent.parameter(id) : undefined;
+            return opts?.inherit && this.parent
+                ? this.parent.parameter(id, opts)
+                : undefined;
         }
         toString() {
             return this.fqn();
-        }
-    }
-
-    class StateQueueManager {
-        /**
-         * @param {ng.UrlService} urlService
-         * @param {StateStore} states
-         * @param {StateBuilder} builder
-         * @param {StateRegistryListener[]} listeners
-         */
-        constructor(urlService, states, builder, listeners) {
-            this._urlService = urlService;
-            this._states = states;
-            this._builder = builder;
-            this._listeners = listeners;
-            this._queue = [];
-        }
-        /**
-         * @param {ng.StateDeclaration} stateDecl
-         * @returns {StateObject}
-         */
-        _register(stateDecl) {
-            const state = new StateObject(stateDecl);
-            const { name } = state;
-            if (!isString(name))
-                throw new Error("State must have a valid name");
-            if (hasOwn(this._states, state.name) ||
-                this._queue.map((x) => x.name).includes(state.name))
-                throw new Error(`State '${state.name}' is already defined`);
-            this._queue.push(state);
-            this._flush();
-            return state;
-        }
-        _flush() {
-            const { _queue, _states, _builder } = this;
-            const registered = []; // states that got registered
-            const orphans = []; // states that don't yet have a parent registered
-            const previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
-            const getState = (name) => hasOwn(this._states, name) ? this._states[name] : undefined;
-            const notifyListeners = () => {
-                if (registered.length) {
-                    this._listeners.forEach((listener) => listener("registered", registered.map((x) => x.self)));
-                }
-            };
-            while (_queue.length > 0) {
-                const state = _queue.shift();
-                if (!state)
-                    continue;
-                const { name } = state;
-                const result = _builder._build(state);
-                const orphanIdx = orphans.indexOf(state);
-                if (result) {
-                    const existingState = getState(name);
-                    if (existingState && existingState.name === name) {
-                        throw new Error(`State '${name}' is already defined`);
-                    }
-                    _states[name] = state;
-                    this._attachRoute(state);
-                    if (orphanIdx >= 0)
-                        orphans.splice(orphanIdx, 1);
-                    registered.push(state);
-                    continue;
-                }
-                const prev = previousQueueLength[name];
-                previousQueueLength[name] = _queue.length;
-                if (orphanIdx >= 0 && prev === _queue.length) {
-                    // Wait until two consecutive iterations where no additional states were dequeued successfully.
-                    // throw new Error(`Cannot register orphaned state '${name}'`);
-                    _queue.push(state);
-                    notifyListeners();
-                    return _states;
-                }
-                else if (orphanIdx < 0) {
-                    orphans.push(state);
-                }
-                _queue.push(state);
-            }
-            notifyListeners();
-            return _states;
-        }
-        /**
-         *
-         * @param {StateObject | ng.StateDeclaration} state
-         * @returns {void} a function that deregisters the rule
-         */
-        _attachRoute(state) {
-            if (!state.abstract &&
-                state.url) {
-                this._urlService._registerStateRoute(state);
-            }
         }
     }
 
@@ -24208,7 +24466,7 @@
      *
      */
     class StateRegistryProvider {
-        constructor(urlService, routerState) {
+        constructor(routerState) {
             this.$get = [
                 _injector,
                 /**
@@ -24223,12 +24481,12 @@
                 },
             ];
             this._states = {};
-            this._urlService = urlService;
+            this._routerState = routerState;
             this._$injector = undefined;
             this._listeners = [];
             this._matcher = new StateMatcher(this._states);
-            this._builder = new StateBuilder(this._matcher, urlService);
-            this._stateQueue = new StateQueueManager(this._urlService, this._states, this._builder, this._listeners);
+            this._builder = new StateBuilder(this._matcher, routerState);
+            this._queue = [];
             this.registerRoot();
             routerState._currentState = this.root();
             routerState._current = routerState._currentState.self;
@@ -24257,7 +24515,7 @@
                 },
                 abstract: true,
             };
-            this._root = this._stateQueue._register(rootStateDef);
+            this._root = this._register(rootStateDef);
             this._root.navigable = null;
         }
         /**
@@ -24318,13 +24576,93 @@
          *
          * Note: a state will be queued if the state's parent isn't yet registered.
          *
-         * @param {_StateDeclaration} stateDefinition the definition of the state to register.
+         * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
          * @returns the internal [[StateObject]] object.
          *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
          *          If the state was only queued, then the object is not fully built.
          */
         register(stateDefinition) {
-            return this._stateQueue._register(stateDefinition);
+            return this._register(stateDefinition);
+        }
+        /** @internal */
+        _register(stateDeclaration) {
+            const state = new StateObject(stateDeclaration);
+            const { name } = state;
+            if (!isString(name))
+                throw new Error("State must have a valid name");
+            if (hasOwn(this._states, name) || this._isQueued(name)) {
+                throw new Error(`State '${name}' is already defined`);
+            }
+            this._queue.push(state);
+            this._flush();
+            return state;
+        }
+        /** @internal */
+        _isQueued(name) {
+            const { _queue } = this;
+            for (let i = 0; i < _queue.length; i++) {
+                if (_queue[i].name === name)
+                    return true;
+            }
+            return false;
+        }
+        /** @internal */
+        _flush() {
+            const { _queue, _states, _builder } = this;
+            const registered = [];
+            const orphans = [];
+            const previousQueueLength = {};
+            while (_queue.length) {
+                const state = _queue.shift();
+                if (!state)
+                    continue;
+                const { name } = state;
+                const result = _builder._build(state);
+                const orphanIndex = orphans.indexOf(state);
+                if (result) {
+                    const existingState = hasOwn(_states, name) ? _states[name] : undefined;
+                    if (existingState?.name === name) {
+                        throw new Error(`State '${name}' is already defined`);
+                    }
+                    _states[name] = state;
+                    this._attachRoute(state);
+                    if (orphanIndex >= 0)
+                        orphans.splice(orphanIndex, 1);
+                    registered.push(state);
+                    continue;
+                }
+                const previousLength = previousQueueLength[name];
+                previousQueueLength[name] = _queue.length;
+                if (orphanIndex >= 0 && previousLength === _queue.length) {
+                    _queue.push(state);
+                    this._notifyRegistered(registered);
+                    return _states;
+                }
+                if (orphanIndex < 0) {
+                    orphans.push(state);
+                }
+                _queue.push(state);
+            }
+            this._notifyRegistered(registered);
+            return _states;
+        }
+        /** @internal */
+        _notifyRegistered(registered) {
+            if (!registered.length)
+                return;
+            const declarations = [];
+            registered.forEach((state) => declarations.push(state.self));
+            this._notifyListeners("registered", declarations);
+        }
+        /** @internal */
+        _notifyListeners(event, states) {
+            this._listeners.forEach((listener) => listener(event, states));
+        }
+        /** @internal */
+        _attachRoute(state) {
+            if (!state.self.abstract && state._url) {
+                this._routerState._registerStateRoute(state);
+            }
         }
         /**
          *
@@ -24350,9 +24688,10 @@
                     }
                 }
             }
-            const deregistered = [state].concat(children).reverse();
+            const deregistered = children.slice().reverse();
+            deregistered.push(state);
             deregistered.forEach((_state) => {
-                this._urlService._removeStateRoute(_state);
+                this._routerState._removeStateRoute(_state);
                 // Remove state from registry
                 delete this._states[_state.name];
             });
@@ -24376,9 +24715,7 @@
             deregisteredStates.forEach((stateDeclaration) => {
                 deregisteredDeclarations.push(stateDeclaration.self);
             });
-            this._listeners.forEach((listener) => {
-                listener("deregistered", deregisteredDeclarations);
-            });
+            this._notifyListeners("deregistered", deregisteredDeclarations);
             return deregisteredStates;
         }
         /**
@@ -24411,18 +24748,17 @@
             return (found && found.self) || null;
         }
     }
-    /* @ignore */ StateRegistryProvider.$inject = [_urlProvider, _routerProvider];
-    const getLocals = (ctx) => {
+    /* @ignore */ StateRegistryProvider.$inject = [_routerProvider];
+    function getLocals(ctx) {
         const tokens = ctx.getTokens();
         const locals = {};
-        for (let i = 0; i < tokens.length; i++) {
-            const key = tokens[i];
+        tokens.forEach((key) => {
             if (isString(key)) {
                 locals[key] = ctx.getResolvable(key).data;
             }
-        }
+        });
         return locals;
-    };
+    }
 
     function getFirstElementFromClone(clone) {
         if (!clone)
@@ -24467,6 +24803,42 @@
     }
     const controllerRegisteredScopes = new WeakMap();
     const controllerLastParamsChangedTransition = new WeakMap();
+    function appendParamSchema(nodes, schema) {
+        for (let i = 0; i < nodes.length; i++) {
+            const nodeSchema = nodes[i].paramSchema;
+            for (let j = 0; j < nodeSchema.length; j++) {
+                schema.push(nodeSchema[j]);
+            }
+        }
+    }
+    function controllerKeyData(element, key) {
+        return (getCacheData(element, key) ||
+            getInheritedData(element, key));
+    }
+    function getComponentController(element, componentName, tagRegexp) {
+        const candidates = element.querySelectorAll("*");
+        let directiveEl;
+        for (let i = 0; i < candidates.length; i++) {
+            const candidate = candidates[i];
+            if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
+                directiveEl = candidate;
+                break;
+            }
+        }
+        if (!directiveEl)
+            return undefined;
+        const camelNameFromTag = directiveEl.tagName
+            .toLowerCase()
+            .replace(/-([a-z])/g, (_all, letter) => letter.toUpperCase());
+        const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
+            getInheritedData(directiveEl, "$isolateScope") ||
+            getCacheData(directiveEl, "$scope") ||
+            getInheritedData(directiveEl, "$scope");
+        return (controllerKeyData(directiveEl, `$${componentName}Controller`) ||
+            controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ||
+            controllerKeyData(directiveEl, "$ngControllerController") ||
+            scopeWithCtrl?.$ctrl);
+    }
     /**
      * `ng-view`: A viewport directive which is filled in by a view from the active state.
      *
@@ -24515,12 +24887,7 @@
      *
      * Resolve data:
      *
-     * The resolved data from the state's `resolve` block is placed on the scope as `$resolve` (this
-     * can be customized using [[ViewDeclaration.resolveAs]]).  This can be then accessed from the template.
-     *
-     * Note that when `controllerAs` is being used, `$resolve` is set on the controller instance *after* the
-     * controller is instantiated.  The `$onInit()` hook can be used to perform initialization code which
-     * depends on `$resolve` data.
+     * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
      *
      * #### Example:
      * ```js
@@ -24532,38 +24899,13 @@
      * });
      * ```
      */
-    ViewDirective.$inject = [_view, _state, _injector, _anchorScroll, _interpolate];
+    ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
     /**
      * Renders and updates the currently active view configuration.
      */
-    function ViewDirective($view, $state, $injector, $anchorScroll, $interpolate) {
-        const getAnimate = createLazyAnimate($injector);
-        function getRenderer() {
-            return {
-                enter(element, target, cb) {
-                    const animate = getAnimateForNode(getAnimate, element);
-                    if (animate) {
-                        animate.enter(element, null, target).done(cb);
-                    }
-                    else {
-                        target.after(element);
-                        cb();
-                    }
-                },
-                leave(element, cb) {
-                    const animate = getAnimateForNode(getAnimate, element);
-                    if (animate) {
-                        animate.leave(element).done(cb);
-                    }
-                    else {
-                        removeElement(element);
-                        cb();
-                    }
-                },
-            };
-        }
+    function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
         const rootData = {
-            $cfg: { viewDecl: { $context: $view._rootViewContext() } },
+            $cfg: { _viewDecl: { _context: $view._rootViewContext() } },
             $ngView: {},
         };
         const directive = {
@@ -24574,30 +24916,30 @@
             compile(_tElement, _tAttrs, $transclude) {
                 const transclude = $transclude;
                 return function (scope, $element, attrs) {
-                    const onloadExp = attrs.onload || "", autoScrollExp = attrs.autoscroll, renderer = getRenderer(), inherited = getInheritedData($element, "$ngView") || rootData, name = $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
-                    let previousEl = null;
+                    const onloadExp = attrs.onload || "", autoScrollExp = attrs.autoscroll, inherited = getInheritedData($element, "$ngView") || rootData, name = $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
+                    const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+                    const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                     let currentEl = null;
                     let currentScope = null;
                     let viewConfig;
                     let configUpdateVersion = 0;
-                    const parentFqn = inherited.$cfg.viewDecl.$context.name || inherited.$ngView.fqn;
+                    const parentFqn = inherited.$cfg._viewDecl._context.name || inherited.$ngView._fqn;
                     const activeNgView = {
-                        id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-                        name, // ng-view name, retained internally for nested view matching
-                        fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-                        config: null, // The active ViewConfig loaded for this ng-view
-                        configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
-                        get creationContext() {
+                        _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+                        _element: $element,
+                        _name: name, // ng-view name, retained internally for nested view matching
+                        _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
+                        _config: null,
+                        _configUpdated: configUpdatedCallback,
+                        get _creationContext() {
                             // Inherit the parent view context for nested ng-view elements.
-                            const fromParentTag = inherited.$ngView.creationContext;
-                            return (inherited.$cfg.viewDecl.$context ||
+                            const fromParentTag = inherited.$ngView._creationContext;
+                            return (inherited.$cfg._viewDecl._context ||
                                 fromParentTag ||
-                                rootData.$cfg.viewDecl.$context);
+                                rootData.$cfg._viewDecl._context);
                         },
                     };
                     function configUpdatedCallback(config) {
-                        if (config && !isInstanceOf(config, ViewConfig))
-                            return;
                         const updateVersion = ++configUpdateVersion;
                         if (!config) {
                             if (!viewConfig)
@@ -24607,16 +24949,16 @@
                                     viewConfig !== undefined) {
                                     return;
                                 }
-                                activeNgView.config = null;
+                                activeNgView._config = null;
                                 updateView(undefined);
                             });
                             viewConfig = undefined;
-                            activeNgView.config = null;
+                            activeNgView._config = null;
                             return;
                         }
                         if (viewConfig === config)
                             return;
-                        activeNgView.config = config || null;
+                        activeNgView._config = config || null;
                         viewConfig = config;
                         updateView(config);
                     }
@@ -24627,21 +24969,14 @@
                         unregister();
                     });
                     function cleanupLastView() {
-                        if (previousEl) {
-                            removeElement(previousEl);
-                            previousEl = null;
-                        }
                         if (currentScope) {
                             currentScope.$destroy();
                             currentScope = null;
                         }
                         if (currentEl) {
                             const _viewData = getCacheData(currentEl, "$ngViewAnim");
-                            renderer.leave(currentEl, function () {
-                                _viewData?.$$animLeave.resolve();
-                                previousEl = null;
-                            });
-                            previousEl = currentEl;
+                            removeElement(currentEl);
+                            _viewData?.$$animLeave.resolve();
                             currentEl = null;
                         }
                     }
@@ -24665,35 +25000,37 @@
                          * @param viewName Name of the view.
                          */
                         newScope.$emit("$viewContentLoading", name);
-                        currentEl = transclude(newScope, (clone) => {
+                        let enteredElement = null;
+                        transclude(newScope, (clone) => {
                             const elementClone = getFirstElementFromClone(clone);
                             const cloneNodes = getRootNodesFromClone(clone);
                             if (!elementClone) {
                                 return;
                             }
-                            cloneNodes.forEach((node) => {
+                            for (let i = 0; i < cloneNodes.length; i++) {
+                                const node = cloneNodes[i];
                                 setCacheData(node, "$ngViewAnim", $ngViewAnim);
                                 setCacheData(node, "$ngView", $ngViewData);
-                            });
-                            renderer.enter(elementClone, $element, () => {
-                                animEnter.resolve(undefined);
-                                if (currentScope)
-                                    currentScope.$emit("$viewContentAnimationEnded");
-                                if ((isDefined(autoScrollExp) && !autoScrollExp) ||
-                                    (autoScrollExp && scope.$eval(autoScrollExp))) {
-                                    $anchorScroll(elementClone);
-                                }
-                            });
+                            }
+                            enteredElement = elementClone;
+                            $element.after(elementClone);
+                            animEnter.resolve(undefined);
                             cleanupLastView();
+                            if ((isDefined(autoScrollExp) && !autoScrollExp) ||
+                                (autoScrollExp && autoScrollFn?.(scope))) {
+                                $anchorScroll(elementClone);
+                            }
                         });
+                        currentEl = enteredElement;
                         currentScope = newScope;
+                        currentScope.$emit("$viewContentAnimationEnded");
                         /**
                          * Fired once the view is **loaded**, *after* the DOM is rendered.
                          *
                          * @param event Event object.
                          */
                         currentScope.$emit("$viewContentLoaded", config || viewConfig);
-                        currentScope.$eval(onloadExp);
+                        onloadFn?.(currentScope);
                     }
                 };
             },
@@ -24719,76 +25056,46 @@
                         return;
                     }
                     const cfg = (data.$cfg || {
-                        viewDecl: {},
-                        getTemplate: () => undefined,
+                        _viewDecl: {},
                     });
-                    const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
-                    $element.innerHTML =
-                        cfg.getTemplate($element, resolveCtx) || initial;
+                    const resolveCtx = cfg._path && new ResolveContext(cfg._path, $injector);
+                    $element.innerHTML = data.$cfg
+                        ? getViewTemplate(data.$cfg, $element, resolveCtx) || initial
+                        : initial;
                     const link = $compile($element.contentDocument ||
                         $element.childNodes);
-                    const { controller } = cfg;
-                    const { controllerAs } = cfg.viewDecl;
-                    const { resolveAs } = cfg.viewDecl;
+                    const controller = cfg._controller;
                     const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
                     const targetScope = scope.$target;
-                    if (resolveAs) {
-                        targetScope[resolveAs] = locals;
-                    }
+                    targetScope.$resolve = locals;
                     if (controller) {
                         const controllerInstance = $controller(controller, assign({}, locals, { $scope: scope, $element }));
-                        if (controllerAs) {
-                            targetScope[controllerAs] = controllerInstance;
-                            if (resolveAs) {
-                                targetScope[controllerAs][resolveAs] = locals;
-                            }
-                        }
                         // TODO: Use $view service as a central point for registering component-level hooks
                         // Then, when a component is created, tell the $view service, so it can invoke hooks
                         // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
                         // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
                         setCacheData($element, "$ngControllerController", controllerInstance);
-                        arrayFrom($element.children).forEach((ell) => {
-                            setCacheData(ell, "$ngControllerController", controllerInstance);
-                        });
+                        const { children } = $element;
+                        for (let i = 0; i < children.length; i++) {
+                            setCacheData(children[i], "$ngControllerController", controllerInstance);
+                        }
                         registerControllerCallbacks($transitions, controllerInstance, scope, cfg);
                     }
                     link(scope);
                     const componentName = cfg
-                        .component;
+                        ._component;
                     const callbackConfig = cfg;
                     if (isString(componentName)) {
                         const kebobName = componentName
                             .replace(/([A-Z])/g, "-$1")
                             .replace(/^-/, "")
                             .toLowerCase();
-                        const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
-                        const getComponentController = () => {
-                            const candidates = arrayFrom($element.querySelectorAll("*"));
-                            const directiveEl = candidates.find((el) => el.tagName && tagRegexp.exec(el.tagName));
-                            if (!directiveEl) {
-                                return undefined;
-                            }
-                            const camelNameFromTag = directiveEl.tagName
-                                .toLowerCase()
-                                .replace(/^(x-|data-)/, "")
-                                .replace(/-([a-z])/g, (_all, letter) => letter.toUpperCase());
-                            const tryControllerKey = (key) => getCacheData(directiveEl, key) ||
-                                getInheritedData(directiveEl, key);
-                            const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
-                                getInheritedData(directiveEl, "$isolateScope") ||
-                                getCacheData(directiveEl, "$scope") ||
-                                getInheritedData(directiveEl, "$scope");
-                            return (tryControllerKey(`$${componentName}Controller`) ||
-                                tryControllerKey(`$${camelNameFromTag}Controller`) ||
-                                tryControllerKey("$ngControllerController") ||
-                                scopeWithCtrl?.$ctrl);
-                        };
+                        const tagRegexp = new RegExp(`^${kebobName}$`, "i");
                         const registerComponentCallbacks = (attempt = 0) => {
                             if (scope.$handler._destroyed) {
                                 return;
                             }
-                            const componentCtrl = getComponentController();
+                            const componentCtrl = getComponentController($element, componentName, tagRegexp);
                             if (componentCtrl) {
                                 registerControllerCallbacks($transitions, componentCtrl, scope, callbackConfig);
                                 return;
@@ -24822,15 +25129,15 @@
         registeredScopes.add($scope);
         // Call $onInit() ASAP
         const onInit = controllerInstance.$onInit;
-        if (isFunction(onInit) && !cfg.viewDecl.component) {
+        if (isFunction(onInit) && !cfg._viewDecl.component) {
             onInit();
         }
-        const viewState = cfg.path[cfg.path.length - 1].state.self;
+        const viewState = cfg._path[cfg._path.length - 1].state.self;
         const hookOptions = { bind: controllerInstance };
         // Add component-level hook for ngOnParamsChanged
         if (isFunction(controllerInstance.ngOnParamsChanged)) {
             const onParamsChanged = controllerInstance.ngOnParamsChanged;
-            const resolveContext = new ResolveContext(cfg.path, cfg.factory?._injector);
+            const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
             const viewCreationTrans = resolveContext.getResolvable("$transition$")
                 .data;
             // Fire callback on any successful transition
@@ -24850,50 +25157,39 @@
                 }
                 const toParams = $transition$.params("to");
                 const fromParams = $transition$.params("from");
-                const treeChanges = $transition$ && $transition$.treeChanges;
-                const toNodes = (isFunction(treeChanges)
-                    ? (treeChanges.call($transition$, "to") ?? [])
-                    : []);
-                const fromNodes = (isFunction(treeChanges)
-                    ? (treeChanges.call($transition$, "from") ?? [])
-                    : []);
+                const toNodes = ($transition$._treeChanges.to || []);
+                const fromNodes = ($transition$._treeChanges.from || []);
                 const toSchema = [];
-                toNodes.forEach((node) => {
-                    node.paramSchema.forEach((param) => {
-                        toSchema.push(param);
-                    });
-                });
+                appendParamSchema(toNodes, toSchema);
                 const fromSchema = [];
-                fromNodes.forEach((node) => {
-                    node.paramSchema.forEach((param) => {
-                        fromSchema.push(param);
-                    });
-                });
+                appendParamSchema(fromNodes, fromSchema);
                 // Find the to params that have different values than the from params
                 const changedToParams = [];
-                toSchema.forEach((param) => {
+                for (let i = 0; i < toSchema.length; i++) {
+                    const param = toSchema[i];
                     const idx = fromSchema.indexOf(param);
                     if (idx === -1 ||
                         !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
                         changedToParams.push(param);
                     }
-                });
+                }
                 // Only trigger callback if a to param has changed or is new
                 if (changedToParams.length) {
                     // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
                     const newValues = {};
-                    changedToParams.forEach((param) => {
+                    for (let i = 0; i < changedToParams.length; i++) {
+                        const param = changedToParams[i];
                         const key = param.id;
                         if (key in toParams)
                             newValues[key] = toParams[key];
-                    });
+                    }
                     onParamsChanged.call(controllerInstance, newValues, $transition$);
                 }
             };
             const hookRegistryKey = [
                 viewState?.name || "",
-                cfg.viewDecl.$ngViewName || "$default",
-                cfg.viewDecl.$ngViewContextAnchor || "^",
+                cfg._viewDecl._ngViewName || "$default",
+                cfg._viewDecl._ngViewContextAnchor || "^",
             ].join("::");
             const rootScope = $scope.$root;
             const registryProp = "__ngRouterParamsChangedHooks__";
@@ -24913,17 +25209,21 @@
         if (isFunction(controllerInstance.ngCanExit)) {
             const ngCanExit = controllerInstance.ngCanExit;
             const id = _ngCanExitId++;
-            const cacheProp = "_ngCanExitIds";
             /**
              * Returns true if any transition in the redirect chain already answered truthy.
              */
-            const prevTruthyAnswer = (trans) => !!trans &&
-                ((trans[cacheProp] && trans[cacheProp][id] === true) ||
-                    prevTruthyAnswer(trans.redirectedFrom()));
+            const prevTruthyAnswer = (trans) => {
+                if (!trans)
+                    return false;
+                const cache = trans._ngCanExitIds;
+                return (cache?.[id] === true ||
+                    prevTruthyAnswer(trans._options.redirectedFrom || null));
+            };
             // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
             const wrappedHook = (trans) => {
                 let promise;
-                const ids = (trans[cacheProp] = trans[cacheProp] || {});
+                const cacheTrans = trans;
+                const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds || {});
                 if (!prevTruthyAnswer(trans)) {
                     promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
                     promise.then((val) => (ids[id] = val !== false));
@@ -24935,97 +25235,161 @@
         }
     }
 
-    /**
-     * A simple bounded FIFO queue with optional eviction notifications.
-     * @template T
-     */
-    class Queue {
+    class ParamFactory {
         /**
-         * @param [items=[]] - Initial queue items.
-         * @param [limit=null] - Maximum allowed items before eviction (null = unlimited).
+         * @param {UrlParamConfig} urlServiceConfig
          */
-        constructor(items = [], limit = null) {
-            this._items = isArray(items) ? [...items] : [];
-            this._limit =
-                Number.isInteger(limit) && limit !== null && limit > 0 ? limit : null;
-            this._evictListeners = [];
+        constructor(urlServiceConfig) {
+            this._injector = undefined;
+            this.urlServiceConfig = urlServiceConfig;
         }
         /**
-         * Register a listener that will be called with the evicted item.
+         * @param {string} id
+         * @param {ParamType | null} type
+         * @param {ng.StateDeclaration} state
          */
-        /** @internal */
-        _onEvict(listener) {
-            this._evictListeners.push(listener);
+        fromConfig(id, type, state) {
+            return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, this, state);
         }
         /**
-         * Adds an item to the end of the queue, evicting the head if over limit.
+         * @param {string} id
+         * @param {ParamType} type
+         * @param {ng.StateDeclaration} state
          */
-        /** @internal */
-        _enqueue(item) {
-            this._items.push(item);
-            if (this._limit !== null && this._items.length > this._limit) {
-                this._evict();
-            }
-            return item;
+        fromPath(id, type, state) {
+            return new Param(id, type, DefType._PATH, this.urlServiceConfig, this, state);
         }
         /**
-         * Removes the head item and notifies eviction listeners.
+         * @param {string} id
+         * @param {ParamType} type
+         * @param {ng.StateDeclaration} state
          */
-        /** @internal */
-        _evict() {
-            const item = this._items.shift();
-            if (item !== undefined) {
-                this._evictListeners.forEach((fn) => fn(item));
-            }
-            return item;
+        fromSearch(id, type, state) {
+            return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, this, state);
         }
-        /**
-         * Removes and returns the first item in the queue.
-         */
-        /** @internal */
-        _dequeue() {
-            return this._items.length > 0 ? this._items.shift() : undefined;
-        }
-        /**
-         * Clears all items from the queue.
-         * @returns The previously stored items.
-         */
-        /** @internal */
-        _clear() {
-            const cleared = [...this._items];
-            this._items.length = 0;
-            return cleared;
-        }
-        /**
-         * Returns the current number of items.
-         */
-        /** @internal */
-        _size() {
-            return this._items.length;
-        }
-        /**
-         * Removes a specific item from the queue.
-         * @returns The removed item, or false if not found.
-         */
-        /** @internal */
-        _remove(item) {
-            const index = this._items.indexOf(item);
-            return index !== -1 ? this._items.splice(index, 1)[0] : false;
-        }
-        /**
-         * Returns the item at the tail (last).
-         */
-        /** @internal */
-        _peekTail() {
-            return this._items[this._items.length - 1];
-        }
-        /**
-         * Returns the item at the head (first).
-         */
-        /** @internal */
-        _peekHead() {
-            return this._items[0];
-        }
+    }
+
+    function encodePathPart(match) {
+        return match === "~" ? "~~" : "~2F";
+    }
+    function decodePathPart(match) {
+        return match === "~~" ? "~" : "/";
+    }
+    function encodePath$1(value) {
+        return !isNullOrUndefined(value)
+            ? value.toString().replace(/([~/])/g, encodePathPart)
+            : value;
+    }
+    function decodePath$1(value) {
+        return !isNullOrUndefined(value)
+            ? value.toString().replace(/(~~|~2F)/g, decodePathPart)
+            : value;
+    }
+    function makeDefaultType(def) {
+        const defaultTypeBase = {
+            is: (val) => isInstanceOf(val, String) || isString(val),
+            pattern: /.*/,
+            equals: (a, b) => a === b,
+        };
+        return assign({}, defaultTypeBase, def);
+    }
+    /** @internal */
+    function createDefaultParamTypes() {
+        const definitions = {
+            string: makeDefaultType({}),
+            path: makeDefaultType({
+                encode: encodePath$1,
+                decode: decodePath$1,
+                pattern: /[^/]*/,
+            }),
+            query: makeDefaultType({}),
+            hash: makeDefaultType({
+                inherit: false,
+            }),
+            int: makeDefaultType({
+                decode: (val) => parseInt(val, 10),
+                /**
+                 * @param {unknown} val
+                 */
+                is(val) {
+                    return (!isNullOrUndefined(val) &&
+                        this.decode?.(val.toString()) === val);
+                },
+                pattern: /-?\d+/,
+            }),
+            bool: makeDefaultType({
+                encode: (val) => ((val && 1) || 0).toString(),
+                decode: (val) => parseInt(val, 10) !== 0,
+                is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
+                pattern: /[01]/,
+            }),
+            date: makeDefaultType({
+                /**
+                 * @param {{ getFullYear: () => number; getMonth: () => number; getDate: () => number; }} val
+                 */
+                encode(val) {
+                    if (!isInstanceOf(val, Date) || isNaN(val.valueOf())) {
+                        return "";
+                    }
+                    return [
+                        val.getFullYear(),
+                        `0${val.getMonth() + 1}`.slice(-2),
+                        `0${val.getDate()}`.slice(-2),
+                    ].join("-");
+                },
+                /**
+                 * @param {unknown} val
+                 */
+                decode(val) {
+                    if (this.is?.(val))
+                        return val;
+                    const match = this.capture.exec(String(val));
+                    return match
+                        ? new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10))
+                        : undefined;
+                },
+                is: (val) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
+                /**
+                 * @param {Date} left
+                 * @param {Date} right
+                 */
+                equals(left, right) {
+                    if (!isInstanceOf(left, Date) || !isInstanceOf(right, Date)) {
+                        return false;
+                    }
+                    return (left.getFullYear() === right.getFullYear() &&
+                        left.getMonth() === right.getMonth() &&
+                        left.getDate() === right.getDate());
+                },
+                pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
+                capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
+            }),
+            json: makeDefaultType({
+                encode: (x) => JSON.stringify(x),
+                decode: (x) => JSON.parse(x),
+                is: (val) => isInstanceOf(val, Object),
+                equals,
+                pattern: /[^/]*/,
+            }),
+            // does not encode/decode
+            any: makeDefaultType({
+                encode: (x) => x,
+                decode: (x) => x,
+                is: () => true,
+                equals,
+            }),
+        };
+        return {
+            hash: new ParamType(assign({ name: "hash" }, definitions.hash)),
+            string: new ParamType(assign({ name: "string" }, definitions.string)),
+            query: new ParamType(assign({ name: "query" }, definitions.query)),
+            path: new ParamType(assign({ name: "path" }, definitions.path)),
+            int: new ParamType(assign({ name: "int" }, definitions.int)),
+            bool: new ParamType(assign({ name: "bool" }, definitions.bool)),
+            date: new ParamType(assign({ name: "date" }, definitions.date)),
+            json: new ParamType(assign({ name: "json" }, definitions.json)),
+            any: new ParamType(assign({ name: "any" }, definitions.any)),
+        };
     }
 
     class StateParams {
@@ -25043,7 +25407,7 @@
         $inherit(newParams, $current, $to) {
             const parents = ancestors($current, $to);
             const inherited = {};
-            const inheritList = [];
+            const inheritList = new Set();
             for (const parent of parents) {
                 if (!parent || !parent.params)
                     continue;
@@ -25052,15 +25416,14 @@
                 if (!parentParamsKeys.length)
                     continue;
                 for (const key of parentParamsKeys) {
-                    if (parentParams[key].inherit === false ||
-                        inheritList.indexOf(key) >= 0) {
+                    if (parentParams[key].inherit === false || inheritList.has(key)) {
                         continue;
                     }
-                    inheritList.push(key);
+                    inheritList.add(key);
                     inherited[key] = this[key];
                 }
             }
-            return assign({}, inherited, newParams);
+            return assign(inherited, newParams);
         }
     }
     /**
@@ -25083,45 +25446,425 @@
         return path;
     }
 
+    const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
     /**
      * Mutable router state/config shared across state, URL, and transition services.
      *
      * @internal
      */
-    class _RouterProvider {
+    class RouterProvider {
         /**
          * Creates the shared mutable router globals container.
          */
-        constructor() {
+        constructor($locationProvider) {
+            this.$get = [
+                _location,
+                _injector,
+                /**
+                 * Returns the singleton router internals instance.
+                 */
+                ($location, $injector) => {
+                    this._location = $location;
+                    this._paramFactory._injector = $injector;
+                    return this;
+                },
+            ];
+            this._locationProvider = $locationProvider;
+            this._stateService = undefined;
+            this._stateRoutes = [];
+            this._isCaseInsensitive = false;
+            this._isStrictMode = true;
+            this._defaultSquashPolicy = false;
+            this._paramTypes = createDefaultParamTypes();
+            this._paramFactory = new ParamFactory(this);
             this._params = new StateParams();
-            this._configuredRouting = false;
             this._lastStartedTransitionId = -1;
-            this._transitionHistory = new Queue([], 1);
-            this._successfulTransitions = new Queue([], 1);
+            this._lastStartedTransition = undefined;
+            this._lastSuccessfulTransition = undefined;
+            this._successfulTransitionCleanup = undefined;
             this._injector = undefined;
             this._current = undefined;
             this._currentState = undefined;
             this._transition = undefined;
         }
-        /**
-         * Marks that the app has configured URL-driven router behavior.
-         */
         /** @internal */
-        _markConfiguredRouting() {
-            this._configuredRouting = true;
+        _setSuccessfulTransition(trans) {
+            if (this._lastSuccessfulTransition && this._successfulTransitionCleanup) {
+                this._successfulTransitionCleanup(this._lastSuccessfulTransition);
+            }
+            this._lastSuccessfulTransition = trans;
+        }
+        /** @internal */
+        _getDefaultSquashPolicy() {
+            return this._defaultSquashPolicy;
+        }
+        /** @internal */
+        _getBaseHref() {
+            return (this._baseHref ||
+                (this._baseHref = getBaseHref() || window.location.pathname));
+        }
+        /** @internal */
+        _url(newUrl, state) {
+            if (isDefined(newUrl)) {
+                this._location.setUrl(decodeURIComponent(newUrl));
+            }
+            if (state)
+                this._location.setState(state);
+            return this._location.getUrl();
+        }
+        /** @internal */
+        _sync(evt) {
+            if (evt && evt.defaultPrevented)
+                return;
+            const best = this._match(this._location.getPath(), this._location.getSearch(), this._location.getHash());
+            if (!best)
+                return;
+            this._transitionToStateRoute(best.state, best.match);
+        }
+        /** @internal */
+        _registerStateRoute(state) {
+            if (!this._stateRoutes.includes(state)) {
+                this._stateRoutes.push(state);
+            }
+        }
+        /** @internal */
+        _removeStateRoute(state) {
+            removeFrom(this._stateRoutes, state);
+        }
+        /** @internal */
+        _transitionToStateRoute(state, params) {
+            const $state = this._stateService;
+            if (!$state)
+                return;
+            const { current } = $state;
+            const currentHref = current ? $state.href(current, $state.params) : null;
+            if ($state.href(state, params) !== currentHref) {
+                $state.transitionTo(state, params, { inherit: true, source: "url" });
+            }
+        }
+        /** @internal */
+        _match(path, search, hash) {
+            let best;
+            this._stateRoutes.forEach((state) => {
+                const urlMatcher = state._url;
+                if (!isInstanceOf(urlMatcher, UrlMatcher))
+                    return;
+                const match = urlMatcher._exec(path, search, hash || "");
+                if (match === null)
+                    return;
+                const weight = stateRouteMatchPriority(urlMatcher, match);
+                if (!best) {
+                    best = { match, state, urlMatcher, weight };
+                    return;
+                }
+                const specificity = compareUrlMatchers(urlMatcher, best.urlMatcher);
+                if (specificity < 0 || (specificity === 0 && weight > best.weight)) {
+                    best = { match, state, urlMatcher, weight };
+                }
+            });
+            return best;
+        }
+        /** @internal */
+        _update(read) {
+            if (read) {
+                this._lastUrl = this._url();
+                return;
+            }
+            if (this._url() === this._lastUrl)
+                return;
+            this._url(this._lastUrl, true);
+        }
+        /** @internal */
+        _push(urlMatcher, params, options) {
+            const url = urlMatcher._format(params || {});
+            if (!isNull(url)) {
+                this._url(url, options && !!options.replace);
+            }
+        }
+        /** @internal */
+        _href(urlMatcher, params, options) {
+            let url = urlMatcher._format(params);
+            if (isNull(url))
+                return null;
+            options = options || { absolute: false };
+            const isHtml5 = this._locationProvider.html5ModeConf.enabled;
+            if (!isHtml5) {
+                url = `#${this._locationProvider.hashPrefixConf}${url}`;
+            }
+            url = appendBasePath(url, isHtml5, options.absolute, this._getBaseHref());
+            if (!options.absolute || !url) {
+                return url;
+            }
+            const slash = !isHtml5 && url ? "/" : "";
+            return [
+                `${window.location.protocol}//`,
+                window.location.host,
+                slash,
+                url,
+            ].join("");
+        }
+        /** @internal */
+        _compile(urlPattern, config) {
+            const globalConfig = {
+                state: { params: {} },
+                strict: this._isStrictMode,
+                caseInsensitive: this._isCaseInsensitive,
+            };
+            return new UrlMatcher(urlPattern, this._paramTypes, this._paramFactory, assign(globalConfig, config));
+        }
+    }
+    /* @ignore */ RouterProvider.$inject = [_locationProvider];
+    function stateRouteMatchPriority(urlMatcher, params) {
+        const path = urlMatcher._cache._path || [urlMatcher];
+        let optionalCount = 0;
+        let matched = 0;
+        path.forEach((matcher) => {
+            matcher._params.forEach((param) => {
+                if (!param.isOptional)
+                    return;
+                optionalCount++;
+                if (params[param.id])
+                    matched++;
+            });
+        });
+        return optionalCount ? matched / optionalCount : EXACT_ROUTE_MATCH_PRIORITY;
+    }
+    function appendBasePath(url, isHtml5, absolute, baseHref) {
+        if (baseHref === "/")
+            return url;
+        if (isHtml5)
+            return stripLastPathElement(baseHref) + url;
+        if (absolute)
+            return baseHref.slice(1) + url;
+        return url;
+    }
+
+    /**
+     * A node in a [[TreeChanges]] path
+     *
+     * For a [[TreeChanges]] path, this class holds the stateful information for a single node in the path.
+     * Each PathNode corresponds to a state being entered, exited, or retained.
+     * The stateful information includes parameter values and resolve data.
+     */
+    class PathNode {
+        /**
+         * @param {PathNode | ng.StateObject | undefined} stateOrNode
+         */
+        constructor(stateOrNode) {
+            if (isInstanceOf(stateOrNode, PathNode)) {
+                const node = stateOrNode;
+                this.state = node.state;
+                this.paramSchema = node.paramSchema.slice();
+                this.paramValues = assign({}, node.paramValues);
+                this.resolvables = node.resolvables.slice();
+                this._views = node._views && node._views.slice();
+            }
+            else {
+                const state = stateOrNode;
+                if (!state)
+                    throw new Error("PathNode requires a state");
+                this.state = state;
+                this.paramSchema = state.parameters({
+                    inherit: false,
+                });
+                this.paramValues = {};
+                this.resolvables = [];
+                const resolvables = state.resolvables || [];
+                resolvables.forEach((resolvable) => this.resolvables.push(resolvable.clone()));
+            }
+        }
+        clone() {
+            return new PathNode(this);
         }
         /**
-         * Returns true when URL-driven router behavior has been configured.
+         * Sets [[paramValues]] for the node, from the values of an object hash
+         * @param {RawParams} params
+         * @returns {PathNode}
          */
-        /** @internal */
-        _hasConfiguredRouting() {
-            return this._configuredRouting;
-        }
-        /**
-         * Returns the singleton router internals instance.
-         */
-        $get() {
+        applyRawParams(params) {
+            const paramValues = {};
+            this.paramSchema.forEach((paramDef) => {
+                paramValues[paramDef.id] = paramDef.value(params[paramDef.id]);
+            });
+            this.paramValues = paramValues;
             return this;
+        }
+        /**
+         * Gets a specific [[Param]] metadata that belongs to the node
+         * @param {string} name
+         * @returns {Param | undefined}
+         */
+        parameter(name) {
+            for (let i = 0; i < this.paramSchema.length; i++) {
+                const param = this.paramSchema[i];
+                if (param.id === name)
+                    return param;
+            }
+            return undefined;
+        }
+        /**
+         * @param {PathNode} node
+         * @param {GetParamsFn} paramsFn
+         * @returns {boolean} true if the state and parameter values for another PathNode are
+        equal to the state and param values for this PathNode
+         */
+        equals(node, paramsFn) {
+            const diff = this.diff(node, paramsFn);
+            return diff !== false && diff.length === 0;
+        }
+        /**
+         * Finds Params with different parameter values on another PathNode.
+         *
+         * Given another node (of the same state), finds the parameter values which differ.
+         * Returns the [[Param]] (schema objects) whose parameter values differ.
+         *
+         * Given another node for a different state, returns `false`
+         * @param {PathNode} node The node to compare to
+         * @param {GetParamsFn} paramsFn A function that returns which parameters should be compared.
+         * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
+         */
+        diff(node, paramsFn) {
+            if (this.state !== node.state)
+                return false;
+            const params = paramsFn ? paramsFn(this) : this.paramSchema;
+            return Param.changed(params, this.paramValues, node.paramValues);
+        }
+    }
+
+    /**
+     * Encapsulate the target (destination) state/params/options of a [[Transition]].
+     *
+     * This class is frequently used to redirect a transition to a new destination.
+     *
+     * See:
+     *
+     * - [[HookResult]]
+     * - [[TransitionHookFn]]
+     * - [[TransitionService.onStart]]
+     *
+     * To create a `TargetState`, use [[StateService.target]].
+     *
+     * ---
+     *
+     * This class wraps:
+     *
+     * 1) an identifier for a state
+     * 2) a set of parameters
+     * 3) and transition options
+     * 4) the registered state object (the [[StateDeclaration]])
+     *
+     * Many ng-router APIs such as [[StateService.go]] take a [[StateOrName]] argument which can
+     * either be a *state object* (a [[StateDeclaration]] or [[StateObject]]) or a *state name* (a string).
+     * The `TargetState` class normalizes those options.
+     *
+     * A `TargetState` may be valid (the state being targeted exists in the registry)
+     * or invalid (the state being targeted is not registered).
+     */
+    class TargetState {
+        /**
+         * The TargetState constructor
+         *
+         * Note: Do not construct a `TargetState` manually.
+         * To create a `TargetState`, use the [[StateService.target]] factory method.
+         *
+         * @param {StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+         * @param {StateOrName} _identifier An identifier for a state.
+         *    Either a fully-qualified state name, or the object used to define the state.
+         * @param {RawParams} _params Parameters for the target state
+         * @param {TransitionOptions} _options Transition options.
+         *
+         * @internal
+         */
+        constructor(_stateRegistry, _identifier, _params, _options) {
+            this._stateRegistry = _stateRegistry;
+            this._identifier = _identifier;
+            this._params = assign({}, _params || {});
+            this._options = assign({}, _options || {});
+            this._definition = _stateRegistry._matcher.find(_identifier, this._options.relative);
+        }
+        /** The name of the state this object targets */
+        name() {
+            return (this._definition && this._definition.name) || this._identifier;
+        }
+        /** The identifier used when creating this TargetState */
+        identifier() {
+            return this._identifier;
+        }
+        /** The target parameter values */
+        params() {
+            return this._params;
+        }
+        /** The internal state object (if it was found) */
+        $state() {
+            return this._definition;
+        }
+        /** The internal state declaration (if it was found) */
+        state() {
+            return this._definition && this._definition.self;
+        }
+        /** The target options */
+        options() {
+            return this._options;
+        }
+        /** True if the target state was found */
+        exists() {
+            return !!(this._definition && this._definition.self);
+        }
+        /** True if the object is valid */
+        valid() {
+            return !this.error();
+        }
+        /** If the object is invalid, returns the reason why */
+        error() {
+            const base = this.options().relative;
+            if (!this._definition && !!base) {
+                const stateName = isObject(base) && isString(base.name)
+                    ? base.name
+                    : base;
+                return `Could not resolve '${this.name()}' from state '${stateName}'`;
+            }
+            if (!this._definition)
+                return `No such state '${this.name()}'`;
+            if (!this._definition.self)
+                return `State '${this.name()}' has an invalid definition`;
+            return undefined;
+        }
+        toString() {
+            return `'${this.name()}'${stringify(this.params())}`;
+        }
+        /**
+         * Returns a copy of this TargetState which targets a different state.
+         * The new TargetState has the same parameter values and transition options.
+         *
+         * @param {StateOrName} state The new state that should be targeted
+         * @returns {TargetState} A new TargetState instance which targets the desired state
+         */
+        withState(state) {
+            return new TargetState(this._stateRegistry, state, this._params, this._options);
+        }
+        /**
+         * Returns a copy of this TargetState, using the specified parameter values.
+         *
+         * @param {RawParams} params the new parameter values to use
+         * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
+         *                When true the parameter values will be used instead of the current values.
+         * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
+         */
+        withParams(params, replace = false) {
+            const newParams = replace ? params : assign({}, this._params, params);
+            return new TargetState(this._stateRegistry, this._identifier, newParams, this._options);
+        }
+        /**
+         * Returns a copy of this TargetState, using the specified Transition Options.
+         *
+         * @param {TransitionOptions} options the new options to use
+         * @param {boolean} replace When false (default) the new options will be merged with the current options.
+         *                When true the options will be used instead of the current options.
+         * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
+         */
+        withOptions(options, replace = false) {
+            const newOpts = replace ? options : assign({}, this._options, options);
+            return new TargetState(this._stateRegistry, this._identifier, this._params, newOpts);
         }
     }
 
@@ -25136,6 +25879,14 @@
         _ERROR: 6,
     };
     let id = 0;
+    function detailToString(data) {
+        return data &&
+            typeof data === "object" &&
+            "toString" in data &&
+            data.toString !== Object.prototype.toString
+            ? String(data.toString())
+            : stringify(data);
+    }
     /**
      * Normalized representation of a transition failure, abort, ignore, or redirect.
      */
@@ -25173,13 +25924,7 @@
             return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
         }
         toString() {
-            const detailString = (data) => data &&
-                typeof data === "object" &&
-                "toString" in data &&
-                data.toString !== Object.prototype.toString
-                ? String(data.toString())
-                : stringify(data);
-            return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailString(this.detail)})`;
+            return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
         }
         /**
          * Returns a rejected promise tagged with this rejection instance.
@@ -25196,6 +25941,8 @@
 
     /**
      * Transition lifecycle phases used to group and order hook execution.
+     *
+     * @internal
      */
     const TransitionHookPhase = {
         _CREATE: 0,
@@ -25204,112 +25951,167 @@
         _SUCCESS: 3,
         _ERROR: 4,
     };
-    /**
-     * Declares whether a hook operates on a whole transition or on individual states.
-     */
-    const TransitionHookScope = {
-        _TRANSITION: 0,
-        _STATE: 1,
-    };
+    function isDoneTask(doneCallback) {
+        return "_startTransition" in doneCallback;
+    }
     const defaultOptions = {
-        current: () => undefined,
-        transition: null,
-        bind: null,
+        _current: () => undefined,
+        _transition: null,
+        _bind: null,
     };
     /**
      * Runtime wrapper around one registered transition hook invocation.
+     *
+     * @internal
      */
     class TransitionHook {
         /**
          * Runs hooks in sequence, waiting for each async hook before invoking the next.
          */
-        static chain(hooks, waitFor) {
-            let promise = waitFor || Promise.resolve();
-            for (let i = 0; i < hooks.length; i++) {
-                const hook = hooks[i];
-                promise = promise.then(() => hook.invokeHook());
-            }
-            return promise;
+        /** @internal */
+        static _chain(hooks, waitFor) {
+            return TransitionHook._chainFrom(hooks, 0, waitFor);
         }
-        static invokeHooks(hooks, doneCallback) {
+        /** @internal */
+        static async _chainFrom(hooks, start, waitFor) {
+            if (waitFor)
+                await waitFor;
+            for (let i = start; i < hooks.length; i++) {
+                await hooks[i]._invokeHook();
+            }
+        }
+        /** @internal */
+        static _invokeHooks(hooks, doneCallback) {
             for (let idx = 0; idx < hooks.length; idx++) {
-                const hookResult = hooks[idx].invokeHook();
+                const hookResult = hooks[idx]._invokeHook();
                 if (isPromise(hookResult)) {
-                    const remainingHooks = hooks.slice(idx + 1);
-                    return TransitionHook.chain(remainingHooks, hookResult).then(() => {
-                        doneCallback();
-                    });
+                    return TransitionHook._chainThenDone(hooks, idx + 1, Promise.resolve(hookResult), doneCallback);
                 }
             }
-            return doneCallback();
+            return TransitionHook._runDoneCallback(doneCallback);
         }
-        static runAllHooks(hooks) {
+        /** @internal */
+        static async _chainThenDone(hooks, start, waitFor, doneCallback) {
+            await TransitionHook._chainFrom(hooks, start, waitFor);
+            return TransitionHook._runDoneCallback(doneCallback);
+        }
+        /** @internal */
+        static _runDoneCallback(doneCallback) {
+            return isDoneTask(doneCallback)
+                ? doneCallback._startTransition()
+                : doneCallback();
+        }
+        /** @internal */
+        static _handleResult(hook, result) {
+            return hook._handleHookResult(result);
+        }
+        /** @internal */
+        static _logRejectedResult(hook, result) {
+            if (isPromise(result)) {
+                Promise.resolve(result).catch((err) => {
+                    hook._logError(Rejection.normalize(err));
+                });
+            }
+            return undefined;
+        }
+        /** @internal */
+        static _logError(hook, error) {
+            return hook?._logError(error);
+        }
+        /** @internal */
+        static _rejectError(_hook, error) {
+            const promise = Promise.reject(error);
+            promise.catch(() => 0);
+            return promise;
+        }
+        /** @internal */
+        static _throwError(_hook, error) {
+            throw error;
+        }
+        /** @internal */
+        static _runAllHooks(hooks) {
             for (let i = 0; i < hooks.length; i++) {
-                hooks[i].invokeHook();
+                hooks[i]._invokeHook();
             }
         }
         /**
          * Creates one executable hook wrapper bound to a transition and state context.
          */
         constructor(transition, stateContext, registeredHook, options, exceptionHandler) {
-            this.transition = transition;
-            this.stateContext = stateContext;
-            this.registeredHook = registeredHook;
-            this.options = assign({}, defaultOptions, options);
+            this._transition = transition;
+            this._stateContext = stateContext;
+            this._registeredHook = registeredHook;
+            this._options = assign({}, defaultOptions, options);
             this._type = registeredHook._eventType;
-            this.isSuperseded = () => this._type.hookPhase === TransitionHookPhase._RUN &&
-                !this.options.transition?.isActive();
             this._exceptionHandler = exceptionHandler;
         }
-        /**
-         * Sends hook execution errors to the configured exception handler.
-         */
-        logError(err) {
+        /** @internal */
+        _isSuperseded() {
+            return (this._type._hookPhase === TransitionHookPhase._RUN &&
+                !this._options._transition?.isActive());
+        }
+        /** @internal */
+        _logError(err) {
             this._exceptionHandler(err);
+        }
+        /** @internal */
+        _invokeCallback(hook) {
+            const { _options } = this;
+            return hook._callback.call(_options._bind, this._transition, this._stateContext);
+        }
+        /** @internal */
+        _handleError(err) {
+            return this._registeredHook._eventType._handleError(this, err);
+        }
+        /** @internal */
+        _handleResult(result) {
+            return this._registeredHook._eventType._handleResult(this, result);
+        }
+        /** @internal */
+        async _handleAsyncResult(result) {
+            try {
+                return this._handleResult(await result);
+            }
+            catch (err) {
+                return this._handleError(Rejection.normalize(err));
+            }
         }
         /**
          * Executes the underlying hook callback and normalizes its result into
          * the router's rejection / redirect model.
          */
-        invokeHook() {
-            const hook = this.registeredHook;
+        _invokeHook() {
+            const hook = this._registeredHook;
             if (hook._deregistered)
                 return undefined;
-            const notCurrent = this.getNotCurrentRejection();
+            const notCurrent = this._getNotCurrentRejection();
             if (notCurrent)
                 return notCurrent;
-            const { options } = this;
-            const invokeCallback = () => hook.callback.call(options.bind, this.transition, this.stateContext);
-            const normalizeErr = (err) => Rejection.normalize(err)._toPromise();
-            const handleError = (err) => hook._eventType.getErrorHandler()(err);
-            const handleResult = (result) => hook._eventType.getResultHandler(this)(result);
             try {
-                const result = invokeCallback();
-                if (!this._type.synchronous && isPromise(result)) {
-                    return result
-                        .catch(normalizeErr)
-                        .then(handleResult, handleError);
+                const result = this._invokeCallback(hook);
+                if (!this._type._synchronous && isPromise(result)) {
+                    return this._handleAsyncResult(result);
                 }
-                return handleResult(result);
+                return this._handleResult(result);
             }
             catch (err) {
-                return handleError(Rejection.normalize(err));
+                return this._handleError(Rejection.normalize(err));
             }
             finally {
-                if (hook.invokeLimit && ++hook.invokeCount >= hook.invokeLimit) {
-                    hook.deregister();
+                if (hook._invokeLimit && ++hook._invokeCount >= hook._invokeLimit) {
+                    hook._deregister();
                 }
             }
         }
         /**
          * Converts raw hook return values into transition outcomes.
          */
-        handleHookResult(result) {
-            const notCurrent = this.getNotCurrentRejection();
+        _handleHookResult(result) {
+            const notCurrent = this._getNotCurrentRejection();
             if (notCurrent)
                 return notCurrent;
             if (isPromise(result)) {
-                return result.then((val) => this.handleHookResult(val));
+                return this._handleAsyncHookResult(Promise.resolve(result));
             }
             if (result === false) {
                 return Rejection.aborted("Hook aborted transition")._toPromise();
@@ -25319,259 +26121,77 @@
             }
             return undefined;
         }
-        /**
-         * Returns a rejection when the transition was aborted or superseded.
-         */
-        getNotCurrentRejection() {
-            if (this.transition._aborted) {
+        /** @internal */
+        async _handleAsyncHookResult(result) {
+            return this._handleHookResult(await result);
+        }
+        /** @internal */
+        _getNotCurrentRejection() {
+            if (this._transition._aborted) {
                 return Rejection.aborted()._toPromise();
             }
-            if (this.isSuperseded()) {
-                return Rejection.superseded(this.options.current())._toPromise();
+            if (this._isSuperseded()) {
+                return Rejection.superseded(this._options._current())._toPromise();
             }
             return undefined;
         }
         toString() {
-            const { options, registeredHook } = this;
-            const event = options.hookType || "internal";
-            const target = options.target;
+            const { _options, _registeredHook } = this;
+            const event = _options._hookType || "internal";
+            const target = _options._target;
             const context = target?.state?.name || target?.name || "unknown";
-            const name = fnToString(registeredHook.callback);
+            const name = fnToString(_registeredHook._callback);
             return `${event} context: ${context}, ${maxLength(200, name)}`;
         }
     }
-    TransitionHook.HANDLE_RESULT =
-        (hook) => (result) => hook.handleHookResult(result);
-    TransitionHook.LOG_REJECTED_RESULT =
-        (hook) => (result) => {
-            if (isPromise(result)) {
-                result.catch((err) => hook.logError(Rejection.normalize(err)));
-            }
-            return undefined;
-        };
-    TransitionHook.LOG_ERROR =
-        (hook) => (error) => hook?.logError(error);
-    TransitionHook.REJECT_ERROR =
-        () => (error) => {
-            const promise = Promise.reject(error);
-            promise.catch(() => 0);
-            return promise;
-        };
-    TransitionHook.THROW_ERROR =
-        () => (error) => {
-            throw error;
-        };
 
-    /**
-     * Tests a state against one hook match criterion.
-     */
-    function matchState(state, criterion, transition) {
-        const toMatch = isString(criterion) ? [criterion] : criterion;
-        const matchGlobs = (_state) => {
-            const globStrings = toMatch;
-            for (let i = 0; i < globStrings.length; i++) {
-                const glob = new Glob(globStrings[i]);
-                if ((glob && glob.matches(_state.name)) ||
-                    (!glob && globStrings[i] === _state.name)) {
-                    return true;
-                }
-            }
-            return false;
-        };
-        const matchFn = (isFunction(toMatch) ? toMatch : matchGlobs);
-        return !!matchFn(state, transition);
-    }
-    /**
-     * Stores one registered transition hook and evaluates whether it matches
-     * a specific transition tree change set.
-     */
-    class RegisteredHook {
-        constructor(tranSvc, eventType, callback, matchCriteria, removeHookFromRegistry, options = {}) {
-            this.tranSvc = tranSvc;
-            this._eventType = eventType;
-            this.callback = callback;
-            this.matchCriteria = matchCriteria;
-            this.removeHookFromRegistry = removeHookFromRegistry;
-            this.invokeCount = 0;
-            this._deregistered = false;
-            this.priority = options.priority || 0;
-            this.bind = options.bind || null;
-            this.invokeLimit = options.invokeLimit;
-        }
-        /** @internal */
-        _matchingNodes(nodes, criterion, transition) {
-            if (criterion === true)
-                return nodes;
-            const matching = [];
-            for (let i = 0; i < nodes.length; i++) {
-                const node = nodes[i];
-                if (matchState(node.state, criterion, transition)) {
-                    matching.push(node);
-                }
-            }
-            return matching.length ? matching : null;
-        }
-        /** @internal */
-        _getDefaultMatchCriteria() {
-            const pathTypes = this.tranSvc._getPathTypes();
-            const criteria = {};
-            for (const key in pathTypes) {
-                criteria[key] = true;
-            }
-            return criteria;
-        }
-        /** @internal */
-        _getMatchingNodes(treeChanges, transition) {
-            const criteria = assign(this._getDefaultMatchCriteria(), this.matchCriteria);
-            const pathTypes = values(this.tranSvc._getPathTypes());
-            const matchingNodes = {};
-            for (let i = 0; i < pathTypes.length; i++) {
-                const pathType = pathTypes[i];
-                const isStateHook = pathType.scope === TransitionHookScope._STATE;
-                const path = (treeChanges[pathType.name] || []);
-                const transitionNode = path.length ? path[path.length - 1] : undefined;
-                const nodes = isStateHook
-                    ? path
-                    : transitionNode
-                        ? [transitionNode]
-                        : [];
-                matchingNodes[pathType.name] = this._matchingNodes(nodes, criteria[pathType.name], transition);
-            }
-            return matchingNodes;
-        }
-        matches(treeChanges, transition) {
-            const matches = this._getMatchingNodes(treeChanges, transition);
-            const matchedPaths = values(matches);
-            let allMatched = true;
-            for (let i = 0; i < matchedPaths.length; i++) {
-                if (!matchedPaths[i]) {
-                    allMatched = false;
-                    break;
-                }
-            }
-            return allMatched ? matches : null;
-        }
-        deregister() {
-            this.removeHookFromRegistry(this);
-            this._deregistered = true;
-        }
-    }
-    /**
-     * Registers a hook on either the transition service or a single transition.
-     */
-    function registerHook(hookSource, transitionService, eventType, matchCriteria, callback, options = {}) {
-        const typedEventType = eventType;
-        const _registeredHooks = (hookSource._registeredHooks =
-            hookSource._registeredHooks || {});
-        const hooks = (_registeredHooks[typedEventType.name] =
-            _registeredHooks[typedEventType.name] || []);
-        const removeHookFn = (hook) => {
-            removeFrom(hooks, hook);
-        };
-        const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchCriteria, removeHookFn, options);
-        hooks.push(registeredHook);
-        return registeredHook.deregister.bind(registeredHook);
-    }
-    /**
-     * Creates a convenience `onX` registration function for a transition event.
-     */
-    function makeEvent(hookSource, transitionService, eventType) {
-        const _registeredHooks = (hookSource._registeredHooks =
-            hookSource._registeredHooks || {});
-        const typedEventType = eventType;
-        const hooks = (_registeredHooks[typedEventType.name] =
-            []);
-        const removeHookFn = (hook) => {
-            removeFrom(hooks, hook);
-        };
-        function hookRegistrationFn(matchObject, callback, options = {}) {
-            const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchObject, removeHookFn, options);
-            hooks.push(registeredHook);
-            return registeredHook.deregister.bind(registeredHook);
-        }
-        hookSource[typedEventType.name] = hookRegistrationFn;
-        return hookRegistrationFn;
-    }
-
-    /**
-     * Builds runnable `TransitionHook` instances for a transition phase.
-     */
     /** @internal */
-    class HookBuilder {
-        constructor(transition) {
-            this.transition = transition;
+    function buildHooksForPhase(transition, phase) {
+        const eventTypes = transition._transitionService._getEvents(phase);
+        const hooks = [];
+        eventTypes.forEach((eventType) => {
+            buildHooks(transition, eventType, hooks);
+        });
+        return hooks;
+    }
+    function buildHooks(transition, hookType, hooks) {
+        const treeChanges = transition._treeChanges;
+        const baseHookOptions = {
+            transition,
+            current: () => transition._options.current?.() || undefined,
+        };
+        const hookTuples = [];
+        const registeredHooks = transition._transitionService._getHooks(hookType._name);
+        if (!isArray(registeredHooks)) {
+            throw new Error(`broken event named: ${hookType._name}`);
         }
-        buildHooksForPhase(phase) {
-            const eventTypes = this.transition._transitionService._getEvents(phase);
-            const hooks = [];
-            for (let i = 0; i < eventTypes.length; i++) {
-                const builtHooks = this.buildHooks(eventTypes[i]);
-                for (let j = 0; j < builtHooks.length; j++) {
-                    if (builtHooks[j])
-                        hooks.push(builtHooks[j]);
-                }
-            }
-            return hooks;
-        }
-        buildHooks(hookType) {
-            const { transition } = this;
-            const treeChanges = transition.treeChanges();
-            const matchingHooks = this.getMatchingHooks(hookType, treeChanges, transition);
-            if (!matchingHooks.length)
-                return [];
-            const baseHookOptions = {
-                transition,
-                current: () => transition.options().current?.() || undefined,
-            };
-            const hookTuples = [];
-            for (let i = 0; i < matchingHooks.length; i++) {
-                const { hook, matches } = matchingHooks[i];
-                const matchingNodes = matches[hookType._criteriaMatchPath.name];
-                for (let j = 0; j < matchingNodes.length; j++) {
-                    const node = matchingNodes[j];
-                    const options = assign({
-                        bind: hook.bind,
-                        hookType: hookType.name,
-                        target: node,
-                    }, baseHookOptions);
-                    const state = hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
-                        ? node.state.self
-                        : null;
-                    const transitionHook = new TransitionHook(transition, state, hook, options, this.transition._transitionService._exceptionHandler);
-                    hookTuples.push({ hook, node, transitionHook });
-                }
-            }
-            hookTuples.sort(hookType.reverseSort
-                ? sortByReverseNodeDepthThenPriority
-                : sortByNodeDepthThenPriority);
-            const hooks = [];
-            for (let i = 0; i < hookTuples.length; i++) {
-                hooks.push(hookTuples[i].transitionHook);
-            }
-            return hooks;
-        }
-        getMatchingHooks(hookType, treeChanges, transition) {
-            const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
-            const $transitions = this.transition._transitionService;
-            const registries = isCreate
-                ? [$transitions]
-                : [this.transition, $transitions];
-            const matchingHooks = [];
-            for (let i = 0; i < registries.length; i++) {
-                const hooks = registries[i].getHooks(hookType.name);
-                if (!isArray(hooks)) {
-                    throw new Error(`broken event named: ${hookType.name}`);
-                }
-                for (let j = 0; j < hooks.length; j++) {
-                    const hook = hooks[j];
-                    const matches = hook.matches(treeChanges, transition);
-                    if (matches) {
-                        matchingHooks.push({ hook, matches });
-                    }
-                }
-            }
-            return matchingHooks;
-        }
+        registeredHooks.forEach((hook) => {
+            const matches = hook._matches(treeChanges, transition);
+            if (!matches)
+                return;
+            const matchingNodes = matches[hookType._criteriaMatchPath._name];
+            matchingNodes.forEach((node) => {
+                const options = {
+                    _bind: hook._bind,
+                    _hookType: hookType._name,
+                    _target: node,
+                    _transition: baseHookOptions.transition,
+                    _current: baseHookOptions.current,
+                };
+                const state = hookType._criteriaMatchPath
+                    ._stateHook
+                    ? node.state.self
+                    : null;
+                const transitionHook = new TransitionHook(transition, state, hook, options, transition._transitionService._exceptionHandler);
+                hookTuples.push({ hook, node, transitionHook });
+            });
+        });
+        if (!hookTuples.length)
+            return;
+        hookTuples.sort(hookType._reverseSort
+            ? sortByReverseNodeDepthThenPriority
+            : sortByNodeDepthThenPriority);
+        hookTuples.forEach((tuple) => hooks.push(tuple.transitionHook));
     }
     /**
      * Sorts hooks first by state depth, then by explicit hook priority.
@@ -25582,13 +26202,145 @@
             factor;
         return depthDelta !== 0
             ? depthDelta
-            : right.hook.priority - left.hook.priority;
+            : right.hook._priority - left.hook._priority;
     }
     function sortByNodeDepthThenPriority(left, right) {
         return compareHookTupleDepth(left, right, 1);
     }
     function sortByReverseNodeDepthThenPriority(left, right) {
         return compareHookTupleDepth(left, right, -1);
+    }
+
+    /**
+     * Converts a TargetState into the concrete path nodes used by a transition.
+     */
+    function buildPath(targetState) {
+        const toParams = targetState.params();
+        const stateObject = targetState.$state();
+        const states = stateObject.path || [];
+        const path = [];
+        states.forEach((state) => path.push(new PathNode(state).applyRawParams(toParams)));
+        return path;
+    }
+    /**
+     * Given a fromPath and a TargetState, builds a toPath.
+     */
+    function buildToPath(fromPath, targetState) {
+        const toPath = buildPath(targetState);
+        if (targetState.options().inherit) {
+            return inheritParams(fromPath, toPath, keys(targetState.params()));
+        }
+        return toPath;
+    }
+    /**
+     * Creates internal view records and adds them to the nodes for the specified states.
+     */
+    function applyViewConfigs($view, path, states) {
+        const stateSet = states instanceof Set ? states : new Set(states);
+        for (let i = 0; i < path.length; i++) {
+            const node = path[i];
+            if (!stateSet.has(node.state))
+                continue;
+            const viewDecls = node.state._views || {};
+            const viewSubPath = path.slice(0, i + 1);
+            const viewConfigs = [];
+            keys(viewDecls).forEach((name) => {
+                const templateFactory = $view._templateFactory;
+                if (!templateFactory) {
+                    throw new Error("ViewService: No template factory registered");
+                }
+                viewConfigs.push(createViewConfig(viewSubPath, viewDecls[name], templateFactory));
+            });
+            node._views = viewConfigs;
+        }
+    }
+    /**
+     * Returns a new to path which inherits parameters from the from path.
+     */
+    function inheritParams(fromPath, toPath, toKeys = []) {
+        const noInherit = new Set();
+        const incomingKeys = new Set(toKeys);
+        fromPath.forEach(({ paramSchema }) => {
+            paramSchema.forEach((param) => {
+                if (!param.inherit) {
+                    noInherit.add(param.id);
+                }
+            });
+        });
+        const inheritedPath = [];
+        for (let i = 0; i < toPath.length; i++) {
+            const toNode = toPath[i];
+            let fromParamVals = {};
+            for (let j = 0; j < fromPath.length; j++) {
+                const fromNode = fromPath[j];
+                if (fromNode.state === toNode.state) {
+                    fromParamVals = assign({}, fromNode.paramValues);
+                    break;
+                }
+            }
+            noInherit.forEach((key) => delete fromParamVals[key]);
+            const toParamVals = {};
+            const incomingParamVals = {};
+            const toNodeParamValues = toNode.paramValues;
+            keys(toNodeParamValues).forEach((key) => {
+                if (!incomingKeys.has(key)) {
+                    toParamVals[key] = toNodeParamValues[key];
+                }
+                else {
+                    incomingParamVals[key] = toNodeParamValues[key];
+                }
+            });
+            const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
+            inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
+        }
+        return inheritedPath;
+    }
+    /**
+     * Computes the tree changes between a fromPath and toPath.
+     */
+    function treeChanges(fromPath, toPath, reloadState) {
+        const max = Math.min(fromPath.length, toPath.length);
+        let keep = 0;
+        while (keep < max &&
+            fromPath[keep].state !== reloadState &&
+            fromPath[keep].equals(toPath[keep], nonDynamicParams)) {
+            keep++;
+        }
+        const from = fromPath;
+        const retained = from.slice(0, keep);
+        const exiting = from.slice(keep);
+        const retainedWithToParams = [];
+        retained.forEach((node, idx) => {
+            const cloned = node.clone();
+            cloned.paramValues = toPath[idx].paramValues;
+            retainedWithToParams.push(cloned);
+        });
+        const entering = toPath.slice(keep);
+        const to = retainedWithToParams.concat(entering);
+        return { from, to, retained, retainedWithToParams, exiting, entering };
+    }
+    /**
+     * Returns the path prefix whose nodes match both paths.
+     */
+    function matching(pathA, pathB, paramsFn) {
+        const matchingPath = [];
+        const max = Math.min(pathA.length, pathB.length);
+        for (let i = 0; i < max; i++) {
+            const nodeA = pathA[i];
+            const nodeB = pathB[i];
+            if (!nodeA.equals(nodeB, paramsFn))
+                break;
+            matchingPath.push(nodeA);
+        }
+        return matchingPath;
+    }
+    function nonDynamicParams(node) {
+        const nonDynamic = [];
+        node.paramSchema.forEach((param) => {
+            if (!param.dynamic)
+                nonDynamic.push(param);
+        });
+        return nonDynamic;
     }
 
     const REDIRECT_MAX = 20;
@@ -25600,6 +26352,47 @@
             reject = rej;
         });
         return { promise, resolve, reject };
+    }
+    function resolvedPromise() {
+        return Promise.resolve();
+    }
+    function nodeIsReloading(node, reloadState) {
+        return !!reloadState && node.state.includes[reloadState.name];
+    }
+    function sameReloadAwarePath(pathA, pathB, reloadState) {
+        if (pathA.length !== pathB.length)
+            return false;
+        let retainedCount = 0;
+        for (let i = 0; i < pathA.length; i++) {
+            if (!pathA[i].equals(pathB[i]))
+                break;
+            if (!nodeIsReloading(pathA[i], reloadState)) {
+                retainedCount++;
+            }
+        }
+        return pathA.length === retainedCount;
+    }
+    function avoidEmptyHash(params) {
+        if (params["#"] !== null && params["#"] !== undefined) {
+            return params;
+        }
+        const cleanParams = {};
+        keys(params).forEach((key) => {
+            if (key !== "#") {
+                cleanParams[key] = params[key];
+            }
+        });
+        return cleanParams;
+    }
+    function collectPathParams(path) {
+        const params = {};
+        path.forEach((node) => {
+            const nodeParams = node.paramValues;
+            keys(nodeParams).forEach((key) => {
+                params[key] = nodeParams[key];
+            });
+        });
+        return params;
     }
     /**
      * Represents a transition between two states.
@@ -25620,6 +26413,8 @@
          * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
          * @param {TransitionService} transitionService
          * @param routerState
+         *
+         * @internal
          */
         constructor(fromPath, targetState, transitionService, routerState) {
             this._routerState = routerState;
@@ -25632,10 +26427,6 @@
              * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
              */
             this.promise = this._deferred.promise;
-            this._registeredHooks = {};
-            this._hookBuilder = new HookBuilder(this);
-            /** Checks if this transition is currently active/running. */
-            this.isActive = () => this._routerState._transition === this;
             this._targetState = targetState;
             if (!targetState.valid()) {
                 throw new Error(targetState.error());
@@ -25645,124 +26436,16 @@
             this.$id = transitionService._transitionCount++;
             const toPath = buildToPath(fromPath, targetState);
             this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
-            const onCreateHooks = this._hookBuilder.buildHooksForPhase(TransitionHookPhase._CREATE);
-            TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
+            const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
+            TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
             this.applyViewConfigs();
         }
-        /**
-         * @param {string} hookName
-         * @returns {RegisteredHook[]}
-         */
-        getHooks(hookName) {
-            return this._registeredHooks[hookName] || [];
-        }
-        /**
-         * Registers a hook by event name.
-         * @param {string} eventName
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        on(eventName, matchCriteria, callback, options) {
-            const eventType = this._getEventType(eventName);
-            if (eventType.hookPhase === TransitionHookPhase._CREATE) {
-                throw new Error("onCreate hooks can only be registered on the service");
-            }
-            return registerHook(this, this._transitionService, eventType, matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onBefore(matchCriteria, callback, options) {
-            return this.on("onBefore", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onStart(matchCriteria, callback, options) {
-            return this.on("onStart", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onEnter(matchCriteria, callback, options) {
-            return this.on("onEnter", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onRetain(matchCriteria, callback, options) {
-            return this.on("onRetain", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onExit(matchCriteria, callback, options) {
-            return this.on("onExit", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onFinish(matchCriteria, callback, options) {
-            return this.on("onFinish", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onSuccess(matchCriteria, callback, options) {
-            return this.on("onSuccess", matchCriteria, callback, options);
-        }
-        /**
-         * @param {HookMatchCriteria} matchCriteria
-         * @param {HookFn} callback
-         * @param {HookRegOptions} [options]
-         * @returns {DeregisterFn}
-         */
-        onError(matchCriteria, callback, options) {
-            return this.on("onError", matchCriteria, callback, options);
-        }
-        /**
-         * @param {string} eventName
-         * @returns {TransitionEventType}
-         */
-        /** @internal */
-        _getEventType(eventName) {
-            const eventType = this._transitionService
-                ._getEvents()
-                .find((type) => type.name === eventName);
-            if (!eventType) {
-                throw new Error(`Unknown Transition hook event: ${eventName}`);
-            }
-            return eventType;
-        }
         applyViewConfigs() {
-            const enteringStates = [];
+            const enteringStates = new Set();
             const { entering } = this._treeChanges;
-            for (let i = 0; i < entering.length; i++) {
-                enteringStates.push(entering[i].state);
-            }
+            entering.forEach((node) => {
+                enteringStates.add(node.state);
+            });
             applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
         }
         /**
@@ -25806,167 +26489,12 @@
             return this.$to().self;
         }
         /**
-         * Gets the Target State
-         *
-         * A transition's [[TargetState]] encapsulates the [[to]] state, the [[params]], and the [[options]] as a single object.
-         *
-         * @returns {TargetState} the [[TargetState]] of this Transition
-         */
-        targetState() {
-            return this._targetState;
-        }
-        /**
          * @param {string} pathname
-         * @returns {any}
+         * @returns {RawParams}
          */
         params(pathname = "to") {
             const path = (this._treeChanges[pathname] || []);
-            const params = {};
-            for (let i = 0; i < path.length; i++) {
-                assign(params, path[i].paramValues);
-            }
-            return Object.freeze(params);
-        }
-        /**
-         * Gets all available resolve tokens (keys)
-         *
-         * This method can be used in conjunction with [[injector]] to inspect the resolve values
-         * available to the Transition.
-         *
-         * This returns all the tokens defined on [[StateDeclaration.resolve]] blocks, for the states
-         * in the Transition's [[TreeChanges.to]] path.
-         *
-         * #### Example:
-         * This example logs all resolve values
-         * ```js
-         * let tokens = trans.getResolveTokens();
-         * tokens.forEach(token => console.log(token + " = " + trans.injector().get(token)));
-         * ```
-         *
-         * #### Example:
-         * This example creates promises for each resolve value.
-         * This triggers fetches of resolves (if any have not yet been fetched).
-         * When all promises have all settled, it logs the resolve values.
-         * ```js
-         * let tokens = trans.getResolveTokens();
-         * let promise = tokens.map(token => trans.injector().getAsync(token));
-         * Promise.all(promises).then(values => console.log("Resolved values: " + values));
-         * ```
-         *
-         * @param pathname resolve context's path name (e.g., `to` or `from`)
-         *
-         * @returns an array of resolve tokens (keys)
-         */
-        getResolveTokens(pathname = "to") {
-            return new ResolveContext((this._treeChanges[pathname] || []), this._routerState._injector).getTokens();
-        }
-        /**
-         * Dynamically adds a new [[Resolvable]] (i.e., [[StateDeclaration.resolve]]) to this transition.
-         *
-         * Allows a transition hook to dynamically add a Resolvable to this Transition.
-         *
-         * Use the [[Transition.injector]] to retrieve the resolved data in subsequent hooks.
-         *
-         * If a `state` argument is provided, the Resolvable is processed when that state is being entered.
-         * If no `state` is provided then the root state is used.
-         * If the given `state` has already been entered, the Resolvable is processed when any child state is entered.
-         * If no child states will be entered, the Resolvable is processed during the `onFinish` phase of the Transition.
-         *
-         * The `state` argument also scopes the resolved data.
-         * The resolved data is available from the injector for that `state` and any children states.
-         *
-         * #### Example:
-         * ```js
-         * transitionService.onBefore({}, transition => {
-         *   transition.addResolvable({
-         *     token: 'myResolve',
-         *     deps: ['MyService'],
-         *     resolveFn: myService => myService.getData()
-         *   });
-         * });
-         * ```
-         *
-         * @param {Resolvable | ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
-         * @param {StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
-         */
-        addResolvable(resolvable, state) {
-            if (state === void 0) {
-                state = "";
-            }
-            resolvable = isInstanceOf(resolvable, Resolvable)
-                ? resolvable
-                : new Resolvable(resolvable);
-            const stateName = isString(state) ? state : state.name;
-            const topath = this._treeChanges.to || [];
-            let targetNode;
-            for (let i = 0; i < topath.length; i++) {
-                const node = topath[i];
-                if (node.state.name === stateName) {
-                    targetNode = node;
-                    break;
-                }
-            }
-            assert(!!targetNode, `targetNode not found ${stateName}`);
-            const resolveContext = new ResolveContext(topath, this._routerState._injector);
-            resolveContext.addResolvables([resolvable], targetNode.state);
-        }
-        /**
-         * Gets the transition from which this transition was redirected.
-         *
-         * If the current transition is a redirect, this method returns the transition that was redirected.
-         *
-         * #### Example:
-         * ```js
-         * let transitionA = $state.go('A').transition
-         * transitionA.onStart({}, () => $state.target('B'));
-         * $transitions.onSuccess({ to: 'B' }, (trans) => {
-         *   trans.to().name === 'B'; // true
-         *   trans.redirectedFrom() === transitionA; // true
-         * });
-         * ```
-         *
-         * @returns {Transition} The previous Transition, or null if this Transition is not the result of a redirection
-         */
-        redirectedFrom() {
-            return this._options.redirectedFrom || null;
-        }
-        /**
-         * Gets the original transition in a redirect chain
-         *
-         * A transition might belong to a long chain of multiple redirects.
-         * This method walks the [[redirectedFrom]] chain back to the original (first) transition in the chain.
-         *
-         * #### Example:
-         * ```js
-         * // states
-         * registry.register({ name: 'A', redirectTo: 'B' });
-         * registry.register({ name: 'B', redirectTo: 'C' });
-         * registry.register({ name: 'C', redirectTo: 'D' });
-         * registry.register({ name: 'D' });
-         *
-         * let transitionA = $state.go('A').transition
-         *
-         * $transitions.onSuccess({ to: 'D' }, (trans) => {
-         *   trans.to().name === 'D'; // true
-         *   trans.redirectedFrom().to().name === 'C'; // true
-         *   trans.originalTransition() === transitionA; // true
-         *   trans.originalTransition().to().name === 'A'; // true
-         * });
-         * ```
-         *
-         * @returns {Transition} The original Transition that started a redirect chain
-         */
-        originalTransition() {
-            const rf = this.redirectedFrom();
-            return (rf && rf.originalTransition()) || this;
-        }
-        /**
-         * Get the transition options
-         *
-         * @returns {TransitionOptions} the options for this Transition.
-         */
-        options() {
-            return this._options;
+            return Object.freeze(collectPathParams(path));
         }
         /**
          * Gets the states being entered.
@@ -25982,62 +26510,12 @@
          * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
          */
         exiting() {
-            const states = pathStates(this._treeChanges.exiting);
-            states.reverse();
-            return states;
-        }
-        /**
-         * Gets the states being retained.
-         *
-         * @returns {StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
-         *    exited during this Transition
-         */
-        retained() {
-            return pathStates(this._treeChanges.retained);
-        }
-        /**
-         * Get the [[ViewConfig]]s associated with this Transition
-         *
-         * Each entered state's view declaration is encapsulated as a `ViewConfig` object.
-         * This method fetches the `ViewConfigs` for a given path in the Transition (e.g., "to" or "entering").
-         *
-         * @param pathname the name of the path to fetch views for:
-         *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-         * @param state If provided, only returns the `ViewConfig`s for a single state in the path
-         *
-         * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
-         */
-        views(pathname = "entering", state) {
-            const path = (this._treeChanges[pathname] || []);
-            const viewConfigs = [];
-            for (let i = 0; i < path.length; i++) {
-                const node = path[i];
-                if (state && node.state !== state)
-                    continue;
-                const views = node._views || [];
-                for (let j = 0; j < views.length; j++) {
-                    viewConfigs.push(views[j]);
-                }
+            const path = this._treeChanges.exiting;
+            const states = [];
+            for (let i = path.length - 1; i >= 0; i--) {
+                states.push(path[i].state.self);
             }
-            return viewConfigs;
-        }
-        /**
-         * Return the transition's tree changes
-         *
-         * A transition goes from one state/parameters to another state/parameters.
-         * During a transition, states are entered and/or exited.
-         *
-         * This function returns various branches (paths) which represent the changes to the
-         * active state tree that are caused by the transition.
-         *
-         * @param {string} [pathname] The name of the tree changes path to get:
-         *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-         * @returns {PathNode[] | TreeChanges}
-         */
-        treeChanges(pathname) {
-            return pathname
-                ? (this._treeChanges[pathname] || [])
-                : this._treeChanges;
+            return states;
         }
         /**
          * Creates a new transition that is a redirection of the current one.
@@ -26052,7 +26530,7 @@
         redirect(targetState) {
             let redirects = 1;
             let trans = this;
-            while ((trans = trans.redirectedFrom())) {
+            while ((trans = trans._options.redirectedFrom || null)) {
                 if (++redirects > REDIRECT_MAX) {
                     throw new Error(`Too many consecutive Transition redirects (20+)`);
                 }
@@ -26065,11 +26543,11 @@
             // on the new transition (unless the target state explicitly specifies location: false).
             // This causes the original url to be replaced with the url for the redirect target
             // so the original url disappears from the browser history.
-            if (this.options().source === "url" &&
+            if (this._options.source === "url" &&
                 targetState.options().location !== false) {
                 redirectOpts.location = "replace";
             }
-            const newOptions = assign({}, this.options(), targetState.options(), redirectOpts);
+            const newOptions = assign({}, this._options, targetState.options(), redirectOpts);
             targetState = targetState.withOptions(newOptions, true);
             const newTransition = this._transitionService.create(this._treeChanges.from, targetState);
             const originalEnteringNodes = this._treeChanges.entering;
@@ -26083,25 +26561,21 @@
             // You can wait for the resolve, then redirect to a child state based on the result.
             // The redirected transition does not have to re-fetch the resolve.
             // ---------------------------------------------------------
-            const nodeIsReloading = (reloadState) => (node) => {
-                return reloadState && node.state.includes[reloadState.name];
-            };
             const params = matching(redirectEnteringNodes, originalEnteringNodes, nonDynamicParams);
             // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
             const matchingEnteringNodes = [];
-            const isReloading = nodeIsReloading(targetState.options().reloadState);
-            for (let i = 0; i < params.length; i++) {
-                if (!isReloading(params[i])) {
-                    matchingEnteringNodes.push(params[i]);
+            const { reloadState } = targetState.options();
+            params.forEach((node) => {
+                if (!nodeIsReloading(node, reloadState)) {
+                    matchingEnteringNodes.push(node);
                 }
-            }
+            });
             // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
-            for (let i = 0; i < matchingEnteringNodes.length; i++) {
-                const node = matchingEnteringNodes[i];
+            matchingEnteringNodes.forEach((node, i) => {
                 if (originalEnteringNodes[i]) {
                     node.resolvables = originalEnteringNodes[i].resolvables;
                 }
-            }
+            });
             return newTransition;
         }
         /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
@@ -26128,12 +26602,14 @@
             if (pathsDiffer)
                 return undefined;
             const changes = [];
-            for (let i = 0; i < tc.to.length; i++) {
-                const nodeChanges = Param.changed(tc.to[i].paramSchema, tc.to[i].paramValues, tc.from[i].paramValues);
-                for (let j = 0; j < nodeChanges.length; j++) {
-                    changes.push(nodeChanges[j]);
-                }
-            }
+            tc.to.forEach((node, i) => {
+                const fromParamValues = tc.from[i].paramValues;
+                node.paramSchema.forEach((param) => {
+                    if (!param.type.equals(node.paramValues[param.id], fromParamValues[param.id])) {
+                        changes.push(param);
+                    }
+                });
+            });
             return changes;
         }
         /**
@@ -26153,44 +26629,71 @@
             }
             return false;
         }
-        /**
-         * Returns true if the transition is ignored.
-         *
-         * A transition is ignored if no states are entered nor exited, and no parameter values have changed.
-         *
-         * @returns true if the Transition is ignored.
-         */
-        ignored() {
-            return !!this._ignoredReason();
-        }
         /** @internal */
         _ignoredReason() {
             const pending = this._routerState._transition;
             const { reloadState } = this._options;
-            const same = (pathA, pathB) => {
-                if (pathA.length !== pathB.length)
-                    return false;
-                const pathPrefix = matching(pathA, pathB);
-                let retainedCount = 0;
-                for (let i = 0; i < pathPrefix.length; i++) {
-                    const node = pathPrefix[i];
-                    if (!reloadState || !node.state.includes[reloadState.name]) {
-                        retainedCount++;
-                    }
-                }
-                return pathA.length === retainedCount;
-            };
             const newTC = this._treeChanges;
             const pendTC = pending && pending._treeChanges;
             if (pendTC &&
-                same(pendTC.to, newTC.to) &&
-                same(pendTC.exiting, newTC.exiting))
+                sameReloadAwarePath(pendTC.to, newTC.to, reloadState) &&
+                sameReloadAwarePath(pendTC.exiting, newTC.exiting, reloadState))
                 return "SameAsPending";
             if (newTC.exiting.length === 0 &&
                 newTC.entering.length === 0 &&
-                same(newTC.from, newTC.to))
+                sameReloadAwarePath(newTC.from, newTC.to, reloadState))
                 return "SameAsCurrent";
             return undefined;
+        }
+        /** @internal */
+        _getHooksFor(phase) {
+            return buildHooksForPhase(this, phase);
+        }
+        /** @internal */
+        _startTransition() {
+            const { _routerState } = this;
+            _routerState._lastStartedTransitionId = this.$id;
+            _routerState._transition = this;
+            _routerState._lastStartedTransition = this;
+            return Promise.resolve();
+        }
+        /** @internal */
+        _runTransitionHooks() {
+            // Wait to build the RUN hook chain until BEFORE hooks have completed.
+            // This allows a BEFORE hook to add more RUN hooks dynamically.
+            const allRunHooks = this._getHooksFor(TransitionHookPhase._RUN);
+            return TransitionHook._invokeHooks(allRunHooks, resolvedPromise);
+        }
+        /** @internal */
+        _resolveTransition() {
+            this._deferred.resolve(this.to());
+        }
+        /** @internal */
+        _transitionSuccess() {
+            this.success = true;
+            const hooks = this._getHooksFor(TransitionHookPhase._SUCCESS);
+            void this._runSuccessHooks(hooks);
+        }
+        /** @internal */
+        async _runSuccessHooks(hooks) {
+            try {
+                await TransitionHook._invokeHooks(hooks, resolvedPromise);
+                this._resolveTransition();
+            }
+            catch (reason) {
+                this._transitionError(reason);
+            }
+        }
+        /** @internal */
+        _transitionError(reason) {
+            const rejection = Rejection.normalize(reason);
+            this.success = false;
+            this._deferred.reject(rejection);
+            this._error = rejection;
+            const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
+            hooks.forEach((hook) => {
+                hook._invokeHook();
+            });
         }
         /**
          * Runs the transition
@@ -26199,48 +26702,27 @@
          *
          * @internal
          *
-         * @returns {Promise<any>} a promise for a successful transition.
+         * @returns {Promise<StateDeclaration>} a promise for a successful transition.
          */
         run() {
-            // Gets transition hooks array for the given phase
-            const getHooksFor = (phase) => this._hookBuilder.buildHooksForPhase(phase);
-            // When the chain is complete, then resolve or reject the deferred
-            const transitionSuccess = () => {
-                this.success = true;
-                this._deferred.resolve(this.to());
-                const hooks = this._hookBuilder.buildHooksForPhase(TransitionHookPhase._SUCCESS);
-                for (let i = 0; i < hooks.length; i++) {
-                    hooks[i].invokeHook();
-                }
-            };
-            const transitionError = (reason) => {
-                this.success = false;
-                this._deferred.reject(reason);
-                this._error = reason;
-                const hooks = getHooksFor(TransitionHookPhase._ERROR);
-                for (let i = 0; i < hooks.length; i++) {
-                    hooks[i].invokeHook();
-                }
-            };
-            const runTransition = () => {
-                // Wait to build the RUN hook chain until the BEFORE hooks are done
-                // This allows a BEFORE hook to dynamically add additional RUN hooks via the Transition object.
-                const allRunHooks = getHooksFor(TransitionHookPhase._RUN);
-                const resolved = Promise.resolve();
-                return TransitionHook.invokeHooks(allRunHooks, () => resolved);
-            };
-            const startTransition = () => {
-                const { _routerState } = this;
-                _routerState._lastStartedTransitionId = this.$id;
-                _routerState._transition = this;
-                _routerState._transitionHistory._enqueue(this);
-                return Promise.resolve();
-            };
-            const allBeforeHooks = getHooksFor(TransitionHookPhase._BEFORE);
-            TransitionHook.invokeHooks(allBeforeHooks, startTransition)
-                .then(runTransition)
-                .then(transitionSuccess, transitionError);
+            void this._run();
             return this.promise;
+        }
+        /** @internal */
+        async _run() {
+            try {
+                const allBeforeHooks = this._getHooksFor(TransitionHookPhase._BEFORE);
+                await TransitionHook._invokeHooks(allBeforeHooks, this);
+                await this._runTransitionHooks();
+                this._transitionSuccess();
+            }
+            catch (reason) {
+                this._transitionError(reason);
+            }
+        }
+        /** Checks if this transition is currently active/running. */
+        isActive() {
+            return this._routerState._transition === this;
         }
         /**
          * Checks if the Transition is valid
@@ -26277,19 +26759,13 @@
             }
             const paramDefs = state.parameters();
             const values = this.params();
-            const invalidParams = [];
-            for (let i = 0; i < paramDefs.length; i++) {
-                const param = paramDefs[i];
+            const invalidValueParts = [];
+            paramDefs.forEach((param) => {
                 if (!param.validates(values[param.id])) {
-                    invalidParams.push(param);
-                }
-            }
-            if (invalidParams.length) {
-                const invalidValueParts = [];
-                for (let i = 0; i < invalidParams.length; i++) {
-                    const param = invalidParams[i];
                     invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
                 }
+            });
+            if (invalidValueParts.length) {
                 const invalidValues = invalidValueParts.join(", ");
                 const detail = `The following parameter values are not valid for state '${state.name}': ${invalidValues}`;
                 return Rejection.invalid(detail);
@@ -26306,18 +26782,6 @@
         toString() {
             const fromStateOrName = this.from();
             const toStateOrName = this.to();
-            const avoidEmptyHash = (params) => {
-                if (params["#"] !== null && params["#"] !== undefined) {
-                    return params;
-                }
-                const cleanParams = {};
-                for (const key in params) {
-                    if (key !== "#") {
-                        cleanParams[key] = params[key];
-                    }
-                }
-                return cleanParams;
-            };
             // (X) means the to state is invalid.
             const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
             return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
@@ -26325,228 +26789,139 @@
     }
     function pathStates(path) {
         const states = [];
-        for (let i = 0; i < path.length; i++) {
-            states.push(path[i].state.self);
-        }
+        path.forEach((node) => {
+            states.push(node.state.self);
+        });
         return states;
     }
     function pathParams(path) {
-        const params = {};
-        for (let i = 0; i < path.length; i++) {
-            assign(params, path[i].paramValues);
-        }
-        return params;
-    }
-    Transition.diToken = Transition;
-
-    /**
-     * Adds built-in transition-scoped resolvables such as `$transition$`,
-     * `$stateParams`, and `$state$` before the transition starts.
-     */
-    function registerAddCoreResolvables(transitionService) {
-        return transitionService._onCreate({}, function addCoreResolvables(trans) {
-            trans.addResolvable(Resolvable.fromData(Transition, trans), "");
-            trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
-            trans.addResolvable(Resolvable.fromData("$stateParams", trans.params()), "");
-            trans.entering().forEach((state) => {
-                trans.addResolvable(Resolvable.fromData("$state$", state), state);
-            });
-        });
-    }
-    const TRANSITION_TOKENS = ["$transition$", Transition];
-    /**
-     * Clears transition object references from cached resolvables once a transition
-     * falls out of router history, preventing stale retention.
-     */
-    function treeChangesCleanup(trans) {
-        const paths = values(trans.treeChanges());
-        const nodes = [];
-        for (let i = 0; i < paths.length; i++) {
-            const path = paths[i];
-            for (let j = 0; j < path.length; j++) {
-                const node = path[j];
-                if (nodes.indexOf(node) === -1) {
-                    nodes.push(node);
-                }
-            }
-        }
-        for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
-            const { resolvables } = node;
-            for (let j = 0; j < resolvables.length; j++) {
-                const resolve = resolvables[j];
-                if (TRANSITION_TOKENS.includes(resolve.token)) {
-                    resolvables[j] = Resolvable.fromData(resolve.token, null);
-                }
-            }
-        }
+        return collectPathParams(path);
     }
 
-    function ignoredHook(trans) {
-        const ignoredReason = trans._ignoredReason();
-        if (!ignoredReason)
-            return undefined;
-        const pending = trans._routerState._transition;
-        if (ignoredReason === "SameAsCurrent" && pending) {
-            pending.abort();
-        }
-        return Rejection.ignored()._toPromise();
-    }
-    /**
-     * Short-circuits transitions that the router determines are ignorable,
-     * such as no-op transitions to the current or pending state.
-     */
-    const registerIgnoredTransitionHook = (transitionService) => transitionService.onBefore({}, ignoredHook, { priority: -9999 });
-
-    function invalidTransitionHook(trans) {
-        if (!trans.valid()) {
-            throw new Error(trans.error()?.toString());
-        }
-    }
-    /**
-     * Fails transitions that are already known to be invalid before any work runs.
-     * This keeps invalid targets from progressing into the rest of the hook pipeline.
-     */
-    const registerInvalidTransitionHook = (transitionService) => transitionService.onBefore({}, invalidTransitionHook, { priority: -1e4 });
-
-    /**
-     * Adapts `onEnter`, `onExit`, and `onRetain` state declaration callbacks
-     * into transition hook functions.
-     */
-    function makeEnterExitRetainHook(hookName) {
-        return (transition, state) => {
-            const _state = (state._state && state._state());
-            const hookFn = _state[hookName];
-            return hookFn(transition, state);
-        };
-    }
-    const onExitHook = makeEnterExitRetainHook("onExit");
-    const onRetainHook = makeEnterExitRetainHook("onRetain");
-    const onEnterHook = makeEnterExitRetainHook("onEnter");
-    /**
-     * Registers state `onExit` callbacks.
-     */
-    const registerOnExitHook = (transitionService) => transitionService.onExit({
-        exiting: (state) => !!state?.onExit,
-    }, onExitHook);
-    /**
-     * Registers state `onRetain` callbacks.
-     */
-    const registerOnRetainHook = (transitionService) => transitionService.onRetain({
-        retained: (state) => !!state?.onRetain,
-    }, onRetainHook);
-    /**
-     * Registers state `onEnter` callbacks.
-     */
-    const registerOnEnterHook = (transitionService) => transitionService.onEnter({
-        entering: (state) => !!state?.onEnter,
-    }, onEnterHook);
-
-    /**
-     * Registers support for state-level `redirectTo` declarations and converts
-     * their results into target states.
-     */
-    const registerRedirectToHook = (transitionService, stateService) => {
-        const redirectToHook = (trans) => {
-            const redirect = trans.to().redirectTo;
-            if (!redirect)
-                return undefined;
-            const $state = stateService;
-            function handleResult(result) {
-                if (!result)
-                    return undefined;
-                if (isInstanceOf(result, TargetState)) {
-                    return result;
-                }
-                if (isString(result)) {
-                    return $state.target(result, trans.params(), trans.options());
-                }
-                if (result.state || result.params) {
-                    return $state.target(result.state || trans.to(), result.params || trans.params(), trans.options());
-                }
-                return undefined;
-            }
-            if (isFunction(redirect)) {
-                return Promise.resolve(redirect(trans)).then(handleResult);
-            }
-            return handleResult(redirect);
-        };
-        return transitionService.onStart({
-            to: (state) => !!state.redirectTo,
-        }, redirectToHook);
+    /** @internal */
+    const PATH_TYPES = {
+        to: { _name: "to", _stateHook: false },
+        from: { _name: "from", _stateHook: false },
+        exiting: { _name: "exiting", _stateHook: true },
+        retained: { _name: "retained", _stateHook: true },
+        entering: { _name: "entering", _stateHook: true },
     };
 
     /**
-     * Base priority for resolve-related transition hooks.
+     * Tests a state against one hook match criterion.
      */
-    const RESOLVE_HOOK_PRIORITY = 1000;
-    const eagerResolvePath = (trans) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
-        .resolvePath(true, trans)
-        .then(() => {
-        /* empty */
-    });
-    const registerEagerResolvePath = (transitionService) => transitionService.onStart({}, eagerResolvePath, {
-        priority: RESOLVE_HOOK_PRIORITY,
-    });
-    /**
-     * Resolves the entering state's lazy resolvables at `onEnter`.
-     */
-    const lazyResolveState = (trans, state) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
-        .subContext(state._state())
-        .resolvePath(false, trans)
-        .then(() => {
-        /* empty */
-    });
-    function matchEnteringState() {
-        return true;
+    function matchState(state, criterion, transition) {
+        if (isString(criterion)) {
+            return criterion === state.name;
+        }
+        if (isFunction(criterion)) {
+            return !!criterion(state, transition);
+        }
+        return false;
     }
-    const registerLazyResolveState = (transitionService) => transitionService.onEnter({ entering: matchEnteringState }, lazyResolveState, {
-        priority: RESOLVE_HOOK_PRIORITY,
-    });
     /**
-     * Resolves any remaining lazy resolvables before the transition finishes.
+     * Stores one registered transition hook and evaluates whether it matches
+     * a specific transition tree change set.
      */
-    const resolveRemaining = (trans) => new ResolveContext(trans.treeChanges().to, trans._routerState._injector)
-        .resolvePath(false, trans)
-        .then(() => {
-        /* empty */
-    });
-    const registerResolveRemaining = (transitionService) => transitionService.onFinish({}, resolveRemaining, {
-        priority: RESOLVE_HOOK_PRIORITY,
-    });
-
+    /** @internal */
+    class RegisteredHook {
+        constructor(tranSvc, eventType, callback, matchCriteria, hooks, options = {}) {
+            this._tranSvc = tranSvc;
+            this._eventType = eventType;
+            this._callback = callback;
+            this._matchCriteria = matchCriteria;
+            this._hooks = hooks;
+            this._invokeCount = 0;
+            this._deregistered = false;
+            this._priority = options.priority || 0;
+            this._bind = options.bind || null;
+            this._invokeLimit = options.invokeLimit;
+        }
+        /** @internal */
+        _matchingNodes(nodes, criterion, transition) {
+            if (criterion === true)
+                return nodes;
+            const matching = [];
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                if (matchState(node.state, criterion, transition)) {
+                    matching.push(node);
+                }
+            }
+            return matching.length ? matching : null;
+        }
+        /** @internal */
+        _getMatchingNodes(treeChanges, transition) {
+            const matchingNodes = {};
+            for (const name in PATH_TYPES) {
+                const pathType = PATH_TYPES[name];
+                const path = (treeChanges[pathType._name] || []);
+                const transitionNode = path.length ? path[path.length - 1] : undefined;
+                const criterion = hasOwn(this._matchCriteria, pathType._name)
+                    ? this._matchCriteria[pathType._name]
+                    : true;
+                if (criterion === true) {
+                    matchingNodes[pathType._name] = pathType._stateHook
+                        ? path
+                        : transitionNode
+                            ? [transitionNode]
+                            : [];
+                    continue;
+                }
+                const matching = pathType._stateHook
+                    ? this._matchingNodes(path, criterion, transition)
+                    : transitionNode &&
+                        matchState(transitionNode.state, criterion, transition)
+                        ? [transitionNode]
+                        : null;
+                if (!matching) {
+                    return null;
+                }
+                matchingNodes[pathType._name] = matching;
+            }
+            return matchingNodes;
+        }
+        /** @internal */
+        _matches(treeChanges, transition) {
+            return this._getMatchingNodes(treeChanges, transition);
+        }
+        /** @internal */
+        _deregister() {
+            removeFrom(this._hooks, this);
+            this._deregistered = true;
+        }
+    }
     /**
-     * Loads all view configs for entering states before view activation.
+     * Registers a hook on either the transition service or a single transition.
+     *
+     * @internal
      */
-    const loadEnteringViews = (transition) => {
-        const enteringViews = transition.views("entering");
-        if (!enteringViews.length)
-            return undefined;
-        return Promise.all(enteringViews.map((view) => Promise.resolve(view.load()))).then(() => {
-            /* empty */
-        });
-    };
+    function registerHook(hookSource, transitionService, eventType, matchCriteria, callback, options = {}) {
+        const _registeredHooks = (hookSource._registeredHooks =
+            hookSource._registeredHooks || {});
+        const hooks = (_registeredHooks[eventType._name] =
+            _registeredHooks[eventType._name] || []);
+        const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchCriteria, hooks, options);
+        hooks.push(registeredHook);
+        return registeredHook._deregister.bind(registeredHook);
+    }
     /**
-     * Registers the entering-view load hook.
+     * Creates a convenience `onX` registration function for a transition event.
+     *
+     * @internal
      */
-    const registerLoadEnteringViews = (transitionService) => transitionService.onFinish({}, loadEnteringViews);
-    /**
-     * Registers the hook that swaps active view configs after a successful transition.
-     */
-    const registerActivateViews = (transitionService, viewService) => {
-        const activateViews = (transition) => {
-            const enteringViews = transition.views("entering");
-            const exitingViews = transition.views("exiting");
-            if (!enteringViews.length && !exitingViews.length)
-                return;
-            exitingViews.forEach((vc) => viewService._deactivateViewConfig(vc));
-            enteringViews.forEach((vc) => {
-                viewService._activateViewConfig(vc);
-            });
-            viewService._sync();
-        };
-        return transitionService.onSuccess({}, activateViews);
-    };
+    function makeEvent(hookSource, transitionService, eventType) {
+        const _registeredHooks = (hookSource._registeredHooks =
+            hookSource._registeredHooks || {});
+        const hooks = (_registeredHooks[eventType._name] = []);
+        function hookRegistrationFn(matchObject, callback, options = {}) {
+            const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchObject, hooks, options);
+            hooks.push(registeredHook);
+            return registeredHook._deregister.bind(registeredHook);
+        }
+        hookSource[eventType._name] = hookRegistrationFn;
+        return hookRegistrationFn;
+    }
 
     /**
      * Immutable metadata describing one transition lifecycle event.
@@ -26556,15 +26931,15 @@
         /**
          * Creates one immutable transition event descriptor.
          */
-        constructor(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, getResultHandler = TransitionHook.HANDLE_RESULT, getErrorHandler = TransitionHook.REJECT_ERROR, synchronous = false) {
-            this.name = name;
-            this.hookPhase = hookPhase;
-            this.hookOrder = hookOrder;
+        constructor(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, resultHandler = TransitionHook._handleResult, errorHandler = TransitionHook._rejectError, synchronous = false) {
+            this._name = name;
+            this._hookPhase = hookPhase;
+            this._hookOrder = hookOrder;
             this._criteriaMatchPath = criteriaMatchPath;
-            this.reverseSort = reverseSort;
-            this.getResultHandler = getResultHandler;
-            this.getErrorHandler = getErrorHandler;
-            this.synchronous = synchronous;
+            this._reverseSort = reverseSort;
+            this._handleResult = resultHandler;
+            this._handleError = errorHandler;
+            this._synchronous = synchronous;
         }
     }
 
@@ -26572,28 +26947,62 @@
         location: true,
         relative: undefined,
         inherit: false,
-        notify: true,
         reload: false,
-        supercede: true,
-        custom: {},
         current: () => null,
         source: "unknown",
     };
+    function noop() {
+        /* empty */
+    }
+    function afterViewCommitTask() {
+        return new Promise((resolve) => {
+            setTimeout(resolve, 0);
+        });
+    }
+    let viewTransitionActive = false;
+    function runWithViewTransition(updateCallback) {
+        if (viewTransitionActive) {
+            updateCallback();
+            return Promise.resolve();
+        }
+        let hasCallbackError = false;
+        let callbackError;
+        viewTransitionActive = true;
+        const viewTransition = document.startViewTransition(() => {
+            try {
+                updateCallback();
+            }
+            catch (error) {
+                hasCallbackError = true;
+                callbackError = error;
+                throw error;
+            }
+        });
+        viewTransition.finished.then(() => {
+            viewTransitionActive = false;
+        }, () => {
+            viewTransitionActive = false;
+        });
+        if (hasCallbackError) {
+            throw callbackError;
+        }
+        return viewTransition.updateCallbackDone.then(afterViewCommitTask);
+    }
     /**
      * Central registry and factory for transition events, hooks, and transition instances.
+     *
+     * @internal
      */
     class TransitionProvider {
         constructor(routerState, $exceptionHandler) {
             this._transitionCount = 0;
             this._eventTypes = [];
             this._registeredHooks = {};
-            this._criteriaPaths = {};
             this._routerState = routerState;
-            this._defineCorePaths();
             this._defineCoreEvents();
             this._registerCoreTransitionHooks();
             this._exceptionHandler = $exceptionHandler.handler;
-            routerState._successfulTransitions._onEvict(treeChangesCleanup);
+            routerState._successfulTransitionCleanup = treeChangesCleanup;
         }
         /**
          * Wires runtime services into the transition service and registers the
@@ -26603,11 +27012,12 @@
             return this;
         }
         /** @internal */
-        _initRuntimeHooks(stateService, urlService, viewService) {
+        _initRuntimeHooks(stateService, viewService) {
             this._view = viewService;
-            registerUpdateUrl(this, stateService, urlService);
-            registerRedirectToHook(this, stateService);
-            registerActivateViews(this, viewService);
+            this._stateService = stateService;
+            registerUpdateUrl(this);
+            registerRedirectToHook(this);
+            registerActivateViews(this);
         }
         /**
          * Creates a new transition from the current path to a target state.
@@ -26621,35 +27031,26 @@
         /** @internal */
         _defineCoreEvents() {
             const TH = TransitionHook;
-            const paths = this._criteriaPaths;
+            const paths = PATH_TYPES;
             const NORMAL_SORT = false;
             const REVERSE_SORT = true;
             const SYNCHRONOUS = true;
-            this._defineEvent("onCreate", TransitionHookPhase._CREATE, 0, paths.to, NORMAL_SORT, TH.LOG_REJECTED_RESULT, TH.THROW_ERROR, SYNCHRONOUS);
+            this._defineEvent("onCreate", TransitionHookPhase._CREATE, 0, paths.to, NORMAL_SORT, TH._logRejectedResult, TH._throwError, SYNCHRONOUS);
             this._defineEvent("onBefore", TransitionHookPhase._BEFORE, 0, paths.to);
             this._defineEvent("onStart", TransitionHookPhase._RUN, 0, paths.to);
             this._defineEvent("onExit", TransitionHookPhase._RUN, 100, paths.exiting, REVERSE_SORT);
             this._defineEvent("onRetain", TransitionHookPhase._RUN, 200, paths.retained);
             this._defineEvent("onEnter", TransitionHookPhase._RUN, 300, paths.entering);
             this._defineEvent("onFinish", TransitionHookPhase._RUN, 400, paths.to);
-            this._defineEvent("onSuccess", TransitionHookPhase._SUCCESS, 0, paths.to, NORMAL_SORT, TH.LOG_REJECTED_RESULT, TH.LOG_ERROR, SYNCHRONOUS);
-            this._defineEvent("onError", TransitionHookPhase._ERROR, 0, paths.to, NORMAL_SORT, TH.LOG_REJECTED_RESULT, TH.LOG_ERROR, SYNCHRONOUS);
-        }
-        /** @internal */
-        _defineCorePaths() {
-            const { _STATE: STATE, _TRANSITION: TRANSITION } = TransitionHookScope;
-            this._definePathType("to", TRANSITION);
-            this._definePathType("from", TRANSITION);
-            this._definePathType("exiting", STATE);
-            this._definePathType("retained", STATE);
-            this._definePathType("entering", STATE);
+            this._defineEvent("onSuccess", TransitionHookPhase._SUCCESS, 0, paths.to, NORMAL_SORT, TH._logRejectedResult, TH._logError, SYNCHRONOUS);
+            this._defineEvent("onError", TransitionHookPhase._ERROR, 0, paths.to, NORMAL_SORT, TH._logRejectedResult, TH._logError, SYNCHRONOUS);
         }
         /**
          * Defines one transition event type and exposes its registration helper.
          */
         /** @internal */
-        _defineEvent(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, getResultHandler = TransitionHook.HANDLE_RESULT, getErrorHandler = TransitionHook.REJECT_ERROR, synchronous = false) {
-            const eventType = new TransitionEventType(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort, getResultHandler, getErrorHandler, synchronous);
+        _defineEvent(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, resultHandler = TransitionHook._handleResult, errorHandler = TransitionHook._rejectError, synchronous = false) {
+            const eventType = new TransitionEventType(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort, resultHandler, errorHandler, synchronous);
             this._eventTypes.push(eventType);
             makeEvent(this, this, eventType);
         }
@@ -26658,32 +27059,19 @@
          */
         /** @internal */
         _getEvents(phase) {
-            const transitionHookTypes = isDefined(phase)
-                ? this._eventTypes.filter((type) => type.hookPhase === phase)
-                : this._eventTypes.slice();
-            return transitionHookTypes.sort((left, right) => {
-                const cmpByPhase = left.hookPhase - right.hookPhase;
-                return cmpByPhase === 0 ? left.hookOrder - right.hookOrder : cmpByPhase;
+            const transitionHookTypes = [];
+            this._eventTypes.forEach((eventType) => {
+                if (phase === undefined || eventType._hookPhase === phase) {
+                    transitionHookTypes.push(eventType);
+                }
             });
-        }
-        /**
-         * Defines one path selector used by transition hook matching.
-         */
-        /** @internal */
-        _definePathType(name, hookScope) {
-            this._criteriaPaths[name] = { name, scope: hookScope };
-        }
-        /**
-         * Returns the configured transition hook path selectors.
-         */
-        /** @internal */
-        _getPathTypes() {
-            return this._criteriaPaths;
+            return transitionHookTypes;
         }
         /**
          * Returns hooks registered for a specific transition event name.
          */
-        getHooks(hookName) {
+        /** @internal */
+        _getHooks(hookName) {
             return this._registeredHooks[hookName] || [];
         }
         /**
@@ -26753,11 +27141,12 @@
          */
         /** @internal */
         _getEventType(eventName) {
-            const eventType = this._eventTypes.find((type) => type.name === eventName);
-            if (!eventType) {
-                throw new Error(`Unknown Transition hook event: ${eventName}`);
+            for (let i = 0; i < this._eventTypes.length; i++) {
+                const eventType = this._eventTypes[i];
+                if (eventType._name === eventName)
+                    return eventType;
             }
-            return eventType;
+            throw new Error(`Unknown Transition hook event: ${eventName}`);
         }
         /**
          * Installs the built-in transition hooks that power router behavior.
@@ -26778,43 +27167,281 @@
         }
     }
     TransitionProvider.$inject = [_routerProvider, _exceptionHandlerProvider];
-    function registerUpdateUrl(transitionService, stateService, urlService) {
-        const updateUrl = (transition) => {
-            const options = transition.options();
-            const $state = stateService;
-            if (options.source !== "url" &&
-                options.location &&
-                $state.$current?.navigable) {
-                const urlOptions = {
-                    replace: options.location === "replace",
-                };
-                urlService.push($state.$current.navigable.url, $state._routerState._params, urlOptions);
+    function registerAddCoreResolvables(transitionService) {
+        return transitionService._onCreate({}, function addCoreResolvables(trans) {
+            addTransitionResolvable(trans, Resolvable.fromData(Transition, trans), "");
+            addTransitionResolvable(trans, Resolvable.fromData("$transition$", trans), "");
+            addTransitionResolvable(trans, Resolvable.fromData("$stateParams", trans.params()), "");
+            const entering = trans.entering();
+            entering.forEach((state) => {
+                addTransitionResolvable(trans, Resolvable.fromData("$state$", state), state.name);
+            });
+        });
+    }
+    function addTransitionResolvable(trans, resolvable, stateName) {
+        const toPath = trans._treeChanges.to || [];
+        let targetNode;
+        for (let i = 0; i < toPath.length; i++) {
+            const node = toPath[i];
+            if (node.state.name === stateName) {
+                targetNode = node;
+                break;
             }
-            urlService.update(true);
+        }
+        if (!targetNode) {
+            throw new Error(`targetNode not found ${stateName}`);
+        }
+        new ResolveContext(toPath, trans._routerState._injector).addResolvables([resolvable], targetNode.state);
+    }
+    function transitionViews(trans, pathname) {
+        const path = (trans._treeChanges[pathname] || []);
+        const viewConfigs = [];
+        for (let i = 0; i < path.length; i++) {
+            const node = path[i];
+            const views = node._views || [];
+            for (let j = 0; j < views.length; j++) {
+                const view = views[j];
+                viewConfigs.push(view);
+            }
+        }
+        return viewConfigs;
+    }
+    function treeChangesCleanup(trans) {
+        const treeChanges = trans._treeChanges;
+        const nodes = new Set();
+        collectPathNodes(nodes, treeChanges.from);
+        collectPathNodes(nodes, treeChanges.to);
+        collectPathNodes(nodes, treeChanges.retained);
+        collectPathNodes(nodes, treeChanges.retainedWithToParams);
+        collectPathNodes(nodes, treeChanges.exiting);
+        collectPathNodes(nodes, treeChanges.entering);
+        nodes.forEach((node) => {
+            const { resolvables } = node;
+            resolvables.forEach((resolve, i) => {
+                if (isTransitionToken(resolve.token)) {
+                    resolvables[i] = Resolvable.fromData(resolve.token, null);
+                }
+            });
+        });
+    }
+    function collectPathNodes(nodes, path) {
+        for (let i = 0; i < path.length; i++) {
+            nodes.add(path[i]);
+        }
+    }
+    function isTransitionToken(token) {
+        return token === "$transition$" || token === Transition;
+    }
+    function ignoredHook(trans) {
+        const ignoredReason = trans._ignoredReason();
+        if (!ignoredReason)
+            return undefined;
+        const pending = trans._routerState._transition;
+        if (ignoredReason === "SameAsCurrent" && pending) {
+            pending.abort();
+        }
+        return Rejection.ignored()._toPromise();
+    }
+    function registerIgnoredTransitionHook(transitionService) {
+        return transitionService.onBefore({}, ignoredHook, { priority: -9999 });
+    }
+    function invalidTransitionHook(trans) {
+        if (!trans.valid()) {
+            throw new Error(trans.error()?.toString());
+        }
+    }
+    function registerInvalidTransitionHook(transitionService) {
+        return transitionService.onBefore({}, invalidTransitionHook, {
+            priority: -1e4,
+        });
+    }
+    function onExitHook(transition, state) {
+        return state._state?.().onExit?.(transition, state);
+    }
+    function onRetainHook(transition, state) {
+        return state._state?.().onRetain?.(transition, state);
+    }
+    function onEnterHook(transition, state) {
+        return state._state?.().onEnter?.(transition, state);
+    }
+    function registerOnExitHook(transitionService) {
+        return transitionService.onExit({
+            exiting: (state) => !!state?.onExit,
+        }, onExitHook);
+    }
+    function registerOnRetainHook(transitionService) {
+        return transitionService.onRetain({
+            retained: (state) => !!state?.onRetain,
+        }, onRetainHook);
+    }
+    function registerOnEnterHook(transitionService) {
+        return transitionService.onEnter({
+            entering: (state) => !!state?.onEnter,
+        }, onEnterHook);
+    }
+    function hasRedirectTo(state) {
+        return !!state.redirectTo;
+    }
+    function handleRedirectToResult(stateService, trans, result) {
+        if (!result)
+            return undefined;
+        if (isInstanceOf(result, TargetState)) {
+            return result;
+        }
+        if (isString(result)) {
+            return stateService.target(result, trans.params(), trans._options);
+        }
+        if (isObject(result) && ("state" in result || "params" in result)) {
+            return stateService.target(result.state || trans.to(), result.params || trans.params(), trans._options);
+        }
+        return undefined;
+    }
+    async function redirectToHook(trans) {
+        const redirect = trans.to().redirectTo;
+        if (!redirect)
+            return undefined;
+        const stateService = this._stateService;
+        if (isFunction(redirect)) {
+            const result = await Promise.resolve(redirect(trans));
+            return handleRedirectToResult(stateService, trans, result);
+        }
+        return handleRedirectToResult(stateService, trans, redirect);
+    }
+    function registerRedirectToHook(transitionService) {
+        return transitionService.onStart({
+            to: hasRedirectTo,
+        }, redirectToHook, { bind: transitionService });
+    }
+    const RESOLVE_HOOK_PRIORITY = 1000;
+    function eagerResolvePath(trans) {
+        return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+            .resolvePath(true, trans)
+            .then(noop);
+    }
+    function registerEagerResolvePath(transitionService) {
+        return transitionService.onStart({}, eagerResolvePath, {
+            priority: RESOLVE_HOOK_PRIORITY,
+        });
+    }
+    function lazyResolveState(trans, state) {
+        return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+            .subContext(state._state())
+            .resolvePath(false, trans)
+            .then(noop);
+    }
+    function matchEnteringState() {
+        return true;
+    }
+    function registerLazyResolveState(transitionService) {
+        return transitionService.onEnter({ entering: matchEnteringState }, lazyResolveState, {
+            priority: RESOLVE_HOOK_PRIORITY,
+        });
+    }
+    function resolveRemaining(trans) {
+        return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
+            .resolvePath(false, trans)
+            .then(noop);
+    }
+    function registerResolveRemaining(transitionService) {
+        return transitionService.onFinish({}, resolveRemaining, {
+            priority: RESOLVE_HOOK_PRIORITY,
+        });
+    }
+    function loadEnteringViews(transition) {
+        const enteringViews = transitionViews(transition, "entering");
+        if (!enteringViews.length)
+            return undefined;
+        const promises = new Array(enteringViews.length);
+        enteringViews.forEach((view, i) => {
+            promises[i] = loadViewConfig(view);
+        });
+        return Promise.all(promises).then(noop);
+    }
+    function registerLoadEnteringViews(transitionService) {
+        return transitionService.onFinish({}, loadEnteringViews);
+    }
+    function updateViewConfigs(viewService, enteringViews, exitingViews) {
+        exitingViews.forEach((view) => {
+            viewService._deactivateViewConfig(view);
+        });
+        enteringViews.forEach((view) => {
+            viewService._activateViewConfig(view);
+        });
+        viewService._sync();
+    }
+    function activateViewsHook(transition) {
+        const viewService = this._view;
+        const enteringViews = transitionViews(transition, "entering");
+        const exitingViews = transitionViews(transition, "exiting");
+        if (!enteringViews.length && !exitingViews.length) {
+            return Promise.resolve();
+        }
+        const updateViews = () => {
+            updateViewConfigs(viewService, enteringViews, exitingViews);
         };
-        return transitionService.onSuccess({}, updateUrl, { priority: 9999 });
+        if (!hasConnectedNgView(viewService)) {
+            updateViews();
+            return Promise.resolve();
+        }
+        return runWithViewTransition(updateViews);
+    }
+    function registerActivateViews(transitionService) {
+        return transitionService.onSuccess({}, activateViewsHook, {
+            bind: transitionService,
+        });
+    }
+    function hasConnectedNgView(viewService) {
+        const ngViews = viewService._ngViews;
+        for (let i = 0; i < ngViews.length; i++) {
+            if (ngViews[i]._element.isConnected) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function updateUrlHook(transition) {
+        const options = transition._options;
+        const stateService = this._stateService;
+        const routerState = this._routerState;
+        const navigable = stateService.$current?.navigable;
+        if (options.source !== "url" && options.location && navigable?._url) {
+            const urlOptions = {
+                replace: options.location === "replace",
+            };
+            routerState._push(navigable._url, stateService._routerState._params, urlOptions);
+        }
+        routerState._update(true);
+    }
+    function registerUpdateUrl(transitionService) {
+        return transitionService.onSuccess({}, updateUrlHook, {
+            bind: transitionService,
+            priority: 9999,
+        });
     }
     function registerUpdateGlobalState(transitionService) {
-        return transitionService._onCreate({}, (trans) => {
+        const updateGlobalState = (trans) => {
             const routerState = trans._routerState;
-            const transitionSuccessful = () => {
-                const current = trans.$to();
-                routerState._successfulTransitions._enqueue(trans);
-                routerState._currentState = current;
-                routerState._current = current?.self;
-                const params = routerState._params;
-                for (const key in params) {
-                    delete params[key];
-                }
-                assign(params, trans.params());
-            };
+            const current = trans.$to();
+            routerState._setSuccessfulTransition(trans);
+            routerState._currentState = current;
+            routerState._current = current?.self;
+            const params = routerState._params;
+            keys(params).forEach((key) => {
+                delete params[key];
+            });
+            assign(params, trans.params());
+        };
+        transitionService._onCreate({}, (trans) => {
+            const routerState = trans._routerState;
             const clearCurrentTransition = () => {
                 if (routerState._transition === trans) {
                     routerState._transition = undefined;
                 }
             };
-            trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
             trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+        });
+        return transitionService.onSuccess({}, updateGlobalState, {
+            priority: 10000,
         });
     }
 
@@ -26827,10 +27454,10 @@
      * @param {Promise<T>} promise
      * @returns {Promise<T>}
      */
-    const silenceUncaughtInPromise = (promise) => {
+    function silenceUncaughtInPromise(promise) {
         promise.catch(() => undefined);
         return promise;
-    };
+    }
     /**
      * Creates a rejected promise whose rejection is intentionally silenced.
      *
@@ -26838,7 +27465,9 @@
      * @param {E} error
      * @returns {Promise<never>}
      */
-    const silentRejection = (error) => silenceUncaughtInPromise(Promise.reject(error));
+    function silentRejection(error) {
+        return silenceUncaughtInPromise(Promise.reject(error));
+    }
     /**
      * Provides services related to ng-router states.
      *
@@ -26848,12 +27477,6 @@
         /** @internal */
         _getRegistry() {
             return this._stateRegistry;
-        }
-        /** @internal */
-        _getUrlService() {
-            if (!this._urlService)
-                throw new Error("Url service is not initialized");
-            return this._urlService;
         }
         /**
          * The latest successful state parameters
@@ -26879,20 +27502,23 @@
             this.$get = [
                 _injector,
                 _stateRegistry,
-                _url,
+                _router,
+                _rootScope,
                 _view,
                 /**
                  * @param {ng.InjectorService} $injector
                  * @param {StateRegistryProvider} $stateRegistry
-                 * @param {ng.UrlService} $url
+                 * @param {RouterProvider} routerState
+                 * @param {ng.RootScopeService} $rootScope
                  * @param viewService
                  * @returns {StateProvider}
                  */
-                ($injector, $stateRegistry, $url, viewService) => {
+                ($injector, $stateRegistry, routerState, $rootScope, viewService) => {
                     this._stateRegistry = $stateRegistry;
-                    this._urlService = $url;
-                    $url._stateService = this;
-                    this._transitionService._initRuntimeHooks(this, $url, viewService);
+                    this._routerState = routerState;
+                    routerState._stateService = this;
+                    $rootScope.$on("$locationChangeSuccess", (evt) => routerState._sync(evt));
+                    this._transitionService._initRuntimeHooks(this, viewService);
                     this._$injector = $injector;
                     this._routerState._injector = $injector;
                     return this;
@@ -26901,9 +27527,8 @@
             this._routerState = routerState;
             this._transitionService = transitionService;
             this._stateRegistry = stateRegistry;
-            this._urlService = undefined;
             this._$injector = undefined;
-            this._invalidCallbacks = [];
+            this._lazyStates = [];
             this._defaultErrorHandler = exceptionHandlerProvider.handler;
         }
         /**
@@ -26922,85 +27547,69 @@
             }
             return this;
         }
-        /**
-         * Handler for when [[transitionTo]] is called with an invalid state.
-         *
-         * Invokes the [[onInvalid]] callbacks, in natural order.
-         * Each callback's return value is checked in sequence until one of them returns an instance of TargetState.
-         * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
-         *
-         * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-         * @internal
-         * @param {PathNode[]} fromPath
-         * @param {TargetState} toState
-         */
-        _handleInvalidTargetState(fromPath, toState) {
-            const fromState = makeTargetState(this._getRegistry(), fromPath);
-            const routerState = this._routerState;
-            const latestThing = () => routerState._transitionHistory._peekTail();
-            const latest = latestThing();
-            const callbackQueue = new Queue(this._invalidCallbacks.slice());
-            const injector = this._$injector;
-            const checkForRedirect = (result) => {
-                if (!isInstanceOf(result, TargetState)) {
-                    return undefined;
+        /** @internal */
+        _registerLazyResult(result) {
+            if (!result)
+                return;
+            const states = isArray(result) ? result : [result];
+            states.forEach((state) => this.state(state));
+        }
+        /** @internal */
+        _findLazyState(target) {
+            const name = target.name();
+            if (!isString(name))
+                return undefined;
+            for (let i = 0; i < this._lazyStates.length; i++) {
+                const lazy = this._lazyStates[i];
+                if (name === lazy.prefix || name.startsWith(`${lazy.prefix}.`)) {
+                    return lazy;
                 }
-                let target = result;
-                // Recreate the TargetState, in case the state is now defined.
-                target = this.target(target.identifier(), target.params(), target.options());
-                if (!target.valid()) {
-                    return Rejection.invalid(target.error())._toPromise();
-                }
-                if (latestThing() !== latest) {
-                    return Rejection.superseded()._toPromise();
-                }
-                return this.transitionTo(target.identifier(), target.params(), target.options());
-            };
-            /**
-             * @returns {Promise<any>}
-             */
-            function invokeNextCallback() {
-                const nextCallback = callbackQueue._dequeue();
-                if (nextCallback === undefined)
-                    return Rejection.invalid(toState.error())._toPromise();
-                const callbackResult = Promise.resolve(nextCallback(toState, fromState, injector));
-                return callbackResult
-                    .then(checkForRedirect)
-                    .then((result) => result || invokeNextCallback());
             }
-            return invokeNextCallback();
+            return undefined;
+        }
+        /** @internal */
+        async _loadLazyTargetState(toState) {
+            const routerState = this._routerState;
+            const latest = routerState._lastStartedTransition;
+            const lazy = this._findLazyState(toState);
+            if (!lazy) {
+                return Rejection.invalid(toState.error())._toPromise();
+            }
+            if (!lazy.promise) {
+                lazy.promise = this._loadLazyRegistration(lazy, toState);
+            }
+            await lazy.promise;
+            if (routerState._lastStartedTransition !== latest) {
+                return Rejection.superseded()._toPromise();
+            }
+            const target = this.target(toState.identifier(), toState.params(), toState.options());
+            if (!target.valid()) {
+                return Rejection.invalid(target.error())._toPromise();
+            }
+            return this.transitionTo(target.identifier(), target.params(), target.options());
+        }
+        /** @internal */
+        async _loadLazyRegistration(lazy, toState) {
+            try {
+                this._registerLazyResult(await lazy.loader(toState, this._$injector));
+                lazy.loaded = true;
+            }
+            catch (error) {
+                lazy.promise = undefined;
+                throw error;
+            }
         }
         /**
-         * Registers an Invalid State handler
-         *
-         * Registers a [[OnInvalidCallback]] function to be invoked when [[StateService.transitionTo]]
-         * has been called with an invalid state reference parameter
-         *
-         * Example:
-         * ```js
-         * stateService.onInvalid(function(to) {
-         *   if (to.name() === 'foo') {
-         *     stateService.state({ name: 'foo' });
-         *     return stateService.target('foo');
-         *   }
-         * });
-         * ```
-         *
-         * @param {OnInvalidCallback} callback invoked when the toState is invalid
-         *   This function receives the (invalid) toState, the fromState, and an injector.
-         *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
-         *   If one is returned, it is treated as a redirect.
-         *
-         * @returns a function which deregisters the callback
+         * Registers a lazy state namespace.
+         * The loader is invoked the first time navigation targets this prefix.
          */
-        onInvalid(callback) {
-            this._invalidCallbacks.push(callback);
-            return () => {
-                const index = this._invalidCallbacks.indexOf(callback);
-                if (index !== -1) {
-                    this._invalidCallbacks.splice(index, 1);
-                }
-            };
+        lazy(prefix, loader) {
+            this._lazyStates.push({
+                prefix: prefix.replace(/\.\*\*$/, ""),
+                loader,
+                loaded: false,
+            });
+            return this;
         }
         /**
          * Reloads the current state
@@ -27053,7 +27662,6 @@
             return this.transitionTo(current, this._routerState._params, {
                 reload: isDefined(reloadState) ? reloadState : true,
                 inherit: false,
-                notify: false,
             });
         }
         /**
@@ -27062,7 +27670,7 @@
          * Convenience method for transitioning to a new state.
          *
          * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-         * `{ location: true, inherit: true, relative: $state.$current, notify: true }`.
+         * `{ location: true, inherit: true, relative: $state.$current }`.
          * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
          * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
          * inherit from the current parameter values (because of `inherit: true`).
@@ -27094,7 +27702,7 @@
          *
          * @param {*} [options] Transition options
          *
-         * @returns {Promise<any>} A promise representing the state of the new transition.
+         * @returns A promise representing the state of the new transition.
          */
         go(to, params, options) {
             const defautGoOpts = { relative: this.$current, inherit: true };
@@ -27109,7 +27717,7 @@
          * This may be returned from a Transition Hook to redirect a transition, for example.
          * @param {string | StateDeclaration | StateObject} identifier
          * @param {{}} params
-         * @param {any} [options]
+         * @param {TransitionOptions} [options]
          */
         target(identifier, params = {}, options = {}) {
             // If we're reloading, find the state object to reload from
@@ -27119,16 +27727,65 @@
             options.reloadState =
                 options.reload === true
                     ? reg.root()
-                    : reg._matcher.find(options.reload, options.relative);
+                    : options.reload
+                        ? reg._matcher.find(options.reload, options.relative)
+                        : undefined;
             if (options.reload && !options.reloadState)
-                throw new Error(`No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`);
+                throw new Error(`No such reload state '${isString(options.reload)
+                ? options.reload
+                : isObject(options.reload) && "name" in options.reload
+                    ? String(options.reload.name)
+                    : String(options.reload)}'`);
             return new TargetState(this._getRegistry(), identifier, params, options);
         }
         getCurrentPath() {
             const routerState = this._routerState;
-            const latestSuccess = routerState._successfulTransitions._peekTail();
-            const rootPath = () => [new PathNode(this._getRegistry().root())];
-            return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
+            const latestSuccess = routerState._lastSuccessfulTransition;
+            return latestSuccess
+                ? latestSuccess._treeChanges.to
+                : [new PathNode(this._getRegistry().root())];
+        }
+        /** @internal */
+        _handleTransitionRejection(trans, error) {
+            if (isInstanceOf(error, Rejection)) {
+                const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
+                if (error.type === RejectType._IGNORED) {
+                    isLatest && this._routerState._update();
+                    // Consider ignored `Transition.run()` as a successful `transitionTo`.
+                    return Promise.resolve(this._routerState._current);
+                }
+                const { detail } = error;
+                if (error.type === RejectType._SUPERSEDED &&
+                    error.redirected &&
+                    isInstanceOf(detail, TargetState)) {
+                    const redirect = trans.redirect(detail);
+                    return this._runRedirectTransition(redirect);
+                }
+                if (error.type === RejectType._ABORTED) {
+                    isLatest && this._routerState._update();
+                    return Promise.reject(error);
+                }
+            }
+            this.defaultErrorHandler()(error);
+            return Promise.reject(error);
+        }
+        /** @internal */
+        async _runRedirectTransition(redirect) {
+            try {
+                return await redirect.run();
+            }
+            catch (reason) {
+                return this._handleTransitionRejection(redirect, reason);
+            }
+        }
+        /** @internal */
+        async _runTransitionTo(trans) {
+            try {
+                return await trans.run();
+            }
+            catch (error) {
+                return this._handleTransitionRejection(trans, error);
+            }
         }
         /**
          * Low-level method for transitioning to a new state.
@@ -27151,7 +27808,7 @@
          *      will populate $stateParams.
          * @param {TransitionOptions} options Transition options
          *
-         * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
+         * @returns A promise representing the state of the new transition. See [[go]]
          */
         transitionTo(to, toParams = {}, options = {}) {
             options = defaults(options, defaultTransOpts);
@@ -27160,42 +27817,20 @@
             const ref = this.target(to, toParams, options);
             const currentPath = this.getCurrentPath();
             if (!ref.exists())
-                return this._handleInvalidTargetState(currentPath, ref);
+                return this._loadLazyTargetState(ref);
             if (!ref.valid())
                 return silentRejection(ref.error());
-            if (options.supercede === false && getCurrent()) {
-                return Rejection.ignored("Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.")._toPromise();
-            }
-            const rejectedTransitionHandler = (trans) => (error) => {
-                if (isInstanceOf(error, Rejection)) {
-                    const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
-                    if (error.type === RejectType._IGNORED) {
-                        isLatest && this._getUrlService().update();
-                        // Consider ignored `Transition.run()` as a successful `transitionTo`
-                        return Promise.resolve(this._routerState._current);
-                    }
-                    const { detail } = error;
-                    if (error.type === RejectType._SUPERSEDED &&
-                        error.redirected &&
-                        isInstanceOf(detail, TargetState)) {
-                        // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
-                        // by returning the promise for the new (redirect) `Transition.run()`.
-                        const redirect = trans.redirect(detail);
-                        return redirect.run().catch(rejectedTransitionHandler(redirect));
-                    }
-                    if (error.type === RejectType._ABORTED) {
-                        isLatest && this._getUrlService().update();
-                        return Promise.reject(error);
-                    }
-                }
-                const errorHandler = this.defaultErrorHandler();
-                errorHandler(error);
-                return Promise.reject(error);
-            };
+            /**
+             * Special handling for Ignored, Aborted, and Redirected transitions
+             *
+             * The semantics for the transition.run() promise and the StateService.transitionTo()
+             * promise differ. For instance, the run() promise may be rejected because it was
+             * IGNORED, but the transitionTo() promise is resolved because from the user perspective
+             * no error occurred.  Likewise, the transition.run() promise may be rejected because of
+             * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
+             */
             const transition = this._transitionService.create(currentPath, ref);
-            const transitionToPromise = transition
-                .run()
-                .catch(rejectedTransitionHandler(transition));
+            const transitionToPromise = this._runTransitionTo(transition);
             silenceUncaughtInPromise(transitionToPromise); // issue #2676
             // Return a promise for the transition, which also has the transition object on it.
             return assign(transitionToPromise, { transition });
@@ -27230,8 +27865,8 @@
            * @returns {boolean | undefined} Returns true if it is the state.
            */
         is(stateOrName, params, options) {
-            options = defaults(options, { relative: this.$current });
-            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+            const relative = options?.relative === undefined ? this.$current : options.relative;
+            const state = this._stateRegistry?._matcher.find(stateOrName, relative);
             if (!isDefined(state))
                 return undefined;
             if (this.$current !== state)
@@ -27278,7 +27913,7 @@
            * @returns {boolean | undefined} Returns true if it does include the state
            */
         includes(stateOrName, params, options) {
-            options = defaults(options, { relative: this.$current });
+            const relative = options?.relative === undefined ? this.$current : options.relative;
             const glob = isString(stateOrName) && Glob.fromString(stateOrName);
             if (glob) {
                 const currentName = this.$current?.name;
@@ -27286,9 +27921,9 @@
                     return false;
                 stateOrName = currentName;
             }
-            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+            const state = this._stateRegistry?._matcher.find(stateOrName, relative);
             const include = this.$current?.includes;
-            if (!isDefined(state))
+            if (!isDefined(state) || !include)
                 return undefined;
             if (!isDefined(include[state.name]))
                 return false;
@@ -27315,24 +27950,18 @@
          * @returns {string | null} compiled state url
          */
         href(stateOrName, params, options) {
-            const defaultHrefOpts = {
-                lossy: true,
-                inherit: true,
-                absolute: false,
-                relative: this.$current,
-            };
-            options = defaults(options, defaultHrefOpts);
             params = params || {};
-            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+            const relative = options?.relative === undefined ? this.$current : options.relative;
+            const state = this._stateRegistry?._matcher.find(stateOrName, relative);
             if (!isDefined(state))
                 return null;
-            if (options?.inherit)
+            if (options?.inherit !== false)
                 params = this._routerState._params.$inherit(params, this.$current, state);
-            const nav = state && options?.lossy ? state.navigable : state;
-            if (!nav || isNullOrUndefined(nav.url)) {
+            const nav = state && options?.lossy !== false ? state.navigable : state;
+            if (!nav || isNullOrUndefined(nav._url)) {
                 return null;
             }
-            return this._getUrlService().href(nav.url, params, {
+            return this._routerState._href(nav._url, params, {
                 absolute: options?.absolute,
             });
         }
@@ -27381,23 +28010,47 @@
         _exceptionHandlerProvider,
     ];
 
+    const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
+    const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
+    function asTemplate(result) {
+        return Promise.resolve(result).then(toTemplateResult);
+    }
+    function asComponent(result) {
+        return Promise.resolve(result).then(toComponentResult);
+    }
+    function toTemplateResult(str) {
+        return { _template: str ?? undefined };
+    }
+    function toComponentResult(str) {
+        return { _component: str };
+    }
+    function getConfigType(config) {
+        if (isDefined(config.template))
+            return "template";
+        if (isDefined(config.templateUrl))
+            return "templateUrl";
+        if (isDefined(config.component))
+            return "component";
+        return "default";
+    }
+    function componentElementName(camelCase) {
+        return kebobString(camelCase);
+    }
     /**
      * Resolves route templates and components from state view declarations.
+     *
+     * @internal
      */
     class TemplateFactoryProvider {
         constructor() {
             /**
-             * Wires HTTP, template request, cache, and injector services into the factory.
+             * Wires template request and injector services into the factory.
              */
             this.$get = [
-                _http,
-                _templateCache,
                 _templateRequest,
                 _injector,
-                ($http, $templateCache, $templateRequest, $injector) => {
+                ($templateRequest, $injector) => {
                     this._templateRequest = $templateRequest;
-                    this._http = $http;
-                    this._templateCache = $templateCache;
                     this._injector = $injector;
                     return this;
                 },
@@ -27406,91 +28059,71 @@
         /**
          * Resolves a state's view config into either concrete template HTML or a component name.
          */
-        fromConfig(config, params, context) {
-            const defaultTemplate = "<ng-view></ng-view>";
-            const asTemplate = (result) => Promise.resolve(result).then((str) => ({ template: str }));
-            const asComponent = (result) => Promise.resolve(result).then((str) => ({ component: str }));
-            const getConfigType = (configParam) => {
-                if (isDefined(configParam.template))
-                    return "template";
-                if (isDefined(configParam.templateUrl))
-                    return "templateUrl";
-                if (isDefined(configParam.templateProvider))
-                    return "templateProvider";
-                if (isDefined(configParam.component))
-                    return "component";
-                return "default";
-            };
+        /** @internal */
+        _fromConfig(config, params) {
             switch (getConfigType(config)) {
                 case "template":
-                    return asTemplate(this.fromString(config.template, params));
+                    return asTemplate(this._fromString(config.template, params));
                 case "templateUrl":
-                    return asTemplate(this.fromUrl(config.templateUrl, params));
-                case "templateProvider":
-                    return asTemplate(this.fromProvider(config.templateProvider, params, context));
+                    return asTemplate(this._fromUrl(config.templateUrl, params));
                 case "component":
                     return asComponent(config.component);
                 default:
-                    return asTemplate(defaultTemplate);
+                    return asTemplate(DEFAULT_TEMPLATE);
             }
         }
         /**
          * Resolves a literal template string or template factory function.
          */
-        fromString(template, params) {
+        /** @internal */
+        _fromString(template, params) {
             return isFunction(template) ? template(params) : template;
         }
         /**
          * Fetches a template from a static URL or a URL factory.
          */
-        fromUrl(url, params) {
-            if (isFunction(url))
-                url = url(params);
-            if (isNullOrUndefined(url))
+        /** @internal */
+        _fromUrl(url, params) {
+            const templateUrl = isFunction(url) ? url(params) : url;
+            if (isNullOrUndefined(templateUrl))
                 return null;
-            return this._templateRequest(url);
-        }
-        fromProvider(provider, _params, context) {
-            const deps = annotate(provider);
-            const providerFn = isArray(provider)
-                ? provider[provider.length - 1]
-                : provider;
-            const resolvable = new Resolvable("", providerFn, deps);
-            return resolvable.get(context);
+            return this._templateRequest(templateUrl);
         }
         /**
          * Builds the HTML for a routed component and binds resolve data to its inputs.
          */
-        makeComponentTemplate(ngView, context, component, bindings) {
+        /** @internal */
+        _makeComponentTemplate(ngView, context, component, bindings) {
             bindings = bindings || {};
-            const kebob = (camelCase) => {
-                const kebobed = kebobString(camelCase);
-                return /^(x|data)-/.exec(kebobed) ? `x-${kebobed}` : kebobed;
-            };
-            const attributeTpl = (input) => {
-                const { name, type } = input;
-                const attrName = kebob(name);
-                if (ngView.getAttribute(attrName) && !bindings[name]) {
-                    return `${attrName}='${ngView.getAttribute(attrName)}'`;
-                }
-                const resolveName = bindings[name] || name;
-                if (type === "@")
-                    return `${attrName}='{{$resolve.${resolveName}}}'`;
-                if (type === "&") {
-                    const res = context.getResolvable(resolveName);
-                    const fn = res && res.data;
-                    const args = (fn && annotate(fn)) || [];
-                    const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
-                    return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
-                }
-                return `${attrName}='$resolve.${resolveName}'`;
-            };
-            const attrs = getComponentBindings(this._injector, component)
-                .map(attributeTpl)
-                .join(" ");
-            const kebobName = kebob(component);
-            return `<${kebobName} ${attrs}></${kebobName}>`;
+            const componentBindings = getComponentBindings(this._injector, component);
+            const attrs = [];
+            componentBindings.forEach((binding) => {
+                attrs.push(componentAttributeTemplate(ngView, context, bindings, binding));
+            });
+            const kebobName = componentElementName(component);
+            return `<${kebobName} ${attrs.join(" ")}></${kebobName}>`;
         }
+    }
+    function componentAttributeTemplate(ngView, context, bindings, input) {
+        const { name, type } = input;
+        const attrName = componentElementName(name);
+        const existingAttr = ngView.getAttribute(attrName);
+        if (existingAttr && !bindings[name]) {
+            return `${attrName}='${existingAttr}'`;
+        }
+        const resolveName = bindings[name] || name;
+        if (type === "@")
+            return `${attrName}='{{$resolve.${resolveName}}}'`;
+        if (type === "&") {
+            const res = context.getResolvable(resolveName);
+            const fn = res && res.data;
+            const args = fn && (isFunction(fn) || isArray(fn))
+                ? annotate(fn)
+                : [];
+            const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
+            return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
+        }
+        return `${attrName}='$resolve.${resolveName}'`;
     }
     /**
      * Reads the binding declarations for a named component directive.
@@ -27509,1509 +28142,25 @@
         });
         return bindings;
     }
-    const getBindings = (def) => {
-        if (isObject(def.bindToController)) {
-            return scopeBindings(def.bindToController);
+    function getBindings(def) {
+        const componentBindings = def.bindToController;
+        if (isObject(componentBindings) &&
+            isObject(def.scope) &&
+            !keys(def.scope).length) {
+            return scopeBindings(componentBindings);
         }
-        return scopeBindings(def.scope);
-    };
-    const scopeBindings = (bindingsObj) => {
+        return [];
+    }
+    function scopeBindings(bindingsObj) {
         const bindingKeys = keys(bindingsObj || {});
         const bindings = [];
         bindingKeys.forEach((key) => {
-            const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
+            const match = BINDING_MATCH.exec(bindingsObj[key] || "");
             if (match) {
                 bindings.push({ name: match[2] || key, type: match[1] });
             }
         });
         return bindings;
-    };
-
-    /**
-     * A registry for parameter types.
-     *
-     * This registry manages the built-in (and custom) parameter types.
-     *
-     * The built-in parameter types are:
-     *
-     * - [[string]]
-     * - [[path]]
-     * - [[query]]
-     * - [[hash]]
-     * - [[int]]
-     * - [[bool]]
-     * - [[date]]
-     * - [[json]]
-     * - [[any]]
-     *
-     * To register custom parameter types, use [[UrlConfig.type]], i.e.,
-     *
-     * ```js
-     * router.urlService.config.type(customType)
-     * ```
-     */
-    class ParamTypes {
-        /**
-         * @param {ng.AngularService} $angular
-         */
-        constructor($angular) {
-            this._angular = $angular;
-            this.$injector = $angular.$injector;
-            this.enqueue = true;
-            this.typeQueue = [];
-            const defaultTypeNames = [
-                "hash",
-                "string",
-                "query",
-                "path",
-                "int",
-                "bool",
-                "date",
-                "json",
-                "any",
-            ];
-            this.defaultTypes = {};
-            const defaultParamTypes = {};
-            defaultTypeNames.forEach((name) => {
-                const definition = ParamTypes.prototype[name];
-                this.defaultTypes[name] = definition;
-                defaultParamTypes[name] = new ParamType(assign({ name }, definition));
-            });
-            // Register default types. Store them in the prototype of this.types.
-            this.types = createObject(defaultParamTypes);
-        }
-        type(name, definition, definitionFn) {
-            if (!isDefined(definition)) {
-                if (this.typeQueue.length && this._getInjector()) {
-                    this._flushTypeQueue();
-                }
-                return this.types[name];
-            }
-            if (hasOwn(this.types, name))
-                throw new Error(`A type named '${name}' has already been defined.`);
-            this.types[name] = new ParamType(assign({ name }, definition));
-            if (definitionFn) {
-                this.typeQueue.push({ name, def: definitionFn });
-                if (!this.enqueue && this._getInjector())
-                    this._flushTypeQueue();
-            }
-            return this;
-        }
-        /** @internal */
-        _flushTypeQueue() {
-            const injector = this._getInjector();
-            if (!injector) {
-                return;
-            }
-            while (this.typeQueue.length) {
-                const type = this.typeQueue.shift();
-                if (type.pattern)
-                    throw new Error("You cannot override a type's .pattern at runtime.");
-                assign(this.types[type.name], injector.invoke(type.def));
-            }
-        }
-        /** @internal */
-        _getInjector() {
-            return (this.$injector || (this.$injector = this._angular.$injector));
-        }
-    }
-    function initDefaultTypes() {
-        const makeDefaultType = (def) => {
-            const valToString = (val) => !isNullOrUndefined(val) ? val.toString() : val;
-            const defaultTypeBase = {
-                encode: (val) => valToString(val),
-                decode: (val) => valToString(val),
-                is: (val) => isInstanceOf(val, String) || isString(val),
-                pattern: /.*/,
-                equals: (a, b) => a === b,
-            };
-            return assign({}, defaultTypeBase, def);
-        };
-        // Default Parameter Type Definitions
-        assign(ParamTypes.prototype, {
-            string: makeDefaultType({}),
-            path: makeDefaultType({
-                pattern: /[^/]*/,
-            }),
-            query: makeDefaultType({}),
-            hash: makeDefaultType({
-                inherit: false,
-            }),
-            int: makeDefaultType({
-                decode: (val) => parseInt(val, 10),
-                /**
-                 * @param {unknown} val
-                 */
-                is(val) {
-                    return (!isNullOrUndefined(val) &&
-                        this.decode(val.toString()) === val);
-                },
-                pattern: /-?\d+/,
-            }),
-            bool: makeDefaultType({
-                encode: (val) => ((val && 1) || 0).toString(),
-                decode: (val) => parseInt(val, 10) !== 0,
-                is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
-                pattern: /[01]/,
-            }),
-            date: makeDefaultType({
-                /**
-                 * @param {{ getFullYear: () => any; getMonth: () => number; getDate: () => any; }} val
-                 */
-                encode(val) {
-                    return !this.is(val)
-                        ? ""
-                        : [
-                            val.getFullYear(),
-                            `0${val.getMonth() + 1}`.slice(-2),
-                            `0${val.getDate()}`.slice(-2),
-                        ].join("-");
-                },
-                /**
-                 * @param {any} val
-                 */
-                decode(val) {
-                    if (this.is(val))
-                        return val;
-                    const match = this.capture.exec(val);
-                    return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
-                },
-                is: (val) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
-                /**
-                 * @param {{ [x: string]: () => any; }} left
-                 * @param {{ [x: string]: () => any; }} right
-                 */
-                equals(left, right) {
-                    return (left.getFullYear() === right.getFullYear() &&
-                        left.getMonth() === right.getMonth() &&
-                        left.getDate() === right.getDate());
-                },
-                pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
-                capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
-            }),
-            json: makeDefaultType({
-                encode: (x) => JSON.stringify(x),
-                decode: (x) => JSON.parse(x),
-                is: (val) => isInstanceOf(val, Object),
-                equals,
-                pattern: /[^/]*/,
-            }),
-            // does not encode/decode
-            any: makeDefaultType({
-                encode: (x) => x,
-                decode: (x) => x,
-                is: () => true,
-                equals,
-            }),
-        });
-    }
-    initDefaultTypes();
-
-    /**
-     * An API to customize the URL behavior and retrieve URL configuration
-     *
-     * This API is used to customize the behavior of the URL.
-     * This includes optional trailing slashes ([[strictMode]]), case sensitivity ([[caseInsensitive]]),
-     * and custom parameter encoding (custom [[type]]).
-     *
-     * It also has information about the location (url) configuration such as [[port]] and [[baseHref]].
-     * This information can be used to build absolute URLs, such as
-     * `https://example.com:443/basepath/state/substate?param1=a#hashvalue`;
-     *
-     * This API is found at `$url.config`.
-     */
-    class UrlConfigProvider {
-        /**
-         * @param {ng.AngularServiceProvider} $angularProvider
-         */
-        constructor($angularProvider) {
-            this.$get = () => this;
-            this.paramTypes = new ParamTypes($angularProvider.$get());
-            this._isCaseInsensitive = false;
-            this._isStrictMode = true;
-            this._defaultSquashPolicy = false;
-            /**
-             * Applies path parameter encoding
-             *
-             * The `$location` service does not allow slashes to be encoded/decoded bi-directionally.
-             *
-             * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
-             *
-             */
-            const pathType = this.type("path");
-            pathType.encode = (x) => !isNullOrUndefined(x)
-                ? x
-                    .toString()
-                    .replace(/([~/])/g, (i) => (i === "~" ? "~~" : "~2F"))
-                : x;
-            pathType.decode = (x) => !isNullOrUndefined(x)
-                ? x
-                    .toString()
-                    .replace(/(~~|~2F)/g, (i) => (i === "~~" ? "~" : "/"))
-                : x;
-            this.paramTypes.enqueue = false;
-            this.paramTypes._flushTypeQueue();
-        }
-        /**
-         * Defines whether URL matching should be case sensitive (the default behavior), or not.
-         *
-         * #### Example:
-         * ```js
-         * // Allow case insensitive url matches
-         * urlService.config.caseInsensitive(true);
-         * ```
-         * @param {boolean} [value] `false` to match URL in a case sensitive manner; otherwise `true`;
-         * @returns {boolean} the current value of caseInsensitive
-         */
-        caseInsensitive(value) {
-            return (this._isCaseInsensitive = isDefined(value)
-                ? value
-                : this._isCaseInsensitive);
-        }
-        /**
-         * Sets the default behavior when generating or matching URLs with default parameter values.
-         *
-         * #### Example:
-         * ```js
-         * // Remove default parameter values from the url
-         * urlService.config.defaultSquashPolicy(true);
-         * ```
-         *
-         * @param {boolean | string} [value] A string that defines the default parameter URL squashing behavior.
-         *    - `nosquash`: When generating an href with a default parameter value, do not squash the parameter value from the URL
-         *    - `slash`: When generating an href with a default parameter value, squash (remove) the parameter value, and, if the
-         *      parameter is surrounded by slashes, squash (remove) one slash from the URL
-         *    - any other string, e.g. "~": When generating an href with a default parameter value, squash (remove)
-         *      the parameter value from the URL and replace it with this string.
-         * @returns {boolean | string} the current value of defaultSquashPolicy
-         */
-        defaultSquashPolicy(value) {
-            if (isDefined(value) &&
-                value !== true &&
-                value !== false &&
-                !isString(value))
-                throw new Error(`Invalid squash policy: ${value}. Valid policies: false, true, arbitrary-string`);
-            return (this._defaultSquashPolicy = isDefined(value)
-                ? value
-                : this._defaultSquashPolicy);
-        }
-        /**
-         * Defines whether URLs should match trailing slashes, or not (the default behavior).
-         *
-         * #### Example:
-         * ```js
-         * // Allow optional trailing slashes
-         * urlService.config.strictMode(false);
-         * ```
-         *
-         * @param {boolean} value `false` to match trailing slashes in URLs, otherwise `true`.
-         * @returns {boolean} the current value of strictMode
-         */
-        strictMode(value) {
-            return (this._isStrictMode = isDefined(value) ? value : this._isStrictMode);
-        }
-        type(name, definition, definitionFn) {
-            if (!isDefined(definition)) {
-                return this.paramTypes.type(name);
-            }
-            this.paramTypes.type(name, definition, definitionFn);
-            return this;
-        }
-    }
-    UrlConfigProvider.$inject = [_angularProvider];
-
-    /**
-     * @param {any} str
-     * @param {any} [param]
-     */
-    function quoteRegExp(str, param) {
-        let surroundPattern = ["", ""];
-        let result = str.replace(/[\\[\]^$*+?.()|{}]/g, "\\$&");
-        if (!param)
-            return result;
-        switch (param.squash) {
-            case false:
-                surroundPattern = ["(", `)${param.isOptional ? "?" : ""}`];
-                break;
-            case true:
-                result = result.replace(/\/$/, "");
-                surroundPattern = ["(?:/(", ")|/)?"];
-                break;
-            default:
-                surroundPattern = [`(${param.squash}|`, ")?"];
-                break;
-        }
-        return (result + surroundPattern[0] + param.type.pattern.source + surroundPattern[1]);
-    }
-    const memoizeTo = (obj, _prop, fn) => (obj[_prop] = obj[_prop] || fn());
-    const splitOnSlash = splitOnDelim("/");
-    const defaultConfig = {
-        state: { params: {} },
-        strict: true,
-        caseInsensitive: true,
-    };
-    /**
-     * Matches URLs against patterns.
-     *
-     * Matches URLs against patterns and extracts named parameters from the path or the search
-     * part of the URL.
-     *
-     * A URL pattern consists of a path pattern, optionally followed by '?' and a list of search (query)
-     * parameters. Multiple search parameter names are separated by '&'. Search parameters
-     * do not influence whether or not a URL is matched, but their values are passed through into
-     * the matched parameters returned by [[UrlMatcher.exec]].
-     *
-     * - *Path parameters* are defined using curly brace placeholders (`/somepath/{param}`)
-     * or colon placeholders (`/somePath/:param`).
-     *
-     * - *A parameter RegExp* may be defined for a param after a colon
-     * (`/somePath/{param:[a-zA-Z0-9]+}`) in a curly brace placeholder.
-     * The regexp must match for the url to be matched.
-     * Should the regexp itself contain curly braces, they must be in matched pairs or escaped with a backslash.
-     *
-     * Note: a RegExp parameter will encode its value using either [[ParamTypes.path]] or [[ParamTypes.query]].
-     *
-     * - *Custom parameter types* may also be specified after a colon (`/somePath/{param:int}`) in curly brace parameters.
-     *   See [[UrlMatcherFactory.type]] for more information.
-     *
-     * - *Catch-all parameters* are defined using an asterisk placeholder (`/somepath/*catchallparam`).
-     *   A catch-all * parameter value will contain the remainder of the URL.
-     *
-     * ---
-     *
-     * Parameter names may contain only word characters (latin letters, digits, and underscore) and
-     * must be unique within the pattern (across both path and search parameters).
-     * A path parameter matches any number of characters other than '/'. For catch-all
-     * placeholders the path parameter matches any number of characters.
-     *
-     * Examples:
-     *
-     * * `'/hello/'` - Matches only if the path is exactly '/hello/'. There is no special treatment for
-     *   trailing slashes, and patterns have to match the entire path, not just a prefix.
-     * * `'/user/:id'` - Matches '/user/bob' or '/user/1234!!!' or even '/user/' but not '/user' or
-     *   '/user/bob/details'. The second path segment will be captured as the parameter 'id'.
-     * * `'/user/{id}'` - Same as the previous example, but using curly brace syntax.
-     * * `'/user/{id:[^/]*}'` - Same as the previous example.
-     * * `'/user/{id:[0-9a-fA-F]{1,8}}'` - Similar to the previous example, but only matches if the id
-     *   parameter consists of 1 to 8 hex digits.
-     * * `'/files/{path:.*}'` - Matches any URL starting with '/files/' and captures the rest of the
-     *   path into the parameter 'path'.
-     * * `'/files/*path'` - ditto.
-     * * `'/calendar/{start:date}'` - Matches "/calendar/2014-11-12" (because the pattern defined
-     *   in the built-in  `date` ParamType matches `2014-11-12`) and provides a Date object in $stateParams.start
-     *
-     */
-    class UrlMatcher {
-        /**
-         * @internal Given a matcher, return an array with the matcher's path segments and path params, in order
-         * @param {UrlMatcher} matcher
-         */
-        static pathSegmentsAndParams(matcher) {
-            const staticSegments = matcher._segments;
-            const pathParams = matcher._params.filter((path) => path.location === DefType._PATH);
-            const result = [];
-            for (let i = 0; i < staticSegments.length; i++) {
-                if (staticSegments[i] !== "")
-                    result.push(staticSegments[i]);
-                if (isDefined(pathParams[i]))
-                    result.push(pathParams[i]);
-            }
-            return result;
-        }
-        /**
-         * @internal Given a matcher, return an array with the matcher's query params
-         * @param {UrlMatcher} matcher
-         * @returns {Param[]}
-         */
-        static queryParams(matcher) {
-            return matcher._params.filter((path) => path.location === DefType._SEARCH);
-        }
-        /**
-         * Compare two UrlMatchers
-         *
-         * This comparison function converts a UrlMatcher into static and dynamic path segments.
-         * Each static path segment is a static string between a path separator (slash character).
-         * Each dynamic segment is a path parameter.
-         *
-         * The comparison function sorts static segments before dynamic ones.
-         * @param {UrlMatcher} a
-         * @param {UrlMatcher} b
-         */
-        static compare(a, b) {
-            /**
-             * Converts a UrlMatcher and all its parent matchers into a flat array of segments.
-             *
-             * Each segment is one of:
-             *  - A slash literal `'/'`
-             *  - A string literal (path segment)
-             *  - A `Param` object representing a URL parameter
-             *
-             * Example:
-             * ```js
-             * // Matches strings like "/foo/:param/tail"
-             * var matcher = $umf.compile("/foo")
-             *                  .append($umf.compile("/:param"))
-             *                  .append($umf.compile("/"))
-             *                  .append($umf.compile("tail"));
-             *
-             * var result = segments(matcher);
-             * // result: [ '/', 'foo', '/', Param, '/', 'tail' ]
-             * ```
-             *
-             * The computed segments are cached in `matcher._cache.segments` for faster future access.
-             *
-             * @param {UrlMatcher} matcher The matcher object to convert into segments. Must have `_cache.path`.
-             * @returns {(string | Param)[]} An array of segments representing the URL pattern.
-             */
-            const segments = (matcher) => (matcher._cache.segments =
-                matcher._cache.segments ||
-                    (matcher._cache.path || [matcher])
-                        .flatMap(UrlMatcher.pathSegmentsAndParams)
-                        .reduce(joinNeighborsR, [])
-                        .flatMap((x) => isString(x) ? splitOnSlash(x) : [x]));
-            /**
-             * Gets the sort weight for each segment of a UrlMatcher
-             *
-             * Caches the result as `matcher._cache.weights`
-             */
-            const weights = (matcher) => (matcher._cache.weights =
-                matcher._cache.weights ||
-                    segments(matcher).map((segment) => {
-                        // Sort slashes first, then static strings, then Params.
-                        if (segment === "/")
-                            return 1;
-                        if (isString(segment))
-                            return 2;
-                        if (isInstanceOf(segment, Param))
-                            return 3;
-                        return 0;
-                    }));
-            /**
-             * Pads shorter array in-place (mutates)
-             */
-            const padArrays = (left, right, padVal) => {
-                const len = Math.max(left.length, right.length);
-                while (left.length < len)
-                    left.push(padVal);
-                while (right.length < len)
-                    right.push(padVal);
-            };
-            const weightsA = weights(a), weightsB = weights(b);
-            padArrays(weightsA, weightsB, 0);
-            let cmp;
-            for (let i = 0, l = weightsA.length; i < l; i++) {
-                cmp = weightsA[i] - weightsB[i];
-                if (cmp !== 0)
-                    return cmp;
-            }
-            return 0;
-        }
-        /**
-         * @param {string} pattern The pattern to compile into a matcher.
-         * @param {ParamTypes} paramTypes The [[ParamTypes]] registry
-         * @param {ParamFactory} paramFactory A [[ParamFactory]] object
-         * @param {UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
-         */
-        constructor(pattern, paramTypes, paramFactory, config) {
-            this._cache = {
-                path: [this],
-            };
-            this._children = [];
-            this._params = [];
-            this._segments = [];
-            this._compiled = [];
-            this.config = config = defaults(config, defaultConfig);
-            this.pattern = pattern;
-            // Find all placeholders and create a compiled pattern, using either classic or curly syntax:
-            //   '*' name
-            //   ':' name
-            //   '{' name '}'
-            //   '{' name ':' regexp '}'
-            // The regular expression is somewhat complicated due to the need to allow curly braces
-            // inside the regular expression. The placeholder regexp breaks down as follows:
-            //    ([:*])([\w\[\]]+)              - classic placeholder ($1 / $2) (search version has - for snake-case)
-            //    \{([\w\[\]]+)(?:\:\s*( ... ))?\}  - curly brace placeholder ($3) with optional regexp/type ... ($4) (search version has - for snake-case
-            //    (?: ... | ... | ... )+         - the regexp consists of any number of atoms, an atom being either
-            //    [^{}\\]+                       - anything other than curly braces or backslash
-            //    \\.                            - a backslash escape
-            //    \{(?:[^{}\\]+|\\.)*\}          - a matched set of curly braces containing other atoms
-            const MAX_REGEX_LENGTH = 200; // or any safe limit
-            const placeholder = new RegExp(`([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
-            const searchPlaceholder = new RegExp(`([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
-            const patterns = [];
-            let last = 0;
-            let matchArray;
-            const checkParamErrors = (id) => {
-                if (!UrlMatcher.nameValidator.test(id))
-                    throw new Error(`Invalid parameter name '${id}' in pattern '${pattern}'`);
-                for (let i = 0; i < this._params.length; i++) {
-                    if (this._params[i].id === id) {
-                        throw new Error(`Duplicate parameter name '${id}' in pattern '${pattern}'`);
-                    }
-                }
-            };
-            // Split into static segments separated by path parameter placeholders.
-            // The number of segments is always 1 more than the number of parameters.
-            const matchDetails = (match, isSearch) => {
-                // IE[78] returns '' for unmatched groups instead of null
-                const id = match[2] || match[3];
-                const defaultType = paramTypes.type(isSearch ? "query" : "path");
-                const regexp = isSearch
-                    ? match[4]
-                    : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
-                if (!defaultType) {
-                    throw new Error(`Missing default parameter type for '${isSearch ? "query" : "path"}'`);
-                }
-                const makeRegexpType = (str) => inherit(defaultType, {
-                    pattern: new RegExp(str, this.config.caseInsensitive ? "i" : undefined),
-                });
-                return {
-                    id,
-                    regexp,
-                    segment: pattern.substring(last, match.index),
-                    type: !regexp
-                        ? defaultType
-                        : paramTypes.type(regexp) ||
-                            makeRegexpType(regexp),
-                };
-            };
-            let details;
-            let segment;
-            while ((matchArray = placeholder.exec(pattern))) {
-                details = matchDetails(matchArray, false);
-                if (details.segment.indexOf("?") >= 0)
-                    break; // we're into the search part
-                checkParamErrors(details.id);
-                this._params.push(paramFactory.fromPath(details.id, details.type, config.state));
-                this._segments.push(details.segment);
-                patterns.push([details.segment, this._params[this._params.length - 1]]);
-                last = placeholder.lastIndex;
-            }
-            segment = pattern.substring(last);
-            // Find any search parameter names and remove them from the last segment
-            const i = segment.indexOf("?");
-            if (i >= 0) {
-                const search = segment.substring(i);
-                segment = segment.substring(0, i);
-                if (search.length > 0) {
-                    last = 0;
-                    while ((matchArray = searchPlaceholder.exec(search))) {
-                        details = matchDetails(matchArray, true);
-                        checkParamErrors(details.id);
-                        this._params.push(paramFactory.fromSearch(details.id, details.type, config.state));
-                        last = placeholder.lastIndex;
-                        // check if ?&
-                    }
-                }
-            }
-            this._segments.push(segment);
-            this._compiled = patterns
-                .map((_pattern) => quoteRegExp(_pattern[0], _pattern[1]))
-                .concat(quoteRegExp(segment));
-        }
-        /**
-         * Creates a new concatenated UrlMatcher
-         *
-         * Builds a new UrlMatcher by appending another UrlMatcher to this one.
-         *
-         * @param {UrlMatcher} url A `UrlMatcher` instance to append as a child of the current `UrlMatcher`.
-         * @returns {UrlMatcher} A new `UrlMatcher` instance representing the concatenation of this `UrlMatcher` and the provided `url` matcher.
-         */
-        append(url) {
-            this._children.push(url);
-            url._cache = {
-                path: (this._cache.path || [this]).concat(url),
-                parent: this,
-                pattern: null,
-            };
-            return url;
-        }
-        isRoot() {
-            return (this._cache.path || [this])[0] === this;
-        }
-        /** Returns the input pattern string */
-        toString() {
-            return this.pattern;
-        }
-        /**
-         * @param {any} value
-         * @param {Param} param
-         * @returns {any}
-         */
-        /** @internal */
-        _getDecodedParamValue(value, param) {
-            return param.value(value);
-        }
-        /**
-         * Tests the specified url/path against this matcher.
-         *
-         * Tests if the given url matches this matcher's pattern, and returns an object containing the captured
-         * parameter values.  Returns null if the path does not match.
-         *
-         * The returned object contains the values
-         * of any search parameters that are mentioned in the pattern, but their value may be null if
-         * they are not present in `search`. This means that search parameters are always treated
-         * as optional.
-         *
-         * #### Example:
-         * ```js
-         * new UrlMatcher('/user/{id}?q&r').exec('/user/bob', {
-         *   x: '1', q: 'hello'
-         * });
-         * // returns { id: 'bob', q: 'hello', r: null }
-         * ```
-         * @param {string} path The URL path to match, e.g. `$location.getPath()`.
-         * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
-         * @param {string} hash URL hash e.g. `$location.getHash()`.
-         * @returns {RawParams | null} The captured parameter values.
-         */
-        exec(path, search = {}, hash) {
-            const pathMatchers = this._cache.path || [this];
-            const match = memoizeTo(this._cache, "pattern", () => {
-                return new RegExp([
-                    "^",
-                    pathMatchers.flatMap((x) => x._compiled).join(""),
-                    this.config.strict === false ? "/?" : "",
-                    "$",
-                ].join(""), this.config.caseInsensitive ? "i" : undefined);
-            }).exec(path);
-            if (!match)
-                return null;
-            // options = defaults(options, { isolate: false });
-            const allParams = this.parameters(), pathParams = [], searchParams = [], values = {};
-            let nPathSegments = 0;
-            for (let i = 0; i < allParams.length; i++) {
-                const param = allParams[i];
-                if (param.isSearch()) {
-                    searchParams.push(param);
-                }
-                else {
-                    pathParams.push(param);
-                }
-            }
-            for (let i = 0; i < pathMatchers.length; i++) {
-                nPathSegments += pathMatchers[i]._segments.length - 1;
-            }
-            if (nPathSegments !== match.length - 1)
-                throw new Error(`Unbalanced capture group in route '${this.pattern}'`);
-            /**
-             * @param {any} paramVal
-             */
-            function decodePathArray(paramVal) {
-                const reverseString = (str) => str.split("").reverse().join("");
-                const unquoteDashes = (str) => str.replace(/\\-/g, "-");
-                const split = reverseString(paramVal).split(/-(?!\\)/);
-                const allReversed = split.map(reverseString);
-                return allReversed.map(unquoteDashes).reverse();
-            }
-            for (let i = 0; i < nPathSegments; i++) {
-                const param = pathParams[i];
-                if (!param)
-                    continue;
-                let value = match[i + 1];
-                // if the param value matches a pre-replace pair, replace the value before decoding.
-                for (let j = 0; j < param.replace.length; j++) {
-                    if (param.replace[j].from === value)
-                        value = param.replace[j].to;
-                }
-                if (value && param.array === true)
-                    value = decodePathArray(value);
-                values[param.id] = this._getDecodedParamValue(value, param);
-            }
-            for (let i = 0; i < searchParams.length; i++) {
-                const param = searchParams[i];
-                let value = search[param.id];
-                for (let j = 0; j < param.replace.length; j++) {
-                    if (param.replace[j].from === value)
-                        value = param.replace[j].to;
-                }
-                values[param.id] = this._getDecodedParamValue(value, param);
-            }
-            if (hash)
-                values["#"] = hash;
-            return values;
-        }
-        /**
-         * @internal
-         * Returns all the [[Param]] objects of all path and search parameters of this pattern in order of appearance.
-         *
-         * @param {any} [opts]
-         * @returns {Array.<Param>}  An array of [[Param]] objects. Must be treated as read-only. If the
-         *    pattern has no parameters, an empty array is returned.
-         */
-        parameters(opts = {}) {
-            if (opts.inherit === false)
-                return this._params;
-            return (this._cache.path || [this]).flatMap((matcher) => matcher._params);
-        }
-        /**
-         * @internal Returns a single parameter from this UrlMatcher by id
-         * @param {string} id
-         * @param {any} opts
-         * @returns {Param | any | boolean | UrlMatcher | null}
-         */
-        parameter(id, opts = {}) {
-            const findParam = () => {
-                for (const param of this._params) {
-                    if (param.id === id)
-                        return param;
-                }
-                return undefined;
-            };
-            const { parent } = this._cache;
-            return (findParam() ||
-                (opts.inherit !== false && parent && parent.parameter(id, opts)) ||
-                null);
-        }
-        /**
-         * Validates the input parameter values against this UrlMatcher
-         *
-         * Checks an object hash of parameters to validate their correctness according to the parameter
-         * types of this `UrlMatcher`.
-         * @param {RawParams} params The object hash of parameters to validate.
-         * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
-         */
-        validates(params) {
-            params = params || {};
-            // I'm not sure why this checks only the param keys passed in, and not all the params known to the matcher
-            const paramSchema = this.parameters();
-            for (let i = 0; i < paramSchema.length; i++) {
-                const paramDef = paramSchema[i];
-                if (hasOwn(params, paramDef.id) &&
-                    !paramDef.validates(params[paramDef.id])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        /**
-         * Given a set of parameter values, creates a URL from this UrlMatcher.
-         *
-         * Creates a URL that matches this pattern by substituting the specified values
-         * for the path and search parameters.
-         *
-         * #### Example:
-         * ```js
-         * new UrlMatcher('/user/{id}?q').format({ id:'bob', q:'yes' });
-         * // returns '/user/bob?q=yes'
-         * ```
-         *
-         * @param {RawParams} values  the values to substitute for the parameters in this pattern.
-         * @returns the formatted URL (path and optionally search part).
-         */
-        format(values = {}) {
-            // Build the full path of UrlMatchers (including all parent UrlMatchers)
-            const urlMatchers = this._cache.path || [this];
-            // Extract all the static segments and Params (processed as ParamDetails)
-            // into an ordered array
-            const pathSegmentsAndParams = urlMatchers
-                .flatMap(UrlMatcher.pathSegmentsAndParams)
-                .map((x) => (isString(x) ? x : getDetails(x)));
-            // Extract the query params into a separate array
-            const queryParams = urlMatchers
-                .flatMap(UrlMatcher.queryParams)
-                .map(getDetails);
-            const isInvalid = (param) => !isString(param) && param.isValid === false;
-            if (pathSegmentsAndParams.concat(queryParams).filter(isInvalid).length) {
-                return null;
-            }
-            /**
-             * Given a Param, applies the parameter value, then returns detailed information about it
-             * @param {Param} param
-             * @returns {ParamDetails}
-             */
-            function getDetails(param) {
-                // Normalize to typed value
-                const value = param.value(values[param.id]);
-                const isValid = param.validates(value);
-                const isDefaultValue = param.isDefaultValue(value);
-                // Check if we're in squash mode for the parameter
-                const squash = isDefaultValue ? param.squash : false;
-                // Allow the Parameter's Type to encode the value
-                const encoded = param.type.encode(value);
-                return { param, value, isValid, isDefaultValue, squash, encoded };
-            }
-            // Build up the path-portion from the list of static segments and parameters
-            const pathString = pathSegmentsAndParams.reduce((acc, x) => {
-                // The element is a static segment (a raw string); just append it
-                if (isString(x))
-                    return acc + x;
-                // Otherwise, it's a ParamDetails.
-                const { squash, encoded, param } = x;
-                // If squash is === true, try to remove a slash from the path
-                if (squash === true)
-                    return acc.match(/\/$/) ? acc.slice(0, -1) : acc;
-                // If squash is a string, use the string for the param value
-                if (isString(squash))
-                    return acc + squash;
-                if (squash !== false)
-                    return acc; // ?
-                if (isNullOrUndefined(encoded))
-                    return acc;
-                // If this parameter value is an array, encode the value using encodeDashes
-                if (isArray(encoded))
-                    return acc + encoded.map(encodeDashes).join("-");
-                // If the parameter type is "raw", then do not encodeURIComponent
-                if (param.raw) {
-                    return acc + encoded;
-                }
-                // Encode the value
-                return acc + encodeURIComponent(encoded);
-            }, "");
-            // Build the query string by applying parameter values (array or regular)
-            // then mapping to key=value, then flattening and joining using "&"
-            const queryString = queryParams
-                .flatMap((paramDetails) => {
-                const { param, squash, isDefaultValue } = paramDetails;
-                let { encoded } = paramDetails;
-                if (isNullOrUndefined(encoded) || (isDefaultValue && squash !== false))
-                    return undefined;
-                if (!isArray(encoded))
-                    encoded = [encoded];
-                if (encoded.length === 0)
-                    return undefined;
-                if (!param.raw)
-                    encoded = encoded.map(encodeURIComponent);
-                return encoded.map((val) => `${param.id}=${val}`);
-            })
-                .join("&");
-            // Concat the pathstring with the queryString (if exists) and the hashString (if exists)
-            return (pathString +
-                (queryString ? `?${queryString}` : "") +
-                (values["#"] ? `#${values["#"]}` : ""));
-        }
-    }
-    UrlMatcher.nameValidator = /^\w+([-.]+\w+)*(?:\[\])?$/;
-    /**
-     * @param {string | number | boolean} str
-     */
-    function encodeDashes(str) {
-        // Replace dashes with encoded "\-"
-        return encodeURIComponent(str).replace(/-/g, (char) => `%5C%${char.charCodeAt(0).toString(16).toUpperCase()}`);
-    }
-
-    class ParamFactory {
-        /**
-         * @param {UrlConfigProvider} urlServiceConfig
-         */
-        constructor(urlServiceConfig) {
-            this.urlServiceConfig = urlServiceConfig;
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType | null} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromConfig(id, type, state) {
-            return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromPath(id, type, state) {
-            return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromSearch(id, type, state) {
-            return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
-        }
-    }
-
-    const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
-    /**
-     * API for URL management
-     */
-    class UrlService {
-        /**
-         * The runtime location service is only available after `$get` runs.
-         * Guard access here so the rest of the methods can use a non-optional type.
-         */
-        /** @internal */
-        _getLocation() {
-            if (!this.$location) {
-                throw new Error("UrlService location is not initialized");
-            }
-            return this.$location;
-        }
-        /** @internal */
-        _getStateService() {
-            if (!this._stateService) {
-                throw new Error("UrlService state service is not initialized");
-            }
-            return this._stateService;
-        }
-        constructor($locationProvider, router, urlConfigProvider) {
-            this.$get = [
-                _location,
-                _rootScope,
-                /**
-                 *
-                 * @param {ng.LocationService} $location
-                 * @param {ng.RootScopeService} $rootScope
-                 * @returns {ng.UrlService}
-                 */
-                ($location, $rootScope) => {
-                    this.$location = $location;
-                    $rootScope.$on("$locationChangeSuccess", (evt) => {
-                        for (let i = 0, j = this._urlListeners.length; i < j; i++) {
-                            this._urlListeners[i](evt);
-                        }
-                    });
-                    this.listen(true);
-                    return this;
-                },
-            ];
-            this._locationProvider = $locationProvider;
-            this._stateService = undefined;
-            this._stateRoutes = [];
-            this._markConfiguredRouting = () => router._markConfiguredRouting();
-            this._config = urlConfigProvider;
-            this._paramFactory = new ParamFactory(this._config);
-            this._urlListeners = [];
-        }
-        /**
-         * Gets the path part of the current url
-         *
-         * If the current URL is `/some/path?query=value#anchor`, this returns `/some/path`
-         *
-         * @return {string} the path portion of the url
-         */
-        getPath() {
-            return this._getLocation().getPath();
-        }
-        /**
-         * Gets the search part of the current url as an object
-         *
-         * If the current URL is `/some/path?query=value#anchor`, this returns `{ query: 'value' }`
-         *
-         * @return {Object} the search (query) portion of the url, as an object
-         */
-        getSearch() {
-            return this._getLocation().getSearch();
-        }
-        /**
-         * Gets the hash part of the current url
-         *
-         * If the current URL is `/some/path?query=value#anchor`, this returns `anchor`
-         *
-         * @return {string} the hash (anchor) portion of the url
-         */
-        getHash() {
-            return this._getLocation().getHash();
-        }
-        /**
-         * @returns {string}
-         */
-        baseHref() {
-            return (this._baseHref ||
-                (this._baseHref = getBaseHref() || window.location.pathname));
-        }
-        /**
-         * Gets the current url, or updates the url
-         *
-         * ### Getting the current URL
-         *
-         * When no arguments are passed, returns the current URL.
-         * The URL is normalized using the internal [[path]]/[[search]]/[[hash]] values.
-         *
-         * For example, the URL may be stored in the hash ([[HashLocationServices]]) or
-         * have a base HREF prepended ([[PushStateLocationServices]]).
-         *
-         * The raw URL in the browser might be:
-         *
-         * ```
-         * http://mysite.com/somepath/index.html#/internal/path/123?param1=foo#anchor
-         * ```
-         *
-         * or
-         *
-         * ```
-         * http://mysite.com/basepath/internal/path/123?param1=foo#anchor
-         * ```
-         *
-         * then this method returns:
-         *
-         * ```
-         * /internal/path/123?param1=foo#anchor
-         * ```
-         *
-         *
-         * #### Example:
-         * ```js
-         * locationServices.url(); // "/some/path?query=value#anchor"
-         * ```
-         *
-         * ### Updating the URL
-         *
-         * When `newurl` arguments is provided, changes the URL to reflect `newurl`
-         *
-         * #### Example:
-         * ```js
-         * locationServices.url("/some/path?query=value#anchor", true);
-         * ```
-         *
-         * @param {string} [newUrl] The new value for the URL.
-         *               This url should reflect only the new internal [[path]], [[search]], and [[hash]] values.
-         *               It should not include the protocol, site, port, or base path of an absolute HREF.
-         * @param {any} [state] The history's state object, i.e., pushState (if the LocationServices implementation supports it)
-         *
-         * @return the url (after potentially being processed)
-         */
-        url(newUrl, state) {
-            const location = this._getLocation();
-            if (isDefined(newUrl)) {
-                const decodeUri = decodeURIComponent(newUrl);
-                location.setUrl(decodeUri);
-            }
-            if (state)
-                location.setState(state);
-            return location.getUrl();
-        }
-        /**
-         * @private
-         *
-         * Registers a low level url change handler
-         *
-         * Note: Because this is a low level handler, it's not recommended for general use.
-         *
-         * #### Example:
-         * ```js
-         * let deregisterFn = locationServices.onChange((evt) => console.log("url change", evt));
-         * ```
-         *
-         * @param {(evt: ng.ScopeEvent) => void} callback a function that will be called when the url is changing
-         * @return {() => void} a function that de-registers the callback
-         */
-        onChange(callback) {
-            this._urlListeners.push(callback);
-            return () => {
-                removeFrom(this._urlListeners, callback);
-            };
-        }
-        /**
-         * Gets the current URL parts.
-         *
-         * Returns an object with the `path`, `search`, and `hash` components
-         * of the current browser location.
-         *
-         * @returns {UrlParts} The current URL's path, search, and hash.
-         */
-        parts() {
-            const location = this._getLocation();
-            return {
-                path: location.getPath(),
-                search: location.getSearch(),
-                hash: location.getHash(),
-            };
-        }
-        /**
-         * Activates the best rule for the current URL
-         *
-         * Checks the current URL for a matching state URL, then activates that state.
-         * This method is called internally any time the URL has changed.
-         *
-         * This effectively activates the state (or redirect, etc) which matches the current URL.
-         *
-         * #### Example:
-         * ```js
-         *
-         * fetch('/states.json').then(resp => resp.json()).then(data => {
-         *   data.forEach(state => $stateRegistry.register(state));
-         *   urlService.listen();
-         *   // Find the matching URL and invoke the handler.
-         *   urlService.sync();
-         * });
-         * ```
-         * @param {ng.ScopeEvent | undefined} [evt]
-         */
-        sync(evt) {
-            if (evt && evt.defaultPrevented)
-                return;
-            const url = this.parts();
-            const best = this.match(url);
-            if (!best)
-                return;
-            this._transitionToStateRoute(best.state, best.match);
-        }
-        /** @internal */
-        _registerStateRoute(state) {
-            if (!this._stateRoutes.includes(state)) {
-                this._stateRoutes.push(state);
-                this._markConfiguredRouting();
-            }
-        }
-        /** @internal */
-        _removeStateRoute(state) {
-            removeFrom(this._stateRoutes, state);
-        }
-        /** @internal */
-        _transitionToStateRoute(state, params) {
-            const $state = this._stateService;
-            if (!$state)
-                return;
-            const { current } = $state;
-            const currentHref = current ? $state.href(current, $state.params) : null;
-            if ($state.href(state, params) !== currentHref) {
-                $state.transitionTo(state, params, { inherit: true, source: "url" });
-            }
-        }
-        /**
-         * Starts or stops listening for URL changes
-         *
-         * Call this sometime after calling [[deferIntercept]] to start monitoring the url.
-         * This causes ng-router to start listening for changes to the URL, if it wasn't already listening.
-         *
-         * If called with `false`, ng-router will stop listening (call listen(true) to start listening again).
-         *
-         * #### Example:
-         * ```js
-         *
-         * fetch('/states.json').then(resp => resp.json()).then(data => {
-         *   data.forEach(state => $stateRegistry.register(state));
-         *   // Start responding to URL changes
-         *   urlService.listen();
-         *   urlService.sync();
-         * });
-         * ```
-         *
-         * @param {boolean} enabled `true` or `false` to start or stop listening to URL changes
-         */
-        listen(enabled) {
-            if (enabled === false) {
-                this._stopListeningFn && this._stopListeningFn();
-                delete this._stopListeningFn;
-                return undefined;
-            }
-            else {
-                return (this._stopListeningFn =
-                    this._stopListeningFn ||
-                        this.onChange((evt) => this.sync(evt)));
-            }
-        }
-        /**
-         * Given a URL (as a [[UrlParts]] object), check all state routes and determine the best match.
-         * Return the result as a [[MatchResult]].
-         * @param {UrlParts} url
-         * @returns {any}
-         */
-        match(url) {
-            url = assign({ path: "", search: {}, hash: "" }, url);
-            let best;
-            for (let i = 0; i < this._stateRoutes.length; i++) {
-                const state = this._stateRoutes[i];
-                const urlMatcher = state.url;
-                if (!isInstanceOf(urlMatcher, UrlMatcher))
-                    continue;
-                const match = urlMatcher.exec(url.path, url.search, url.hash || "");
-                if (match === null || !urlMatcher.validates(match))
-                    continue;
-                const weight = stateRouteMatchPriority(urlMatcher, match);
-                if (!best ||
-                    UrlMatcher.compare(urlMatcher, best.urlMatcher) < 0 ||
-                    (UrlMatcher.compare(urlMatcher, best.urlMatcher) === 0 &&
-                        weight > best.weight)) {
-                    best = { match, state, urlMatcher, weight };
-                }
-            }
-            return best;
-        }
-        /**
-         * @param {boolean | undefined} [read]
-         */
-        update(read) {
-            if (read) {
-                this.location = this.url();
-                return;
-            }
-            if (this.url() === this.location)
-                return;
-            this.url(this.location, true);
-        }
-        /**
-         * Internal API.
-         *
-         * Pushes a new location to the browser history.
-         * @internal
-         * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
-         * @param {StateParams} params
-         * @param {string} options
-         */
-        push(urlMatcher, params, options) {
-            const replace = options && !!options.replace;
-            this.url(urlMatcher.format(params || {}), replace);
-        }
-        /**
-           * Builds and returns a URL with interpolated parameters
-           *
-           * #### Example:
-           * ```js
-           * matcher = $umf.compile("/about/:person");
-           * params = { person: "bob" };
-           * $bob = $url.href(matcher, params);
-           * // $bob == "/about/bob";
-           * ```
-           * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-           * @param {Object} params An object of parameter values to fill the matcher's required parameters.
-           * @param {{ absolute: any; }} options Options object. The options are:
-      
-          - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
-           * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
-           */
-        href(urlMatcher, params, options) {
-            let url = urlMatcher.format(params);
-            if (isNull(url))
-                return null;
-            options = options || { absolute: false };
-            const isHtml5 = this._locationProvider.html5ModeConf.enabled;
-            if (!isHtml5) {
-                url = `#${this._locationProvider.hashPrefixConf}${url}`;
-            }
-            url = appendBasePath(url, isHtml5, options.absolute, this.baseHref());
-            if (!options.absolute || !url) {
-                return url;
-            }
-            const slash = !isHtml5 && url ? "/" : "";
-            return [
-                `${window.location.protocol}//`,
-                window.location.host,
-                slash,
-                url,
-            ].join("");
-        }
-        /**
-         * Creates a [[UrlMatcher]] for the specified pattern.
-         *
-         * @param {string} urlPattern  The URL pattern.
-         * @param {*} [config]  The config object hash.
-         * @returns The UrlMatcher.
-         */
-        compile(urlPattern, config) {
-            const urlConfig = this._config;
-            // backward-compatible support for config.params -> config.state.params
-            const params = config && !config.state && config.params;
-            config = params ? assign({ state: { params } }, config) : config;
-            const globalConfig = {
-                strict: urlConfig._isStrictMode,
-                caseInsensitive: urlConfig._isCaseInsensitive,
-            };
-            return new UrlMatcher(urlPattern, urlConfig.paramTypes, this._paramFactory, assign(globalConfig, config));
-        }
-        /**
-         * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
-         *
-         * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
-         * @returns `true` if the object matches the `UrlMatcher` interface, by
-         *          implementing all the same methods.
-         */
-        isMatcher(object) {
-            if (!isObject(object))
-                return false;
-            let result = true;
-            entries(UrlMatcher.prototype).forEach(([name, val]) => {
-                if (isFunction(val))
-                    result =
-                        result && isDefined(object[name]) && isFunction(object[name]);
-            });
-            return result;
-        }
-    }
-    /* @ignore */ UrlService.$inject = [
-        _locationProvider,
-        _routerProvider,
-        _urlConfigProvider,
-    ];
-    function stateRouteMatchPriority(urlMatcher, params) {
-        const optional = urlMatcher.parameters().filter((param) => param.isOptional);
-        if (!optional.length)
-            return EXACT_ROUTE_MATCH_PRIORITY;
-        let matched = 0;
-        for (let i = 0; i < optional.length; i++) {
-            if (params[optional[i].id])
-                matched++;
-        }
-        return matched / optional.length;
-    }
-    /**
-     * @param {string} url
-     * @param {boolean} isHtml5
-     * @param {any} absolute
-     * @param {string} baseHref
-     */
-    function appendBasePath(url, isHtml5, absolute, baseHref) {
-        if (baseHref === "/")
-            return url;
-        if (isHtml5)
-            return stripLastPathElement(baseHref) + url;
-        if (absolute)
-            return baseHref.slice(1) + url;
-        return url;
-    }
-
-    const FQN_MULTIPLIER = 10000;
-    function contextDepth(context) {
-        let cursor = context;
-        let depth = 1;
-        while (cursor && cursor.parent) {
-            depth += 1;
-            cursor = cursor.parent;
-        }
-        return depth;
-    }
-    function ngViewDepth(cache, ngView) {
-        const cached = cache.get(ngView);
-        if (cached !== undefined)
-            return cached;
-        const computed = ngView.fqn.split(".").length * FQN_MULTIPLIER +
-            contextDepth(ngView.creationContext);
-        cache.set(ngView, computed);
-        return computed;
-    }
-    function viewConfigDepth(cache, config) {
-        const cached = cache.get(config);
-        if (cached !== undefined)
-            return cached;
-        let context = config.viewDecl.$context;
-        let count = 0;
-        while (++count && context.parent) {
-            context = context.parent;
-        }
-        cache.set(config, count);
-        return count;
-    }
-    /**
-     * Tracks active `ng-view` instances and matches them with registered
-     * view configs produced during state transitions.
-     */
-    class ViewService {
-        /**
-         * Creates an empty view registry ready to track active `ng-view` instances.
-         */
-        constructor() {
-            /**
-             * Returns the singleton view service instance.
-             */
-            this.$get = [
-                _templateFactory,
-                _router,
-                ($templateFactory, $routerState) => {
-                    this._templateFactory = $templateFactory;
-                    this._rootViewContext($routerState._currentState || null);
-                    return this;
-                },
-            ];
-            this._ngViews = [];
-            this._viewConfigs = [];
-            this._templateFactory = undefined;
-            this._rootContext = undefined;
-        }
-        /**
-         * Gets or sets the root view context used for relative `ng-view` targeting.
-         */
-        /** @internal */
-        _rootViewContext(context) {
-            return (this._rootContext = context || this._rootContext);
-        }
-        /**
-         * Builds a view config for one view declaration along the specified path.
-         */
-        /** @internal */
-        _createViewConfig(path, decl) {
-            const templateFactory = this._templateFactory;
-            if (!templateFactory) {
-                throw new Error("ViewService: No template factory registered");
-            }
-            return new ViewConfig(path, decl, templateFactory);
-        }
-        /**
-         * Removes a view config from the active registry.
-         */
-        /** @internal */
-        _deactivateViewConfig(viewConfig) {
-            removeFrom(this._viewConfigs, viewConfig);
-        }
-        /**
-         * Adds a view config to the active registry.
-         */
-        /** @internal */
-        _activateViewConfig(viewConfig) {
-            this._viewConfigs.push(viewConfig);
-        }
-        /**
-         * Re-matches active `ng-view` instances against currently registered view configs
-         * and notifies each view when its config assignment changes.
-         */
-        /** @internal */
-        _sync() {
-            const ngViewsByFqn = {};
-            for (let i = 0; i < this._ngViews.length; i++) {
-                const ngView = this._ngViews[i];
-                ngViewsByFqn[ngView.fqn] = ngView;
-            }
-            const ngViewDepthCache = new Map();
-            const viewConfigDepthCache = new Map();
-            this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
-                ngViewDepth(ngViewDepthCache, right));
-            for (let i = 0; i < this._ngViews.length; i++) {
-                const ngView = this._ngViews[i];
-                let selectedViewConfig = undefined;
-                let bestDepth = Number.NEGATIVE_INFINITY;
-                for (let j = 0; j < this._viewConfigs.length; j++) {
-                    const candidate = this._viewConfigs[j];
-                    if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
-                        continue;
-                    const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
-                    if (!selectedViewConfig || candidateDepth > bestDepth) {
-                        selectedViewConfig = candidate;
-                        bestDepth = candidateDepth;
-                    }
-                }
-                if (this._ngViews.indexOf(ngView) !== -1) {
-                    ngView.configUpdated(selectedViewConfig);
-                }
-            }
-        }
-        /**
-         * Registers one active `ng-view` and returns a deregistration function.
-         */
-        /** @internal */
-        _registerNgView(ngView) {
-            const ngViews = this._ngViews;
-            ngViews.push(ngView);
-            this._sync();
-            return () => {
-                removeFrom(ngViews, ngView);
-                this._sync();
-            };
-        }
-        /**
-         * Builds a predicate that determines whether a view config matches
-         * a specific active `ng-view`.
-         */
-        /** @internal */
-        static _matches(ngViewsByFqn, ngView, viewConfig) {
-            if (!viewConfig || !viewConfig.viewDecl)
-                return false;
-            const ngViewContext = ngView.creationContext;
-            const { viewDecl } = viewConfig;
-            const vcName = viewDecl.$ngViewName || "$default";
-            const vcContext = viewDecl.$ngViewContextAnchor || "";
-            const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
-            if (normalizedTarget !== ngView.fqn)
-                return false;
-            const viewContext = viewDecl.$context;
-            if (viewContext.name !== ngViewContext.name &&
-                vcContext !== ngViewContext.name) {
-                return false;
-            }
-            const childViewFqn = `${normalizedTarget}.${ngView.name}`;
-            return !ngViewsByFqn[childViewFqn];
-        }
     }
 
     class AnchorScrollProvider {
@@ -29112,7 +28261,7 @@
                             if (document.readyState === "complete") {
                                 // Force the action to be run async for consistent behavior
                                 // from the action's point of view
-                                // i.e. it will definitely not be in a $apply
+                                // i.e. it will definitely run after the current event stack.
                                 queueMicrotask(() => action());
                             }
                             else {
@@ -29397,34 +28546,8 @@
     /**
      * @ignore
      */
-    function createHtml5ModeConfig(value, onRewriteLinksConfigured) {
-        return new Proxy(value, {
-            set(target, property, nextValue) {
-                if (property === "rewriteLinks") {
-                    onRewriteLinksConfigured();
-                }
-                target[property] = nextValue;
-                return true;
-            },
-        });
-    }
-    /**
-     * @ignore
-     */
-    function hasConfiguredRouter(router) {
-        return !!router?._hasConfiguredRouting?.();
-    }
-    /**
-     * @ignore
-     */
-    function isLinkRewritingEnabled(rewriteLinks, rewriteLinksConfigured, router) {
-        if (!rewriteLinks) {
-            return false;
-        }
-        if (isString(rewriteLinks) || rewriteLinksConfigured) {
-            return true;
-        }
-        return hasConfiguredRouter(router);
+    function isLinkRewritingEnabled(rewriteLinks) {
+        return !!rewriteLinks;
     }
     class Location {
         /**
@@ -29716,9 +28839,8 @@
             this.$get = [
                 _rootScope,
                 _rootElement,
-                _router,
                 _exceptionHandler,
-                ($rootScope, $rootElement, $routerConfig, $exceptionHandler) => {
+                ($rootScope, $rootElement, $exceptionHandler) => {
                     const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
                     const initialUrl = trimEmptyHash(window.location.href);
                     let appBase;
@@ -29759,7 +28881,7 @@
                         const { rewriteLinks } = this.html5ModeConf;
                         // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
                         // currently we open nice url link and redirect then
-                        if (!isLinkRewritingEnabled(rewriteLinks, this._rewriteLinksConfigured, $routerConfig) ||
+                        if (!isLinkRewritingEnabled(rewriteLinks) ||
                             event.ctrlKey ||
                             event.metaKey ||
                             event.shiftKey ||
@@ -29907,14 +29029,11 @@
                 },
             ];
             this.hashPrefixConf = "!";
-            this._rewriteLinksConfigured = false;
-            this._html5ModeConf = createHtml5ModeConfig({
+            this._html5ModeConf = {
                 enabled: true,
                 requireBase: false,
                 rewriteLinks: true,
-            }, () => {
-                this._rewriteLinksConfigured = true;
-            });
+            };
             this._urlChangeListeners = [];
             /** @private */
             this._urlChangeInit = false;
@@ -29927,10 +29046,7 @@
             return this._html5ModeConf;
         }
         set html5ModeConf(value) {
-            this._rewriteLinksConfigured = Object.prototype.hasOwnProperty.call(value, "rewriteLinks");
-            this._html5ModeConf = createHtml5ModeConfig(value, () => {
-                this._rewriteLinksConfigured = true;
-            });
+            this._html5ModeConf = value;
         }
         /// ///////////////////////////////////////////////////////////
         // URL API
@@ -30342,7 +29458,7 @@
         constructor($exceptionHandler) {
             this._topics = nullObject();
             this._disposed = false;
-            this.$exceptionHandler = $exceptionHandler;
+            this._exceptionHandler = $exceptionHandler;
         }
         /**
          * Reset the bus to its initial state without disposing it.
@@ -30470,7 +29586,7 @@
                         fn.apply(context, args);
                     }
                     catch (err) {
-                        this.$exceptionHandler(err);
+                        this._exceptionHandler(err);
                     }
                 }
             });
@@ -30889,6 +30005,7 @@
     const $sceMinErr = minErr("$sce");
     const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST = /^\s*(https?|s?ftp|mailto|tel|file):/;
     const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST = /^\s*((https?|ftp|file|blob):|data:image\/)/;
+    const trustedTypesPolicyByWindow = new WeakMap();
     // Copied from:
     // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
     // Prereq: s is a string.
@@ -30925,6 +30042,44 @@
             return new RegExp(`^${matcher.source}$`);
         }
         throw $sceMinErr("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
+    }
+    function getTrustedTypesPolicy($window) {
+        if (trustedTypesPolicyByWindow.has($window)) {
+            return trustedTypesPolicyByWindow.get($window) ?? null;
+        }
+        const { trustedTypes } = $window;
+        let policy = null;
+        if (trustedTypes) {
+            try {
+                policy = trustedTypes.createPolicy("angular-ts", {
+                    createHTML: (value) => value,
+                    createScriptURL: (value) => value,
+                });
+            }
+            catch {
+                policy = null;
+            }
+        }
+        trustedTypesPolicyByWindow.set($window, policy);
+        return policy;
+    }
+    function createTrustedType(policy, type, value) {
+        if (!policy) {
+            return value;
+        }
+        if (type === SCE_CONTEXTS._HTML) {
+            return policy.createHTML(value);
+        }
+        if (type === SCE_CONTEXTS._RESOURCE_URL) {
+            return policy.createScriptURL(value);
+        }
+        return value;
+    }
+    function unwrapTrustedValueForContext(type, value) {
+        if (type === SCE_CONTEXTS._HTML || type === SCE_CONTEXTS._RESOURCE_URL) {
+            return value._unwrapTrustedType();
+        }
+        return value._unwrapTrustedValue();
     }
     /**
      * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict
@@ -31127,6 +30282,7 @@
                  * Creates the `$sceDelegate` service using the configured policies and sanitizers.
                  */
                 function ($injector, $window, $exceptionHandler) {
+                    const trustedTypesPolicy = getTrustedTypesPolicy($window);
                     let htmlSanitizer = function () {
                         $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
                     };
@@ -31187,9 +30343,12 @@
                      */
                     function generateHolderType(Base) {
                         /** @param trustedValue */
-                        const holderType = function TrustedValueHolderType(trustedValue = "") {
+                        const holderType = function TrustedValueHolderType(trustedValue = "", trustedType = trustedValue) {
                             this._unwrapTrustedValue = function () {
                                 return trustedValue;
+                            };
+                            this._unwrapTrustedType = function () {
+                                return trustedType;
                             };
                         };
                         if (Base) {
@@ -31248,7 +30407,7 @@
                             $exceptionHandler($sceMinErr("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
                             return undefined;
                         }
-                        const tst = new Constructor(trustedValue);
+                        const tst = new Constructor(trustedValue, createTrustedType(trustedTypesPolicy, type, trustedValue));
                         return tst;
                     }
                     /**
@@ -31311,7 +30470,7 @@
                         // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
                         // as-is.
                         if (constructor && isInstanceOf(maybeTrusted, constructor)) {
-                            return maybeTrusted._unwrapTrustedValue();
+                            return unwrapTrustedValueForContext(type, maybeTrusted);
                         }
                         // If maybeTrusted is a trusted class instance but not of the correct trusted type
                         // then unwrap it and allow it to pass through to the rest of the checks
@@ -31557,15 +30716,13 @@
     }
 
     /**
-     * Shared Stream Connection Manager
-     * Handles reconnect, heartbeat, and event callbacks for SSE or WebSocket
+     * Shared connection manager for push transports such as SSE and WebSocket.
+     * Handles reconnect, heartbeat, and event callbacks.
      */
-    class StreamConnection {
-        /**
-         * @param createFn - Function that creates a new EventSource or WebSocket.
-         * @param config - Configuration object with callbacks, retries, heartbeat, transformMessage.
-         * @param log - Optional logger (default: console).
-         */
+    /**
+     * @internal
+     */
+    class ConnectionManager {
         constructor(createFn, config = {}, log = console) {
             this._createFn = createFn;
             this._config = {
@@ -31589,27 +30746,15 @@
             this._connection = null;
             this.connect();
         }
-        /**
-         * Establishes a new connection using the provided createFn.
-         * Closes any existing connection before creating a new one.
-         */
         connect() {
             if (this._closed)
                 return;
-            // Close the old connection if it exists
             if (this._connection && isFunction(this._connection.close)) {
                 this._connection.close();
             }
-            // Create new connection
             this._connection = this._createFn();
-            // Bind events for the new connection
             this._bindEvents();
         }
-        /**
-         * Sends data over a WebSocket connection.
-         * Logs a warning if called on a non-WebSocket connection.
-         * @param data - Data to send.
-         */
         send(data) {
             if (isInstanceOf(this._connection, WebSocket)) {
                 this._connection.send(JSON.stringify(data));
@@ -31618,9 +30763,6 @@
                 this._log.warn("Send is only supported on WebSocket connections");
             }
         }
-        /**
-         * Closes the connection manually and clears the heartbeat timer.
-         */
         close() {
             this._closed = true;
             clearTimeout(this._heartbeatTimer);
@@ -31628,80 +30770,63 @@
                 this._connection.close();
             }
         }
-        /**
-         * @private
-         * Binds event handlers to the underlying connection (EventSource or WebSocket)
-         * for open, message, error, and close events.
-         */
         /** @internal */
         _bindEvents() {
             const conn = this._connection;
             if (isInstanceOf(conn, EventSource)) {
                 conn.addEventListener("open", (err) => this._handleOpen(err));
                 conn.addEventListener("message", (err) => this._handleMessage(err.data, err));
+                this._config.eventTypes?.forEach((eventType) => {
+                    if (eventType === "message")
+                        return;
+                    conn.addEventListener(eventType, (event) => {
+                        const messageEvent = event;
+                        this._handleMessage(messageEvent.data, messageEvent);
+                    });
+                });
                 conn.addEventListener("error", (err) => this._handleError(err));
             }
             else if (isInstanceOf(conn, WebSocket)) {
                 conn.onopen = (err) => this._handleOpen(err);
                 conn.onmessage = (err) => this._handleMessage(err.data, err);
                 conn.onerror = (err) => this._handleError(err);
-                conn.onclose = () => this._handleClose();
+                conn.onclose = (event) => this._handleClose(event);
             }
         }
-        /**
-         * @private
-         * Handles the open event from the connection.
-         * @param event - The open event.
-         */
         /** @internal */
         _handleOpen(event) {
             this._retryCount = 0;
             this._config.onOpen?.(event);
             this._resetHeartbeat();
         }
-        /**
-         * @private
-         * Handles incoming messages, applies the transformMessage function,
-         * and calls the onMessage callback.
-         * @param data - Raw message data.
-         * @param event - The message event.
-         */
         /** @internal */
         _handleMessage(data, event) {
+            const rawData = data;
             try {
                 data = this._config.transformMessage?.(data) ?? data;
             }
             catch {
                 /* empty */
             }
+            this._config.onEvent?.({
+                type: event.type || "message",
+                data,
+                rawData,
+                event,
+            });
             this._config.onMessage?.(data, event);
             this._resetHeartbeat();
         }
-        /**
-         * @private
-         * Handles errors emitted from the connection.
-         * Calls onError callback and schedules a reconnect.
-         * @param err - Error object or message.
-         */
         /** @internal */
         _handleError(err) {
             this._config.onError?.(err);
             this._scheduleReconnect();
         }
-        /**
-         * @private
-         * Handles close events for WebSocket connections.
-         * Triggers reconnect logic.
-         */
         /** @internal */
-        _handleClose() {
+        _handleClose(event) {
+            this._config.onClose?.(event);
             this._scheduleReconnect();
         }
-        /**
-         * @private
-         * Schedules a reconnect attempt based on retryCount and config.maxRetries.
-         * Calls onReconnect callback if reconnecting.
-         */
         /** @internal */
         _scheduleReconnect() {
             if (this._closed)
@@ -31712,30 +30837,22 @@
                 setTimeout(() => this.connect(), this._config.retryDelay);
             }
             else {
-                this._log.warn("StreamConnection: Max retries reached");
+                this._log.warn("ConnectionManager: Max retries reached");
             }
         }
-        /**
-         * @private
-         * Resets the heartbeat timer. If the timer expires, the connection is closed
-         * and a reconnect is attempted.
-         */
         /** @internal */
         _resetHeartbeat() {
             if (!this._config.heartbeatTimeout)
                 return;
             clearTimeout(this._heartbeatTimer);
             this._heartbeatTimer = setTimeout(() => {
-                this._log.warn("StreamConnection: heartbeat timeout, reconnecting...");
+                this._log.warn("ConnectionManager: heartbeat timeout, reconnecting...");
                 this._closeInternal();
                 this._retryCount++;
                 this._config.onReconnect?.(this._retryCount);
                 this.connect();
             }, this._config.heartbeatTimeout);
         }
-        /**
-         * @private
-         */
         /** @internal */
         _closeInternal() {
             clearTimeout(this._heartbeatTimer);
@@ -31758,7 +30875,7 @@
                     return (url, config = {}) => {
                         const mergedConfig = { ...this.defaults, ...config };
                         const finalUrl = this._buildUrl(url, mergedConfig.params);
-                        return new StreamConnection(() => new EventSource(finalUrl, {
+                        return new ConnectionManager(() => new EventSource(finalUrl, {
                             withCredentials: !!mergedConfig.withCredentials,
                         }), {
                             ...mergedConfig,
@@ -31795,6 +30912,119 @@
                 .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
                 .join("&");
             return url + (url.includes("?") ? "&" : "?") + query;
+        }
+    }
+
+    class StreamProvider {
+        constructor() {
+            this.$get = () => ({
+                isReadableStream,
+                consumeText,
+                readText,
+                readLines,
+                consumeJsonLines,
+                readJsonLines,
+            });
+        }
+    }
+    function isReadableStream(value) {
+        return (typeof ReadableStream !== "undefined" && value instanceof ReadableStream);
+    }
+    async function consumeText(stream, options = {}) {
+        const reader = stream.getReader();
+        const decoder = new TextDecoder(options.encoding);
+        const cancelReader = () => {
+            void reader.cancel(options.signal?.reason);
+        };
+        try {
+            if (options.signal?.aborted) {
+                await reader.cancel(options.signal.reason);
+                return;
+            }
+            options.signal?.addEventListener("abort", cancelReader, { once: true });
+            while (true) {
+                if (options.signal?.aborted) {
+                    await reader.cancel(options.signal.reason);
+                    break;
+                }
+                const result = await reader.read();
+                if (result.done)
+                    break;
+                const chunk = decoder.decode(result.value, { stream: true });
+                if (chunk)
+                    options.onChunk?.(chunk);
+            }
+            if (options.signal?.aborted)
+                return;
+            const tail = decoder.decode();
+            if (tail)
+                options.onChunk?.(tail);
+        }
+        finally {
+            options.signal?.removeEventListener("abort", cancelReader);
+            reader.releaseLock();
+        }
+    }
+    async function readText(stream, options = {}) {
+        let text = "";
+        await consumeText(stream, {
+            ...options,
+            onChunk(chunk) {
+                text += chunk;
+                options.onChunk?.(chunk);
+            },
+        });
+        return text;
+    }
+    async function readLines(stream, options = {}) {
+        const lines = [];
+        await consumeLines(stream, {
+            ...options,
+            onLine(line) {
+                lines.push(line);
+                options.onLine?.(line);
+            },
+        });
+        return lines;
+    }
+    async function consumeJsonLines(stream, options = {}) {
+        const ignoreEmpty = options.ignoreEmpty !== false;
+        await consumeLines(stream, {
+            ...options,
+            onLine(line) {
+                if (ignoreEmpty && !line.trim())
+                    return;
+                const value = fromJson(line);
+                options.onLine?.(line);
+                options.onValue?.(value, line);
+            },
+        });
+    }
+    async function readJsonLines(stream, options = {}) {
+        const values = [];
+        await consumeJsonLines(stream, {
+            ...options,
+            onValue(value, line) {
+                values.push(value);
+                options.onValue?.(value, line);
+            },
+        });
+        return values;
+    }
+    async function consumeLines(stream, options = {}) {
+        const separator = options.separator ?? /\r?\n/;
+        let pending = "";
+        await consumeText(stream, {
+            ...options,
+            onChunk(chunk) {
+                pending += chunk;
+                const parts = pending.split(separator);
+                pending = parts.pop() ?? "";
+                parts.forEach((line) => options.onLine?.(line));
+            },
+        });
+        if (isDefined(pending) && pending !== "") {
+            options.onLine?.(pending);
         }
     }
 
@@ -31901,7 +31131,7 @@
                         mergedConfig.protocols = protocols.length
                             ? protocols
                             : mergedConfig.protocols;
-                        return new StreamConnection(() => new WebSocket(url, mergedConfig.protocols), {
+                        return new ConnectionManager(() => new WebSocket(url, mergedConfig.protocols), {
                             ...mergedConfig,
                             onMessage: (data, event) => {
                                 mergedConfig.onMessage?.(data, event);
@@ -31921,10 +31151,9 @@
             ];
             this.defaults = {
                 protocols: [],
-                autoReconnect: true,
-                reconnectInterval: 1000,
+                retryDelay: 1000,
                 maxRetries: Infinity,
-                heartbeatInterval: 0, // ms, 0 = disabled
+                heartbeatTimeout: 0,
                 transformMessage(data) {
                     try {
                         return JSON.parse(data);
@@ -32078,17 +31307,16 @@
                     $parse: ParseProvider,
                     $rest: RestProvider,
                     $rootScope: RootScopeProvider,
-                    [_router]: _RouterProvider,
+                    [_router]: RouterProvider,
                     $sce: SceProvider,
                     $sceDelegate: SceDelegateProvider,
+                    $stream: StreamProvider,
                     $sse: SseProvider,
                     $templateCache: TemplateCacheProvider,
                     $templateRequest: TemplateRequestProvider,
-                    $urlConfig: UrlConfigProvider,
                     $view: ViewService,
                     $transitions: TransitionProvider,
                     $templateFactory: TemplateFactoryProvider,
-                    $url: UrlService,
                     $stateRegistry: StateRegistryProvider,
                     $state: StateProvider,
                     $eventBus: PubSubProvider,

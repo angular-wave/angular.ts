@@ -8,15 +8,15 @@ class TransitionEventType {
     /**
      * Creates one immutable transition event descriptor.
      */
-    constructor(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, getResultHandler = TransitionHook.HANDLE_RESULT, getErrorHandler = TransitionHook.REJECT_ERROR, synchronous = false) {
-        this.name = name;
-        this.hookPhase = hookPhase;
-        this.hookOrder = hookOrder;
+    constructor(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, resultHandler = TransitionHook._handleResult, errorHandler = TransitionHook._rejectError, synchronous = false) {
+        this._name = name;
+        this._hookPhase = hookPhase;
+        this._hookOrder = hookOrder;
         this._criteriaMatchPath = criteriaMatchPath;
-        this.reverseSort = reverseSort;
-        this.getResultHandler = getResultHandler;
-        this.getErrorHandler = getErrorHandler;
-        this.synchronous = synchronous;
+        this._reverseSort = reverseSort;
+        this._handleResult = resultHandler;
+        this._handleError = errorHandler;
+        this._synchronous = synchronous;
     }
 }
 

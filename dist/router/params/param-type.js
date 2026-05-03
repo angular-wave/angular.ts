@@ -1,61 +1,42 @@
-import { assign, isArray, isDefined } from '../../shared/utils.js';
+import { assign, isNullOrUndefined, isArray, isDefined } from '../../shared/utils.js';
 
+const emptyParamTypeDefinition = {};
+function valToString(val) {
+    return !isNullOrUndefined(val) ? val.toString() : undefined;
+}
 /**
  * An internal class which implements [[ParamTypeDefinition]].
  *
- * A [[ParamTypeDefinition]] is a plain javascript object used to register custom parameter types.
- * When a param type definition is registered, an instance of this class is created internally.
- *
- * This class has naive implementations for all the [[ParamTypeDefinition]] methods.
- *
- * Used by [[UrlMatcher]] when matching or formatting URLs, or comparing and validating parameter values.
- *
- * #### Example:
- * ```js
- * var paramTypeDef = {
- *   decode: function(val) { return parseInt(val, 10); },
- *   encode: function(val) { return val && val.toString(); },
- *   equals: function(a, b) { return this.is(a) && a === b; },
- *   is: function(val) { return angular.isNumber(val) && isFinite(val) && val % 1 === 0; },
- *   pattern: /\d+/
- * }
- *
- * var paramType = new ParamType(paramTypeDef);
- * ```
+ * Used internally when matching or formatting URLs, or comparing and validating parameter values.
  */
 class ParamType {
-    /**
-       * @param {any} def A configuration object which contains the custom type definition.  The object's
-      properties will override the default methods and/or pattern in `ParamType`'s public interface.
-       */
     constructor(def) {
         this.pattern = /.*/;
         this.inherit = true;
         assign(this, def);
-        this.name = undefined;
     }
     // consider these four methods to be "abstract methods" that should be overridden
     /**
-     * @param {any} val
+     * @param {unknown} val
      */
     is(val) {
         return !!val;
     }
     /**
-     * @param {any} val
+     * @param {unknown} val
      */
     encode(val) {
-        return val;
+        return valToString(val);
     }
     /**
-     * @param {any} val
+     * @param {unknown} val
      */
     decode(val) {
-        return val;
+        return valToString(val);
     }
     /**
-     * @param {any} a
-     * @param {any} b
+     * @param {unknown} a
+     * @param {unknown} b
      */
     equals(a, b) {
         return a === b;
@@ -65,7 +46,7 @@ class ParamType {
     }
     /**
      * Given an encoded string, or a decoded object, returns a decoded object
-     * @param {any} val
+     * @param {unknown} val
      */
     $normalize(val) {
         return this.is(val) ? val : this.decode(val);
@@ -80,100 +61,92 @@ class ParamType {
      * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
      * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
      * @param {boolean |'auto'} mode
-     * @param {any} isSearch
      */
-    $asArray(mode, isSearch) {
+    $asArray(mode) {
         if (!mode)
             return this;
-        if (mode === "auto" && !isSearch)
-            throw new Error("'auto' array mode is for query parameters only");
-        return new ArrayType(this, mode);
+        return new ArrayParamType(this, mode);
     }
 }
 /**
  * Wraps up a `ParamType` object to handle array values.
- * @this {Record<string, any>}
- * @param {ParamType & Record<string, any>} type
+ * @param {ParamType & Record<string, unknown>} type
  * @param {boolean | 'auto'} mode
  */
-function ArrayType(type, mode) {
-    // Wrap non-array value as array
-    /**
-     * @param {any} val
-     */
-    function arrayWrap(val) {
+class ArrayParamType extends ParamType {
+    constructor(type, mode) {
+        super(emptyParamTypeDefinition);
+        delete this.is;
+        delete this.encode;
+        delete this.decode;
+        delete this.equals;
+        this._type = type;
+        this._arrayMode = mode;
+        this.dynamic = type.dynamic;
+        this.name = type.name;
+        this.pattern = type.pattern;
+        this.inherit = type.inherit;
+        this.raw = type.raw;
+        this.$arrayMode = mode;
+    }
+    /** @internal */
+    _arrayWrap(val) {
         return isArray(val) ? val : isDefined(val) ? [val] : [];
     }
-    // Unwrap array value for "auto" mode. Return undefined for empty array.
-    /**
-     * @param {any} val
-     */
-    function arrayUnwrap(val) {
+    /** @internal */
+    _arrayUnwrap(val) {
         switch (val.length) {
             case 0:
                 return undefined;
             case 1:
-                return mode === "auto" ? val[0] : val;
+                return this._arrayMode === "auto" ? val[0] : val;
             default:
                 return val;
         }
     }
-    // Wraps type (.is/.encode/.decode) functions to operate on each value of an array
-    /**
-     * @param {(value: any) => any} callback
-     * @param {boolean} [allTruthyMode]
-     */
-    function arrayHandler(callback, allTruthyMode) {
-        return function handleArray(val) {
-            if (isArray(val) && val.length === 0)
-                return val;
-            const arr = arrayWrap(val);
-            const result = [];
+    /** @internal */
+    _mapArray(method, val, allTruthyMode = false) {
+        if (isArray(val) && val.length === 0)
+            return val;
+        const arr = this._arrayWrap(val);
+        const type = this._type;
+        if (allTruthyMode) {
             for (let i = 0; i < arr.length; i++) {
-                result.push(callback(arr[i]));
-            }
-            if (allTruthyMode === true) {
-                for (let i = 0; i < result.length; i++) {
-                    if (!result[i])
-                        return false;
-                }
-                return true;
-            }
-            return arrayUnwrap(result);
-        };
-    }
-    // Wraps type (.equals) functions to operate on each value of an array
-    /**
-     * @param {(arg0: any, arg1: any) => any} callback
-     */
-    function arrayEqualsHandler(callback) {
-        return function handleArray(val1, val2) {
-            const left = arrayWrap(val1), right = arrayWrap(val2);
-            if (left.length !== right.length)
-                return false;
-            for (let i = 0; i < left.length; i++) {
-                if (!callback(left[i], right[i]))
+                if (!type[method](arr[i]))
                     return false;
             }
             return true;
-        };
+        }
+        const result = [];
+        arr.forEach((item) => {
+            result.push(type[method](item));
+        });
+        return this._arrayUnwrap(result);
     }
-    const wrappedMethods = ["encode", "decode", "equals", "$normalize"];
-    for (let i = 0; i < wrappedMethods.length; i++) {
-        const name = wrappedMethods[i];
-        const paramTypeFn = type[name].bind(type);
-        const wrapperFn = name === "equals" ? arrayEqualsHandler : arrayHandler;
-        this[name] = wrapperFn(paramTypeFn);
+    encode(val) {
+        return this._mapArray("encode", val);
     }
-    assign(this, {
-        dynamic: type.dynamic,
-        name: type.name,
-        pattern: type.pattern,
-        inherit: type.inherit,
-        raw: type.raw,
-        is: arrayHandler(type.is.bind(type), true),
-        $arrayMode: mode,
-    });
+    decode(val) {
+        return this._mapArray("decode", val);
+    }
+    $normalize(val) {
+        return this._mapArray("$normalize", val);
+    }
+    is(val) {
+        return this._mapArray("is", val, true);
+    }
+    equals(val1, val2) {
+        const left = this._arrayWrap(val1);
+        const right = this._arrayWrap(val2);
+        if (left.length !== right.length)
+            return false;
+        const { _type: type } = this;
+        for (let i = 0; i < left.length; i++) {
+            if (!type.equals(left[i], right[i]))
+                return false;
+        }
+        return true;
+    }
 }
 
 export { ParamType };

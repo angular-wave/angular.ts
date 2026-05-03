@@ -1,4 +1,4 @@
-import { _injector, _templateRequest, _compile } from '../../injection-tokens.js';
+import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { removeElement } from '../../shared/dom.js';
 import { isString, isInstanceOf, values, entries, isArray, hasOwn } from '../../shared/utils.js';
@@ -9,7 +9,7 @@ class NgMessageCtrl {
     /**
      * Creates a controller that manages message matching and attachment state.
      */
-    constructor($element, $scope, $attrs, getAnimate) {
+    constructor($element, $scope, $attrs, getAnimate, $parse) {
         this._element = $element;
         this._scope = $scope;
         this._attrs = $attrs;
@@ -21,6 +21,8 @@ class NgMessageCtrl {
         this._renderLater = false;
         this._cachedCollection = null;
         this._default = undefined;
+        this._multipleExpression = parseAttrTruthy($parse, this._attrs.multiple);
+        this._ngMessagesMultipleExpression = parseAttrTruthy($parse, this._attrs.ngMessagesMultiple);
         this._scope.$watch(this._attrs.ngMessages || this._attrs.for, this._render.bind(this));
     }
     /** @internal */
@@ -31,8 +33,8 @@ class NgMessageCtrl {
     _render(collection = {}) {
         this._renderLater = false;
         this._cachedCollection = collection;
-        const multiple = isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
-            isAttrTruthy(this._scope, this._attrs.multiple);
+        const multiple = evalAttrTruthy(this._scope, this._ngMessagesMultipleExpression) ||
+            evalAttrTruthy(this._scope, this._multipleExpression);
         const unmatchedMessages = [];
         const matchedKeys = {};
         let truthyKeys = 0;
@@ -142,24 +144,28 @@ class NgMessageCtrl {
         this.reRender();
     }
 }
-ngMessagesDirective.$inject = [_injector];
+ngMessagesDirective.$inject = [_injector, _parse];
 /**
  * Builds the root `ngMessages` directive.
  */
-function ngMessagesDirective($injector) {
+function ngMessagesDirective($injector, $parse) {
     const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngMessages",
         restrict: "AE",
-        controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate),
+        controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate, $parse),
     };
 }
 /**
  * Evaluates whether an `ngMessages` boolean-style attribute should be treated as enabled.
  */
-function isAttrTruthy(scope, attr) {
-    return ((isString(attr) && attr.length === 0) || // empty attribute
-        truthy(attr && scope.$eval(attr)));
+function parseAttrTruthy($parse, attr) {
+    if (!isString(attr))
+        return undefined;
+    return attr.length === 0 ? true : $parse(attr);
+}
+function evalAttrTruthy(scope, expr) {
+    return expr === true || truthy(expr && expr(scope));
 }
 /**
  * Normalizes message values into a simple truthy check.
@@ -199,11 +205,11 @@ const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(isDefault) {
-    ngMessageDirectiveFn.$inject = [_injector];
+    ngMessageDirectiveFn.$inject = [_injector, _parse];
     /**
      * Builds a concrete `ngMessage` directive definition.
      */
-    function ngMessageDirectiveFn($injector) {
+    function ngMessageDirectiveFn($injector, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "AE",
@@ -229,7 +235,8 @@ function ngMessageDirectiveFactory(isDefault) {
                         ngMessagesCtrl.reRender();
                     };
                     if (dynamicExp) {
-                        assignRecords(scope.$eval(dynamicExp));
+                        const dynamicFn = $parse(dynamicExp);
+                        assignRecords(dynamicFn(scope));
                         scope.$watch(dynamicExp, assignRecords);
                     }
                     else {

@@ -1,4 +1,4 @@
-import { isString, isObject, assign } from '../../shared/utils.js';
+import { assign, isObject, isString } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
 
 /**
@@ -31,11 +31,6 @@ import { stringify } from '../../shared/strings.js';
  * or invalid (the state being targeted is not registered).
  */
 class TargetState {
-    static isDef(obj) {
-        return (obj &&
-            obj.state &&
-            (isString(obj.state) || (isObject(obj.state) && isString(obj.state.name))));
-    }
     /**
      * The TargetState constructor
      *

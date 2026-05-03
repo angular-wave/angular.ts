@@ -108,9 +108,10 @@ import type {
   StorageType as TStorageType,
 } from "./services/storage/storage.ts";
 import type {
-  StreamConnection as TStreamConnection,
-  StreamConnectionConfig as TStreamConnectionConfig,
-} from "./services/stream/stream.ts";
+  ConnectionConfig as TConnectionConfig,
+  ConnectionEvent as TConnectionEvent,
+} from "./services/connection/connection-manager.ts";
+import type { StreamService as TStreamService } from "./services/stream/readable-stream.ts";
 import type {
   CookieService as TCookieService,
   CookieStoreOptions as TCookieStoreOptions,
@@ -130,6 +131,7 @@ import {
 } from "./router/state/interface.ts";
 import type { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
 import type {
+  WebSocketConnection as TWebSocketConnection,
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
@@ -338,15 +340,19 @@ declare global {
 
     export type StorageType = TStorageType;
 
-    export type StreamConnection = TStreamConnection;
+    export type ConnectionConfig = TConnectionConfig;
 
-    export type StreamConnectionConfig = TStreamConnectionConfig;
+    export type ConnectionEvent = TConnectionEvent;
+
+    export type StreamService = TStreamService;
 
     export type Transition = TTransition;
 
     export type Validator = TValidator;
 
     export type WebSocketConfig = TWebSocketConfig;
+
+    export type WebSocketConnection = TWebSocketConnection;
 
     export type WebSocketService = TWebSocketService;
 

@@ -4,9 +4,9 @@
 [![stats](https://data.jsdelivr.com/v1/package/npm/@angular-wave/angular.ts/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@angular-wave/angular.ts)
 
 AngularTS preserves, modernizes and expands the original
-[AngularJS](https://angularjs.org/) framework. It keeps the parts that still
-scale well: declarative templates, dependency injection, controllers,
-directives, forms and two-way binding. It then replaces the legacy digest-era
+[AngularJS](https://angularjs.org/) framework. It keeps its best parts: 
+declarative templates, dependency injection, controllers,
+directives, and two-way binding. It then replaces the legacy digest-era
 runtime with reactive change detection, native browser APIs and TypeScript
 declarations.
 
@@ -21,7 +21,7 @@ AngularTS builds on AngularJS' decade of production hardening and adds:
 - injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, streams and WASM modules
 
 The result is a high-performance, buildless, multi-paradigm framework that stays
-close to Web standards while preserving AngularJS' productive HTML-first model.
+close to Web standards while preserving AngularJS' HTML-first model.
 
 AngularTS is a good fit if you:
 

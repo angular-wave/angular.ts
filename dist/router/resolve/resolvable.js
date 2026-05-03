@@ -1,6 +1,19 @@
 import { stringify } from '../../shared/strings.js';
-import { isInstanceOf, assign, isFunction, assert, isObject, hasOwn, isArray, isNullOrUndefined } from '../../shared/utils.js';
+import { isInstanceOf, isFunction, assert, isNullOrUndefined, isObject, hasOwn, isArray } from '../../shared/utils.js';
 
+async function resolveResolvable(resolvable, resolveContext, trans) {
+    const dependencies = resolveContext.getDependencies(resolvable);
+    const dependencyPromises = new Array(dependencies.length);
+    dependencies.forEach((dependency, index) => {
+        dependencyPromises[index] = dependency.get(resolveContext, trans);
+    });
+    const resolvedDeps = await Promise.all(dependencyPromises);
+    const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
+    resolvable.data = resolvedValue;
+    resolvable.resolved = true;
+    resolvable.resolveFn = null;
+    return resolvable.data;
+}
 /**
  * # The Resolve subsystem
  *
@@ -27,7 +40,13 @@ class Resolvable {
         this.resolved = false;
         this.promise = undefined;
         if (isInstanceOf(arg1, Resolvable)) {
-            assign(this, arg1);
+            this.token = arg1.token;
+            this.resolveFn = arg1.resolveFn;
+            this.deps = arg1.deps;
+            this.eager = arg1.eager;
+            this.data = arg1.data;
+            this.resolved = arg1.resolved;
+            this.promise = arg1.promise;
         }
         else if (isFunction(resolveFn)) {
             assert(!isNullOrUndefined(arg1), "token argument is required");
@@ -40,7 +59,7 @@ class Resolvable {
             this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
         }
         else if (isObject(arg1) &&
-            arg1.token &&
+            hasOwn(arg1, "token") &&
             (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
             const literal = arg1;
             this.token = literal.token;
@@ -57,20 +76,7 @@ class Resolvable {
      * the resolve function and caching the resulting value.
      */
     resolve(resolveContext, trans) {
-        const getResolvableDependencies = () => Promise.all(resolveContext
-            .getDependencies(this)
-            .map((resolvable) => resolvable.get(resolveContext, trans)));
-        const invokeResolveFn = (resolvedDeps) => this.resolveFn?.apply(null, resolvedDeps);
-        const applyResolvedValue = (resolvedValue) => {
-            this.data = resolvedValue;
-            this.resolved = true;
-            this.resolveFn = null;
-            return this.data;
-        };
-        this.promise = Promise.resolve()
-            .then(getResolvableDependencies)
-            .then(invokeResolveFn)
-            .then(applyResolvedValue);
+        this.promise = resolveResolvable(this, resolveContext, trans);
         return this.promise;
     }
     /**

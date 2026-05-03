@@ -2,27 +2,58 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS SSE Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
     <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const stream = document.getElementById("stream");
+        const events = document.getElementById("sse-events");
+
+        ["open", "message", "stats", "swapped", "close"].forEach((name) => {
+          stream.addEventListener(`ng:sse:${name}`, () => {
+            events.textContent = `Last SSE lifecycle event: ng:sse:${name}`;
+          });
+        });
+      });
+    </script>
   </head>
   <body ng-app>
-    <button ng-sse="/mock/events" target="#log" trigger="click">Start</button>
-    <div id="log"></div>
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>SSE DOM stream</h1>
+        <p>
+          This demo uses the Express test backend at
+          <code>/mock/sse-demo</code>. The server sends JSON SSE messages with
+          <code>target</code>, <code>swap</code>, and <code>html</code> fields.
+        </p>
+      </header>
 
-    <div ng-sse="/mock/eventsoject" trigger="load">Start on load</div>
-    {{ time }}
+      <section class="demo-content">
+        <button
+          id="stream"
+          ng-sse="/mock/sse-demo"
+          sse-events="stats"
+          trigger="click"
+        >
+          Start stream
+        </button>
 
-    <br />
+        <p id="sse-events" class="demo-note">Stream is idle.</p>
 
-    <input
-      name="text"
-      ng-post="/mock/publish"
-      trigger="keyup"
-      placeholder="Search..."
-    />
-    {{ text }}
+        <section class="demo-grid">
+          <div class="demo-panel">
+            <h2>Stats</h2>
+            <p id="sse-stats">No updates yet.</p>
+          </div>
 
-    <div ng-sse="/mock/subscribe" trigger="load"></div>
+          <div class="demo-panel">
+            <h2>Feed</h2>
+            <div id="sse-feed" class="demo-stack"></div>
+          </div>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

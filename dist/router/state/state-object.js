@@ -1,5 +1,5 @@
 import { Glob } from '../glob/glob.js';
-import { isFunction, isObject, assign, isInstanceOf, values, hasOwn } from '../../shared/utils.js';
+import { isFunction, isObject, assign, isInstanceOf, keys, hasOwn } from '../../shared/utils.js';
 
 /**
  * Internal representation of a ng-router state.
@@ -17,7 +17,8 @@ class StateObject {
         return isFunction(obj._state);
     }
     static isState(obj) {
-        return isObject(obj._stateObjectCache);
+        return (isObject(obj) &&
+            isObject(obj._stateObjectCache));
     }
     /**
      * @param {StateDeclaration} config
@@ -42,7 +43,7 @@ class StateObject {
      * reference to the actual `State` instance, the original definition object passed to
      * `$stateProvider.state()`, or the fully-qualified name.
      *
-     * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
+     * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
      *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
      * @returns Returns `true` if `ref` matches the current `State` instance.
      */
@@ -74,29 +75,24 @@ class StateObject {
      * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
      * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
      *
-     * @param {Partial<Param>} [opts] options
+     * @param {StateParamOptions} [opts] options
      * @returns {Param[]} the list of [[Param]] objects
      */
     parameters(opts) {
-        const params = assign({
-            inherit: true,
-            matchingKeys: null,
-        }, opts || {});
-        const inherited = (params.inherit && this.parent && this.parent.parameters()) || [];
-        const ownParams = values(this.params || {});
-        const result = [];
-        for (let i = 0; i < inherited.length; i++) {
-            const param = inherited[i];
-            if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+        const inherit = opts?.inherit !== false;
+        const matchingKeys = opts?.matchingKeys;
+        const inherited = (inherit && this.parent && this.parent.parameters({ matchingKeys })) ||
+            [];
+        const result = inherited.slice();
+        const { params } = this;
+        if (!params)
+            return result;
+        keys(params).forEach((id) => {
+            const { [id]: param } = params;
+            if (!matchingKeys || hasOwn(matchingKeys, id)) {
                 result.push(param);
             }
-        }
-        for (let i = 0; i < ownParams.length; i++) {
-            const param = ownParams[i];
-            if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
-                result.push(param);
-            }
-        }
+        });
         return result;
     }
     /**
@@ -104,20 +100,21 @@ class StateObject {
      *
      * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
      * @param {string} id the name of the [[Param]] to return
-     * @param {Param} [opts] options
+     * @param {StateParamOptions} [opts] options
      * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
      */
-    parameter(id, opts = {}) {
-        const urlParam = this.url && this.url.parameter(id, opts);
+    parameter(id, opts) {
+        const urlParam = this._url && this._url._parameter(id, opts);
         if (urlParam)
             return urlParam;
-        const ownParams = values(this.params || {});
-        for (let i = 0; i < ownParams.length; i++) {
-            const param = ownParams[i];
-            if (param.id === id)
-                return param;
+        const { params } = this;
+        if (params && hasOwn(params, id)) {
+            const { [id]: param } = params;
+            return param;
         }
-        return opts.inherit && this.parent ? this.parent.parameter(id) : undefined;
+        return opts?.inherit && this.parent
+            ? this.parent.parameter(id, opts)
+            : undefined;
     }
     toString() {
         return this.fqn();

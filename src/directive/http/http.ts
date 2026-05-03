@@ -6,6 +6,7 @@ import {
   _parse,
   _sse,
   _state,
+  _stream,
 } from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
@@ -15,6 +16,7 @@ import {
   removeElement,
 } from "../../shared/dom.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
+import type { ConnectionEvent } from "../../services/connection/connection-manager.ts";
 import {
   arrayFrom,
   callBackAfterFirst,
@@ -37,12 +39,19 @@ type HttpDirectiveElement = HTMLElement & {
   disabled?: boolean;
 };
 
-type HttpResponsePayload = string | object;
+type HttpResponsePayload = ReadableStream<Uint8Array> | string | object;
 
 type SwapNodes = Array<Node | ChildNode>;
 
 type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
   headers?: Record<string, string>;
+};
+
+type SseProtocolMessage = {
+  data?: unknown;
+  html?: unknown;
+  target?: string;
+  swap?: SwapModeType;
 };
 
 /**
@@ -97,7 +106,16 @@ function defineDirective(
     $inject?: string[];
   };
 
-  directive.$inject = [_http, _compile, _log, _parse, _state, _sse, _injector];
+  directive.$inject = [
+    _http,
+    _compile,
+    _log,
+    _parse,
+    _state,
+    _sse,
+    _injector,
+    _stream,
+  ];
 
   return directive;
 }
@@ -129,6 +147,7 @@ export function createHttpDirective(
     $state: ng.StateService,
     $sse: ng.SseService,
     $injector: ng.InjectorService,
+    $stream: ng.StreamService,
   ): ng.Directive {
     const getAnimate = createLazyAnimate($injector);
 
@@ -216,6 +235,22 @@ export function createHttpDirective(
         let throttled = false;
 
         let intervalId: ReturnType<typeof setInterval> | undefined;
+
+        let resolveDestroy: (() => void) | undefined;
+
+        const destroyPromise = new Promise<void>((resolve) => {
+          resolveDestroy = resolve;
+        });
+
+        const destroyController = new AbortController();
+
+        scope.$on("$destroy", () => {
+          resolveDestroy?.();
+          resolveDestroy = undefined;
+          destroyController.abort("scope destroyed");
+
+          if (intervalId) clearInterval(intervalId);
+        });
 
         if (isDefined(attrs.interval)) {
           element.dispatchEvent(new Event(eventName));
@@ -463,6 +498,110 @@ export function createHttpDirective(
           }
         }
 
+        async function handleStreamResponse(
+          stream: ReadableStream<Uint8Array>,
+          swap: SwapModeType,
+        ): Promise<void> {
+          await $stream.consumeText(stream, {
+            signal: destroyController.signal,
+            onChunk(chunk) {
+              if (chunk) handleSwapResponse(chunk, swap, scope, attrs, element);
+            },
+          });
+        }
+
+        function createRequestConfig(): RequestShortcutConfigWithHeaders {
+          const config: RequestShortcutConfigWithHeaders = {};
+
+          if (attrs.enctype) {
+            config.headers = {
+              "Content-Type": attrs.enctype,
+            };
+          }
+
+          if (
+            attrs.responseType === "stream" ||
+            isDefined(attrs.stream) ||
+            isDefined(attrs.responseStream)
+          ) {
+            config.responseType = "stream";
+          }
+
+          config.timeout = destroyPromise;
+
+          return config;
+        }
+
+        function dispatchSseEvent(name: string, detail: object): boolean {
+          return element.dispatchEvent(
+            new CustomEvent(`ng:sse:${name}`, {
+              bubbles: true,
+              cancelable: true,
+              detail,
+            }),
+          );
+        }
+
+        function parseSseEventTypes(): string[] {
+          if (!isString(attrs.sseEvents)) return [];
+
+          return attrs.sseEvents
+            .split(",")
+            .map((eventType: string) => eventType.trim())
+            .filter(Boolean);
+        }
+
+        function isSseProtocolMessage(
+          data: unknown,
+        ): data is SseProtocolMessage {
+          return (
+            isObject(data) &&
+            ("html" in data || "target" in data || "swap" in data)
+          );
+        }
+
+        function handleSseProtocolMessage(
+          data: SseProtocolMessage,
+          swap: SwapModeType,
+          event: Event | MessageEvent,
+          source: ng.SseConnection,
+        ): void {
+          const html = "html" in data ? data.html : data.data;
+
+          const nextSwap = data.swap || swap;
+
+          const previousTarget = attrs.target;
+
+          if (!dispatchSseEvent("message", { data, event, source })) {
+            source.close();
+
+            return;
+          }
+
+          if (isDefined(html)) {
+            if (data.target) attrs.target = data.target;
+
+            try {
+              handleSwapResponse(
+                isString(html) || isObject(html) ? html : String(html),
+                nextSwap,
+                scope,
+                attrs,
+                element,
+              );
+              dispatchSseEvent("swapped", { data, event, source });
+            } finally {
+              if (data.target) {
+                if (isDefined(previousTarget)) {
+                  attrs.target = previousTarget;
+                } else {
+                  delete attrs.target;
+                }
+              }
+            }
+          }
+        }
+
         element.addEventListener(eventName, async (event: Event) => {
           if ((element as HTMLButtonElement).disabled) return;
 
@@ -512,7 +651,11 @@ export function createHttpDirective(
               }
             }
 
-            if (isObject(html)) {
+            if ($stream.isReadableStream(html)) {
+              handleStreamResponse(html, swap).catch((error: unknown) => {
+                $log.error(`${attrName}: stream error`, error);
+              });
+            } else if (isObject(html)) {
               if (attrs.target) {
                 $parse(attrs.target)._assign?.(scope, html);
               } else {
@@ -526,6 +669,8 @@ export function createHttpDirective(
           if (isDefined(attrs.delay)) {
             await wait(parseInt(attrs.delay) | 0);
           }
+
+          if (scope._destroyed) return;
 
           if (throttled) return;
 
@@ -549,12 +694,9 @@ export function createHttpDirective(
           if (method === "post" || method === "put") {
             let data: any;
 
-            const config: RequestShortcutConfigWithHeaders = {};
+            const config = createRequestConfig();
 
             if (attrs.enctype) {
-              config.headers = {
-                "Content-Type": attrs.enctype,
-              };
               data = toKeyValue(collectFormData(element));
             } else {
               data = collectFormData(element);
@@ -564,8 +706,11 @@ export function createHttpDirective(
             if (method === "get" && attrs.ngSse) {
               const sseUrl = url;
 
+              const sourceRef: { current?: ng.SseConnection } = {};
+
               const config: ng.SseConfig = {
                 withCredentials: attrs.withCredentials === "true",
+                eventTypes: parseSseEventTypes(),
                 transformMessage: (data: string) => {
                   try {
                     return JSON.parse(data);
@@ -576,17 +721,73 @@ export function createHttpDirective(
                 onOpen: () => {
                   $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
 
+                  if (!dispatchSseEvent("open", { url: sseUrl })) {
+                    sourceRef.current?.close();
+
+                    return;
+                  }
+
                   if (isDefined(attrs.loading)) attrs.$set("loading", false);
 
                   if (isDefined(attrs.loadingClass))
                     attrs.$removeClass(attrs.loadingClass);
                 },
-                onMessage: (data: any) => {
+                onEvent: ({
+                  data,
+                  event: messageEvent,
+                  type,
+                }: ConnectionEvent) => {
+                  const source = sourceRef.current;
+
+                  if (!source) return;
+
+                  if (type !== "message") {
+                    const proceed = dispatchSseEvent(type, {
+                      data,
+                      event: messageEvent,
+                      source,
+                    });
+
+                    if (!proceed) {
+                      source.close();
+
+                      return;
+                    }
+
+                    if (!isSseProtocolMessage(data)) return;
+                  }
+
+                  if (isSseProtocolMessage(data)) {
+                    handleSseProtocolMessage(data, swap, messageEvent, source);
+
+                    return;
+                  }
+
+                  if (
+                    !dispatchSseEvent("message", {
+                      data,
+                      event: messageEvent,
+                      source,
+                    })
+                  ) {
+                    source.close();
+
+                    return;
+                  }
+
                   const res = { status: 200, data };
 
                   handler(res as ng.HttpResponse<HttpResponsePayload>);
+                  dispatchSseEvent("swapped", {
+                    data,
+                    event: messageEvent,
+                    source,
+                  });
                 },
                 onError: (err: any) => {
+                  const source = sourceRef.current;
+
+                  dispatchSseEvent("error", { error: err, source });
                   $log.error(`${attrName}: SSE error`, err);
                   const res = { status: 500, data: err };
 
@@ -602,19 +803,20 @@ export function createHttpDirective(
 
               const source = $sse(sseUrl, config);
 
+              sourceRef.current = source;
+
               scope.$on("$destroy", () => {
                 $log.info(`${attrName}: closing SSE connection`);
+                dispatchSseEvent("close", { source });
                 source.close();
               });
             } else {
-              $http[method](url).then(handler).catch(handler);
+              $http[method](url, createRequestConfig())
+                .then(handler)
+                .catch(handler);
             }
           }
         });
-
-        if (intervalId) {
-          scope.$on("$destroy", () => clearInterval(intervalId));
-        }
 
         if (eventName === "load") {
           element.dispatchEvent(new Event("load"));

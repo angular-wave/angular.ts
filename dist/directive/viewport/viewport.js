@@ -1,22 +1,24 @@
+import { _parse } from '../../injection-tokens.js';
 import { arrayFrom } from '../../shared/utils.js';
 
+ngViewportDirective.$inject = [_parse];
 /** Evaluates expressions when an element enters or leaves the viewport. */
-function ngViewportDirective() {
+function ngViewportDirective($parse) {
     return {
         restrict: "A",
         link(scope, element, attrs) {
             const attrMap = attrs;
             const enterExpr = attrMap.onEnter;
             const leaveExpr = attrMap.onLeave;
+            const enterFn = enterExpr ? $parse(enterExpr) : undefined;
+            const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        if (enterExpr)
-                            scope.$eval(enterExpr);
+                        enterFn?.(scope);
                     }
                     else {
-                        if (leaveExpr)
-                            scope.$eval(leaveExpr);
+                        leaveFn?.(scope);
                     }
                 });
             }, {

@@ -1,8 +1,75 @@
 import { _templateFactory, _router } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { ViewConfig } from '../state/views.js';
+import { assign, isString } from '../../shared/utils.js';
 
 const FQN_MULTIPLIER = 10000;
+let nextViewId = 0;
+/** @internal */
+function createViewConfig(path, viewDecl, factory) {
+    return {
+        _id: nextViewId++,
+        _path: path,
+        _viewDecl: viewDecl,
+        _factory: factory,
+        _component: undefined,
+        _template: undefined,
+        _loaded: false,
+        _controller: undefined,
+    };
+}
+/** @internal */
+function getViewTemplate(config, ngView, context) {
+    return config._component
+        ? config._factory._makeComponentTemplate(ngView, context, config._component, config._viewDecl.bindings)
+        : config._template;
+}
+/** @internal */
+async function loadViewConfig(config) {
+    const params = {};
+    config._path.forEach((node) => assign(params, node.paramValues));
+    const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+    config._controller = config._viewDecl.controller;
+    assign(config, viewResult);
+    return config;
+}
+/** @internal */
+function normalizeNgViewTarget(context, rawViewName = "") {
+    const viewAtContext = rawViewName.split("@");
+    let ngViewName = viewAtContext[0] || "$default";
+    let ngViewContextAnchor = isString(viewAtContext[1]) ? viewAtContext[1] : "^";
+    const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+    if (relativeViewNameSugar) {
+        ngViewContextAnchor = relativeViewNameSugar[1];
+        ngViewName = relativeViewNameSugar[2];
+    }
+    if (ngViewName.charAt(0) === "!") {
+        ngViewName = ngViewName.substring(1);
+        ngViewContextAnchor = "";
+    }
+    const relativeMatch = /^(\^(?:\.\^)*)$/;
+    if (relativeMatch.exec(ngViewContextAnchor)) {
+        let anchorState = context;
+        let hops = 0;
+        for (let i = 0; i < ngViewContextAnchor.length; i++) {
+            if (ngViewContextAnchor[i] === "^") {
+                hops++;
+            }
+        }
+        for (let i = 0; i < hops; i++) {
+            anchorState = anchorState && anchorState.parent;
+        }
+        if (!anchorState) {
+            anchorState = context;
+            while (anchorState.parent)
+                anchorState = anchorState.parent;
+        }
+        ngViewContextAnchor = anchorState.name;
+    }
+    else if (ngViewContextAnchor === ".") {
+        ngViewContextAnchor = context.name;
+    }
+    return { ngViewName, ngViewContextAnchor };
+}
 function contextDepth(context) {
     let cursor = context;
     let depth = 1;
@@ -16,8 +83,8 @@ function ngViewDepth(cache, ngView) {
     const cached = cache.get(ngView);
     if (cached !== undefined)
         return cached;
-    const computed = ngView.fqn.split(".").length * FQN_MULTIPLIER +
-        contextDepth(ngView.creationContext);
+    const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
+        contextDepth(ngView._creationContext);
     cache.set(ngView, computed);
     return computed;
 }
@@ -25,7 +92,7 @@ function viewConfigDepth(cache, config) {
     const cached = cache.get(config);
     if (cached !== undefined)
         return cached;
-    let context = config.viewDecl.$context;
+    let context = config._viewDecl._context;
     let count = 0;
     while (++count && context.parent) {
         context = context.parent;
@@ -67,17 +134,6 @@ class ViewService {
         return (this._rootContext = context || this._rootContext);
     }
     /**
-     * Builds a view config for one view declaration along the specified path.
-     */
-    /** @internal */
-    _createViewConfig(path, decl) {
-        const templateFactory = this._templateFactory;
-        if (!templateFactory) {
-            throw new Error("ViewService: No template factory registered");
-        }
-        return new ViewConfig(path, decl, templateFactory);
-    }
-    /**
      * Removes a view config from the active registry.
      */
     /** @internal */
@@ -98,32 +154,29 @@ class ViewService {
     /** @internal */
     _sync() {
         const ngViewsByFqn = {};
-        for (let i = 0; i < this._ngViews.length; i++) {
-            const ngView = this._ngViews[i];
-            ngViewsByFqn[ngView.fqn] = ngView;
-        }
+        this._ngViews.forEach((ngView) => {
+            ngViewsByFqn[ngView._fqn] = ngView;
+        });
         const ngViewDepthCache = new Map();
         const viewConfigDepthCache = new Map();
         this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
             ngViewDepth(ngViewDepthCache, right));
-        for (let i = 0; i < this._ngViews.length; i++) {
-            const ngView = this._ngViews[i];
+        this._ngViews.forEach((ngView) => {
             let selectedViewConfig = undefined;
             let bestDepth = Number.NEGATIVE_INFINITY;
-            for (let j = 0; j < this._viewConfigs.length; j++) {
-                const candidate = this._viewConfigs[j];
+            this._viewConfigs.forEach((candidate) => {
                 if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
-                    continue;
+                    return;
                 const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
                 if (!selectedViewConfig || candidateDepth > bestDepth) {
                     selectedViewConfig = candidate;
                     bestDepth = candidateDepth;
                 }
-            }
+            });
             if (this._ngViews.indexOf(ngView) !== -1) {
-                ngView.configUpdated(selectedViewConfig);
+                ngView._configUpdated(selectedViewConfig);
             }
-        }
+        });
     }
     /**
      * Registers one active `ng-view` and returns a deregistration function.
@@ -144,23 +197,23 @@ class ViewService {
      */
     /** @internal */
     static _matches(ngViewsByFqn, ngView, viewConfig) {
-        if (!viewConfig || !viewConfig.viewDecl)
+        if (!viewConfig || !viewConfig._viewDecl)
             return false;
-        const ngViewContext = ngView.creationContext;
-        const { viewDecl } = viewConfig;
-        const vcName = viewDecl.$ngViewName || "$default";
-        const vcContext = viewDecl.$ngViewContextAnchor || "";
+        const ngViewContext = ngView._creationContext;
+        const viewDecl = viewConfig._viewDecl;
+        const vcName = viewDecl._ngViewName || "$default";
+        const vcContext = viewDecl._ngViewContextAnchor || "";
         const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
-        if (normalizedTarget !== ngView.fqn)
+        if (normalizedTarget !== ngView._fqn)
             return false;
-        const viewContext = viewDecl.$context;
+        const viewContext = viewDecl._context;
         if (viewContext.name !== ngViewContext.name &&
             vcContext !== ngViewContext.name) {
             return false;
         }
-        const childViewFqn = `${normalizedTarget}.${ngView.name}`;
+        const childViewFqn = `${normalizedTarget}.${ngView._name}`;
         return !ngViewsByFqn[childViewFqn];
     }
 }
 
-export { ViewService };
+export { ViewService, createViewConfig, getViewTemplate, loadViewConfig, normalizeNgViewTarget };

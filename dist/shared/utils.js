@@ -493,6 +493,8 @@ function equals(o1, o2) {
     // Handle general objects
     const keySet = nullObject();
     for (const key in o1) {
+        if (!hasOwn(o1, key))
+            continue;
         if (key.charAt(0) === "$" || isFunction(o1[key]))
             continue;
         if (!equals(o1[key], o2[key]))
@@ -500,6 +502,8 @@ function equals(o1, o2) {
         keySet[key] = true;
     }
     for (const key in o2) {
+        if (!hasOwn(o2, key))
+            continue;
         if (!(key in keySet) &&
             key.charAt(0) !== "$" &&
             isDefined(o2[key]) &&
@@ -630,7 +634,9 @@ function fromJson(json) {
 function parseKeyValue(value) {
     const obj = {};
     const res = value || "";
-    res.split("&").forEach((keyValue) => {
+    const keyValues = res.split("&");
+    for (let i = 0; i < keyValues.length; i++) {
+        let keyValue = keyValues[i];
         let splitPoint;
         let key;
         let val;
@@ -658,7 +664,7 @@ function parseKeyValue(value) {
                 }
             }
         }
-    });
+    }
     return obj;
 }
 /**
@@ -666,21 +672,25 @@ function parseKeyValue(value) {
  */
 function toKeyValue(obj) {
     const parts = [];
-    obj &&
-        entries(obj).forEach(([key, value]) => {
+    if (obj) {
+        const keyValues = entries(obj);
+        for (let i = 0; i < keyValues.length; i++) {
+            const [key, value] = keyValues[i];
             if (isArray(value)) {
-                value.forEach((arrayValue) => {
+                for (let j = 0; j < value.length; j++) {
+                    const arrayValue = value[j];
                     parts.push(encodeUriQuery(key, true) +
                         (arrayValue === true
                             ? ""
                             : `=${encodeUriQuery(arrayValue, true)}`));
-                });
+                }
             }
             else {
                 parts.push(encodeUriQuery(key, true) +
                     (value === true ? "" : `=${encodeUriQuery(value, true)}`));
             }
-        });
+        }
+    }
     return parts.length ? parts.join("&") : "";
 }
 /**
@@ -747,6 +757,8 @@ function shallowCopy(src, dst) {
     if (isObject(src)) {
         const out = dst || {};
         for (const key in src) {
+            if (!hasOwn(src, key))
+                continue;
             // Copy all properties except $$-prefixed
             if (!key.startsWith("$$")) {
                 out[key] = src[key];

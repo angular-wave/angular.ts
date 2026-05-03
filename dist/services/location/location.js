@@ -1,4 +1,4 @@
-import { _rootScope, _rootElement, _router, _exceptionHandler } from '../../injection-tokens.js';
+import { _rootScope, _rootElement, _exceptionHandler } from '../../injection-tokens.js';
 import { trimEmptyHash, urlResolve } from '../../shared/url-utils/url-utils.js';
 import { isUndefined, isString, isNumber, parseKeyValue, isObject, entries, isNull, isDefined, startsWith, isFunction, equals, encodeUriSegment, toKeyValue, minErr } from '../../shared/utils.js';
 import { getBaseHref } from '../../shared/dom.js';
@@ -22,34 +22,8 @@ let _hash = "";
 /**
  * @ignore
  */
-function createHtml5ModeConfig(value, onRewriteLinksConfigured) {
-    return new Proxy(value, {
-        set(target, property, nextValue) {
-            if (property === "rewriteLinks") {
-                onRewriteLinksConfigured();
-            }
-            target[property] = nextValue;
-            return true;
-        },
-    });
-}
-/**
- * @ignore
- */
-function hasConfiguredRouter(router) {
-    return !!router?._hasConfiguredRouting?.();
-}
-/**
- * @ignore
- */
-function isLinkRewritingEnabled(rewriteLinks, rewriteLinksConfigured, router) {
-    if (!rewriteLinks) {
-        return false;
-    }
-    if (isString(rewriteLinks) || rewriteLinksConfigured) {
-        return true;
-    }
-    return hasConfiguredRouter(router);
+function isLinkRewritingEnabled(rewriteLinks) {
+    return !!rewriteLinks;
 }
 class Location {
     /**
@@ -341,9 +315,8 @@ class LocationProvider {
         this.$get = [
             _rootScope,
             _rootElement,
-            _router,
             _exceptionHandler,
-            ($rootScope, $rootElement, $routerConfig, $exceptionHandler) => {
+            ($rootScope, $rootElement, $exceptionHandler) => {
                 const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
                 const initialUrl = trimEmptyHash(window.location.href);
                 let appBase;
@@ -384,7 +357,7 @@ class LocationProvider {
                     const { rewriteLinks } = this.html5ModeConf;
                     // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
                     // currently we open nice url link and redirect then
-                    if (!isLinkRewritingEnabled(rewriteLinks, this._rewriteLinksConfigured, $routerConfig) ||
+                    if (!isLinkRewritingEnabled(rewriteLinks) ||
                         event.ctrlKey ||
                         event.metaKey ||
                         event.shiftKey ||
@@ -532,14 +505,11 @@ class LocationProvider {
             },
         ];
         this.hashPrefixConf = "!";
-        this._rewriteLinksConfigured = false;
-        this._html5ModeConf = createHtml5ModeConfig({
+        this._html5ModeConf = {
             enabled: true,
             requireBase: false,
             rewriteLinks: true,
-        }, () => {
-            this._rewriteLinksConfigured = true;
-        });
+        };
         this._urlChangeListeners = [];
         /** @private */
         this._urlChangeInit = false;
@@ -552,10 +522,7 @@ class LocationProvider {
         return this._html5ModeConf;
     }
     set html5ModeConf(value) {
-        this._rewriteLinksConfigured = Object.prototype.hasOwnProperty.call(value, "rewriteLinks");
-        this._html5ModeConf = createHtml5ModeConfig(value, () => {
-            this._rewriteLinksConfigured = true;
-        });
+        this._html5ModeConf = value;
     }
     /// ///////////////////////////////////////////////////////////
     // URL API
@@ -867,4 +834,4 @@ function normalizeUrl(url) {
     return normalized;
 }
 
-export { Location, LocationProvider, decodePath, encodePath, hasConfiguredRouter, isLinkRewritingEnabled, normalizePath, parseAppUrl, serverBase, stripBaseUrl, stripFile, stripHash, urlsEqual };
+export { Location, LocationProvider, decodePath, encodePath, isLinkRewritingEnabled, normalizePath, parseAppUrl, serverBase, stripBaseUrl, stripFile, stripHash, urlsEqual };

@@ -200,8 +200,8 @@ function AnimateProvider($provide) {
                  *     * from - `{Object|null}` - CSS properties & values at the beginning of the animation
                  *     * to - `{Object|null}` - CSS properties & values at the end of the animation
                  *
-                 * Note that the callback does not trigger a scope digest. Wrap your call into a
-                 * {@link $rootScope.Scope#$apply scope.$apply} to propagate changes to the scope.
+                 * Scope assignments made from this callback are reactive; use `$postUpdate` when
+                 * follow-up work must run after listeners flush.
                  */
                 on: $$animateQueue.on,
                 /**

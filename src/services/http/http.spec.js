@@ -25,7 +25,7 @@ describe("$http", function () {
     expect(result.then).toBeDefined();
   });
 
-  it("makes an XMLHttpRequest to given URL", async function () {
+  it("makes a fetch request to given URL", async function () {
     await $http({
       method: "POST",
       url: "/mock/hello",
@@ -39,7 +39,7 @@ describe("$http", function () {
     expect(requests[0].config.data).toBe("hello");
   });
 
-  it("resolves promise when XHR result received", async function () {
+  it("resolves promise when transport result received", async function () {
     await $http({
       method: "GET",
       url: "/mock/hello",
@@ -53,7 +53,7 @@ describe("$http", function () {
     expect(response.config.url).toEqual("/mock/hello");
   });
 
-  it("rejects promise when XHR result received with error status", async function () {
+  it("rejects promise when transport result received with error status", async function () {
     await $http({
       method: "GET",
       url: "/mock/401",
@@ -254,6 +254,50 @@ describe("$http", function () {
       response = r;
     });
     expect(response.headers()).toBeTruthy();
+  });
+
+  it("supports native response streams", async function () {
+    await $http
+      .get("/mock/hello", {
+        responseType: "stream",
+      })
+      .then(function (r) {
+        response = r;
+      });
+
+    expect(response.data instanceof ReadableStream).toBe(true);
+
+    const reader = response.data
+      .pipeThrough(new TextDecoderStream())
+      .getReader();
+    const chunks = [];
+
+    let result = await reader.read();
+
+    while (!result.done) {
+      chunks.push(result.value);
+      result = await reader.read();
+    }
+
+    expect(chunks.join("")).toBe("Hello");
+  });
+
+  it("allows explicitly transforming native response streams", async function () {
+    const transformResponse = jasmine
+      .createSpy("transformResponse")
+      .and.callFake((data) => data);
+
+    await $http
+      .get("/mock/hello", {
+        responseType: "stream",
+        transformResponse,
+      })
+      .then(function (r) {
+        response = r;
+      });
+
+    expect(transformResponse).toHaveBeenCalled();
+    expect(response.data instanceof ReadableStream).toBe(true);
   });
 
   it("allows setting withCredentials", async function () {
@@ -1140,55 +1184,55 @@ describe("$http", function () {
 });
 
 describe("http", () => {
-  let xhrEnv;
+  let fetchEnv;
   let callback;
   let requests;
 
   beforeEach(() => {
-    xhrEnv = installFakeXHR();
-    requests = xhrEnv.requests;
+    fetchEnv = installFakeFetch();
+    requests = fetchEnv.requests;
 
     window.angular = new Angular();
     callback = jasmine.createSpy("done");
   });
 
   afterEach(() => {
-    xhrEnv.restore();
+    fetchEnv.restore();
   });
 
-  it("should do basics - open async xhr and send data", () => {
-    http("GET", "/some-url", "some-data", () => {});
+  it("should do basics - start fetch and send data", () => {
+    http("POST", "/some-url", "some-data", () => {});
     expect(requests.length).toBe(1);
-    expect(requests[0].method).toBe("GET");
+    expect(requests[0].method).toBe("POST");
     expect(requests[0].url).toBe("/some-url");
-    expect(requests[0].requestBody).toBe("some-data");
-    expect(requests[0].async).toBe(true);
+    expect(requests[0].body).toBe("some-data");
   });
 
-  it("should pass null to send if no body is set", () => {
+  it("should omit body if no body is set", () => {
     http("GET", "/some-url", undefined, () => {});
-    expect(requests[0].requestBody).toBe(null);
+    expect(requests[0].body).toBeUndefined();
   });
 
-  it("should pass the correct falsy value to send if falsy body is set (excluding undefined, NaN)", () => {
+  it("should pass the correct falsy value as body if falsy body is set", () => {
     [false, 0, "", null].forEach((value, index) => {
-      http("GET", "/some-url", value, () => {});
-      expect(requests[index].requestBody).toBe(value);
+      http("POST", "/some-url", value, () => {});
+      expect(requests[index].body).toBe(value === null ? null : String(value));
     });
   });
 
-  it("should pass NaN to send if NaN body is set", () => {
-    http("GET", "/some-url", NaN, () => {});
-    expect(Number.isNaN(requests[0].requestBody)).toBeTrue();
+  it("should pass NaN as body if NaN body is set", () => {
+    http("POST", "/some-url", NaN, () => {});
+    expect(requests[0].body).toBe("NaN");
   });
 
-  it("should call completion function with xhr.statusText if present", () => {
+  it("should call completion function with response statusText if present", async () => {
     callback.and.callFake((status, response, headers, statusText) => {
       expect(statusText).toBe("OK");
     });
 
     http("GET", "/some-url", null, callback);
     requests[0].respond(200, "OK", "");
+    await wait(10);
     expect(callback).toHaveBeenCalled();
   });
 
@@ -1198,11 +1242,11 @@ describe("http", () => {
       "X-header2": "value2",
     });
 
-    expect(requests[0].requestHeaders["X-header1"]).toEqual("value1");
-    expect(requests[0].requestHeaders["X-header2"]).toEqual("value2");
+    expect(requests[0].headers.get("X-header1")).toEqual("value1");
+    expect(requests[0].headers.get("X-header2")).toEqual("value2");
   });
 
-  it("should not try to read response data when request is aborted", () => {
+  it("should not try to read response data when request is aborted", async () => {
     callback.and.callFake((status, response, headers, statusText) => {
       expect(status).toBe(-1);
       expect(response).toBe(null);
@@ -1212,13 +1256,12 @@ describe("http", () => {
 
     http("GET", "/url", null, callback, {}, 2000);
 
-    // your code previously did respond(0) to simulate abort-ish behavior;
-    // keep that shape:
     requests[0].abort();
+    await wait();
     expect(callback).toHaveBeenCalled();
   });
 
-  it("should complete the request on abort", () => {
+  it("should complete the request on abort", async () => {
     callback.and.callFake((status, response, headers, statusText) => {
       expect(status).toBe(-1);
       expect(response).toBe(null);
@@ -1229,12 +1272,12 @@ describe("http", () => {
     http("GET", "/url", null, callback, {});
     expect(callback).not.toHaveBeenCalled();
 
-    // simulate abort
     requests[0].abort();
+    await wait();
     expect(callback).toHaveBeenCalled();
   });
 
-  it("should complete the request on error", () => {
+  it("should complete the request on error", async () => {
     callback.and.callFake(
       (status, response, headers, statusText, xhrStatus) => {
         expect(status).toBe(-1);
@@ -1249,10 +1292,11 @@ describe("http", () => {
     expect(callback).not.toHaveBeenCalled();
 
     requests[0].error();
+    await wait();
     expect(callback).toHaveBeenCalled();
   });
 
-  it("should complete the request on timeout", () => {
+  it("should complete the request on timeout", async () => {
     callback.and.callFake(
       (status, response, headers, statusText, xhrStatus) => {
         expect(status).toBe(-1);
@@ -1263,19 +1307,19 @@ describe("http", () => {
       },
     );
 
-    http("GET", "/url", null, callback, {});
+    http("GET", "/url", null, callback, {}, 1);
     expect(callback).not.toHaveBeenCalled();
 
-    requests[0].timeout();
+    await wait(10);
     expect(callback).toHaveBeenCalled();
   });
 
-  it("should complete the request on success", () => {
+  it("should complete the request on success", async () => {
     callback.and.callFake(
       (status, response, headers, statusText, xhrStatus) => {
         expect(status).toBe(200);
         expect(response).toBe("response");
-        expect(headers).toBe("");
+        expect(headers).toContain("content-type: text/plain");
         expect(statusText).toBe("OK");
         expect(xhrStatus).toBe("complete");
       },
@@ -1285,7 +1329,98 @@ describe("http", () => {
     expect(callback).not.toHaveBeenCalled();
 
     requests[0].respond(200, "OK", "response");
+    await wait(10);
     expect(callback).toHaveBeenCalled();
+  });
+
+  it("should read text responses through the stream service when provided", async () => {
+    const streamService = createStreamService();
+
+    callback.and.callFake((status, response) => {
+      expect(status).toBe(200);
+      expect(response).toBe("response");
+    });
+
+    http(
+      "GET",
+      "/url",
+      null,
+      callback,
+      {},
+      undefined,
+      false,
+      "text",
+      undefined,
+      undefined,
+      streamService,
+    );
+    requests[0].respond(200, "OK", "response");
+    await wait(10);
+
+    expect(callback).toHaveBeenCalled();
+    expect(streamService.readText).toHaveBeenCalledWith(
+      jasmine.any(ReadableStream),
+    );
+  });
+
+  it("should parse json responses read through the stream service", async () => {
+    const streamService = createStreamService();
+
+    callback.and.callFake((status, response) => {
+      expect(status).toBe(200);
+      expect(response).toEqual({ ok: true });
+    });
+
+    http(
+      "GET",
+      "/url",
+      null,
+      callback,
+      {},
+      undefined,
+      false,
+      "json",
+      undefined,
+      undefined,
+      streamService,
+    );
+    requests[0].respond(200, "OK", '{"ok":true}');
+    await wait(10);
+
+    expect(callback).toHaveBeenCalled();
+    expect(streamService.readText).toHaveBeenCalled();
+  });
+
+  it("should return response body stream for stream responseType", async () => {
+    const streamService = createStreamService();
+
+    callback.and.callFake(
+      (status, response, headers, statusText, xhrStatus) => {
+        expect(status).toBe(200);
+        expect(response instanceof ReadableStream).toBe(true);
+        expect(statusText).toBe("OK");
+        expect(xhrStatus).toBe("complete");
+      },
+    );
+
+    http(
+      "GET",
+      "/url",
+      null,
+      callback,
+      {},
+      undefined,
+      false,
+      "stream",
+      undefined,
+      undefined,
+      streamService,
+    );
+    requests[0].respond(200, "OK", "response");
+    await wait(10);
+
+    expect(callback).toHaveBeenCalled();
+    expect(streamService.readText).not.toHaveBeenCalled();
   });
 });
 
@@ -3993,123 +4128,80 @@ describe("http", () => {
 //   });
 // });
 
-function installFakeXHR() {
-  const RealXHR = window.XMLHttpRequest;
+function installFakeFetch() {
+  const realFetch = window.fetch;
 
-  /** @type {FakeXMLHttpRequest[]} */
   const requests = [];
 
-  class FakeXMLHttpRequest {
-    constructor() {
-      /** @type {Record<string, string>} */
-      this.requestHeaders = {};
-      /** @type {any} */
-      this.requestBody = null;
+  window.fetch = (url, init = {}) => {
+    let resolve;
+    let reject;
 
-      this.method = "";
-      this.url = "";
-      this.async = true;
+    const request = {
+      url: String(url),
+      init,
+      method: init.method || "GET",
+      headers: init.headers,
+      body: init.body,
+      respond(status, statusText, body = "", headers = "") {
+        resolve(
+          new Response(body, {
+            status,
+            statusText,
+            headers: parseHeaderString(headers),
+          }),
+        );
+      },
+      error() {
+        reject(new TypeError("network error"));
+      },
+      abort() {
+        reject(new DOMException("The operation was aborted.", "AbortError"));
+      },
+    };
 
-      this.status = 0;
-      this.statusText = "";
-      this.responseText = "";
-      this.readyState = 0;
+    requests.push(request);
 
-      // handlers
-      this.onreadystatechange = null;
-      this.onload = null;
-      this.onerror = null;
-      this.onabort = null;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
 
-      requests.push(this);
-    }
+    init.signal?.addEventListener("abort", () => request.abort());
 
-    open(method, url, async = true) {
-      this.method = method;
-      this.url = url;
-      this.async = async;
-      this.readyState = 1;
-    }
-
-    setRequestHeader(name, value) {
-      this.requestHeaders[name] = value;
-    }
-
-    send(body) {
-      // match native XHR behavior: undefined -> null
-      this.requestBody = body === undefined ? null : body;
-      this.readyState = 2;
-    }
-
-    abort() {
-      // many libs treat abort as "status 0" + xhrStatus "abort"
-      this.status = 0;
-      this.statusText = "";
-      this.responseText = "";
-      if (typeof this.onabort === "function") this.onabort();
-      if (typeof this.onerror === "function") this.onerror(); // some impls use onerror for abort
-    }
-
-    /**
-     * Simulate a successful network response.
-     * @param {number} status
-     * @param {string} statusText
-     * @param {string} body
-     */
-    respond(status, headers = "", body = "", statusText) {
-      this.status = status;
-      this.statusText = statusText ?? (status === 200 ? "OK" : "");
-      this.readyState = 4;
-
-      // Normalize body to string (your tests use string bodies)
-      const text = body == null ? "" : String(body);
-
-      // Populate the fields real XHR exposes that libs commonly read
-      this.responseText = text;
-      this.response = text;
-
-      // Store headers for getAllResponseHeaders/getResponseHeader if you use them
-      this._responseHeaders = headers;
-
-      if (typeof this.onreadystatechange === "function")
-        this.onreadystatechange();
-      if (typeof this.onload === "function") this.onload();
-    }
-
-    /**
-     * Simulate a network error.
-     */
-    error() {
-      this.status = 0;
-      this.statusText = "";
-      this.responseText = "";
-      if (typeof this.onerror === "function") this.onerror();
-    }
-
-    timeout() {
-      this.status = 0;
-      this.statusText = "";
-      this.responseText = "";
-      if (typeof this.ontimeout === "function") this.ontimeout();
-    }
-
-    // optional, if your http() reads getAllResponseHeaders()
-    getAllResponseHeaders() {
-      return "";
-    }
-
-    // optional, if your http() reads getResponseHeader()
-    getResponseHeader() {
-      return null;
-    }
-  }
-
-  window.XMLHttpRequest = FakeXMLHttpRequest;
+    return promise;
+  };
 
   return {
     requests,
+    timeout(request) {
+      request.init.signal.dispatchEvent(new Event("abort"));
+    },
     restore() {
-      window.XMLHttpRequest = RealXHR;
+      window.fetch = realFetch;
     },
   };
+}
+
+function createStreamService() {
+  return {
+    readText: jasmine
+      .createSpy("readText")
+      .and.callFake((stream) => new Response(stream).text()),
+    readLines: jasmine.createSpy("readLines"),
+  };
+}
+
+function parseHeaderString(headers) {
+  const parsed = {};
+
+  headers.split("\n").forEach((line) => {
+    const index = line.indexOf(":");
+
+    if (index === -1) return;
+
+    parsed[line.slice(0, index).trim()] = line.slice(index + 1).trim();
+  });
+
+  return parsed;
 }

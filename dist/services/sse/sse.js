@@ -1,6 +1,6 @@
 import { _log } from '../../injection-tokens.js';
 import { entries } from '../../shared/utils.js';
-import { StreamConnection } from '../stream/stream.js';
+import { ConnectionManager } from '../connection/connection-manager.js';
 
 class SseProvider {
     /**
@@ -17,7 +17,7 @@ class SseProvider {
                 return (url, config = {}) => {
                     const mergedConfig = { ...this.defaults, ...config };
                     const finalUrl = this._buildUrl(url, mergedConfig.params);
-                    return new StreamConnection(() => new EventSource(finalUrl, {
+                    return new ConnectionManager(() => new EventSource(finalUrl, {
                         withCredentials: !!mergedConfig.withCredentials,
                     }), {
                         ...mergedConfig,

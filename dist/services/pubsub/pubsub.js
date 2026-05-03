@@ -30,7 +30,7 @@ class PubSub {
     constructor($exceptionHandler) {
         this._topics = nullObject();
         this._disposed = false;
-        this.$exceptionHandler = $exceptionHandler;
+        this._exceptionHandler = $exceptionHandler;
     }
     /**
      * Reset the bus to its initial state without disposing it.
@@ -158,7 +158,7 @@ class PubSub {
                     fn.apply(context, args);
                 }
                 catch (err) {
-                    this.$exceptionHandler(err);
+                    this._exceptionHandler(err);
                 }
             }
         });

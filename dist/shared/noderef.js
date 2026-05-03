@@ -112,7 +112,10 @@ class NodeRef {
     /** @returns A detached fragment containing the wrapped node list. */
     get fragment() {
         const fragment = createDocumentFragment();
-        this._collection().forEach((el) => fragment.appendChild(el));
+        const collection = this._collection();
+        for (let i = 0; i < collection.length; i++) {
+            fragment.appendChild(collection[i]);
+        }
         return fragment;
     }
     /** @returns The wrapped DOM value. */
@@ -193,9 +196,14 @@ class NodeRef {
      */
     /** @internal */
     _clone() {
-        const cloned = this._isList
-            ? this._collection().map((el) => el.cloneNode(true))
-            : this.node.cloneNode(true);
+        if (!this._isList) {
+            return new NodeRef(this.node.cloneNode(true));
+        }
+        const collection = this._collection();
+        const cloned = new Array(collection.length);
+        for (let i = 0; i < collection.length; i++) {
+            cloned[i] = collection[i].cloneNode(true);
+        }
         return new NodeRef(cloned);
     }
     /** @internal */

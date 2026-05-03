@@ -51,13 +51,12 @@ class AbstractInjector {
     _injectionArgs(fn, locals, serviceName) {
         const args = [];
         const $inject = annotate(fn, this.strictDi, serviceName);
-        for (let i = 0; i < $inject.length; i++) {
-            const key = $inject[i];
+        $inject.forEach((key) => {
             if (!isString(key)) {
                 throw $injectorMinErr("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
             }
             args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
-        }
+        });
         return args;
     }
     /**

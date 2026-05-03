@@ -1,9 +1,8 @@
 import { getBooleanAttrName } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { directiveNormalize, snakeCase, getNodeName, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, isString, trim, keys, minErr } from '../../shared/utils.js';
+import { directiveNormalize, snakeCase, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
-const $compileMinErr = minErr("$compile");
 const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
 const lazyAnimateByInjector = new WeakMap();
@@ -16,7 +15,7 @@ function getLazyAnimate($injector) {
     return getAnimate;
 }
 class Attributes {
-    constructor($injector, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
+    constructor($injector, $exceptionHandler, nodeRef, attributesToCopy) {
         /**
          * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
          * `data-`) to its normalized, camelCase form.
@@ -30,7 +29,6 @@ class Attributes {
         this.$normalize = directiveNormalize;
         this._getAnimate = getLazyAnimate($injector);
         this._exceptionHandler = $exceptionHandler;
-        this._sce = $sce;
         this.$attr = {};
         if (attributesToCopy) {
             const attributeKeys = keys(attributesToCopy);
@@ -121,35 +119,26 @@ class Attributes {
                 this.$attr[key] = attrName = snakeCase(key, "-");
             }
         }
-        const elementNode = this._nodeRef?.node;
-        const nodeName = elementNode && getNodeName(elementNode);
-        let maybeSanitizedValue;
-        if (nodeName === "img" && key === "srcset") {
-            this[key] = maybeSanitizedValue = this._sanitizeSrcset(value, "$set('srcset', value)");
-        }
-        else {
-            maybeSanitizedValue = value;
-        }
         if (writeAttr !== false) {
             if (!attrName)
                 return;
             const elem = this._element();
-            if (isNullOrUndefined(maybeSanitizedValue)) {
+            if (isNullOrUndefined(value)) {
                 elem.removeAttribute(attrName);
             }
             else if (SIMPLE_ATTR_NAME.test(attrName)) {
-                if (booleanKey && maybeSanitizedValue === false) {
+                if (booleanKey && value === false) {
                     elem.removeAttribute(attrName);
                 }
                 else if (booleanKey) {
-                    elem.toggleAttribute(attrName, maybeSanitizedValue);
+                    elem.toggleAttribute(attrName, value);
                 }
                 else {
-                    elem.setAttribute(attrName, maybeSanitizedValue);
+                    elem.setAttribute(attrName, value);
                 }
             }
             else {
-                this._setSpecialAttr(elem, attrName, maybeSanitizedValue);
+                this._setSpecialAttr(elem, attrName, value);
             }
         }
         const { _observers } = this;
@@ -157,7 +146,7 @@ class Attributes {
             const observerListeners = _observers[observer];
             for (let i = 0, l = observerListeners.length; i < l; i++) {
                 try {
-                    observerListeners[i](maybeSanitizedValue);
+                    observerListeners[i](value);
                 }
                 catch (err) {
                     this._exceptionHandler(err);
@@ -184,33 +173,6 @@ class Attributes {
         attributes.removeNamedItem(attribute.name);
         attribute.value = value ?? "";
         element.attributes.setNamedItem(attribute);
-    }
-    /** @internal */
-    _sanitizeSrcset(value, invokeType) {
-        let i;
-        if (!value) {
-            return value;
-        }
-        if (!isString(value)) {
-            throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, value.toString());
-        }
-        let result = "";
-        const trimmedSrcset = trim(value);
-        const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
-        const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
-        const rawUris = trimmedSrcset.split(pattern);
-        const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
-        for (i = 0; i < nbrUrisWith2parts; i++) {
-            const innerIdx = i * 2;
-            result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
-            result += ` ${trim(rawUris[innerIdx + 1])}`;
-        }
-        const lastTuple = trim(rawUris[i * 2]).split(/\s/);
-        result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
-        if (lastTuple.length === 2) {
-            result += ` ${trim(lastTuple[1])}`;
-        }
-        return result.replace(/unsafe:unsafe/g, "unsafe");
     }
 }
 Attributes.$nonscope = true;

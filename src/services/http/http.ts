@@ -3,6 +3,7 @@ import {
   _httpParamSerializer,
   _injector,
   _sce,
+  _stream,
 } from "../../injection-tokens.ts";
 import {
   trimEmptyHash,
@@ -13,6 +14,7 @@ import {
   entries,
   extend,
   fromJson,
+  hasOwn,
   isArray,
   isBlob,
   isDate,
@@ -126,6 +128,15 @@ export interface HttpProviderDefaults {
   paramSerializer?: string | ((obj: any) => string) | undefined;
 }
 
+/** Native response body readers supported by `$http`. */
+export type HttpResponseType =
+  | "arraybuffer"
+  | "blob"
+  | "document"
+  | "json"
+  | "stream"
+  | "text";
+
 /**
  * Request options shared by the `$http` shortcut methods.
  * See http://docs.angularjs.org/api/ng/service/$http#usage
@@ -137,8 +148,8 @@ export interface RequestShortcutConfig extends HttpProviderDefaults {
   data?: any;
   /** Millisecond timeout, or a promise whose resolution aborts the request. */
   timeout?: number | Promise<any> | undefined;
-  /** Native `XMLHttpRequest.responseType` value. */
-  responseType?: string | undefined;
+  /** Native fetch response body reader hint. */
+  responseType?: HttpResponseType | string | undefined;
 }
 
 /**
@@ -150,16 +161,16 @@ export interface RequestConfig extends RequestShortcutConfig {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
   /** Request URL. Query parameters from `params` are appended to this URL. */
   url: string;
-  /** Event handlers attached to the underlying `XMLHttpRequest`. */
+  /** Event handlers notified by the underlying transport. */
   eventHandlers?: Record<string, EventListenerOrEventListenerObject>;
-  /** Event handlers attached to the underlying `XMLHttpRequest.upload`. */
+  /** Upload event handlers. Not used by the fetch transport. */
   uploadEventHandlers?: Record<string, EventListenerOrEventListenerObject>;
 }
 
 /** HTTP method accepted by {@link RequestConfig.method}. */
 export type HttpMethod = RequestConfig["method"];
 
-/** Final transport status reported by `XMLHttpRequest` completion handlers. */
+/** Final transport status reported by transport completion handlers. */
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 
 /** Response object used to resolve or reject {@link HttpPromise}. */
@@ -596,11 +607,13 @@ export function HttpProvider(this: any): void {
     _injector,
     _sce,
     _cookie,
+    _stream,
     /** Creates the runtime `$http` service. */
     function (
       $injector: ng.InjectorService,
       $sce: ng.SceService,
       $cookie: ng.CookieService,
+      $stream: ng.StreamService,
     ) {
       const defaultCache = new Map<string, any>();
 
@@ -652,6 +665,11 @@ export function HttpProvider(this: any): void {
           );
         }
 
+        const hasCustomResponseTransform = hasOwn(
+          requestConfig,
+          "transformResponse",
+        );
+
         const config = extend(
           {
             method: "get",
@@ -661,6 +679,10 @@ export function HttpProvider(this: any): void {
           },
           requestConfig,
         ) as RequestConfig;
+
+        if (config.responseType === "stream" && !hasCustomResponseTransform) {
+          config.transformResponse = [];
+        }
 
         config.headers = mergeHeaders(requestConfig);
         config.method = uppercase(config.method) as HttpMethod;
@@ -991,15 +1013,16 @@ export function HttpProvider(this: any): void {
             reqHeaders,
             config.timeout,
             config.withCredentials,
-            config.responseType as XMLHttpRequestResponseType | undefined,
+            config.responseType,
             createEventHandlers(config.eventHandlers),
             createEventHandlers(config.uploadEventHandlers),
+            $stream,
           );
         }
 
         return promise;
 
-        /** Wraps raw XHR event handlers with function/object listener support. */
+        /** Wraps raw transport event handlers with function/object listener support. */
         function createEventHandlers(
           eventHandlers:
             | RequestConfig["eventHandlers"]
@@ -1028,7 +1051,7 @@ export function HttpProvider(this: any): void {
           }
         }
 
-        /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
+        /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
         function done(
           status: number,
           response: any,
@@ -1060,7 +1083,7 @@ export function HttpProvider(this: any): void {
           );
         }
 
-        /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
+        /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
         function resolvePromise(
           response: any,
           status: number,
@@ -1113,7 +1136,7 @@ export function HttpProvider(this: any): void {
 }
 
 /**
- * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
+ * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
  *
  * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
  * @param [url] - The request URL. Defaults to the current page URL.
@@ -1122,9 +1145,10 @@ export function HttpProvider(this: any): void {
  * @param [headers] - Request headers to apply before sending.
  * @param [timeout] - Timeout in milliseconds or a cancellable promise.
  * @param [withCredentials] - Whether to send credentials with the request.
- * @param [responseType] - The expected XHR response type.
- * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
- * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
+ * @param [responseType] - The response body reader hint.
+ * @param [eventHandlers] - Event listeners notified by the fetch transport.
+ * @param [uploadEventHandlers] - Currently ignored by the fetch transport.
+ * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
  */
 export function http(
   method: string,
@@ -1140,85 +1164,43 @@ export function http(
   headers?: Record<string, string | undefined>,
   timeout?: number | Promise<any>,
   withCredentials?: boolean,
-  responseType?: XMLHttpRequestResponseType,
+  responseType?: string,
   eventHandlers?: RequestConfig["eventHandlers"],
   uploadEventHandlers?: RequestConfig["uploadEventHandlers"],
+  streamService?: ng.StreamService,
 ): void {
   url = url || trimEmptyHash(window.location.href);
 
-  const xhr = new XMLHttpRequest();
+  void uploadEventHandlers;
 
-  let abortedByTimeout = false;
+  const abortController = new AbortController();
+
+  let abortReason: "timeout" | "abort" = "abort";
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  xhr.open(method, url, true);
+  const requestHeaders = new Headers();
 
   if (headers) {
     for (const [key, value] of entries(headers)) {
       if (isDefined(value)) {
-        xhr.setRequestHeader(key, value);
+        requestHeaders.set(key, value);
       }
     }
   }
 
-  xhr.onload = () => {
-    let status = xhr.status || 0;
+  const upperMethod = uppercase(method);
 
-    const statusText = xhr.statusText || "";
-
-    if (status === 0) {
-      status = xhr.response
-        ? Http._OK
-        : new URL(url).protocol === "file:"
-          ? Http._NotFound
-          : 0;
-    }
-
-    completeRequest(
-      status,
-      xhr.response,
-      xhr.getAllResponseHeaders(),
-      statusText,
-      "complete",
-    );
+  const init: RequestInit = {
+    method: upperMethod,
+    headers: requestHeaders,
+    signal: abortController.signal,
+    credentials: withCredentials ? "include" : "same-origin",
   };
 
-  xhr.onerror = () => completeRequest(-1, null, null, "", "error");
-  xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
-
-  xhr.onabort = () => {
-    completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
-  };
-
-  if (eventHandlers) {
-    for (const [key, handler] of entries(eventHandlers)) {
-      xhr.addEventListener(key, handler as EventListenerOrEventListenerObject);
-    }
+  if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
+    init.body = normalizeFetchBody(post);
   }
-
-  if (uploadEventHandlers) {
-    for (const [key, handler] of entries(uploadEventHandlers)) {
-      xhr.upload.addEventListener(
-        key,
-        handler as EventListenerOrEventListenerObject,
-      );
-    }
-  }
-
-  if (withCredentials) {
-    xhr.withCredentials = true;
-  }
-
-  if (responseType) {
-    try {
-      xhr.responseType = responseType;
-    } catch (err) {
-      if (responseType !== "json") throw err;
-    }
-  }
-
-  xhr.send(isUndefined(post) ? null : post);
 
   if (typeof timeout === "number" && timeout > 0) {
     timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
@@ -1228,11 +1210,45 @@ export function http(
     });
   }
 
-  /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
-  function timeoutRequest(reason: "timeout" | "abort"): void {
-    abortedByTimeout = reason === "timeout";
+  fetch(url, init).then(
+    (response) => {
+      const status = response.status || 0;
 
-    if (xhr) xhr.abort();
+      responseBody(response, responseType, streamService).then(
+        (body) => {
+          notifyEvent("load", eventHandlers);
+          completeRequest(
+            status,
+            body,
+            responseHeadersString(response.headers),
+            response.statusText || "",
+            "complete",
+          );
+        },
+        () => {
+          notifyEvent("error", eventHandlers);
+          completeRequest(-1, null, null, "", "error");
+        },
+      );
+    },
+    (error) => {
+      if (error?.name === "AbortError") {
+        notifyEvent(abortReason, eventHandlers);
+        completeRequest(-1, null, null, "", abortReason);
+
+        return;
+      }
+
+      notifyEvent("error", eventHandlers);
+      completeRequest(-1, null, null, "", "error");
+    },
+  );
+
+  /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
+  function timeoutRequest(reason: "timeout" | "abort"): void {
+    abortReason = reason;
+
+    abortController.abort();
   }
 
   /**
@@ -1258,5 +1274,98 @@ export function http(
     if (callback) {
       callback(status, response, headersString, statusText, xhrStatus);
     }
+  }
+}
+
+/** Normalizes AngularTS request data into a fetch-compatible body. */
+function normalizeFetchBody(post: any): BodyInit | null {
+  if (post === null) return null;
+
+  if (
+    isString(post) ||
+    isBlob(post) ||
+    isFormData(post) ||
+    post instanceof URLSearchParams ||
+    post instanceof ArrayBuffer ||
+    ArrayBuffer.isView(post)
+  ) {
+    return post as BodyInit;
+  }
+
+  return String(post);
+}
+
+/** Reads a fetch response body using the closest `$http` responseType equivalent. */
+function responseBody(
+  response: Response,
+  responseType?: string,
+  streamService?: ng.StreamService,
+): Promise<any> {
+  switch (responseType) {
+    case "arraybuffer":
+      return response.arrayBuffer();
+    case "blob":
+      return response.blob();
+    case "json":
+      return responseText(response, streamService).then((text) =>
+        text ? fromJson(text) : null,
+      );
+    case "stream":
+      return Promise.resolve(response.body);
+    case "document":
+      return responseText(response, streamService).then((text) => {
+        return new DOMParser().parseFromString(text, "text/html");
+      });
+    case "text":
+    case "":
+    case undefined:
+      return responseText(response, streamService);
+    default:
+      return responseText(response, streamService);
+  }
+}
+
+/** Reads text via `$stream` when available, falling back to the native response reader. */
+function responseText(
+  response: Response,
+  streamService?: ng.StreamService,
+): Promise<string> {
+  return response.body && streamService
+    ? streamService.readText(response.body)
+    : response.text();
+}
+
+/** Converts fetch headers into the raw header string shape expected by `$http`. */
+function responseHeadersString(headers: Headers): string {
+  const headerLines: string[] = [];
+
+  headers.forEach((value, key) => {
+    headerLines.push(`${key}: ${value}`);
+  });
+
+  return headerLines.join("\n");
+}
+
+/** Notifies configured transport event handlers for compatibility. */
+function notifyEvent(
+  eventName: string,
+  eventHandlers: RequestConfig["eventHandlers"],
+): void {
+  if (!eventHandlers) return;
+
+  const handler = eventHandlers[eventName];
+
+  if (!handler) return;
+
+  const event = new Event(eventName);
+
+  if (isFunction(handler)) {
+    handler(event);
+  } else if (
+    handler &&
+    typeof handler === "object" &&
+    "handleEvent" in handler
+  ) {
+    (handler as EventListenerObject).handleEvent(event);
   }
 }

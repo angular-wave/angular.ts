@@ -2,8 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS HTTP Router Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
     <script type="module" src="../../index.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -21,17 +22,27 @@
                 name: "home",
                 url: "/src/directive/http/form-router-test.html",
                 template: `
-                <h1>Home</h1>
-                <form ng-post="/mock/posthtml" state-success="page1">
-                    <input name="name" />
-                    <button type="submit">Test</button>
-                </form>
-              `,
+                  <section class="demo-panel">
+                    <h2>Submit and transition</h2>
+                    <p class="demo-note">
+                      The successful POST navigates to the configured router state.
+                    </p>
+                    <form ng-post="/mock/posthtml" state-success="page1">
+                      <input name="name" placeholder="Name" />
+                      <button type="submit">Post and navigate</button>
+                    </form>
+                  </section>
+                `,
               })
               .state({
                 name: "page1",
                 url: "/src/directive/http/page1",
-                template: "<h3>Its the NG-Router hello world app!</h3>",
+                template: `
+                  <section class="demo-panel">
+                    <h2>Navigation complete</h2>
+                    <p>The HTTP directive transitioned to this state.</p>
+                  </section>
+                `,
               });
           },
         ]);
@@ -39,6 +50,18 @@
     </script>
   </head>
   <body ng-app="router">
-    <ng-view></ng-view>
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>POST-driven routing</h1>
+        <p>
+          HTTP directives can move the router after a successful or failed
+          response using state attributes.
+        </p>
+      </header>
+
+      <section class="demo-content">
+        <ng-view></ng-view>
+      </section>
+    </main>
   </body>
 </html>

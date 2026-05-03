@@ -12,6 +12,14 @@ const RejectType = {
     _ERROR: 6,
 };
 let id = 0;
+function detailToString(data) {
+    return data &&
+        typeof data === "object" &&
+        "toString" in data &&
+        data.toString !== Object.prototype.toString
+        ? String(data.toString())
+        : stringify(data);
+}
 /**
  * Normalized representation of a transition failure, abort, ignore, or redirect.
  */
@@ -49,13 +57,7 @@ class Rejection {
         return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
     }
     toString() {
-        const detailString = (data) => data &&
-            typeof data === "object" &&
-            "toString" in data &&
-            data.toString !== Object.prototype.toString
-            ? String(data.toString())
-            : stringify(data);
-        return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailString(this.detail)})`;
+        return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
     }
     /**
      * Returns a rejected promise tagged with this rejection instance.

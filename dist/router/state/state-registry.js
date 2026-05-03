@@ -1,9 +1,9 @@
-import { _injector, _urlProvider, _routerProvider } from '../../injection-tokens.js';
+import { _injector, _routerProvider } from '../../injection-tokens.js';
 import { StateMatcher } from './state-matcher.js';
 import { StateBuilder } from './state-builder.js';
-import { StateQueueManager } from './state-queue-manager.js';
+import { StateObject } from './state-object.js';
 import { annotate } from '../../core/di/di.js';
-import { keys, isString } from '../../shared/utils.js';
+import { isString, hasOwn, keys } from '../../shared/utils.js';
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -12,7 +12,7 @@ import { keys, isString } from '../../shared/utils.js';
  *
  */
 class StateRegistryProvider {
-    constructor(urlService, routerState) {
+    constructor(routerState) {
         this.$get = [
             _injector,
             /**
@@ -27,12 +27,12 @@ class StateRegistryProvider {
             },
         ];
         this._states = {};
-        this._urlService = urlService;
+        this._routerState = routerState;
         this._$injector = undefined;
         this._listeners = [];
         this._matcher = new StateMatcher(this._states);
-        this._builder = new StateBuilder(this._matcher, urlService);
-        this._stateQueue = new StateQueueManager(this._urlService, this._states, this._builder, this._listeners);
+        this._builder = new StateBuilder(this._matcher, routerState);
+        this._queue = [];
         this.registerRoot();
         routerState._currentState = this.root();
         routerState._current = routerState._currentState.self;
@@ -61,7 +61,7 @@ class StateRegistryProvider {
             },
             abstract: true,
         };
-        this._root = this._stateQueue._register(rootStateDef);
+        this._root = this._register(rootStateDef);
         this._root.navigable = null;
     }
     /**
@@ -122,13 +122,93 @@ class StateRegistryProvider {
      *
      * Note: a state will be queued if the state's parent isn't yet registered.
      *
-     * @param {_StateDeclaration} stateDefinition the definition of the state to register.
+     * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
      * @returns the internal [[StateObject]] object.
      *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
      *          If the state was only queued, then the object is not fully built.
      */
     register(stateDefinition) {
-        return this._stateQueue._register(stateDefinition);
+        return this._register(stateDefinition);
+    }
+    /** @internal */
+    _register(stateDeclaration) {
+        const state = new StateObject(stateDeclaration);
+        const { name } = state;
+        if (!isString(name))
+            throw new Error("State must have a valid name");
+        if (hasOwn(this._states, name) || this._isQueued(name)) {
+            throw new Error(`State '${name}' is already defined`);
+        }
+        this._queue.push(state);
+        this._flush();
+        return state;
+    }
+    /** @internal */
+    _isQueued(name) {
+        const { _queue } = this;
+        for (let i = 0; i < _queue.length; i++) {
+            if (_queue[i].name === name)
+                return true;
+        }
+        return false;
+    }
+    /** @internal */
+    _flush() {
+        const { _queue, _states, _builder } = this;
+        const registered = [];
+        const orphans = [];
+        const previousQueueLength = {};
+        while (_queue.length) {
+            const state = _queue.shift();
+            if (!state)
+                continue;
+            const { name } = state;
+            const result = _builder._build(state);
+            const orphanIndex = orphans.indexOf(state);
+            if (result) {
+                const existingState = hasOwn(_states, name) ? _states[name] : undefined;
+                if (existingState?.name === name) {
+                    throw new Error(`State '${name}' is already defined`);
+                }
+                _states[name] = state;
+                this._attachRoute(state);
+                if (orphanIndex >= 0)
+                    orphans.splice(orphanIndex, 1);
+                registered.push(state);
+                continue;
+            }
+            const previousLength = previousQueueLength[name];
+            previousQueueLength[name] = _queue.length;
+            if (orphanIndex >= 0 && previousLength === _queue.length) {
+                _queue.push(state);
+                this._notifyRegistered(registered);
+                return _states;
+            }
+            if (orphanIndex < 0) {
+                orphans.push(state);
+            }
+            _queue.push(state);
+        }
+        this._notifyRegistered(registered);
+        return _states;
+    }
+    /** @internal */
+    _notifyRegistered(registered) {
+        if (!registered.length)
+            return;
+        const declarations = [];
+        registered.forEach((state) => declarations.push(state.self));
+        this._notifyListeners("registered", declarations);
+    }
+    /** @internal */
+    _notifyListeners(event, states) {
+        this._listeners.forEach((listener) => listener(event, states));
+    }
+    /** @internal */
+    _attachRoute(state) {
+        if (!state.self.abstract && state._url) {
+            this._routerState._registerStateRoute(state);
+        }
     }
     /**
      *
@@ -154,9 +234,10 @@ class StateRegistryProvider {
                 }
             }
         }
-        const deregistered = [state].concat(children).reverse();
+        const deregistered = children.slice().reverse();
+        deregistered.push(state);
         deregistered.forEach((_state) => {
-            this._urlService._removeStateRoute(_state);
+            this._routerState._removeStateRoute(_state);
             // Remove state from registry
             delete this._states[_state.name];
         });
@@ -180,9 +261,7 @@ class StateRegistryProvider {
         deregisteredStates.forEach((stateDeclaration) => {
             deregisteredDeclarations.push(stateDeclaration.self);
         });
-        this._listeners.forEach((listener) => {
-            listener("deregistered", deregisteredDeclarations);
-        });
+        this._notifyListeners("deregistered", deregisteredDeclarations);
         return deregisteredStates;
     }
     /**
@@ -215,17 +294,16 @@ class StateRegistryProvider {
         return (found && found.self) || null;
     }
 }
-/* @ignore */ StateRegistryProvider.$inject = [_urlProvider, _routerProvider];
-const getLocals = (ctx) => {
+/* @ignore */ StateRegistryProvider.$inject = [_routerProvider];
+function getLocals(ctx) {
     const tokens = ctx.getTokens();
     const locals = {};
-    for (let i = 0; i < tokens.length; i++) {
-        const key = tokens[i];
+    tokens.forEach((key) => {
         if (isString(key)) {
             locals[key] = ctx.getResolvable(key).data;
         }
-    }
+    });
     return locals;
-};
+}
 
 export { StateRegistryProvider, getLocals };

@@ -2,18 +2,55 @@ import { Angular } from "../../angular.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { dealoc } from "../../shared/dom.ts";
 
+function createAnimateSpy() {
+  const calls = [];
+  const runner = {
+    done(callback) {
+      callback(true);
+
+      return runner;
+    },
+  };
+
+  return {
+    calls,
+    enter(node, parent, after) {
+      calls.push({ event: "enter", node, parent, after });
+
+      if (parent) {
+        parent.insertBefore(node, after ? after.nextSibling : null);
+      }
+
+      return runner;
+    },
+    leave(node) {
+      calls.push({ event: "leave", node });
+
+      if (node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+
+      return runner;
+    },
+  };
+}
+
 describe("ng-get", () => {
-  let $compile, $rootScope, $log, el;
+  let $compile, $rootScope, $log, $stream, el, animateSpy;
 
   beforeEach(() => {
     el = document.getElementById("app");
     dealoc(el);
     el.innerHTML = "";
+    animateSpy = createAnimateSpy();
     let angular = new Angular();
     angular.module("default", []).config([
+      "$provide",
       "$stateProvider",
       "$locationProvider",
-      ($stateProvider) => {
+      ($provide, $stateProvider) => {
+        $provide.value("$animate", animateSpy);
+
         $stateProvider
           .state({
             name: "success",
@@ -29,11 +66,66 @@ describe("ng-get", () => {
     ]);
     angular
       .bootstrap(el, ["default"])
-      .invoke((_$compile_, _$rootScope_, _$log_) => {
+      .invoke((_$compile_, _$rootScope_, _$log_, _$stream_) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
         $log = _$log_;
+        $stream = _$stream_;
       });
+  });
+
+  it("should use $animate.enter for animated element responses", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML = '<button ng-get="/mock/div" animate="true">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(100);
+    expect(animateSpy.calls.map((call) => call.event)).toEqual(["enter"]);
+    expect(el.textContent).toContain("Hello");
+  });
+
+  it("should use $animate.leave before entering an animated replacement", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML = '<button ng-get="/mock/div" animate="true">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(100);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(100);
+    expect(animateSpy.calls.map((call) => call.event)).toEqual([
+      "enter",
+      "leave",
+      "enter",
+    ]);
+    expect(el.textContent).toContain("Hello");
+  });
+
+  it("should use $animate for animated outerHTML replacements", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML =
+      '<button ng-get="/mock/div" animate="true" data-swap="outerHTML">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(100);
+    expect(animateSpy.calls.map((call) => call.event)).toEqual([
+      "leave",
+      "enter",
+    ]);
+    expect(el.textContent).toContain("Hello");
+  });
+
+  it("should not animate text-node responses", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML = '<button ng-get="/mock/hello" animate="true">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await wait(100);
+    expect(animateSpy.calls).toEqual([]);
+    expect(el.textContent).toBe("Hello");
   });
 
   it("should replace innerHTML (default) on click", async () => {
@@ -339,6 +431,175 @@ describe("ng-get", () => {
       const found = el.querySelector("#found");
       const next = found.nextSibling;
       expect(el.lastChild.textContent).toBe("Hello");
+    });
+  });
+
+  describe("streams", () => {
+    it("should compile and swap streamed HTML responses", async () => {
+      const scope = $rootScope.$new();
+
+      scope.first = "A";
+      scope.second = "B";
+      el.innerHTML =
+        '<button ng-get="/mock/stream-html" response-type="stream" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(200);
+      expect(el.querySelector("#found").textContent).toBe("AB");
+    });
+
+    it("should accept stream as a responseType shortcut", async () => {
+      const scope = $rootScope.$new();
+
+      scope.first = "C";
+      scope.second = "D";
+      el.innerHTML =
+        '<button ng-get="/mock/stream-html" stream data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(200);
+      expect(el.querySelector("#found").textContent).toBe("CD");
+    });
+
+    it("should accept data-response-stream as a responseType shortcut", async () => {
+      const scope = $rootScope.$new();
+
+      scope.first = "E";
+      scope.second = "F";
+      el.innerHTML =
+        '<button ng-get="/mock/stream-html" data-response-stream data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(200);
+      expect(el.querySelector("#found").textContent).toBe("EF");
+    });
+
+    it("should abort stream consumption when the directive scope is destroyed", async () => {
+      const scope = $rootScope.$new();
+      let signal;
+      let resolveConsume;
+
+      spyOn($stream, "consumeText").and.callFake((_stream, options) => {
+        signal = options.signal;
+
+        return new Promise((resolve) => {
+          resolveConsume = resolve;
+        });
+      });
+
+      el.innerHTML =
+        '<button ng-get="/mock/stream-html" response-type="stream" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(100);
+
+      expect(signal.aborted).toBe(false);
+
+      scope.$destroy();
+      resolveConsume();
+
+      expect(signal.aborted).toBe(true);
+    });
+  });
+
+  describe("ng-sse protocol", () => {
+    it("should swap raw SSE message HTML", async () => {
+      const scope = $rootScope.$new();
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-once" data-target="#feed">Start</button><div id="feed"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(150);
+      expect(el.querySelector("#feed").textContent).toBe("Raw message");
+      scope.$broadcast("$destroy");
+    });
+
+    it("should route structured SSE messages to their target", async () => {
+      const scope = $rootScope.$new();
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-protocol">Start</button><div id="feed"></div><div id="side"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(250);
+      expect(el.querySelector("#feed").textContent).toBe("Feed");
+      expect(el.querySelector("#side").textContent).toBe("Side");
+      scope.$broadcast("$destroy");
+    });
+
+    it("should use data as HTML when structured SSE messages omit html", async () => {
+      const scope = $rootScope.$new();
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-protocol-data">Start</button><div id="feed"></div>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(150);
+      expect(el.querySelector("#feed").textContent).toBe("Data fallback");
+      scope.$broadcast("$destroy");
+    });
+
+    it("should support registered custom SSE events", async () => {
+      const scope = $rootScope.$new();
+      const received = [];
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-custom" sse-events="notice">Start</button><div id="feed"></div>';
+      $compile(el)(scope);
+      el.querySelector("button").addEventListener("ng:sse:notice", (event) =>
+        received.push(event.detail.data),
+      );
+      browserTrigger(el.querySelector("button"), "click");
+      await wait(250);
+      expect(received.length).toBe(1);
+      expect(el.querySelector("#feed").textContent).toBe("Notice");
+      scope.$broadcast("$destroy");
+    });
+
+    it("should dispatch lifecycle DOM events", async () => {
+      const scope = $rootScope.$new();
+      const received = [];
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-protocol">Start</button><div id="feed"></div><div id="side"></div>';
+      $compile(el)(scope);
+
+      const button = el.querySelector("button");
+
+      ["open", "message", "swapped", "close"].forEach((name) => {
+        button.addEventListener(`ng:sse:${name}`, () => received.push(name));
+      });
+
+      browserTrigger(button, "click");
+      await wait(250);
+      scope.$broadcast("$destroy");
+      await wait(50);
+
+      expect(received).toContain("open");
+      expect(received).toContain("message");
+      expect(received).toContain("swapped");
+      expect(received).toContain("close");
+    });
+
+    it("should close the stream when a message event is cancelled", async () => {
+      const scope = $rootScope.$new();
+
+      el.innerHTML =
+        '<button ng-sse="/mock/sse-protocol">Start</button><div id="feed"></div><div id="side"></div>';
+      $compile(el)(scope);
+
+      const button = el.querySelector("button");
+
+      button.addEventListener("ng:sse:message", (event) => {
+        event.preventDefault();
+      });
+
+      browserTrigger(button, "click");
+      await wait(250);
+      expect(el.querySelector("#feed").textContent).toBe("");
+      expect(el.querySelector("#side").textContent).toBe("");
+      scope.$broadcast("$destroy");
     });
   });
 

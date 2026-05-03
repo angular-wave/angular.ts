@@ -1,5 +1,5 @@
 import { _log } from '../../injection-tokens.js';
-import { StreamConnection } from '../stream/stream.js';
+import { ConnectionManager } from '../connection/connection-manager.js';
 
 /**
  * WebSocketProvider
@@ -22,7 +22,7 @@ class WebSocketProvider {
                     mergedConfig.protocols = protocols.length
                         ? protocols
                         : mergedConfig.protocols;
-                    return new StreamConnection(() => new WebSocket(url, mergedConfig.protocols), {
+                    return new ConnectionManager(() => new WebSocket(url, mergedConfig.protocols), {
                         ...mergedConfig,
                         onMessage: (data, event) => {
                             mergedConfig.onMessage?.(data, event);
@@ -42,10 +42,9 @@ class WebSocketProvider {
         ];
         this.defaults = {
             protocols: [],
-            autoReconnect: true,
-            reconnectInterval: 1000,
+            retryDelay: 1000,
             maxRetries: Infinity,
-            heartbeatInterval: 0, // ms, 0 = disabled
+            heartbeatTimeout: 0,
             transformMessage(data) {
                 try {
                     return JSON.parse(data);

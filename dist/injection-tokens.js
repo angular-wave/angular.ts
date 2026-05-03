@@ -40,13 +40,12 @@ const _sce = "$sce";
 const _sceDelegate = "$sceDelegate";
 const _state = "$state";
 const _stateRegistry = "$stateRegistry";
+const _stream = "$stream";
 const _sse = "$sse";
 const _templateCache = "$templateCache";
 const _templateFactory = "$templateFactory";
 const _templateRequest = "$templateRequest";
 const _transitions = "$transitions";
-const _urlConfig = "$urlConfig";
-const _url = "$url";
 const _view = "$view";
 const _window = "$window";
 const _websocket = "$websocket";
@@ -78,12 +77,11 @@ const _sceDelegateProvider = "$sceDelegateProvider";
 const _sseProvider = "$sseProvider";
 const _stateProvider = "$stateProvider";
 const _stateRegistryProvider = "$stateRegistryProvider";
+const _streamProvider = "$streamProvider";
 const _templateCacheProvider = "$templateCacheProvider";
 const _templateFactoryProvider = "$templateFactoryProvider";
 const _templateRequestProvider = "$templateRequestProvider";
 const _transitionsProvider = "$transitionsProvider";
-const _urlConfigProvider = "$urlConfigProvider";
-const _urlProvider = "$urlProvider";
 const _viewProvider = "$viewProvider";
 const _websocketProvider = "$websocketProvider";
 const _workerProvider = "$workerProvider";
@@ -129,13 +127,12 @@ const $injectTokens = {
     _sceDelegate,
     _state,
     _stateRegistry,
+    _stream,
     _sse,
     _templateCache,
     _templateFactory,
     _templateRequest,
     _transitions,
-    _urlConfig,
-    _url,
     _view,
     _window,
     _websocket,
@@ -167,12 +164,11 @@ const $injectTokens = {
     _sseProvider,
     _stateProvider,
     _stateRegistryProvider,
+    _streamProvider,
     _templateCacheProvider,
     _templateFactoryProvider,
     _templateRequestProvider,
     _transitionsProvider,
-    _urlConfigProvider,
-    _urlProvider,
     _viewProvider,
     _websocketProvider,
     _workerProvider,
@@ -180,4 +176,4 @@ const $injectTokens = {
     _controllerProvider,
 };
 
-export { $injectTokens, _anchorScroll, _anchorScrollProvider, _angular, _angularProvider, _animate, _animateCss, _animateCssDriver, _animateCssProvider, _animateJs, _animateJsDriver, _animateProvider, _animateQueue, _animation, _aria, _ariaProvider, _attrs, _compile, _compileProvider, _controller, _controllerProvider, _cookie, _cookieProvider, _document, _element, _eventBus, _eventBusProvider, _exceptionHandler, _exceptionHandlerProvider, _filter, _filterProvider, _http, _httpParamSerializer, _httpParamSerializerProvider, _httpProvider, _injector, _interpolate, _interpolateProvider, _location, _locationProvider, _log, _logProvider, _parse, _parseProvider, _provide, _rest, _restProvider, _rootElement, _rootScope, _rootScopeProvider, _router, _routerProvider, _sce, _sceDelegate, _sceDelegateProvider, _sceProvider, _scope, _sse, _sseProvider, _state, _stateProvider, _stateRegistry, _stateRegistryProvider, _taskTrackerFactory, _templateCache, _templateCacheProvider, _templateFactory, _templateFactoryProvider, _templateRequest, _templateRequestProvider, _transitions, _transitionsProvider, _url, _urlConfig, _urlConfigProvider, _urlProvider, _view, _viewProvider, _wasm, _wasmProvider, _websocket, _websocketProvider, _window, _worker, _workerProvider };
+export { $injectTokens, _anchorScroll, _anchorScrollProvider, _angular, _angularProvider, _animate, _animateCss, _animateCssDriver, _animateCssProvider, _animateJs, _animateJsDriver, _animateProvider, _animateQueue, _animation, _aria, _ariaProvider, _attrs, _compile, _compileProvider, _controller, _controllerProvider, _cookie, _cookieProvider, _document, _element, _eventBus, _eventBusProvider, _exceptionHandler, _exceptionHandlerProvider, _filter, _filterProvider, _http, _httpParamSerializer, _httpParamSerializerProvider, _httpProvider, _injector, _interpolate, _interpolateProvider, _location, _locationProvider, _log, _logProvider, _parse, _parseProvider, _provide, _rest, _restProvider, _rootElement, _rootScope, _rootScopeProvider, _router, _routerProvider, _sce, _sceDelegate, _sceDelegateProvider, _sceProvider, _scope, _sse, _sseProvider, _state, _stateProvider, _stateRegistry, _stateRegistryProvider, _stream, _streamProvider, _taskTrackerFactory, _templateCache, _templateCacheProvider, _templateFactory, _templateFactoryProvider, _templateRequest, _templateRequestProvider, _transitions, _transitionsProvider, _view, _viewProvider, _wasm, _wasmProvider, _websocket, _websocketProvider, _window, _worker, _workerProvider };

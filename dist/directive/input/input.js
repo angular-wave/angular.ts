@@ -640,6 +640,13 @@ function hiddenInputDirective() {
     };
 }
 const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
+function parseConstantValue(value) {
+    if (value === "true")
+        return true;
+    if (value === "false")
+        return false;
+    return Number(value);
+}
 /**
  * Keeps an input element's `value` attribute and property synchronized with `ngValue`.
  */
@@ -657,8 +664,8 @@ function ngValueDirective() {
         priority: 100,
         compile(_, tplAttr) {
             if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
-                return function (scope, elm, attr) {
-                    const value = scope.$eval(attr.ngValue);
+                return function (_scope, elm, attr) {
+                    const value = parseConstantValue(attr.ngValue);
                     updateElementValue(elm, attr, value);
                 };
             }

@@ -2,9 +2,10 @@ import { Param, DefType } from './param.js';
 
 class ParamFactory {
     /**
-     * @param {UrlConfigProvider} urlServiceConfig
+     * @param {UrlParamConfig} urlServiceConfig
      */
     constructor(urlServiceConfig) {
+        this._injector = undefined;
         this.urlServiceConfig = urlServiceConfig;
     }
     /**
@@ -13,7 +14,7 @@ class ParamFactory {
      * @param {ng.StateDeclaration} state
      */
     fromConfig(id, type, state) {
-        return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
+        return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, this, state);
     }
     /**
      * @param {string} id
@@ -21,7 +22,7 @@ class ParamFactory {
      * @param {ng.StateDeclaration} state
      */
     fromPath(id, type, state) {
-        return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
+        return new Param(id, type, DefType._PATH, this.urlServiceConfig, this, state);
     }
     /**
      * @param {string} id
@@ -29,7 +30,7 @@ class ParamFactory {
      * @param {ng.StateDeclaration} state
      */
     fromSearch(id, type, state) {
-        return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
+        return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, this, state);
     }
 }
 

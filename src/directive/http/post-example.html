@@ -2,46 +2,81 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS HTTP POST Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
     <script type="module" src="/src/index.ts"></script>
   </head>
   <body ng-app>
-    InnerHTML
-    <form ng-post="/mock/posthtml">
-      <input name="name" />
-      <button type="submit">Test</button>
-    </form>
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>Declarative POST</h1>
+        <p>
+          <code>ng-post</code> collects form values, sends them through
+          <code>$http</code>, and swaps the response without controller glue.
+        </p>
+      </header>
 
-    Target
-    <form ng-post="/mock/posthtml" data-target="#output">
-      <input name="name" />
-      <button type="submit">Test</button>
-    </form>
+      <section class="demo-content">
+        <div class="demo-grid">
+          <section class="demo-panel">
+            <h2>Form as request source</h2>
+            <form ng-post="/mock/posthtml">
+              <input name="name" placeholder="Name" />
+              <button type="submit">Post into form</button>
+            </form>
+          </section>
 
-    Nested
-    <form>
-      <input ng-post="/mock/posthtml" data-target="#output" name="name" />
-      <button type="submit">Test</button>
-    </form>
+          <section class="demo-panel">
+            <h2>Targeted response</h2>
+            <form ng-post="/mock/posthtml" data-target="#output">
+              <input name="name" placeholder="Name" />
+              <button type="submit">Post to output</button>
+            </form>
+          </section>
 
-    Reference
-    <button ng-post="/mock/posthtml" target="#output" form="$ngForm">
-      Test
-    </button>
-    <form id="$ngForm">
-      <input name="name" />
-    </form>
+          <section class="demo-panel">
+            <h2>Nested control</h2>
+            <form>
+              <input
+                ng-post="/mock/posthtml"
+                data-target="#output"
+                name="name"
+                placeholder="Type and submit"
+              />
+              <button type="submit">Submit</button>
+            </form>
+          </section>
 
-    Input only
-    <input
-      name="name"
-      ng-post="/mock/posthtml"
-      target="#output"
-      trigger="keyup"
-      placeholder="Search..."
-    />
+          <section class="demo-panel">
+            <h2>External form reference</h2>
+            <form id="$ngForm">
+              <input name="name" placeholder="Referenced form value" />
+            </form>
+            <div class="demo-actions">
+              <button ng-post="/mock/posthtml" target="#output" form="$ngForm">
+                Post referenced form
+              </button>
+            </div>
+          </section>
+        </div>
 
-    <div id="output"></div>
+        <section class="demo-panel">
+          <h2>Input-only trigger</h2>
+          <input
+            name="name"
+            ng-post="/mock/posthtml"
+            target="#output"
+            trigger="keyup"
+            placeholder="Type to post..."
+          />
+        </section>
+
+        <section class="demo-panel">
+          <h2>Output</h2>
+          <div id="output" class="demo-output"></div>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

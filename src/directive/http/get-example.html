@@ -2,64 +2,78 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS HTTP GET Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
     <script type="module" src="/src/index.ts"></script>
-    <style>
-      .animate {
-        background: white;
-        border: 1px solid black;
-        padding: 10px;
-        transition: all ease-in-out 0.5s;
-      }
-      .animate.ng-enter,
-      .animate.ng-leave.ng-leave-active {
-        opacity: 0;
-      }
-
-      .animate.ng-leave,
-      .animate.ng-enter.ng-enter-active {
-        opacity: 1;
-      }
-    </style>
   </head>
   <body ng-app>
-    <div id="output"></div>
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>Declarative GET</h1>
+        <p>
+          Use <code>ng-get</code> to fetch HTML or JSON directly from markup.
+          Responses can target a DOM node, merge into scope, or animate through
+          the existing swap pipeline.
+        </p>
+      </header>
 
-    <button ng-get="/mock/hello" data-target="#output" trigger="click">
-      Get
-    </button>
-    <button ng-get="/mock/jsonobject" target="person" trigger="load">
-      Get
-    </button>
-    {{ person.name }} {{ person.age }}
+      <section class="demo-content">
+        <div class="demo-actions">
+          <button ng-get="/mock/hello" data-target="#output" trigger="click">
+            Fetch text
+          </button>
+          <button
+            class="secondary"
+            ng-get="/mock/jsonobject"
+            target="person"
+            trigger="load"
+          >
+            Load JSON into scope
+          </button>
+        </div>
 
-    <h1>Animated</h1>
+        <div class="demo-grid">
+          <section class="demo-panel">
+            <h2>Output</h2>
+            <div id="output" class="demo-output"></div>
+          </section>
 
-    <button ng-get="/mock/hello" animate="true" trigger="click">
-      Get with text
-    </button>
-    <button ng-get="/mock/div-animate" animate="true" trigger="click">
-      Get with div
-    </button>
-    <button
-      ng-get="/mock/div-animate"
-      animate="true"
-      target="#output"
-      trigger="click"
-    >
-      Get with div target
-    </button>
+          <section class="demo-panel">
+            <h2>Scope merge</h2>
+            <p>{{ person.name || "Loading" }} {{ person.age || "" }}</p>
+          </section>
+        </div>
 
-    <h1>Animated outerHTML</h1>
-
-    <button
-      ng-get="/mock/hello"
-      animate="true"
-      swap="outerHTML"
-      trigger="click"
-    >
-      Get with text outer
-    </button>
+        <section class="demo-panel">
+          <h2>Animated swaps</h2>
+          <div class="demo-actions">
+            <button ng-get="/mock/div-animate" animate="true" trigger="click">
+              Animate response
+            </button>
+            <button ng-get="/mock/div-animate" animate="true" trigger="click">
+              Animate element
+            </button>
+            <button
+              ng-get="/mock/div-animate"
+              animate="true"
+              target="#output"
+              trigger="click"
+            >
+              Animate into output
+            </button>
+            <button
+              class="secondary animate"
+              ng-get="/mock/div-animate"
+              animate="true"
+              swap="outerHTML"
+              trigger="click"
+            >
+              Replace this button
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

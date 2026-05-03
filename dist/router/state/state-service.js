@@ -1,8 +1,6 @@
-import { _injector, _stateRegistry, _url, _view, _stateRegistryProvider, _routerProvider, _transitionsProvider, _exceptionHandlerProvider } from '../../injection-tokens.js';
+import { _injector, _stateRegistry, _router, _rootScope, _view, _stateRegistryProvider, _routerProvider, _transitionsProvider, _exceptionHandlerProvider } from '../../injection-tokens.js';
 import { defaults } from '../../shared/common.js';
-import { isDefined, isObject, isString, assign, isNullOrUndefined, isInstanceOf, minErr } from '../../shared/utils.js';
-import { Queue } from '../../shared/queue.js';
-import { makeTargetState } from '../path/path-utils.js';
+import { isString, isDefined, isObject, isInstanceOf, assign, isNullOrUndefined, isArray, minErr } from '../../shared/utils.js';
 import { PathNode } from '../path/path-node.js';
 import { defaultTransOpts } from '../transition/transition-service.js';
 import { Rejection, RejectType } from '../transition/reject-factory.js';
@@ -19,10 +17,10 @@ const stdErr = minErr("$stateProvider");
  * @param {Promise<T>} promise
  * @returns {Promise<T>}
  */
-const silenceUncaughtInPromise = (promise) => {
+function silenceUncaughtInPromise(promise) {
     promise.catch(() => undefined);
     return promise;
-};
+}
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
  *
@@ -30,7 +28,9 @@ const silenceUncaughtInPromise = (promise) => {
  * @param {E} error
  * @returns {Promise<never>}
  */
-const silentRejection = (error) => silenceUncaughtInPromise(Promise.reject(error));
+function silentRejection(error) {
+    return silenceUncaughtInPromise(Promise.reject(error));
+}
 /**
  * Provides services related to ng-router states.
  *
@@ -40,12 +40,6 @@ class StateProvider {
     /** @internal */
     _getRegistry() {
         return this._stateRegistry;
-    }
-    /** @internal */
-    _getUrlService() {
-        if (!this._urlService)
-            throw new Error("Url service is not initialized");
-        return this._urlService;
     }
     /**
      * The latest successful state parameters
@@ -71,20 +65,23 @@ class StateProvider {
         this.$get = [
             _injector,
             _stateRegistry,
-            _url,
+            _router,
+            _rootScope,
             _view,
             /**
              * @param {ng.InjectorService} $injector
              * @param {StateRegistryProvider} $stateRegistry
-             * @param {ng.UrlService} $url
+             * @param {RouterProvider} routerState
+             * @param {ng.RootScopeService} $rootScope
              * @param viewService
              * @returns {StateProvider}
              */
-            ($injector, $stateRegistry, $url, viewService) => {
+            ($injector, $stateRegistry, routerState, $rootScope, viewService) => {
                 this._stateRegistry = $stateRegistry;
-                this._urlService = $url;
-                $url._stateService = this;
-                this._transitionService._initRuntimeHooks(this, $url, viewService);
+                this._routerState = routerState;
+                routerState._stateService = this;
+                $rootScope.$on("$locationChangeSuccess", (evt) => routerState._sync(evt));
+                this._transitionService._initRuntimeHooks(this, viewService);
                 this._$injector = $injector;
                 this._routerState._injector = $injector;
                 return this;
@@ -93,9 +90,8 @@ class StateProvider {
         this._routerState = routerState;
         this._transitionService = transitionService;
         this._stateRegistry = stateRegistry;
-        this._urlService = undefined;
         this._$injector = undefined;
-        this._invalidCallbacks = [];
+        this._lazyStates = [];
         this._defaultErrorHandler = exceptionHandlerProvider.handler;
     }
     /**
@@ -114,85 +110,69 @@ class StateProvider {
         }
         return this;
     }
-    /**
-     * Handler for when [[transitionTo]] is called with an invalid state.
-     *
-     * Invokes the [[onInvalid]] callbacks, in natural order.
-     * Each callback's return value is checked in sequence until one of them returns an instance of TargetState.
-     * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
-     *
-     * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-     * @internal
-     * @param {PathNode[]} fromPath
-     * @param {TargetState} toState
-     */
-    _handleInvalidTargetState(fromPath, toState) {
-        const fromState = makeTargetState(this._getRegistry(), fromPath);
-        const routerState = this._routerState;
-        const latestThing = () => routerState._transitionHistory._peekTail();
-        const latest = latestThing();
-        const callbackQueue = new Queue(this._invalidCallbacks.slice());
-        const injector = this._$injector;
-        const checkForRedirect = (result) => {
-            if (!isInstanceOf(result, TargetState)) {
-                return undefined;
+    /** @internal */
+    _registerLazyResult(result) {
+        if (!result)
+            return;
+        const states = isArray(result) ? result : [result];
+        states.forEach((state) => this.state(state));
+    }
+    /** @internal */
+    _findLazyState(target) {
+        const name = target.name();
+        if (!isString(name))
+            return undefined;
+        for (let i = 0; i < this._lazyStates.length; i++) {
+            const lazy = this._lazyStates[i];
+            if (name === lazy.prefix || name.startsWith(`${lazy.prefix}.`)) {
+                return lazy;
             }
-            let target = result;
-            // Recreate the TargetState, in case the state is now defined.
-            target = this.target(target.identifier(), target.params(), target.options());
-            if (!target.valid()) {
-                return Rejection.invalid(target.error())._toPromise();
-            }
-            if (latestThing() !== latest) {
-                return Rejection.superseded()._toPromise();
-            }
-            return this.transitionTo(target.identifier(), target.params(), target.options());
-        };
-        /**
-         * @returns {Promise<any>}
-         */
-        function invokeNextCallback() {
-            const nextCallback = callbackQueue._dequeue();
-            if (nextCallback === undefined)
-                return Rejection.invalid(toState.error())._toPromise();
-            const callbackResult = Promise.resolve(nextCallback(toState, fromState, injector));
-            return callbackResult
-                .then(checkForRedirect)
-                .then((result) => result || invokeNextCallback());
         }
-        return invokeNextCallback();
+        return undefined;
+    }
+    /** @internal */
+    async _loadLazyTargetState(toState) {
+        const routerState = this._routerState;
+        const latest = routerState._lastStartedTransition;
+        const lazy = this._findLazyState(toState);
+        if (!lazy) {
+            return Rejection.invalid(toState.error())._toPromise();
+        }
+        if (!lazy.promise) {
+            lazy.promise = this._loadLazyRegistration(lazy, toState);
+        }
+        await lazy.promise;
+        if (routerState._lastStartedTransition !== latest) {
+            return Rejection.superseded()._toPromise();
+        }
+        const target = this.target(toState.identifier(), toState.params(), toState.options());
+        if (!target.valid()) {
+            return Rejection.invalid(target.error())._toPromise();
+        }
+        return this.transitionTo(target.identifier(), target.params(), target.options());
+    }
+    /** @internal */
+    async _loadLazyRegistration(lazy, toState) {
+        try {
+            this._registerLazyResult(await lazy.loader(toState, this._$injector));
+            lazy.loaded = true;
+        }
+        catch (error) {
+            lazy.promise = undefined;
+            throw error;
+        }
     }
     /**
-     * Registers an Invalid State handler
-     *
-     * Registers a [[OnInvalidCallback]] function to be invoked when [[StateService.transitionTo]]
-     * has been called with an invalid state reference parameter
-     *
-     * Example:
-     * ```js
-     * stateService.onInvalid(function(to) {
-     *   if (to.name() === 'foo') {
-     *     stateService.state({ name: 'foo' });
-     *     return stateService.target('foo');
-     *   }
-     * });
-     * ```
-     *
-     * @param {OnInvalidCallback} callback invoked when the toState is invalid
-     *   This function receives the (invalid) toState, the fromState, and an injector.
-     *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
-     *   If one is returned, it is treated as a redirect.
-     *
-     * @returns a function which deregisters the callback
+     * Registers a lazy state namespace.
+     * The loader is invoked the first time navigation targets this prefix.
      */
-    onInvalid(callback) {
-        this._invalidCallbacks.push(callback);
-        return () => {
-            const index = this._invalidCallbacks.indexOf(callback);
-            if (index !== -1) {
-                this._invalidCallbacks.splice(index, 1);
-            }
-        };
+    lazy(prefix, loader) {
+        this._lazyStates.push({
+            prefix: prefix.replace(/\.\*\*$/, ""),
+            loader,
+            loaded: false,
+        });
+        return this;
     }
     /**
      * Reloads the current state
@@ -245,7 +225,6 @@ class StateProvider {
         return this.transitionTo(current, this._routerState._params, {
             reload: isDefined(reloadState) ? reloadState : true,
             inherit: false,
-            notify: false,
         });
     }
     /**
@@ -254,7 +233,7 @@ class StateProvider {
      * Convenience method for transitioning to a new state.
      *
      * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-     * `{ location: true, inherit: true, relative: $state.$current, notify: true }`.
+     * `{ location: true, inherit: true, relative: $state.$current }`.
      * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
      * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
      * inherit from the current parameter values (because of `inherit: true`).
@@ -286,7 +265,7 @@ class StateProvider {
      *
      * @param {*} [options] Transition options
      *
-     * @returns {Promise<any>} A promise representing the state of the new transition.
+     * @returns A promise representing the state of the new transition.
      */
     go(to, params, options) {
         const defautGoOpts = { relative: this.$current, inherit: true };
@@ -301,7 +280,7 @@ class StateProvider {
      * This may be returned from a Transition Hook to redirect a transition, for example.
      * @param {string | StateDeclaration | StateObject} identifier
      * @param {{}} params
-     * @param {any} [options]
+     * @param {TransitionOptions} [options]
      */
     target(identifier, params = {}, options = {}) {
         // If we're reloading, find the state object to reload from
@@ -311,16 +290,65 @@ class StateProvider {
         options.reloadState =
             options.reload === true
                 ? reg.root()
-                : reg._matcher.find(options.reload, options.relative);
+                : options.reload
+                    ? reg._matcher.find(options.reload, options.relative)
+                    : undefined;
         if (options.reload && !options.reloadState)
-            throw new Error(`No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`);
+            throw new Error(`No such reload state '${isString(options.reload)
+                ? options.reload
+                : isObject(options.reload) && "name" in options.reload
+                    ? String(options.reload.name)
+                    : String(options.reload)}'`);
         return new TargetState(this._getRegistry(), identifier, params, options);
     }
     getCurrentPath() {
         const routerState = this._routerState;
-        const latestSuccess = routerState._successfulTransitions._peekTail();
-        const rootPath = () => [new PathNode(this._getRegistry().root())];
-        return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
+        const latestSuccess = routerState._lastSuccessfulTransition;
+        return latestSuccess
+            ? latestSuccess._treeChanges.to
+            : [new PathNode(this._getRegistry().root())];
+    }
+    /** @internal */
+    _handleTransitionRejection(trans, error) {
+        if (isInstanceOf(error, Rejection)) {
+            const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
+            if (error.type === RejectType._IGNORED) {
+                isLatest && this._routerState._update();
+                // Consider ignored `Transition.run()` as a successful `transitionTo`.
+                return Promise.resolve(this._routerState._current);
+            }
+            const { detail } = error;
+            if (error.type === RejectType._SUPERSEDED &&
+                error.redirected &&
+                isInstanceOf(detail, TargetState)) {
+                const redirect = trans.redirect(detail);
+                return this._runRedirectTransition(redirect);
+            }
+            if (error.type === RejectType._ABORTED) {
+                isLatest && this._routerState._update();
+                return Promise.reject(error);
+            }
+        }
+        this.defaultErrorHandler()(error);
+        return Promise.reject(error);
+    }
+    /** @internal */
+    async _runRedirectTransition(redirect) {
+        try {
+            return await redirect.run();
+        }
+        catch (reason) {
+            return this._handleTransitionRejection(redirect, reason);
+        }
+    }
+    /** @internal */
+    async _runTransitionTo(trans) {
+        try {
+            return await trans.run();
+        }
+        catch (error) {
+            return this._handleTransitionRejection(trans, error);
+        }
     }
     /**
      * Low-level method for transitioning to a new state.
@@ -343,7 +371,7 @@ class StateProvider {
      *      will populate $stateParams.
      * @param {TransitionOptions} options Transition options
      *
-     * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
+     * @returns A promise representing the state of the new transition. See [[go]]
      */
     transitionTo(to, toParams = {}, options = {}) {
         options = defaults(options, defaultTransOpts);
@@ -352,42 +380,20 @@ class StateProvider {
         const ref = this.target(to, toParams, options);
         const currentPath = this.getCurrentPath();
         if (!ref.exists())
-            return this._handleInvalidTargetState(currentPath, ref);
+            return this._loadLazyTargetState(ref);
         if (!ref.valid())
             return silentRejection(ref.error());
-        if (options.supercede === false && getCurrent()) {
-            return Rejection.ignored("Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.")._toPromise();
-        }
-        const rejectedTransitionHandler = (trans) => (error) => {
-            if (isInstanceOf(error, Rejection)) {
-                const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
-                if (error.type === RejectType._IGNORED) {
-                    isLatest && this._getUrlService().update();
-                    // Consider ignored `Transition.run()` as a successful `transitionTo`
-                    return Promise.resolve(this._routerState._current);
-                }
-                const { detail } = error;
-                if (error.type === RejectType._SUPERSEDED &&
-                    error.redirected &&
-                    isInstanceOf(detail, TargetState)) {
-                    // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
-                    // by returning the promise for the new (redirect) `Transition.run()`.
-                    const redirect = trans.redirect(detail);
-                    return redirect.run().catch(rejectedTransitionHandler(redirect));
-                }
-                if (error.type === RejectType._ABORTED) {
-                    isLatest && this._getUrlService().update();
-                    return Promise.reject(error);
-                }
-            }
-            const errorHandler = this.defaultErrorHandler();
-            errorHandler(error);
-            return Promise.reject(error);
-        };
+        /**
+         * Special handling for Ignored, Aborted, and Redirected transitions
+         *
+         * The semantics for the transition.run() promise and the StateService.transitionTo()
+         * promise differ. For instance, the run() promise may be rejected because it was
+         * IGNORED, but the transitionTo() promise is resolved because from the user perspective
+         * no error occurred.  Likewise, the transition.run() promise may be rejected because of
+         * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
+         */
         const transition = this._transitionService.create(currentPath, ref);
-        const transitionToPromise = transition
-            .run()
-            .catch(rejectedTransitionHandler(transition));
+        const transitionToPromise = this._runTransitionTo(transition);
         silenceUncaughtInPromise(transitionToPromise); // issue #2676
         // Return a promise for the transition, which also has the transition object on it.
         return assign(transitionToPromise, { transition });
@@ -422,8 +428,8 @@ class StateProvider {
        * @returns {boolean | undefined} Returns true if it is the state.
        */
     is(stateOrName, params, options) {
-        options = defaults(options, { relative: this.$current });
-        const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+        const relative = options?.relative === undefined ? this.$current : options.relative;
+        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
         if (!isDefined(state))
             return undefined;
         if (this.$current !== state)
@@ -470,7 +476,7 @@ class StateProvider {
        * @returns {boolean | undefined} Returns true if it does include the state
        */
     includes(stateOrName, params, options) {
-        options = defaults(options, { relative: this.$current });
+        const relative = options?.relative === undefined ? this.$current : options.relative;
         const glob = isString(stateOrName) && Glob.fromString(stateOrName);
         if (glob) {
             const currentName = this.$current?.name;
@@ -478,9 +484,9 @@ class StateProvider {
                 return false;
             stateOrName = currentName;
         }
-        const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
         const include = this.$current?.includes;
-        if (!isDefined(state))
+        if (!isDefined(state) || !include)
             return undefined;
         if (!isDefined(include[state.name]))
             return false;
@@ -507,24 +513,18 @@ class StateProvider {
      * @returns {string | null} compiled state url
      */
     href(stateOrName, params, options) {
-        const defaultHrefOpts = {
-            lossy: true,
-            inherit: true,
-            absolute: false,
-            relative: this.$current,
-        };
-        options = defaults(options, defaultHrefOpts);
         params = params || {};
-        const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
+        const relative = options?.relative === undefined ? this.$current : options.relative;
+        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
         if (!isDefined(state))
             return null;
-        if (options?.inherit)
+        if (options?.inherit !== false)
             params = this._routerState._params.$inherit(params, this.$current, state);
-        const nav = state && options?.lossy ? state.navigable : state;
-        if (!nav || isNullOrUndefined(nav.url)) {
+        const nav = state && options?.lossy !== false ? state.navigable : state;
+        if (!nav || isNullOrUndefined(nav._url)) {
             return null;
         }
-        return this._getUrlService().href(nav.url, params, {
+        return this._routerState._href(nav._url, params, {
             absolute: options?.absolute,
         });
     }

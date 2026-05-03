@@ -113,6 +113,63 @@ app.get("/div", (req, res) => {
   res.send("<div>Hello</div>");
 });
 
+app.get("/stream-html", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.write("<span>{{first}}</span>");
+  setTimeout(() => {
+    res.write("<span>{{second}}</span>");
+    res.end();
+  }, 25);
+});
+
+app.get("/http-stream-demo", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.flushHeaders?.();
+
+  const chunks = [
+    `<article class="chunk-card"><b>Chunk 1</b><span>Connected to fetch stream</span></article>`,
+    `<article class="chunk-card"><b>Chunk 2</b><span>Compiled at {{ timestamp }}</span></article>`,
+    `<article class="chunk-card"><b>Chunk 3</b><span>Template expression: {{ message }}</span></article>`,
+  ];
+
+  chunks.forEach((chunk, index) => {
+    setTimeout(() => {
+      res.write(chunk);
+
+      if (index === chunks.length - 1) {
+        res.end();
+      }
+    }, index * 700);
+  });
+});
+
+app.post("/stream-html", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.write("<span>{{first}}</span>");
+  setTimeout(() => {
+    res.write("<span>{{second}}</span>");
+    res.end();
+  }, 25);
+});
+
+app.put("/stream-html", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.write("<span>{{first}}</span>");
+  setTimeout(() => {
+    res.write("<span>{{second}}</span>");
+    res.end();
+  }, 25);
+});
+
+app.delete("/stream-html", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.write("<span>{{first}}</span>");
+  setTimeout(() => {
+    res.write("<span>{{second}}</span>");
+    res.end();
+  }, 25);
+});
+
 app.get("/div-animate", (req, res) => {
   res.send(`<div class='animate'>Hello ${Date.now().toString(10)}</div>`);
 });
@@ -231,6 +288,142 @@ app.get("/events", (req, res) => {
   }, 1000);
 
   // Cleanup when the client closes the connection
+  req.on("close", () => {
+    clearInterval(interval);
+    res.end();
+  });
+});
+
+app.get("/sse-protocol", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  res.write(
+    `data: ${JSON.stringify({
+      target: "#feed",
+      swap: "beforeend",
+      html: "<p>Feed</p>",
+    })}\n\n`,
+  );
+
+  setTimeout(() => {
+    res.write(
+      `data: ${JSON.stringify({
+        target: "#side",
+        swap: "innerHTML",
+        html: "<p>Side</p>",
+      })}\n\n`,
+    );
+  }, 25);
+
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    res.end();
+  });
+});
+
+app.get("/sse-protocol-data", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  res.write(
+    `data: ${JSON.stringify({
+      target: "#feed",
+      swap: "beforeend",
+      data: "<p>Data fallback</p>",
+    })}\n\n`,
+  );
+
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    res.end();
+  });
+});
+
+app.get("/sse-once", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  res.write(`data: <p>Raw message</p>\n\n`);
+
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    res.end();
+  });
+});
+
+app.get("/sse-custom", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  res.write(
+    `event: notice\ndata: ${JSON.stringify({
+      target: "#feed",
+      swap: "beforeend",
+      html: "<p>Notice</p>",
+    })}\n\n`,
+  );
+
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    res.end();
+  });
+});
+
+app.get("/sse-demo", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  let count = 0;
+
+  const send = () => {
+    count++;
+    res.write(
+      `data: ${JSON.stringify({
+        target: "#sse-feed",
+        swap: "afterbegin",
+        html: `<article class="event-card"><strong>Update ${count}</strong><span>${new Date().toLocaleTimeString()}</span></article>`,
+      })}\n\n`,
+    );
+    res.write(
+      `event: stats\ndata: ${JSON.stringify({
+        target: "#sse-stats",
+        swap: "innerHTML",
+        html: `<b>${count}</b> streamed update${count === 1 ? "" : "s"}`,
+      })}\n\n`,
+    );
+  };
+
+  send();
+
+  const interval = setInterval(send, 1500);
+
   req.on("close", () => {
     clearInterval(interval);
     res.end();
