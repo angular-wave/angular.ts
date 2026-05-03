@@ -123,7 +123,6 @@ import type {
   RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
-import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import {
   StateDeclaration as TStateDeclaration,
   StateResolveArray as TStateResolveArray,
@@ -199,8 +198,6 @@ declare global {
     export type SceDelegateProvider = TSceDelegateProvider;
 
     export type SceProvider = ThisParameterType<typeof SceProvider>;
-
-    export type TransitionProvider = TTransitionProvider;
 
     export type TransitionService = TTransitionService;
 

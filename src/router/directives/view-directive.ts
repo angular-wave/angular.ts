@@ -29,7 +29,7 @@ import {
 import { getLocals } from "../state/state-registry.ts";
 import {
   getViewTemplate,
-  type _ViewConfig,
+  type ViewConfig,
   type ActiveNgView,
   type ViewContext,
   type ViewService,
@@ -96,12 +96,12 @@ type NgViewAnimData = {
 };
 
 type NgViewData = {
-  $cfg?: _ViewConfig;
+  $cfg?: ViewConfig;
   $ngView: ActiveNgView;
 };
 
 type ActiveNgViewRootData = {
-  $cfg: { viewDecl: { $context: ViewContext } };
+  $cfg: { _viewDecl: { _context: ViewContext } };
   $ngView: Partial<ActiveNgView>;
 };
 
@@ -291,7 +291,7 @@ export function ViewDirective(
   void $state;
 
   const rootData: ActiveNgViewRootData = {
-    $cfg: { viewDecl: { $context: $view._rootViewContext() as ViewContext } },
+    $cfg: { _viewDecl: { _context: $view._rootViewContext() as ViewContext } },
     $ngView: {},
   };
 
@@ -333,35 +333,35 @@ export function ViewDirective(
 
         let currentScope: ng.Scope | null = null;
 
-        let viewConfig: _ViewConfig | undefined;
+        let viewConfig: ViewConfig | undefined;
 
         let configUpdateVersion = 0;
 
         const parentFqn =
-          inherited.$cfg.viewDecl.$context.name || inherited.$ngView.fqn;
+          inherited.$cfg._viewDecl._context.name || inherited.$ngView._fqn;
 
         const activeNgView: ActiveNgView = {
-          id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-          element: $element,
-          name, // ng-view name, retained internally for nested view matching
-          fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-          config: null,
-          configUpdated: configUpdatedCallback,
-          get creationContext(): ViewContext {
+          _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+          _element: $element,
+          _name: name, // ng-view name, retained internally for nested view matching
+          _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
+          _config: null,
+          _configUpdated: configUpdatedCallback,
+          get _creationContext(): ViewContext {
             // Inherit the parent view context for nested ng-view elements.
-            const fromParentTag = inherited.$ngView.creationContext as
+            const fromParentTag = inherited.$ngView._creationContext as
               | ViewContext
               | undefined;
 
             return (
-              inherited.$cfg.viewDecl.$context ||
+              inherited.$cfg._viewDecl._context ||
               fromParentTag ||
-              rootData.$cfg.viewDecl.$context
+              rootData.$cfg._viewDecl._context
             );
           },
         };
 
-        function configUpdatedCallback(config: _ViewConfig | undefined): void {
+        function configUpdatedCallback(config: ViewConfig | undefined): void {
           const updateVersion = ++configUpdateVersion;
 
           if (!config) {
@@ -375,19 +375,19 @@ export function ViewDirective(
                 return;
               }
 
-              activeNgView.config = null;
+              activeNgView._config = null;
               updateView(undefined);
             });
 
             viewConfig = undefined;
-            activeNgView.config = null;
+            activeNgView._config = null;
 
             return;
           }
 
           if (viewConfig === config) return;
 
-          activeNgView.config = config || null;
+          activeNgView._config = config || null;
           viewConfig = config;
           updateView(config);
         }
@@ -417,7 +417,7 @@ export function ViewDirective(
           }
         }
 
-        function updateView(config?: _ViewConfig): void {
+        function updateView(config?: ViewConfig): void {
           const newScope = scope.$new();
 
           const animEnter = withResolvers<void>();
@@ -525,13 +525,14 @@ export function ViewDirectiveFill(
           return;
         }
         const cfg = (data.$cfg || {
-          viewDecl: {},
-        }) as Pick<_ViewConfig, "viewDecl" | "controller"> &
+          _viewDecl: {},
+        }) as Pick<ViewConfig, "_viewDecl" | "_controller"> &
           Partial<
-            Pick<_ViewConfig, "path" | "component" | "factory" | "template">
+            Pick<ViewConfig, "_path" | "_component" | "_factory" | "_template">
           >;
 
-        const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
+        const resolveCtx =
+          cfg._path && new ResolveContext(cfg._path, $injector);
 
         $element.innerHTML = data.$cfg
           ? getViewTemplate(
@@ -545,7 +546,7 @@ export function ViewDirectiveFill(
             $element.childNodes,
         );
 
-        const { controller } = cfg;
+        const controller = cfg._controller;
 
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
 
@@ -577,16 +578,16 @@ export function ViewDirectiveFill(
             $transitions,
             controllerInstance,
             scope,
-            cfg as Pick<_ViewConfig, "viewDecl" | "path">,
+            cfg as Pick<ViewConfig, "_viewDecl" | "_path">,
           );
         }
         link(scope);
 
-        const componentName = (cfg as _ViewConfig & { component?: string })
-          .component;
+        const componentName = (cfg as ViewConfig & { _component?: string })
+          ._component;
 
-        const callbackConfig = cfg as Pick<_ViewConfig, "viewDecl" | "path"> &
-          Partial<Pick<_ViewConfig, "factory">>;
+        const callbackConfig = cfg as Pick<ViewConfig, "_viewDecl" | "_path"> &
+          Partial<Pick<ViewConfig, "_factory">>;
 
         if (isString(componentName)) {
           const kebobName = componentName
@@ -642,8 +643,8 @@ function registerControllerCallbacks(
   $transitions: ng.TransitionService,
   controllerInstance: ViewControllerInstance,
   $scope: ng.Scope,
-  cfg: Pick<_ViewConfig, "viewDecl" | "path"> &
-    Partial<Pick<_ViewConfig, "factory">>,
+  cfg: Pick<ViewConfig, "_viewDecl" | "_path"> &
+    Partial<Pick<ViewConfig, "_factory">>,
 ): void {
   let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
 
@@ -661,10 +662,10 @@ function registerControllerCallbacks(
   // Call $onInit() ASAP
   const onInit = controllerInstance.$onInit;
 
-  if (isFunction(onInit) && !cfg.viewDecl.component) {
+  if (isFunction(onInit) && !cfg._viewDecl.component) {
     onInit();
   }
-  const viewState = cfg.path[cfg.path.length - 1].state.self;
+  const viewState = cfg._path[cfg._path.length - 1].state.self;
 
   const hookOptions = { bind: controllerInstance };
 
@@ -675,7 +676,10 @@ function registerControllerCallbacks(
       trans: ng.Transition,
     ) => void;
 
-    const resolveContext = new ResolveContext(cfg.path, cfg.factory?._injector);
+    const resolveContext = new ResolveContext(
+      cfg._path,
+      cfg._factory?._injector,
+    );
 
     const viewCreationTrans = resolveContext.getResolvable("$transition$")
       .data as ng.Transition;
@@ -755,8 +759,8 @@ function registerControllerCallbacks(
 
     const hookRegistryKey = [
       viewState?.name || "",
-      cfg.viewDecl.$ngViewName || "$default",
-      cfg.viewDecl.$ngViewContextAnchor || "^",
+      cfg._viewDecl._ngViewName || "$default",
+      cfg._viewDecl._ngViewContextAnchor || "^",
     ].join("::");
 
     const rootScope = $scope.$root as ng.Scope &

@@ -163,7 +163,6 @@ export type {
   StateOrName,
   StateResolveArray,
   StateResolveObject,
-  TargetStateDef,
   TransitionPromise,
   ViewDeclaration,
 } from "./router/state/interface.ts";
@@ -175,7 +174,6 @@ export type {
   HookMatchCriteria,
   HookMatchCriterion,
   HookRegOptions,
-  HookRegistry,
   HookResult,
   TransitionHookFn,
   TransitionOptions,
@@ -187,5 +185,4 @@ export type {
   RejectTypeValue,
   TransitionRejectionDetail,
 } from "./router/transition/reject-factory.ts";
-export { TransitionProvider } from "./router/transition/transition-service.ts";
 export { Transition } from "./router/transition/transition.ts";

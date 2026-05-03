@@ -21,7 +21,10 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { PathNode } from "../path/path-node.ts";
-import { defaultTransOpts } from "../transition/transition-service.ts";
+import {
+  defaultTransOpts,
+  type TransitionProvider,
+} from "../transition/transition-service.ts";
 import { RejectType, Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
@@ -86,7 +89,7 @@ export class StateProvider {
   /** @internal */
   _routerState: RouterProvider;
   /** @internal */
-  _transitionService: ng.TransitionProvider;
+  _transitionService: TransitionProvider;
   /** @internal */
   _stateRegistry: StateRegistryProvider;
   /** @internal */
@@ -135,7 +138,7 @@ export class StateProvider {
   constructor(
     stateRegistry: StateRegistryProvider,
     routerState: RouterProvider,
-    transitionService: ng.TransitionProvider,
+    transitionService: TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
     this._routerState = routerState;
@@ -347,7 +350,6 @@ export class StateProvider {
     return this.transitionTo(current, this._routerState._params, {
       reload: isDefined(reloadState) ? reloadState : true,
       inherit: false,
-      notify: false,
     });
   }
 
@@ -357,7 +359,7 @@ export class StateProvider {
    * Convenience method for transitioning to a new state.
    *
    * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-   * `{ location: true, inherit: true, relative: $state.$current, notify: true }`.
+   * `{ location: true, inherit: true, relative: $state.$current }`.
    * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
    * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
    * inherit from the current parameter values (because of `inherit: true`).
@@ -553,11 +555,6 @@ export class StateProvider {
 
     if (!ref.valid()) return silentRejection(ref.error());
 
-    if (options.supercede === false && getCurrent()) {
-      return Rejection.ignored(
-        "Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.",
-      )._toPromise();
-    }
     /**
      * Special handling for Ignored, Aborted, and Redirected transitions
      *

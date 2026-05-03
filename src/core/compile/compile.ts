@@ -1326,7 +1326,6 @@ export class CompileProvider {
       _injector,
       _interpolate,
       _exceptionHandler,
-      _templateRequest,
       _parse,
       _controller,
       /** Creates the runtime `$compile` service and its shared helper closures. */
@@ -1334,11 +1333,36 @@ export class CompileProvider {
         $injector: ng.InjectorService,
         $interpolate: ng.InterpolateService,
         $exceptionHandler: ng.ExceptionHandlerService,
-        $templateRequest: ng.TemplateRequestService,
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
       ) => {
         const security = getSecurityAdapter($injector);
+
+        let lazyTemplateRequest: ng.TemplateRequestService | null | undefined;
+
+        function requestTemplate(templateUrl: string): Promise<string> {
+          if (lazyTemplateRequest === undefined) {
+            lazyTemplateRequest = $injector.has(_templateRequest)
+              ? ($injector.get(_templateRequest) as ng.TemplateRequestService)
+              : null;
+          }
+
+          return lazyTemplateRequest
+            ? lazyTemplateRequest(templateUrl)
+            : fetchTemplate(templateUrl);
+        }
+
+        function fetchTemplate(templateUrl: string): Promise<string> {
+          return fetch(templateUrl, {
+            headers: { Accept: "text/html" },
+          }).then((response) => {
+            if (!response.ok) {
+              return Promise.reject(response);
+            }
+
+            return response.text();
+          });
+        }
 
         const onChangesQueueState: OnChangesQueueState = {
           _exceptionHandler: $exceptionHandler,
@@ -4249,7 +4273,7 @@ export class CompileProvider {
             _originalDirective: origAsyncDirective,
           }) as InternalDirective;
 
-          let templateUrl: string;
+          let templateUrl: unknown;
 
           if (isFunction(origAsyncDirective.templateUrl)) {
             templateUrl = (
@@ -4263,7 +4287,18 @@ export class CompileProvider {
               tAttrs,
             );
           } else {
-            templateUrl = origAsyncDirective.templateUrl || "";
+            ({ templateUrl } = origAsyncDirective);
+          }
+
+          templateUrl = stringify(templateUrl);
+
+          if (!isString(templateUrl) || !templateUrl) {
+            throw $compileMinErr(
+              "tplurl",
+              "Directive '{0}' produced an invalid templateUrl: {1}",
+              origAsyncDirective.name,
+              stringify(templateUrl),
+            );
           }
           const { templateNamespace } = origAsyncDirective;
 
@@ -4287,7 +4322,7 @@ export class CompileProvider {
 
           emptyElement($compileNode.element);
 
-          $templateRequest(templateUrl || "")
+          requestTemplate(templateUrl)
             .then((content) => {
               handleDelayedTemplateLoaded(delayedState, content);
             })

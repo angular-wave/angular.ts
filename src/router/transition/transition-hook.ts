@@ -11,6 +11,8 @@ import type { TransitionEventType } from "./transition-event-type.ts";
 
 /**
  * Transition lifecycle phases used to group and order hook execution.
+ *
+ * @internal
  */
 export const TransitionHookPhase = {
   _CREATE: 0,
@@ -20,25 +22,16 @@ export const TransitionHookPhase = {
   _ERROR: 4,
 } as const;
 
+/** @internal */
 export type TransitionHookPhase = number;
 
-/**
- * Declares whether a hook operates on a whole transition or on individual states.
- */
-export const TransitionHookScope = {
-  _TRANSITION: 0,
-  _STATE: 1,
-} as const;
-
-export type TransitionHookScope = number;
-
+/** @internal */
 export interface TransitionHookOptions {
-  current: () => Transition | void; // path?
-  transition?: Transition | null;
-  hookType?: string;
-  target?: unknown;
-  bind?: unknown;
-  stateHook?: boolean;
+  _current: () => Transition | void;
+  _transition?: Transition | null;
+  _hookType?: string;
+  _target?: unknown;
+  _bind?: unknown;
 }
 
 interface TransitionHookDoneTask {
@@ -56,19 +49,25 @@ function isDoneTask(
 }
 
 const defaultOptions: Partial<TransitionHookOptions> = {
-  current: () => undefined,
-  transition: null,
-  bind: null,
+  _current: () => undefined,
+  _transition: null,
+  _bind: null,
 };
 
 /**
  * Runtime wrapper around one registered transition hook invocation.
+ *
+ * @internal
  */
 export class TransitionHook {
-  transition: Transition;
-  stateContext: StateDeclaration | null;
-  registeredHook: RegisteredHook;
-  options: TransitionHookOptions;
+  /** @internal */
+  _transition: Transition;
+  /** @internal */
+  _stateContext: StateDeclaration | null;
+  /** @internal */
+  _registeredHook: RegisteredHook;
+  /** @internal */
+  _options: TransitionHookOptions;
   /** @internal */
   _type: TransitionEventType;
   /** @internal */
@@ -77,7 +76,8 @@ export class TransitionHook {
   /**
    * Runs hooks in sequence, waiting for each async hook before invoking the next.
    */
-  static chain(
+  /** @internal */
+  static _chain(
     hooks: TransitionHook[],
     waitFor?: Promise<unknown>,
   ): Promise<void> {
@@ -93,16 +93,17 @@ export class TransitionHook {
     if (waitFor) await waitFor;
 
     for (let i = start; i < hooks.length; i++) {
-      await hooks[i].invokeHook();
+      await hooks[i]._invokeHook();
     }
   }
 
-  static invokeHooks(
+  /** @internal */
+  static _invokeHooks(
     hooks: TransitionHook[],
     doneCallback: TransitionHookDoneCallback,
   ): Promise<unknown> {
     for (let idx = 0; idx < hooks.length; idx++) {
-      const hookResult = hooks[idx].invokeHook();
+      const hookResult = hooks[idx]._invokeHook();
 
       if (isPromise(hookResult)) {
         return TransitionHook._chainThenDone(
@@ -143,7 +144,7 @@ export class TransitionHook {
     hook: TransitionHook,
     result: HookResult,
   ): Promise<unknown> | undefined {
-    return hook.handleHookResult(result);
+    return hook._handleHookResult(result);
   }
 
   /** @internal */
@@ -153,7 +154,7 @@ export class TransitionHook {
   ): undefined {
     if (isPromise(result)) {
       Promise.resolve(result as Promise<HookResultValue>).catch((err) => {
-        hook.logError(Rejection.normalize(err));
+        hook._logError(Rejection.normalize(err));
       });
     }
 
@@ -162,10 +163,10 @@ export class TransitionHook {
 
   /** @internal */
   static _logError(
-    hook: { logError: (error: unknown) => unknown } | undefined,
+    hook: { _logError: (error: unknown) => unknown } | undefined,
     error: unknown,
   ): unknown {
-    return hook?.logError(error);
+    return hook?._logError(error);
   }
 
   /** @internal */
@@ -185,9 +186,10 @@ export class TransitionHook {
     throw error;
   }
 
-  static runAllHooks(hooks: TransitionHook[]): void {
+  /** @internal */
+  static _runAllHooks(hooks: TransitionHook[]): void {
     for (let i = 0; i < hooks.length; i++) {
-      hooks[i].invokeHook();
+      hooks[i]._invokeHook();
     }
   }
 
@@ -201,10 +203,14 @@ export class TransitionHook {
     options: TransitionHookOptions,
     exceptionHandler: ng.ExceptionHandlerService,
   ) {
-    this.transition = transition;
-    this.stateContext = stateContext;
-    this.registeredHook = registeredHook;
-    this.options = assign({}, defaultOptions, options) as TransitionHookOptions;
+    this._transition = transition;
+    this._stateContext = stateContext;
+    this._registeredHook = registeredHook;
+    this._options = assign(
+      {},
+      defaultOptions,
+      options,
+    ) as TransitionHookOptions;
     this._type = registeredHook._eventType;
     this._exceptionHandler = exceptionHandler;
   }
@@ -212,37 +218,35 @@ export class TransitionHook {
   /** @internal */
   _isSuperseded(): boolean {
     return (
-      this._type.hookPhase === TransitionHookPhase._RUN &&
-      !this.options.transition?.isActive()
+      this._type._hookPhase === TransitionHookPhase._RUN &&
+      !this._options._transition?.isActive()
     );
   }
 
-  /**
-   * Sends hook execution errors to the configured exception handler.
-   */
-  logError(err: unknown): void {
+  /** @internal */
+  _logError(err: unknown): void {
     this._exceptionHandler(err);
   }
 
   /** @internal */
   _invokeCallback(hook: RegisteredHook): HookResult {
-    const { options } = this;
+    const { _options } = this;
 
-    return hook.callback.call(
-      options.bind,
-      this.transition,
-      this.stateContext as StateDeclaration,
+    return hook._callback.call(
+      _options._bind,
+      this._transition,
+      this._stateContext as StateDeclaration,
     ) as HookResult;
   }
 
   /** @internal */
   _handleError(err: Rejection): unknown {
-    return this.registeredHook._eventType._handleError(this, err);
+    return this._registeredHook._eventType._handleError(this, err);
   }
 
   /** @internal */
   _handleResult(result: HookResult): unknown {
-    return this.registeredHook._eventType._handleResult(this, result);
+    return this._registeredHook._eventType._handleResult(this, result);
   }
 
   /** @internal */
@@ -258,19 +262,19 @@ export class TransitionHook {
    * Executes the underlying hook callback and normalizes its result into
    * the router's rejection / redirect model.
    */
-  invokeHook(): unknown {
-    const hook = this.registeredHook;
+  _invokeHook(): unknown {
+    const hook = this._registeredHook;
 
     if (hook._deregistered) return undefined;
 
-    const notCurrent = this.getNotCurrentRejection();
+    const notCurrent = this._getNotCurrentRejection();
 
     if (notCurrent) return notCurrent;
 
     try {
       const result = this._invokeCallback(hook);
 
-      if (!this._type.synchronous && isPromise(result)) {
+      if (!this._type._synchronous && isPromise(result)) {
         return this._handleAsyncResult(result);
       }
 
@@ -278,8 +282,8 @@ export class TransitionHook {
     } catch (err) {
       return this._handleError(Rejection.normalize(err));
     } finally {
-      if (hook.invokeLimit && ++hook.invokeCount >= hook.invokeLimit) {
-        hook.deregister();
+      if (hook._invokeLimit && ++hook._invokeCount >= hook._invokeLimit) {
+        hook._deregister();
       }
     }
   }
@@ -287,8 +291,8 @@ export class TransitionHook {
   /**
    * Converts raw hook return values into transition outcomes.
    */
-  handleHookResult(result: HookResult): Promise<unknown> | undefined {
-    const notCurrent = this.getNotCurrentRejection();
+  _handleHookResult(result: HookResult): Promise<unknown> | undefined {
+    const notCurrent = this._getNotCurrentRejection();
 
     if (notCurrent) return notCurrent;
 
@@ -313,36 +317,34 @@ export class TransitionHook {
   async _handleAsyncHookResult(
     result: Promise<HookResultValue>,
   ): Promise<unknown> {
-    return this.handleHookResult(await result);
+    return this._handleHookResult(await result);
   }
 
-  /**
-   * Returns a rejection when the transition was aborted or superseded.
-   */
-  getNotCurrentRejection(): Promise<never> | undefined {
-    if (this.transition._aborted) {
+  /** @internal */
+  _getNotCurrentRejection(): Promise<never> | undefined {
+    if (this._transition._aborted) {
       return Rejection.aborted()._toPromise();
     }
 
     if (this._isSuperseded()) {
-      return Rejection.superseded(this.options.current())._toPromise();
+      return Rejection.superseded(this._options._current())._toPromise();
     }
 
     return undefined;
   }
 
   toString(): string {
-    const { options, registeredHook } = this;
+    const { _options, _registeredHook } = this;
 
-    const event = options.hookType || "internal";
+    const event = _options._hookType || "internal";
 
-    const target = options.target as
+    const target = _options._target as
       | { state?: { name?: string }; name?: string }
       | undefined;
 
     const context = target?.state?.name || target?.name || "unknown";
 
-    const name = fnToString(registeredHook.callback);
+    const name = fnToString(_registeredHook._callback);
 
     return `${event} context: ${context}, ${maxLength(200, name)}`;
   }

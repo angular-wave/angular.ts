@@ -42,43 +42,20 @@ import {
   type TransitionErrorHandler,
   type TransitionResultHandler,
 } from "./transition-event-type.ts";
-import {
-  TransitionHook,
-  TransitionHookPhase,
-  TransitionHookScope,
-} from "./transition-hook.ts";
+import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import type { StateProvider } from "../state/state-service.ts";
 import {
   loadViewConfig,
-  type _ViewConfig,
+  type ViewConfig,
   type ViewService,
 } from "../view/view.ts";
-
-/** @internal */
-export interface PathType {
-  name: string;
-  scope: number;
-}
-
-/** @internal */
-export interface PathTypes {
-  [key: string]: PathType;
-
-  to: PathType;
-  from: PathType;
-  exiting: PathType;
-  retained: PathType;
-  entering: PathType;
-}
+import { PATH_TYPES, type PathType } from "./path-types.ts";
 
 export const defaultTransOpts: TransitionOptions = {
   location: true,
   relative: undefined,
   inherit: false,
-  notify: true,
   reload: false,
-  supercede: true,
-  custom: {},
   current: () => null,
   source: "unknown",
 };
@@ -149,6 +126,8 @@ function runWithViewTransition(updateCallback: () => void): Promise<void> {
  * Note: In this codebase, `$get` returns the provider instance (`return this;`),
  * so the "service" surface includes both the public HookRegistry API and
  * a set of internal fields/methods used by built-in hook registrations.
+ *
+ * @internal
  */
 export interface TransitionService extends HookRegistry {
   /**
@@ -162,11 +141,11 @@ export interface TransitionService extends HookRegistry {
   /** @internal hook event types (onBefore/onStart/...) */
   _eventTypes: TransitionEventType[];
 
-  /** @internal path type metadata used for matching */
-  _criteriaPaths: PathTypes;
-
   /** @internal Return event types, optionally filtered by phase. */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+
+  /** @internal Return hooks registered for a transition event name. */
+  _getHooks(hookName: string): RegisteredHooks[string];
 
   /** @internal Register a transition-construction hook used by built-ins. */
   _onCreate(
@@ -181,9 +160,6 @@ export interface TransitionService extends HookRegistry {
     viewService: ViewService,
   ): void;
 
-  /** @internal Return the defined path types */
-  _getPathTypes(): PathTypes;
-
   /** @internal view service */
   /** @internal */
   _view: ViewService;
@@ -197,6 +173,8 @@ export interface TransitionService extends HookRegistry {
 
 /**
  * Central registry and factory for transition events, hooks, and transition instances.
+ *
+ * @internal
  */
 export class TransitionProvider implements TransitionService {
   static $inject = [_routerProvider, _exceptionHandlerProvider] as const;
@@ -207,8 +185,6 @@ export class TransitionProvider implements TransitionService {
   _eventTypes: TransitionEventType[];
   /** @internal */
   _registeredHooks: RegisteredHooks;
-  /** @internal */
-  _criteriaPaths: PathTypes;
   /** @internal */
   _routerState: RouterProvider;
   /** @internal */
@@ -225,9 +201,7 @@ export class TransitionProvider implements TransitionService {
     this._transitionCount = 0;
     this._eventTypes = [];
     this._registeredHooks = {};
-    this._criteriaPaths = {} as PathTypes;
     this._routerState = routerState;
-    this._defineCorePaths();
     this._defineCoreEvents();
     this._registerCoreTransitionHooks();
     this._exceptionHandler = $exceptionHandler.handler;
@@ -268,7 +242,7 @@ export class TransitionProvider implements TransitionService {
   _defineCoreEvents(): void {
     const TH = TransitionHook;
 
-    const paths = this._criteriaPaths;
+    const paths = PATH_TYPES;
 
     const NORMAL_SORT = false;
 
@@ -325,17 +299,6 @@ export class TransitionProvider implements TransitionService {
     );
   }
 
-  /** @internal */
-  _defineCorePaths(): void {
-    const { _STATE: STATE, _TRANSITION: TRANSITION } = TransitionHookScope;
-
-    this._definePathType("to", TRANSITION);
-    this._definePathType("from", TRANSITION);
-    this._definePathType("exiting", STATE);
-    this._definePathType("retained", STATE);
-    this._definePathType("entering", STATE);
-  }
-
   /**
    * Defines one transition event type and exposes its registration helper.
    */
@@ -373,7 +336,7 @@ export class TransitionProvider implements TransitionService {
     const transitionHookTypes: TransitionEventType[] = [];
 
     this._eventTypes.forEach((eventType) => {
-      if (phase === undefined || eventType.hookPhase === phase) {
+      if (phase === undefined || eventType._hookPhase === phase) {
         transitionHookTypes.push(eventType);
       }
     });
@@ -382,25 +345,10 @@ export class TransitionProvider implements TransitionService {
   }
 
   /**
-   * Defines one path selector used by transition hook matching.
-   */
-  /** @internal */
-  _definePathType(name: keyof PathTypes, hookScope: number): void {
-    this._criteriaPaths[name] = { name, scope: hookScope } as PathType;
-  }
-
-  /**
-   * Returns the configured transition hook path selectors.
-   */
-  /** @internal */
-  _getPathTypes(): PathTypes {
-    return this._criteriaPaths;
-  }
-
-  /**
    * Returns hooks registered for a specific transition event name.
    */
-  getHooks(hookName: string) {
+  /** @internal */
+  _getHooks(hookName: string): RegisteredHooks[string] {
     return this._registeredHooks[hookName] || [];
   }
 
@@ -533,7 +481,7 @@ export class TransitionProvider implements TransitionService {
     for (let i = 0; i < this._eventTypes.length; i++) {
       const eventType = this._eventTypes[i];
 
-      if (eventType.name === eventName) return eventType;
+      if (eventType._name === eventName) return eventType;
     }
 
     throw new Error(`Unknown Transition hook event: ${eventName}`);
@@ -621,10 +569,10 @@ function addTransitionResolvable(
   );
 }
 
-function transitionViews(trans: Transition, pathname: string): _ViewConfig[] {
+function transitionViews(trans: Transition, pathname: string): ViewConfig[] {
   const path = (trans._treeChanges[pathname] || []) as PathNode[];
 
-  const viewConfigs: _ViewConfig[] = [];
+  const viewConfigs: ViewConfig[] = [];
 
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
@@ -899,8 +847,8 @@ function registerLoadEnteringViews(
 
 function updateViewConfigs(
   viewService: ViewService,
-  enteringViews: _ViewConfig[],
-  exitingViews: _ViewConfig[],
+  enteringViews: ViewConfig[],
+  exitingViews: ViewConfig[],
 ): void {
   exitingViews.forEach((view) => {
     viewService._deactivateViewConfig(view);
@@ -952,7 +900,7 @@ function hasConnectedNgView(viewService: ViewService): boolean {
   const ngViews = viewService._ngViews;
 
   for (let i = 0; i < ngViews.length; i++) {
-    if (ngViews[i].element.isConnected) {
+    if (ngViews[i]._element.isConnected) {
       return true;
     }
   }

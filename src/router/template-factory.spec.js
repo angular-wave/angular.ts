@@ -38,7 +38,7 @@ describe("templateFactory", () => {
 
   describe("template URL behavior", () => {
     it("fetches relative URLs correctly", async () => {
-      const res = await $templateFactory.fromUrl("/mock/hello");
+      const res = await $templateFactory._fromUrl("/mock/hello");
       await wait(100);
       expect(await res).toEqual("Hello");
     });
@@ -47,7 +47,7 @@ describe("templateFactory", () => {
       const url = "http://evil.com/views/view.html";
       let templateData;
       try {
-        templateData = await $templateFactory.fromUrl(url);
+        templateData = await $templateFactory._fromUrl(url);
       } catch (e) {
         templateData = null; // fetch failed (404, network, etc.)
       }
@@ -60,7 +60,7 @@ describe("templateFactory", () => {
       const url = "http://example.com/trusted.html";
       let templateData;
       try {
-        templateData = await $templateFactory.fromUrl(url);
+        templateData = await $templateFactory._fromUrl(url);
       } catch (e) {
         templateData = null;
       }

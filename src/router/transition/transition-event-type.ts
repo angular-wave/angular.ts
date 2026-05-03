@@ -1,12 +1,14 @@
 import { TransitionHook } from "./transition-hook.ts";
 import type { HookResult } from "./interface.ts";
-import type { PathType } from "./transition-service.ts";
+import type { PathType } from "./path-types.ts";
 
+/** @internal */
 export type TransitionResultHandler = (
   hook: TransitionHook,
   result: HookResult,
 ) => unknown;
 
+/** @internal */
 export type TransitionErrorHandler = (
   hook: TransitionHook | undefined,
   error: unknown,
@@ -17,17 +19,22 @@ export type TransitionErrorHandler = (
  */
 /** @internal */
 export class TransitionEventType {
-  name: string;
-  hookPhase: number;
-  hookOrder: number;
+  /** @internal */
+  _name: string;
+  /** @internal */
+  _hookPhase: number;
+  /** @internal */
+  _hookOrder: number;
   /** @internal */
   _criteriaMatchPath: PathType;
-  reverseSort: boolean;
+  /** @internal */
+  _reverseSort: boolean;
   /** @internal */
   _handleResult: TransitionResultHandler;
   /** @internal */
   _handleError: TransitionErrorHandler;
-  synchronous: boolean;
+  /** @internal */
+  _synchronous: boolean;
 
   /**
    * Creates one immutable transition event descriptor.
@@ -42,13 +49,13 @@ export class TransitionEventType {
     errorHandler: TransitionErrorHandler = TransitionHook._rejectError,
     synchronous = false,
   ) {
-    this.name = name;
-    this.hookPhase = hookPhase;
-    this.hookOrder = hookOrder;
+    this._name = name;
+    this._hookPhase = hookPhase;
+    this._hookOrder = hookOrder;
     this._criteriaMatchPath = criteriaMatchPath;
-    this.reverseSort = reverseSort;
+    this._reverseSort = reverseSort;
     this._handleResult = resultHandler;
     this._handleError = errorHandler;
-    this.synchronous = synchronous;
+    this._synchronous = synchronous;
   }
 }

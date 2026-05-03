@@ -3,33 +3,34 @@
 ![Build status](https://github.com/angular-wave/angular.ts/actions/workflows/ci.yml/badge.svg)
 [![stats](https://data.jsdelivr.com/v1/package/npm/@angular-wave/angular.ts/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@angular-wave/angular.ts)
 
-This project preserves, modernizes and expands the original [AngularJS](https://angularjs.org/)
-framework. AngularTS is "AngularJS: The Good Parts". It takes the three core pillars of the original &ndash; a string-interpolation engine,
-dependency injection, two-way data-binding &ndash; and adds a reactive change-detection model on top of modern build tooling 
-with strong typechecking of TypeScript.
+AngularTS preserves, modernizes and expands the original
+[AngularJS](https://angularjs.org/) framework. It keeps the parts that still
+scale well: declarative templates, dependency injection, controllers,
+directives, forms and two-way binding. It then replaces the legacy digest-era
+runtime with reactive change detection, native browser APIs and TypeScript
+declarations.
 
-With AngularJS, you get a decade-long optimization effort of Angular Team at Google, plus a massive testing suite.
-AngularTS builds on that foundation and adds:
+AngularTS builds on AngularJS' decade of production hardening and adds:
 
-- a fully reactive change-detection model without digests or virtual DOMs, like `Vue`
-- access to native DOM APIs at component and directive level (no `JQuery`or `JQLite`)
-- access to native Promises API (no `$q` or `$timetout`)
-- built-in enterprise-level router (`ng-router`, ported from `ui-router`)
-- built-in animations (`animate`)
-- new directives, inspired by `HTMX`
-- new injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets and WASM modules
+- reactive change detection without digests or a virtual DOM
+- native DOM APIs in directives and components, with no `jQuery` or `jqLite`
+- native `Promise` and browser scheduling APIs instead of `$q` and `$timeout`
+- a built-in state router with nested views, resolves, transitions and URL matching
+- built-in animations
+- declarative HTTP directives inspired by HTMX
+- injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, streams and WASM modules
 
-The result is a high-performance, buildless, multi-paradigm and battle-tested JS framework that stays as close to Web standards as possible.
+The result is a high-performance, buildless, multi-paradigm framework that stays
+close to Web standards while preserving AngularJS' productive HTML-first model.
 
-If you: 
+AngularTS is a good fit if you:
 
-- Build server-rendered web applications for desktop and mobile
-- Want a tools that is easy to get started with, yet remains expert-friendly at scale
-- Make no compromises on performance (think McMaster-Carr) 
+- build server-rendered or progressively enhanced web applications
+- want a framework that starts simple but still scales to large applications
+- need direct DOM access and predictable runtime behavior
+- care about performance and low tooling overhead
 
-then AngularTS is your new (old) secret weapon.
-
-### Getting started
+## Getting Started
 
 #### Install
 
@@ -53,13 +54,16 @@ Initialize your app
 <div ng-app ng-init="x='world'">Hello {{ x }}</div>
 ```
 
-### Runtime builds 
+## Custom Runtime
 
-The default package comes with full a 'kitchen-sink' to explore the Web platform. 
-This is great for experimentation and hacking, but come production time and bundle-size becomes a priority.
-AngularTS allows you to pay only for what you use.
+The default package includes the full framework: compiler, router, animation
+system, HTTP services, storage, workers, streams and other browser integrations.
+That is useful for exploration, but a production build should include only the 
+features actually used by your application.
 
-Assume your application uses only `ng-bind` and `ng-repeat` directives.
+With `@angular-wave/angular.ts/runtime`, you can assemble an `ng` module from
+only the directives, providers, filters and services your application uses. 
+For example, an application that only needs `ng-bind` and `ng-repeat` can use:
 
 ```js
 import { createAngularCustom } from "@angular-wave/angular.ts/runtime";
@@ -79,11 +83,12 @@ const angular = createAngularCustom({
 angular.module("app", []);
 angular.bootstrap(document, ["app"]);
 ```
-The example above will come in around *32KB* (GZIP).
 
-Or check out the updated [Angular seed](https://github.com/angular-wave/angular-seed), which can serve as a solid starting point
-or a source of inspiration for new ideas.
+The example above currently comes in around **32KB** gzip.
+
+For a complete starting point, see
+[angular-seed](https://github.com/angular-wave/angular-seed).
 
 ## Documentation
 
-Go to https://angular-wave.github.io/angular.ts/
+Documentation is available at https://angular-wave.github.io/angular.ts/.

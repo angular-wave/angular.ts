@@ -2,16 +2,12 @@ import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
-import {
-  TransitionHook,
-  TransitionHookPhase,
-  TransitionHookScope,
-} from "./transition-hook.ts";
+import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
 /** @internal */
-export interface HookTuple {
+interface HookTuple {
   hook: RegisteredHook;
   node: PathNode;
   transitionHook: TransitionHook;
@@ -47,32 +43,34 @@ function buildHooks(
 
   const hookTuples: HookTuple[] = [];
 
-  const registeredHooks = transition._transitionService.getHooks(hookType.name);
+  const registeredHooks = transition._transitionService._getHooks(
+    hookType._name,
+  );
 
   if (!isArray(registeredHooks)) {
-    throw new Error(`broken event named: ${hookType.name}`);
+    throw new Error(`broken event named: ${hookType._name}`);
   }
 
   registeredHooks.forEach((hook) => {
-    const matches = hook.matches(treeChanges, transition);
+    const matches = hook._matches(treeChanges, transition);
 
     if (!matches) return;
 
-    const matchingNodes = matches[hookType._criteriaMatchPath.name];
+    const matchingNodes = matches[hookType._criteriaMatchPath._name];
 
     matchingNodes.forEach((node) => {
       const options = {
-        bind: hook.bind,
-        hookType: hookType.name,
-        target: node,
-        transition: baseHookOptions.transition,
-        current: baseHookOptions.current,
+        _bind: hook._bind,
+        _hookType: hookType._name,
+        _target: node,
+        _transition: baseHookOptions.transition,
+        _current: baseHookOptions.current,
       };
 
-      const state: StateDeclaration | null =
-        hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
-          ? node.state.self
-          : null;
+      const state: StateDeclaration | null = hookType._criteriaMatchPath
+        ._stateHook
+        ? node.state.self
+        : null;
 
       const transitionHook = new TransitionHook(
         transition,
@@ -89,7 +87,7 @@ function buildHooks(
   if (!hookTuples.length) return;
 
   hookTuples.sort(
-    hookType.reverseSort
+    hookType._reverseSort
       ? sortByReverseNodeDepthThenPriority
       : sortByNodeDepthThenPriority,
   );
@@ -112,7 +110,7 @@ function compareHookTupleDepth(
 
   return depthDelta !== 0
     ? depthDelta
-    : right.hook.priority - left.hook.priority;
+    : right.hook._priority - left.hook._priority;
 }
 
 function sortByNodeDepthThenPriority(

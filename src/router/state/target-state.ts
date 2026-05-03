@@ -2,11 +2,7 @@ import { assign, isObject, isString } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
-import type {
-  StateDeclaration,
-  StateOrName,
-  TargetStateDef,
-} from "./interface.ts";
+import type { StateDeclaration, StateOrName } from "./interface.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateObject } from "./state-object.ts";
 /**
@@ -39,17 +35,6 @@ import type { StateObject } from "./state-object.ts";
  * or invalid (the state being targeted is not registered).
  */
 export class TargetState {
-  static isDef(obj: unknown): obj is TargetStateDef {
-    return (
-      isObject(obj) &&
-      "state" in obj &&
-      (obj as { state?: unknown }).state !== undefined &&
-      (isString((obj as { state?: unknown }).state) ||
-        (isObject((obj as { state?: unknown }).state) &&
-          isString((obj as { state: { name?: unknown } }).state.name)))
-    );
-  }
-
   /** @internal */
   _stateRegistry: StateRegistryProvider;
   /** @internal */

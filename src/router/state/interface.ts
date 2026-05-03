@@ -4,10 +4,7 @@ import { StateObject } from "./state-object.ts";
 import { ViewContext } from "../view/view.ts";
 import { ControllerConstructor, Injectable } from "../../interface.ts";
 import type { Transition } from "../transition/transition.ts";
-import {
-  TransitionStateHookFn,
-  TransitionOptions,
-} from "../transition/interface.ts";
+import { TransitionStateHookFn } from "../transition/interface.ts";
 import { ResolvableLiteral } from "../resolve/interface.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { TargetState } from "./target-state.ts";
@@ -29,12 +26,6 @@ export type LazyStateLoader = (
   target: TargetState,
   injector?: ng.InjectorService,
 ) => LazyStateLoadResult | Promise<LazyStateLoadResult>;
-
-export interface TargetStateDef {
-  state: StateOrName;
-  params?: RawParams;
-  options?: TransitionOptions;
-}
 
 export type RouterInjectable = Injectable<(...args: unknown[]) => unknown>;
 
@@ -217,27 +208,27 @@ export interface ViewDeclaration extends ViewDeclarationCommon {
   /**
    * The raw view declaration name from [[StateDeclaration.views]].
    */
-  $name?: string;
+  _name?: string;
 
   /**
    * The normalized address for the targeted `ng-view`.
    *
-   * A view target is matched relative to the `$ngViewContextAnchor`.
+   * A view target is matched relative to the `_ngViewContextAnchor`.
    * @example `header`, `messagecontent`, or `$default`
    */
-  $ngViewName?: string;
+  _ngViewName?: string;
 
   /**
    * The normalized context anchor (state name) for the `ngVIewName`
    *
    * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
    */
-  $ngViewContextAnchor?: string;
+  _ngViewContextAnchor?: string;
 
   /**
    * The context that this view is declared within.
    */
-  $context?: ViewContext;
+  _context?: ViewContext;
 }
 
 /**
@@ -776,7 +767,10 @@ export interface HrefOptions {
  * Either a [[StateDeclaration]] or an ES6 class that implements [[StateDeclaration]]
  * The ES6 class constructor should have no arguments.
  */
-export type _StateDeclaration = StateDeclaration | { new (): StateDeclaration };
+/** @internal */
+export type StateDeclarationInput =
+  | StateDeclaration
+  | { new (): StateDeclaration };
 
 /**
  * The signature for the callback function provided to [[StateRegistry.onStatesChanged]].

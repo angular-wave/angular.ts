@@ -34,7 +34,7 @@ import type {
   TransitionStateHookFn,
 } from "../transition/interface.ts";
 
-type ViewDeclarationKey = keyof ViewDeclaration | "notify" | "async";
+type ViewDeclarationKey = keyof ViewDeclaration;
 
 type ViewDeclarationValueMap = Partial<Record<ViewDeclarationKey, unknown>>;
 
@@ -46,12 +46,7 @@ type StateLifecycleHookContext = {
   _$injector: ng.InjectorService | undefined;
 };
 
-const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = [
-  "templateUrl",
-  "template",
-  "notify",
-  "async",
-];
+const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = ["templateUrl", "template"];
 
 const CONTROLLER_VIEW_KEYS: ViewDeclarationKey[] = ["controller"];
 
@@ -236,16 +231,16 @@ function viewsBuilder(
       );
     }
 
-    config.$context = state;
-    config.$name = name;
+    config._context = state;
+    config._name = name;
 
     const normalized = normalizeNgViewTarget(
-      config.$context as StateObject,
-      config.$name as string,
+      config._context as StateObject,
+      config._name as string,
     );
 
-    config.$ngViewName = normalized.ngViewName;
-    config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+    config._ngViewName = normalized.ngViewName;
+    config._ngViewContextAnchor = normalized.ngViewContextAnchor;
 
     views[name] = config;
   });

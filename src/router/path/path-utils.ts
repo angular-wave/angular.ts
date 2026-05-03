@@ -3,7 +3,7 @@ import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import {
   createViewConfig,
-  type _ViewConfig,
+  type ViewConfig,
   type ViewService,
 } from "../view/view.ts";
 import type { Param } from "../params/param.ts";
@@ -11,7 +11,6 @@ import type { GetParamsFn } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TreeChanges } from "../transition/interface.ts";
-import type { StateRegistryProvider } from "../state/state-registry.ts";
 
 /**
  * Converts a TargetState into the concrete path nodes used by a transition.
@@ -67,7 +66,7 @@ export function applyViewConfigs(
 
     const viewSubPath = path.slice(0, i + 1);
 
-    const viewConfigs: _ViewConfig[] = [];
+    const viewConfigs: ViewConfig[] = [];
 
     keys(viewDecls).forEach((name) => {
       const templateFactory = $view._templateFactory;
@@ -221,29 +220,4 @@ export function nonDynamicParams(node: PathNode): Param[] {
   });
 
   return nonDynamic;
-}
-
-/** Given a PathNode[], create an TargetState
- * @param {StateRegistryProvider} registry
- * @param {Array<PathNode>} path
- * @returns {TargetState}
- */
-export function makeTargetState(
-  registry: StateRegistryProvider,
-  path: PathNode[],
-): TargetState {
-  const tailNode = path.at(-1);
-
-  if (!tailNode)
-    throw new Error("Cannot create TargetState from an empty path");
-
-  return new TargetState(registry, tailNode.state, pathToParams(path), {});
-}
-
-function pathToParams(path: PathNode[]): RawParams {
-  const params: RawParams = {};
-
-  path.forEach((node) => assign(params, node.paramValues));
-
-  return params;
 }

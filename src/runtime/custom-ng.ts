@@ -11,12 +11,9 @@ import { FilterProvider } from "../core/filter/filter.ts";
 import { InterpolateProvider } from "../core/interpolate/interpolate.ts";
 import { ParseProvider } from "../core/parse/parse.ts";
 import { RootScopeProvider } from "../core/scope/scope.ts";
+import { ControllerProvider } from "../core/controller/controller.ts";
 import { ExceptionHandlerProvider } from "../services/exception/exception.ts";
 import type { Injectable } from "../interface.ts";
-import {
-  DisabledControllerProvider,
-  DisabledTemplateRequestProvider,
-} from "./disabled-providers.ts";
 import { keys } from "../shared/utils.ts";
 
 export type DirectiveRegistration = Record<string, ng.DirectiveFactory>;
@@ -57,12 +54,11 @@ export interface CustomNgModuleOptions {
  * custom builds do not pull them in unless explicitly requested.
  */
 export const coreProviders = {
-  $controller: DisabledControllerProvider,
+  $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
-  $templateRequest: DisabledTemplateRequestProvider,
 } satisfies ProviderRegistration;
 
 /**

@@ -56,9 +56,9 @@ describe("StateBuilder", function () {
 
     expect(built._views.main.template).toBe("hello");
     expect(built._views.main.controller).toBe("FooController");
-    expect(built._views.main.$ngViewName).toBe("main");
+    expect(built._views.main._ngViewName).toBe("main");
     expect(built._views.sidebar.component).toBe("SidebarComponent");
-    expect(built._views.sidebar.$ngViewName).toBe("sidebar");
+    expect(built._views.sidebar._ngViewName).toBe("sidebar");
   });
 
   it("should copy state-level view fields into the default view", function () {
