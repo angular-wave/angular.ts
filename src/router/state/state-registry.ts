@@ -8,7 +8,7 @@ import { hasOwn, keys, isString } from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuiltStateDeclaration,
-  _StateDeclaration,
+  StateDeclarationInput,
   StateDeclaration,
   StateOrName,
   StateRegistryListener,
@@ -172,12 +172,12 @@ export class StateRegistryProvider {
    *
    * Note: a state will be queued if the state's parent isn't yet registered.
    *
-   * @param {_StateDeclaration} stateDefinition the definition of the state to register.
+   * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
    * @returns the internal [[StateObject]] object.
    *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
    *          If the state was only queued, then the object is not fully built.
    */
-  register(stateDefinition: _StateDeclaration): StateObject {
+  register(stateDefinition: StateDeclarationInput): StateObject {
     return this._register(stateDefinition);
   }
 

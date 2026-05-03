@@ -3,7 +3,7 @@ import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { GetParamsFn } from "./interface.ts";
-import type { _ViewConfig } from "../view/view.ts";
+import type { ViewConfig } from "../view/view.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 
 /**
@@ -19,7 +19,7 @@ export class PathNode {
   paramValues: RawParams;
   resolvables: Resolvable[];
   /** @internal */
-  _views?: _ViewConfig[];
+  _views?: ViewConfig[];
 
   /**
    * @param {PathNode | ng.StateObject | undefined} stateOrNode

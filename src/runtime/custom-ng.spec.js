@@ -90,6 +90,57 @@ describe("custom runtime", () => {
     expect(injector.get("counter").value).toBe(7);
   });
 
+  it("includes the normal controller provider", async () => {
+    function TodoController() {
+      this.title = "custom controller";
+    }
+
+    const angular = createAngularCustom({ attachToWindow: true });
+
+    angular
+      .module("app", [])
+      .controller("TodoController", TodoController)
+      .directive("todoCard", () => ({
+        controller: "TodoController",
+        controllerAs: "$ctrl",
+        template: "<span>{{$ctrl.title}}</span>",
+      }));
+
+    const injector = angular.injector(["ng", "app"]);
+    const $compile = injector.get("$compile");
+    const $rootScope = injector.get("$rootScope");
+
+    element = createElementFromHTML("<todo-card></todo-card>");
+
+    $compile(element)($rootScope);
+    await wait();
+
+    expect(element.textContent).toBe("custom controller");
+  });
+
+  it("fetches directive templateUrl without a template request provider", async () => {
+    const angular = createAngularCustom({ attachToWindow: true });
+
+    angular.module("app", []).directive("fetchedTemplate", () => ({
+      templateUrl: "/public/test.html",
+    }));
+
+    const injector = angular.injector(["ng", "app"]);
+    const $compile = injector.get("$compile");
+    const $rootScope = injector.get("$rootScope");
+
+    expect(() => injector.get("$templateRequest")).toThrowError(
+      /Unknown provider/,
+    );
+
+    element = createElementFromHTML("<fetched-template></fetched-template>");
+
+    $compile(element)($rootScope);
+    await wait(100);
+
+    expect(element.textContent.trim()).toBe("hello");
+  });
+
   it("registers high-level injectables as services through provider factories", () => {
     class RestProvider {
       $get = () => (url, entityClass, options) => ({

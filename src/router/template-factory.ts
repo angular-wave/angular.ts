@@ -25,8 +25,8 @@ type BindingTuple = {
 };
 
 type TemplateResult =
-  | Promise<{ template: string | undefined }>
-  | Promise<{ component: string }>;
+  | Promise<{ _template: string | undefined }>
+  | Promise<{ _component: string }>;
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 
@@ -36,24 +36,24 @@ type TemplateConfigType = "template" | "templateUrl" | "component" | "default";
 
 function asTemplate(
   result: string | Promise<string> | null,
-): Promise<{ template: string | undefined }> {
+): Promise<{ _template: string | undefined }> {
   return Promise.resolve(result).then(toTemplateResult);
 }
 
 function asComponent(
   result: string | Promise<string>,
-): Promise<{ component: string }> {
+): Promise<{ _component: string }> {
   return Promise.resolve(result).then(toComponentResult);
 }
 
 function toTemplateResult(str: string | null): {
-  template: string | undefined;
+  _template: string | undefined;
 } {
-  return { template: str ?? undefined };
+  return { _template: str ?? undefined };
 }
 
-function toComponentResult(str: string): { component: string } {
-  return { component: str };
+function toComponentResult(str: string): { _component: string } {
+  return { _component: str };
 }
 
 function getConfigType(config: ViewDeclarationCommon): TemplateConfigType {
@@ -72,6 +72,8 @@ function componentElementName(camelCase: string): string {
 
 /**
  * Resolves route templates and components from state view declarations.
+ *
+ * @internal
  */
 export class TemplateFactoryProvider {
   /** @internal */
@@ -99,12 +101,16 @@ export class TemplateFactoryProvider {
   /**
    * Resolves a state's view config into either concrete template HTML or a component name.
    */
-  fromConfig(config: ViewDeclarationCommon, params: RawParams): TemplateResult {
+  /** @internal */
+  _fromConfig(
+    config: ViewDeclarationCommon,
+    params: RawParams,
+  ): TemplateResult {
     switch (getConfigType(config)) {
       case "template":
-        return asTemplate(this.fromString(config.template!, params));
+        return asTemplate(this._fromString(config.template!, params));
       case "templateUrl":
-        return asTemplate(this.fromUrl(config.templateUrl!, params));
+        return asTemplate(this._fromUrl(config.templateUrl!, params));
       case "component":
         return asComponent(config.component as string);
       default:
@@ -115,14 +121,16 @@ export class TemplateFactoryProvider {
   /**
    * Resolves a literal template string or template factory function.
    */
-  fromString(template: string | TemplateFactory, params?: RawParams): string {
+  /** @internal */
+  _fromString(template: string | TemplateFactory, params?: RawParams): string {
     return isFunction(template) ? template(params) : template;
   }
 
   /**
    * Fetches a template from a static URL or a URL factory.
    */
-  fromUrl(
+  /** @internal */
+  _fromUrl(
     url: string | TemplateUrlFactory,
     params: RawParams,
   ): Promise<string> | null {
@@ -136,7 +144,8 @@ export class TemplateFactoryProvider {
   /**
    * Builds the HTML for a routed component and binds resolve data to its inputs.
    */
-  makeComponentTemplate(
+  /** @internal */
+  _makeComponentTemplate(
     ngView: Element,
     context: ResolveContext,
     component: string,

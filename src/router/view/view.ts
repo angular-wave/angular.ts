@@ -18,31 +18,31 @@ export interface ViewContext {
 /** @internal */
 export interface ActiveNgView {
   /** An auto-incremented id */
-  id: number;
+  _id: number;
   /** The DOM node for the ng-view anchor */
-  element: HTMLElement;
+  _element: HTMLElement;
   /** The ng-view short name */
-  name: string;
+  _name: string;
   /** The ng-view's fully qualified name */
-  fqn: string;
+  _fqn: string;
   /** The internal view record currently loaded into the ng-view. */
-  config: _ViewConfig | null;
+  _config: ViewConfig | null;
   /** The state context in which the ng-view tag was created. */
-  creationContext: ViewContext;
+  _creationContext: ViewContext;
   /** Applies an internal view record or clears the ng-view when config is undefined. */
-  configUpdated: (config: _ViewConfig | undefined) => void;
+  _configUpdated: (config: ViewConfig | undefined) => void;
 }
 
 /** @internal */
-export interface _ViewConfig {
-  $id: number;
-  path: PathNode[];
-  viewDecl: ViewDeclaration;
-  factory: TemplateFactoryProvider;
-  component: string | undefined;
-  template: string | undefined;
-  loaded: boolean;
-  controller: ViewDeclaration["controller"] | undefined;
+export interface ViewConfig {
+  _id: number;
+  _path: PathNode[];
+  _viewDecl: ViewDeclaration;
+  _factory: TemplateFactoryProvider;
+  _component: string | undefined;
+  _template: string | undefined;
+  _loaded: boolean;
+  _controller: ViewDeclaration["controller"] | undefined;
 }
 
 const FQN_MULTIPLIER = 10_000;
@@ -54,46 +54,47 @@ export function createViewConfig(
   path: PathNode[],
   viewDecl: ViewDeclaration,
   factory: TemplateFactoryProvider,
-): _ViewConfig {
+): ViewConfig {
   return {
-    $id: nextViewId++,
-    path,
-    viewDecl,
-    factory,
-    component: undefined,
-    template: undefined,
-    loaded: false,
-    controller: undefined,
+    _id: nextViewId++,
+    _path: path,
+    _viewDecl: viewDecl,
+    _factory: factory,
+    _component: undefined,
+    _template: undefined,
+    _loaded: false,
+    _controller: undefined,
   };
 }
 
 /** @internal */
 export function getViewTemplate(
-  config: _ViewConfig,
+  config: ViewConfig,
   ngView: Element,
   context: ResolveContext,
 ): string | undefined {
-  return config.component
-    ? config.factory.makeComponentTemplate(
+  return config._component
+    ? config._factory._makeComponentTemplate(
         ngView,
         context,
-        config.component,
-        config.viewDecl.bindings,
+        config._component,
+        config._viewDecl.bindings,
       )
-    : config.template;
+    : config._template;
 }
 
 /** @internal */
-export async function loadViewConfig(
-  config: _ViewConfig,
-): Promise<_ViewConfig> {
+export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
   const params: RawParams = {};
 
-  config.path.forEach((node) => assign(params, node.paramValues));
+  config._path.forEach((node) => assign(params, node.paramValues));
 
-  const viewResult = await config.factory.fromConfig(config.viewDecl, params);
+  const viewResult = await config._factory._fromConfig(
+    config._viewDecl,
+    params,
+  );
 
-  config.controller = config.viewDecl.controller;
+  config._controller = config._viewDecl.controller;
   assign(config, viewResult);
 
   return config;
@@ -175,8 +176,8 @@ function ngViewDepth(
   if (cached !== undefined) return cached;
 
   const computed =
-    ngView.fqn.split(".").length * FQN_MULTIPLIER +
-    contextDepth(ngView.creationContext);
+    ngView._fqn.split(".").length * FQN_MULTIPLIER +
+    contextDepth(ngView._creationContext);
 
   cache.set(ngView, computed);
 
@@ -184,14 +185,14 @@ function ngViewDepth(
 }
 
 function viewConfigDepth(
-  cache: Map<_ViewConfig, number>,
-  config: _ViewConfig,
+  cache: Map<ViewConfig, number>,
+  config: ViewConfig,
 ): number {
   const cached = cache.get(config);
 
   if (cached !== undefined) return cached;
 
-  let context = config.viewDecl.$context as ViewContext;
+  let context = config._viewDecl._context as ViewContext;
 
   let count = 0;
 
@@ -212,7 +213,7 @@ export class ViewService {
   /** @internal */
   _ngViews: ActiveNgView[];
   /** @internal */
-  _viewConfigs: _ViewConfig[];
+  _viewConfigs: ViewConfig[];
   /** @internal */
   _templateFactory: TemplateFactoryProvider | undefined;
   /** @internal */
@@ -259,7 +260,7 @@ export class ViewService {
    * Removes a view config from the active registry.
    */
   /** @internal */
-  _deactivateViewConfig(viewConfig: _ViewConfig): void {
+  _deactivateViewConfig(viewConfig: ViewConfig): void {
     removeFrom(this._viewConfigs, viewConfig);
   }
 
@@ -267,7 +268,7 @@ export class ViewService {
    * Adds a view config to the active registry.
    */
   /** @internal */
-  _activateViewConfig(viewConfig: _ViewConfig): void {
+  _activateViewConfig(viewConfig: ViewConfig): void {
     this._viewConfigs.push(viewConfig);
   }
 
@@ -280,12 +281,12 @@ export class ViewService {
     const ngViewsByFqn: Record<string, ActiveNgView> = {};
 
     this._ngViews.forEach((ngView) => {
-      ngViewsByFqn[ngView.fqn] = ngView;
+      ngViewsByFqn[ngView._fqn] = ngView;
     });
 
     const ngViewDepthCache = new Map<ActiveNgView, number>();
 
-    const viewConfigDepthCache = new Map<_ViewConfig, number>();
+    const viewConfigDepthCache = new Map<ViewConfig, number>();
 
     this._ngViews.sort(
       (left, right) =>
@@ -294,7 +295,7 @@ export class ViewService {
     );
 
     this._ngViews.forEach((ngView) => {
-      let selectedViewConfig: _ViewConfig | undefined = undefined;
+      let selectedViewConfig: ViewConfig | undefined = undefined;
 
       let bestDepth = Number.NEGATIVE_INFINITY;
 
@@ -310,7 +311,7 @@ export class ViewService {
       });
 
       if (this._ngViews.indexOf(ngView) !== -1) {
-        ngView.configUpdated(selectedViewConfig);
+        ngView._configUpdated(selectedViewConfig);
       }
     });
   }
@@ -339,23 +340,23 @@ export class ViewService {
   static _matches(
     ngViewsByFqn: Record<string, ActiveNgView>,
     ngView: ActiveNgView,
-    viewConfig: _ViewConfig,
+    viewConfig: ViewConfig,
   ): boolean {
-    if (!viewConfig || !viewConfig.viewDecl) return false;
+    if (!viewConfig || !viewConfig._viewDecl) return false;
 
-    const ngViewContext = ngView.creationContext;
+    const ngViewContext = ngView._creationContext;
 
-    const { viewDecl } = viewConfig;
+    const viewDecl = viewConfig._viewDecl;
 
-    const vcName = viewDecl.$ngViewName || "$default";
+    const vcName = viewDecl._ngViewName || "$default";
 
-    const vcContext = viewDecl.$ngViewContextAnchor || "";
+    const vcContext = viewDecl._ngViewContextAnchor || "";
 
     const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
-    if (normalizedTarget !== ngView.fqn) return false;
+    if (normalizedTarget !== ngView._fqn) return false;
 
-    const viewContext = viewDecl.$context as ViewContext;
+    const viewContext = viewDecl._context as ViewContext;
 
     if (
       viewContext.name !== ngViewContext.name &&
@@ -364,7 +365,7 @@ export class ViewService {
       return false;
     }
 
-    const childViewFqn = `${normalizedTarget}.${ngView.name}`;
+    const childViewFqn = `${normalizedTarget}.${ngView._name}`;
 
     return !ngViewsByFqn[childViewFqn];
   }

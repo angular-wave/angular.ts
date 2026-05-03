@@ -113,8 +113,8 @@ function parseStateRef(ref: string): ParsedStateRef {
 function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
 
-  const path = ($ngView as { $cfg?: { path?: unknown } } | undefined)?.$cfg
-    ?.path as Array<{ state: { name: string } }> | undefined;
+  const path = ($ngView as { $cfg?: { _path?: unknown } } | undefined)?.$cfg
+    ?._path as Array<{ state: { name: string } }> | undefined;
 
   return path ? path[path.length - 1].state.name : undefined;
 }

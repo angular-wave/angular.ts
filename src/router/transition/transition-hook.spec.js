@@ -10,16 +10,16 @@ function createHook({
   const hook = {
     _deregistered: false,
     _eventType: {
-      hookPhase: TransitionHookPhase._BEFORE,
-      synchronous: false,
+      _hookPhase: TransitionHookPhase._BEFORE,
+      _synchronous: false,
       _handleError: (_hook, error) => error,
       _handleResult: (transitionHook, result) =>
-        transitionHook.handleHookResult(result),
+        transitionHook._handleHookResult(result),
       ...eventType,
     },
-    callback,
-    invokeCount: 0,
-    deregister() {},
+    _callback: callback,
+    _invokeCount: 0,
+    _deregister() {},
     ...registeredHook,
   };
 
@@ -32,8 +32,8 @@ function createHook({
     null,
     hook,
     {
-      current: () => null,
-      transition: null,
+      _current: () => null,
+      _transition: null,
       ...options,
     },
     () => undefined,
@@ -44,9 +44,9 @@ describe("TransitionHook", () => {
   it("chains hooks without an initial promise", async () => {
     const order = [];
 
-    await TransitionHook.chain([
+    await TransitionHook._chain([
       {
-        invokeHook() {
+        _invokeHook() {
           order.push("hook");
         },
       },
@@ -58,16 +58,16 @@ describe("TransitionHook", () => {
   it("returns the async done callback result after remaining hooks run", async () => {
     const order = [];
 
-    const result = await TransitionHook.invokeHooks(
+    const result = await TransitionHook._invokeHooks(
       [
         {
-          invokeHook() {
+          _invokeHook() {
             order.push("first");
             return Promise.resolve().then(() => order.push("async"));
           },
         },
         {
-          invokeHook() {
+          _invokeHook() {
             order.push("second");
           },
         },
@@ -89,18 +89,18 @@ describe("TransitionHook", () => {
       registeredHook: { _deregistered: true },
     });
 
-    expect(hook.invokeHook()).toBeUndefined();
+    expect(hook._invokeHook()).toBeUndefined();
     expect(callback).not.toHaveBeenCalled();
   });
 
   it("deregisters hooks when invoke limit is reached", () => {
-    const deregister = jasmine.createSpy("deregister");
+    const deregister = jasmine.createSpy("_deregister");
     const hook = createHook({
       callback: () => undefined,
-      registeredHook: { invokeLimit: 1, deregister },
+      registeredHook: { _invokeLimit: 1, _deregister: deregister },
     });
 
-    hook.invokeHook();
+    hook._invokeHook();
 
     expect(deregister).toHaveBeenCalled();
   });
@@ -110,33 +110,36 @@ describe("TransitionHook", () => {
       transition: { _aborted: true },
     });
 
-    await expectAsync(hook.getNotCurrentRejection()).toBeRejected();
+    await expectAsync(hook._getNotCurrentRejection()).toBeRejected();
   });
 
   it("returns a rejection for superseded run hooks", async () => {
     const hook = createHook({
-      eventType: { hookPhase: TransitionHookPhase._RUN },
+      eventType: { _hookPhase: TransitionHookPhase._RUN },
       options: {
-        current: () => null,
-        transition: { isActive: () => false },
+        _current: () => null,
+        _transition: { isActive: () => false },
       },
     });
 
-    await expectAsync(hook.getNotCurrentRejection()).toBeRejected();
+    await expectAsync(hook._getNotCurrentRejection()).toBeRejected();
   });
 
   it("handles promise hook results recursively", async () => {
     const hook = createHook();
 
     await expectAsync(
-      hook.handleHookResult(Promise.resolve(false)),
+      hook._handleHookResult(Promise.resolve(false)),
     ).toBeRejected();
   });
 
   it("logs rejected hook results", async () => {
     const logError = jasmine.createSpy("logError");
 
-    TransitionHook._logRejectedResult({ logError }, Promise.reject("nope"));
+    TransitionHook._logRejectedResult(
+      { _logError: logError },
+      Promise.reject("nope"),
+    );
 
     await new Promise((resolve) => setTimeout(resolve));
 
@@ -161,15 +164,15 @@ describe("TransitionHook", () => {
     expect(
       createHook({
         options: {
-          hookType: "custom",
-          target: { state: { name: "stateName" } },
+          _hookType: "custom",
+          _target: { state: { name: "stateName" } },
         },
       }).toString(),
     ).toContain("custom context: stateName");
 
     expect(
       createHook({
-        options: { target: { name: "targetName" } },
+        options: { _target: { name: "targetName" } },
       }).toString(),
     ).toContain("internal context: targetName");
   });

@@ -43,7 +43,7 @@ export interface Transition {
   $to(): StateObject;
 }
 
-export type { TreeChanges, TransitionOptions } from "./interface.ts";
+export type { TransitionOptions } from "./interface.ts";
 const REDIRECT_MAX = 20;
 
 type DeferredPromise<T> = {
@@ -132,7 +132,6 @@ function collectPathParams(path: PathNode[]): RawParams {
  * It has information about all states being entered and exited as a result of the transition.
  */
 export class Transition {
-  static diToken: typeof Transition;
   promise: Promise<StateDeclaration>;
   $id: number;
   /** @internal */
@@ -163,6 +162,8 @@ export class Transition {
    * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
    * @param {TransitionService} transitionService
    * @param routerState
+   *
+   * @internal
    */
   constructor(
     fromPath: PathNode[],
@@ -201,7 +202,7 @@ export class Transition {
     );
     const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
 
-    TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
+    TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
     this.applyViewConfigs();
   }
 
@@ -506,7 +507,7 @@ export class Transition {
     // This allows a BEFORE hook to add more RUN hooks dynamically.
     const allRunHooks = this._getHooksFor(TransitionHookPhase._RUN);
 
-    return TransitionHook.invokeHooks(allRunHooks, resolvedPromise);
+    return TransitionHook._invokeHooks(allRunHooks, resolvedPromise);
   }
 
   /** @internal */
@@ -526,7 +527,7 @@ export class Transition {
   /** @internal */
   async _runSuccessHooks(hooks: TransitionHook[]): Promise<void> {
     try {
-      await TransitionHook.invokeHooks(hooks, resolvedPromise);
+      await TransitionHook._invokeHooks(hooks, resolvedPromise);
       this._resolveTransition();
     } catch (reason) {
       this._transitionError(reason);
@@ -544,7 +545,7 @@ export class Transition {
     const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
 
     hooks.forEach((hook) => {
-      hook.invokeHook();
+      hook._invokeHook();
     });
   }
 
@@ -568,7 +569,7 @@ export class Transition {
     try {
       const allBeforeHooks = this._getHooksFor(TransitionHookPhase._BEFORE);
 
-      await TransitionHook.invokeHooks(allBeforeHooks, this);
+      await TransitionHook._invokeHooks(allBeforeHooks, this);
       await this._runTransitionHooks();
       this._transitionSuccess();
     } catch (reason) {
@@ -681,5 +682,3 @@ function pathStates(path: PathNode[]): StateDeclaration[] {
 function pathParams(path: PathNode[]): RawParams {
   return collectPathParams(path);
 }
-
-Transition.diToken = Transition;

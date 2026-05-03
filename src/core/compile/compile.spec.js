@@ -3093,6 +3093,42 @@ describe("$compile", () => {
       expect(templateUrlSpy.calls.first().args[1].myDirective).toBeDefined();
     });
 
+    it("throws when templateUrl function returns undefined", () => {
+      registerDirectives({
+        myDirective: () => {
+          return {
+            templateUrl() {
+              return undefined;
+            },
+          };
+        },
+      });
+      reloadModules();
+      const el = $("<div my-directive></div>");
+
+      expect(() => {
+        $compile(el);
+      }).toThrowError(/tplurl/);
+    });
+
+    it("throws when templateUrl function returns an empty string", () => {
+      registerDirectives({
+        myDirective: () => {
+          return {
+            templateUrl() {
+              return "";
+            },
+          };
+        },
+      });
+      reloadModules();
+      const el = $("<div my-directive></div>");
+
+      expect(() => {
+        $compile(el);
+      }).toThrowError(/tplurl/);
+    });
+
     it("does not allow templateUrl directive after template directive", () => {
       registerDirectives({
         myDirective: () => {

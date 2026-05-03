@@ -47,15 +47,15 @@ describe("view", () => {
   describe("matching", () => {
     it("matches root default ng-view targets using the active ng-view fqn format", () => {
       const ngView = {
-        fqn: "$default",
-        name: "$default",
-        creationContext: root,
+        _fqn: "$default",
+        _name: "$default",
+        _creationContext: root,
       };
       const viewConfig = {
-        viewDecl: {
-          $ngViewName: "$default",
-          $ngViewContextAnchor: "",
-          $context: root,
+        _viewDecl: {
+          _ngViewName: "$default",
+          _ngViewContextAnchor: "",
+          _context: root,
         },
       };
 
@@ -69,15 +69,15 @@ describe("view", () => {
         parent: parentContext,
       });
       const ngView = {
-        fqn: "parent.sidebar",
-        name: "sidebar",
-        creationContext: parentContext,
+        _fqn: "parent.sidebar",
+        _name: "sidebar",
+        _creationContext: parentContext,
       };
       const viewConfig = {
-        viewDecl: {
-          $ngViewName: "sidebar",
-          $ngViewContextAnchor: "parent",
-          $context: childContext,
+        _viewDecl: {
+          _ngViewName: "sidebar",
+          _ngViewContextAnchor: "parent",
+          _context: childContext,
         },
       };
 
@@ -91,20 +91,20 @@ describe("view", () => {
         parent: parentContext,
       });
       const ngView = {
-        fqn: "parent.sidebar",
-        name: "sidebar",
-        creationContext: parentContext,
+        _fqn: "parent.sidebar",
+        _name: "sidebar",
+        _creationContext: parentContext,
       };
       const viewConfig = {
-        viewDecl: {
-          $ngViewName: "sidebar",
-          $ngViewContextAnchor: "parent",
-          $context: childContext,
+        _viewDecl: {
+          _ngViewName: "sidebar",
+          _ngViewContextAnchor: "parent",
+          _context: childContext,
         },
       };
       const childNgViewsByFqn = {
         "parent.sidebar.sidebar": {
-          fqn: "parent.sidebar.sidebar",
+          _fqn: "parent.sidebar.sidebar",
         },
       };
 
@@ -129,8 +129,8 @@ describe("view", () => {
       applyViewConfigs(viewService, path, [state]);
 
       expect(path[1]._views.length).toBe(1);
-      expect(path[1]._views[0].path).toEqual(jasmine.arrayContaining(path));
-      expect(path[1]._views[0].viewDecl).toBe(state._views.$default);
+      expect(path[1]._views[0]._path).toEqual(jasmine.arrayContaining(path));
+      expect(path[1]._views[0]._viewDecl).toBe(state._views.$default);
     });
   });
 });

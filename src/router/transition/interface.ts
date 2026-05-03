@@ -3,14 +3,6 @@ import { Transition } from "./transition.ts";
 import { StateObject } from "../state/state-object.ts";
 import { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
-import { RegisteredHook } from "./hook-registry.ts";
-import {
-  TransitionHook,
-  TransitionHookPhase,
-  TransitionHookScope,
-} from "./transition-hook.ts";
-import { TransitionEventType } from "./transition-event-type.ts";
-import type { ViewService } from "../view/view.ts";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;
@@ -51,11 +43,6 @@ export interface TransitionOptions {
   inherit?: boolean;
 
   /**
-   * @deprecated
-   */
-  notify?: boolean;
-
-  /**
    * This option may be used to force states which are currently active to reload.
    *
    * During a normal transition, a state is "retained" if:
@@ -77,24 +64,6 @@ export interface TransitionOptions {
    */
   reload?: boolean | string | StateDeclaration | StateObject;
 
-  /**
-   * You can define your own Transition Options inside this property and use them, e.g., from a Transition Hook
-   */
-  custom?: unknown;
-
-  /**
-   * This option may be used to cancel the active transition (if one is active) in favour of the this one.
-   * This is the default behaviour of ng-router.
-   *
-   *
-   * - When `true`, the active transition will be canceled and new transition will begin.
-   * - when `false`, the transition will be canceled if a transition is already running. This can be useful in cases where
-   * you only want to navigate to a different state if you are not already navigating somewhere.
-   *
-   * @default `true`
-   */
-  supercede?: boolean;
-
   /** @internal */
   reloadState?: StateObject;
 
@@ -107,16 +76,7 @@ export interface TransitionOptions {
   current?: () => Transition | null;
 
   /** @internal */
-  source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
-}
-
-export interface TransitionHookOptions {
-  current: () => Transition | void; // path?
-  transition?: Transition | null;
-  hookType?: string;
-  target?: unknown;
-  bind?: unknown;
-  stateHook?: boolean;
+  source?: "sref" | "url" | "redirect" | "unknown";
 }
 
 /**
@@ -136,6 +96,8 @@ export interface TransitionHookOptions {
  * Path, you would find a node in the array for each portion: `foo`, `bar`, and `baz`.
  *
  * A visual state tree example can be added here later.
+ *
+ * @internal
  */
 export interface TreeChanges {
   /** Additional path collections by name. */
@@ -382,47 +344,12 @@ export interface HookMatchCriteria {
   entering?: HookMatchCriterion;
 }
 
-export interface IMatchingNodes {
-  [key: string]: PathNode[];
-
-  to: PathNode[];
-  from: PathNode[];
-  exiting: PathNode[];
-  retained: PathNode[];
-  entering: PathNode[];
-}
-
-/** @internal */
-export interface RegisteredHooks {
-  [key: string]: RegisteredHook[];
-}
-
-/** @internal */
-export interface PathType {
-  name: string;
-  scope: TransitionHookScope;
-}
-
-/** @internal */
-export interface PathTypes {
-  [key: string]: PathType;
-
-  to: PathType;
-  from: PathType;
-  exiting: PathType;
-  retained: PathType;
-  entering: PathType;
-}
-
 /**
  * This interface specifies the api for registering Transition Hooks.  Both the
  * [[TransitionService]] and also the [[Transition]] object itself implement this interface.
  * Note: the Transition object only allows hooks to be registered before the Transition is started.
  */
 export interface HookRegistry {
-  /** @internal place to store the hooks */
-  _registeredHooks: RegisteredHooks;
-
   /**
    * Registers a [[TransitionHookFn]], called *before a transition starts*.
    *
@@ -859,62 +786,6 @@ export interface HookRegistry {
     callback: TransitionHookFn,
     options?: HookRegOptions,
   ): DeregisterFn;
-
-  /**
-   * Returns all the registered hooks of a given `hookName` type
-   *
-   * #### Example:
-   * ```
-   * $transitions.getHooks("onEnter")
-   * ```
-   */
-  getHooks(hookName: string): RegisteredHook[];
 }
 
-/**
- * TODO: unite with TransitionProvider
- * The runtime service instance returned from `TransitionProvider.$get`.
- *
- * Note: In this codebase, `$get` returns the provider instance (`return this;`),
- * so the "service" surface includes both the public HookRegistry API and
- * a set of internal fields/methods used by built-in hook registrations.
- */
-export interface TransitionService extends HookRegistry {
-  /* -------------------- Transition factory -------------------- */
-
-  /**
-   * Internal factory used by StateService.
-   */
-  create(fromPath: PathNode[], targetState: TargetState): Transition;
-
-  /* -------------------- Internal surface used by built-in hooks -------------------- */
-
-  /** @internal incremented for each created Transition */
-  _transitionCount: number;
-
-  /** @internal hook event types (onBefore/onStart/...) */
-  _eventTypes: TransitionEventType[];
-
-  /** @internal path type metadata used for matching */
-  _criteriaPaths: PathTypes;
-
-  /** @internal Return event types, optionally filtered by phase. */
-  _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
-
-  /** @internal Return the defined path types */
-  _getPathTypes(): PathTypes;
-
-  /** @internal view service */
-  /** @internal */
-  _view: ViewService;
-
-  /** @internal */
-  _exceptionHandler: ng.ExceptionHandlerService;
-}
-
-/** @internal */
-export interface HookTuple {
-  hook: RegisteredHook;
-  node: PathNode;
-  transitionHook: TransitionHook;
-}
+export interface TransitionService extends HookRegistry {}
