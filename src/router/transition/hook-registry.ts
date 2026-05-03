@@ -128,17 +128,25 @@ export class RegisteredHook {
 
       const transitionNode = path.length ? path[path.length - 1] : undefined;
 
-      const nodes: PathNode[] = isStateHook
-        ? path
-        : transitionNode
-          ? [transitionNode]
-          : [];
-
       const criterion = hasOwn(this.matchCriteria, pathType.name)
         ? (this.matchCriteria[pathType.name] as HookMatchCriterion)
         : true;
 
-      const matching = this._matchingNodes(nodes, criterion, transition);
+      if (criterion === true) {
+        matchingNodes[pathType.name] = isStateHook
+          ? path
+          : transitionNode
+            ? [transitionNode]
+            : [];
+        continue;
+      }
+
+      const matching = isStateHook
+        ? this._matchingNodes(path, criterion, transition)
+        : transitionNode &&
+            matchState(transitionNode.state, criterion, transition)
+          ? [transitionNode]
+          : null;
 
       if (!matching) {
         return null;

@@ -4,13 +4,11 @@ import {
 } from "../../injection-tokens.ts";
 import {
   assign,
-  isDefined,
   isFunction,
   isInstanceOf,
   isObject,
   isString,
   keys,
-  values,
 } from "../../shared/utils.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -167,9 +165,7 @@ export interface TransitionService extends HookRegistry {
   /** @internal path type metadata used for matching */
   _criteriaPaths: PathTypes;
 
-  /**
-   * @internal Return event types, optionally filtered by phase, sorted by phase/order.
-   */
+  /** @internal Return event types, optionally filtered by phase. */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
 
   /** @internal Register a transition-construction hook used by built-ins. */
@@ -377,16 +373,12 @@ export class TransitionProvider implements TransitionService {
     const transitionHookTypes: TransitionEventType[] = [];
 
     this._eventTypes.forEach((eventType) => {
-      if (!isDefined(phase) || eventType.hookPhase === phase) {
+      if (phase === undefined || eventType.hookPhase === phase) {
         transitionHookTypes.push(eventType);
       }
     });
 
-    return transitionHookTypes.sort((left, right) => {
-      const cmpByPhase = left.hookPhase - right.hookPhase;
-
-      return cmpByPhase === 0 ? left.hookOrder - right.hookOrder : cmpByPhase;
-    });
+    return transitionHookTypes;
   }
 
   /**
@@ -601,8 +593,6 @@ function registerAddCoreResolvables(
   );
 }
 
-const TRANSITION_TOKENS = ["$transition$", Transition] as const;
-
 function addTransitionResolvable(
   trans: Transition,
   resolvable: Resolvable,
@@ -636,39 +626,52 @@ function transitionViews(trans: Transition, pathname: string): _ViewConfig[] {
 
   const viewConfigs: _ViewConfig[] = [];
 
-  path.forEach((node) => {
+  for (let i = 0; i < path.length; i++) {
+    const node = path[i];
+
     const views = node._views || [];
 
-    views.forEach((view) => {
+    for (let j = 0; j < views.length; j++) {
+      const view = views[j];
+
       viewConfigs.push(view);
-    });
-  });
+    }
+  }
 
   return viewConfigs;
 }
 
 function treeChangesCleanup(trans: Transition): void {
-  const paths = values(trans._treeChanges as Record<string, PathNode[]>);
+  const treeChanges = trans._treeChanges;
 
-  const nodes: PathNode[] = [];
+  const nodes = new Set<PathNode>();
 
-  paths.forEach((path: PathNode[]) => {
-    path.forEach((node) => {
-      if (nodes.indexOf(node) === -1) {
-        nodes.push(node);
-      }
-    });
-  });
+  collectPathNodes(nodes, treeChanges.from);
+  collectPathNodes(nodes, treeChanges.to);
+  collectPathNodes(nodes, treeChanges.retained);
+  collectPathNodes(nodes, treeChanges.retainedWithToParams);
+  collectPathNodes(nodes, treeChanges.exiting);
+  collectPathNodes(nodes, treeChanges.entering);
 
   nodes.forEach((node) => {
     const { resolvables } = node;
 
     resolvables.forEach((resolve, i) => {
-      if (TRANSITION_TOKENS.some((token) => token === resolve.token)) {
+      if (isTransitionToken(resolve.token)) {
         resolvables[i] = Resolvable.fromData(resolve.token, null);
       }
     });
   });
+}
+
+function collectPathNodes(nodes: Set<PathNode>, path: PathNode[]): void {
+  for (let i = 0; i < path.length; i++) {
+    nodes.add(path[i]);
+  }
+}
+
+function isTransitionToken(token: unknown): boolean {
+  return token === "$transition$" || token === Transition;
 }
 
 function ignoredHook(trans: Transition) {
@@ -882,7 +885,7 @@ function loadEnteringViews(transition: Transition): Promise<void> | undefined {
   const promises = new Array(enteringViews.length);
 
   enteringViews.forEach((view, i) => {
-    promises[i] = Promise.resolve(loadViewConfig(view));
+    promises[i] = loadViewConfig(view);
   });
 
   return Promise.all(promises).then(noop);

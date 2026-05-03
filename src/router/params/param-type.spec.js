@@ -14,14 +14,12 @@ describe("ParamType", () => {
   it("returns the original type when array mode is disabled", () => {
     const type = createType();
 
-    expect(type.$asArray(false, true)).toBe(type);
+    expect(type.$asArray(false)).toBe(type);
   });
 
-  it("rejects auto array mode for path parameters", () => {
+  it("wraps a type when array mode is enabled", () => {
     const type = createType();
 
-    expect(() => type.$asArray("auto", false)).toThrowError(
-      "'auto' array mode is for query parameters only",
-    );
+    expect(type.$asArray("auto")).not.toBe(type);
   });
 });

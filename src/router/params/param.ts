@@ -1,6 +1,5 @@
 import { isInjectable } from "../../shared/predicates.ts";
 import {
-  assign,
   hasOwn,
   isArray,
   isDefined,
@@ -13,6 +12,7 @@ import { ParamType } from "./param-type.ts";
 import type {
   ParamDeclaration,
   ParamDefaultValueFactory,
+  ParamDefaultValueProvider,
   RawParams,
   Replace,
 } from "./interface.ts";
@@ -62,11 +62,13 @@ function getParamDeclaration(
 ): ParamDeclaration {
   const { dynamic } = state;
 
-  const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
-
   const paramConfig = unwrapShorthand(state?.params?.[paramName]);
 
-  return assign(defaultConfig, paramConfig);
+  if (isDefined(dynamic) && !hasOwn(paramConfig, "dynamic")) {
+    paramConfig.dynamic = dynamic;
+  }
+
+  return paramConfig;
 }
 
 /**
@@ -88,7 +90,9 @@ function unwrapShorthand(cfg: unknown): ParamDeclaration {
     ? paramConfig.value
     : getStaticDefaultValue;
 
-  return assign(paramConfig, { _fn });
+  paramConfig._fn = _fn as ParamDefaultValueProvider;
+
+  return paramConfig;
 }
 
 /**
@@ -172,32 +176,39 @@ function getReplace(
   isOptional: boolean,
   squash: string | boolean,
 ): Replace[] {
-  const defaultPolicy = [
-    { from: "", to: isOptional || arrayMode ? undefined : "" },
-    { from: null, to: isOptional || arrayMode ? undefined : "" },
-  ] as Replace[];
-
   const replace = isArray(config.replace) ? config.replace : [];
-
-  if (isString(squash)) replace.push({ from: squash, to: undefined });
-
-  const configuredKeys: Array<string | null> = [];
-
-  replace.forEach((item) => {
-    configuredKeys.push(item.from);
-  });
 
   const result: Replace[] = [];
 
-  defaultPolicy.forEach((item) => {
-    if (configuredKeys.indexOf(item.from) === -1) {
-      result.push(item);
-    }
-  });
+  let hasEmptyReplace = false;
 
-  replace.forEach((item) => {
+  let hasNullReplace = false;
+
+  for (let i = 0; i < replace.length; i++) {
+    const item = replace[i];
+
+    if (item.from === "") {
+      hasEmptyReplace = true;
+    } else if (item.from === null) {
+      hasNullReplace = true;
+    }
+  }
+
+  const defaultReplacement = isOptional || arrayMode ? undefined : "";
+
+  if (!hasEmptyReplace) result.push({ from: "", to: defaultReplacement });
+
+  if (!hasNullReplace) {
+    result.push({ from: null as unknown as string, to: defaultReplacement });
+  }
+
+  for (let i = 0; i < replace.length; i++) {
+    const item = replace[i];
+
     result.push(item);
-  });
+  }
+
+  if (isString(squash)) result.push({ from: squash, to: undefined });
 
   return result;
 }
@@ -207,13 +218,11 @@ function getArrayMode(
   location: DefTypeValue,
   config: ParamDeclaration,
 ): boolean | "auto" {
-  const arrayDefaults = {
-    array: location === DefType._SEARCH ? "auto" : false,
-  };
+  if (location !== DefType._SEARCH) return false;
 
-  const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
+  if (isDefined(config.array)) return config.array;
 
-  return assign(arrayDefaults, arrayParamNomenclature, config).array;
+  return id.endsWith("[]") ? true : "auto";
 }
 
 export class Param {
@@ -228,7 +237,6 @@ export class Param {
   inherit: boolean;
   array: boolean | "auto";
   config: ParamDeclaration;
-  matchingKeys: RawParams | undefined;
   /** @internal */
   _defaultValueCache?: { defaultValue: unknown };
   /** @internal */
@@ -256,9 +264,7 @@ export class Param {
     type = getType(config, type, location, id, urlConfig._paramTypes);
     const arrayMode = getArrayMode(id, location, config);
 
-    type = arrayMode
-      ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
-      : type;
+    type = arrayMode ? type && type.$asArray(arrayMode) : type;
     const isOptional =
       config.value !== undefined || location === DefType._SEARCH;
 
@@ -289,7 +295,6 @@ export class Param {
     this.inherit = inherit;
     this.array = arrayMode;
     this.config = config;
-    this.matchingKeys = undefined;
     this._runtime = runtime;
   }
 
@@ -306,7 +311,14 @@ export class Param {
    * @param {undefined} [value]
    */
   value(value?: unknown): unknown {
-    value = this._replaceSpecialValues(value);
+    for (let i = 0; i < this.replace.length; i++) {
+      const tuple = this.replace[i];
+
+      if (tuple.from === value) {
+        value = tuple.to;
+        break;
+      }
+    }
 
     return isUndefined(value)
       ? this._getDefaultValue()
@@ -344,21 +356,6 @@ export class Param {
     }
 
     return defaultValue;
-  }
-
-  /** @internal */
-  _replaceSpecialValues(value: unknown): unknown {
-    for (let i = 0; i < this.replace.length; i++) {
-      const tuple = this.replace[i];
-
-      if (tuple.from === value) return tuple.to;
-    }
-
-    return value;
-  }
-
-  isSearch(): boolean {
-    return this.location === DefType._SEARCH;
   }
 
   /**
@@ -433,7 +430,15 @@ export class Param {
     values1: RawParams = {},
     values2: RawParams = {},
   ): boolean {
-    return Param.changed(params, values1, values2).length === 0;
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+
+      if (!param.type.equals(values1[param.id], values2[param.id])) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

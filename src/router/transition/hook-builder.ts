@@ -1,8 +1,7 @@
-import { assign, isArray } from "../../shared/utils.ts";
+import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";
-import type { TreeChanges } from "./interface.ts";
+import type { RegisteredHook } from "./hook-registry.ts";
 import {
   TransitionHook,
   TransitionHookPhase,
@@ -28,11 +27,7 @@ export function buildHooksForPhase(
   const hooks: TransitionHook[] = [];
 
   eventTypes.forEach((eventType) => {
-    const builtHooks = buildHooks(transition, eventType);
-
-    builtHooks.forEach((hook) => {
-      if (hook) hooks.push(hook);
-    });
+    buildHooks(transition, eventType, hooks);
   });
 
   return hooks;
@@ -41,12 +36,9 @@ export function buildHooksForPhase(
 function buildHooks(
   transition: Transition,
   hookType: TransitionEventType,
-): TransitionHook[] {
+  hooks: TransitionHook[],
+): void {
   const treeChanges = transition._treeChanges;
-
-  const matchingHooks = getMatchingHooks(hookType, treeChanges, transition);
-
-  if (!matchingHooks.length) return [];
 
   const baseHookOptions = {
     transition,
@@ -55,18 +47,27 @@ function buildHooks(
 
   const hookTuples: HookTuple[] = [];
 
-  matchingHooks.forEach(({ hook, matches }) => {
+  const registeredHooks = transition._transitionService.getHooks(hookType.name);
+
+  if (!isArray(registeredHooks)) {
+    throw new Error(`broken event named: ${hookType.name}`);
+  }
+
+  registeredHooks.forEach((hook) => {
+    const matches = hook.matches(treeChanges, transition);
+
+    if (!matches) return;
+
     const matchingNodes = matches[hookType._criteriaMatchPath.name];
 
     matchingNodes.forEach((node) => {
-      const options = assign(
-        {
-          bind: hook.bind,
-          hookType: hookType.name,
-          target: node,
-        },
-        baseHookOptions,
-      );
+      const options = {
+        bind: hook.bind,
+        hookType: hookType.name,
+        target: node,
+        transition: baseHookOptions.transition,
+        current: baseHookOptions.current,
+      };
 
       const state: StateDeclaration | null =
         hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
@@ -85,46 +86,15 @@ function buildHooks(
     });
   });
 
+  if (!hookTuples.length) return;
+
   hookTuples.sort(
     hookType.reverseSort
       ? sortByReverseNodeDepthThenPriority
       : sortByNodeDepthThenPriority,
   );
 
-  const hooks: TransitionHook[] = [];
-
   hookTuples.forEach((tuple) => hooks.push(tuple.transitionHook));
-
-  return hooks;
-}
-
-function getMatchingHooks(
-  hookType: TransitionEventType,
-  treeChanges: TreeChanges,
-  transition: Transition,
-): Array<{ hook: RegisteredHook; matches: IMatchingNodes }> {
-  const $transitions = transition._transitionService;
-
-  const matchingHooks: Array<{
-    hook: RegisteredHook;
-    matches: IMatchingNodes;
-  }> = [];
-
-  const hooks = $transitions.getHooks(hookType.name);
-
-  if (!isArray(hooks)) {
-    throw new Error(`broken event named: ${hookType.name}`);
-  }
-
-  hooks.forEach((hook) => {
-    const matches = hook.matches(treeChanges, transition);
-
-    if (matches) {
-      matchingHooks.push({ hook, matches });
-    }
-  });
-
-  return matchingHooks;
 }
 
 /**

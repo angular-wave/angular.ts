@@ -81,17 +81,18 @@ export class TransitionHook {
     hooks: TransitionHook[],
     waitFor?: Promise<unknown>,
   ): Promise<void> {
-    return TransitionHook._chain(hooks, waitFor);
+    return TransitionHook._chainFrom(hooks, 0, waitFor);
   }
 
   /** @internal */
-  static async _chain(
+  static async _chainFrom(
     hooks: TransitionHook[],
+    start: number,
     waitFor?: Promise<unknown>,
   ): Promise<void> {
     if (waitFor) await waitFor;
 
-    for (let i = 0; i < hooks.length; i++) {
+    for (let i = start; i < hooks.length; i++) {
       await hooks[i].invokeHook();
     }
   }
@@ -104,10 +105,9 @@ export class TransitionHook {
       const hookResult = hooks[idx].invokeHook();
 
       if (isPromise(hookResult)) {
-        const remainingHooks = hooks.slice(idx + 1);
-
         return TransitionHook._chainThenDone(
-          remainingHooks,
+          hooks,
+          idx + 1,
           Promise.resolve(hookResult),
           doneCallback,
         );
@@ -120,10 +120,11 @@ export class TransitionHook {
   /** @internal */
   static async _chainThenDone(
     hooks: TransitionHook[],
+    start: number,
     waitFor: Promise<unknown>,
     doneCallback: TransitionHookDoneCallback,
   ): Promise<unknown> {
-    await TransitionHook.chain(hooks, waitFor);
+    await TransitionHook._chainFrom(hooks, start, waitFor);
 
     return TransitionHook._runDoneCallback(doneCallback);
   }
@@ -185,9 +186,9 @@ export class TransitionHook {
   }
 
   static runAllHooks(hooks: TransitionHook[]): void {
-    hooks.forEach((hook) => {
-      hook.invokeHook();
-    });
+    for (let i = 0; i < hooks.length; i++) {
+      hooks[i].invokeHook();
+    }
   }
 
   /**

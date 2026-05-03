@@ -26,7 +26,7 @@ export class StateParams {
 
     const inherited: RawParams = {};
 
-    const inheritList: string[] = [];
+    const inheritList = new Set<string>();
 
     for (const parent of parents) {
       if (!parent || !parent.params) continue;
@@ -37,19 +37,16 @@ export class StateParams {
       if (!parentParamsKeys.length) continue;
 
       for (const key of parentParamsKeys) {
-        if (
-          parentParams[key].inherit === false ||
-          inheritList.indexOf(key) >= 0
-        ) {
+        if (parentParams[key].inherit === false || inheritList.has(key)) {
           continue;
         }
 
-        inheritList.push(key);
+        inheritList.add(key);
         inherited[key] = this[key];
       }
     }
 
-    return assign({}, inherited, newParams);
+    return assign(inherited, newParams);
   }
 }
 
