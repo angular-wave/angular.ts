@@ -1726,7 +1726,7 @@ describe("select", () => {
           browserTrigger(element, "change");
           await wait();
           const arrayVal = ["a"];
-          arrayVal._hashKey = "object:4";
+          arrayVal.$hashKey = "object:4";
           await wait();
           expect(scope.selected.length).toBe(6);
         });

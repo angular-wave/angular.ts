@@ -8,6 +8,18 @@ import { Angular } from "./angular.ts";
  */
 export const angular = new Angular();
 
+export { HttpRestBackend } from "./services/rest/rest.ts";
+export type {
+  CachedRestBackendOptions,
+  RestBackend,
+  RestCacheStore,
+  RestCacheStrategy,
+  RestOptions,
+  RestRequest,
+  RestResponse,
+  RestRevalidateEvent,
+} from "./services/rest/rest.ts";
+
 /**
  * Auto-bootstrap the document once the browser DOM is ready.
  */

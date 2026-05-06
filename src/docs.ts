@@ -106,11 +106,24 @@ export type {
 export type { LogService } from "./services/log/log.ts";
 export { LogProvider } from "./services/log/log.ts";
 export { PubSub, PubSubProvider } from "./services/pubsub/pubsub.ts";
-export { RestProvider, RestService } from "./services/rest/rest.ts";
+export {
+  CachedRestBackend,
+  HttpRestBackend,
+  RestProvider,
+  RestService,
+} from "./services/rest/rest.ts";
 export type {
+  CachedRestBackendOptions,
   EntityClass,
+  RestBackend,
+  RestCacheStore,
+  RestCacheStrategy,
   RestDefinition,
   RestFactory,
+  RestOptions,
+  RestRequest,
+  RestResponse,
+  RestRevalidateEvent,
 } from "./services/rest/rest.ts";
 export { SceDelegateProvider, SceProvider } from "./services/sce/sce.ts";
 export type { SceDelegateService, SceService } from "./services/sce/sce.ts";

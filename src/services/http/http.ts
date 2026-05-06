@@ -10,6 +10,7 @@ import {
   urlIsAllowedOriginFactory,
 } from "../../shared/url-utils/url-utils.ts";
 import {
+  deProxy,
   encodeUriQuery,
   entries,
   extend,
@@ -510,6 +511,55 @@ function isSuccess(status: number): boolean {
   return status >= Http._OK && status < Http._MultipleChoices;
 }
 
+function deProxyHttpPayload(
+  value: unknown,
+  seen = new WeakMap<object, unknown>(),
+): unknown {
+  const source = deProxy(value as any);
+
+  if (!isObject(source)) {
+    return source;
+  }
+
+  if (
+    isDate(source) ||
+    isFile(source) ||
+    isBlob(source) ||
+    isFormData(source)
+  ) {
+    return source;
+  }
+
+  if (seen.has(source)) {
+    return seen.get(source);
+  }
+
+  if (isArray(source)) {
+    const output: unknown[] = [];
+
+    seen.set(source, output);
+
+    for (let i = 0; i < source.length; i++) {
+      output[i] = deProxyHttpPayload(source[i], seen);
+    }
+
+    return output;
+  }
+
+  const output: Record<string, unknown> = {};
+
+  seen.set(source, output);
+
+  for (const key of keys(source)) {
+    output[key] = deProxyHttpPayload(
+      (source as Record<string, unknown>)[key],
+      seen,
+    );
+  }
+
+  return output;
+}
+
 /** Configures the default behavior of the `$http` service. */
 export function HttpProvider(this: any): void {
   /**
@@ -528,7 +578,7 @@ export function HttpProvider(this: any): void {
           !isFile(data) &&
           !isBlob(data) &&
           !isFormData(data)
-          ? toJson(data)
+          ? toJson(deProxyHttpPayload(data))
           : data;
       },
     ],

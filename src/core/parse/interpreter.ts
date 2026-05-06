@@ -918,7 +918,11 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = (deProxy(base) as Record<string, any>)[name];
+        value = (
+          create
+            ? (base as Record<string, any>)
+            : (deProxy(base) as Record<string, any>)
+        )[name];
       }
 
       if (context) {

@@ -18,6 +18,10 @@ export default defineConfig({
     port,
     strictPort: true,
     proxy: {
+      "/api": {
+        target: "http://localhost:3000/",
+        changeOrigin: true,
+      },
       "/mock": {
         target: "http://localhost:3000/",
         changeOrigin: true,

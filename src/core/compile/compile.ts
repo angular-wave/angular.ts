@@ -14,6 +14,7 @@ import {
   createNodelistFromHTML,
   deleteCacheData,
   emptyElement,
+  FUTURE_PARENT_ELEMENT_KEY,
   getBooleanAttrName,
   getCacheData,
   getInheritedData,
@@ -448,7 +449,15 @@ export interface OneWayBindingState {
   /** @internal */
   _firstChange: boolean;
   /** @internal */
+  _lastInputs?: any[];
+  /** @internal */
+  _literal: boolean;
+  /** @internal */
+  _parentGet: any;
+  /** @internal */
   _scopeName: string;
+  /** @internal */
+  _scopeTarget: Record<string, any>;
 }
 
 export interface CompileControllerLocals {
@@ -532,6 +541,8 @@ export interface AttrInterpolationBindingState {
   _scope: Scope;
   /** @internal */
   _attr: Attributes;
+  /** @internal */
+  _lastValue?: string;
 }
 
 export interface PropertyDirectiveBindingState {
@@ -1571,17 +1582,57 @@ export class CompileProvider {
           state: OneWayBindingState,
           val: any,
         ): void {
-          state._destAny.$target[state._scopeName] = val;
+          if (state._literal) {
+            const inputs = evaluateOneWayBindingInputs(state);
+
+            if (inputs && state._lastInputs) {
+              let sameInputs = inputs.length === state._lastInputs.length;
+
+              for (let i = 0, l = inputs.length; sameInputs && i < l; i++) {
+                sameInputs = simpleCompare(inputs[i], state._lastInputs[i]);
+              }
+
+              if (sameInputs) {
+                return;
+              }
+            }
+
+            state._lastInputs = inputs;
+          }
+
+          state._destAny.$target[state._scopeName] =
+            state._literal || !isObject(val)
+              ? val
+              : createScope(val, state._bindingChangeState._scope.$handler);
+
           recordDirectiveBindingChange(
             state._bindingChangeState,
             state._scopeName,
-            val,
+            state._destAny.$target[state._scopeName],
             state._firstChange,
           );
 
           if (state._firstChange) {
             state._firstChange = false;
           }
+        }
+
+        function evaluateOneWayBindingInputs(
+          state: OneWayBindingState,
+        ): any[] | undefined {
+          const inputs = state._parentGet?._inputs;
+
+          if (!isArray(inputs)) {
+            return undefined;
+          }
+
+          const values = new Array(inputs.length);
+
+          for (let i = 0, l = inputs.length; i < l; i++) {
+            values[i] = inputs[i](state._scopeTarget);
+          }
+
+          return values;
         }
 
         function invokePublicLink(
@@ -1645,6 +1696,14 @@ export class CompileProvider {
 
           if ($linkNode._element) {
             setScope($linkNode._element, scope);
+
+            if (_futureParentElement) {
+              setCacheData(
+                $linkNode._element,
+                FUTURE_PARENT_ELEMENT_KEY,
+                _futureParentElement,
+              );
+            }
           }
 
           if (cloneConnectFn) {
@@ -2446,10 +2505,20 @@ export class CompileProvider {
             return;
           }
 
+          const value = interpolateFn(bindingState._scope);
+
+          if (
+            bindingState._lastValue === value &&
+            "$index" in bindingState._scope.$target
+          ) {
+            return;
+          }
+
+          bindingState._lastValue = value;
           applyInterpolatedAttrValue(
             bindingState._linkState,
             bindingState._attr,
-            interpolateFn(bindingState._scope),
+            value,
           );
         }
 
@@ -3990,6 +4059,8 @@ export class CompileProvider {
 
             const optional = match[2] === "?";
 
+            const originalElement = $element;
+
             // If only parents then start at the parent element
             if (inheritType === "^^") {
               if ($element && $element.parentElement) {
@@ -4021,6 +4092,17 @@ export class CompileProvider {
                     ? getInheritedData($element, dataName)
                     : getCacheData($element, dataName)
                   : undefined;
+              }
+
+              if (!value && inheritType && originalElement) {
+                const futureParentElement = getInheritedData(
+                  originalElement,
+                  FUTURE_PARENT_ELEMENT_KEY,
+                ) as Node | undefined;
+
+                if (futureParentElement) {
+                  value = getInheritedData(futureParentElement, dataName);
+                }
               }
             }
 
@@ -4891,14 +4973,25 @@ export class CompileProvider {
 
                   parentGet = attrsAny[attrName] && $parse(attrsAny[attrName]);
 
-                  destAny.$target[scopeName] =
+                  const initialOneWayValue =
                     parentGet && parentGet(scopeTarget);
+
+                  destAny.$target[scopeName] =
+                    parentGet?._literal || !isObject(initialOneWayValue)
+                      ? initialOneWayValue
+                      : createScope(initialOneWayValue, scope.$handler);
                   const oneWayBindingState: OneWayBindingState = {
                     _bindingChangeState: bindingChangeState,
                     _destAny: destAny,
                     _firstChange: true,
+                    _literal: !!parentGet?._literal,
+                    _parentGet: parentGet,
                     _scopeName: scopeName,
+                    _scopeTarget: scopeTarget,
                   };
+
+                  oneWayBindingState._lastInputs =
+                    evaluateOneWayBindingInputs(oneWayBindingState);
 
                   initialChanges[scopeName] = {
                     currentValue: destAny.$target[scopeName],

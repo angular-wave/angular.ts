@@ -48,6 +48,8 @@ import {
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
 
+const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
+
 export const ngModelMinErr = minErr("ngModel");
 
 export interface ModelValidators {
@@ -252,6 +254,9 @@ export class NgModelController {
   /** @internal */
   _destroyed: boolean;
 
+  /** @internal */
+  _lastValidityParentVersions: Record<string, number | undefined>;
+
   /**
    * Creates a model controller bound to the element, scope, and ngModel expression.
    */
@@ -312,6 +317,7 @@ export class NgModelController {
     this._parse = $parse;
     this._exceptionHandler = $exceptionHandler;
     this._destroyed = false;
+    this._lastValidityParentVersions = {};
 
     this._hasNativeValidators = false;
     this._classCache = {};
@@ -409,6 +415,9 @@ export class NgModelController {
       );
     }
 
+    const previousCombinedState =
+      this._combinedValidityState(validationErrorKey);
+
     if (isUndefined(state)) {
       createAndSet(this, "$pending", validationErrorKey);
     } else {
@@ -441,20 +450,62 @@ export class NgModelController {
     // combined state in this.$error[validationError] (used for forms),
     // where setting/unsetting only increments/decrements the value,
     // and does not replace it.
-    let combinedState;
+    const combinedState = this._combinedValidityState(validationErrorKey);
 
-    if (this.$pending && this.$pending[validationErrorKey]) {
-      combinedState = undefined;
-    } else if (this.$error[validationErrorKey]) {
-      combinedState = false;
-    } else if (this._success[validationErrorKey]) {
-      combinedState = true;
-    } else {
-      combinedState = null;
+    const parentVersion = this._validityParentVersion();
+
+    const lastParentVersion =
+      this._lastValidityParentVersions[validationErrorKey];
+
+    if (
+      combinedState === previousCombinedState &&
+      parentVersion === lastParentVersion
+    ) {
+      return;
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
     this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+    this._lastValidityParentVersions[validationErrorKey] = parentVersion;
+  }
+
+  /** @internal Returns the aggregate validity state for one validation key. */
+  _combinedValidityState(
+    validationErrorKey: string,
+  ): boolean | undefined | null {
+    if (this.$pending && this.$pending[validationErrorKey]) {
+      return undefined;
+    }
+
+    if (this.$error[validationErrorKey]) {
+      return false;
+    }
+
+    if (this._success[validationErrorKey]) {
+      return true;
+    }
+
+    return null;
+  }
+
+  /** @internal Returns the current parent form chain version for validity propagation. */
+  _validityParentVersion(): number {
+    let form = deProxy(this._parentForm) as
+      | (ParentFormController & { _parentForm?: ParentFormController })
+      | undefined;
+
+    let version = 1;
+
+    while (form && form !== nullFormCtrl) {
+      version =
+        version * VALIDITY_PARENT_VERSION_MULTIPLIER +
+        (form._validityPropagationId ?? 0);
+      form = deProxy(form._parentForm) as
+        | (ParentFormController & { _parentForm?: ParentFormController })
+        | undefined;
+    }
+
+    return version;
   }
 
   /** @internal */
@@ -797,6 +848,15 @@ export class NgModelController {
         // If there was no change in validity, don't update the model
         // This prevents changing an invalid modelValue to undefined
         if (!allowInvalid && prevValid !== allValid) {
+          if (
+            allValid &&
+            that.$isEmpty(viewValue) &&
+            !that.$isEmpty(modelValue) &&
+            isUndefined(prevModelValue)
+          ) {
+            return;
+          }
+
           // Note: Don't check this.$valid here, as we could have
           // external validators (e.g. calculated on the server),
           // that just call $setValidity and need the model value
@@ -1484,7 +1544,17 @@ export function ngModelDirective(): ng.Directive {
             );
 
             const deregisterWatch = (scope.$watch(attr.ngModel, (val: any) => {
-              modelCtrl._setModelValue(deProxy(val));
+              const modelValue = deProxy(val);
+
+              if (
+                modelValue === modelCtrl.$modelValue ||
+                (Number.isNaN(modelValue) &&
+                  Number.isNaN(modelCtrl.$modelValue))
+              ) {
+                return;
+              }
+
+              modelCtrl._setModelValue(modelValue);
             }) ||
               (() => {
                 /* empty */

@@ -12,6 +12,7 @@ import {
   deProxy,
   extend,
   hasAnimate,
+  isArray,
   isBoolean,
   isObjectEmpty,
   isUndefined,
@@ -55,6 +56,8 @@ export interface NamedControl {
 
 export interface ParentFormController {
   $nonscope?: boolean;
+  /** @internal */
+  _validityPropagationId?: number;
   $addControl(control: NamedControl): void;
   $getControls(): ReadonlyArray<FormController | NgModelController>;
   /** @internal */
@@ -103,6 +106,8 @@ export const nullFormCtrl: ParentFormController = {
 
 export const PENDING_CLASS = "ng-pending";
 const SUBMITTED_CLASS = "ng-submitted";
+
+let nextValidityPropagationId = 0;
 
 /**
  * @property $dirty True if user has already interacted with the form.
@@ -196,6 +201,9 @@ export class FormController {
   /** @internal */
   _classCache: Record<string, any>;
 
+  /** @internal */
+  _validityPropagationId: number;
+
   $target: Record<string, any>;
 
   /**
@@ -238,6 +246,7 @@ export class FormController {
 
     this._classCache[VALID_CLASS] = isValid;
     this._classCache[INVALID_CLASS] = !isValid;
+    this._validityPropagationId = nextValidityPropagationId++;
 
     this.$target = {};
   }
@@ -287,6 +296,7 @@ export class FormController {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
     assertNotHasOwnProperty(control.$name, "input");
+    this._validityPropagationId = nextValidityPropagationId++;
     this._controls.push(control);
 
     if (control.$name) {
@@ -324,6 +334,8 @@ export class FormController {
   _renameControl(control: NamedControl, newName: string | number): void {
     const oldName = control.$name;
 
+    this._validityPropagationId = nextValidityPropagationId++;
+
     if ((this as Record<string, any>)[oldName] === control) {
       delete (this as Record<string, any>)[oldName];
     }
@@ -342,6 +354,8 @@ export class FormController {
    * may not mean that the form is still `$dirty`.
    */
   $removeControl(control: FormController | NgModelController): void {
+    this._validityPropagationId = nextValidityPropagationId++;
+
     if (
       control.$name &&
       (this as Record<string, any>)[control.$name] === control
@@ -469,13 +483,18 @@ export class FormController {
    */
   /** @internal */
   _set(object: Record<string, any>, property: string, controller: any): void {
+    object = deProxy(object);
     const list = object[property];
 
-    if (!list) {
-      object = deProxy(object);
+    if (!list || !isArray(list)) {
       object[property] = [controller];
     } else {
-      const index = list.indexOf(controller);
+      const rawList = deProxy(list);
+
+      const index = rawList.findIndex(
+        (item: any) =>
+          item === controller || deProxy(item) === deProxy(controller),
+      );
 
       if (index === -1) {
         list.push(controller);
@@ -488,18 +507,33 @@ export class FormController {
    */
   /** @internal */
   _unset(object: Record<string, any>, property: string, controller: any): void {
+    object = deProxy(object);
     const list = object[property];
 
     if (!list) {
       return;
     }
-    const index = arrayRemove(list, controller);
 
-    if (index === -1) {
-      arrayRemove(list, controller.$target as FormController);
+    if (!isArray(list)) {
+      if (list === controller || deProxy(list) === deProxy(controller)) {
+        delete object[property];
+      }
+
+      return;
     }
 
-    if (list.length === 0) {
+    const rawList = deProxy(list);
+
+    const index = rawList.findIndex(
+      (item: any) =>
+        item === controller || deProxy(item) === deProxy(controller),
+    );
+
+    if (index !== -1) {
+      rawList.splice(index, 1);
+    }
+
+    if (rawList.length === 0) {
       delete object[property];
     }
   }

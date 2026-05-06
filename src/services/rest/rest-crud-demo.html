@@ -1,0 +1,291 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS REST CRUD Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/src/services/rest/rest-demo.css" />
+    <script type="module">
+      import "/src/index.ts";
+      import {
+        CachedRestBackend,
+        HttpRestBackend,
+      } from "/src/services/rest/rest.ts";
+
+      const cacheOptions = [
+        { key: "network-first", label: "Network first" },
+        { key: "cache-first", label: "Cache first" },
+        { key: "stale-while-revalidate", label: "Stale while revalidate" },
+      ];
+
+      class DemoRestCacheStore {
+        constructor() {
+          this.cache = new Map();
+        }
+
+        async get(key) {
+          return this.cache.get(key);
+        }
+
+        async set(key, response) {
+          this.cache.set(key, response);
+        }
+
+        async delete(key) {
+          this.cache.delete(key);
+        }
+
+        async deletePrefix(prefix) {
+          for (const key of this.cache.keys()) {
+            if (key.startsWith(prefix)) {
+              this.cache.delete(key);
+            }
+          }
+        }
+      }
+
+      class CrudDemo {
+        constructor($rest, $http, $scope) {
+          this.$rest = $rest;
+          this.networkBackend = new HttpRestBackend($http);
+          this.cache = new DemoRestCacheStore();
+          this.scope = $scope;
+
+          $scope.taskList = [];
+          $scope.selected = null;
+          $scope.notice = "";
+          $scope.cacheOptions = cacheOptions;
+          $scope.cacheStrategy = "network-first";
+          $scope.form = {
+            title: "",
+            owner: "",
+            status: "Open",
+          };
+          $scope.refresh = this.refresh.bind(this);
+          $scope.setCacheStrategy = this.setCacheStrategy.bind(this);
+          $scope.select = this.select.bind(this);
+          $scope.clear = this.clear.bind(this);
+          $scope.save = this.save.bind(this);
+          $scope.remove = this.remove.bind(this);
+
+          this.configureTasks($scope.cacheStrategy);
+          this.refresh();
+        }
+
+        configureTasks(strategy) {
+          this.tasks = this.$rest("/api/tasks", undefined, {
+            backend: new CachedRestBackend({
+              network: this.networkBackend,
+              cache: this.cache,
+              strategy,
+              onRevalidate: () => {
+                this.scope.notice = "Cache refreshed from server";
+              },
+            }),
+          });
+        }
+
+        async setCacheStrategy(strategy) {
+          if (this.scope.cacheStrategy === strategy) {
+            return;
+          }
+
+          this.scope.cacheStrategy = strategy;
+          this.configureTasks(strategy);
+          await this.refresh(`Using ${this.cacheLabel(strategy)}`);
+        }
+
+        cacheLabel(strategy) {
+          const option = cacheOptions.find((item) => item.key === strategy);
+
+          return option ? option.label : strategy;
+        }
+
+        async refresh(message) {
+          this.scope.taskList = await this.tasks.list();
+          this.scope.notice =
+            message || `Loaded ${this.scope.taskList.length} tasks`;
+        }
+
+        async select(id) {
+          this.scope.selected = await this.tasks.get(id);
+          this.scope.form = {
+            title: this.scope.selected.title,
+            owner: this.scope.selected.owner,
+            status: this.scope.selected.status,
+          };
+          this.scope.notice = `Read task #${id}`;
+        }
+
+        clear() {
+          this.scope.selected = null;
+          this.scope.form = {
+            title: "",
+            owner: "",
+            status: "Open",
+          };
+          this.scope.notice = "Ready to create a task";
+        }
+
+        async save() {
+          const payload = {
+            title: this.scope.form.title.trim(),
+            owner: this.scope.form.owner.trim(),
+            status: this.scope.form.status,
+          };
+
+          if (!payload.title || !payload.owner) {
+            this.scope.notice = "Title and owner are required";
+
+            return;
+          }
+
+          if (this.scope.selected) {
+            this.scope.selected = await this.tasks.update(
+              this.scope.selected.id,
+              payload,
+            );
+            const index = this.scope.taskList.findIndex(
+              (item) => item.id === this.scope.selected.id,
+            );
+
+            if (index >= 0) {
+              this.scope.taskList[index] = this.scope.selected;
+            }
+
+            this.scope.notice = `Updated task #${this.scope.selected.id}`;
+          } else {
+            this.scope.selected = await this.tasks.create(payload);
+            this.scope.taskList.push(this.scope.selected);
+            this.scope.notice = `Created task #${this.scope.selected.id}`;
+          }
+        }
+
+        async remove(item) {
+          const removed = await this.tasks.delete(item.id);
+
+          if (removed && this.scope.selected?.id === item.id) {
+            this.clear();
+          }
+
+          if (removed) {
+            const index = this.scope.taskList.findIndex(
+              (entry) => entry.id === item.id,
+            );
+
+            if (index >= 0) {
+              this.scope.taskList.splice(index, 1);
+            }
+          }
+
+          this.scope.notice = removed
+            ? `Deleted task #${item.id}`
+            : "Delete failed";
+        }
+      }
+
+      CrudDemo.$inject = ["$rest", "$http", "$scope"];
+
+      window.angular
+        .module("restCrudDemo", [])
+        .controller("CrudDemo", CrudDemo);
+    </script>
+  </head>
+  <body ng-app="restCrudDemo">
+    <main ng-controller="CrudDemo">
+      <section class="workspace">
+        <header class="toolbar">
+          <h1>REST CRUD</h1>
+          <div class="toolbar-tools">
+            <div
+              class="segmented-control"
+              role="group"
+              aria-label="Cache policy"
+            >
+              <button
+                type="button"
+                ng-repeat="option in cacheOptions"
+                ng-click="setCacheStrategy(option.key)"
+                ng-disabled="cacheStrategy === option.key"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+            <div class="notice" role="status">{{ notice }}</div>
+          </div>
+        </header>
+
+        <section class="panel" aria-labelledby="tasks-heading">
+          <div class="panel-header">
+            <h2 id="tasks-heading">Tasks</h2>
+            <button type="button" ng-click="refresh()">Refresh</button>
+          </div>
+
+          <div class="item-list" role="list">
+            <article
+              class="item-row"
+              role="listitem"
+              ng-repeat="item in taskList"
+              data-index="id"
+            >
+              <div>
+                <div class="title-cell">{{ item.title }}</div>
+                <div class="item-meta">
+                  <span>{{ item.owner }}</span>
+                  <span
+                    class="status"
+                    ng-class="{ 'is-done': item.status === 'Done' }"
+                  >
+                    {{ item.status }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button type="button" ng-click="select(item.id)">Read</button>
+                <button type="button" class="danger" ng-click="remove(item)">
+                  Delete
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="editor-heading">
+          <div class="panel-header">
+            <h2 id="editor-heading">
+              {{ selected ? 'Edit task #' + selected.id : 'New task' }}
+            </h2>
+          </div>
+
+          <div class="form-grid">
+            <label for="task-title">
+              Title
+              <input id="task-title" ng-model="form.title" />
+            </label>
+
+            <label for="task-owner">
+              Owner
+              <input id="task-owner" ng-model="form.owner" />
+            </label>
+
+            <label for="task-status">
+              Status
+              <select id="task-status" ng-model="form.status">
+                <option value="Open">Open</option>
+                <option value="Done">Done</option>
+              </select>
+            </label>
+
+            <div class="form-actions">
+              <button type="button" class="primary" ng-click="save()">
+                Save
+              </button>
+              <button type="button" ng-click="clear()">New</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
