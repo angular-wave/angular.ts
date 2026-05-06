@@ -15,6 +15,7 @@ import {
   directiveNormalize,
   entries,
   errorHandlingConfig,
+  getHashKey,
   hashKey,
   hasAnimate,
   hasCustomToString,
@@ -104,23 +105,37 @@ describe("utility functions", () => {
   });
 
   describe("hashKey()", () => {
-    it("should use an existing `_hashKey`", () => {
-      const obj = { _hashKey: "foo" };
+    it("should use an existing `$hashKey`", () => {
+      const obj = { $hashKey: "foo" };
       expect(hashKey(obj)).toBe("foo");
     });
 
-    it("should support a function as `_hashKey` (and call it)", () => {
-      const obj = { _hashKey: () => "foo" };
+    it("should support a function as `$hashKey` (and call it)", () => {
+      const obj = { $hashKey: () => "foo" };
       expect(hashKey(obj)).toBe("foo");
     });
 
-    it("should create a new `_hashKey` if none exists (and return it)", () => {
+    it("should create a generated hash key if none exists without mutating the object", () => {
       const obj = {};
-      expect(hashKey(obj)).toBe(obj._hashKey);
-      expect(obj._hashKey).toBeDefined();
+      const key = hashKey(obj);
+
+      expect(key).toMatch(/^object:\S+$/);
+      expect(getHashKey(obj)).toBe(key);
+      expect(obj.$hashKey).toBeUndefined();
     });
 
-    it("should create appropriate `_hashKey`s for primitive values", () => {
+    it("should store generated hash keys against deproxied targets", () => {
+      const target = {};
+      const proxy = { [isProxySymbol]: true, $target: target };
+      const key = hashKey(proxy);
+
+      expect(hashKey(target)).toBe(key);
+      expect(getHashKey(proxy)).toBe(key);
+      expect(proxy.$hashKey).toBeUndefined();
+      expect(target.$hashKey).toBeUndefined();
+    });
+
+    it("should create appropriate `$hashKey`s for primitive values", () => {
       expect(hashKey(undefined)).not.toBe(hashKey(undefined));
       expect(hashKey(null)).toBe(hashKey(null));
       expect(hashKey(null)).not.toBe(hashKey(undefined));
@@ -134,7 +149,7 @@ describe("utility functions", () => {
       expect(hashKey("foo")).not.toBe(hashKey("bar"));
     });
 
-    it("should create appropriate `_hashKey`s for non-primitive values", () => {
+    it("should create appropriate `$hashKey`s for non-primitive values", () => {
       const fn = () => {};
       const arr = [];
       const obj = {};
@@ -222,25 +237,27 @@ describe("utility functions", () => {
       expect(hashKey(fn1)).not.toEqual(hashKey(fn2));
     });
 
-    it("stores the hash key in the _hashKey attribute", () => {
+    it("does not store generated hash keys in the $hashKey attribute", () => {
       const obj = { a: 42 };
       const hash = hashKey(obj);
-      expect(obj._hashKey).toEqual(hash.match(/^object:(\S+)$/)[0]);
+
+      expect(hash).toMatch(/^object:\S+$/);
+      expect(obj.$hashKey).toBeUndefined();
     });
 
-    it("uses preassigned _hashKey", () => {
-      expect(hashKey({ _hashKey: "42" })).toEqual("42");
+    it("uses preassigned $hashKey", () => {
+      expect(hashKey({ $hashKey: "42" })).toEqual("42");
     });
 
-    it("supports a function _hashKey", function () {
-      expect(hashKey({ _hashKey: () => "42" })).toEqual("42");
+    it("supports a function $hashKey", function () {
+      expect(hashKey({ $hashKey: () => "42" })).toEqual("42");
     });
 
-    it("calls the function _hashKey as a method with the correct this", () => {
+    it("calls the function $hashKey as a method with the correct this", () => {
       expect(
         hashKey({
           myKey: "42",
-          _hashKey() {
+          $hashKey() {
             return this.myKey;
           },
         }),
@@ -322,12 +339,12 @@ describe("utility functions", () => {
       expect(dst.hasOwnProperty("__proto__")).toBe(false);
     });
 
-    it("should preserve _hashKey", () => {
-      const dst = { _hashKey: "abc" };
+    it("should preserve $hashKey", () => {
+      const dst = { $hashKey: "abc" };
       const src = { a: 1 };
       const result = baseExtend(dst, [src], false);
 
-      expect(result._hashKey).toBe("abc");
+      expect(result.$hashKey).toBe("abc");
     });
   });
 
@@ -446,14 +463,14 @@ describe("utility functions", () => {
   });
 
   describe("extend", () => {
-    it("should not copy the private _hashKey", () => {
+    it("should not copy the private $hashKey", () => {
       let src;
       let dst;
-      src = {};
+      src = { $hashKey: "src" };
       dst = {};
-      hashKey(src);
       dst = extend(dst, src);
-      expect(hashKey(dst)).not.toEqual(hashKey(src));
+      expect(dst.$hashKey).toBeUndefined();
+      expect(hashKey(dst)).not.toEqual("src");
     });
 
     it("should copy the properties of the source object onto the destination object", () => {
@@ -475,7 +492,7 @@ describe("utility functions", () => {
       expect(isDefined(destination.radius)).toBe(true);
     });
 
-    it("should retain the previous _hashKey", () => {
+    it("should retain the previous $hashKey", () => {
       let src;
       let dst;
       let h;
@@ -1186,14 +1203,16 @@ describe("utility functions", () => {
       expect(trim(obj)).toBe(obj);
     });
 
-    it("should set and clear hash keys", () => {
+    it("should set and clear internal hash keys", () => {
       const obj = {};
 
       setHashKey(obj, "abc");
-      expect(obj._hashKey).toBe("abc");
+      expect(getHashKey(obj)).toBe("abc");
+      expect(obj.$hashKey).toBeUndefined();
 
       setHashKey(obj, null);
-      expect(obj._hashKey).toBeUndefined();
+      expect(getHashKey(obj)).toBeUndefined();
+      expect(obj.$hashKey).toBeUndefined();
     });
 
     it("should create inherited objects", () => {

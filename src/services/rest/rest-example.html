@@ -2,19 +2,25 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AngularTS</title>
+    <title>AngularTS REST Demo</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link rel="stylesheet" href="/src/services/rest/rest-demo.css" />
     <script type="module" src="/src/index.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         class Demo {
-          constructor(user) {
-            this.users = [];
+          constructor(user, $scope) {
             this.user = user;
+            this.scope = $scope;
+
+            $scope.users = [];
+            $scope.notice = "Ready";
+            $scope.load = this.load.bind(this);
           }
 
-          async test() {
-            this.users = await this.user.list();
+          async load() {
+            this.scope.users = await this.user.list();
+            this.scope.notice = `Loaded ${this.scope.users.length} users`;
           }
         }
         class User {
@@ -24,6 +30,8 @@
           }
         }
 
+        User.$nonscope = true;
+
         window.angular
           .module("example", [])
           .rest("user", "/mock/users/", User)
@@ -32,11 +40,37 @@
     </script>
   </head>
   <body ng-app="example">
-    <div ng-controller="Demo as $ctrl">
-      <ul>
-        <li ng-repeat="u in $ctrl.users">{{ u.name }}</li>
-      </ul>
-      <button ng-click="$ctrl.test()">Test</button>
-    </div>
+    <main ng-controller="Demo">
+      <section class="workspace is-single">
+        <header class="toolbar">
+          <h1>REST Demo</h1>
+          <div class="notice" role="status">{{ notice }}</div>
+        </header>
+
+        <section class="panel" aria-labelledby="users-heading">
+          <div class="panel-header">
+            <h2 id="users-heading">Users</h2>
+            <button type="button" class="primary" ng-click="load()">
+              Load
+            </button>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="u in users">
+                <td>{{ u.id }}</td>
+                <td class="title-cell">{{ u.name }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

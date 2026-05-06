@@ -657,7 +657,7 @@ describe("ngRepeat", () => {
         scope,
       );
       scope.items = ["a", "b", "c"];
-      scope.items._hashKey = "xxx";
+      scope.items.$hashKey = "xxx";
       scope.items.$root = "yyy";
       await wait();
       expect(element.textContent).toEqual("a|b|c|");
@@ -792,6 +792,129 @@ describe("ngRepeat", () => {
       await wait();
 
       expect(element.textContent).toBe("New Task false|Second Task true|");
+    });
+
+    it("uses object id as the default repeat key for fresh object instances", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { id: 1, task: "First Task" },
+        { id: 2, task: "Second Task" },
+      ];
+
+      await wait();
+      expect(element.textContent).toBe("First Task|Second Task|");
+
+      scope.tasks = [
+        { id: 1, task: "First Task Updated" },
+        { id: 3, task: "Third Task" },
+      ];
+      await wait();
+
+      expect(element.textContent).toBe("First Task Updated|Third Task|");
+      expect(element.querySelectorAll("li").length).toBe(2);
+    });
+
+    it("does not write generated repeat hash keys onto item objects", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}}|</li></ul>',
+      )(scope);
+      const first = { task: "First Task" };
+      const second = { task: "Second Task" };
+
+      scope.tasks = [first, second];
+      await wait();
+
+      expect(element.textContent).toBe("First Task|Second Task|");
+      expect(first.$hashKey).toBeUndefined();
+      expect(second.$hashKey).toBeUndefined();
+
+      scope.tasks = [second, first];
+      await wait();
+
+      expect(element.textContent).toBe("Second Task|First Task|");
+      expect(first.$hashKey).toBeUndefined();
+      expect(second.$hashKey).toBeUndefined();
+    });
+
+    it("does not update a keyed row value when the object instance is unchanged", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}}|</li></ul>',
+      )(scope);
+      const first = { id: 1, task: "First Task" };
+
+      scope.tasks = [first];
+      await wait();
+
+      const row = element.querySelector("li");
+      row.setAttribute("mark", "stable");
+
+      scope.tasks = [first];
+      await wait();
+
+      expect(element.querySelector("li")).toBe(row);
+      expect(element.querySelector("li").getAttribute("mark")).toBe("stable");
+      expect(element.textContent).toBe("First Task|");
+    });
+
+    it("passes rows that can be found in the repeated array by identity", async () => {
+      element = $compile(
+        "<table><tbody>" +
+          '<tr ng-repeat="row in rows">' +
+          "<td>{{row.id}}</td>" +
+          '<td><button type="button" ng-click="remove(row)">x</button></td>' +
+          "</tr>" +
+          "</tbody></table>",
+      )(scope);
+
+      scope.rows = Array.from({ length: 10 }, (_value, index) => ({
+        id: index + 1,
+      }));
+      scope.remove = (row) => {
+        const index = scope.rows.indexOf(row);
+
+        scope.removedIndex = index;
+
+        if (index !== -1) {
+          scope.rows.splice(index, 1);
+        }
+      };
+
+      await wait();
+
+      element.querySelectorAll("button")[8].click();
+      await wait();
+
+      const ids = Array.from(
+        element.querySelectorAll("tr td:first-child"),
+        (cell) => cell.textContent,
+      );
+
+      expect(scope.removedIndex).toBe(8);
+      expect(ids).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "10"]);
+    });
+
+    it("uses data-index as the repeat key property for fresh object instances", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks" data-index="key">{{todo.task}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { key: "first", task: "First Task" },
+        { key: "second", task: "Second Task" },
+      ];
+
+      await wait();
+      expect(element.textContent).toBe("First Task|Second Task|");
+
+      scope.tasks = [
+        { key: "second", task: "Second Task Updated" },
+        { key: "third", task: "Third Task" },
+      ];
+      await wait();
+
+      expect(element.textContent).toBe("Second Task Updated|Third Task|");
+      expect(element.querySelectorAll("li").length).toBe(2);
     });
 
     it("preserves repeated row DOM nodes when proxied array items are swapped by index", async () => {

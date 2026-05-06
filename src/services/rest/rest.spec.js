@@ -1,5 +1,11 @@
 import { _http } from "../../injection-tokens.ts";
-import { RestProvider, RestService } from "./rest.ts";
+import {
+  CachedRestBackend,
+  createRestCacheKey,
+  HttpRestBackend,
+  RestProvider,
+  RestService,
+} from "./rest.ts";
 import { expandExpression, expandUriTemplate, pctEncode } from "./rfc.ts";
 
 function httpResponse(data, overrides = {}) {
@@ -22,6 +28,41 @@ class UserEntity {
   }
 }
 
+function restService($http, baseUrl, entityClass, options) {
+  return new RestService(
+    new HttpRestBackend($http),
+    baseUrl,
+    entityClass,
+    options,
+  );
+}
+
+class TestRestCacheStore {
+  constructor() {
+    this.cache = new Map();
+  }
+
+  async get(key) {
+    return this.cache.get(key);
+  }
+
+  async set(key, response) {
+    this.cache.set(key, response);
+  }
+
+  async delete(key) {
+    this.cache.delete(key);
+  }
+
+  async deletePrefix(prefix) {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
 describe("$rest", () => {
   describe("RestService", () => {
     let $http;
@@ -31,14 +72,14 @@ describe("$rest", () => {
     });
 
     it("requires a non-empty baseUrl", () => {
-      expect(() => new RestService($http, "")).toThrowError(
+      expect(() => restService($http, "")).toThrowError(
         Error,
         "baseUrl required",
       );
     });
 
     it("builds URLs from RFC templates", () => {
-      const service = new RestService($http, "/users");
+      const service = restService($http, "/users");
 
       expect(service.buildUrl("/users/{id}{?q}", { id: 10, q: "a b" })).toBe(
         "/users/10?q=a%20b",
@@ -48,7 +89,7 @@ describe("$rest", () => {
 
     it("lists entities, maps them, and forwards request options", async () => {
       $http.and.resolveTo(httpResponse([{ id: 1, name: "Ada" }]));
-      const service = new RestService($http, "/users{?page}", UserEntity, {
+      const service = restService($http, "/users{?page}", UserEntity, {
         headers: { Accept: "application/json" },
         timeout: 25,
       });
@@ -72,16 +113,16 @@ describe("$rest", () => {
 
     it("returns an empty list when the backend payload is not an array", async () => {
       $http.and.resolveTo(httpResponse({ items: [] }));
-      const service = new RestService($http, "/users");
+      const service = restService($http, "/users");
 
       await expectAsync(service.list()).toBeResolvedTo([]);
     });
 
-    it("reads entities and preserves falsy non-null payloads", async () => {
+    it("gets entities and preserves falsy non-null payloads", async () => {
       $http.and.resolveTo(httpResponse(0));
-      const service = new RestService($http, "/users");
+      const service = restService($http, "/users");
 
-      await expectAsync(service.read(7)).toBeResolvedTo(0);
+      await expectAsync(service.get(7)).toBeResolvedTo(0);
       expect($http).toHaveBeenCalledWith({
         method: "GET",
         url: "/users/7",
@@ -90,25 +131,25 @@ describe("$rest", () => {
       });
     });
 
-    it("maps read results to entity instances and returns null for nullish bodies", async () => {
+    it("maps get results to entity instances and returns null for nullish bodies", async () => {
       $http.and.returnValues(
         Promise.resolve(httpResponse({ id: 7, name: "Grace" })),
         Promise.resolve(httpResponse(undefined)),
       );
-      const service = new RestService($http, "/users", UserEntity);
+      const service = restService($http, "/users", UserEntity);
 
-      const entity = await service.read(7);
-      const missing = await service.read(8);
+      const entity = await service.get(7);
+      const missing = await service.get(8);
 
       expect(entity instanceof UserEntity).toBeTrue();
       expect(entity.name).toBe("Grace");
       expect(missing).toBeNull();
     });
 
-    it("validates read, create, update, and delete arguments", async () => {
-      const service = new RestService($http, "/users");
+    it("validates get, create, update, and delete arguments", async () => {
+      const service = restService($http, "/users");
 
-      await expectAsync(service.read(null)).toBeRejectedWithError(
+      await expectAsync(service.get(null)).toBeRejectedWithError(
         Error,
         "badarg:id null",
       );
@@ -128,7 +169,7 @@ describe("$rest", () => {
 
     it("creates entities and returns mapped data", async () => {
       $http.and.resolveTo(httpResponse({ id: 3, name: "Lin" }));
-      const service = new RestService($http, "/users", UserEntity);
+      const service = restService($http, "/users", UserEntity);
 
       const created = await service.create({ name: "Lin" });
 
@@ -145,7 +186,7 @@ describe("$rest", () => {
       const raw = { id: 9, name: "Raw" };
 
       $http.and.resolveTo(httpResponse(raw));
-      const service = new RestService($http, "/users");
+      const service = restService($http, "/users");
 
       await expectAsync(service.create({ name: "Raw" })).toBeResolvedTo(raw);
     });
@@ -155,7 +196,7 @@ describe("$rest", () => {
         Promise.resolve(httpResponse({ id: 3, name: "Updated" })),
         Promise.reject(new Error("write failed")),
       );
-      const service = new RestService($http, "/users", UserEntity);
+      const service = restService($http, "/users", UserEntity);
 
       const updated = await service.update(3, { name: "Updated" });
       const failed = await service.update(4, { name: "Nope" });
@@ -167,7 +208,7 @@ describe("$rest", () => {
 
     it("returns null when update succeeds with a nullish body", async () => {
       $http.and.resolveTo(httpResponse(undefined));
-      const service = new RestService($http, "/users", UserEntity);
+      const service = restService($http, "/users", UserEntity);
 
       await expectAsync(service.update(3, { name: "Updated" })).toBeResolvedTo(
         null,
@@ -181,10 +222,508 @@ describe("$rest", () => {
         ),
         Promise.reject(new Error("delete failed")),
       );
-      const service = new RestService($http, "/users");
+      const service = restService($http, "/users");
 
       await expectAsync(service.delete(1)).toBeResolvedTo(true);
       await expectAsync(service.delete(2)).toBeResolvedTo(false);
+    });
+
+    it("sends normalized REST request metadata to custom backends", async () => {
+      const backend = {
+        request: jasmine
+          .createSpy("backend")
+          .and.returnValues(
+            Promise.resolve({ data: [{ id: 1, name: "Ada" }] }),
+            Promise.resolve({ data: { id: 2, name: "Grace" } }),
+            Promise.resolve({ data: { id: 3, name: "Lin" } }),
+            Promise.resolve({ data: { id: 4, name: "Updated" } }),
+            Promise.resolve({ data: null }),
+          ),
+      };
+      const options = { headers: { Accept: "application/json" } };
+      const service = new RestService(backend, "/users", UserEntity, options);
+
+      await expectAsync(service.list({ page: 2 })).toBeResolvedTo([
+        jasmine.objectContaining({ id: 1, mapped: true }),
+      ]);
+      await expectAsync(service.get(2, { include: "roles" })).toBeResolvedTo(
+        jasmine.objectContaining({ id: 2, mapped: true }),
+      );
+      await expectAsync(service.create({ name: "Lin" })).toBeResolvedTo(
+        jasmine.objectContaining({ id: 3, mapped: true }),
+      );
+      await expectAsync(service.update(4, { name: "Updated" })).toBeResolvedTo(
+        jasmine.objectContaining({ id: 4, mapped: true }),
+      );
+      await expectAsync(service.delete(5)).toBeResolvedTo(true);
+
+      expect(backend.request.calls.allArgs()).toEqual([
+        [
+          {
+            method: "GET",
+            url: "/users",
+            data: null,
+            params: { page: 2 },
+            collectionUrl: "/users",
+            id: undefined,
+            options,
+          },
+        ],
+        [
+          {
+            method: "GET",
+            url: "/users/2",
+            data: null,
+            params: { include: "roles" },
+            collectionUrl: "/users",
+            id: 2,
+            options,
+          },
+        ],
+        [
+          {
+            method: "POST",
+            url: "/users",
+            data: { name: "Lin" },
+            params: {},
+            collectionUrl: "/users",
+            id: undefined,
+            options,
+          },
+        ],
+        [
+          {
+            method: "PUT",
+            url: "/users/4",
+            data: { name: "Updated" },
+            params: {},
+            collectionUrl: "/users",
+            id: 4,
+            options,
+          },
+        ],
+        [
+          {
+            method: "DELETE",
+            url: "/users/5",
+            data: null,
+            params: {},
+            collectionUrl: "/users",
+            id: 5,
+            options,
+          },
+        ],
+      ]);
+    });
+  });
+
+  describe("HttpRestBackend", () => {
+    it("forwards REST requests through $http", async () => {
+      const $http = jasmine
+        .createSpy("$http")
+        .and.resolveTo(httpResponse({ id: 1 }));
+      const backend = new HttpRestBackend($http, { timeout: 25 });
+
+      await backend.request({
+        method: "GET",
+        url: "/users/1",
+        params: { include: "roles" },
+        options: { headers: { Accept: "application/json" } },
+      });
+
+      expect($http).toHaveBeenCalledWith({
+        method: "GET",
+        url: "/users/1",
+        data: null,
+        params: { include: "roles" },
+        timeout: 25,
+        headers: { Accept: "application/json" },
+      });
+    });
+
+    it("lets per-request options override backend defaults", async () => {
+      const $http = jasmine
+        .createSpy("$http")
+        .and.resolveTo(httpResponse(null));
+      const backend = new HttpRestBackend($http, {
+        headers: { Accept: "text/plain" },
+        timeout: 25,
+      });
+
+      await backend.request({
+        method: "POST",
+        url: "/users",
+        data: { name: "Ada" },
+        options: {
+          headers: { Accept: "application/json" },
+          timeout: 50,
+        },
+      });
+
+      expect($http).toHaveBeenCalledWith({
+        method: "POST",
+        url: "/users",
+        data: { name: "Ada" },
+        params: {},
+        headers: { Accept: "application/json" },
+        timeout: 50,
+      });
+    });
+  });
+
+  describe("RestCacheStore fixtures", () => {
+    it("gets, deletes, and deletes by prefix", async () => {
+      const cache = new TestRestCacheStore();
+
+      await cache.set("GET /users\n{}", httpResponse([{ id: 1 }]));
+      await cache.set("GET /users/1\n{}", httpResponse({ id: 1 }));
+      await cache.set("GET /posts\n{}", httpResponse([{ id: 2 }]));
+
+      await expectAsync(cache.get("GET /users\n{}")).toBeResolvedTo(
+        jasmine.objectContaining({ data: [{ id: 1 }] }),
+      );
+
+      await cache.delete("GET /users/1\n{}");
+      await expectAsync(cache.get("GET /users/1\n{}")).toBeResolvedTo(
+        undefined,
+      );
+
+      await cache.deletePrefix("GET /users");
+      await expectAsync(cache.get("GET /users\n{}")).toBeResolvedTo(undefined);
+      await expectAsync(cache.get("GET /posts\n{}")).toBeResolvedTo(
+        jasmine.objectContaining({ data: [{ id: 2 }] }),
+      );
+    });
+  });
+
+  describe("CachedRestBackend", () => {
+    function request(overrides = {}) {
+      return {
+        method: "GET",
+        url: "/users/7",
+        collectionUrl: "/users",
+        params: {},
+        ...overrides,
+      };
+    }
+
+    it("uses deterministic cache keys with sorted params", () => {
+      expect(
+        createRestCacheKey(
+          request({
+            params: {
+              b: 2,
+              a: { z: true, y: [undefined, null, "x"] },
+            },
+          }),
+        ),
+      ).toEqual(
+        createRestCacheKey(
+          request({
+            params: {
+              a: { y: [undefined, null, "x"], z: true },
+              b: 2,
+            },
+          }),
+        ),
+      );
+    });
+
+    it("fetches and caches cache-first misses", async () => {
+      const cache = new TestRestCacheStore();
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7 })),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "cache-first",
+      });
+      const restRequest = request();
+      const key = createRestCacheKey(restRequest);
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "network",
+        }),
+      );
+      expect(network.request).toHaveBeenCalledOnceWith(restRequest);
+      await expectAsync(cache.get(key)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "network",
+        }),
+      );
+    });
+
+    it("serves cache-first reads without hitting the network", async () => {
+      const cache = new TestRestCacheStore();
+      const network = { request: jasmine.createSpy("network") };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "cache-first",
+      });
+      const restRequest = request();
+
+      await cache.set(createRestCacheKey(restRequest), httpResponse({ id: 7 }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "cache",
+        }),
+      );
+      expect(network.request).not.toHaveBeenCalled();
+    });
+
+    it("stores successful network-first reads", async () => {
+      const cache = new TestRestCacheStore();
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7 })),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "network-first",
+      });
+      const restRequest = request();
+      const key = createRestCacheKey(restRequest);
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "network",
+        }),
+      );
+      await expectAsync(cache.get(key)).toBeResolvedTo(
+        jasmine.objectContaining({ data: { id: 7 }, source: "network" }),
+      );
+    });
+
+    it("rejects network-first reads when network and cache both miss", async () => {
+      const cache = new TestRestCacheStore();
+      const error = new Error("offline");
+      const network = {
+        request: jasmine.createSpy("network").and.rejectWith(error),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "network-first",
+      });
+
+      await expectAsync(backend.request(request())).toBeRejectedWith(error);
+    });
+
+    it("falls back to stale cache for network-first reads", async () => {
+      const cache = new TestRestCacheStore();
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.rejectWith(new Error("offline")),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "network-first",
+      });
+      const restRequest = request();
+
+      await cache.set(createRestCacheKey(restRequest), httpResponse({ id: 7 }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "cache",
+          stale: true,
+        }),
+      );
+    });
+
+    it("fetches and caches stale-while-revalidate misses", async () => {
+      const cache = new TestRestCacheStore();
+      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7 })),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "stale-while-revalidate",
+        onRevalidate,
+      });
+      const restRequest = request();
+      const key = createRestCacheKey(restRequest);
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "network",
+        }),
+      );
+      expect(onRevalidate).not.toHaveBeenCalled();
+      await expectAsync(cache.get(key)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "network",
+        }),
+      );
+    });
+
+    it("returns stale-while-revalidate cache and refreshes in the background", async () => {
+      const cache = new TestRestCacheStore();
+      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7, name: "Fresh" })),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "stale-while-revalidate",
+        onRevalidate,
+      });
+      const restRequest = request();
+      const key = createRestCacheKey(restRequest);
+
+      await cache.set(key, httpResponse({ id: 7, name: "Cached" }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7, name: "Cached" },
+          source: "cache",
+          stale: true,
+        }),
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(onRevalidate).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          key,
+          request: restRequest,
+          response: jasmine.objectContaining({
+            data: { id: 7, name: "Fresh" },
+            source: "network",
+          }),
+        }),
+      );
+      await expectAsync(cache.get(key)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7, name: "Fresh" },
+          source: "network",
+        }),
+      );
+    });
+
+    it("swallows stale-while-revalidate background refresh failures", async () => {
+      const cache = new TestRestCacheStore();
+      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.rejectWith(new Error("offline")),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "stale-while-revalidate",
+        onRevalidate,
+      });
+      const restRequest = request();
+      const key = createRestCacheKey(restRequest);
+
+      await cache.set(key, httpResponse({ id: 7, name: "Cached" }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7, name: "Cached" },
+          source: "cache",
+          stale: true,
+        }),
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(onRevalidate).not.toHaveBeenCalled();
+      await expectAsync(cache.get(key)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7, name: "Cached" },
+        }),
+      );
+    });
+
+    it("invalidates collection and entity cache entries after writes", async () => {
+      const cache = new TestRestCacheStore();
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7 })),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "cache-first",
+      });
+      const listRequest = request({ url: "/users" });
+      const entityRequest = request();
+      const listKey = createRestCacheKey(listRequest);
+      const entityKey = createRestCacheKey(entityRequest);
+
+      await cache.set(listKey, httpResponse([{ id: 7 }]));
+      await cache.set(entityKey, httpResponse({ id: 7 }));
+
+      await backend.request({
+        method: "PUT",
+        url: "/users/7",
+        collectionUrl: "/users",
+        data: { name: "Updated" },
+        params: {},
+      });
+
+      await expectAsync(cache.get(listKey)).toBeResolvedTo(undefined);
+      await expectAsync(cache.get(entityKey)).toBeResolvedTo(undefined);
+    });
+
+    it("does not invalidate cached reads when writes fail", async () => {
+      const cache = new TestRestCacheStore();
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.rejectWith(new Error("write failed")),
+      };
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "cache-first",
+      });
+      const entityRequest = request();
+      const entityKey = createRestCacheKey(entityRequest);
+
+      await cache.set(entityKey, httpResponse({ id: 7 }));
+
+      await expectAsync(
+        backend.request({
+          method: "DELETE",
+          url: "/users/7",
+          collectionUrl: "/users",
+          params: {},
+        }),
+      ).toBeRejectedWithError("write failed");
+      await expectAsync(cache.get(entityKey)).toBeResolvedTo(
+        jasmine.objectContaining({ data: { id: 7 } }),
+      );
     });
   });
 
@@ -215,7 +754,31 @@ describe("$rest", () => {
       const factory = provider.$get[1]($http);
       const service = factory("/posts");
 
-      await expectAsync(service.read(5)).toBeResolvedTo(raw);
+      await expectAsync(service.get(5)).toBeResolvedTo(raw);
+    });
+
+    it("uses an options backend instead of the default HTTP backend", async () => {
+      const provider = new RestProvider();
+      const $http = jasmine.createSpy("$http");
+      const backend = {
+        request: jasmine.createSpy("backend").and.resolveTo(httpResponse([])),
+      };
+
+      const factory = provider.$get[1]($http);
+      const service = factory("/admins", UserEntity, {
+        backend,
+        timeout: 10,
+      });
+
+      await expectAsync(service.list()).toBeResolvedTo([]);
+      expect(backend.request).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          method: "GET",
+          url: "/admins",
+          options: { timeout: 10 },
+        }),
+      );
+      expect($http).not.toHaveBeenCalled();
     });
   });
 });

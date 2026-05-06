@@ -494,6 +494,83 @@ app.post("/publish", (req, res) => {
   res.json({ status: "Message sent to SSE client" });
 });
 
+const initialTasks = [
+  { id: 1, title: "Write API notes", owner: "Ada", status: "Open" },
+  { id: 2, title: "Review cache policy", owner: "Lin", status: "Open" },
+  { id: 3, title: "Ship REST demo", owner: "Grace", status: "Done" },
+];
+let tasks = [];
+let nextTaskId = 1;
+
+function resetTasks() {
+  tasks = initialTasks.map((task) => ({ ...task }));
+  nextTaskId = Math.max(...tasks.map((task) => task.id)) + 1;
+}
+
+resetTasks();
+
+app.use("/api/tasks", express.json());
+
+app.post("/api/tasks/reset", (req, res) => {
+  resetTasks();
+  res.json({ data: tasks });
+});
+
+app.get("/api/tasks", (req, res) => {
+  res.json(tasks);
+});
+
+app.get("/api/tasks/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const task = tasks.find((item) => item.id === id);
+
+  if (!task) {
+    return res.sendStatus(404);
+  }
+
+  res.json(task);
+});
+
+app.post("/api/tasks", (req, res) => {
+  const body = req.body || {};
+  const task = {
+    id: nextTaskId++,
+    title: body.title,
+    owner: body.owner,
+    status: body.status || "Open",
+  };
+
+  tasks = [task, ...tasks];
+  res.status(201).json(task);
+});
+
+app.put("/api/tasks/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const current = tasks.find((item) => item.id === id);
+
+  if (!current) {
+    return res.sendStatus(404);
+  }
+
+  const updated = { ...current, ...(req.body || {}), id };
+
+  tasks = tasks.map((item) => (item.id === id ? updated : item));
+  res.json(updated);
+});
+
+app.delete("/api/tasks/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const length = tasks.length;
+
+  tasks = tasks.filter((item) => item.id !== id);
+
+  if (tasks.length === length) {
+    return res.sendStatus(404);
+  }
+
+  res.status(204).end();
+});
+
 app.get("/users", (req, res) => {
   res.json([
     {

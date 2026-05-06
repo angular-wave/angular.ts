@@ -1,5 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { isObject } from "../../shared/utils.ts";
+import { createScope } from "../../core/scope/scope.ts";
+import { hashKey, isObject } from "../../shared/utils.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
 import { http } from "./http.ts";
@@ -487,6 +488,63 @@ describe("$http", function () {
     await wait();
     expect(response.data).toEqual({ aKey: 42 });
     expect(response.config.data).toEqual({ aKey: 42 });
+  });
+
+  it("deproxies scope payloads before data reaches the server", async function () {
+    const payload = createScope({
+      name: "Ada",
+      $hashKey: "user:1",
+      $$watchersCount: 3,
+      nested: {
+        role: "admin",
+        $hashKey: "role:1",
+      },
+      tags: [
+        {
+          label: "primary",
+          $hashKey: "tag:1",
+        },
+      ],
+    });
+
+    await $http({
+      method: "POST",
+      url: "/mock/json",
+      data: payload,
+    }).then(function (r) {
+      response = r;
+    });
+    await wait();
+
+    expect(response.data).toEqual({
+      name: "Ada",
+      $hashKey: "user:1",
+      nested: { role: "admin", $hashKey: "role:1" },
+      tags: [{ label: "primary", $hashKey: "tag:1" }],
+    });
+    expect(response.data.$handler).toBeUndefined();
+    expect(response.data.$target).toBeUndefined();
+    expect(response.data.$proxy).toBeUndefined();
+    expect(response.data.$$watchersCount).toBeUndefined();
+    expect(response.data.nested).not.toBe("$SCOPE");
+  });
+
+  it("does not send internally generated hash keys", async function () {
+    const payload = createScope({ name: "Grace" });
+
+    hashKey(payload);
+
+    await $http({
+      method: "POST",
+      url: "/mock/json",
+      data: payload,
+    }).then(function (r) {
+      response = r;
+    });
+    await wait();
+
+    expect(response.data).toEqual({ name: "Grace" });
+    expect(response.data.$hashKey).toBeUndefined();
   });
 
   it("serializes array data to JSON for requests", async function () {

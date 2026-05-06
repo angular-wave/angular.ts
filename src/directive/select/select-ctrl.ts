@@ -3,6 +3,7 @@ import { NodeType } from "../../shared/node.ts";
 import { removeElement } from "../../shared/dom.ts";
 import {
   assertNotHasOwnProperty,
+  deProxy,
   hashKey,
   isArray,
   isDefined,
@@ -177,12 +178,13 @@ export class SelectController {
     const realVal =
       val in this._selectValueMap ? this._selectValueMap[val] : val;
 
-    return this._hasOption(realVal) ? realVal : null;
+    return this._hasOption(realVal) ? deProxy(realVal) : null;
   }
 
   /** @ignore */
   /** @internal */
   _writeValue(value: any) {
+    value = deProxy(value);
     const currentlySelectedOption =
       this._element.options[this._element.selectedIndex];
 
@@ -210,6 +212,8 @@ export class SelectController {
   /** @ignore */
   /** @internal */
   _addOption(value: any, element: HTMLOptionElement) {
+    value = deProxy(value);
+
     if (element.nodeType === NodeType._COMMENT_NODE) return;
 
     assertNotHasOwnProperty(value, '"option value"');
@@ -243,6 +247,7 @@ export class SelectController {
   /** @ignore */
   /** @internal */
   _removeOption(value: any) {
+    value = deProxy(value);
     const count = this._optionsMap.get(value);
 
     if (count) {
@@ -262,6 +267,8 @@ export class SelectController {
   /** @ignore */
   /** @internal */
   _hasOption(value: any) {
+    value = deProxy(value);
+
     return !!this._optionsMap.get(value);
   }
 
@@ -352,11 +359,13 @@ export class SelectController {
           removal = true;
         }
 
-        hashedVal = hashKey(newVal);
-        oldVal = newVal;
-        registeredValue = newVal;
-        this._selectValueMap[hashedVal] = newVal;
-        this._addOption(newVal, optionElement);
+        const rawNewVal = deProxy(newVal);
+
+        hashedVal = hashKey(rawNewVal);
+        oldVal = rawNewVal;
+        registeredValue = rawNewVal;
+        this._selectValueMap[hashedVal] = rawNewVal;
+        this._addOption(rawNewVal, optionElement);
         optionElement.setAttribute("value", hashedVal);
 
         if (removal && previouslySelected) {

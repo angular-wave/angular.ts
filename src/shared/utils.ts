@@ -25,6 +25,8 @@ const ngMinErr = minErr("ng");
 
 let uid = 0;
 
+const generatedHashKeys = new WeakMap<object, string>();
+
 /**
  * Returns a unique numeric identifier.
  */
@@ -310,19 +312,58 @@ export function snakeCase(name: string, separator?: string): string {
   );
 }
 
+function getHashKeyTarget(obj: any): object | undefined {
+  const target = deProxy(obj);
+
+  const objType = typeof target;
+
+  return objType === "function" || (objType === "object" && target !== null)
+    ? (target as object)
+    : undefined;
+}
+
+function getGeneratedHashKey(obj: any): string | undefined {
+  const target = getHashKeyTarget(obj);
+
+  return target ? generatedHashKeys.get(target) : undefined;
+}
+
 /**
- * Set or clear the hashkey for an object.
+ * Set or clear the internally generated hash key for an object.
+ *
+ * This does not write a property onto the object. Explicit user-owned
+ * `$hashKey` properties are still read by {@link hashKey}.
+ *
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(obj: { [x: string]: any }, hashkey: any): void {
-  const hashable = obj as { [x: string]: any; _hashKey?: any };
+  const target = getHashKeyTarget(obj);
+
+  if (!target) return;
 
   if (hashkey) {
-    hashable._hashKey = hashkey;
+    generatedHashKeys.set(target, hashkey);
   } else {
-    delete hashable._hashKey;
+    generatedHashKeys.delete(target);
   }
+}
+
+/**
+ * Read an explicit or internally generated hash key without creating one.
+ */
+export function getHashKey(obj: any): string | undefined {
+  const target = deProxy(obj);
+
+  const key = target && target.$hashKey;
+
+  if (key) {
+    return isFunction(key) ? key.call(target) : key;
+  }
+
+  const hashKeyTarget = getHashKeyTarget(target);
+
+  return hashKeyTarget ? generatedHashKeys.get(hashKeyTarget) : undefined;
 }
 
 /**
@@ -340,7 +381,11 @@ export function baseExtend(
   objs: Array<Record<string, any>>,
   deep = false,
 ): Record<string, any> {
-  const hasKey = dst._hashKey;
+  const hasInternalKey = getGeneratedHashKey(dst);
+
+  const hadExplicitKey = hasOwn(dst, "$hashKey");
+
+  const explicitKey = dst.$hashKey;
 
   for (let i = 0, ii = objs.length; i < ii; ++i) {
     const obj = objs[i];
@@ -350,6 +395,8 @@ export function baseExtend(
 
     for (let j = 0, jj = keyList.length; j < jj; j++) {
       const key = keyList[j];
+
+      if (key === "$hashKey") continue;
 
       const src = obj[key];
 
@@ -370,7 +417,13 @@ export function baseExtend(
     }
   }
 
-  setHashKey(dst, hasKey);
+  if (hadExplicitKey) {
+    dst.$hashKey = explicitKey;
+  } else {
+    delete dst.$hashKey;
+  }
+
+  setHashKey(dst, hasInternalKey);
 
   return dst;
 }
@@ -1108,26 +1161,24 @@ export function toDebugString(obj: any): string {
  * Hash of a:
  *  string is string
  *  number is number as string
- *  object is either result of calling _hashKey function on the object or uniquely generated id,
- *         that is also assigned to the _hashKey property of the object.
+ *  object is either result of calling $hashKey function on the object or a
+ *         uniquely generated id stored in internal metadata.
  */
 export function hashKey(obj: any): string {
-  const key = obj && obj._hashKey;
+  const key = getHashKey(obj);
 
-  if (key) {
-    if (isFunction(key)) {
-      return obj._hashKey();
-    }
+  if (key) return key;
 
-    return key;
-  }
+  const target = deProxy(obj);
 
-  const objType = typeof obj;
+  const objType = typeof target;
 
-  if (objType === "function" || (objType === "object" && obj !== null)) {
-    obj._hashKey = `${objType}:${nextUid()}`;
+  if (objType === "function" || (objType === "object" && target !== null)) {
+    const generatedKey = `${objType}:${nextUid()}`;
 
-    return obj._hashKey;
+    generatedHashKeys.set(target as object, generatedKey);
+
+    return generatedKey;
   }
 
   if (objType === "undefined") {

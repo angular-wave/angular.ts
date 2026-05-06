@@ -1,5 +1,9 @@
 import { _interpolate } from "../../injection-tokens.ts";
-import { getCacheData } from "../../shared/dom.ts";
+import {
+  FUTURE_PARENT_ELEMENT_KEY,
+  getCacheData,
+  getInheritedData,
+} from "../../shared/dom.ts";
 import {
   arrayFrom,
   equals,
@@ -173,11 +177,19 @@ export function optionDirective(
 
         const parent = optionElementParam.parentElement;
 
+        const futureParent = getInheritedData(
+          optionElementParam,
+          FUTURE_PARENT_ELEMENT_KEY,
+        ) as Element | undefined;
+
         const selectCtrl =
           (parent ? getCacheData(parent, selectCtrlName) : undefined) ||
           (parent?.parentElement
             ? getCacheData(parent.parentElement, selectCtrlName)
-            : undefined);
+            : undefined) ||
+          (futureParent
+            ? getInheritedData(futureParent, selectCtrlName)
+            : null);
 
         if (selectCtrl) {
           selectCtrl._registerOption(

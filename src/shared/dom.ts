@@ -19,6 +19,8 @@ const ISOLATE_SCOPE_KEY = "$isolateScope";
 
 const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
 
+export const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
+
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
 let expandoCache = new WeakMap<object, ExpandoStore>();

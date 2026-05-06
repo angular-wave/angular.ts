@@ -1,4 +1,4 @@
-export { angular } from "./index.ts";
+export { angular, HttpRestBackend } from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
 import type { Attributes as TAttributes } from "./core/compile/attributes.ts";
@@ -118,9 +118,17 @@ import type {
   CookieOptions as TCookieOptions,
 } from "./services/cookie/cookie.ts";
 import type {
+  CachedRestBackendOptions as TCachedRestBackendOptions,
   RestDefinition as TRestDefinition,
   EntityClass as TEntityClass,
+  RestBackend as TRestBackend,
+  RestCacheStore as TRestCacheStore,
+  RestCacheStrategy as TRestCacheStrategy,
   RestFactory as TRestFactory,
+  RestOptions as TRestOptions,
+  RestRequest as TRestRequest,
+  RestResponse as TRestResponse,
+  RestRevalidateEvent as TRestRevalidateEvent,
   RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
@@ -323,6 +331,22 @@ declare global {
     export type RestDefinition<T> = TRestDefinition<T>;
 
     export type RestFactory = TRestFactory;
+
+    export type RestBackend = TRestBackend;
+
+    export type RestCacheStore = TRestCacheStore;
+
+    export type RestCacheStrategy = TRestCacheStrategy;
+
+    export type RestOptions = TRestOptions;
+
+    export type RestRequest = TRestRequest;
+
+    export type RestResponse<T> = TRestResponse<T>;
+
+    export type RestRevalidateEvent<T> = TRestRevalidateEvent<T>;
+
+    export type CachedRestBackendOptions = TCachedRestBackendOptions;
 
     export type RestService<T, ID> = TRestService<T, ID>;
 

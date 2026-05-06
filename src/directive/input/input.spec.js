@@ -220,15 +220,15 @@ describe("input", () => {
       };
     });
 
-    it('should update the model event if the browser does not support the "input" event', () => {
-      assertBrowserSupportsChangeEvent(false);
+    it('should update the model event if the browser does not support the "input" event', async () => {
+      await assertBrowserSupportsChangeEvent(false);
     });
 
     it(
       'should update the model event if the browser supports the "input" ' +
         "event so that form auto complete works",
-      () => {
-        assertBrowserSupportsChangeEvent(true);
+      async () => {
+        await assertBrowserSupportsChangeEvent(true);
       },
     );
 

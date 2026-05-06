@@ -92,12 +92,84 @@ describe("Scope", () => {
     });
 
     it("should make its properties available for getters", () => {
-      scope = createScope({ a: 1, b: { test: "test" } });
+      const target = { a: 1, b: { test: "test" } };
+      scope = createScope(target);
       expect(scope.$target).toBeDefined();
+      expect(scope.$target).toBe(target);
       expect(scope.a).toEqual(1);
       expect(scope.$target.a).toEqual(1);
       expect(scope.a).toBe(scope.$target.a);
-      expect(scope.b).toBe(scope.$target.b);
+      expect(scope.b).not.toBe(scope.$target.b);
+      expect(scope.b).toEqual(scope.$target.b);
+      expect(isProxy(scope.b)).toBeTrue();
+      expect(isProxy(scope.$target.b)).toBeFalse();
+      expect(target.b).toBe(scope.$target.b);
+    });
+
+    it("should not write lazy nested proxies into the target model", () => {
+      const child = { test: "test" };
+      const target = { child };
+      scope = createScope(target);
+
+      const childScope = scope.child;
+      expect(isProxy(childScope)).toBeTrue();
+      expect(target.child).toBe(child);
+
+      childScope.test = "updated";
+      expect(child.test).toEqual("updated");
+      expect(target.child).toBe(child);
+    });
+
+    it("should store assigned proxies as raw target values", () => {
+      const target = {};
+      const assigned = createScope({ name: "service" });
+      scope = createScope(target);
+
+      scope.service = assigned;
+
+      expect(target.service).toBe(assigned.$target);
+      expect(isProxy(target.service)).toBeFalse();
+      expect(scope.service.$target).toBe(assigned.$target);
+      expect(scope.$handler._foreignProxies.has(assigned)).toBeTrue();
+
+      assigned.name = "updated";
+      expect(scope.service.name).toBe("updated");
+    });
+
+    it("should store assigned child scopes as raw target values", () => {
+      scope = createScope({});
+      const child = scope.$new();
+
+      scope.current = child;
+
+      expect(scope.$target.current).toBe(child.$target);
+      expect(isProxy(scope.$target.current)).toBeFalse();
+      expect(scope.current.$target).toBe(child.$target);
+    });
+
+    it("should preserve assigned nonscope child proxy identity", () => {
+      class Controller {
+        static $nonscope = true;
+      }
+
+      scope = createScope({});
+      const controller = scope.$new(new Controller());
+
+      scope.controller = controller;
+
+      expect(scope.$target.controller).toBe(controller);
+      expect(scope.controller).toBe(controller);
+    });
+
+    it("should store proxies added to arrays as raw target values", () => {
+      const assigned = createScope({ id: 1 });
+      scope = createScope({ items: [] });
+
+      scope.items.push(assigned);
+
+      expect(scope.$target.items[0]).toBe(assigned.$target);
+      expect(isProxy(scope.$target.items[0])).toBeFalse();
+      expect(scope.items[0].$target).toBe(assigned.$target);
     });
 
     it("should make its properties available for setters", () => {
@@ -1775,6 +1847,24 @@ describe("Scope", () => {
           await wait();
           expect(newValueGiven).toEqual([2]);
         });
+
+        it("can watch object appends after replacing an array property", async () => {
+          scope.items = [];
+          const listener = jasmine.createSpy("items watcher");
+          scope.$watch("items", listener);
+
+          await wait();
+          expect(listener).toHaveBeenCalledTimes(1);
+
+          scope.items = [{ id: 1 }];
+          await wait();
+          expect(listener).toHaveBeenCalledTimes(2);
+
+          scope.items.push({ id: 2 });
+          await wait();
+          expect(listener).toHaveBeenCalledTimes(3);
+          expect(scope.items.length).toBe(2);
+        });
       });
 
       it("should return oldCollection === newCollection only on the first listener call", async () => {
@@ -1960,9 +2050,45 @@ describe("Scope", () => {
 
         expect(parent.service.$handler._foreignListeners.has("b")).toBeFalse();
       });
+
+      it("should detect foreign proxy changes after storing the raw target", async () => {
+        const scope1 = createScope();
+        const scope2 = createScope({ b: 2 });
+        let latest;
+
+        scope1.service = scope2;
+        expect(scope1.$target.service).toBe(scope2.$target);
+        expect(isProxy(scope1.$target.service)).toBeFalse();
+
+        scope1.$watch("service.b", (value) => {
+          latest = value;
+        });
+
+        scope2.b = 3;
+        await wait();
+
+        expect(latest).toBe(3);
+      });
     });
 
     describe("$watch", () => {
+      it("should notify nested watchers when replacing an object with raw data", async () => {
+        scope = createScope({ item: { nested: { count: 1 } } });
+        let latest;
+
+        scope.$watch("item.nested.count", (value) => {
+          latest = value;
+        });
+        await wait();
+
+        expect(latest).toBe(1);
+
+        scope.item = { nested: { count: 2 } };
+        await wait();
+
+        expect(latest).toBe(2);
+      });
+
       describe("constiable", () => {
         let deregister;
         beforeEach(async () => {
@@ -3163,6 +3289,24 @@ describe("Scope", () => {
       expect(handler._propertyMap.$root).toBeUndefined();
     });
 
+    it("should release destroyed scope references on the next microtask", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const handler = child.$handler;
+
+      child.value = 42;
+      child.$destroy();
+
+      expect(handler.$target).not.toBeNull();
+      expect(handler.$parent).toBe(scope.$handler);
+
+      await Promise.resolve();
+
+      expect(handler.$target).toBeNull();
+      expect(handler.$proxy).toBeUndefined();
+      expect(handler.$parent).toBeUndefined();
+    });
+
     it("should release root child references after destroy", async () => {
       const scope = createScope();
       const handler = scope.$handler;
@@ -3388,6 +3532,22 @@ describe("Scope", () => {
       expect(destroySpy).toHaveBeenCalledTimes(1);
     });
 
+    it("should only invoke displaced child scope destruction once on undefined overwrite", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const originalDestroy = child.$handler._propertyMap.$destroy;
+      const destroySpy = jasmine
+        .createSpy("bound child destroy on undefined")
+        .and.callFake((...args) => originalDestroy(...args));
+
+      child.$handler._propertyMap.$destroy = destroySpy;
+
+      scope.current = child;
+      scope.current = undefined;
+
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    });
+
     it("should not destroy nested proxied objects that share the current handler when overwritten", () => {
       const scope = createScope();
 
@@ -3497,6 +3657,25 @@ describe("Scope", () => {
         expect(mutationMeta?._swapToIndex).toBe(2);
         expect(mutationMeta?._previousLength).toBe(3);
         expect(mutationMeta?._currentLength).toBe(3);
+      });
+
+      it("should find proxied array items with array identity methods", () => {
+        const scope = createScope();
+        const first = { id: 1 };
+        const second = { id: 2 };
+
+        scope.items = [first, second];
+
+        const proxiedFirst = scope.items[0];
+        const proxiedSecond = scope.items[1];
+
+        expect(proxiedFirst).not.toBe(first);
+        expect(scope.items.indexOf(proxiedFirst)).toBe(0);
+        expect(scope.items.indexOf(first)).toBe(0);
+        expect(scope.items.includes(proxiedSecond)).toBeTrue();
+        expect(scope.items.includes(second)).toBeTrue();
+        expect(scope.items.lastIndexOf(proxiedSecond)).toBe(1);
+        expect(scope.items.lastIndexOf(second)).toBe(1);
       });
     });
 
@@ -4036,6 +4215,106 @@ describe("Scope optimizations", () => {
       expect(scope.$handler._listenerScheduler._queue.length).toBe(0);
       expect(scope.$handler._listenerScheduler._index).toBe(0);
       expect(queuedMicrotasks.length).toBe(0);
+    });
+  });
+
+  describe("internal nested listener stats", () => {
+    it("should track nested watcher registrations without scanning watcher maps", () => {
+      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
+      expect(scope.$handler._hasNestedListenerCandidates()).toBeFalse();
+
+      const unwatch = scope.$watch("item.name", () => {});
+
+      expect(
+        scope.$handler._listenerStats._nestedCandidateCount,
+      ).toBeGreaterThan(0);
+      expect(scope.$handler._hasNestedListenerCandidates()).toBeTrue();
+
+      unwatch();
+
+      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
+      expect(scope.$handler._hasNestedListenerCandidates()).toBeFalse();
+    });
+
+    it("should keep nested watcher stats for remaining child scopes", () => {
+      const left = scope.$new();
+      const right = scope.$new();
+
+      left.$watch("item.name", () => {});
+      right.$watch("item.name", () => {});
+
+      expect(
+        scope.$handler._listenerStats._nestedCandidateCount,
+      ).toBeGreaterThan(1);
+
+      left.$destroy();
+
+      expect(
+        scope.$handler._listenerStats._nestedCandidateCount,
+      ).toBeGreaterThan(0);
+
+      right.$destroy();
+
+      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
+    });
+  });
+
+  describe("primitive assignment fast path", () => {
+    it("should skip listener scheduling for unobserved primitive assignments", () => {
+      const scheduleSpy = spyOn(
+        scope.$handler,
+        "_scheduleListener",
+      ).and.callThrough();
+
+      scope.fastValue = 1;
+
+      expect(scope.fastValue).toBe(1);
+      expect(scheduleSpy).not.toHaveBeenCalled();
+    });
+
+    it("should still schedule listener work for observed primitive assignments", () => {
+      scope.$watch("fastValue", () => {
+        /* empty */
+      });
+
+      const scheduleSpy = spyOn(
+        scope.$handler,
+        "_scheduleListener",
+      ).and.callThrough();
+
+      scope.fastValue = 1;
+
+      expect(scheduleSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe("object listener key tracking", () => {
+    it("should keep mutation listeners for aliases that share an object", async () => {
+      const shared = { count: 1 };
+      const leftListener = jasmine.createSpy("left listener");
+      const rightListener = jasmine.createSpy("right listener");
+
+      scope.left = shared;
+      scope.right = shared;
+      scope.$watch("left", leftListener);
+      scope.$watch("right", rightListener);
+      await wait();
+
+      leftListener.calls.reset();
+      rightListener.calls.reset();
+
+      scope.left = { count: 2 };
+      await wait();
+
+      leftListener.calls.reset();
+      rightListener.calls.reset();
+
+      scope.right.count = 3;
+      await wait();
+
+      expect(leftListener).not.toHaveBeenCalled();
+      expect(rightListener).toHaveBeenCalled();
+      expect(scope.right.count).toBe(3);
     });
   });
 
