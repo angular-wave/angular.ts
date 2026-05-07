@@ -42,6 +42,33 @@ describe("ngClass", () => {
     expect(element.classList.contains("B")).toBe(false);
   });
 
+  it("should update when a controller instance method changes class data", async () => {
+    class TestController {
+      classes = "before";
+
+      activate() {
+        this.classes = "after";
+      }
+    }
+
+    element = $compile(
+      '<section><button type="button" ng-click="$ctrl.activate()">Activate</button>' +
+        '<span ng-class="$ctrl.classes"></span></section>',
+    )($rootScope);
+    $rootScope.$ctrl = new TestController();
+
+    await wait();
+    const span = element.querySelector("span");
+    expect(span.classList.contains("before")).toBe(true);
+    expect(span.classList.contains("after")).toBe(false);
+
+    element.querySelector("button").click();
+    await wait();
+
+    expect(span.classList.contains("before")).toBe(false);
+    expect(span.classList.contains("after")).toBe(true);
+  });
+
   it("should add new and remove old classes with same names as Object.prototype properties dynamically", async () => {
     element = $compile('<div class="existing" ng-class="dynClass"></div>')(
       $rootScope,

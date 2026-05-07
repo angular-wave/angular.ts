@@ -53,6 +53,35 @@ describe("ngShow / ngHide", () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
     });
 
+    it("should update when a controller instance method changes visibility", async () => {
+      class TestController {
+        visible = false;
+
+        show() {
+          this.visible = true;
+        }
+      }
+
+      element = createElementFromHTML(
+        '<section><button type="button" ng-click="$ctrl.show()">Show</button>' +
+          '<span ng-show="$ctrl.visible">Visible</span></section>',
+      );
+      element = $compile(element)($scope);
+      $scope.$ctrl = new TestController();
+
+      await wait();
+      expect(element.querySelector("span").classList.contains("ng-hide")).toBe(
+        true,
+      );
+
+      element.querySelector("button").click();
+      await wait();
+
+      expect(element.querySelector("span").classList.contains("ng-hide")).toBe(
+        false,
+      );
+    });
+
     ["false", "undefined", "null", "NaN", "''", "0"].forEach((x) => {
       it("should hide the element if condition is falsy: " + x, async () => {
         element = createElementFromHTML(`<div ng-show="${x}"></div>`);
@@ -96,6 +125,35 @@ describe("ngShow / ngHide", () => {
       $scope.exp = true;
       await wait();
       expect(element.classList.contains("ng-hide")).toBeTrue();
+    });
+
+    it("should update when a controller instance method changes visibility", async () => {
+      class TestController {
+        hidden = false;
+
+        hide() {
+          this.hidden = true;
+        }
+      }
+
+      element = createElementFromHTML(
+        '<section><button type="button" ng-click="$ctrl.hide()">Hide</button>' +
+          '<span ng-hide="$ctrl.hidden">Visible</span></section>',
+      );
+      element = $compile(element)($scope);
+      $scope.$ctrl = new TestController();
+
+      await wait();
+      expect(element.querySelector("span").classList.contains("ng-hide")).toBe(
+        false,
+      );
+
+      element.querySelector("button").click();
+      await wait();
+
+      expect(element.querySelector("span").classList.contains("ng-hide")).toBe(
+        true,
+      );
     });
 
     ["false", "undefined", "null", "NaN", "''", "0"].forEach((x) => {
