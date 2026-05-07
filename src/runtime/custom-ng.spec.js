@@ -181,6 +181,14 @@ describe("custom runtime", () => {
       });
     }
 
+    class WebTransportProvider {
+      $get = () => (url, config) => ({
+        type: "webTransport",
+        url,
+        config,
+      });
+    }
+
     class PostEntity {}
 
     class Preferences {
@@ -208,6 +216,7 @@ describe("custom runtime", () => {
           $worker: WorkerProvider,
           $wasm: WasmProvider,
           $sse: SseProvider,
+          $webTransport: WebTransportProvider,
           $websocket: WebSocketProvider,
         },
       },
@@ -228,6 +237,9 @@ describe("custom runtime", () => {
       .sse("notifications", "/events", { retryDelay: 10 })
       .websocket("chat", "wss://chat.example.com", ["json"], {
         maxRetries: 1,
+      })
+      .webTransport("live", "https://localhost:4433/webtransport", {
+        requireUnreliable: true,
       })
       .store("prefs", Preferences, "custom", { backend: storageBackend });
 
@@ -260,6 +272,11 @@ describe("custom runtime", () => {
       url: "wss://chat.example.com",
       protocols: ["json"],
       config: { maxRetries: 1 },
+    });
+    expect(injector.get("live")).toEqual({
+      type: "webTransport",
+      url: "https://localhost:4433/webtransport",
+      config: { requireUnreliable: true },
     });
 
     const prefs = injector.get("prefs");

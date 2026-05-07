@@ -1,5 +1,5 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
-import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _wasm, _worker, _rest, _sse, _websocket } from '../../../injection-tokens.js';
+import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport } from '../../../injection-tokens.js';
 import { isInjectable } from '../../../shared/predicates.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
 
@@ -325,6 +325,33 @@ class NgModule {
                 [
                     _websocket,
                     ($websocket) => $websocket(url, protocols, config),
+                ],
+            ],
+        ]);
+        return this;
+    }
+    /**
+     * Register a pre-configured WebTransport connection as an injectable service.
+     *
+     * The connection is created by `$webTransport` when the named service is
+     * requested.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string} url - WebTransport endpoint.
+     * @param {WebTransportConfig} [config] - WebTransport connection options.
+     * @returns {NgModule}
+     */
+    webTransport(name, url, config = {}) {
+        validate(isString, name, "name");
+        validate(isString, url, "url");
+        this._invokeQueue.push([
+            _provide,
+            "factory",
+            [
+                name,
+                [
+                    _webTransport,
+                    ($webTransport) => $webTransport(url, config),
                 ],
             ],
         ]);

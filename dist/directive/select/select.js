@@ -1,5 +1,5 @@
 import { _interpolate } from '../../injection-tokens.js';
-import { getCacheData } from '../../shared/dom.js';
+import { getInheritedData, getCacheData, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
 import { isDefined, arrayFrom, includes, equals, shallowCopy } from '../../shared/utils.js';
 import { SelectController } from './select-ctrl.js';
 
@@ -106,10 +106,14 @@ function optionDirective($interpolate) {
                 const optionElementParam = elemParam;
                 const selectCtrlName = "$selectController";
                 const parent = optionElementParam.parentElement;
+                const futureParent = getInheritedData(optionElementParam, FUTURE_PARENT_ELEMENT_KEY);
                 const selectCtrl = (parent ? getCacheData(parent, selectCtrlName) : undefined) ||
                     (parent?.parentElement
                         ? getCacheData(parent.parentElement, selectCtrlName)
-                        : undefined);
+                        : undefined) ||
+                    (futureParent
+                        ? getInheritedData(futureParent, selectCtrlName)
+                        : null);
                 if (selectCtrl) {
                     selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn);
                 }

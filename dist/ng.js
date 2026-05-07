@@ -49,6 +49,7 @@ import { ngTranscludeDirective } from './directive/transclude/transclude.js';
 import { maxlengthDirective, minlengthDirective, requiredDirective, patternDirective } from './directive/validators/validators.js';
 import { ngViewportDirective } from './directive/viewport/viewport.js';
 import { ngWasmDirective } from './directive/wasm/wasm.js';
+import { ngWebTransportDirective } from './directive/webtransport/webtransport.js';
 import { ngWorkerDirective } from './directive/worker/worker.js';
 import { StateRefDynamicDirective, StateRefActiveDirective, StateRefDirective } from './router/directives/state-directives.js';
 import { ViewDirective, ViewDirectiveFill } from './router/directives/view-directive.js';
@@ -71,6 +72,7 @@ import { SseProvider } from './services/sse/sse.js';
 import { StreamProvider } from './services/stream/readable-stream.js';
 import { TemplateCacheProvider } from './services/template-cache/template-cache.js';
 import { TemplateRequestProvider } from './services/template-request/template-request.js';
+import { WebTransportProvider } from './services/webtransport/webtransport.js';
 import { WebSocketProvider } from './services/websocket/websocket.js';
 import { WorkerProvider } from './services/worker/worker.js';
 import { WasmProvider } from './services/wasm/wasm.js';
@@ -152,6 +154,7 @@ function registerNgModule(angular) {
                 ngModelOptions: ngModelOptionsDirective,
                 ngViewport: ngViewportDirective,
                 ngWasm: ngWasmDirective,
+                ngWebTransport: ngWebTransportDirective,
                 ngWorker: ngWorkerDirective,
                 ngScope: ngScopeDirective,
             })
@@ -218,6 +221,7 @@ function registerNgModule(angular) {
                 $stateRegistry: StateRegistryProvider,
                 $state: StateProvider,
                 $eventBus: PubSubProvider,
+                $webTransport: WebTransportProvider,
                 $websocket: WebSocketProvider,
                 $worker: WorkerProvider,
                 $wasm: WasmProvider,

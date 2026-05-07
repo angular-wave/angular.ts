@@ -181,16 +181,27 @@ function createStringDateInputType(type, regexp) {
         // Optional min/max
         if (isDefined(attr.min) || attr.ngMin) {
             let minVal = attr.min || $parse?.(attr.ngMin)(scope);
-            ctrl.$validators.min = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue >= minVal;
+            ctrl.$validators.min = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) ||
+                ctrl.$isEmpty(minVal) ||
+                viewValue >= minVal;
             attr.$observe("min", (val) => {
+                if (val === minVal) {
+                    return;
+                }
                 minVal = val;
                 ctrl.$validate();
             });
         }
         if (isDefined(attr.max) || attr.ngMax) {
             let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
-            ctrl.$validators.max = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
+            ctrl.$validators.max = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) ||
+                ctrl.$isEmpty(maxVal) ||
+                !isString(maxVal) ||
+                viewValue <= maxVal;
             attr.$observe("max", (val) => {
+                if (val === maxVal) {
+                    return;
+                }
                 maxVal = val;
                 ctrl.$validate();
             });

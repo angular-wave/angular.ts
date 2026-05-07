@@ -1,7 +1,7 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement } from '../../shared/dom.js';
-import { isUndefined, hashKey, assertNotHasOwnProperty, isNullOrUndefined, isDefined, isArray } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, isArray } from '../../shared/utils.js';
 
 /**
  * The controller for the `select` directive.
@@ -110,11 +110,12 @@ class SelectController {
     _readValue() {
         const val = this._element.value;
         const realVal = val in this._selectValueMap ? this._selectValueMap[val] : val;
-        return this._hasOption(realVal) ? realVal : null;
+        return this._hasOption(realVal) ? deProxy(realVal) : null;
     }
     /** @ignore */
     /** @internal */
     _writeValue(value) {
+        value = deProxy(value);
         const currentlySelectedOption = this._element.options[this._element.selectedIndex];
         if (currentlySelectedOption)
             currentlySelectedOption.selected = false;
@@ -138,6 +139,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _addOption(value, element) {
+        value = deProxy(value);
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
         assertNotHasOwnProperty(value, '"option value"');
@@ -164,6 +166,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _removeOption(value) {
+        value = deProxy(value);
         const count = this._optionsMap.get(value);
         if (count) {
             if (count === 1) {
@@ -181,6 +184,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _hasOption(value) {
+        value = deProxy(value);
         return !!this._optionsMap.get(value);
     }
     /** @ignore */
@@ -250,11 +254,12 @@ class SelectController {
                     delete this._selectValueMap[hashedVal];
                     removal = true;
                 }
-                hashedVal = hashKey(newVal);
-                oldVal = newVal;
-                registeredValue = newVal;
-                this._selectValueMap[hashedVal] = newVal;
-                this._addOption(newVal, optionElement);
+                const rawNewVal = deProxy(newVal);
+                hashedVal = hashKey(rawNewVal);
+                oldVal = rawNewVal;
+                registeredValue = rawNewVal;
+                this._selectValueMap[hashedVal] = rawNewVal;
+                this._addOption(rawNewVal, optionElement);
                 optionElement.setAttribute("value", hashedVal);
                 if (removal && previouslySelected) {
                     this._scheduleViewValueUpdate();

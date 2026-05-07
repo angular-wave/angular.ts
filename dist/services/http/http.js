@@ -1,6 +1,6 @@
 import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, minErr, hasOwn, lowercase, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, minErr, hasOwn, lowercase, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -191,6 +191,35 @@ function transformData(data, headers, status, fns) {
 function isSuccess(status) {
     return status >= Http._OK && status < Http._MultipleChoices;
 }
+function deProxyHttpPayload(value, seen = new WeakMap()) {
+    const source = deProxy(value);
+    if (!isObject(source)) {
+        return source;
+    }
+    if (isDate(source) ||
+        isFile(source) ||
+        isBlob(source) ||
+        isFormData(source)) {
+        return source;
+    }
+    if (seen.has(source)) {
+        return seen.get(source);
+    }
+    if (isArray(source)) {
+        const output = [];
+        seen.set(source, output);
+        for (let i = 0; i < source.length; i++) {
+            output[i] = deProxyHttpPayload(source[i], seen);
+        }
+        return output;
+    }
+    const output = {};
+    seen.set(source, output);
+    for (const key of keys(source)) {
+        output[key] = deProxyHttpPayload(source[key], seen);
+    }
+    return output;
+}
 /** Configures the default behavior of the `$http` service. */
 function HttpProvider() {
     /**
@@ -209,7 +238,7 @@ function HttpProvider() {
                     !isFile(data) &&
                     !isBlob(data) &&
                     !isFormData(data)
-                    ? toJson(data)
+                    ? toJson(deProxyHttpPayload(data))
                     : data;
             },
         ],

@@ -1,13 +1,14 @@
 ---
 title: "Real-Time Communication"
 weight: 400
-description: "Stream server events with $sse, exchange bidirectional messages with $websocket, and offload work with ng-worker and ng-wasm."
+description: "Stream server events with $sse, exchange bidirectional messages with $websocket or $webTransport, and offload work with ng-worker and ng-wasm."
 ---
 
-AngularTS provides four building blocks for real-time and compute-heavy work:
+AngularTS provides five building blocks for real-time and compute-heavy work:
 
 - `$sse` for Server-Sent Events.
 - `$websocket` for bidirectional WebSocket connections.
+- `$webTransport` for HTTP/3 WebTransport sessions with datagrams and streams.
 - `ng-worker` for JavaScript work in a Web Worker.
 - `ng-wasm` for loading WebAssembly modules.
 
@@ -19,6 +20,9 @@ Exact service and connection signatures live in TypeDoc:
 - [`WebSocketService`](../../../typedoc/types/WebSocketService.html)
 - [`WebSocketConfig`](../../../typedoc/interfaces/WebSocketConfig.html)
 - [`WebSocketConnection`](../../../typedoc/interfaces/WebSocketConnection.html)
+- [`WebTransportService`](../../../typedoc/types/WebTransportService.html)
+- [`WebTransportConfig`](../../../typedoc/interfaces/WebTransportConfig.html)
+- [`WebTransportConnection`](../../../typedoc/interfaces/WebTransportConnection.html)
 - [`WorkerConfig`](../../../typedoc/interfaces/WorkerConfig.html)
 - [`WorkerConnection`](../../../typedoc/interfaces/WorkerConnection.html)
 
@@ -91,6 +95,77 @@ class ChatController {
 
 `send()` serializes values as JSON before passing them to the native WebSocket.
 
+## WebTransport
+
+`$webTransport` opens a browser-native WebTransport session. Use it when an
+endpoint can serve HTTP/3 and the client benefits from unreliable datagrams,
+reliable streams, or both in the same session.
+
+```typescript
+class TelemetryController {
+  static $inject = ["$webTransport", "$scope"];
+
+  events: string[] = [];
+  private session: ng.WebTransportConnection;
+
+  constructor($webTransport: ng.WebTransportService, $scope: ng.Scope) {
+    this.session = $webTransport("https://localhost:4433/webtransport", {
+      reconnect: true,
+      retryDelay: 500,
+      maxRetries: 5,
+      requireUnreliable: true,
+      transformDatagram: (data) => new TextDecoder().decode(data),
+      onDatagram: ({ message }) => {
+        this.events.push(String(message));
+        $scope.$applyAsync();
+      },
+      onReconnect: ({ connection }) => {
+        return connection.sendText(JSON.stringify({ subscribe: "telemetry" }));
+      },
+    });
+  }
+
+  send(value: string) {
+    return this.session.sendText(value);
+  }
+}
+```
+
+The service expects the browser `WebTransport` API to exist and requires an
+`https:` URL with an explicit port. The test backend exposes certificate hash
+metadata at `/webtransport/cert-hash` for local browser tests.
+
+Reconnect is opt-in at the service layer. When enabled, the
+`WebTransportConnection` object stays stable while its native `transport`
+instance is replaced. Use `onReconnect` as the renegotiation hook for
+subscriptions, authentication messages, or other session state that the server
+does not remember across HTTP/3 sessions.
+
+For template-level feeds, `ng-web-transport` connects on load by default and
+evaluates lifecycle expressions. `data-mode="datagram"` is the default;
+`data-mode="stream"` reads server-opened unidirectional streams.
+
+```html
+<div
+  ng-web-transport="transportUrl"
+  data-config="transportConfig"
+  data-mode="datagram"
+  data-transform="json"
+  data-as="session"
+  data-reconnect="true"
+  data-on-message="events.push($message)"
+  data-on-reconnect="reconnects = $attempt"
+  data-on-error="error = $error"
+></div>
+```
+
+`data-transform` accepts `bytes`, `text`, or `json`. Message expressions receive
+`$connection`, `$data`, `$message`, `$event`, and `$text` for text/json modes.
+Reconnect is opt-in with `data-reconnect="true"`; tune it with
+`data-retry-delay` and `data-max-retries`. `data-on-reconnect` runs after the
+replacement session is ready and receives `$attempt`, `$connection`, `$error`,
+and `$url`.
+
 ## Web Workers
 
 Use `ng-worker` when a view action should run CPU-heavy JavaScript outside the main thread.
@@ -161,6 +236,7 @@ WebAssembly loading is asynchronous. Guard calls until the export object exists 
 | --- | --- |
 | Server pushes one-way updates | `$sse` |
 | Client and server both send messages | `$websocket` |
+| HTTP/3 datagrams or streams | `$webTransport` |
 | CPU-heavy JavaScript | `ng-worker` |
 | Compiled compute module | `ng-wasm` |
 

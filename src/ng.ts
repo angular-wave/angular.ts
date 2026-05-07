@@ -104,6 +104,7 @@ import {
 } from "./directive/validators/validators.ts";
 import { ngViewportDirective } from "./directive/viewport/viewport.ts";
 import { ngWasmDirective } from "./directive/wasm/wasm.ts";
+import { ngWebTransportDirective } from "./directive/webtransport/webtransport.ts";
 import { ngWorkerDirective } from "./directive/worker/worker.ts";
 import {
   StateRefActiveDirective,
@@ -136,6 +137,7 @@ import { SseProvider } from "./services/sse/sse.ts";
 import { StreamProvider } from "./services/stream/readable-stream.ts";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
+import { WebTransportProvider } from "./services/webtransport/webtransport.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
@@ -221,6 +223,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
               ngModelOptions: ngModelOptionsDirective,
               ngViewport: ngViewportDirective,
               ngWasm: ngWasmDirective,
+              ngWebTransport: ngWebTransportDirective,
               ngWorker: ngWorkerDirective,
               ngScope: ngScopeDirective,
             })
@@ -287,6 +290,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $stateRegistry: StateRegistryProvider,
             $state: StateProvider,
             $eventBus: PubSubProvider,
+            $webTransport: WebTransportProvider,
             $websocket: WebSocketProvider,
             $worker: WorkerProvider,
             $wasm: WasmProvider,

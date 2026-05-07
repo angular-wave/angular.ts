@@ -77,7 +77,7 @@ doc: ensure-deps
 
 serve: ensure-deps
 	@node_modules/.bin/vite --config utils/vite.config.js & \
-	node --watch ./utils/express.js & \
+	(cd utils/server && go run .) & \
 	wait
 
 prepare-release: build test check types doc format gzip version size-html

@@ -20,6 +20,7 @@ function deProxy(val) {
 }
 const ngMinErr = minErr("ng");
 let uid = 0;
+const generatedHashKeys = new WeakMap();
 /**
  * Returns a unique numeric identifier.
  */
@@ -254,19 +255,48 @@ function snakeCase(name, separator) {
     const modseparator = separator || "_";
     return name.replace(/[A-Z]/g, (letter, pos) => (pos ? modseparator : "") + letter.toLowerCase());
 }
+function getHashKeyTarget(obj) {
+    const target = deProxy(obj);
+    const objType = typeof target;
+    return objType === "function" || (objType === "object" && target !== null)
+        ? target
+        : undefined;
+}
+function getGeneratedHashKey(obj) {
+    const target = getHashKeyTarget(obj);
+    return target ? generatedHashKeys.get(target) : undefined;
+}
 /**
- * Set or clear the hashkey for an object.
+ * Set or clear the internally generated hash key for an object.
+ *
+ * This does not write a property onto the object. Explicit user-owned
+ * `$hashKey` properties are still read by {@link hashKey}.
+ *
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 function setHashKey(obj, hashkey) {
-    const hashable = obj;
+    const target = getHashKeyTarget(obj);
+    if (!target)
+        return;
     if (hashkey) {
-        hashable._hashKey = hashkey;
+        generatedHashKeys.set(target, hashkey);
     }
     else {
-        delete hashable._hashKey;
+        generatedHashKeys.delete(target);
     }
+}
+/**
+ * Read an explicit or internally generated hash key without creating one.
+ */
+function getHashKey(obj) {
+    const target = deProxy(obj);
+    const key = target && target.$hashKey;
+    if (key) {
+        return isFunction(key) ? key.call(target) : key;
+    }
+    const hashKeyTarget = getHashKeyTarget(target);
+    return hashKeyTarget ? generatedHashKeys.get(hashKeyTarget) : undefined;
 }
 /**
  * Deeply extends a destination object with one or more source objects.
@@ -279,7 +309,9 @@ function setHashKey(obj, hashkey) {
  * @returns The extended destination object.
  */
 function baseExtend(dst, objs, deep = false) {
-    const hasKey = dst._hashKey;
+    const hasInternalKey = getGeneratedHashKey(dst);
+    const hadExplicitKey = hasOwn(dst, "$hashKey");
+    const explicitKey = dst.$hashKey;
     for (let i = 0, ii = objs.length; i < ii; ++i) {
         const obj = objs[i];
         if (!isObject(obj) && !isFunction(obj))
@@ -287,6 +319,8 @@ function baseExtend(dst, objs, deep = false) {
         const keyList = keys(obj);
         for (let j = 0, jj = keyList.length; j < jj; j++) {
             const key = keyList[j];
+            if (key === "$hashKey")
+                continue;
             const src = obj[key];
             if (deep && isObject(src)) {
                 if (isDate(src)) {
@@ -309,7 +343,13 @@ function baseExtend(dst, objs, deep = false) {
             }
         }
     }
-    setHashKey(dst, hasKey);
+    if (hadExplicitKey) {
+        dst.$hashKey = explicitKey;
+    }
+    else {
+        delete dst.$hashKey;
+    }
+    setHashKey(dst, hasInternalKey);
     return dst;
 }
 /**
@@ -898,21 +938,19 @@ function toDebugString(obj) {
  * Hash of a:
  *  string is string
  *  number is number as string
- *  object is either result of calling _hashKey function on the object or uniquely generated id,
- *         that is also assigned to the _hashKey property of the object.
+ *  object is either result of calling $hashKey function on the object or a
+ *         uniquely generated id stored in internal metadata.
  */
 function hashKey(obj) {
-    const key = obj && obj._hashKey;
-    if (key) {
-        if (isFunction(key)) {
-            return obj._hashKey();
-        }
+    const key = getHashKey(obj);
+    if (key)
         return key;
-    }
-    const objType = typeof obj;
-    if (objType === "function" || (objType === "object" && obj !== null)) {
-        obj._hashKey = `${objType}:${nextUid()}`;
-        return obj._hashKey;
+    const target = deProxy(obj);
+    const objType = typeof target;
+    if (objType === "function" || (objType === "object" && target !== null)) {
+        const generatedKey = `${objType}:${nextUid()}`;
+        generatedHashKeys.set(target, generatedKey);
+        return generatedKey;
     }
     if (objType === "undefined") {
         return `${objType}:${nextUid()}`;
@@ -1143,4 +1181,4 @@ function nullObject() {
     return createObject(null);
 }
 
-export { arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, concat, createObject, deProxy, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, minErr, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };
+export { arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, concat, createObject, deProxy, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, minErr, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };

@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 4, 2026 00:24:45 */
+/* Version: 0.27.0 - May 7, 2026 23:40:34 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -49,6 +49,7 @@ const _templateRequest = "$templateRequest";
 const _transitions = "$transitions";
 const _view = "$view";
 const _window = "$window";
+const _webTransport = "$webTransport";
 const _websocket = "$websocket";
 const _worker = "$worker";
 const _wasm = "$wasm";
@@ -84,6 +85,7 @@ const _templateFactoryProvider = "$templateFactoryProvider";
 const _templateRequestProvider = "$templateRequestProvider";
 const _transitionsProvider = "$transitionsProvider";
 const _viewProvider = "$viewProvider";
+const _webTransportProvider = "$webTransportProvider";
 const _websocketProvider = "$websocketProvider";
 const _workerProvider = "$workerProvider";
 const _wasmProvider = "$wasmProvider";
@@ -136,6 +138,7 @@ const $injectTokens = {
     _transitions,
     _view,
     _window,
+    _webTransport,
     _websocket,
     _worker,
     _wasm,
@@ -171,6 +174,7 @@ const $injectTokens = {
     _templateRequestProvider,
     _transitionsProvider,
     _viewProvider,
+    _webTransportProvider,
     _websocketProvider,
     _workerProvider,
     _wasmProvider,
@@ -224,6 +228,7 @@ function deProxy(val) {
 }
 const ngMinErr$1 = minErr("ng");
 let uid$1 = 0;
+const generatedHashKeys = new WeakMap();
 /**
  * Returns a unique numeric identifier.
  */
@@ -458,19 +463,48 @@ function snakeCase(name, separator) {
     const modseparator = separator;
     return name.replace(/[A-Z]/g, (letter, pos) => (pos ? modseparator : "") + letter.toLowerCase());
 }
+function getHashKeyTarget(obj) {
+    const target = deProxy(obj);
+    const objType = typeof target;
+    return objType === "function" || (objType === "object" && target !== null)
+        ? target
+        : undefined;
+}
+function getGeneratedHashKey(obj) {
+    const target = getHashKeyTarget(obj);
+    return target ? generatedHashKeys.get(target) : undefined;
+}
 /**
- * Set or clear the hashkey for an object.
+ * Set or clear the internally generated hash key for an object.
+ *
+ * This does not write a property onto the object. Explicit user-owned
+ * `$hashKey` properties are still read by {@link hashKey}.
+ *
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 function setHashKey(obj, hashkey) {
-    const hashable = obj;
+    const target = getHashKeyTarget(obj);
+    if (!target)
+        return;
     if (hashkey) {
-        hashable._hashKey = hashkey;
+        generatedHashKeys.set(target, hashkey);
     }
     else {
-        delete hashable._hashKey;
+        generatedHashKeys.delete(target);
     }
+}
+/**
+ * Read an explicit or internally generated hash key without creating one.
+ */
+function getHashKey(obj) {
+    const target = deProxy(obj);
+    const key = target && target.$hashKey;
+    if (key) {
+        return isFunction(key) ? key.call(target) : key;
+    }
+    const hashKeyTarget = getHashKeyTarget(target);
+    return hashKeyTarget ? generatedHashKeys.get(hashKeyTarget) : undefined;
 }
 /**
  * Deeply extends a destination object with one or more source objects.
@@ -483,7 +517,9 @@ function setHashKey(obj, hashkey) {
  * @returns The extended destination object.
  */
 function baseExtend(dst, objs, deep = false) {
-    const hasKey = dst._hashKey;
+    const hasInternalKey = getGeneratedHashKey(dst);
+    const hadExplicitKey = hasOwn(dst, "$hashKey");
+    const explicitKey = dst.$hashKey;
     for (let i = 0, ii = objs.length; i < ii; ++i) {
         const obj = objs[i];
         if (!isObject(obj) && !isFunction(obj))
@@ -491,6 +527,8 @@ function baseExtend(dst, objs, deep = false) {
         const keyList = keys(obj);
         for (let j = 0, jj = keyList.length; j < jj; j++) {
             const key = keyList[j];
+            if (key === "$hashKey")
+                continue;
             const src = obj[key];
             if (deep && isObject(src)) {
                 if (isDate(src)) {
@@ -513,7 +551,13 @@ function baseExtend(dst, objs, deep = false) {
             }
         }
     }
-    setHashKey(dst, hasKey);
+    if (hadExplicitKey) {
+        dst.$hashKey = explicitKey;
+    }
+    else {
+        delete dst.$hashKey;
+    }
+    setHashKey(dst, hasInternalKey);
     return dst;
 }
 /**
@@ -1071,21 +1115,19 @@ function toDebugString(obj) {
  * Hash of a:
  *  string is string
  *  number is number as string
- *  object is either result of calling _hashKey function on the object or uniquely generated id,
- *         that is also assigned to the _hashKey property of the object.
+ *  object is either result of calling $hashKey function on the object or a
+ *         uniquely generated id stored in internal metadata.
  */
 function hashKey(obj) {
-    const key = obj && obj._hashKey;
-    if (key) {
-        if (isFunction(key)) {
-            return obj._hashKey();
-        }
+    const key = getHashKey(obj);
+    if (key)
         return key;
-    }
-    const objType = typeof obj;
-    if (objType === "function" || (objType === "object" && obj !== null)) {
-        obj._hashKey = `${objType}:${nextUid()}`;
-        return obj._hashKey;
+    const target = deProxy(obj);
+    const objType = typeof target;
+    if (objType === "function" || (objType === "object" && target !== null)) {
+        const generatedKey = `${objType}:${nextUid()}`;
+        generatedHashKeys.set(target, generatedKey);
+        return generatedKey;
     }
     if (objType === "undefined") {
         return `${objType}:${nextUid()}`;
@@ -1321,6 +1363,7 @@ function nullObject() {
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
+const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 const NG_ANIMATE_ATTR_NAME$1 = "data-ng-animate";
 let expandoCache = new WeakMap();
 /**
@@ -2777,6 +2820,33 @@ class NgModule {
                 [
                     _websocket,
                     ($websocket) => $websocket(url, protocols, config),
+                ],
+            ],
+        ]);
+        return this;
+    }
+    /**
+     * Register a pre-configured WebTransport connection as an injectable service.
+     *
+     * The connection is created by `$webTransport` when the named service is
+     * requested.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string} url - WebTransport endpoint.
+     * @param {WebTransportConfig} [config] - WebTransport connection options.
+     * @returns {NgModule}
+     */
+    webTransport(name, url, config = {}) {
+        validate(isString, name, "name");
+        validate(isString, url, "url");
+        this._invokeQueue.push([
+            _provide,
+            "factory",
+            [
+                name,
+                [
+                    _webTransport,
+                    ($webTransport) => $webTransport(url, config),
                 ],
             ],
         ]);
@@ -7035,10 +7105,41 @@ function getArrayMutationIndex(property) {
     return numericProperty;
 }
 function unwrapArrayMutationValue(value) {
-    if (isProxy(value) && value.$target) {
-        return value.$target;
+    return getAssignedScopeValue(value)._storedValue;
+}
+function unwrapArrayMutationArgs(args) {
+    let rawArgs;
+    for (let i = 0, l = args.length; i < l; i++) {
+        const rawArg = unwrapArrayMutationValue(args[i]);
+        if (rawArg !== args[i] && !rawArgs) {
+            rawArgs = args.slice(0, i);
+        }
+        if (rawArgs) {
+            rawArgs[i] = rawArg;
+        }
     }
-    return value;
+    return rawArgs || args;
+}
+function collectRemovedArrayMutationValues(method, args, target) {
+    const previousLength = target.length;
+    switch (method) {
+        case "pop":
+            return previousLength > 0 ? [target[previousLength - 1]] : undefined;
+        case "shift":
+            return previousLength > 0 ? [target[0]] : undefined;
+        case "splice": {
+            const index = normalizeSpliceIndex(args[0], previousLength);
+            const deleteCount = args.length < 2
+                ? previousLength - index
+                : Math.min(Math.max(toArrayMutationLength(args[1]), 0), previousLength - index);
+            if (deleteCount === 0) {
+                return undefined;
+            }
+            return target.slice(index, index + deleteCount);
+        }
+        default:
+            return undefined;
+    }
 }
 function clearArraySwapCandidate(proxy) {
     arraySwapCandidates.delete(proxy);
@@ -7101,20 +7202,33 @@ function getMethodArrayMutationMeta(method, args, previousLength, currentLength)
     }
 }
 function clearArrayMutationMeta(proxy) {
-    arrayMutationMeta.delete(proxy);
+    const target = proxy?.$target;
+    if (isArray(target)) {
+        arrayMutationMeta.delete(target);
+    }
+    else {
+        arrayMutationMeta.delete(proxy);
+    }
 }
 function setArrayMutationMeta(proxy, meta) {
     if (!meta) {
         clearArrayMutationMeta(proxy);
         return;
     }
-    arrayMutationMeta.set(proxy, meta);
+    const target = proxy?.$target;
+    if (isArray(target)) {
+        arrayMutationMeta.set(target, meta);
+    }
+    else {
+        arrayMutationMeta.set(proxy, meta);
+    }
 }
 function getArrayMutationMeta(value) {
-    if (!value || !isProxy(value)) {
+    if (!value) {
         return undefined;
     }
-    return arrayMutationMeta.get(value);
+    const target = isProxy(value) ? value.$target : value;
+    return isArray(target) ? arrayMutationMeta.get(target) : undefined;
 }
 class RootScopeProvider {
     constructor() {
@@ -7161,6 +7275,11 @@ function resolveWatchKey(node) {
 function getWatchParentExpression(watchProp) {
     const lastDotIndex = watchProp.lastIndexOf(".");
     return lastDotIndex === -1 ? "" : watchProp.slice(0, lastDotIndex);
+}
+function listenerNeedsNestedCollection(listener) {
+    return !!(listener._watchParentFn ||
+        listener._watchNestedObject ||
+        listener._watchLiteralInput);
 }
 function pushUniqueListenerKey(keySet, seenKeys, listener, key) {
     if (seenKeys.has(key))
@@ -7266,8 +7385,9 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
 }
 /**
  * @private
- * Creates a deep proxy for the target object, intercepting property changes
- * and recursively applying proxies to nested objects.
+ * Creates a scope proxy for the target object, intercepting property changes.
+ * Nested scopeable values are proxied lazily when read, without writing proxy
+ * helper state back into the target model.
  *
  * @param target - The object to be wrapped in a proxy.
  * @param [context] - The context for the handler, used to track listeners.
@@ -7275,23 +7395,7 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
  *                                     or the original value if the target is not an object.
  */
 function createScope(target = {}, context) {
-    if (!isObject(target) || isNonScope(target))
-        return target;
-    if (isProxy(target))
-        return target;
-    const proxy = new Proxy(target, context || new Scope());
-    const keyList = keys(target);
-    const ctorNonScope = target.constructor?.$nonscope;
-    const instNonScope = target.$nonscope;
-    for (let i = 0, l = keyList.length; i < l; i++) {
-        const key = keyList[i];
-        if ((isArray(ctorNonScope) && ctorNonScope.includes(key)) ||
-            (isArray(instNonScope) && instNonScope.includes(key))) {
-            continue;
-        }
-        target[key] = createScope(target[key], proxy.$handler);
-    }
-    return proxy;
+    return getCachedScopeProxy(target, context || new Scope());
 }
 const global = globalThis;
 const arrayMutationMethods = new Set([
@@ -7303,6 +7407,7 @@ const arrayMutationMethods = new Set([
     "sort",
     "unshift",
 ]);
+const arrayIdentityMethods = new Set(["includes", "indexOf", "lastIndexOf"]);
 const wStr = "[object Window]";
 const nonScopeConstructors = [
     Window,
@@ -7340,6 +7445,89 @@ const nonScopeConstructors = [
 ];
 const nonScopeCache = new WeakSet();
 const scopeCache = new WeakSet();
+const scopeProxyCache = new WeakMap();
+const destroyedScopeCleanupQueue = [];
+let destroyedScopeCleanupQueued = false;
+function queueDestroyedScopeCleanup(scope) {
+    destroyedScopeCleanupQueue.push(scope);
+    if (destroyedScopeCleanupQueued) {
+        return;
+    }
+    destroyedScopeCleanupQueued = true;
+    queueMicrotask(flushDestroyedScopeCleanup);
+}
+function flushDestroyedScopeCleanup() {
+    destroyedScopeCleanupQueued = false;
+    const queue = destroyedScopeCleanupQueue.splice(0);
+    for (let i = 0, l = queue.length; i < l; i++) {
+        queue[i]._cleanupDestroyedScope();
+    }
+}
+function unwrapScopeValue(value) {
+    return isProxy(value) ? value.$target : value;
+}
+function getAssignedScopeValue(value) {
+    const rawValue = unwrapScopeValue(value);
+    const valueIsProxy = isProxy(value);
+    return {
+        _rawValue: rawValue,
+        _storedValue: valueIsProxy && isObject(rawValue) && isNonScope(rawValue)
+            ? value
+            : rawValue,
+        _isProxy: valueIsProxy,
+    };
+}
+function getObjectListenerTarget(value) {
+    const target = unwrapScopeValue(value);
+    if (!isObject(target) || isNonScope(target)) {
+        return undefined;
+    }
+    return target;
+}
+function addObjectListenerKey(objectListeners, target, key) {
+    const keyList = objectListeners.get(target);
+    if (keyList) {
+        if (!keyList.includes(key)) {
+            keyList.push(key);
+        }
+        return;
+    }
+    objectListeners.set(target, [key]);
+}
+function removeObjectListenerKey(objectListeners, target, key) {
+    const keyList = objectListeners.get(target);
+    if (!keyList) {
+        return;
+    }
+    const keyIndex = keyList.indexOf(key);
+    if (keyIndex === -1) {
+        return;
+    }
+    if (keyList.length === 1) {
+        objectListeners.delete(target);
+        return;
+    }
+    keyList[keyIndex] = keyList[keyList.length - 1];
+    keyList.length--;
+}
+function getCachedScopeProxy(target, handler) {
+    if (!isObject(target) || isNonScope(target))
+        return target;
+    if (isProxy(target))
+        return target;
+    const objectTarget = target;
+    let proxiesByHandler = scopeProxyCache.get(objectTarget);
+    if (!proxiesByHandler) {
+        proxiesByHandler = new WeakMap();
+        scopeProxyCache.set(objectTarget, proxiesByHandler);
+    }
+    let proxy = proxiesByHandler.get(handler);
+    if (!proxy) {
+        proxy = new Proxy(target, handler);
+        proxiesByHandler.set(handler, proxy);
+    }
+    return proxy;
+}
 /**
  * Checks whether a target should be excluded from scope observability.
  */
@@ -7410,14 +7598,25 @@ class Scope {
      */
     constructor(context, parent) {
         this._watchers = context?._watchers ?? new Map();
+        this._watcherIndexes = context?._watcherIndexes ?? new Map();
+        this._watchersByHash = context?._watchersByHash ?? new Map();
         this._listeners = new Map();
         this._foreignListeners = context?._foreignListeners ?? new Map();
+        this._foreignListenerIndexes =
+            context?._foreignListenerIndexes ?? new Map();
+        this._foreignListenersByHash =
+            context?._foreignListenersByHash ?? new Map();
         this._foreignProxies = context?._foreignProxies ?? new Set();
+        this._foreignProxyTargets = context?._foreignProxyTargets ?? new WeakMap();
         this._objectListeners = context?._objectListeners ?? new WeakMap();
+        this._listenerStats = context?._listenerStats ?? {
+            _nestedCandidateCount: 0,
+        };
         this.$handler = this;
         this.$target = null;
         this._children = [];
         this._childIndices = new WeakMap();
+        this._childTargets = new WeakMap();
         this.$id = nextId();
         this.$root = context ? context.$root : this;
         this.$parent = parent || (this.$root === this ? undefined : context);
@@ -7470,6 +7669,16 @@ class Scope {
         if (visited.has(objectValue))
             return;
         visited.add(objectValue);
+        const childScope = this._childTargets.get(objectValue);
+        if (childScope) {
+            if (childScope.$handler._destroyed)
+                return;
+            const destroy = childScope.$destroy;
+            if (isFunction(destroy)) {
+                destroy();
+            }
+            return;
+        }
         if (isProxy(value)) {
             const scopeValue = value;
             if (this._children.includes(scopeValue)) {
@@ -7495,11 +7704,16 @@ class Scope {
             for (let i = 0, l = value.length; i < l; i++) {
                 this._destroyDisplacedValue(value[i], visited);
             }
+            return;
+        }
+        const keyList = keys(value);
+        for (let i = 0, l = keyList.length; i < l; i++) {
+            this._destroyDisplacedValue(value[keyList[i]], visited);
         }
     }
     /**
-     * Intercepts and handles property assignments on the target object. If a new value is
-     * an object, it will be recursively proxied.
+     * Intercepts and handles property assignments on the target object. Scopeable
+     * objects are stored as raw model values and proxied lazily when read.
      *
      * @param target - The target object.
      * @param property - The name of the property being set.
@@ -7523,6 +7737,12 @@ class Scope {
         this.$proxy = proxy;
         this.$target = target;
         const oldValue = target[property];
+        const rawOldValue = unwrapScopeValue(oldValue);
+        const assignedValue = getAssignedScopeValue(value);
+        const rawValue = assignedValue._rawValue;
+        const valueIsProxy = assignedValue._isProxy;
+        const storedValue = assignedValue._storedValue;
+        const valueChanged = rawOldValue !== rawValue;
         if (isArray(target) &&
             property === "length" &&
             typeof oldValue === "number" &&
@@ -7544,16 +7764,16 @@ class Scope {
         // Handle NaNs
         if (oldValue !== undefined &&
             Number.isNaN(oldValue) &&
-            Number.isNaN(value)) {
+            Number.isNaN(rawValue)) {
             return true;
         }
         if (oldValue && oldValue[isProxySymbol]) {
-            if (isArray(value)) {
-                const isProxyRebind = isProxy(value);
-                if (oldValue !== value && !isProxyRebind) {
+            if (isArray(rawValue)) {
+                const isProxyRebind = valueIsProxy;
+                if (valueChanged && !isProxyRebind) {
                     this._destroyDisplacedValue(oldValue);
                 }
-                if (oldValue !== value) {
+                if (valueChanged) {
                     const listeners = this._watchers.get(property);
                     if (listeners) {
                         this._scheduleListener(listeners);
@@ -7564,31 +7784,32 @@ class Scope {
                     }
                     this._scheduleArrayOwnerListeners(target, proxy, property);
                 }
-                if (this._objectListeners.get(target[property])) {
-                    this._objectListeners.delete(target[property]);
+                const oldObjectListenerTarget = getObjectListenerTarget(target[property]);
+                if (oldObjectListenerTarget) {
+                    removeObjectListenerKey(this._objectListeners, oldObjectListenerTarget, property);
                 }
-                target[property] = createScope(value, this);
-                this._objectListeners.set(target[property], [property]);
-                if (oldValue !== value && isArray(target)) {
+                target[property] = storedValue;
+                addObjectListenerKey(this._objectListeners, rawValue, property);
+                if (valueChanged && isArray(target)) {
                     trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                 }
                 return true;
             }
-            if (isObject(value)) {
-                const isProxyRebind = isProxy(value);
+            if (isObject(rawValue)) {
+                const isProxyRebind = valueIsProxy;
                 // Moving one existing proxy onto another slot is a rebind, not disposal.
                 // Keep nested child scopes alive and let collection watchers handle the move.
-                if (oldValue !== value && !isProxyRebind) {
+                if (valueChanged && !isProxyRebind) {
                     this._destroyDisplacedValue(oldValue);
                 }
                 if (!isProxyRebind && hasOwn(target, property)) {
-                    const keyList = keys(oldValue);
+                    const keyList = keys(unwrapScopeValue(oldValue));
                     for (const k of keyList) {
-                        if (!hasOwn(value, k))
+                        if (!hasOwn(rawValue, k))
                             delete oldValue[k];
                     }
                 }
-                if (oldValue !== value) {
+                if (valueChanged) {
                     const listeners = this._watchers.get(property);
                     if (listeners) {
                         this._scheduleListener(listeners);
@@ -7597,17 +7818,17 @@ class Scope {
                     if (_foreignListeners) {
                         this._scheduleListener(_foreignListeners);
                     }
-                    this._checkListenersForAllKeys(value);
+                    this._checkListenersForAllKeys(rawValue);
                     this._scheduleArrayOwnerListeners(target, proxy, property);
                 }
-                target[property] = createScope(value, this);
-                if (oldValue !== value && isArray(target)) {
+                target[property] = storedValue;
+                if (valueChanged && isArray(target)) {
                     trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                 }
                 //setDeepValue(target[property], value);
                 return true;
             }
-            if (isUndefined(value)) {
+            if (isUndefined(rawValue)) {
                 this._destroyDisplacedValue(oldValue);
                 let called = false;
                 const keyList = keys(oldValue.$target);
@@ -7619,7 +7840,6 @@ class Scope {
                         called = true;
                     }
                 }
-                this._destroyDisplacedValue(oldValue);
                 for (let i = 0, l = keyList.length; i < l; i++) {
                     delete oldValue[keyList[i]];
                 }
@@ -7632,9 +7852,9 @@ class Scope {
                 }
                 return true;
             }
-            if (isDefined(value)) {
+            if (isDefined(rawValue)) {
                 this._destroyDisplacedValue(oldValue);
-                target[property] = value;
+                target[property] = storedValue;
                 const listeners = this._watchers.get(property);
                 if (listeners) {
                     this._scheduleListener(listeners);
@@ -7648,55 +7868,142 @@ class Scope {
             return true;
         }
         else {
-            if (isUndefined(target[property]) && isProxy(value)) {
+            if (valueIsProxy) {
                 this._foreignProxies.add(value);
-                target[property] = value;
+                this._foreignProxyTargets.set(rawValue, value);
+            }
+            if (isUndefined(target[property]) && valueIsProxy) {
+                target[property] = storedValue;
                 if (!this._watchers.has(property)) {
                     return true;
                 }
             }
-            if (isUndefined(value)) {
-                target[property] = value;
+            const shouldDestroyOldValue = !(isArray(rawOldValue) &&
+                isArray(rawValue) &&
+                this._objectListeners.has(rawOldValue));
+            if (valueChanged && !valueIsProxy && shouldDestroyOldValue) {
+                this._destroyDisplacedValue(oldValue);
+            }
+            if (isUndefined(rawValue)) {
+                target[property] = rawValue;
             }
             else {
-                target[property] = createScope(value, this);
+                target[property] = storedValue;
             }
-            if (oldValue !== value) {
-                let expectedTarget = this.$target;
-                const listeners = [];
-                // Handle the case where we need to start observing object after a watcher has been set
-                if (isUndefined(oldValue) && isObject(target[property])) {
-                    if (!this._objectListeners.has(target[property])) {
-                        this._objectListeners.set(target[property], [property]);
+            if (valueChanged) {
+                const hasDirectPropertyListeners = this._watchers.has(property);
+                const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
+                    !!this.$parent?._foreignListeners?.has(property);
+                const hasObjectListeners = property !== "length" && this._objectListeners.has(target);
+                const hasArrayLengthListeners = isArray(target) && this._watchers.has("length");
+                const mayCollectNestedListeners = !isArray(target) &&
+                    !isArray(rawOldValue) &&
+                    !isArray(rawValue) &&
+                    (isObject(rawOldValue) || isObject(rawValue)) &&
+                    this._hasNestedListenerCandidates();
+                const mayScheduleArrayOwnerListeners = isArray(target) &&
+                    !this._arrayOwnerListenersScheduled &&
+                    (property === "length" || hasObjectListeners);
+                if (!hasDirectPropertyListeners &&
+                    !hasForeignPropertyListeners &&
+                    !hasObjectListeners &&
+                    !hasArrayLengthListeners &&
+                    !mayCollectNestedListeners &&
+                    !mayScheduleArrayOwnerListeners) {
+                    if (isArray(target) && property !== "length") {
+                        trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                     }
-                    const keyList = keys(value);
+                    return true;
+                }
+                let expectedTarget = this.$target;
+                const directListeners = [];
+                const nestedListeners = [];
+                const seenListenerIds = new Set();
+                const pushUniqueListener = (list, listener) => {
+                    if (seenListenerIds.has(listener._id))
+                        return;
+                    seenListenerIds.add(listener._id);
+                    list.push(listener);
+                };
+                const visitedNestedValues = new WeakSet();
+                const collectNestedListeners = (nestedValue) => {
+                    const nestedTarget = unwrapScopeValue(nestedValue);
+                    if (!isObject(nestedTarget) || isNonScope(nestedTarget)) {
+                        return;
+                    }
+                    const nestedObject = nestedTarget;
+                    if (visitedNestedValues.has(nestedObject)) {
+                        return;
+                    }
+                    visitedNestedValues.add(nestedObject);
+                    const keyList = keys(nestedTarget);
                     for (let i = 0, l = keyList.length; i < l; i++) {
                         const key = keyList[i];
                         const keyListeners = this._watchers.get(key);
                         if (keyListeners) {
                             for (let j = 0, jl = keyListeners.length; j < jl; j++) {
-                                listeners.push(keyListeners[j]);
+                                pushUniqueListener(nestedListeners, keyListeners[j]);
                             }
                         }
+                        if (isObject(nestedTarget[key])) {
+                            collectNestedListeners(nestedTarget[key]);
+                        }
                     }
-                    expectedTarget = value;
+                };
+                if (isObject(rawOldValue)) {
+                    const oldObjectListenerTarget = getObjectListenerTarget(rawOldValue);
+                    if (oldObjectListenerTarget) {
+                        removeObjectListenerKey(this._objectListeners, oldObjectListenerTarget, property);
+                    }
+                }
+                // Handle the case where we need to start observing object after a watcher has been set
+                if (isObject(target[property]) &&
+                    (isArray(target[property])
+                        ? this._hasObjectMutationWatchers(String(property))
+                        : isUndefined(oldValue))) {
+                    const childObjectListenerTarget = getObjectListenerTarget(target[property]);
+                    if (childObjectListenerTarget) {
+                        addObjectListenerKey(this._objectListeners, childObjectListenerTarget, property);
+                    }
+                    if (isUndefined(oldValue) && !isArray(target)) {
+                        expectedTarget = rawValue;
+                    }
                 }
                 if (isArray(target)) {
-                    const lengthListeners = this._watchers.get("length");
+                    const lengthListeners = hasArrayLengthListeners
+                        ? this._watchers.get("length")
+                        : undefined;
                     if (lengthListeners) {
                         for (let i = 0, l = lengthListeners.length; i < l; i++) {
-                            listeners.push(lengthListeners[i]);
+                            pushUniqueListener(directListeners, lengthListeners[i]);
                         }
                     }
                 }
-                const propListeners = this._watchers.get(property);
-                if (propListeners) {
-                    for (let i = 0, l = propListeners.length; i < l; i++) {
-                        listeners.push(propListeners[i]);
+                if (mayCollectNestedListeners && isObject(rawOldValue)) {
+                    collectNestedListeners(unwrapScopeValue(oldValue));
+                }
+                if (mayCollectNestedListeners && isObject(rawValue)) {
+                    collectNestedListeners(rawValue);
+                }
+                let propListeners = hasDirectPropertyListeners
+                    ? this._watchers.get(property)
+                    : undefined;
+                const targetHashKey = getHashKey(target);
+                if (isDefined(targetHashKey)) {
+                    const hashedPropListeners = this._watchersByHash
+                        .get(String(property))
+                        ?.get(targetHashKey);
+                    if (hashedPropListeners) {
+                        propListeners = hashedPropListeners;
                     }
                 }
-                if (listeners.length > 0) {
-                    this._scheduleListener(listeners, (list) => {
+                if (propListeners) {
+                    for (let i = 0, l = propListeners.length; i < l; i++) {
+                        pushUniqueListener(directListeners, propListeners[i]);
+                    }
+                }
+                if (directListeners.length > 0) {
+                    this._scheduleListener(directListeners, (list) => {
                         const scheduled = [];
                         for (let i = 0, l = list.length; i < l; i++) {
                             const x = list[i];
@@ -7704,17 +8011,25 @@ class Scope {
                                 scheduled.push(x);
                                 continue;
                             }
-                            const expectedHandler = x._watchParentFn?.(x._originalTarget);
-                            if (expectedTarget === expectedHandler?.$target) {
+                            const expectedParent = x._watchParentFn?.(x._originalTarget);
+                            const expectedParentTarget = unwrapScopeValue(expectedParent);
+                            if (expectedTarget === expectedParentTarget ||
+                                (isArray(expectedParentTarget) &&
+                                    expectedTarget === x._originalTarget) ||
+                                (x._watchProp.includes("[") &&
+                                    expectedTarget === x._originalTarget)) {
                                 scheduled.push(x);
                             }
                         }
                         return scheduled;
                     });
                 }
+                if (nestedListeners.length > 0) {
+                    this._scheduleListener(nestedListeners);
+                }
                 if (isArray(target) &&
                     property === "length" &&
-                    oldValue !== value &&
+                    valueChanged &&
                     !this._arrayOwnerListenersScheduled) {
                     if (typeof oldValue === "number" &&
                         typeof value === "number" &&
@@ -7738,23 +8053,20 @@ class Scope {
                 if (_foreignListeners) {
                     let scheduled = _foreignListeners;
                     // filter for repeaters
-                    const hashKey = this.$target._hashKey;
-                    if (hashKey) {
-                        scheduled = [];
-                        for (let i = 0, l = _foreignListeners.length; i < l; i++) {
-                            const listener = _foreignListeners[i];
-                            if (listener._originalTarget._hashKey === hashKey) {
-                                scheduled.push(listener);
-                            }
-                        }
+                    const hashKey = getHashKey(this.$target);
+                    if (isDefined(hashKey)) {
+                        scheduled =
+                            this._foreignListenersByHash
+                                .get(String(property))
+                                ?.get(hashKey) ?? [];
                     }
                     if (scheduled.length > 0) {
                         this._scheduleListener(scheduled);
                     }
                 }
             }
-            if (this._objectListeners.has(proxy) && property !== "length") {
-                const keyList = this._objectListeners.get(proxy);
+            if (this._objectListeners.has(target) && property !== "length") {
+                const keyList = this._objectListeners.get(target);
                 if (keyList) {
                     for (let i = 0, l = keyList.length; i < l; i++) {
                         const key = keyList[i];
@@ -7791,8 +8103,14 @@ class Scope {
             return this._propertyMap[property];
         }
         const targetProp = isString(property) ? target[property] : target[property];
-        if (isProxy(targetProp)) {
-            this.$proxy = targetProp;
+        const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
+        const scopedTargetProp = isString(property) &&
+            isArray(nonscopeProps) &&
+            nonscopeProps.includes(property)
+            ? targetProp
+            : getCachedScopeProxy(targetProp, this);
+        if (isProxy(scopedTargetProp)) {
+            this.$proxy = scopedTargetProp;
         }
         else {
             this.$proxy = proxy;
@@ -7821,8 +8139,8 @@ class Scope {
                 clearArraySwapCandidate(proxy);
                 this._scheduled = [];
                 this._arrayOwnerListenersScheduled = false;
-                if (this._objectListeners.has(proxy)) {
-                    const keyList = this._objectListeners.get(proxy);
+                if (this._objectListeners.has(target)) {
+                    const keyList = this._objectListeners.get(target);
                     if (keyList) {
                         for (let i = 0, l = keyList.length; i < l; i++) {
                             const key = keyList[i];
@@ -7838,8 +8156,23 @@ class Scope {
                     this._arrayOwnerListenersScheduled = true;
                 }
                 try {
-                    const result = Reflect.apply(targetProp, proxy, args);
-                    setArrayMutationMeta(proxy, getMethodArrayMutationMeta(property, args, previousLength, target.length));
+                    const rawArgs = unwrapArrayMutationArgs(args);
+                    const removedValues = collectRemovedArrayMutationValues(property, rawArgs, target);
+                    const result = Reflect.apply(targetProp, target, rawArgs);
+                    if (removedValues) {
+                        for (let i = 0, l = removedValues.length; i < l; i++) {
+                            if (!target.includes(removedValues[i])) {
+                                this._destroyDisplacedValue(removedValues[i]);
+                            }
+                        }
+                    }
+                    setArrayMutationMeta(proxy, getMethodArrayMutationMeta(property, rawArgs, previousLength, target.length));
+                    if (previousLength !== target.length) {
+                        const lengthListeners = this._watchers.get("length");
+                        if (lengthListeners) {
+                            this._scheduleListener(lengthListeners);
+                        }
+                    }
                     if (this._scheduled.length > 0 &&
                         !this._arrayOwnerListenersScheduled) {
                         this._scheduleListener(this._scheduled);
@@ -7855,13 +8188,18 @@ class Scope {
             wrappers[property] = wrapper;
             return wrapper;
         }
+        if (isArray(target) &&
+            isString(property) &&
+            arrayIdentityMethods.has(property)) {
+            return (...args) => Reflect.apply(targetProp, target, unwrapArrayMutationArgs(args));
+        }
         if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
             this.$target = target;
             return this._propertyMap[property];
         }
         else {
             // we are a simple getter
-            return targetProp;
+            return scopedTargetProp;
         }
     }
     /**
@@ -7881,9 +8219,8 @@ class Scope {
             if (listeners) {
                 this._scheduleListener(listeners);
             }
-            if (this._scheduled.length === 0 &&
-                this._objectListeners.has(this.$proxy)) {
-                const keyList = this._objectListeners.get(this.$proxy);
+            if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
+                const keyList = this._objectListeners.get(target);
                 if (keyList) {
                     for (let i = 0, l = keyList.length; i < l; i++) {
                         const key = keyList[i];
@@ -7901,9 +8238,8 @@ class Scope {
             return true;
         }
         delete target[property];
-        if (this._scheduled.length === 0 &&
-            this._objectListeners.has(this.$proxy)) {
-            const keyList = this._objectListeners.get(this.$proxy);
+        if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
+            const keyList = this._objectListeners.get(target);
             if (keyList) {
                 for (let i = 0, l = keyList.length; i < l; i++) {
                     const key = keyList[i];
@@ -7928,18 +8264,49 @@ class Scope {
     }
     /** @internal Recursively schedules listeners for every reachable object key in the value. */
     _checkListenersForAllKeys(value) {
-        if (isUndefined(value)) {
+        this._checkListenersForAllKeysRecursive(value, new WeakSet());
+    }
+    /** @internal Returns true when a key has listeners that should react to object mutation. */
+    _hasObjectMutationWatchers(property) {
+        const hasMutationWatcher = (listeners) => {
+            if (!listeners) {
+                return false;
+            }
+            for (let i = 0, l = listeners.length; i < l; i++) {
+                if (!listeners[i]._watchLiteralInput ||
+                    listeners[i]._watchNestedObject) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        return (hasMutationWatcher(this._watchers.get(property)) ||
+            hasMutationWatcher(this._foreignListeners.get(property)));
+    }
+    /** @internal Returns true when any registered listener depends on nested object traversal. */
+    _hasNestedListenerCandidates() {
+        return this._listenerStats._nestedCandidateCount > 0;
+    }
+    /** @internal Recursive implementation for _checkListenersForAllKeys with cycle protection. */
+    _checkListenersForAllKeysRecursive(value, visited) {
+        const target = unwrapScopeValue(value);
+        if (isUndefined(target) || !isObject(target) || isNonScope(target)) {
             return;
         }
-        const keyList = keys(value);
+        const objectTarget = target;
+        if (visited.has(objectTarget)) {
+            return;
+        }
+        visited.add(objectTarget);
+        const keyList = keys(target);
         for (let i = 0, l = keyList.length; i < l; i++) {
             const k = keyList[i];
             const listeners = this._watchers.get(k);
             if (listeners) {
                 this._scheduleListener(listeners);
             }
-            if (isObject(value[k])) {
-                this._checkListenersForAllKeys(value[k]);
+            if (isObject(target[k])) {
+                this._checkListenersForAllKeysRecursive(target[k], visited);
             }
         }
     }
@@ -8189,16 +8556,24 @@ class Scope {
                     listener._watchParentFn = $parse(getWatchParentExpression(watchProp));
                     const potentialProxy = listener._watchParentFn(listener._originalTarget);
                     const foreignKey = key;
-                    if (foreignKey &&
-                        potentialProxy &&
-                        this._foreignProxies.has(potentialProxy)) {
-                        potentialProxy.$handler._registerForeignKey(foreignKey, listener);
-                        this._trackOwnedForeignListener(potentialProxy.$handler, foreignKey, listener._id);
-                        potentialProxy.$handler._scheduleListener([listener]);
+                    let foreignProxy;
+                    if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
+                        foreignProxy = potentialProxy;
+                    }
+                    else {
+                        const foreignTarget = getObjectListenerTarget(potentialProxy);
+                        if (foreignTarget) {
+                            foreignProxy = this._foreignProxyTargets.get(foreignTarget);
+                        }
+                    }
+                    if (foreignKey && foreignProxy) {
+                        foreignProxy.$handler._registerForeignKey(foreignKey, listener);
+                        this._trackOwnedForeignListener(foreignProxy.$handler, foreignKey, listener._id);
+                        foreignProxy.$handler._scheduleListener([listener]);
                         return () => {
-                            potentialProxy.$handler._deregisterForeignKey(foreignKey, listener._id);
-                            this._untrackOwnedForeignListener(potentialProxy.$handler, foreignKey, listener._id);
-                            return potentialProxy.$handler._deregisterKey(foreignKey, listener._id);
+                            foreignProxy.$handler._deregisterForeignKey(foreignKey, listener._id);
+                            this._untrackOwnedForeignListener(foreignProxy.$handler, foreignKey, listener._id);
+                            return foreignProxy.$handler._deregisterKey(foreignKey, listener._id);
                         };
                     }
                 }
@@ -8214,6 +8589,7 @@ class Scope {
             }
             // 12
             case ASTType._ArrayExpression: {
+                listener._watchLiteralInput = true;
                 const { _elements: elements } = expr;
                 for (let i = 0, l = elements.length; i < l; i++) {
                     const element = elements[i];
@@ -8234,12 +8610,14 @@ class Scope {
             }
             // 14
             case ASTType._ObjectExpression: {
+                listener._watchLiteralInput = true;
                 const { _properties: properties } = expr;
                 const collectedKeys = new Set();
                 for (let i = 0, l = properties.length; i < l; i++) {
                     const prop = properties[i];
                     let currentKey;
                     if (prop._key._isPure === false) {
+                        listener._watchNestedObject = true;
                         currentKey = resolveNodeWatchKey(prop._key);
                         if (!currentKey) {
                             collectWatchKeys(prop._key, collectedKeys);
@@ -8275,7 +8653,10 @@ class Scope {
                 key = keySet[0];
             }
             if (key) {
-                this._objectListeners.set(listenerObject, [key]);
+                const listenerTarget = getObjectListenerTarget(listenerObject);
+                if (listenerTarget) {
+                    addObjectListenerKey(this._objectListeners, listenerTarget, key);
+                }
             }
         }
         if (keySet.length > 0) {
@@ -8332,6 +8713,7 @@ class Scope {
         const proxy = new Proxy(child, new Scope(this));
         this._children.push(proxy);
         this._childIndices.set(proxy, this._children.length - 1);
+        this._childTargets.set(child, proxy);
         return proxy;
     }
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
@@ -8340,6 +8722,7 @@ class Scope {
         const proxy = new Proxy(child, new Scope(this, this.$root));
         this._children.push(proxy);
         this._childIndices.set(proxy, this._children.length - 1);
+        this._childTargets.set(child, proxy);
         return proxy;
     }
     /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
@@ -8348,6 +8731,7 @@ class Scope {
         const proxy = new Proxy(child, new Scope(this, parentInstance));
         this._children.push(proxy);
         this._childIndices.set(proxy, this._children.length - 1);
+        this._childTargets.set(child, proxy);
         return proxy;
     }
     /** @internal Registers a listener under a watched key on this scope. */
@@ -8356,12 +8740,77 @@ class Scope {
             _key: key,
             _id: listener._id,
         });
+        this._registerInheritedKey(key);
+        this._trackNestedListenerCandidate(listener);
         const listeners = this._watchers.get(key);
+        let listenerIndex = 0;
         if (listeners) {
+            listenerIndex = listeners.length;
             listeners.push(listener);
+        }
+        else {
+            this._watchers.set(key, [listener]);
+        }
+        let keyIndexes = this._watcherIndexes.get(key);
+        if (!keyIndexes) {
+            keyIndexes = new Map();
+            this._watcherIndexes.set(key, keyIndexes);
+        }
+        keyIndexes.set(listener._id, listenerIndex);
+        const hashKey = getHashKey(listener._originalTarget);
+        if (!isDefined(hashKey)) {
             return;
         }
-        this._watchers.set(key, [listener]);
+        let listenersByHash = this._watchersByHash.get(key);
+        if (!listenersByHash) {
+            listenersByHash = new Map();
+            this._watchersByHash.set(key, listenersByHash);
+        }
+        const hashedListeners = listenersByHash.get(hashKey);
+        if (hashedListeners) {
+            hashedListeners.push(listener);
+            return;
+        }
+        listenersByHash.set(hashKey, [listener]);
+    }
+    /** @internal Tracks a registered listener that can require nested collection scans. */
+    _trackNestedListenerCandidate(listener) {
+        if (listenerNeedsNestedCollection(listener)) {
+            this._listenerStats._nestedCandidateCount++;
+        }
+    }
+    /** @internal Untracks a registered listener that can require nested collection scans. */
+    _untrackNestedListenerCandidate(listener) {
+        if (listenerNeedsNestedCollection(listener) &&
+            this._listenerStats._nestedCandidateCount > 0) {
+            this._listenerStats._nestedCandidateCount--;
+        }
+    }
+    /** @internal Registers inherited property listeners with the owning parent scope. */
+    _registerInheritedKey(key) {
+        if (hasOwn(this.$target, key)) {
+            return;
+        }
+        const parent = this.$parent?.$handler;
+        let owner = parent;
+        while (owner && owner !== this) {
+            if (owner.$target && hasOwn(owner.$target, key)) {
+                this._registerForeignKeyOwner(owner, key);
+                return;
+            }
+            owner = owner.$parent?.$handler;
+        }
+        if (parent) {
+            this._registerForeignKeyOwner(parent, key);
+        }
+    }
+    /** @internal Registers one inherited key against a resolved parent scope owner. */
+    _registerForeignKeyOwner(owner, key) {
+        const ownerValue = owner.$target[key];
+        if (isObject(ownerValue) && !isNonScope(ownerValue)) {
+            const ownerTarget = ownerValue;
+            addObjectListenerKey(owner._objectListeners, ownerTarget, key);
+        }
     }
     /** @internal Removes a tracked local watcher registration record. */
     _untrackOwnedWatcher(key, id) {
@@ -8377,12 +8826,37 @@ class Scope {
     }
     /** @internal Registers a listener under a watched key owned by a foreign proxied scope. */
     _registerForeignKey(key, listener) {
+        this._trackNestedListenerCandidate(listener);
         const listeners = this._foreignListeners.get(key);
+        let listenerIndex = 0;
         if (listeners) {
+            listenerIndex = listeners.length;
             listeners.push(listener);
+        }
+        else {
+            this._foreignListeners.set(key, [listener]);
+        }
+        let keyIndexes = this._foreignListenerIndexes.get(key);
+        if (!keyIndexes) {
+            keyIndexes = new Map();
+            this._foreignListenerIndexes.set(key, keyIndexes);
+        }
+        keyIndexes.set(listener._id, listenerIndex);
+        const hashKey = getHashKey(listener._originalTarget);
+        if (!isDefined(hashKey)) {
             return;
         }
-        this._foreignListeners.set(key, [listener]);
+        let listenersByHash = this._foreignListenersByHash.get(key);
+        if (!listenersByHash) {
+            listenersByHash = new Map();
+            this._foreignListenersByHash.set(key, listenersByHash);
+        }
+        const hashedListeners = listenersByHash.get(hashKey);
+        if (hashedListeners) {
+            hashedListeners.push(listener);
+            return;
+        }
+        listenersByHash.set(hashKey, [listener]);
     }
     /** @internal Tracks a foreign-listener registration owned by this scope. */
     _trackOwnedForeignListener(handler, key, id) {
@@ -8411,23 +8885,61 @@ class Scope {
             return false;
         }
         const len = listenerList.length;
-        for (let i = 0; i < len; i++) {
-            if (listenerList[i]._id === id) {
-                if (len === 1) {
-                    // Last element — just delete the key entirely
-                    this._watchers.delete(key);
+        const keyIndexes = this._watcherIndexes.get(key);
+        let listenerIndex = keyIndexes?.get(id);
+        if (listenerIndex === undefined ||
+            listenerIndex >= len ||
+            listenerList[listenerIndex]._id !== id) {
+            listenerIndex = undefined;
+            for (let i = 0; i < len; i++) {
+                if (listenerList[i]._id === id) {
+                    listenerIndex = i;
+                    break;
                 }
-                else {
-                    // Swap with last element and pop — O(1) removal
-                    listenerList[i] = listenerList[len - 1];
-                    listenerList.length = len - 1;
-                }
-                if (untrack)
-                    this._untrackOwnedWatcher(key, id);
-                return true;
             }
         }
-        return false;
+        if (listenerIndex === undefined) {
+            return false;
+        }
+        const listener = listenerList[listenerIndex];
+        const movedListener = listenerList[len - 1];
+        if (len === 1) {
+            this._watchers.delete(key);
+            this._watcherIndexes.delete(key);
+        }
+        else {
+            listenerList[listenerIndex] = movedListener;
+            listenerList.length = len - 1;
+            keyIndexes?.set(movedListener._id, listenerIndex);
+            keyIndexes?.delete(id);
+        }
+        const hashKey = getHashKey(listener._originalTarget);
+        if (isDefined(hashKey)) {
+            const listenersByHash = this._watchersByHash.get(key);
+            const hashedListeners = listenersByHash?.get(hashKey);
+            if (hashedListeners) {
+                const hashedLen = hashedListeners.length;
+                for (let j = 0; j < hashedLen; j++) {
+                    if (hashedListeners[j]._id === id) {
+                        if (hashedLen === 1) {
+                            listenersByHash?.delete(hashKey);
+                            if (listenersByHash?.size === 0) {
+                                this._watchersByHash.delete(key);
+                            }
+                        }
+                        else {
+                            hashedListeners[j] = hashedListeners[hashedLen - 1];
+                            hashedListeners.length = hashedLen - 1;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        this._untrackNestedListenerCandidate(listener);
+        if (untrack)
+            this._untrackOwnedWatcher(key, id);
+        return true;
     }
     /** @internal Removes a listener by id from the foreign watcher map. */
     _deregisterForeignKey(key, id) {
@@ -8436,19 +8948,59 @@ class Scope {
             return false;
         }
         const len = listenerList.length;
-        for (let i = 0; i < len; i++) {
-            if (listenerList[i]._id === id) {
-                if (len === 1) {
-                    this._foreignListeners.delete(key);
+        const keyIndexes = this._foreignListenerIndexes.get(key);
+        let listenerIndex = keyIndexes?.get(id);
+        if (listenerIndex === undefined ||
+            listenerIndex >= len ||
+            listenerList[listenerIndex]._id !== id) {
+            listenerIndex = undefined;
+            for (let i = 0; i < len; i++) {
+                if (listenerList[i]._id === id) {
+                    listenerIndex = i;
+                    break;
                 }
-                else {
-                    listenerList[i] = listenerList[len - 1];
-                    listenerList.length = len - 1;
-                }
-                return true;
             }
         }
-        return false;
+        if (listenerIndex === undefined) {
+            return false;
+        }
+        const listener = listenerList[listenerIndex];
+        const movedListener = listenerList[len - 1];
+        if (len === 1) {
+            this._foreignListeners.delete(key);
+            this._foreignListenerIndexes.delete(key);
+        }
+        else {
+            listenerList[listenerIndex] = movedListener;
+            listenerList.length = len - 1;
+            keyIndexes?.set(movedListener._id, listenerIndex);
+            keyIndexes?.delete(id);
+        }
+        const hashKey = getHashKey(listener._originalTarget);
+        if (isDefined(hashKey)) {
+            const listenersByHash = this._foreignListenersByHash.get(key);
+            const hashedListeners = listenersByHash?.get(hashKey);
+            if (hashedListeners) {
+                const hashedLen = hashedListeners.length;
+                for (let j = 0; j < hashedLen; j++) {
+                    if (hashedListeners[j]._id === id) {
+                        if (hashedLen === 1) {
+                            listenersByHash?.delete(hashKey);
+                            if (listenersByHash?.size === 0) {
+                                this._foreignListenersByHash.delete(key);
+                            }
+                        }
+                        else {
+                            hashedListeners[j] = hashedListeners[hashedLen - 1];
+                            hashedListeners.length = hashedLen - 1;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        this._untrackNestedListenerCandidate(listener);
+        return true;
     }
     /** @internal Reschedules watchers that observe this array through its owning scope property. */
     _scheduleArrayOwnerListeners(target, proxy, property, allowLength = false) {
@@ -8457,10 +9009,10 @@ class Scope {
             this._scheduled.length > 0) {
             return;
         }
-        if (!this._objectListeners.has(proxy)) {
+        if (!this._objectListeners.has(target)) {
             return;
         }
-        const keyList = this._objectListeners.get(proxy);
+        const keyList = this._objectListeners.get(target);
         if (!keyList) {
             return;
         }
@@ -8468,6 +9020,10 @@ class Scope {
             const currentListeners = this._watchers.get(keyList[i]);
             if (currentListeners) {
                 this._scheduleListener(currentListeners);
+            }
+            const currentForeignListeners = this._foreignListeners.get(keyList[i]);
+            if (currentForeignListeners) {
+                this._scheduleListener(currentForeignListeners);
             }
         }
     }
@@ -8604,7 +9160,9 @@ class Scope {
     $destroy() {
         if (this._destroyed)
             return;
-        this.$broadcast("$destroy");
+        if (this._listeners.has("$destroy") || this._children.length > 0) {
+            this.$broadcast("$destroy");
+        }
         const scopeId = this.$id;
         const ownedWatchers = this._ownedWatchers;
         for (let i = 0, l = ownedWatchers.length; i < l; i++) {
@@ -8619,7 +9177,11 @@ class Scope {
         this._ownedForeignListeners.length = 0;
         if (this._isRoot()) {
             this._watchers.clear();
+            this._watcherIndexes.clear();
+            this._watchersByHash.clear();
             this._foreignListeners.clear();
+            this._foreignListenerIndexes.clear();
+            this._foreignListenersByHash.clear();
         }
         else {
             const parent = this.$parent;
@@ -8632,6 +9194,10 @@ class Scope {
             const children = parentHandler._children;
             const childProxy = this.$proxy;
             const childIndex = parentHandler._childIndices.get(childProxy);
+            const childTarget = this.$target;
+            if (childTarget) {
+                parentHandler._childTargets.delete(childTarget);
+            }
             const lastIndex = children.length - 1;
             if (childIndex !== undefined && childIndex <= lastIndex) {
                 const movedChild = children[lastIndex];
@@ -8659,40 +9225,53 @@ class Scope {
         }
         this._scheduled = [];
         this._foreignProxies.clear();
+        this._foreignProxyTargets = new WeakMap();
+        this._watcherIndexes = new Map();
+        this._watchersByHash = new Map();
         this._foreignListeners = new Map();
+        this._foreignListenerIndexes = new Map();
+        this._foreignListenersByHash = new Map();
         this._objectListeners = new WeakMap();
+        if (this._isRoot()) {
+            this._listenerStats._nestedCandidateCount = 0;
+        }
         this._childIndices = new WeakMap();
+        this._childTargets = new WeakMap();
         this._listeners.clear();
         this._destroyed = true;
-        queueMicrotask(() => {
-            if (!this._destroyed)
-                return;
-            if (this._isRoot()) {
-                this._children.length = 0;
-            }
-            else {
-                this._children.length = 0;
-                this._watchers = new Map();
-            }
-            this.$target = null;
-            this.$proxy = undefined;
-            if (!this._isRoot()) {
-                this.$parent = undefined;
-                this.$root = undefined;
-            }
-            this._propertyMap = {
-                $destroy: this._propertyMap.$destroy,
-                $handler: this,
-                $id: this.$id,
-                $isRoot: this._propertyMap.$isRoot,
-                $parent: this.$parent,
-                $proxy: this.$proxy,
-                $root: this.$root,
-                $scopename: this.$scopename,
-                $target: this.$target,
-                _children: this._children,
-            };
-        });
+        queueDestroyedScopeCleanup(this);
+    }
+    /** @internal Completes deferred reference cleanup after destroy observers have run. */
+    _cleanupDestroyedScope() {
+        if (!this._destroyed)
+            return;
+        if (this._isRoot()) {
+            this._children.length = 0;
+        }
+        else {
+            this._children.length = 0;
+            this._watchers = new Map();
+            this._watcherIndexes = new Map();
+            this._watchersByHash = new Map();
+        }
+        this.$target = null;
+        this.$proxy = undefined;
+        if (!this._isRoot()) {
+            this.$parent = undefined;
+            this.$root = undefined;
+        }
+        this._propertyMap = {
+            $destroy: this._propertyMap.$destroy,
+            $handler: this,
+            $id: this.$id,
+            $isRoot: this._propertyMap.$isRoot,
+            $parent: this.$parent,
+            $proxy: this.$proxy,
+            $root: this.$root,
+            $scopename: this.$scopename,
+            $target: this.$target,
+            _children: this._children,
+        };
     }
     /** @internal Resolves the watched value and notifies a single listener. */
     _notifyListener(listener, target) {
@@ -9744,11 +10323,38 @@ class CompileProvider {
                     state._firstChange = false;
                 }
                 function handleOneWayBindingChange(state, val) {
-                    state._destAny.$target[state._scopeName] = val;
-                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, val, state._firstChange);
+                    if (state._literal) {
+                        const inputs = evaluateOneWayBindingInputs(state);
+                        if (inputs && state._lastInputs) {
+                            let sameInputs = inputs.length === state._lastInputs.length;
+                            for (let i = 0, l = inputs.length; sameInputs && i < l; i++) {
+                                sameInputs = simpleCompare(inputs[i], state._lastInputs[i]);
+                            }
+                            if (sameInputs) {
+                                return;
+                            }
+                        }
+                        state._lastInputs = inputs;
+                    }
+                    state._destAny.$target[state._scopeName] =
+                        state._literal || !isObject(val)
+                            ? val
+                            : createScope(val, state._bindingChangeState._scope.$handler);
+                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, state._destAny.$target[state._scopeName], state._firstChange);
                     if (state._firstChange) {
                         state._firstChange = false;
                     }
+                }
+                function evaluateOneWayBindingInputs(state) {
+                    const inputs = state._parentGet?._inputs;
+                    if (!isArray(inputs)) {
+                        return undefined;
+                    }
+                    const values = new Array(inputs.length);
+                    for (let i = 0, l = inputs.length; i < l; i++) {
+                        values[i] = inputs[i](state._scopeTarget);
+                    }
+                    return values;
                 }
                 function invokePublicLink(state, scope, cloneConnectFn, options) {
                     const { _nodeRef: nodeRef } = state;
@@ -9789,6 +10395,9 @@ class CompileProvider {
                     }
                     if ($linkNode._element) {
                         setScope($linkNode._element, scope);
+                        if (_futureParentElement) {
+                            setCacheData($linkNode._element, FUTURE_PARENT_ELEMENT_KEY, _futureParentElement);
+                        }
                     }
                     if (cloneConnectFn) {
                         registerScopeOwnedNodeRef(scope, $linkNode);
@@ -10201,7 +10810,13 @@ class CompileProvider {
                     if (!interpolateFn) {
                         return;
                     }
-                    applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, interpolateFn(bindingState._scope));
+                    const value = interpolateFn(bindingState._scope);
+                    if (bindingState._lastValue === value &&
+                        "$index" in bindingState._scope.$target) {
+                        return;
+                    }
+                    bindingState._lastValue = value;
+                    applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, value);
                 }
                 /**
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
@@ -11026,6 +11641,7 @@ class CompileProvider {
                         const name = require.substring(match[0].length);
                         const inheritType = match[1] || match[3];
                         const optional = match[2] === "?";
+                        const originalElement = $element;
                         // If only parents then start at the parent element
                         if (inheritType === "^^") {
                             if ($element && $element.parentElement) {
@@ -11056,6 +11672,12 @@ class CompileProvider {
                                         ? getInheritedData($element, dataName)
                                         : getCacheData($element, dataName)
                                     : undefined;
+                            }
+                            if (!value && inheritType && originalElement) {
+                                const futureParentElement = getInheritedData(originalElement, FUTURE_PARENT_ELEMENT_KEY);
+                                if (futureParentElement) {
+                                    value = getInheritedData(futureParentElement, dataName);
+                                }
                             }
                         }
                         if (!value && !optional) {
@@ -11589,14 +12211,22 @@ class CompileProvider {
                                         break;
                                     }
                                     parentGet = attrsAny[attrName] && $parse(attrsAny[attrName]);
+                                    const initialOneWayValue = parentGet && parentGet(scopeTarget);
                                     destAny.$target[scopeName] =
-                                        parentGet && parentGet(scopeTarget);
+                                        parentGet?._literal || !isObject(initialOneWayValue)
+                                            ? initialOneWayValue
+                                            : createScope(initialOneWayValue, scope.$handler);
                                     const oneWayBindingState = {
                                         _bindingChangeState: bindingChangeState,
                                         _destAny: destAny,
                                         _firstChange: true,
+                                        _literal: !!parentGet?._literal,
+                                        _parentGet: parentGet,
                                         _scopeName: scopeName,
+                                        _scopeTarget: scopeTarget,
                                     };
+                                    oneWayBindingState._lastInputs =
+                                        evaluateOneWayBindingInputs(oneWayBindingState);
                                     initialChanges[scopeName] = {
                                         currentValue: destAny.$target[scopeName],
                                         firstChange: oneWayBindingState._firstChange,
@@ -13337,7 +13967,9 @@ class ASTInterpreter {
             }
             let value = undefined;
             if (base) {
-                value = deProxy(base)[name];
+                value = (create
+                    ? base
+                    : deProxy(base))[name];
             }
             if (context) {
                 return { context: base, name, value };
@@ -15153,6 +15785,7 @@ const nullFormCtrl = {
 };
 const PENDING_CLASS = "ng-pending";
 const SUBMITTED_CLASS = "ng-submitted";
+let nextValidityPropagationId = 0;
 /**
  * @property $dirty True if user has already interacted with the form.
  * @property $valid True if all of the containing forms and controls are valid.
@@ -15224,6 +15857,7 @@ class FormController {
         const isValid = this._element.classList.contains(VALID_CLASS);
         this._classCache[VALID_CLASS] = isValid;
         this._classCache[INVALID_CLASS] = !isValid;
+        this._validityPropagationId = nextValidityPropagationId++;
         this.$target = {};
     }
     /**
@@ -15269,6 +15903,7 @@ class FormController {
         // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
         // and not added to the scope.  Now we throw an error.
         assertNotHasOwnProperty(control.$name, "input");
+        this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.$name) {
             this[control.$name] = control;
@@ -15300,6 +15935,7 @@ class FormController {
     /** @internal */
     _renameControl(control, newName) {
         const oldName = control.$name;
+        this._validityPropagationId = nextValidityPropagationId++;
         if (this[oldName] === control) {
             delete this[oldName];
         }
@@ -15317,6 +15953,7 @@ class FormController {
      * may not mean that the form is still `$dirty`.
      */
     $removeControl(control) {
+        this._validityPropagationId = nextValidityPropagationId++;
         if (control.$name &&
             this[control.$name] === control) {
             delete this[control.$name];
@@ -15430,13 +16067,14 @@ class FormController {
      */
     /** @internal */
     _set(object, property, controller) {
+        object = deProxy(object);
         const list = object[property];
-        if (!list) {
-            object = deProxy(object);
+        if (!list || !isArray(list)) {
             object[property] = [controller];
         }
         else {
-            const index = list.indexOf(controller);
+            const rawList = deProxy(list);
+            const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
             if (index === -1) {
                 list.push(controller);
             }
@@ -15447,15 +16085,23 @@ class FormController {
      */
     /** @internal */
     _unset(object, property, controller) {
+        object = deProxy(object);
         const list = object[property];
         if (!list) {
             return;
         }
-        const index = arrayRemove(list, controller);
-        if (index === -1) {
-            arrayRemove(list, controller.$target);
+        if (!isArray(list)) {
+            if (list === controller || deProxy(list) === deProxy(controller)) {
+                delete object[property];
+            }
+            return;
         }
-        if (list.length === 0) {
+        const rawList = deProxy(list);
+        const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
+        if (index !== -1) {
+            rawList.splice(index, 1);
+        }
+        if (rawList.length === 0) {
             delete object[property];
         }
     }
@@ -16058,6 +16704,35 @@ function transformData(data, headers, status, fns) {
 function isSuccess(status) {
     return status >= Http._OK && status < Http._MultipleChoices;
 }
+function deProxyHttpPayload(value, seen = new WeakMap()) {
+    const source = deProxy(value);
+    if (!isObject(source)) {
+        return source;
+    }
+    if (isDate(source) ||
+        isFile(source) ||
+        isBlob(source) ||
+        isFormData(source)) {
+        return source;
+    }
+    if (seen.has(source)) {
+        return seen.get(source);
+    }
+    if (isArray(source)) {
+        const output = [];
+        seen.set(source, output);
+        for (let i = 0; i < source.length; i++) {
+            output[i] = deProxyHttpPayload(source[i], seen);
+        }
+        return output;
+    }
+    const output = {};
+    seen.set(source, output);
+    for (const key of keys(source)) {
+        output[key] = deProxyHttpPayload(source[key], seen);
+    }
+    return output;
+}
 /** Configures the default behavior of the `$http` service. */
 function HttpProvider() {
     /**
@@ -16076,7 +16751,7 @@ function HttpProvider() {
                     !isFile(data) &&
                     !isBlob(data) &&
                     !isFormData(data)
-                    ? toJson(data)
+                    ? toJson(deProxyHttpPayload(data))
                     : data;
             },
         ],
@@ -17457,6 +18132,7 @@ function defaults$1(dst, src) {
     });
 }
 
+const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 const ngModelMinErr = minErr("ngModel");
 /**
  * @property $viewValue The actual value from the control's view.
@@ -17538,6 +18214,7 @@ class NgModelController {
         this._parse = $parse;
         this._exceptionHandler = $exceptionHandler;
         this._destroyed = false;
+        this._lastValidityParentVersions = {};
         this._hasNativeValidators = false;
         this._classCache = {};
         const isValid = this._element.classList.contains(VALID_CLASS);
@@ -17599,6 +18276,7 @@ class NgModelController {
             cachedToggleClass(ctrl, VALID_CLASS + validationErrorKeyParam, isValid === true);
             cachedToggleClass(ctrl, INVALID_CLASS + validationErrorKeyParam, isValid === false);
         }
+        const previousCombinedState = this._combinedValidityState(validationErrorKey);
         if (isUndefined(state)) {
             createAndSet(this, "$pending", validationErrorKey);
         }
@@ -17632,21 +18310,41 @@ class NgModelController {
         // combined state in this.$error[validationError] (used for forms),
         // where setting/unsetting only increments/decrements the value,
         // and does not replace it.
-        let combinedState;
-        if (this.$pending && this.$pending[validationErrorKey]) {
-            combinedState = undefined;
-        }
-        else if (this.$error[validationErrorKey]) {
-            combinedState = false;
-        }
-        else if (this._success[validationErrorKey]) {
-            combinedState = true;
-        }
-        else {
-            combinedState = null;
+        const combinedState = this._combinedValidityState(validationErrorKey);
+        const parentVersion = this._validityParentVersion();
+        const lastParentVersion = this._lastValidityParentVersions[validationErrorKey];
+        if (combinedState === previousCombinedState &&
+            parentVersion === lastParentVersion) {
+            return;
         }
         toggleValidationCss(this, validationErrorKey, combinedState);
         this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+        this._lastValidityParentVersions[validationErrorKey] = parentVersion;
+    }
+    /** @internal Returns the aggregate validity state for one validation key. */
+    _combinedValidityState(validationErrorKey) {
+        if (this.$pending && this.$pending[validationErrorKey]) {
+            return undefined;
+        }
+        if (this.$error[validationErrorKey]) {
+            return false;
+        }
+        if (this._success[validationErrorKey]) {
+            return true;
+        }
+        return null;
+    }
+    /** @internal Returns the current parent form chain version for validity propagation. */
+    _validityParentVersion() {
+        let form = deProxy(this._parentForm);
+        let version = 1;
+        while (form && form !== nullFormCtrl) {
+            version =
+                version * VALIDITY_PARENT_VERSION_MULTIPLIER +
+                    (form._validityPropagationId ?? 0);
+            form = deProxy(form._parentForm);
+        }
+        return version;
     }
     /** @internal */
     _initGetterSetters() {
@@ -17952,6 +18650,12 @@ class NgModelController {
             // If there was no change in validity, don't update the model
             // This prevents changing an invalid modelValue to undefined
             if (!allowInvalid && prevValid !== allValid) {
+                if (allValid &&
+                    that.$isEmpty(viewValue) &&
+                    !that.$isEmpty(modelValue) &&
+                    isUndefined(prevModelValue)) {
+                    return;
+                }
                 // Note: Don't check this.$valid here, as we could have
                 // external validators (e.g. calculated on the server),
                 // that just call $setValidity and need the model value
@@ -18526,7 +19230,13 @@ function ngModelDirective() {
                         }
                     });
                     const deregisterWatch = (scope.$watch(attr.ngModel, (val) => {
-                        modelCtrl._setModelValue(deProxy(val));
+                        const modelValue = deProxy(val);
+                        if (modelValue === modelCtrl.$modelValue ||
+                            (Number.isNaN(modelValue) &&
+                                Number.isNaN(modelCtrl.$modelValue))) {
+                            return;
+                        }
+                        modelCtrl._setModelValue(modelValue);
                     }) ||
                         (() => {
                             /* empty */
@@ -18753,16 +19463,27 @@ function createStringDateInputType(type, regexp) {
         // Optional min/max
         if (isDefined(attr.min) || attr.ngMin) {
             let minVal = attr.min || $parse?.(attr.ngMin)(scope);
-            ctrl.$validators.min = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue >= minVal;
+            ctrl.$validators.min = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) ||
+                ctrl.$isEmpty(minVal) ||
+                viewValue >= minVal;
             attr.$observe("min", (val) => {
+                if (val === minVal) {
+                    return;
+                }
                 minVal = val;
                 ctrl.$validate();
             });
         }
         if (isDefined(attr.max) || attr.ngMax) {
             let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
-            ctrl.$validators.max = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
+            ctrl.$validators.max = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) ||
+                ctrl.$isEmpty(maxVal) ||
+                !isString(maxVal) ||
+                viewValue <= maxVal;
             attr.$observe("max", (val) => {
+                if (val === maxVal) {
+                    return;
+                }
                 maxVal = val;
                 ctrl.$validate();
             });
@@ -20033,11 +20754,12 @@ class SelectController {
     _readValue() {
         const val = this._element.value;
         const realVal = val in this._selectValueMap ? this._selectValueMap[val] : val;
-        return this._hasOption(realVal) ? realVal : null;
+        return this._hasOption(realVal) ? deProxy(realVal) : null;
     }
     /** @ignore */
     /** @internal */
     _writeValue(value) {
+        value = deProxy(value);
         const currentlySelectedOption = this._element.options[this._element.selectedIndex];
         if (currentlySelectedOption)
             currentlySelectedOption.selected = false;
@@ -20061,6 +20783,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _addOption(value, element) {
+        value = deProxy(value);
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
         assertNotHasOwnProperty(value, '"option value"');
@@ -20087,6 +20810,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _removeOption(value) {
+        value = deProxy(value);
         const count = this._optionsMap.get(value);
         if (count) {
             if (count === 1) {
@@ -20104,6 +20828,7 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _hasOption(value) {
+        value = deProxy(value);
         return !!this._optionsMap.get(value);
     }
     /** @ignore */
@@ -20173,11 +20898,12 @@ class SelectController {
                     delete this._selectValueMap[hashedVal];
                     removal = true;
                 }
-                hashedVal = hashKey(newVal);
-                oldVal = newVal;
-                registeredValue = newVal;
-                this._selectValueMap[hashedVal] = newVal;
-                this._addOption(newVal, optionElement);
+                const rawNewVal = deProxy(newVal);
+                hashedVal = hashKey(rawNewVal);
+                oldVal = rawNewVal;
+                registeredValue = rawNewVal;
+                this._selectValueMap[hashedVal] = rawNewVal;
+                this._addOption(rawNewVal, optionElement);
                 optionElement.setAttribute("value", hashedVal);
                 if (removal && previouslySelected) {
                     this._scheduleViewValueUpdate();
@@ -20366,10 +21092,14 @@ function optionDirective($interpolate) {
                 const optionElementParam = elemParam;
                 const selectCtrlName = "$selectController";
                 const parent = optionElementParam.parentElement;
+                const futureParent = getInheritedData(optionElementParam, FUTURE_PARENT_ELEMENT_KEY);
                 const selectCtrl = (parent ? getCacheData(parent, selectCtrlName) : undefined) ||
                     (parent?.parentElement
                         ? getCacheData(parent.parentElement, selectCtrlName)
-                        : undefined);
+                        : undefined) ||
+                    (futureParent
+                        ? getInheritedData(futureParent, selectCtrlName)
+                        : null);
                 if (selectCtrl) {
                     selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn);
                 }
@@ -20444,8 +21174,11 @@ function ngRepeatDirective($injector) {
         if (keyIdentifier && scope[keyIdentifier] !== key) {
             scope[keyIdentifier] = key;
         }
-        if (value && scope.$target._hashKey !== value._hashKey) {
-            scope.$target._hashKey = value._hashKey;
+        if (value && (typeof value === "object" || typeof value === "function")) {
+            setHashKey(scope.$target, hashKey(value));
+        }
+        else {
+            setHashKey(scope.$target, null);
         }
         if (!updatePositionLocals) {
             return;
@@ -20473,6 +21206,52 @@ function ngRepeatDirective($injector) {
         if (scope.$odd !== isOdd) {
             scope.$odd = isOdd;
         }
+    }
+    function initializeScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
+        const target = scope.$target;
+        target[valueIdentifier] = value;
+        if (isProxy(value)) {
+            scope.$handler._foreignProxies.add(value);
+        }
+        if (keyIdentifier) {
+            target[keyIdentifier] = key;
+        }
+        if (value && (typeof value === "object" || typeof value === "function")) {
+            setHashKey(target, hashKey(value));
+        }
+        else {
+            setHashKey(target, null);
+        }
+        target.$index = index;
+        target.$first = index === 0;
+        target.$last = index === arrayLength - 1;
+        target.$middle = !(target.$first || target.$last);
+        target.$odd = (index & 1) !== 0;
+        target.$even = !target.$odd;
+    }
+    function reconcileScopedObjectValue(scope, valueIdentifier, value) {
+        const current = scope[valueIdentifier];
+        if (!current ||
+            !value ||
+            typeof current !== "object" ||
+            typeof value !== "object" ||
+            isArray(current) ||
+            isArray(value)) {
+            return value;
+        }
+        const currentKeys = Object.keys(current);
+        for (let i = 0, l = currentKeys.length; i < l; i++) {
+            const key = currentKeys[i];
+            if (!hasOwn(value, key)) {
+                delete current[key];
+            }
+        }
+        const valueKeys = Object.keys(value);
+        for (let i = 0, l = valueKeys.length; i < l; i++) {
+            const key = valueKeys[i];
+            current[key] = value[key];
+        }
+        return current;
     }
     function getBlockStart(block) {
         return isArray(block._clone) ? block._clone[0] : block._clone;
@@ -20539,8 +21318,28 @@ function ngRepeatDirective($injector) {
         }
         range.detach();
     }
-    function trackByIdArrayFn(_$scope, _key, value) {
-        return hashKey(value);
+    function isRepeatIndexKey(value) {
+        const valueType = typeof value;
+        return (valueType === "string" ||
+            valueType === "number" ||
+            valueType === "boolean");
+    }
+    function trackByObjectIndex(value, indexProperty) {
+        if (!value || (typeof value !== "object" && typeof value !== "function")) {
+            return undefined;
+        }
+        const property = indexProperty || "id";
+        if (!hasOwn(value, property)) {
+            return undefined;
+        }
+        const indexValue = value[property];
+        if (!isRepeatIndexKey(indexValue)) {
+            return undefined;
+        }
+        return `property:${property}:${typeof indexValue}:${indexValue}`;
+    }
+    function createTrackByIdArrayFn(indexProperty) {
+        return (_$scope, _key, value) => trackByObjectIndex(value, indexProperty) ?? hashKey(value);
     }
     function trackByIdObjFn(_$scope, key) {
         return key;
@@ -20640,6 +21439,7 @@ function ngRepeatDirective($injector) {
         compile(_$element, $attr) {
             const expression = $attr.ngRepeat;
             const hasAnimate = !!$attr.animate;
+            const indexProperty = $attr.index || $attr.dataIndex || undefined;
             let match = expression.match(/^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/);
             if (!match) {
                 throw ngRepeatMinErr("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -20667,7 +21467,10 @@ function ngRepeatDirective($injector) {
             });
             function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
                 let previousNode;
-                function insertNodesAfter(nodes, afterNode) {
+                let pendingInsertAnchor;
+                let pendingInsertEnd;
+                let pendingInsertFragment;
+                function insertNodesAfterNow(nodes, afterNode) {
                     const { parentNode } = afterNode;
                     if (!parentNode)
                         return;
@@ -20680,6 +21483,33 @@ function ngRepeatDirective($injector) {
                         fragment.appendChild(nodes[i]);
                     }
                     parentNode.insertBefore(fragment, afterNode.nextSibling);
+                }
+                function flushPendingInserts() {
+                    if (!pendingInsertFragment || !pendingInsertAnchor) {
+                        return;
+                    }
+                    const { parentNode } = pendingInsertAnchor;
+                    if (parentNode) {
+                        parentNode.insertBefore(pendingInsertFragment, pendingInsertAnchor.nextSibling);
+                    }
+                    pendingInsertAnchor = undefined;
+                    pendingInsertEnd = undefined;
+                    pendingInsertFragment = undefined;
+                }
+                function insertNodesAfter(nodes, afterNode) {
+                    flushPendingInserts();
+                    insertNodesAfterNow(nodes, afterNode);
+                }
+                function queueNodesAfter(nodes, afterNode) {
+                    if (!pendingInsertFragment || afterNode !== pendingInsertEnd) {
+                        flushPendingInserts();
+                        pendingInsertAnchor = afterNode;
+                        pendingInsertFragment = createDocumentFragment();
+                    }
+                    for (let i = 0; i < nodes.length; i++) {
+                        pendingInsertFragment.appendChild(nodes[i]);
+                    }
+                    pendingInsertEnd = nodes[nodes.length - 1];
                 }
                 function moveSwappedBlocks(leftIndex, rightIndex) {
                     const firstBlock = lastBlockOrder[leftIndex];
@@ -20739,7 +21569,7 @@ function ngRepeatDirective($injector) {
                     }
                     if (isArrayLike(collection)) {
                         collectionKeys = collection;
-                        trackByIdFn = trackByIdArrayFn;
+                        trackByIdFn = createTrackByIdArrayFn(indexProperty);
                     }
                     else {
                         trackByIdFn = trackByIdObjFn;
@@ -20923,9 +21753,11 @@ function ngRepeatDirective($injector) {
                         value = collection[key];
                         block = nextBlockOrder[index];
                         if (block._scope) {
+                            flushPendingInserts();
+                            const collectionValue = value;
                             const shouldUpdatePositionLocals = !!block._usesPositionLocals;
                             const shouldUpdateKeyLocal = !!keyIdentifier && block._scope[keyIdentifier] !== key;
-                            const shouldUpdateValueLocal = block._scope[valueIdentifier] !== value;
+                            const shouldUpdateValueLocal = block._value !== collectionValue;
                             const existingClone = block._clone;
                             if (!existingClone) {
                                 continue;
@@ -20955,11 +21787,17 @@ function ngRepeatDirective($injector) {
                             if (shouldUpdatePositionLocals ||
                                 shouldUpdateKeyLocal ||
                                 shouldUpdateValueLocal) {
+                                if (shouldUpdateValueLocal) {
+                                    value = reconcileScopedObjectValue(block._scope, valueIdentifier, value);
+                                }
                                 updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength, shouldUpdatePositionLocals);
+                                block._value = collectionValue;
                             }
                         }
                         else {
-                            $transclude?.((clone, scope) => {
+                            const childScope = $scope.$transcluded();
+                            initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
+                            $transclude?.(childScope, (clone, scope) => {
                                 const normalizedClone = normalizeCloneNodes(clone);
                                 const cloneNodes = isArray(normalizedClone)
                                     ? normalizedClone
@@ -20972,18 +21810,25 @@ function ngRepeatDirective($injector) {
                                     previousNode = endNode;
                                 }
                                 else {
-                                    insertNodesAfter(cloneNodes, previousNode);
+                                    if (cloneNodes.length === 1 &&
+                                        cloneNodes[0].nodeType === NodeType._ELEMENT_NODE) {
+                                        queueNodesAfter(cloneNodes, previousNode);
+                                    }
+                                    else {
+                                        insertNodesAfter(cloneNodes, previousNode);
+                                    }
                                     previousNode = endNode;
                                 }
                                 block._clone = normalizedClone;
+                                block._value = value;
                                 nextBlockMap[block._id] = block;
-                                updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                             });
                             if (block._scope) {
                                 block._usesPositionLocals = scopeUsesRepeatPositionLocals(block._scope);
                             }
                         }
                     }
+                    flushPendingInserts();
                     lastBlockMap = nextBlockMap;
                     lastBlockOrder = nextBlockOrder;
                 }, isDefined(attr.lazy));
@@ -21718,6 +22563,296 @@ function ngWasmDirective() {
             $scope.$target[$attrs.as || "wasm"] = (await instantiateWasm($attrs.src)).exports;
         },
     };
+}
+
+ngWebTransportDirective.$inject = [
+    _webTransport,
+    _parse,
+    _log,
+    _exceptionHandler,
+];
+/**
+ * Connects an element to a WebTransport endpoint and evaluates template
+ * expressions for incoming datagrams or unidirectional streams.
+ */
+function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler) {
+    const decoder = new TextDecoder();
+    return {
+        restrict: "A",
+        link(scope, element, attrs) {
+            const eventName = attrs.trigger || "load";
+            const mode = parseMode(attrs.mode);
+            const transform = parseTransform(attrs.transform);
+            let connection;
+            let streamReader = null;
+            function attr(name) {
+                return (attrs[name] || attrs[`data${name[0].toUpperCase()}${name.slice(1)}`]);
+            }
+            function evaluate(expression, locals) {
+                if (!expression)
+                    return;
+                try {
+                    $parse(expression)(scope, locals);
+                    if (isFunction(scope.$flushQueue)) {
+                        scope.$flushQueue();
+                    }
+                }
+                catch (error) {
+                    $exceptionHandler(error);
+                }
+            }
+            function dispatch(name, detail) {
+                return element.dispatchEvent(new CustomEvent(`ng:webtransport:${name}`, {
+                    bubbles: true,
+                    cancelable: true,
+                    detail,
+                }));
+            }
+            function resolveUrl() {
+                const value = attrs.ngWebTransport;
+                if (!value)
+                    return undefined;
+                if (/^https:\/\//i.test(value))
+                    return value;
+                try {
+                    const evaluated = $parse(value)(scope);
+                    return isString(evaluated) ? evaluated : value;
+                }
+                catch {
+                    return value;
+                }
+            }
+            function resolveConfig() {
+                const expression = attr("config");
+                if (!expression)
+                    return {};
+                const value = $parse(expression)(scope);
+                return isObject(value) ? { ...value } : {};
+            }
+            function assignConnection(nextConnection) {
+                const expression = attr("as");
+                if (!expression)
+                    return;
+                const parsed = $parse(expression);
+                if (isFunction(parsed._assign)) {
+                    parsed._assign(scope, nextConnection);
+                    if (isFunction(scope.$flushQueue)) {
+                        scope.$flushQueue();
+                    }
+                }
+                else {
+                    $log.warn(`ngWebTransport: "${expression}" is not assignable`);
+                }
+            }
+            function reconnectEnabled() {
+                const value = attrs.reconnect || attrs.dataReconnect;
+                return value === "" || value === true || value === "true";
+            }
+            function retryDelay() {
+                return parseInt(attr("retryDelay") || "", 10) || 1000;
+            }
+            function maxRetries() {
+                const value = parseInt(attr("maxRetries") || "", 10);
+                return Number.isFinite(value) ? value : Infinity;
+            }
+            function closeConnection(reason) {
+                const current = connection;
+                if (!current)
+                    return;
+                current.closed.catch(() => {
+                    // Directive-owned sessions may be torn down before the browser finishes connecting.
+                });
+                try {
+                    current.close(reason ? { reason } : undefined);
+                }
+                catch {
+                    current.ready
+                        .then(() => current.close(reason ? { reason } : undefined))
+                        .catch(() => {
+                        // The browser may reject a connection that is destroyed while opening.
+                    });
+                }
+            }
+            function handleError(error, locals = {}) {
+                if (connection) {
+                    dispatch("error", { error, connection, ...locals });
+                }
+                evaluate(attr("onError"), {
+                    $connection: connection,
+                    $error: error,
+                    ...locals,
+                });
+            }
+            function transformMessage(data) {
+                if (transform === "bytes") {
+                    return { $message: data };
+                }
+                const text = decoder.decode(data);
+                if (transform === "text") {
+                    return { $message: text, $text: text };
+                }
+                return { $message: JSON.parse(text), $text: text };
+            }
+            function handleMessage(data, event = null) {
+                if (!connection)
+                    return;
+                let transformed;
+                try {
+                    transformed = transformMessage(data);
+                }
+                catch (error) {
+                    handleError(error, { $data: data, $text: decoder.decode(data) });
+                    return;
+                }
+                const locals = {
+                    $connection: connection,
+                    $data: data,
+                    $event: event,
+                    ...transformed,
+                };
+                if (!dispatch("message", locals)) {
+                    closeConnection("message canceled");
+                    return;
+                }
+                evaluate(attr("onMessage"), locals);
+                if (isUndefined(attr("onMessage"))) {
+                    element.textContent = isString(locals.$message)
+                        ? locals.$message
+                        : JSON.stringify(locals.$message);
+                }
+            }
+            async function readIncomingStreams(nextConnection) {
+                const streams = nextConnection.transport.incomingUnidirectionalStreams;
+                if (!streams) {
+                    throw new Error("WebTransport incoming unidirectional streams are not available");
+                }
+                streamReader = streams.getReader();
+                try {
+                    for (;;) {
+                        const result = await streamReader.read();
+                        if (result.done)
+                            return;
+                        handleMessage(await readBytes(result.value));
+                    }
+                }
+                finally {
+                    streamReader.releaseLock();
+                    streamReader = null;
+                }
+            }
+            async function connect() {
+                const url = resolveUrl();
+                if (!url) {
+                    $log.warn("ngWebTransport: missing URL");
+                    return;
+                }
+                closeConnection("reconnect");
+                streamReader?.cancel("reconnect");
+                const userConfig = resolveConfig();
+                const userOnOpen = userConfig.onOpen;
+                const userOnClose = userConfig.onClose;
+                const userOnError = userConfig.onError;
+                const userOnDatagram = userConfig.onDatagram;
+                const userOnReconnect = userConfig.onReconnect;
+                const config = {
+                    ...userConfig,
+                    reconnect: reconnectEnabled() || userConfig.reconnect,
+                    retryDelay: attr("retryDelay") ? retryDelay() : userConfig.retryDelay,
+                    maxRetries: attr("maxRetries") ? maxRetries() : userConfig.maxRetries,
+                    onOpen: () => {
+                        userOnOpen?.();
+                        if (!connection)
+                            return;
+                        dispatch("open", { connection, url });
+                        evaluate(attr("onOpen"), { $connection: connection, $url: url });
+                        if (mode !== "datagram") {
+                            readIncomingStreams(connection).catch((error) => {
+                                if (!scope._destroyed)
+                                    handleError(error);
+                            });
+                        }
+                    },
+                    onClose: () => {
+                        userOnClose?.();
+                        if (!connection)
+                            return;
+                        dispatch("close", { connection });
+                        evaluate(attr("onClose"), { $connection: connection });
+                    },
+                    onError: (error) => {
+                        userOnError?.(error);
+                        handleError(error);
+                    },
+                    onDatagram: (event) => {
+                        userOnDatagram?.(event);
+                        if (mode === "datagram") {
+                            handleMessage(event.data);
+                        }
+                    },
+                    onReconnect: async (event) => {
+                        dispatch("reconnect", event);
+                        evaluate(attr("onReconnect"), {
+                            $attempt: event.attempt,
+                            $connection: event.connection,
+                            $count: event.attempt,
+                            $error: event.error,
+                            $url: event.url,
+                        });
+                        await userOnReconnect?.(event);
+                    },
+                };
+                connection = $webTransport(url, config);
+                connection.closed.catch(() => {
+                    // Reconnect/error hooks own directive connection failures.
+                });
+                assignConnection(connection);
+                await connection.ready;
+            }
+            element.addEventListener(eventName, () => {
+                connect().catch((error) => handleError(error));
+            });
+            scope.$on("$destroy", () => {
+                streamReader?.cancel("scope destroyed");
+                closeConnection("scope destroyed");
+            });
+            if (eventName === "load") {
+                element.dispatchEvent(new Event("load"));
+            }
+        },
+    };
+}
+function parseMode(value) {
+    if (value === "stream" || value === "unidirectional")
+        return value;
+    return "datagram";
+}
+function parseTransform(value) {
+    if (value === "text" || value === "json")
+        return value;
+    return "bytes";
+}
+async function readBytes(stream) {
+    const reader = stream.getReader();
+    const chunks = [];
+    try {
+        for (;;) {
+            const result = await reader.read();
+            if (result.done)
+                break;
+            chunks.push(result.value);
+        }
+    }
+    finally {
+        reader.releaseLock();
+    }
+    const length = chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    chunks.forEach((chunk) => {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+    });
+    return bytes;
 }
 
 /**
@@ -29840,26 +30975,59 @@ function expandExpression(expression, vars) {
 }
 
 /**
- * Typed REST resource client backed by {@link HttpService}.
+ * Default REST backend that adapts {@link RestRequest} objects to `$http`.
+ *
+ * This preserves the existing HTTP behavior for `$rest` resources while making
+ * the transport swappable for custom resource backends.
+ */
+class HttpRestBackend {
+    /** Creates a backend that executes REST requests through `$http`. */
+    constructor(
+    /** Runtime `$http` service used to execute requests. */
+    _$http, 
+    /** Default `$http` options merged into every request. */
+    _options = {}) {
+        this._$http = _$http;
+        this._options = _options;
+    }
+    /**
+     * Send the REST request through `$http`.
+     *
+     * Request-specific options override backend defaults.
+     */
+    request(request) {
+        return this._$http({
+            method: request.method,
+            url: request.url,
+            data: request.data ?? null,
+            params: request.params || {},
+            ...this._options,
+            ...(request.options || {}),
+        });
+    }
+}
+
+/**
+ * Typed REST resource client backed by {@link RestBackend}.
  *
  * A `RestService` is usually created by injecting `$rest` and calling it with a
- * base URL, optional {@link EntityClass}, and optional `$http` request defaults.
+ * base URL, optional {@link EntityClass}, and optional backend request defaults.
  */
 class RestService {
     /**
      * @throws Error when `baseUrl` is empty or not a string.
      */
-    constructor($http, 
+    constructor(backend, 
     /** Base URL or RFC 6570 URI template for this resource. */
     baseUrl, 
     /** Optional mapper that converts raw JSON objects into entity instances. */
     entityClass, 
-    /** Extra `$http` options merged into every request. */
+    /** Extra backend options merged into every request. */
     options = {}) {
         if (!isString(baseUrl) || baseUrl.length === 0) {
             throw new Error("baseUrl required");
         }
-        this._$http = $http;
+        this._backend = backend;
         this._baseUrl = baseUrl;
         this._entityClass = entityClass;
         this._options = options;
@@ -29874,7 +31042,7 @@ class RestService {
     buildUrl(template, params) {
         return expandUriTemplate(template, params || {});
     }
-    mapEntity(data) {
+    _mapEntity(data) {
         if (!data)
             return data;
         return this._entityClass ? new this._entityClass(data) : data;
@@ -29887,25 +31055,26 @@ class RestService {
      */
     async list(params = {}) {
         const url = this.buildUrl(this._baseUrl, params);
-        const resp = await this.request("GET", url, null, params);
+        const resp = await this._request("GET", url, null, params, url);
         if (!isArray(resp.data))
             return [];
-        return resp.data.map((data) => this.mapEntity(data));
+        return resp.data.map((data) => this._mapEntity(data));
     }
     /**
-     * Fetch one resource by ID.
+     * Fetch one resource by ID using `GET`.
      *
      * @param id - Resource identifier appended to the base URL.
      * @param params - Additional URI template or query parameters.
      * @returns The mapped entity, raw response value, or `null` when empty.
      * @throws Error when `id` is null or undefined.
      */
-    async read(id, params = {}) {
+    async get(id, params = {}) {
         if (isNullOrUndefined(id))
             throw new Error(`badarg:id ${id}`);
         const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
-        const resp = await this.request("GET", url, null, params);
-        return this.mapEntity(resp.data) ?? null;
+        const collectionUrl = this.buildUrl(this._baseUrl, params);
+        const resp = await this._request("GET", url, null, params, collectionUrl, id);
+        return this._mapEntity(resp.data) ?? null;
     }
     /**
      * Create a resource using `POST`.
@@ -29917,8 +31086,8 @@ class RestService {
     async create(item) {
         if (isNullOrUndefined(item))
             throw new Error(`badarg:item ${item}`);
-        const resp = await this.request("POST", this._baseUrl, item);
-        return this.mapEntity(resp.data);
+        const resp = await this._request("POST", this._baseUrl, item, {}, this._baseUrl);
+        return this._mapEntity(resp.data);
     }
     /**
      * Update a resource using `PUT`.
@@ -29933,8 +31102,8 @@ class RestService {
             throw new Error(`badarg:id ${id}`);
         const url = `${this._baseUrl}/${id}`;
         try {
-            const resp = await this.request("PUT", url, item);
-            return this.mapEntity(resp.data) ?? null;
+            const resp = await this._request("PUT", url, item, {}, this._baseUrl, id);
+            return this._mapEntity(resp.data) ?? null;
         }
         catch {
             return null;
@@ -29952,47 +31121,45 @@ class RestService {
             throw new Error(`badarg:id ${id}`);
         const url = `${this._baseUrl}/${id}`;
         try {
-            await this.request("DELETE", url);
+            await this._request("DELETE", url, null, {}, this._baseUrl, id);
             return true;
         }
         catch {
             return false;
         }
     }
-    async request(method, url, data = null, params = {}) {
-        return this._$http({
+    async _request(method, url, data = null, params = {}, collectionUrl, id) {
+        return this._backend.request({
             method,
             url,
             data,
             params,
-            ...this._options,
+            collectionUrl,
+            id,
+            options: this._options,
         });
     }
 }
 RestService.$nonscope = true;
 class RestProvider {
     constructor() {
-        this._definitions = [];
         this.$get = [
             _http,
             ($http) => {
-                const services = new Map();
-                const factory = (baseUrl, entityClass, options = {}) => new RestService($http, baseUrl, entityClass, options);
-                for (const def of this._definitions) {
-                    services.set(def.name, factory(def.url, def.entityClass, def.options));
-                }
-                return factory;
+                return (baseUrl, entityClass, options = {}) => {
+                    const { backend, ...requestOptions } = options;
+                    return new RestService(backend || new HttpRestBackend($http), baseUrl, entityClass, requestOptions);
+                };
             },
         ];
     }
     /**
-     * Register a REST resource definition during module configuration.
+     * Accept a REST resource definition during provider configuration.
      *
-     * Registered definitions are available to the `$rest` factory when the
-     * provider creates it.
+     * Named injectable resources are registered by {@link NgModule.rest}; the
+     * provider exposes the runtime `$rest` factory.
      */
     rest(name, url, entityClass, options = {}) {
-        this._definitions.push({ name, url, entityClass, options });
     }
 }
 
@@ -31104,6 +32271,260 @@ class TemplateRequestProvider {
     }
 }
 
+class ManagedWebTransportConnection {
+    constructor(url, TransportCtor, transportOptions, config, log) {
+        this._encoder = new TextEncoder();
+        this._closing = false;
+        this._closedSettled = false;
+        this._reconnectAttempts = 0;
+        this._url = url;
+        this._TransportCtor = TransportCtor;
+        this._transportOptions = transportOptions;
+        this._config = config;
+        this._log = log;
+        this.closed = new Promise((resolve, reject) => {
+            this._closedResolve = resolve;
+            this._closedReject = reject;
+        });
+        this._open();
+    }
+    async sendDatagram(data) {
+        await this.transport.ready;
+        const writer = this.transport.datagrams.writable.getWriter();
+        try {
+            await writer.write(this._toBytes(data));
+        }
+        finally {
+            writer.releaseLock();
+        }
+    }
+    sendText(data) {
+        return this.sendDatagram(data);
+    }
+    async sendStream(data) {
+        await this.transport.ready;
+        const stream = await this.transport.createUnidirectionalStream();
+        const writable = "writable" in stream ? stream.writable : stream;
+        const writer = writable.getWriter();
+        try {
+            await writer.write(this._toBytes(data));
+            await writer.close();
+        }
+        finally {
+            writer.releaseLock();
+        }
+    }
+    async createBidirectionalStream() {
+        await this.transport.ready;
+        return this.transport.createBidirectionalStream();
+    }
+    close(closeInfo) {
+        this._closing = true;
+        this._clearReconnectTimer();
+        this.transport.close(closeInfo);
+    }
+    _open(attempt = 0, previousError) {
+        let transport;
+        try {
+            transport = new this._TransportCtor(this._url, this._transportOptions);
+        }
+        catch (error) {
+            this._handleNativeClose(error);
+            this.ready = Promise.reject(error);
+            return;
+        }
+        this.transport = transport;
+        this.ready = transport.ready.then(async () => {
+            this._readDatagrams(transport);
+            if (attempt > 0) {
+                await this._notifyReconnect(attempt, previousError);
+            }
+            this._config.onOpen?.();
+            return this;
+        }, (error) => {
+            this._handleNativeClose(error, transport);
+            throw error;
+        });
+        transport.closed.then(() => {
+            this._handleNativeClose(undefined, transport);
+        }, (error) => {
+            this._handleNativeClose(error, transport);
+        });
+    }
+    async _notifyReconnect(attempt, error) {
+        if (!this._config.onReconnect)
+            return;
+        try {
+            await this._config.onReconnect({
+                attempt,
+                connection: this,
+                error,
+                url: this._url,
+            });
+        }
+        catch (nextError) {
+            this._config.onError?.(nextError);
+            this._log.error("WebTransport reconnect hook failed", nextError);
+        }
+    }
+    _handleNativeClose(error, transport = this.transport) {
+        if (transport !== this.transport || this._closedSettled)
+            return;
+        if (this._closing) {
+            this._config.onClose?.();
+            this._settleClosed();
+            return;
+        }
+        if (this._config.reconnect && this._scheduleReconnect(error)) {
+            return;
+        }
+        if (error) {
+            this._config.onError?.(error);
+            this._settleClosed(error);
+            return;
+        }
+        this._config.onClose?.();
+        this._settleClosed();
+    }
+    _scheduleReconnect(error) {
+        if (this._closedSettled || !this._config.reconnect)
+            return false;
+        const maxRetries = this._config.maxRetries ?? Infinity;
+        if (this._reconnectAttempts >= maxRetries)
+            return false;
+        const attempt = ++this._reconnectAttempts;
+        const delay = this._resolveRetryDelay(attempt, error);
+        this._clearReconnectTimer();
+        this._reconnectTimer = setTimeout(() => {
+            this._reconnectTimer = undefined;
+            this._open(attempt, error);
+        }, delay);
+        return true;
+    }
+    _resolveRetryDelay(attempt, error) {
+        const retryDelay = this._config.retryDelay ?? 1000;
+        const delay = isFunction(retryDelay)
+            ? retryDelay(attempt, error)
+            : retryDelay;
+        return isNumber(delay) && Number.isFinite(delay) && delay > 0 ? delay : 0;
+    }
+    _settleClosed(error) {
+        if (this._closedSettled)
+            return;
+        this._closedSettled = true;
+        this._clearReconnectTimer();
+        if (error) {
+            this._closedReject(error);
+        }
+        else {
+            this._closedResolve();
+        }
+    }
+    _clearReconnectTimer() {
+        if (!this._reconnectTimer)
+            return;
+        clearTimeout(this._reconnectTimer);
+        this._reconnectTimer = undefined;
+    }
+    async _readDatagrams(transport) {
+        if (!this._config.onDatagram)
+            return;
+        const reader = transport.datagrams.readable.getReader();
+        try {
+            for (;;) {
+                const result = await reader.read();
+                if (result.done)
+                    return;
+                const data = result.value;
+                let message;
+                try {
+                    message = this._config.transformDatagram
+                        ? this._config.transformDatagram(data)
+                        : data;
+                }
+                catch (error) {
+                    this._config.onError?.(error);
+                    this._log.error("WebTransport datagram transform failed", error);
+                    continue;
+                }
+                this._config.onDatagram({ data, message });
+            }
+        }
+        catch (error) {
+            if (this._closing ||
+                this._closedSettled ||
+                (this._config.reconnect && transport === this.transport)) {
+                return;
+            }
+            this._config.onError?.(error);
+            this._log.error("WebTransport datagram read failed", error);
+        }
+        finally {
+            reader.releaseLock();
+        }
+    }
+    _toBytes(data) {
+        if (isString(data)) {
+            return this._encoder.encode(data);
+        }
+        if (data instanceof Uint8Array) {
+            return data;
+        }
+        if (data instanceof ArrayBuffer) {
+            return new Uint8Array(data);
+        }
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+}
+ManagedWebTransportConnection.$nonscope = true;
+/** Provider for the `$webTransport` service. */
+class WebTransportProvider {
+    constructor() {
+        /** Default options merged into every `$webTransport` call. */
+        this.defaults = {};
+        /**
+         * Returns a factory that opens browser-native WebTransport sessions.
+         */
+        this.$get = [
+            _log,
+            (log) => {
+                return (url, config = {}) => {
+                    validateWebTransportUrl(url);
+                    const WebTransportCtor = globalThis.WebTransport;
+                    if (!isFunction(WebTransportCtor)) {
+                        throw new Error("WebTransport API is not available in this browser");
+                    }
+                    const mergedConfig = { ...this.defaults, ...config };
+                    const { onOpen, onClose, onError, onDatagram, transformDatagram, reconnect, retryDelay, maxRetries, onReconnect, ...transportOptions } = mergedConfig;
+                    return new ManagedWebTransportConnection(url, WebTransportCtor, transportOptions, {
+                        onOpen,
+                        onClose,
+                        onError,
+                        onDatagram,
+                        transformDatagram,
+                        reconnect,
+                        retryDelay,
+                        maxRetries,
+                        onReconnect,
+                    }, log);
+                };
+            },
+        ];
+    }
+}
+function validateWebTransportUrl(url) {
+    if (!isString(url) || !url) {
+        throw new Error("WebTransport URL required");
+    }
+    const parsed = new URL(url, window.location.href);
+    if (parsed.protocol !== "https:") {
+        throw new Error("WebTransport URL must use https");
+    }
+    if (!parsed.port) {
+        throw new Error("WebTransport URL must include an explicit port");
+    }
+}
+
 /**
  * WebSocketProvider
  * Provides a pre-configured WebSocket connection as an injectable.
@@ -31248,6 +32669,7 @@ function registerNgModule(angular) {
                 ngModelOptions: ngModelOptionsDirective,
                 ngViewport: ngViewportDirective,
                 ngWasm: ngWasmDirective,
+                ngWebTransport: ngWebTransportDirective,
                 ngWorker: ngWorkerDirective,
                 ngScope: ngScopeDirective,
             })
@@ -31314,6 +32736,7 @@ function registerNgModule(angular) {
                 $stateRegistry: StateRegistryProvider,
                 $state: StateProvider,
                 $eventBus: PubSubProvider,
+                $webTransport: WebTransportProvider,
                 $websocket: WebSocketProvider,
                 $worker: WorkerProvider,
                 $wasm: WasmProvider,
@@ -31352,4 +32775,4 @@ document.addEventListener("DOMContentLoaded", () => angular.init(document), {
     once: true,
 });
 
-export { angular };
+export { HttpRestBackend, angular };

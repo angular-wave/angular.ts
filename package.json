@@ -20,6 +20,22 @@
     "./runtime/*": {
       "import": "./dist/runtime/*.js"
     },
+    "./services/rest": {
+      "types": "./@types/services/rest/rest.d.ts",
+      "import": "./dist/services/rest/rest.js"
+    },
+    "./services/rest/*": {
+      "types": "./@types/services/rest/*.d.ts",
+      "import": "./dist/services/rest/*.js"
+    },
+    "./services/webtransport": {
+      "types": "./@types/services/webtransport/webtransport.d.ts",
+      "import": "./dist/services/webtransport/webtransport.js"
+    },
+    "./directives/webtransport": {
+      "types": "./@types/directive/webtransport/webtransport.d.ts",
+      "import": "./dist/directive/webtransport/webtransport.js"
+    },
     "./directives/repeat": {
       "import": "./dist/directive/repeat/repeat.js"
     },
@@ -61,7 +77,6 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-promise": "^7.2.1",
-    "express": "latest",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "jasmine-core": "latest",

@@ -1,5 +1,5 @@
 import { _parse, _element, _attrs, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, assertNotHasOwnProperty, shallowCopy, keys, arrayRemove, deProxy, isUndefined, isBoolean, isObjectEmpty, snakeCase, extend } from '../../shared/utils.js';
+import { hasAnimate, assertNotHasOwnProperty, shallowCopy, keys, arrayRemove, deProxy, isArray, isUndefined, isBoolean, isObjectEmpty, snakeCase, extend } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, PRISTINE_CLASS, DIRTY_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 
@@ -33,6 +33,7 @@ const nullFormCtrl = {
 };
 const PENDING_CLASS = "ng-pending";
 const SUBMITTED_CLASS = "ng-submitted";
+let nextValidityPropagationId = 0;
 /**
  * @property $dirty True if user has already interacted with the form.
  * @property $valid True if all of the containing forms and controls are valid.
@@ -104,6 +105,7 @@ class FormController {
         const isValid = this._element.classList.contains(VALID_CLASS);
         this._classCache[VALID_CLASS] = isValid;
         this._classCache[INVALID_CLASS] = !isValid;
+        this._validityPropagationId = nextValidityPropagationId++;
         this.$target = {};
     }
     /**
@@ -149,6 +151,7 @@ class FormController {
         // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
         // and not added to the scope.  Now we throw an error.
         assertNotHasOwnProperty(control.$name, "input");
+        this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.$name) {
             this[control.$name] = control;
@@ -180,6 +183,7 @@ class FormController {
     /** @internal */
     _renameControl(control, newName) {
         const oldName = control.$name;
+        this._validityPropagationId = nextValidityPropagationId++;
         if (this[oldName] === control) {
             delete this[oldName];
         }
@@ -197,6 +201,7 @@ class FormController {
      * may not mean that the form is still `$dirty`.
      */
     $removeControl(control) {
+        this._validityPropagationId = nextValidityPropagationId++;
         if (control.$name &&
             this[control.$name] === control) {
             delete this[control.$name];
@@ -310,13 +315,14 @@ class FormController {
      */
     /** @internal */
     _set(object, property, controller) {
+        object = deProxy(object);
         const list = object[property];
-        if (!list) {
-            object = deProxy(object);
+        if (!list || !isArray(list)) {
             object[property] = [controller];
         }
         else {
-            const index = list.indexOf(controller);
+            const rawList = deProxy(list);
+            const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
             if (index === -1) {
                 list.push(controller);
             }
@@ -327,15 +333,23 @@ class FormController {
      */
     /** @internal */
     _unset(object, property, controller) {
+        object = deProxy(object);
         const list = object[property];
         if (!list) {
             return;
         }
-        const index = arrayRemove(list, controller);
-        if (index === -1) {
-            arrayRemove(list, controller.$target);
+        if (!isArray(list)) {
+            if (list === controller || deProxy(list) === deProxy(controller)) {
+                delete object[property];
+            }
+            return;
         }
-        if (list.length === 0) {
+        const rawList = deProxy(list);
+        const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
+        if (index !== -1) {
+            rawList.splice(index, 1);
+        }
+        if (rawList.length === 0) {
             delete object[property];
         }
     }

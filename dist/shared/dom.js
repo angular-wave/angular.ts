@@ -7,6 +7,7 @@ import { NodeType } from './node.js';
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
+const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 let expandoCache = new WeakMap();
 let cacheSize = 0;
@@ -577,4 +578,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, animatedomInsert, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getInheritedData, getInjector, getOrSetCacheData, getScope, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getInheritedData, getInjector, getOrSetCacheData, getScope, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, snakeToCamel, startingTag };

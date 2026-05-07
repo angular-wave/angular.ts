@@ -1,11 +1,11 @@
 import { _injector, _interpolate, _exceptionHandler, _parse, _controller, _templateRequest, _scope, _provide } from '../../injection-tokens.js';
-import { getBooleanAttrName, createDocumentFragment, emptyElement, isTextNode, createNodelistFromHTML, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData } from '../../shared/dom.js';
+import { getBooleanAttrName, createDocumentFragment, emptyElement, isTextNode, createNodelistFromHTML, startingTag, createElementFromHTML, setScope, setCacheData, FUTURE_PARENT_ELEMENT_KEY, deleteCacheData, setIsolateScope, getInheritedData, getCacheData } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { NodeRef } from '../../shared/noderef.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
 import { getSecurityAdapter } from '../security/security-adapter.js';
-import { isDefined, assign, getNodeName, directiveNormalize, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, stringify, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, isScope, equals, simpleCompare } from '../../shared/utils.js';
+import { isDefined, assign, getNodeName, directiveNormalize, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, stringify, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, simpleCompare, isScope, equals } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP } from '../../shared/constants.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
@@ -563,11 +563,38 @@ class CompileProvider {
                     state._firstChange = false;
                 }
                 function handleOneWayBindingChange(state, val) {
-                    state._destAny.$target[state._scopeName] = val;
-                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, val, state._firstChange);
+                    if (state._literal) {
+                        const inputs = evaluateOneWayBindingInputs(state);
+                        if (inputs && state._lastInputs) {
+                            let sameInputs = inputs.length === state._lastInputs.length;
+                            for (let i = 0, l = inputs.length; sameInputs && i < l; i++) {
+                                sameInputs = simpleCompare(inputs[i], state._lastInputs[i]);
+                            }
+                            if (sameInputs) {
+                                return;
+                            }
+                        }
+                        state._lastInputs = inputs;
+                    }
+                    state._destAny.$target[state._scopeName] =
+                        state._literal || !isObject(val)
+                            ? val
+                            : createScope(val, state._bindingChangeState._scope.$handler);
+                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, state._destAny.$target[state._scopeName], state._firstChange);
                     if (state._firstChange) {
                         state._firstChange = false;
                     }
+                }
+                function evaluateOneWayBindingInputs(state) {
+                    const inputs = state._parentGet?._inputs;
+                    if (!isArray(inputs)) {
+                        return undefined;
+                    }
+                    const values = new Array(inputs.length);
+                    for (let i = 0, l = inputs.length; i < l; i++) {
+                        values[i] = inputs[i](state._scopeTarget);
+                    }
+                    return values;
                 }
                 function invokePublicLink(state, scope, cloneConnectFn, options) {
                     const { _nodeRef: nodeRef } = state;
@@ -608,6 +635,9 @@ class CompileProvider {
                     }
                     if ($linkNode._element) {
                         setScope($linkNode._element, scope);
+                        if (_futureParentElement) {
+                            setCacheData($linkNode._element, FUTURE_PARENT_ELEMENT_KEY, _futureParentElement);
+                        }
                     }
                     if (cloneConnectFn) {
                         registerScopeOwnedNodeRef(scope, $linkNode);
@@ -1020,7 +1050,13 @@ class CompileProvider {
                     if (!interpolateFn) {
                         return;
                     }
-                    applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, interpolateFn(bindingState._scope));
+                    const value = interpolateFn(bindingState._scope);
+                    if (bindingState._lastValue === value &&
+                        "$index" in bindingState._scope.$target) {
+                        return;
+                    }
+                    bindingState._lastValue = value;
+                    applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, value);
                 }
                 /**
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
@@ -1845,6 +1881,7 @@ class CompileProvider {
                         const name = require.substring(match[0].length);
                         const inheritType = match[1] || match[3];
                         const optional = match[2] === "?";
+                        const originalElement = $element;
                         // If only parents then start at the parent element
                         if (inheritType === "^^") {
                             if ($element && $element.parentElement) {
@@ -1875,6 +1912,12 @@ class CompileProvider {
                                         ? getInheritedData($element, dataName)
                                         : getCacheData($element, dataName)
                                     : undefined;
+                            }
+                            if (!value && inheritType && originalElement) {
+                                const futureParentElement = getInheritedData(originalElement, FUTURE_PARENT_ELEMENT_KEY);
+                                if (futureParentElement) {
+                                    value = getInheritedData(futureParentElement, dataName);
+                                }
                             }
                         }
                         if (!value && !optional) {
@@ -2408,14 +2451,22 @@ class CompileProvider {
                                         break;
                                     }
                                     parentGet = attrsAny[attrName] && $parse(attrsAny[attrName]);
+                                    const initialOneWayValue = parentGet && parentGet(scopeTarget);
                                     destAny.$target[scopeName] =
-                                        parentGet && parentGet(scopeTarget);
+                                        parentGet?._literal || !isObject(initialOneWayValue)
+                                            ? initialOneWayValue
+                                            : createScope(initialOneWayValue, scope.$handler);
                                     const oneWayBindingState = {
                                         _bindingChangeState: bindingChangeState,
                                         _destAny: destAny,
                                         _firstChange: true,
+                                        _literal: !!parentGet?._literal,
+                                        _parentGet: parentGet,
                                         _scopeName: scopeName,
+                                        _scopeTarget: scopeTarget,
                                     };
+                                    oneWayBindingState._lastInputs =
+                                        evaluateOneWayBindingInputs(oneWayBindingState);
                                     initialChanges[scopeName] = {
                                         currentValue: destAny.$target[scopeName],
                                         firstChange: oneWayBindingState._firstChange,

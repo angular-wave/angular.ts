@@ -158,6 +158,17 @@ export type {
   WebSocketConfig,
   WebSocketService,
 } from "./services/websocket/websocket.ts";
+export { WebTransportProvider } from "./services/webtransport/webtransport.ts";
+export type {
+  NativeWebTransport,
+  WebTransportBufferInput,
+  WebTransportCertificateHash,
+  WebTransportConfig,
+  WebTransportConnection,
+  WebTransportDatagramEvent,
+  WebTransportOptions,
+  WebTransportService,
+} from "./services/webtransport/webtransport.ts";
 export {
   WorkerProvider,
   createWorkerConnection,
@@ -176,6 +187,7 @@ export type {
 export type { AriaService } from "./directive/aria/aria.ts";
 export { SwapMode } from "./directive/http/http.ts";
 export { NgModelController } from "./directive/model/model.ts";
+export { ngWebTransportDirective } from "./directive/webtransport/webtransport.ts";
 
 export type { ParamDeclaration, RawParams } from "./router/params/interface.ts";
 export type {

@@ -143,6 +143,18 @@ import type {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
+import type {
+  NativeWebTransport as TNativeWebTransport,
+  WebTransportBufferInput as TWebTransportBufferInput,
+  WebTransportCertificateHash as TWebTransportCertificateHash,
+  WebTransportConfig as TWebTransportConfig,
+  WebTransportConnection as TWebTransportConnection,
+  WebTransportDatagramEvent as TWebTransportDatagramEvent,
+  WebTransportOptions as TWebTransportOptions,
+  WebTransportReconnectEvent as TWebTransportReconnectEvent,
+  WebTransportRetryDelay as TWebTransportRetryDelay,
+  WebTransportService as TWebTransportService,
+} from "./services/webtransport/webtransport.ts";
 import type { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
@@ -379,6 +391,26 @@ declare global {
     export type WebSocketConnection = TWebSocketConnection;
 
     export type WebSocketService = TWebSocketService;
+
+    export type NativeWebTransport = TNativeWebTransport;
+
+    export type WebTransportBufferInput = TWebTransportBufferInput;
+
+    export type WebTransportCertificateHash = TWebTransportCertificateHash;
+
+    export type WebTransportConfig = TWebTransportConfig;
+
+    export type WebTransportConnection = TWebTransportConnection;
+
+    export type WebTransportDatagramEvent<T> = TWebTransportDatagramEvent<T>;
+
+    export type WebTransportOptions = TWebTransportOptions;
+
+    export type WebTransportReconnectEvent = TWebTransportReconnectEvent;
+
+    export type WebTransportRetryDelay = TWebTransportRetryDelay;
+
+    export type WebTransportService = TWebTransportService;
 
     export type WindowService = Window;
 
