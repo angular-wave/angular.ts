@@ -1,5 +1,5 @@
 import { _injector } from '../../injection-tokens.js';
-import { minErr, isArrayLike, hasOwn, values, nullObject, isArray, isDefined, callBackOnce, isInstanceOf, arrayFrom, hashKey } from '../../shared/utils.js';
+import { minErr, isArrayLike, hasOwn, values, nullObject, isArray, isDefined, callBackOnce, setHashKey, hashKey, isProxy, isInstanceOf, arrayFrom } from '../../shared/utils.js';
 import { getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
 import { getArrayMutationMeta } from '../../core/scope/scope.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -35,8 +35,11 @@ function ngRepeatDirective($injector) {
         if (keyIdentifier && scope[keyIdentifier] !== key) {
             scope[keyIdentifier] = key;
         }
-        if (value && scope.$target._hashKey !== value._hashKey) {
-            scope.$target._hashKey = value._hashKey;
+        if (value && (typeof value === "object" || typeof value === "function")) {
+            setHashKey(scope.$target, hashKey(value));
+        }
+        else {
+            setHashKey(scope.$target, null);
         }
         if (!updatePositionLocals) {
             return;
@@ -64,6 +67,52 @@ function ngRepeatDirective($injector) {
         if (scope.$odd !== isOdd) {
             scope.$odd = isOdd;
         }
+    }
+    function initializeScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
+        const target = scope.$target;
+        target[valueIdentifier] = value;
+        if (isProxy(value)) {
+            scope.$handler._foreignProxies.add(value);
+        }
+        if (keyIdentifier) {
+            target[keyIdentifier] = key;
+        }
+        if (value && (typeof value === "object" || typeof value === "function")) {
+            setHashKey(target, hashKey(value));
+        }
+        else {
+            setHashKey(target, null);
+        }
+        target.$index = index;
+        target.$first = index === 0;
+        target.$last = index === arrayLength - 1;
+        target.$middle = !(target.$first || target.$last);
+        target.$odd = (index & 1) !== 0;
+        target.$even = !target.$odd;
+    }
+    function reconcileScopedObjectValue(scope, valueIdentifier, value) {
+        const current = scope[valueIdentifier];
+        if (!current ||
+            !value ||
+            typeof current !== "object" ||
+            typeof value !== "object" ||
+            isArray(current) ||
+            isArray(value)) {
+            return value;
+        }
+        const currentKeys = Object.keys(current);
+        for (let i = 0, l = currentKeys.length; i < l; i++) {
+            const key = currentKeys[i];
+            if (!hasOwn(value, key)) {
+                delete current[key];
+            }
+        }
+        const valueKeys = Object.keys(value);
+        for (let i = 0, l = valueKeys.length; i < l; i++) {
+            const key = valueKeys[i];
+            current[key] = value[key];
+        }
+        return current;
     }
     function getBlockStart(block) {
         return isArray(block._clone) ? block._clone[0] : block._clone;
@@ -130,8 +179,28 @@ function ngRepeatDirective($injector) {
         }
         range.detach();
     }
-    function trackByIdArrayFn(_$scope, _key, value) {
-        return hashKey(value);
+    function isRepeatIndexKey(value) {
+        const valueType = typeof value;
+        return (valueType === "string" ||
+            valueType === "number" ||
+            valueType === "boolean");
+    }
+    function trackByObjectIndex(value, indexProperty) {
+        if (!value || (typeof value !== "object" && typeof value !== "function")) {
+            return undefined;
+        }
+        const property = indexProperty || "id";
+        if (!hasOwn(value, property)) {
+            return undefined;
+        }
+        const indexValue = value[property];
+        if (!isRepeatIndexKey(indexValue)) {
+            return undefined;
+        }
+        return `property:${property}:${typeof indexValue}:${indexValue}`;
+    }
+    function createTrackByIdArrayFn(indexProperty) {
+        return (_$scope, _key, value) => trackByObjectIndex(value, indexProperty) ?? hashKey(value);
     }
     function trackByIdObjFn(_$scope, key) {
         return key;
@@ -231,6 +300,7 @@ function ngRepeatDirective($injector) {
         compile(_$element, $attr) {
             const expression = $attr.ngRepeat;
             const hasAnimate = !!$attr.animate;
+            const indexProperty = $attr.index || $attr.dataIndex || undefined;
             let match = expression.match(/^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/);
             if (!match) {
                 throw ngRepeatMinErr("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -258,7 +328,10 @@ function ngRepeatDirective($injector) {
             });
             function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
                 let previousNode;
-                function insertNodesAfter(nodes, afterNode) {
+                let pendingInsertAnchor;
+                let pendingInsertEnd;
+                let pendingInsertFragment;
+                function insertNodesAfterNow(nodes, afterNode) {
                     const { parentNode } = afterNode;
                     if (!parentNode)
                         return;
@@ -271,6 +344,33 @@ function ngRepeatDirective($injector) {
                         fragment.appendChild(nodes[i]);
                     }
                     parentNode.insertBefore(fragment, afterNode.nextSibling);
+                }
+                function flushPendingInserts() {
+                    if (!pendingInsertFragment || !pendingInsertAnchor) {
+                        return;
+                    }
+                    const { parentNode } = pendingInsertAnchor;
+                    if (parentNode) {
+                        parentNode.insertBefore(pendingInsertFragment, pendingInsertAnchor.nextSibling);
+                    }
+                    pendingInsertAnchor = undefined;
+                    pendingInsertEnd = undefined;
+                    pendingInsertFragment = undefined;
+                }
+                function insertNodesAfter(nodes, afterNode) {
+                    flushPendingInserts();
+                    insertNodesAfterNow(nodes, afterNode);
+                }
+                function queueNodesAfter(nodes, afterNode) {
+                    if (!pendingInsertFragment || afterNode !== pendingInsertEnd) {
+                        flushPendingInserts();
+                        pendingInsertAnchor = afterNode;
+                        pendingInsertFragment = createDocumentFragment();
+                    }
+                    for (let i = 0; i < nodes.length; i++) {
+                        pendingInsertFragment.appendChild(nodes[i]);
+                    }
+                    pendingInsertEnd = nodes[nodes.length - 1];
                 }
                 function moveSwappedBlocks(leftIndex, rightIndex) {
                     const firstBlock = lastBlockOrder[leftIndex];
@@ -330,7 +430,7 @@ function ngRepeatDirective($injector) {
                     }
                     if (isArrayLike(collection)) {
                         collectionKeys = collection;
-                        trackByIdFn = trackByIdArrayFn;
+                        trackByIdFn = createTrackByIdArrayFn(indexProperty);
                     }
                     else {
                         trackByIdFn = trackByIdObjFn;
@@ -514,9 +614,11 @@ function ngRepeatDirective($injector) {
                         value = collection[key];
                         block = nextBlockOrder[index];
                         if (block._scope) {
+                            flushPendingInserts();
+                            const collectionValue = value;
                             const shouldUpdatePositionLocals = !!block._usesPositionLocals;
                             const shouldUpdateKeyLocal = !!keyIdentifier && block._scope[keyIdentifier] !== key;
-                            const shouldUpdateValueLocal = block._scope[valueIdentifier] !== value;
+                            const shouldUpdateValueLocal = block._value !== collectionValue;
                             const existingClone = block._clone;
                             if (!existingClone) {
                                 continue;
@@ -546,11 +648,17 @@ function ngRepeatDirective($injector) {
                             if (shouldUpdatePositionLocals ||
                                 shouldUpdateKeyLocal ||
                                 shouldUpdateValueLocal) {
+                                if (shouldUpdateValueLocal) {
+                                    value = reconcileScopedObjectValue(block._scope, valueIdentifier, value);
+                                }
                                 updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength, shouldUpdatePositionLocals);
+                                block._value = collectionValue;
                             }
                         }
                         else {
-                            $transclude?.((clone, scope) => {
+                            const childScope = $scope.$transcluded();
+                            initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
+                            $transclude?.(childScope, (clone, scope) => {
                                 const normalizedClone = normalizeCloneNodes(clone);
                                 const cloneNodes = isArray(normalizedClone)
                                     ? normalizedClone
@@ -563,18 +671,25 @@ function ngRepeatDirective($injector) {
                                     previousNode = endNode;
                                 }
                                 else {
-                                    insertNodesAfter(cloneNodes, previousNode);
+                                    if (cloneNodes.length === 1 &&
+                                        cloneNodes[0].nodeType === NodeType._ELEMENT_NODE) {
+                                        queueNodesAfter(cloneNodes, previousNode);
+                                    }
+                                    else {
+                                        insertNodesAfter(cloneNodes, previousNode);
+                                    }
                                     previousNode = endNode;
                                 }
                                 block._clone = normalizedClone;
+                                block._value = value;
                                 nextBlockMap[block._id] = block;
-                                updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                             });
                             if (block._scope) {
                                 block._usesPositionLocals = scopeUsesRepeatPositionLocals(block._scope);
                             }
                         }
                     }
+                    flushPendingInserts();
                     lastBlockMap = nextBlockMap;
                     lastBlockOrder = nextBlockOrder;
                 }, isDefined(attr.lazy));

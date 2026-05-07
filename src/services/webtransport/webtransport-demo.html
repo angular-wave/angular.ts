@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS WebTransport Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/src/services/rest/rest-demo.css" />
+    <script type="module">
+      import { Angular } from "/src/angular.ts";
+
+      const decoder = new TextDecoder();
+      const response = await fetch(
+        "http://localhost:3000/webtransport/cert-hash",
+      );
+      const metadata = await response.json();
+      const streamMessage = encodeURIComponent(
+        JSON.stringify({
+          channel: "stream",
+          text: "Server stream opened",
+        }),
+      );
+
+      function bytesFromBase64(value) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+
+        return bytes;
+      }
+
+      class WebTransportDemo {
+        constructor($scope) {
+          this.scope = $scope;
+
+          $scope.ready = false;
+          $scope.notice = "Connecting";
+          $scope.datagramEvents = [];
+          $scope.streamEvents = [];
+          $scope.outgoing = "Hello WebTransport";
+          $scope.reconnects = 0;
+          $scope.transportUrl = metadata.url;
+          $scope.streamUrl = `${metadata.url}?welcome=stream&message=${streamMessage}`;
+          $scope.transportConfig = {
+            serverCertificateHashes: [
+              {
+                algorithm: metadata.algorithm,
+                value: bytesFromBase64(metadata.value),
+              },
+            ],
+          };
+          $scope.send = this.send.bind(this);
+          $scope.decodeBytes = (data) => decoder.decode(data);
+        }
+
+        async send() {
+          const text = this.scope.outgoing.trim();
+
+          if (!text || !this.scope.datagramSession) return;
+
+          await this.scope.datagramSession.sendText(
+            JSON.stringify({
+              channel: "datagram",
+              text,
+              time: new Date().toLocaleTimeString(),
+            }),
+          );
+          this.scope.outgoing = "";
+        }
+      }
+
+      WebTransportDemo.$inject = ["$scope"];
+
+      const angular = new Angular();
+
+      window.angular = angular;
+
+      angular
+        .module("webTransportDemo", [])
+        .controller("WebTransportDemo", WebTransportDemo);
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => angular.init(document), {
+          once: true,
+        });
+      } else {
+        angular.init(document);
+      }
+    </script>
+  </head>
+  <body ng-app="webTransportDemo">
+    <main ng-controller="WebTransportDemo">
+      <section class="workspace">
+        <header class="toolbar">
+          <h1>WebTransport</h1>
+          <div class="notice" role="status">
+            {{ notice }}<span ng-if="reconnects"> - reconnects {{ reconnects }}</span>
+          </div>
+        </header>
+
+        <section class="panel" aria-labelledby="datagram-heading">
+          <div class="panel-header">
+            <h2 id="datagram-heading">Datagrams</h2>
+          </div>
+
+          <div
+            ng-web-transport="transportUrl"
+            data-config="transportConfig"
+            data-as="datagramSession"
+            data-transform="json"
+            data-reconnect="true"
+            data-retry-delay="500"
+            data-on-open="notice = 'Datagram session open'"
+            data-on-message="datagramEvents = [$message].concat(datagramEvents)"
+            data-on-reconnect="reconnects = $attempt"
+            data-on-error="notice = $error.message || 'Datagram error'"
+          ></div>
+
+          <form class="form-grid">
+            <label>
+              Message
+              <input ng-model="outgoing" name="outgoing" />
+            </label>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="primary"
+                ng-click="send()"
+                ng-disabled="!datagramSession"
+              >
+                Send
+              </button>
+            </div>
+          </form>
+
+          <div class="item-list">
+            <article class="item-row" ng-repeat="event in datagramEvents">
+              <div>
+                <strong>{{ event.text }}</strong>
+                <div class="item-meta">
+                  <span>{{ event.channel }}</span>
+                  <span>{{ event.time }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="stream-heading">
+          <div class="panel-header">
+            <h2 id="stream-heading">Streams</h2>
+          </div>
+
+          <div
+            ng-web-transport="streamUrl"
+            data-mode="stream"
+            data-config="transportConfig"
+            data-transform="json"
+            data-reconnect="true"
+            data-retry-delay="1000"
+            data-on-message="streamEvents = [$message].concat(streamEvents)"
+            data-on-error="notice = $error.message || 'Stream error'"
+          ></div>
+
+          <div class="item-list">
+            <article class="item-row" ng-repeat="event in streamEvents">
+              <div>
+                <strong>{{ event.text }}</strong>
+                <div class="item-meta">
+                  <span>{{ event.channel }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

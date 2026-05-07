@@ -15,6 +15,7 @@ import {
   _rest,
   _sse,
   _wasm,
+  _webTransport,
   _websocket,
   _worker,
 } from "../../../injection-tokens.ts";
@@ -31,6 +32,10 @@ import type {
   RestOptions,
 } from "../../../services/rest/rest.ts";
 import type { SseConfig, SseService } from "../../../services/sse/sse.ts";
+import type {
+  WebTransportConfig,
+  WebTransportService,
+} from "../../../services/webtransport/webtransport.ts";
 import type {
   WebSocketConfig,
   WebSocketService,
@@ -471,6 +476,39 @@ export class NgModule {
         [
           _websocket,
           ($websocket: WebSocketService) => $websocket(url, protocols, config),
+        ],
+      ],
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a pre-configured WebTransport connection as an injectable service.
+   *
+   * The connection is created by `$webTransport` when the named service is
+   * requested.
+   *
+   * @param {string} name - Injectable name.
+   * @param {string} url - WebTransport endpoint.
+   * @param {WebTransportConfig} [config] - WebTransport connection options.
+   * @returns {NgModule}
+   */
+  webTransport(
+    name: string,
+    url: string,
+    config: WebTransportConfig = {},
+  ): NgModule {
+    validate(isString, name, "name");
+    validate(isString, url, "url");
+    this._invokeQueue.push([
+      _provide,
+      "factory",
+      [
+        name,
+        [
+          _webTransport,
+          ($webTransport: WebTransportService) => $webTransport(url, config),
         ],
       ],
     ]);

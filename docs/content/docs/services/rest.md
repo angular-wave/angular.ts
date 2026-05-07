@@ -244,9 +244,9 @@ with `CachedRestBackend` when reads should use one of the cache strategies.
 
 ## CRUD demo
 
-The demo at `/src/services/rest/rest-crud-demo.html` uses the Express demo
-server through `/api/tasks`. It shows `list()`, `get()`, `create()`, `update()`,
-and `delete()` against a real HTTP endpoint, renders rows with `ng-repeat`, and
+The demo at `/src/services/rest/rest-crud-demo.html` uses the Go demo backend
+through `/api/tasks`. It shows `list()`, `get()`, `create()`, `update()`, and
+`delete()` against a real HTTP endpoint, renders rows with `ng-repeat`, and
 includes a cache strategy toggle for `network-first`, `cache-first`, and
 `stale-while-revalidate`.
 

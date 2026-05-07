@@ -165,9 +165,9 @@ angular.module('app', []).config(($restProvider) => {
 
 ## Demo
 
-The CRUD demo at `/src/services/rest/rest-crud-demo.html` talks to the Express
-demo server through `/api/tasks`. It uses `ng-repeat` for rows, `$rest` for
-CRUD operations, and a cache strategy toggle for `network-first`,
+The CRUD demo at `/src/services/rest/rest-crud-demo.html` talks to the Go demo
+backend through `/api/tasks`. It uses `ng-repeat` for rows, `$rest` for CRUD
+operations, and a cache strategy toggle for `network-first`,
 `cache-first`, and `stale-while-revalidate`.
 
 ## Related

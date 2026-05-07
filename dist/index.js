@@ -1,4 +1,6 @@
 import { Angular } from './angular.js';
+import './services/rest/rest.js';
+export { HttpRestBackend } from './services/rest/http-rest-backend.js';
 
 /**
  * Default browser entry point.

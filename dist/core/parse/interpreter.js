@@ -591,7 +591,9 @@ class ASTInterpreter {
             }
             let value = undefined;
             if (base) {
-                value = deProxy(base)[name];
+                value = (create
+                    ? base
+                    : deProxy(base))[name];
             }
             if (context) {
                 return { context: base, name, value };

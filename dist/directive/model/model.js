@@ -1,11 +1,12 @@
 import { _scope, _exceptionHandler, _attrs, _element, _parse, _injector, _interpolate } from '../../injection-tokens.js';
 import { VALID_CLASS, INVALID_CLASS, NOT_EMPTY_CLASS, EMPTY_CLASS, PRISTINE_CLASS, DIRTY_CLASS, UNTOUCHED_CLASS, TOUCHED_CLASS } from '../../shared/constants.js';
-import { hasAnimate, isUndefined, isBoolean, isObjectEmpty, isFunction, isNull, isNumberNaN, keys, entries, isPromiseLike, values, isNumber, deProxy, minErr, snakeCase } from '../../shared/utils.js';
+import { hasAnimate, isUndefined, isBoolean, isObjectEmpty, deProxy, isFunction, isNull, isNumberNaN, keys, entries, isPromiseLike, values, isNumber, minErr, snakeCase } from '../../shared/utils.js';
 import { nullFormCtrl, cachedToggleClass, PENDING_CLASS } from '../form/form.js';
 import { defaultModelOptions } from '../model-options/model-options.js';
 import { startingTag } from '../../shared/dom.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 
+const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 const ngModelMinErr = minErr("ngModel");
 /**
  * @property $viewValue The actual value from the control's view.
@@ -87,6 +88,7 @@ class NgModelController {
         this._parse = $parse;
         this._exceptionHandler = $exceptionHandler;
         this._destroyed = false;
+        this._lastValidityParentVersions = {};
         this._hasNativeValidators = false;
         this._classCache = {};
         const isValid = this._element.classList.contains(VALID_CLASS);
@@ -148,6 +150,7 @@ class NgModelController {
             cachedToggleClass(ctrl, VALID_CLASS + validationErrorKeyParam, isValid === true);
             cachedToggleClass(ctrl, INVALID_CLASS + validationErrorKeyParam, isValid === false);
         }
+        const previousCombinedState = this._combinedValidityState(validationErrorKey);
         if (isUndefined(state)) {
             createAndSet(this, "$pending", validationErrorKey);
         }
@@ -181,21 +184,41 @@ class NgModelController {
         // combined state in this.$error[validationError] (used for forms),
         // where setting/unsetting only increments/decrements the value,
         // and does not replace it.
-        let combinedState;
-        if (this.$pending && this.$pending[validationErrorKey]) {
-            combinedState = undefined;
-        }
-        else if (this.$error[validationErrorKey]) {
-            combinedState = false;
-        }
-        else if (this._success[validationErrorKey]) {
-            combinedState = true;
-        }
-        else {
-            combinedState = null;
+        const combinedState = this._combinedValidityState(validationErrorKey);
+        const parentVersion = this._validityParentVersion();
+        const lastParentVersion = this._lastValidityParentVersions[validationErrorKey];
+        if (combinedState === previousCombinedState &&
+            parentVersion === lastParentVersion) {
+            return;
         }
         toggleValidationCss(this, validationErrorKey, combinedState);
         this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+        this._lastValidityParentVersions[validationErrorKey] = parentVersion;
+    }
+    /** @internal Returns the aggregate validity state for one validation key. */
+    _combinedValidityState(validationErrorKey) {
+        if (this.$pending && this.$pending[validationErrorKey]) {
+            return undefined;
+        }
+        if (this.$error[validationErrorKey]) {
+            return false;
+        }
+        if (this._success[validationErrorKey]) {
+            return true;
+        }
+        return null;
+    }
+    /** @internal Returns the current parent form chain version for validity propagation. */
+    _validityParentVersion() {
+        let form = deProxy(this._parentForm);
+        let version = 1;
+        while (form && form !== nullFormCtrl) {
+            version =
+                version * VALIDITY_PARENT_VERSION_MULTIPLIER +
+                    (form._validityPropagationId ?? 0);
+            form = deProxy(form._parentForm);
+        }
+        return version;
     }
     /** @internal */
     _initGetterSetters() {
@@ -501,6 +524,12 @@ class NgModelController {
             // If there was no change in validity, don't update the model
             // This prevents changing an invalid modelValue to undefined
             if (!allowInvalid && prevValid !== allValid) {
+                if (allValid &&
+                    that.$isEmpty(viewValue) &&
+                    !that.$isEmpty(modelValue) &&
+                    isUndefined(prevModelValue)) {
+                    return;
+                }
                 // Note: Don't check this.$valid here, as we could have
                 // external validators (e.g. calculated on the server),
                 // that just call $setValidity and need the model value
@@ -1075,7 +1104,13 @@ function ngModelDirective() {
                         }
                     });
                     const deregisterWatch = (scope.$watch(attr.ngModel, (val) => {
-                        modelCtrl._setModelValue(deProxy(val));
+                        const modelValue = deProxy(val);
+                        if (modelValue === modelCtrl.$modelValue ||
+                            (Number.isNaN(modelValue) &&
+                                Number.isNaN(modelCtrl.$modelValue))) {
+                            return;
+                        }
+                        modelCtrl._setModelValue(modelValue);
                     }) ||
                         (() => {
                             /* empty */

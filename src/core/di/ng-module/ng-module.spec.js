@@ -9,6 +9,7 @@ import {
   _rest,
   _sse,
   _wasm,
+  _webTransport,
   _websocket,
   _worker,
 } from "../../../injection-tokens.ts";
@@ -175,9 +176,11 @@ describe("NgModule", () => {
       .worker("backgroundWorker", "/workers/bg.js")
       .wasm("mathLib", "/wasm/math.wasm")
       .sse("notifications", "/events")
-      .websocket("chat", "wss://chat.example.com", ["json"]);
+      .websocket("chat", "wss://chat.example.com", ["json"])
+      .webTransport("live", "https://localhost:4433/webtransport");
 
     expect(ngModule._invokeQueue.map((item) => item[0])).toEqual([
+      _provide,
       _provide,
       _provide,
       _provide,
@@ -190,6 +193,7 @@ describe("NgModule", () => {
       "factory",
       "factory",
       "factory",
+      "factory",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][0])).toEqual([
       "posts",
@@ -197,6 +201,7 @@ describe("NgModule", () => {
       "mathLib",
       "notifications",
       "chat",
+      "live",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][1][0])).toEqual([
       _rest,
@@ -204,6 +209,7 @@ describe("NgModule", () => {
       _wasm,
       _sse,
       _websocket,
+      _webTransport,
     ]);
   });
 
