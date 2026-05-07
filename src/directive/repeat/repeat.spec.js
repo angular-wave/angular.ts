@@ -1,6 +1,6 @@
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { ngRepeatDirective } from "./repeat.ts";
 
 describe("ngRepeat", () => {
@@ -774,6 +774,32 @@ describe("ngRepeat", () => {
       scope.tasks = scope.tasks.filter((task) => !task.done);
       await wait();
       expect(element.textContent).toBe("Build an AngularTS app false|");
+    });
+
+    it("updates controller alias repeats when a method replaces the collection", async () => {
+      element = $compile(
+        '<section><button type="button" ng-click="$ctrl.archive()">Archive</button>' +
+          '<ul><li ng-repeat="todo in $ctrl.tasks">{{todo.task}} {{todo.done}}|</li></ul></section>',
+      )(scope);
+      scope.$ctrl = {
+        tasks: [
+          { task: "Learn AngularTS", done: true },
+          { task: "Build an AngularTS app", done: false },
+        ],
+        archive() {
+          this.tasks = this.tasks.filter((task) => !task.done);
+        },
+      };
+
+      await wait();
+      expect(element.textContent).toBe(
+        "ArchiveLearn AngularTS true|Build an AngularTS app false|",
+      );
+
+      browserTrigger(element.querySelector("button"), "click");
+      await wait();
+
+      expect(element.textContent).toBe("ArchiveBuild an AngularTS app false|");
     });
 
     it("updates repeated rows when an array item object is replaced by index", async () => {

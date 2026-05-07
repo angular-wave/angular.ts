@@ -140,6 +140,30 @@ describe("ng-bind", () => {
       await wait();
       expect(element.textContent).toEqual("Loading case");
     });
+
+    it("should update when a controller instance method changes a bound value", async () => {
+      class TestController {
+        label = "before";
+
+        rename() {
+          this.label = "after";
+        }
+      }
+
+      element = $compile(
+        '<section><button type="button" ng-click="$ctrl.rename()">Rename</button>' +
+          '<span ng-bind="$ctrl.label"></span></section>',
+      )($rootScope);
+      $rootScope.$ctrl = new TestController();
+
+      await wait();
+      expect(element.querySelector("span").textContent).toEqual("before");
+
+      element.querySelector("button").click();
+      await wait();
+
+      expect(element.querySelector("span").textContent).toEqual("after");
+    });
   });
 
   describe("ngBindTemplate", () => {

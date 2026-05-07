@@ -88,6 +88,30 @@ describe("ngIf", () => {
       expect(element.childNodes[0].nodeType).toBe(Node.COMMENT_NODE);
     });
 
+    it("should update when a controller instance method changes the condition", async () => {
+      class TestController {
+        visible = true;
+
+        hide() {
+          this.visible = false;
+        }
+      }
+
+      element = $compile(
+        '<section><button type="button" ng-click="$ctrl.hide()">Hide</button>' +
+          '<span ng-if="$ctrl.visible">Visible</span></section>',
+      )($scope);
+      $scope.$ctrl = new TestController();
+
+      await wait();
+      expect(element.querySelector("span").textContent).toBe("Visible");
+
+      element.querySelector("button").click();
+      await wait();
+
+      expect(element.querySelector("span")).toBeNull();
+    });
+
     it("should react to changes on a property of a nested object", async () => {
       $scope.a = {
         b: {

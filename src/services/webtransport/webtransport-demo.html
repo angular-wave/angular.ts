@@ -124,16 +124,15 @@
             data-on-error="notice = $error.message || 'Datagram error'"
           ></div>
 
-          <form class="form-grid">
+          <form class="form-grid" ng-submit="send()">
             <label>
               Message
               <input ng-model="outgoing" name="outgoing" />
             </label>
             <div class="form-actions">
               <button
-                type="button"
+                type="submit"
                 class="primary"
-                ng-click="send()"
                 ng-disabled="!datagramSession"
               >
                 Send

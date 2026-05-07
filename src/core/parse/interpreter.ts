@@ -262,13 +262,7 @@ export class ASTInterpreter {
 
           return args.length
             ? (scope, locals, assign) => {
-                const runtimeScope = scope as any;
-
-                const rhs = (right as Function)(
-                  runtimeScope?.$target ? runtimeScope.$target : scope,
-                  locals,
-                  assign,
-                );
+                const rhs = (right as Function)(scope, locals, assign);
 
                 let value: any;
 
@@ -284,13 +278,7 @@ export class ASTInterpreter {
                 return context ? { value } : value;
               }
             : (scope, locals, assign) => {
-                const runtimeScope = scope as any;
-
-                const rhs = (right as Function)(
-                  runtimeScope?.$target ? runtimeScope.$target : scope,
-                  locals,
-                  assign,
-                );
+                const rhs = (right as Function)(scope, locals, assign);
 
                 const value =
                   !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
@@ -319,13 +307,7 @@ export class ASTInterpreter {
                 : value();
             }
           : (scope, locals, assign) => {
-              const runtimeScope = scope as any;
-
-              const rhs = (right as Function)(
-                runtimeScope?.$target ? runtimeScope.$target : scope,
-                locals,
-                assign,
-              );
+              const rhs = (right as Function)(scope, locals, assign);
 
               let value: any;
 
@@ -918,11 +900,7 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = (
-          create
-            ? (base as Record<string, any>)
-            : (deProxy(base) as Record<string, any>)
-        )[name];
+        value = (base as Record<string, any>)[name];
       }
 
       if (context) {
@@ -1050,7 +1028,7 @@ function getPathBase(
       ? locals
       : ((runtimeScope && runtimeScope.$proxy) ?? scope);
 
-  return base ? (deProxy(base) as Record<string, any>) : undefined;
+  return base as Record<string, any> | undefined;
 }
 
 function createPathGetter(path: string[]): CompiledExpressionFunction {
