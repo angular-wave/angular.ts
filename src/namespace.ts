@@ -57,6 +57,7 @@ import type { LogService as TLogService } from "./services/log/log.ts";
 import {
   PubSubProvider as TPubSubProvider,
   PubSub as TPubSub,
+  type TopicService as TTopicService,
 } from "./services/pubsub/pubsub.ts";
 import {
   AnnotatedFactory as TAnnotatedFactory,
@@ -143,6 +144,15 @@ import type {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
+import type {
+  ElementScopeOptions as TElementScopeOptions,
+  WebComponentContext as TWebComponentContext,
+  WebComponentInput as TWebComponentInput,
+  WebComponentInputConfig as TWebComponentInputConfig,
+  WebComponentInputs as TWebComponentInputs,
+  WebComponentOptions as TWebComponentOptions,
+  WebComponentService as TWebComponentService,
+} from "./services/web-component/web-component.ts";
 import type {
   NativeWebTransport as TNativeWebTransport,
   WebTransportBufferInput as TWebTransportBufferInput,
@@ -288,6 +298,8 @@ declare global {
 
     export type TemplateRequestService = TTemplateRequestService;
 
+    export type TopicService = TTopicService;
+
     // Support types
     export type AngularService = Angular;
 
@@ -385,6 +397,22 @@ declare global {
     export type Transition = TTransition;
 
     export type Validator = TValidator;
+
+    export type ElementScopeOptions = TElementScopeOptions;
+
+    export type WebComponentContext<T extends object = Record<string, any>> =
+      TWebComponentContext<T>;
+
+    export type WebComponentInput = TWebComponentInput;
+
+    export type WebComponentInputConfig = TWebComponentInputConfig;
+
+    export type WebComponentInputs = TWebComponentInputs;
+
+    export type WebComponentOptions<T extends object = Record<string, any>> =
+      TWebComponentOptions<T>;
+
+    export type WebComponentService = TWebComponentService;
 
     export type WebSocketConfig = TWebSocketConfig;
 

@@ -23,8 +23,9 @@ Exact state and router contracts live in TypeDoc:
 
 ## Register States
 
-Register most states in a config block. Calls to `$stateProvider.state()` are
-chainable.
+Register most states in a config block, or use `module.state()` for the same
+provider registration through the fluent module API. Calls to both
+`$stateProvider.state()` and `module.state()` are chainable.
 
 ```javascript
 angular.module("demo", []).config(($stateProvider) => {
@@ -42,6 +43,22 @@ angular.module("demo", []).config(($stateProvider) => {
       controllerAs: "vm",
     });
 });
+```
+
+Equivalent module-level registration:
+
+```javascript
+angular.module("demo", [])
+  .state("home", {
+    url: "/home",
+    component: "homePage",
+  })
+  .state("contacts", {
+    url: "/contacts",
+    templateUrl: "contacts/list.html",
+    controller: "ContactsListCtrl",
+    controllerAs: "vm",
+  });
 ```
 
 Register states at runtime when a feature is loaded after bootstrap.

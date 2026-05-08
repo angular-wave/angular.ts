@@ -99,6 +99,8 @@ export function createEventDirective(
         const handler = (event: Event): void => {
           try {
             fn(scope, { $event: event });
+
+            flushScopeQueue(scope);
           } catch (error) {
             $exceptionHandler(error);
           }
@@ -133,6 +135,8 @@ export function createWindowEventDirective(
         const handler = (event: Event): void => {
           try {
             fn(scope, { $event: event });
+
+            flushScopeQueue(scope);
           } catch (error) {
             $exceptionHandler(error);
           }
@@ -146,4 +150,12 @@ export function createWindowEventDirective(
       };
     },
   };
+}
+
+function flushScopeQueue(scope: ng.Scope): void {
+  const rootScope = scope.$root || scope;
+
+  if (typeof rootScope.$flushQueue === "function") {
+    rootScope.$flushQueue();
+  }
 }

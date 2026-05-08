@@ -15,9 +15,15 @@
       "default": "./dist/angular-ts.esm.js"
     },
     "./runtime": {
+      "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
     },
+    "./runtime/web-component": {
+      "types": "./@types/runtime/web-component.d.ts",
+      "import": "./dist/runtime/web-component.js"
+    },
     "./runtime/*": {
+      "types": "./@types/runtime/*.d.ts",
       "import": "./dist/runtime/*.js"
     },
     "./services/rest": {
@@ -27,6 +33,10 @@
     "./services/rest/*": {
       "types": "./@types/services/rest/*.d.ts",
       "import": "./dist/services/rest/*.js"
+    },
+    "./services/web-component": {
+      "types": "./@types/services/web-component/web-component.d.ts",
+      "import": "./dist/services/web-component/web-component.js"
     },
     "./services/webtransport": {
       "types": "./@types/services/webtransport/webtransport.d.ts",
@@ -84,6 +94,8 @@
     "playwright": "latest",
     "postcss": "^8.5.6",
     "prettier": "latest",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "rollup": "latest",
     "rollup-plugin-version-injector": "latest",
     "typedoc": "^0.28.17",

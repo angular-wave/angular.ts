@@ -28,7 +28,9 @@ All three share a `RouterProvider` globals object that tracks the current `State
 
 ### Register your states during config
 
-Call `$stateProvider.state(declaration)` inside an Angular config block. States must have a unique `name`.
+Call `$stateProvider.state(declaration)` inside an Angular config block, or use
+the equivalent module-level `module.state(declaration)` convenience. States must
+have a unique `name`.
 
 ```javascript
 angular.module('app', ['ng.router'])
@@ -56,6 +58,21 @@ angular.module('app', ['ng.router'])
         templateUrl: 'contact-detail.html',
         controller: 'ContactDetailCtrl'
       });
+  });
+```
+
+The same states can be registered without an explicit config block:
+
+```javascript
+angular.module('app', ['ng'])
+  .state('home', {
+    url: '/home',
+    template: '<h1>Home</h1>'
+  })
+  .state('contacts', {
+    url: '/contacts',
+    templateUrl: 'contacts.html',
+    controller: 'ContactsCtrl'
   });
 ```
 

@@ -9,12 +9,15 @@ import {
   _animateProvider,
   _compileProvider,
   _controllerProvider,
+  _eventBus,
   _filterProvider,
   _injector,
   _provide,
   _rest,
   _sse,
+  _stateProvider,
   _wasm,
+  _webComponent,
   _webTransport,
   _websocket,
   _worker,
@@ -41,10 +44,20 @@ import type {
   WebSocketService,
 } from "../../../services/websocket/websocket.ts";
 import type { WasmOptions, WasmService } from "../../../services/wasm/wasm.ts";
+import type { StateDeclaration } from "../../../router/state/interface.ts";
 import type {
   WorkerConfig,
   WorkerService,
 } from "../../../services/worker/worker.ts";
+import {
+  createTopicService,
+  type PubSub,
+  type TopicService,
+} from "../../../services/pubsub/pubsub.ts";
+import type {
+  WebComponentOptions,
+  WebComponentService,
+} from "../../../services/web-component/web-component.ts";
 
 type ModuleConfigFn = Injectable<(...args: any[]) => unknown>;
 
@@ -65,6 +78,7 @@ type InvokeQueueItem =
   | [typeof _compileProvider, "directive", [string, NamedInjectable]]
   | [typeof _animateProvider, "register", [string, NamedInjectable]]
   | [typeof _filterProvider, "register", [string, ng.FilterFactory]]
+  | [typeof _stateProvider, "state", [StateDeclaration]]
   | [
       typeof _controllerProvider,
       "register",
@@ -297,6 +311,39 @@ export class NgModule {
   }
 
   /**
+   * Register a router state during module configuration.
+   *
+   * This is equivalent to calling `$stateProvider.state(...)` in a config
+   * block, but keeps route declarations in the same fluent module API used for
+   * components, services, directives, and custom elements.
+   *
+   * @param {ng.StateDeclaration} definition - State declaration with a `name`.
+   * @returns {NgModule}
+   */
+  state(definition: StateDeclaration): NgModule;
+  /**
+   * Register a named router state during module configuration.
+   *
+   * The provided `name` is copied onto the state declaration before it is
+   * passed to `$stateProvider`.
+   *
+   * @param {string} name - State name.
+   * @param {ng.StateDeclaration} definition - State declaration without a required `name`.
+   * @returns {NgModule}
+   */
+  state(name: string, definition: Omit<StateDeclaration, "name">): NgModule;
+  state(
+    nameOrDefinition: string | StateDeclaration,
+    definition?: Omit<StateDeclaration, "name">,
+  ): NgModule {
+    const state = normalizeStateDeclaration(nameOrDefinition, definition);
+
+    this._configBlocks.push([_stateProvider, "state", [state]]);
+
+    return this;
+  }
+
+  /**
    * Register a named WebAssembly module as an injectable service.
    *
    * The actual loading is delegated to the `$wasm` provider, so custom
@@ -515,4 +562,85 @@ export class NgModule {
 
     return this;
   }
+
+  /**
+   * Register a scoped custom element backed by a normal AngularTS child scope.
+   *
+   * The definition is installed when the module runs. The custom element can be
+   * consumed as a native element while its internal model remains part of the
+   * AngularTS scope tree.
+   *
+   * @param {string} name - Custom element tag name.
+   * @param {WebComponentOptions} options - Custom element options.
+   * @returns {NgModule}
+   */
+  webComponent<T extends object = Record<string, any>>(
+    name: string,
+    options: WebComponentOptions<T>,
+  ): NgModule {
+    validate(isString, name, "name");
+    validate(isObject, options, "options");
+    this._runBlocks.push([
+      _webComponent,
+      ($webComponent: WebComponentService) =>
+        $webComponent.define<T>(name, options),
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a topic-bound event bus facade as an injectable service.
+   *
+   * Events published through the facade are namespaced as `${topic}:${event}`,
+   * keeping raw event-bus topic strings out of application services.
+   *
+   * @param {string} name - Injectable name.
+   * @param {string} topic - Base event-bus topic prefix.
+   * @returns {NgModule}
+   */
+  topic(name: string, topic: string): NgModule {
+    validate(isString, name, "name");
+    validate(isString, topic, "topic");
+    this._invokeQueue.push([
+      _provide,
+      "factory",
+      [
+        name,
+        [
+          _eventBus,
+          ($eventBus: PubSub): TopicService =>
+            createTopicService($eventBus, topic),
+        ],
+      ],
+    ]);
+
+    return this;
+  }
+}
+
+function normalizeStateDeclaration(
+  nameOrDefinition: string | StateDeclaration,
+  definition?: Omit<StateDeclaration, "name">,
+): StateDeclaration {
+  if (isString(nameOrDefinition)) {
+    validate(isObject, definition, "definition");
+
+    const namedDefinition = definition as StateDeclaration;
+
+    if (
+      isDefined(namedDefinition.name) &&
+      namedDefinition.name !== nameOrDefinition
+    ) {
+      throw new Error(
+        `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`,
+      );
+    }
+
+    return { ...namedDefinition, name: nameOrDefinition };
+  }
+
+  validate(isObject, nameOrDefinition, "definition");
+
+  return nameOrDefinition;
 }

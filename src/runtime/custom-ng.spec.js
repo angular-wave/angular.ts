@@ -1,12 +1,15 @@
 import { createAngularCustom } from "./index.ts";
+import { defineAngularElement } from "./web-component.ts";
 import { ngBindDirective } from "../directive/bind/bind.ts";
+import { ngClickDirective } from "../directive/events/events.ts";
 import { ngRepeatDirective } from "../directive/repeat/repeat.ts";
-import { createElementFromHTML, dealoc } from "../shared/dom.ts";
+import { createElementFromHTML, dealoc, getScope } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
 
 describe("custom runtime", () => {
   let element;
   let previousAngular;
+  let nextElementId = 0;
 
   beforeEach(() => {
     previousAngular = window.angular;
@@ -286,5 +289,81 @@ describe("custom runtime", () => {
     prefs.theme = "dark";
 
     expect(JSON.parse(storedValues.get("prefs"))).toEqual({ theme: "dark" });
+  });
+
+  it("defines standalone AngularTS custom elements without host bootstrap", async () => {
+    class LabelService {
+      value = "custom runtime service";
+    }
+
+    const tagName = `x-runtime-card-${++nextElementId}`;
+    const events = [];
+
+    const definition = defineAngularElement(tagName, {
+      ngModule: {
+        directives: {
+          ngClick: ngClickDirective,
+        },
+        services: {
+          labelService: LabelService,
+        },
+      },
+      component: {
+        shadow: true,
+        inputs: {
+          count: Number,
+          title: String,
+        },
+        scope: {
+          count: 1,
+        },
+        template: `
+          <button ng-click="increment()">
+            {{ title }} / {{ count }} / {{ label.value }}
+          </button>
+        `,
+        connected({ dispatch, injector, scope }) {
+          scope.label = injector.get("labelService");
+          scope.increment = () => {
+            scope.count++;
+            dispatch("count-change", { count: scope.count });
+          };
+        },
+      },
+    });
+
+    expect(definition.angular.$rootScope).toBeDefined();
+    expect(definition.injector.get("labelService").value).toBe(
+      "custom runtime service",
+    );
+    expect(definition.element).toBe(customElements.get(tagName));
+
+    element = document.createElement(tagName);
+    element.title = "Standalone";
+    element.count = 2;
+    element.addEventListener("count-change", (event) => {
+      events.push(event.detail.count);
+    });
+
+    document.getElementById("app").appendChild(element);
+
+    await wait();
+    await wait();
+
+    expect(getScope(element).$parent.$id).toBe(
+      definition.angular.$rootScope.$id,
+    );
+    expect(element.shadowRoot.textContent).toContain(
+      "Standalone / 2 / custom runtime service",
+    );
+
+    element.shadowRoot.querySelector("button").click();
+
+    await wait();
+
+    expect(events).toEqual([3]);
+    expect(element.shadowRoot.textContent).toContain(
+      "Standalone / 3 / custom runtime service",
+    );
   });
 });

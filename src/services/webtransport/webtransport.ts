@@ -133,9 +133,9 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   closed: Promise<void>;
   transport!: NativeWebTransport;
 
-  private _url: string;
-  private _TransportCtor: NativeWebTransportConstructor;
-  private _transportOptions: WebTransportOptions;
+  private readonly _url: string;
+  private readonly _TransportCtor: NativeWebTransportConstructor;
+  private readonly _transportOptions: WebTransportOptions;
   private _config: WebTransportConfig;
   private _log: LogService;
   private _encoder = new TextEncoder();
@@ -208,7 +208,12 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   close(closeInfo?: { closeCode?: number; reason?: string }): void {
     this._closing = true;
     this._clearReconnectTimer();
-    this.transport.close(closeInfo);
+
+    try {
+      this.transport.close(closeInfo);
+    } catch {
+      this._settleClosed();
+    }
   }
 
   private _open(attempt = 0, previousError?: unknown): void {
@@ -226,11 +231,13 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     this.transport = transport;
     this.ready = transport.ready.then(
       async () => {
-        this._readDatagrams(transport);
+        void this._readDatagrams(transport);
 
         if (attempt > 0) {
           await this._notifyReconnect(attempt, previousError);
         }
+
+        if (this._closing || this._closedSettled) return this;
 
         this._config.onOpen?.();
 
@@ -266,6 +273,8 @@ class ManagedWebTransportConnection implements WebTransportConnection {
         url: this._url,
       });
     } catch (nextError) {
+      if (this._closing || this._closedSettled) return;
+
       this._config.onError?.(nextError);
       this._log.error("WebTransport reconnect hook failed", nextError);
     }

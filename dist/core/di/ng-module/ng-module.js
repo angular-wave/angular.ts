@@ -1,7 +1,8 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
-import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport } from '../../../injection-tokens.js';
+import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent, _eventBus } from '../../../injection-tokens.js';
 import { isInjectable } from '../../../shared/predicates.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
+import { createTopicService } from '../../../services/pubsub/pubsub.js';
 
 /**
  * Modules are collections of application configuration information for components:
@@ -177,6 +178,11 @@ class NgModule {
         validate(isString, name, "name");
         validateRequired(ctlFn, `fictlFnlterFn`);
         this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
+        return this;
+    }
+    state(nameOrDefinition, definition) {
+        const state = normalizeStateDeclaration(nameOrDefinition, definition);
+        this._configBlocks.push([_stateProvider, "state", [state]]);
         return this;
     }
     /**
@@ -357,6 +363,65 @@ class NgModule {
         ]);
         return this;
     }
+    /**
+     * Register a scoped custom element backed by a normal AngularTS child scope.
+     *
+     * The definition is installed when the module runs. The custom element can be
+     * consumed as a native element while its internal model remains part of the
+     * AngularTS scope tree.
+     *
+     * @param {string} name - Custom element tag name.
+     * @param {WebComponentOptions} options - Custom element options.
+     * @returns {NgModule}
+     */
+    webComponent(name, options) {
+        validate(isString, name, "name");
+        validate(isObject, options, "options");
+        this._runBlocks.push([
+            _webComponent,
+            ($webComponent) => $webComponent.define(name, options),
+        ]);
+        return this;
+    }
+    /**
+     * Register a topic-bound event bus facade as an injectable service.
+     *
+     * Events published through the facade are namespaced as `${topic}:${event}`,
+     * keeping raw event-bus topic strings out of application services.
+     *
+     * @param {string} name - Injectable name.
+     * @param {string} topic - Base event-bus topic prefix.
+     * @returns {NgModule}
+     */
+    topic(name, topic) {
+        validate(isString, name, "name");
+        validate(isString, topic, "topic");
+        this._invokeQueue.push([
+            _provide,
+            "factory",
+            [
+                name,
+                [
+                    _eventBus,
+                    ($eventBus) => createTopicService($eventBus, topic),
+                ],
+            ],
+        ]);
+        return this;
+    }
+}
+function normalizeStateDeclaration(nameOrDefinition, definition) {
+    if (isString(nameOrDefinition)) {
+        validate(isObject, definition, "definition");
+        const namedDefinition = definition;
+        if (isDefined(namedDefinition.name) &&
+            namedDefinition.name !== nameOrDefinition) {
+            throw new Error(`State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
+        }
+        return { ...namedDefinition, name: nameOrDefinition };
+    }
+    validate(isObject, nameOrDefinition, "definition");
+    return nameOrDefinition;
 }
 
 export { NgModule };

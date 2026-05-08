@@ -72,6 +72,15 @@ Runs during the config phase, before any services are instantiated. Only provide
 #### .run(fn)
 
 Runs after the injector has been created. Services are available. Use this for one-time initialization logic.
+
+#### .state(definition) / .state(name, definition)
+
+Registers a router state through `$stateProvider` during the config phase. This
+is equivalent to using `.config(['$stateProvider', ...])`, but keeps route
+declarations in the same fluent module chain as components and services.
+The method records only a provider-token invocation; it does not import router
+implementation code into custom runtimes unless that runtime actually includes
+the router provider and loads a module that calls `.state()`.
 ## A complete module example
 
 The following example creates a module, registers a constant, a service, a controller, and a config block, then composes that module with a second utility module.
@@ -119,6 +128,11 @@ app.controller('UserListController', [
     });
   },
 ]);
+
+app.state('users', {
+  url: '/users',
+  template: '<user-list></user-list>',
+});
 
 app.config(['$locationProvider', function ($locationProvider) {
   $locationProvider.html5Mode(true);

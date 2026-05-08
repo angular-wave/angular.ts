@@ -1,18 +1,24 @@
 import { NgModule } from "./ng-module.js";
+import { Angular } from "../../../angular.ts";
+import { createInjector } from "../injector.ts";
 import {
   _animateProvider,
   _compileProvider,
   _controllerProvider,
+  _eventBus,
   _filterProvider,
   _injector,
   _provide,
   _rest,
   _sse,
+  _stateProvider,
   _wasm,
+  _webComponent,
   _webTransport,
   _websocket,
   _worker,
 } from "../../../injection-tokens.ts";
+import { wait } from "../../../shared/utils.ts";
 
 describe("NgModule", () => {
   /** @type {NgModule} */
@@ -177,9 +183,11 @@ describe("NgModule", () => {
       .wasm("mathLib", "/wasm/math.wasm")
       .sse("notifications", "/events")
       .websocket("chat", "wss://chat.example.com", ["json"])
-      .webTransport("live", "https://localhost:4433/webtransport");
+      .webTransport("live", "https://localhost:4433/webtransport")
+      .topic("taskEvents", "tasks");
 
     expect(ngModule._invokeQueue.map((item) => item[0])).toEqual([
+      _provide,
       _provide,
       _provide,
       _provide,
@@ -194,6 +202,7 @@ describe("NgModule", () => {
       "factory",
       "factory",
       "factory",
+      "factory",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][0])).toEqual([
       "posts",
@@ -202,6 +211,7 @@ describe("NgModule", () => {
       "notifications",
       "chat",
       "live",
+      "taskEvents",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][1][0])).toEqual([
       _rest,
@@ -210,7 +220,96 @@ describe("NgModule", () => {
       _sse,
       _websocket,
       _webTransport,
+      _eventBus,
     ]);
+  });
+
+  it("stores web component definitions as run blocks", () => {
+    const options = {
+      template: "<span>{{title}}</span>",
+    };
+
+    ngModule.webComponent("x-test-card", options);
+
+    expect(ngModule._runBlocks.length).toBe(1);
+    expect(ngModule._runBlocks[0][0]).toBe(_webComponent);
+  });
+
+  it("stores router states as config blocks", () => {
+    const home = {
+      name: "home",
+      url: "/home",
+      template: "<h1>Home</h1>",
+    };
+
+    ngModule.state(home).state("home.detail", {
+      url: "/:id",
+      template: "<h1>Detail</h1>",
+    });
+
+    expect(ngModule._configBlocks[0]).toEqual([
+      _stateProvider,
+      "state",
+      [home],
+    ]);
+    expect(ngModule._configBlocks[1]).toEqual([
+      _stateProvider,
+      "state",
+      [
+        {
+          name: "home.detail",
+          url: "/:id",
+          template: "<h1>Detail</h1>",
+        },
+      ],
+    ]);
+  });
+
+  it("registers module states through the router provider", () => {
+    const angular = new Angular();
+
+    angular
+      .module("stateApp", ["ng"])
+      .state("home", {
+        url: "/home",
+        template: "<h1>Home</h1>",
+      })
+      .state({
+        name: "home.detail",
+        url: "/:id",
+        template: "<h1>Detail</h1>",
+      });
+
+    const injector = createInjector(["stateApp"]);
+    const registry = injector.get("$stateRegistry");
+
+    expect(registry.get("home").name).toBe("home");
+    expect(registry.get("home.detail").url).toBe("/:id");
+  });
+
+  it("registers topic-bound event bus helpers", async () => {
+    const angular = new Angular();
+
+    angular.module("topicApp", ["ng"]).topic("taskEvents", "tasks");
+
+    const injector = createInjector(["topicApp"]);
+    const taskEvents = injector.get("taskEvents");
+    const eventBus = injector.get("$eventBus");
+    const received = [];
+
+    taskEvents.subscribe("saved", (task, source) => {
+      received.push({ task, source });
+    });
+
+    expect(taskEvents.topic).toBe("tasks");
+    expect(taskEvents.getCount("saved")).toBe(1);
+    expect(eventBus.getCount("tasks:saved")).toBe(1);
+    expect(eventBus.getCount("saved")).toBe(0);
+    expect(taskEvents.publish("saved", { id: 1 }, "ui")).toBe(true);
+
+    await wait();
+
+    expect(received).toEqual([{ task: { id: 1 }, source: "ui" }]);
   });
 
   it("can store providers", () => {

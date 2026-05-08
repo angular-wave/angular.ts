@@ -105,7 +105,12 @@ export type {
 } from "./services/location/location.ts";
 export type { LogService } from "./services/log/log.ts";
 export { LogProvider } from "./services/log/log.ts";
-export { PubSub, PubSubProvider } from "./services/pubsub/pubsub.ts";
+export {
+  createTopicService,
+  PubSub,
+  PubSubProvider,
+} from "./services/pubsub/pubsub.ts";
+export type { TopicService } from "./services/pubsub/pubsub.ts";
 export {
   CachedRestBackend,
   HttpRestBackend,
@@ -152,6 +157,16 @@ export type {
   StorageBackend,
   StorageType,
 } from "./services/storage/storage.ts";
+export { WebComponentProvider } from "./services/web-component/web-component.ts";
+export type {
+  ElementScopeOptions,
+  WebComponentContext,
+  WebComponentInput,
+  WebComponentInputConfig,
+  WebComponentInputs,
+  WebComponentOptions,
+  WebComponentService,
+} from "./services/web-component/web-component.ts";
 export { WebSocketProvider } from "./services/websocket/websocket.ts";
 export type {
   WebSocketConnection,

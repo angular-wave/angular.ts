@@ -94,16 +94,13 @@ class StateProvider {
         this._lazyStates = [];
         this._defaultErrorHandler = exceptionHandlerProvider.handler;
     }
-    /**
-     *
-     * @param {StateDeclaration} definition
-     */
-    state(definition) {
-        if (!definition.name) {
+    state(nameOrDefinition, definition) {
+        const stateDefinition = normalizeStateDeclaration(nameOrDefinition, definition);
+        if (!stateDefinition.name) {
             throw stdErr("stateinvalid", `'name' required`);
         }
         try {
-            this._getRegistry().register(definition);
+            this._getRegistry().register(stateDefinition);
         }
         catch (err) {
             throw stdErr("stateinvalid", err.message);
@@ -572,5 +569,19 @@ StateProvider.$inject = [
     _transitionsProvider,
     _exceptionHandlerProvider,
 ];
+function normalizeStateDeclaration(nameOrDefinition, definition) {
+    if (isString(nameOrDefinition)) {
+        if (!isObject(definition)) {
+            throw stdErr("stateinvalid", `'definition' required`);
+        }
+        const namedDefinition = definition;
+        if (isDefined(namedDefinition.name) &&
+            namedDefinition.name !== nameOrDefinition) {
+            throw stdErr("stateinvalid", `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
+        }
+        return { ...namedDefinition, name: nameOrDefinition };
+    }
+    return nameOrDefinition;
+}
 
 export { StateProvider, silentRejection };

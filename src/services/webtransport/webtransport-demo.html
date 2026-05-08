@@ -82,9 +82,13 @@
         .controller("WebTransportDemo", WebTransportDemo);
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => angular.init(document), {
-          once: true,
-        });
+        document.addEventListener(
+          "DOMContentLoaded",
+          () => angular.init(document),
+          {
+            once: true,
+          },
+        );
       } else {
         angular.init(document);
       }
@@ -96,7 +100,9 @@
         <header class="toolbar">
           <h1>WebTransport</h1>
           <div class="notice" role="status">
-            {{ notice }}<span ng-if="reconnects"> - reconnects {{ reconnects }}</span>
+            {{ notice }}<span ng-if="reconnects">
+              - reconnects {{ reconnects }}</span
+            >
           </div>
         </header>
 

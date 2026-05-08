@@ -200,6 +200,73 @@ describe("event directives", () => {
       expect(button.removeEventListener).toHaveBeenCalledWith("click", handler);
     });
 
+    it("should flush template updates after event expressions", async () => {
+      const scope = $rootScope.$new();
+
+      scope.count = 0;
+      element = $compile(
+        '<button ng-click="count = count + 1">{{ count }}</button>',
+      )(scope);
+
+      await wait();
+
+      expect(element.textContent).toBe("0");
+
+      browserTrigger(element, "click");
+      await wait();
+
+      expect(element.textContent).toBe("1");
+    });
+
+    it("should flush the scope queue after event expressions", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+      const link = directive.compile(null, { ngClick: "click($event)" });
+      const scope = {
+        $flushQueue: jasmine.createSpy("$flushQueue"),
+        $on: jasmine.createSpy("$on"),
+        click: jasmine.createSpy("click"),
+      };
+      const button = document.createElement("button");
+      const event = new Event("click");
+
+      link(scope, button);
+      button.dispatchEvent(event);
+
+      expect(scope.click).toHaveBeenCalledWith(event);
+      expect(scope.$flushQueue).toHaveBeenCalled();
+    });
+
+    it("should flush from the root scope after child-scope event expressions", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+      const link = directive.compile(null, { ngClick: "click($event)" });
+      const rootScope = {
+        $flushQueue: jasmine.createSpy("$flushQueue"),
+      };
+      const scope = {
+        $flushQueue: jasmine.createSpy("$flushQueue"),
+        $on: jasmine.createSpy("$on"),
+        $root: rootScope,
+        click: jasmine.createSpy("click"),
+      };
+      const button = document.createElement("button");
+
+      link(scope, button);
+      button.dispatchEvent(new Event("click"));
+
+      expect(rootScope.$flushQueue).toHaveBeenCalled();
+      expect(scope.$flushQueue).not.toHaveBeenCalled();
+    });
+
     it("should delegate listener errors to $exceptionHandler", () => {
       const directive = createEventDirective(
         $parse,

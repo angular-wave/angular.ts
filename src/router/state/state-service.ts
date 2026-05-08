@@ -186,16 +186,35 @@ export class StateProvider {
   ];
 
   /**
+   * Register a router state.
    *
-   * @param {StateDeclaration} definition
+   * @param {StateDeclaration} definition - State declaration with a `name`.
+   * @returns {this}
    */
-  state(definition: StateDeclaration): this {
-    if (!definition.name) {
+  state(definition: StateDeclaration): this;
+  /**
+   * Register a named router state.
+   *
+   * @param {string} name - State name.
+   * @param {StateDeclaration} definition - State declaration without a required `name`.
+   * @returns {this}
+   */
+  state(name: string, definition: Omit<StateDeclaration, "name">): this;
+  state(
+    nameOrDefinition: string | StateDeclaration,
+    definition?: Omit<StateDeclaration, "name">,
+  ): this {
+    const stateDefinition = normalizeStateDeclaration(
+      nameOrDefinition,
+      definition,
+    );
+
+    if (!stateDefinition.name) {
       throw stdErr("stateinvalid", `'name' required`);
     }
 
     try {
-      this._getRegistry().register(definition);
+      this._getRegistry().register(stateDefinition);
     } catch (err) {
       throw stdErr("stateinvalid", (err as Error).message);
     }
@@ -782,4 +801,31 @@ export class StateProvider {
 
     return reg?.get(stateOrName, base || this.$current);
   }
+}
+
+function normalizeStateDeclaration(
+  nameOrDefinition: string | StateDeclaration,
+  definition?: Omit<StateDeclaration, "name">,
+): StateDeclaration {
+  if (isString(nameOrDefinition)) {
+    if (!isObject(definition)) {
+      throw stdErr("stateinvalid", `'definition' required`);
+    }
+
+    const namedDefinition = definition as StateDeclaration;
+
+    if (
+      isDefined(namedDefinition.name) &&
+      namedDefinition.name !== nameOrDefinition
+    ) {
+      throw stdErr(
+        "stateinvalid",
+        `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`,
+      );
+    }
+
+    return { ...namedDefinition, name: nameOrDefinition };
+  }
+
+  return nameOrDefinition;
 }
