@@ -137,10 +137,238 @@ import { SseProvider } from "./services/sse/sse.ts";
 import { StreamProvider } from "./services/stream/readable-stream.ts";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
+import { WebComponentProvider } from "./services/web-component/web-component.ts";
 import { WebTransportProvider } from "./services/webtransport/webtransport.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
+
+type ProviderGroup = Record<string, Function>;
+
+type DirectiveGroup = Record<string, ng.DirectiveFactory>;
+
+/**
+ * Runtime identity and DOM globals.
+ *
+ * Custom runtimes almost always want these values, even when they do not include
+ * browser I/O, router, animation, or platform integration services.
+ */
+function registerRuntimeHostValues(
+  angular: ng.Angular,
+  $provide: ng.ProvideService,
+): void {
+  $provide.provider(
+    _angular,
+    class {
+      $get = () => angular;
+    },
+  );
+  $provide.value(_window, window);
+  $provide.value(_document, document);
+}
+
+/** Providers required by scopes, expressions, filters, controllers, and compile. */
+export const ngCoreProviders = {
+  $controller: ControllerProvider,
+  $exceptionHandler: ExceptionHandlerProvider,
+  $filter: FilterProvider,
+  $interpolate: InterpolateProvider,
+  $parse: ParseProvider,
+  $rootScope: RootScopeProvider,
+} satisfies ProviderGroup;
+
+/** Browser services that are useful in normal apps but optional for small runtimes. */
+export const ngBrowserProviders = {
+  $anchorScroll: AnchorScrollProvider,
+  $aria: AriaProvider,
+  $cookie: CookieProvider,
+  $http: HttpProvider,
+  $httpParamSerializer: HttpParamSerializerProvider,
+  $location: LocationProvider,
+  $log: LogProvider,
+  $templateCache: TemplateCacheProvider,
+  $templateRequest: TemplateRequestProvider,
+} satisfies ProviderGroup;
+
+/** Strict contextual escaping providers. */
+export const ngSecurityProviders = {
+  $sce: SceProvider,
+  $sceDelegate: SceDelegateProvider,
+} satisfies ProviderGroup;
+
+/** Animation providers. Omit this group for runtimes that use native transitions only. */
+export const ngAnimationProviders = {
+  $animate: AnimateProvider,
+  $$animation: AnimationProvider,
+  $animateCss: AnimateCssProvider,
+  $$animateCssDriver: AnimateCssDriverProvider,
+  $$animateJs: AnimateJsProvider,
+  $$animateJsDriver: AnimateJsDriverProvider,
+  $$animateQueue: AnimateQueueProvider,
+} satisfies ProviderGroup;
+
+/** State-router providers. Omit this group for custom-element or widget runtimes without routing. */
+export const ngRouterProviders = {
+  [_router]: RouterProvider,
+  $view: ViewService,
+  $transitions: TransitionProvider,
+  $templateFactory: TemplateFactoryProvider,
+  $stateRegistry: StateRegistryProvider,
+  $state: StateProvider,
+} satisfies ProviderGroup;
+
+/** Network, messaging, persistence, and worker-style integration providers. */
+export const ngIntegrationProviders = {
+  $eventBus: PubSubProvider,
+  $rest: RestProvider,
+  $sse: SseProvider,
+  $stream: StreamProvider,
+  $wasm: WasmProvider,
+  $webComponent: WebComponentProvider,
+  $websocket: WebSocketProvider,
+  $webTransport: WebTransportProvider,
+  $worker: WorkerProvider,
+} satisfies ProviderGroup;
+
+/** Element, form, and script directives for normal HTML integration. */
+export const ngElementDirectives = {
+  input: inputDirective,
+  textarea: inputDirective,
+  form: formDirective,
+  script: scriptDirective,
+  select: selectDirective,
+  option: optionDirective,
+  ngForm: ngFormDirective,
+} satisfies DirectiveGroup;
+
+/** Template binding and DOM update directives. */
+export const ngBindingDirectives = {
+  ngBind: ngBindDirective,
+  ngBindHtml: ngBindHtmlDirective,
+  ngBindTemplate: ngBindTemplateDirective,
+  ngClass: classDirective,
+  ngCloak: ngCloakDirective,
+  ngEl: ngElDirective,
+  ngHide: ngHideDirective,
+  ngRef: ngRefDirective,
+  ngShow: ngShowDirective,
+  ngStyle: ngStyleDirective,
+  ngValue: ngValueDirective,
+} satisfies DirectiveGroup;
+
+/** Control-flow and composition directives. */
+export const ngTemplateDirectives = {
+  ngController: ngControllerDirective,
+  ngIf: ngIfDirective,
+  ngInclude: ngIncludeDirective,
+  ngInject: ngInjectDirective,
+  ngInit: ngInitDirective,
+  ngListener: ngListenerDirective,
+  ngNonBindable: ngNonBindableDirective,
+  ngRepeat: ngRepeatDirective,
+  ngScope: ngScopeDirective,
+  ngSetter: ngSetterDirective,
+  ngSwitch: ngSwitchDirective,
+  ngSwitchWhen: ngSwitchWhenDirective,
+  ngSwitchDefault: ngSwitchDefaultDirective,
+  ngTransclude: ngTranscludeDirective,
+} satisfies DirectiveGroup;
+
+/** Form model, validation, selection, and message directives. */
+export const ngFormDirectives = {
+  ngMessages: ngMessagesDirective,
+  ngMessage: ngMessageDirective,
+  ngMessageExp: ngMessageExpDirective,
+  ngMessagesInclude: ngMessagesIncludeDirective,
+  ngMessageDefault: ngMessageDefaultDirective,
+  ngModel: ngModelDirective,
+  ngModelOptions: ngModelOptionsDirective,
+  ngOptions: ngOptionsDirective,
+  pattern: patternDirective,
+  ngPattern: patternDirective,
+  required: requiredDirective,
+  ngRequired: requiredDirective,
+  ngMinlength: minlengthDirective,
+  minlength: minlengthDirective,
+  ngMaxlength: maxlengthDirective,
+  maxlength: maxlengthDirective,
+} satisfies DirectiveGroup;
+
+/** HTTP, streaming, WebAssembly, WebTransport, and Worker directives. */
+export const ngIntegrationDirectives = {
+  ngChannel: ngChannelDirective,
+  ngDelete: ngDeleteDirective,
+  ngGet: ngGetDirective,
+  ngPost: ngPostDirective,
+  ngPut: ngPutDirective,
+  ngSse: ngSseDirective,
+  ngViewport: ngViewportDirective,
+  ngWasm: ngWasmDirective,
+  ngWebTransport: ngWebTransportDirective,
+  ngWorker: ngWorkerDirective,
+} satisfies DirectiveGroup;
+
+/** Animation directives. */
+export const ngAnimationDirectives = {
+  ngAnimateSwap: ngAnimateSwapDirective,
+  ngAnimateChildren: $$AnimateChildrenDirective,
+} satisfies DirectiveGroup;
+
+/** Accessibility enhancement directives layered onto normal template directives. */
+export const ngAriaDirectives = {
+  ngChecked: ngCheckedAriaDirective,
+  ngClick: ngClickAriaDirective,
+  ngDblclick: ngDblclickAriaDirective,
+  ngDisabled: ngDisabledAriaDirective,
+  ngHide: ngHideAriaDirective,
+  ngShow: ngShowAriaDirective,
+  ngMessages: ngMessagesAriaDirective,
+  ngModel: ngModelAriaDirective,
+  ngReadonly: ngReadonlyAriaDirective,
+  ngRequired: ngRequiredAriaDirective,
+  ngValue: ngValueAriaDirective,
+} satisfies DirectiveGroup;
+
+/** State-router directives. */
+export const ngRouterDirectives = {
+  ngSref: StateRefDirective,
+  ngSrefActive: StateRefActiveDirective,
+  ngSrefActiveEq: StateRefActiveDirective,
+  ngState: StateRefDynamicDirective,
+  ngView: ViewDirective,
+} satisfies DirectiveGroup;
+
+/** Fill/transclusion directives that intentionally register after their base directive. */
+export const ngFillDirectives = {
+  input: hiddenInputDirective,
+  ngInclude: ngIncludeFillContentDirective,
+  ngView: ViewDirectiveFill,
+} satisfies DirectiveGroup;
+
+/** Provider groups included by the default full `ng` runtime. */
+export const ngDefaultProviderGroups = [
+  ngCoreProviders,
+  ngBrowserProviders,
+  ngSecurityProviders,
+  ngAnimationProviders,
+  ngRouterProviders,
+  ngIntegrationProviders,
+] satisfies ProviderGroup[];
+
+/** Directive groups included by the default full `ng` runtime. */
+export const ngDefaultDirectiveGroups = [
+  ngElementDirectives,
+  ngBindingDirectives,
+  ngTemplateDirectives,
+  ngFormDirectives,
+  ngIntegrationDirectives,
+  ngAnimationDirectives,
+  ngAriaDirectives,
+  ngRouterDirectives,
+  ngFillDirectives,
+  ngAttributeAliasDirectives,
+  ngEventDirectives,
+] satisfies DirectiveGroup[];
 
 /**
  * Initializes and registers the core `ng` module.
@@ -149,160 +377,44 @@ import { WasmProvider } from "./services/wasm/wasm.ts";
  * router integrations that make up the default AngularTS runtime.
  */
 export function registerNgModule(angular: ng.Angular): ng.NgModule {
-  return angular
-    .module(
-      "ng",
-      [],
-      [
-        _provide,
-        ($provide: ng.ProvideService) => {
-          $provide.provider(
-            _angular,
-            class {
-              $get = () => angular;
-            },
-          );
-          $provide.value(_window, window);
-          $provide.value(_document, document);
-          $provide
-            .provider(_compile, CompileProvider)
-            .directive({
-              input: inputDirective,
-              textarea: inputDirective,
-              form: formDirective,
-              script: scriptDirective,
-              select: selectDirective,
-              option: optionDirective,
-              ngBind: ngBindDirective,
-              ngBindHtml: ngBindHtmlDirective,
-              ngBindTemplate: ngBindTemplateDirective,
-              ngChannel: ngChannelDirective,
-              ngClass: classDirective,
-              ngCloak: ngCloakDirective,
-              ngController: ngControllerDirective,
-              ngDelete: ngDeleteDirective,
-              ngDisabled: ngDisabledAriaDirective,
-              ngEl: ngElDirective,
-              ngForm: ngFormDirective,
-              ngGet: ngGetDirective,
-              ngHide: ngHideDirective,
-              ngIf: ngIfDirective,
-              ngInclude: ngIncludeDirective,
-              ngInject: ngInjectDirective,
-              ngInit: ngInitDirective,
-              ngListener: ngListenerDirective,
-              ngMessages: ngMessagesDirective,
-              ngMessage: ngMessageDirective,
-              ngMessageExp: ngMessageExpDirective,
-              ngMessagesInclude: ngMessagesIncludeDirective,
-              ngMessageDefault: ngMessageDefaultDirective,
-              ngNonBindable: ngNonBindableDirective,
-              ngPost: ngPostDirective,
-              ngPut: ngPutDirective,
-              ngRef: ngRefDirective,
-              ngRepeat: ngRepeatDirective,
-              ngSetter: ngSetterDirective,
-              ngShow: ngShowDirective,
-              ngStyle: ngStyleDirective,
-              ngSse: ngSseDirective,
-              ngSwitch: ngSwitchDirective,
-              ngSwitchWhen: ngSwitchWhenDirective,
-              ngSwitchDefault: ngSwitchDefaultDirective,
-              ngOptions: ngOptionsDirective,
-              ngTransclude: ngTranscludeDirective,
-              ngModel: ngModelDirective,
-              pattern: patternDirective,
-              ngPattern: patternDirective,
-              required: requiredDirective,
-              ngRequired: requiredDirective,
-              ngMinlength: minlengthDirective,
-              minlength: minlengthDirective,
-              ngMaxlength: maxlengthDirective,
-              maxlength: maxlengthDirective,
-              ngValue: ngValueDirective,
-              ngModelOptions: ngModelOptionsDirective,
-              ngViewport: ngViewportDirective,
-              ngWasm: ngWasmDirective,
-              ngWebTransport: ngWebTransportDirective,
-              ngWorker: ngWorkerDirective,
-              ngScope: ngScopeDirective,
-            })
-            .directive({
-              input: hiddenInputDirective,
-              ngAnimateSwap: ngAnimateSwapDirective,
-              ngAnimateChildren: $$AnimateChildrenDirective,
-              // aria directives
-              ngChecked: ngCheckedAriaDirective,
-              ngClick: ngClickAriaDirective,
-              ngDblclick: ngDblclickAriaDirective,
-              ngInclude: ngIncludeFillContentDirective,
-              ngHide: ngHideAriaDirective,
-              ngShow: ngShowAriaDirective,
-              ngMessages: ngMessagesAriaDirective,
-              ngModel: ngModelAriaDirective,
-              ngReadonly: ngReadonlyAriaDirective,
-              ngRequired: ngRequiredAriaDirective,
-              ngValue: ngValueAriaDirective,
-              // router directives
-              ngSref: StateRefDirective,
-              ngSrefActive: StateRefActiveDirective,
-              ngSrefActiveEq: StateRefActiveDirective,
-              ngState: StateRefDynamicDirective,
-              ngView: ViewDirective,
-            })
-            .directive({
-              ngView: ViewDirectiveFill,
-            })
-            .directive(ngAttributeAliasDirectives)
-            .directive(ngEventDirectives);
-          $provide.provider({
-            $aria: AriaProvider,
-            $anchorScroll: AnchorScrollProvider,
-            $animate: AnimateProvider,
-            $$animation: AnimationProvider,
-            $animateCss: AnimateCssProvider,
-            $$animateCssDriver: AnimateCssDriverProvider,
-            $$animateJs: AnimateJsProvider,
-            $$animateJsDriver: AnimateJsDriverProvider,
-            $$animateQueue: AnimateQueueProvider,
-            $controller: ControllerProvider,
-            $cookie: CookieProvider,
-            $exceptionHandler: ExceptionHandlerProvider,
-            $filter: FilterProvider,
-            $interpolate: InterpolateProvider,
-            $http: HttpProvider,
-            $httpParamSerializer: HttpParamSerializerProvider,
-            $location: LocationProvider,
-            $log: LogProvider,
-            $parse: ParseProvider,
-            $rest: RestProvider,
-            $rootScope: RootScopeProvider,
-            [_router]: RouterProvider,
-            $sce: SceProvider,
-            $sceDelegate: SceDelegateProvider,
-            $stream: StreamProvider,
-            $sse: SseProvider,
-            $templateCache: TemplateCacheProvider,
-            $templateRequest: TemplateRequestProvider,
-            $view: ViewService,
-            $transitions: TransitionProvider,
-            $templateFactory: TemplateFactoryProvider,
-            $stateRegistry: StateRegistryProvider,
-            $state: StateProvider,
-            $eventBus: PubSubProvider,
-            $webTransport: WebTransportProvider,
-            $websocket: WebSocketProvider,
-            $worker: WorkerProvider,
-            $wasm: WasmProvider,
-          });
-        },
-      ],
-    )
-    .factory("$stateParams", [
-      _router,
-      /**
-       * Exposes the router's current parameter bag as `$stateParams`.
-       */
-      (state: RouterProvider) => state._params,
-    ]);
+  const ngModule = angular.module(
+    "ng",
+    [],
+    [
+      _provide,
+      ($provide: ng.ProvideService) => {
+        registerRuntimeHostValues(angular, $provide);
+
+        const $compileProvider = $provide.provider(
+          _compile,
+          CompileProvider,
+        ) as unknown as CompileProvider;
+
+        ngDefaultDirectiveGroups.forEach((directives) => {
+          $compileProvider.directive(directives);
+        });
+
+        ngDefaultProviderGroups.forEach((providers) => {
+          $provide.provider(providers);
+        });
+      },
+    ],
+  );
+
+  registerRouterAliases(ngModule);
+
+  return ngModule;
+}
+
+/**
+ * Router compatibility aliases layered on top of the router provider group.
+ */
+export function registerRouterAliases(ngModule: ng.NgModule): ng.NgModule {
+  return ngModule.factory("$stateParams", [
+    _router,
+    /**
+     * Exposes the router's current parameter bag as `$stateParams`.
+     */
+    (state: RouterProvider) => state._params,
+  ]);
 }

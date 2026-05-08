@@ -51,7 +51,12 @@ class ManagedWebTransportConnection {
     close(closeInfo) {
         this._closing = true;
         this._clearReconnectTimer();
-        this.transport.close(closeInfo);
+        try {
+            this.transport.close(closeInfo);
+        }
+        catch {
+            this._settleClosed();
+        }
     }
     _open(attempt = 0, previousError) {
         let transport;
@@ -65,10 +70,12 @@ class ManagedWebTransportConnection {
         }
         this.transport = transport;
         this.ready = transport.ready.then(async () => {
-            this._readDatagrams(transport);
+            void this._readDatagrams(transport);
             if (attempt > 0) {
                 await this._notifyReconnect(attempt, previousError);
             }
+            if (this._closing || this._closedSettled)
+                return this;
             this._config.onOpen?.();
             return this;
         }, (error) => {
@@ -93,6 +100,8 @@ class ManagedWebTransportConnection {
             });
         }
         catch (nextError) {
+            if (this._closing || this._closedSettled)
+                return;
             this._config.onError?.(nextError);
             this._log.error("WebTransport reconnect hook failed", nextError);
         }

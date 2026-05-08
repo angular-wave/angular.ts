@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 7, 2026 23:40:30 */
+/* Version: 0.27.0 - May 8, 2026 14:29:07 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -55,6 +55,7 @@
     const _transitions = "$transitions";
     const _view = "$view";
     const _window = "$window";
+    const _webComponent = "$webComponent";
     const _webTransport = "$webTransport";
     const _websocket = "$websocket";
     const _worker = "$worker";
@@ -91,6 +92,7 @@
     const _templateRequestProvider = "$templateRequestProvider";
     const _transitionsProvider = "$transitionsProvider";
     const _viewProvider = "$viewProvider";
+    const _webComponentProvider = "$webComponentProvider";
     const _webTransportProvider = "$webTransportProvider";
     const _websocketProvider = "$websocketProvider";
     const _workerProvider = "$workerProvider";
@@ -144,6 +146,7 @@
         _transitions,
         _view,
         _window,
+        _webComponent,
         _webTransport,
         _websocket,
         _worker,
@@ -180,6 +183,7 @@
         _templateRequestProvider,
         _transitionsProvider,
         _viewProvider,
+        _webComponentProvider,
         _webTransportProvider,
         _websocketProvider,
         _workerProvider,
@@ -2504,6 +2508,195 @@
         };
     }
 
+    let eventBusInstance;
+    /**
+     * Configurable provider for the application-wide {@link PubSub} event bus.
+     *
+     * The provider creates the singleton `$eventBus` service and also exposes it on
+     * the global Angular service for integrations that publish from outside
+     * dependency injection.
+     */
+    class PubSubProvider {
+        constructor($exceptionHandler, angularProvider) {
+            this.$get = () => this.eventBus;
+            this.eventBus = eventBusInstance =
+                eventBusInstance || new PubSub($exceptionHandler.handler);
+            angularProvider.$get().$eventBus = this.eventBus;
+        }
+    }
+    PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
+    /**
+     * Creates a small domain-specific facade around the application event bus.
+     *
+     * `createTopicService(eventBus, "tasks").publish("saved", task)` maps to
+     * `$eventBus.publish("tasks:saved", task)`.
+     */
+    function createTopicService(eventBus, topic) {
+        const eventName = (event) => (event ? `${topic}:${event}` : topic);
+        return {
+            topic,
+            publish(event, ...args) {
+                return eventBus.publish(eventName(event), ...args);
+            },
+            subscribe(event, fn, context = undefined) {
+                return eventBus.subscribe(eventName(event), fn, context);
+            },
+            subscribeOnce(event, fn, context = undefined) {
+                return eventBus.subscribeOnce(eventName(event), fn, context);
+            },
+            getCount(event) {
+                return eventBus.getCount(eventName(event));
+            },
+        };
+    }
+    class PubSub {
+        /**
+         * Create a publish/subscribe event bus.
+         *
+         * Applications usually receive the singleton instance by injecting
+         * `$eventBus` instead of constructing this class directly.
+         *
+         * @param $exceptionHandler - Handler invoked when a subscriber throws.
+         */
+        constructor($exceptionHandler) {
+            this._topics = nullObject();
+            this._disposed = false;
+            this._exceptionHandler = $exceptionHandler;
+        }
+        /**
+         * Reset the bus to its initial state without disposing it.
+         *
+         * All topics and listeners are removed, and the instance can be reused.
+         */
+        reset() {
+            this._topics = nullObject();
+            this._disposed = false;
+        }
+        /**
+         * Checks if instance has been disposed.
+         * @returns True if disposed.
+         */
+        isDisposed() {
+            return this._disposed;
+        }
+        /**
+         * Dispose the instance, removing all topics and listeners.
+         */
+        dispose() {
+            if (this._disposed)
+                return;
+            this._disposed = true;
+            this._topics = nullObject();
+        }
+        /**
+         * Subscribe a function to a topic.
+         *
+         * The returned function removes only this listener registration.
+         *
+         * @param topic - The topic to subscribe to.
+         * @param fn - The callback function to invoke when published.
+         * @param [context] - Optional `this` context for the callback.
+         * @returns A function that unsubscribes this listener.
+         */
+        subscribe(topic, fn, context = undefined) {
+            if (this._disposed)
+                return () => false;
+            let listeners = this._topics[topic];
+            if (!listeners)
+                this._topics[topic] = listeners = [];
+            const entry = { _fn: fn, _context: context };
+            listeners.push(entry);
+            return () => this.unsubscribe(topic, fn, context);
+        }
+        /**
+         * Subscribe a function to a topic only once.
+         *
+         * Listener is removed before the first invocation.
+         *
+         * @param topic - The topic to subscribe to.
+         * @param fn - The callback function.
+         * @param [context] - Optional `this` context for the callback.
+         * @returns A function that unsubscribes this listener.
+         */
+        subscribeOnce(topic, fn, context = undefined) {
+            if (this._disposed)
+                return () => false;
+            let called = false;
+            const wrapper = (...args) => {
+                if (called)
+                    return;
+                called = true;
+                unsub(); // unsubscribe before running
+                fn.apply(context, args);
+            };
+            const unsub = this.subscribe(topic, wrapper);
+            return unsub;
+        }
+        /**
+         * Unsubscribe a specific function from a topic.
+         * Matches by function reference and optional context.
+         * @param topic - The topic to unsubscribe from.
+         * @param fn - The listener function.
+         * @param [context] - Optional `this` context.
+         * @returns True if the listener was found and removed.
+         */
+        unsubscribe(topic, fn, context = undefined) {
+            if (this._disposed)
+                return false;
+            const listeners = this._topics[topic];
+            if (!listeners || listeners.length === 0)
+                return false;
+            for (let i = 0; i < listeners.length; i++) {
+                const l = listeners[i];
+                if (l._fn === fn && l._context === context) {
+                    listeners.splice(i, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+        /**
+         * Get the number of subscribers for a topic.
+         *
+         * @param topic - Topic name to inspect.
+         * @returns The number of currently registered listeners.
+         */
+        getCount(topic) {
+            const listeners = this._topics[topic];
+            return listeners ? listeners.length : 0;
+        }
+        /**
+         * Publish a value to a topic asynchronously.
+         *
+         * All listeners are invoked in the order they were added.
+         * Delivery is scheduled with `queueMicrotask`.
+         *
+         * @param topic - The topic to publish.
+         * @param args - Arguments to pass to listeners.
+         * @returns True if any listeners exist for this topic.
+         */
+        publish(topic, ...args) {
+            if (this._disposed)
+                return false;
+            const listeners = this._topics[topic];
+            if (!listeners || listeners.length === 0)
+                return false;
+            // snapshot to prevent modifications during publish from affecting this call
+            const snapshot = listeners.slice();
+            queueMicrotask(() => {
+                for (const { _fn: fn, _context: context } of snapshot) {
+                    try {
+                        fn.apply(context, args);
+                    }
+                    catch (err) {
+                        this._exceptionHandler(err);
+                    }
+                }
+            });
+            return true;
+        }
+    }
+
     /**
      * Modules are collections of application configuration information for components:
      * controllers, directives, filters, etc. They provide recipes for the injector
@@ -2678,6 +2871,11 @@
             validate(isString, name, "name");
             validateRequired(ctlFn, `fictlFnlterFn`);
             this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
+            return this;
+        }
+        state(nameOrDefinition, definition) {
+            const state = normalizeStateDeclaration$1(nameOrDefinition, definition);
+            this._configBlocks.push([_stateProvider, "state", [state]]);
             return this;
         }
         /**
@@ -2858,6 +3056,65 @@
             ]);
             return this;
         }
+        /**
+         * Register a scoped custom element backed by a normal AngularTS child scope.
+         *
+         * The definition is installed when the module runs. The custom element can be
+         * consumed as a native element while its internal model remains part of the
+         * AngularTS scope tree.
+         *
+         * @param {string} name - Custom element tag name.
+         * @param {WebComponentOptions} options - Custom element options.
+         * @returns {NgModule}
+         */
+        webComponent(name, options) {
+            validate(isString, name, "name");
+            validate(isObject, options, "options");
+            this._runBlocks.push([
+                _webComponent,
+                ($webComponent) => $webComponent.define(name, options),
+            ]);
+            return this;
+        }
+        /**
+         * Register a topic-bound event bus facade as an injectable service.
+         *
+         * Events published through the facade are namespaced as `${topic}:${event}`,
+         * keeping raw event-bus topic strings out of application services.
+         *
+         * @param {string} name - Injectable name.
+         * @param {string} topic - Base event-bus topic prefix.
+         * @returns {NgModule}
+         */
+        topic(name, topic) {
+            validate(isString, name, "name");
+            validate(isString, topic, "topic");
+            this._invokeQueue.push([
+                _provide,
+                "factory",
+                [
+                    name,
+                    [
+                        _eventBus,
+                        ($eventBus) => createTopicService($eventBus, topic),
+                    ],
+                ],
+            ]);
+            return this;
+        }
+    }
+    function normalizeStateDeclaration$1(nameOrDefinition, definition) {
+        if (isString(nameOrDefinition)) {
+            validate(isObject, definition, "definition");
+            const namedDefinition = definition;
+            if (isDefined(namedDefinition.name) &&
+                namedDefinition.name !== nameOrDefinition) {
+                throw new Error(`State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
+            }
+            return { ...namedDefinition, name: nameOrDefinition };
+        }
+        validate(isObject, nameOrDefinition, "definition");
+        return nameOrDefinition;
     }
 
     const ngMinErr = minErr("ng");
@@ -9483,6 +9740,7 @@
                     const handler = (event) => {
                         try {
                             fn(scope, { $event: event });
+                            flushScopeQueue(scope);
                         }
                         catch (error) {
                             $exceptionHandler(error);
@@ -9506,6 +9764,7 @@
                     const handler = (event) => {
                         try {
                             fn(scope, { $event: event });
+                            flushScopeQueue(scope);
                         }
                         catch (error) {
                             $exceptionHandler(error);
@@ -9516,6 +9775,12 @@
                 };
             },
         };
+    }
+    function flushScopeQueue(scope) {
+        const rootScope = scope.$root || scope;
+        if (typeof rootScope.$flushQueue === "function") {
+            rootScope.$flushQueue();
+        }
     }
 
     /**
@@ -28666,16 +28931,13 @@
             this._lazyStates = [];
             this._defaultErrorHandler = exceptionHandlerProvider.handler;
         }
-        /**
-         *
-         * @param {StateDeclaration} definition
-         */
-        state(definition) {
-            if (!definition.name) {
+        state(nameOrDefinition, definition) {
+            const stateDefinition = normalizeStateDeclaration(nameOrDefinition, definition);
+            if (!stateDefinition.name) {
                 throw stdErr("stateinvalid", `'name' required`);
             }
             try {
-                this._getRegistry().register(definition);
+                this._getRegistry().register(stateDefinition);
             }
             catch (err) {
                 throw stdErr("stateinvalid", err.message);
@@ -29144,6 +29406,20 @@
         _transitionsProvider,
         _exceptionHandlerProvider,
     ];
+    function normalizeStateDeclaration(nameOrDefinition, definition) {
+        if (isString(nameOrDefinition)) {
+            if (!isObject(definition)) {
+                throw stdErr("stateinvalid", `'definition' required`);
+            }
+            const namedDefinition = definition;
+            if (isDefined(namedDefinition.name) &&
+                namedDefinition.name !== nameOrDefinition) {
+                throw stdErr("stateinvalid", `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
+            }
+            return { ...namedDefinition, name: nameOrDefinition };
+        }
+        return nameOrDefinition;
+    }
 
     const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
     const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
@@ -30561,171 +30837,6 @@
                     };
                 })(),
             };
-        }
-    }
-
-    let eventBusInstance;
-    /**
-     * Configurable provider for the application-wide {@link PubSub} event bus.
-     *
-     * The provider creates the singleton `$eventBus` service and also exposes it on
-     * the global Angular service for integrations that publish from outside
-     * dependency injection.
-     */
-    class PubSubProvider {
-        constructor($exceptionHandler, angularProvider) {
-            this.$get = () => this.eventBus;
-            this.eventBus = eventBusInstance =
-                eventBusInstance || new PubSub($exceptionHandler.handler);
-            angularProvider.$get().$eventBus = this.eventBus;
-        }
-    }
-    PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
-    class PubSub {
-        /**
-         * Create a publish/subscribe event bus.
-         *
-         * Applications usually receive the singleton instance by injecting
-         * `$eventBus` instead of constructing this class directly.
-         *
-         * @param $exceptionHandler - Handler invoked when a subscriber throws.
-         */
-        constructor($exceptionHandler) {
-            this._topics = nullObject();
-            this._disposed = false;
-            this._exceptionHandler = $exceptionHandler;
-        }
-        /**
-         * Reset the bus to its initial state without disposing it.
-         *
-         * All topics and listeners are removed, and the instance can be reused.
-         */
-        reset() {
-            this._topics = nullObject();
-            this._disposed = false;
-        }
-        /**
-         * Checks if instance has been disposed.
-         * @returns True if disposed.
-         */
-        isDisposed() {
-            return this._disposed;
-        }
-        /**
-         * Dispose the instance, removing all topics and listeners.
-         */
-        dispose() {
-            if (this._disposed)
-                return;
-            this._disposed = true;
-            this._topics = nullObject();
-        }
-        /**
-         * Subscribe a function to a topic.
-         *
-         * The returned function removes only this listener registration.
-         *
-         * @param topic - The topic to subscribe to.
-         * @param fn - The callback function to invoke when published.
-         * @param [context] - Optional `this` context for the callback.
-         * @returns A function that unsubscribes this listener.
-         */
-        subscribe(topic, fn, context = undefined) {
-            if (this._disposed)
-                return () => false;
-            let listeners = this._topics[topic];
-            if (!listeners)
-                this._topics[topic] = listeners = [];
-            const entry = { _fn: fn, _context: context };
-            listeners.push(entry);
-            return () => this.unsubscribe(topic, fn, context);
-        }
-        /**
-         * Subscribe a function to a topic only once.
-         *
-         * Listener is removed before the first invocation.
-         *
-         * @param topic - The topic to subscribe to.
-         * @param fn - The callback function.
-         * @param [context] - Optional `this` context for the callback.
-         * @returns A function that unsubscribes this listener.
-         */
-        subscribeOnce(topic, fn, context = undefined) {
-            if (this._disposed)
-                return () => false;
-            let called = false;
-            const wrapper = (...args) => {
-                if (called)
-                    return;
-                called = true;
-                unsub(); // unsubscribe before running
-                fn.apply(context, args);
-            };
-            const unsub = this.subscribe(topic, wrapper);
-            return unsub;
-        }
-        /**
-         * Unsubscribe a specific function from a topic.
-         * Matches by function reference and optional context.
-         * @param topic - The topic to unsubscribe from.
-         * @param fn - The listener function.
-         * @param [context] - Optional `this` context.
-         * @returns True if the listener was found and removed.
-         */
-        unsubscribe(topic, fn, context = undefined) {
-            if (this._disposed)
-                return false;
-            const listeners = this._topics[topic];
-            if (!listeners || listeners.length === 0)
-                return false;
-            for (let i = 0; i < listeners.length; i++) {
-                const l = listeners[i];
-                if (l._fn === fn && l._context === context) {
-                    listeners.splice(i, 1);
-                    return true;
-                }
-            }
-            return false;
-        }
-        /**
-         * Get the number of subscribers for a topic.
-         *
-         * @param topic - Topic name to inspect.
-         * @returns The number of currently registered listeners.
-         */
-        getCount(topic) {
-            const listeners = this._topics[topic];
-            return listeners ? listeners.length : 0;
-        }
-        /**
-         * Publish a value to a topic asynchronously.
-         *
-         * All listeners are invoked in the order they were added.
-         * Delivery is scheduled with `queueMicrotask`.
-         *
-         * @param topic - The topic to publish.
-         * @param args - Arguments to pass to listeners.
-         * @returns True if any listeners exist for this topic.
-         */
-        publish(topic, ...args) {
-            if (this._disposed)
-                return false;
-            const listeners = this._topics[topic];
-            if (!listeners || listeners.length === 0)
-                return false;
-            // snapshot to prevent modifications during publish from affecting this call
-            const snapshot = listeners.slice();
-            queueMicrotask(() => {
-                for (const { _fn: fn, _context: context } of snapshot) {
-                    try {
-                        fn.apply(context, args);
-                    }
-                    catch (err) {
-                        this._exceptionHandler(err);
-                    }
-                }
-            });
-            return true;
         }
     }
 
@@ -32277,6 +32388,356 @@
         }
     }
 
+    const pendingValueStore = new WeakMap();
+    /** Provider for scoped custom element integration. */
+    class WebComponentProvider {
+        constructor() {
+            /** Default options merged into every custom element definition. */
+            this.defaults = {};
+            this.$get = [
+                _injector,
+                _rootScope,
+                _compile,
+                (injector, rootScope, compile) => {
+                    const createElementScope = (host, initialState = {}, options = {}) => {
+                        const parentScope = options.parentScope ||
+                            getScope(host) ||
+                            getInheritedData(host.parentNode || host, _scope) ||
+                            rootScope;
+                        const scope = options.isolate
+                            ? parentScope.$newIsolate(initialState)
+                            : parentScope.$new(initialState);
+                        setScope(host, scope);
+                        return scope;
+                    };
+                    return {
+                        createElementScope,
+                        define: (name, options) => {
+                            const existing = customElements.get(name);
+                            if (existing)
+                                return existing;
+                            const mergedOptions = {
+                                ...this.defaults,
+                                ...options,
+                            };
+                            const inputs = normalizeInputs(mergedOptions.inputs);
+                            const elementClass = createWebComponentClass(name, inputs, mergedOptions, injector, compile, createElementScope);
+                            customElements.define(name, elementClass);
+                            return elementClass;
+                        },
+                    };
+                },
+            ];
+        }
+    }
+    function createWebComponentClass(name, inputs, options, injector, compile, createElementScope) {
+        const attributes = inputs.map((input) => input.attribute);
+        const scopes = new WeakMap();
+        const contexts = new WeakMap();
+        const destroyTimers = new WeakMap();
+        const cleanupFns = new WeakMap();
+        const queuedConnects = new WeakSet();
+        const reflectingAttributes = new WeakMap();
+        class AngularTsWebComponent extends HTMLElement {
+            static get observedAttributes() {
+                return attributes;
+            }
+            connectedCallback() {
+                const destroyTimer = destroyTimers.get(this);
+                if (destroyTimer) {
+                    clearTimeout(destroyTimer);
+                    destroyTimers.delete(this);
+                }
+                if (queuedConnects.has(this))
+                    return;
+                queuedConnects.add(this);
+                queueMicrotask(() => {
+                    queuedConnects.delete(this);
+                    if (!this.isConnected)
+                        return;
+                    connectHost(this);
+                });
+            }
+            disconnectedCallback() {
+                const timer = setTimeout(() => {
+                    destroyTimers.delete(this);
+                    if (this.isConnected)
+                        return;
+                    disconnectHost(this);
+                }, 0);
+                destroyTimers.set(this, timer);
+            }
+            attributeChangedCallback(attribute, oldValue, newValue) {
+                if (oldValue === newValue)
+                    return;
+                const reflected = reflectingAttributes.get(this);
+                if (reflected?.has(attribute))
+                    return;
+                const input = inputs.find((candidate) => candidate.attribute === attribute);
+                if (!input)
+                    return;
+                writeInput(this, input, coerceAttributeValue(input, newValue), scopes.get(this));
+                const context = contexts.get(this);
+                if (context) {
+                    options.attributeChanged?.(attribute, oldValue, newValue, context);
+                }
+            }
+        }
+        inputs.forEach((input) => {
+            Object.defineProperty(AngularTsWebComponent.prototype, input.property, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    const scope = scopes.get(this);
+                    if (scope)
+                        return scope[input.property];
+                    return getPendingValues(this)[input.property];
+                },
+                set(value) {
+                    const nextValue = coercePropertyValue(input, value);
+                    writeInput(this, input, nextValue, scopes.get(this));
+                    if (input.reflect) {
+                        reflectInput(this, input, nextValue, reflectingAttributes);
+                    }
+                },
+            });
+        });
+        function connectHost(host) {
+            const existingScope = scopes.get(host);
+            if (existingScope && !existingScope.$handler._destroyed)
+                return;
+            const renderRoot = resolveRenderRoot(host, options.shadow);
+            const initialState = resolveInitialState(options.scope);
+            const scope = createElementScope(host, initialState, {
+                isolate: options.isolate,
+            });
+            const context = createContext(host, scope, injector, renderRoot);
+            scopes.set(host, scope);
+            contexts.set(host, context);
+            applyInputDefaults(host, inputs);
+            upgradeOwnProperties(host, inputs);
+            applyAttributes(host, inputs, scope);
+            applyPendingValues(host, inputs, scope);
+            renderTemplate(renderRoot, host, scope, options.template, compile);
+            const cleanup = options.connected?.(context);
+            if (isFunction(cleanup)) {
+                cleanupFns.set(host, cleanup);
+            }
+            if (isFunction(scope.$flushQueue)) {
+                scope.$flushQueue();
+            }
+        }
+        function disconnectHost(host) {
+            const context = contexts.get(host);
+            const scope = scopes.get(host);
+            if (!scope)
+                return;
+            const cleanup = cleanupFns.get(host);
+            cleanup?.();
+            cleanupFns.delete(host);
+            if (context) {
+                options.disconnected?.(context);
+            }
+            if (!scope.$handler._destroyed) {
+                scope.$destroy();
+            }
+            scopes.delete(host);
+            contexts.delete(host);
+            clearRenderedContent(resolveRenderRoot(host, options.shadow));
+        }
+        Object.defineProperty(AngularTsWebComponent, "name", {
+            value: customElementClassName(name),
+        });
+        return AngularTsWebComponent;
+    }
+    function normalizeInputs(inputs = {}) {
+        return Object.keys(inputs).map((property) => {
+            const input = inputs[property];
+            if (isFunction(input)) {
+                return {
+                    attribute: kebobString(property),
+                    property,
+                    reflect: false,
+                    type: input,
+                };
+            }
+            const config = input;
+            return {
+                attribute: config.attribute || kebobString(property),
+                default: config.default,
+                property,
+                reflect: !!config.reflect,
+                type: config.type || String,
+            };
+        });
+    }
+    function resolveInitialState(state) {
+        if (!state)
+            return {};
+        return (isFunction(state) ? state() : { ...state });
+    }
+    function resolveRenderRoot(host, shadow) {
+        if (!shadow)
+            return host;
+        if (host.shadowRoot)
+            return host.shadowRoot;
+        const init = isObject(shadow)
+            ? shadow
+            : { mode: "open" };
+        return host.attachShadow(init);
+    }
+    function createContext(host, scope, injector, root) {
+        return {
+            host,
+            injector,
+            root,
+            scope,
+            shadowRoot: root instanceof ShadowRoot ? root : undefined,
+            dispatch(type, detail, init = {}) {
+                return host.dispatchEvent(new CustomEvent(type, {
+                    bubbles: true,
+                    composed: true,
+                    ...init,
+                    detail,
+                }));
+            },
+        };
+    }
+    function applyInputDefaults(host, inputs) {
+        inputs.forEach((input) => {
+            if (!("default" in input))
+                return;
+            if (host.hasAttribute(input.attribute))
+                return;
+            const pending = getPendingValues(host);
+            if (input.property in pending)
+                return;
+            pending[input.property] = input.default;
+        });
+    }
+    function upgradeOwnProperties(host, inputs) {
+        inputs.forEach((input) => {
+            if (!Object.prototype.hasOwnProperty.call(host, input.property))
+                return;
+            const hostRecord = host;
+            const value = hostRecord[input.property];
+            delete hostRecord[input.property];
+            hostRecord[input.property] = value;
+        });
+    }
+    function applyAttributes(host, inputs, scope) {
+        inputs.forEach((input) => {
+            if (!host.hasAttribute(input.attribute))
+                return;
+            writeInput(host, input, coerceAttributeValue(input, host.getAttribute(input.attribute)), scope);
+        });
+    }
+    function applyPendingValues(host, inputs, scope) {
+        const pending = getPendingValues(host);
+        inputs.forEach((input) => {
+            if (!(input.property in pending))
+                return;
+            scope[input.property] =
+                pending[input.property];
+        });
+    }
+    function writeInput(host, input, value, scope) {
+        if (scope) {
+            scope[input.property] = value;
+            if (isFunction(scope.$flushQueue)) {
+                scope.$flushQueue();
+            }
+            return;
+        }
+        getPendingValues(host)[input.property] = value;
+    }
+    function getPendingValues(host) {
+        let pending = pendingValueStore.get(host);
+        if (!pending) {
+            pending = {};
+            pendingValueStore.set(host, pending);
+        }
+        return pending;
+    }
+    function reflectInput(host, input, value, reflectingAttributes) {
+        let reflected = reflectingAttributes.get(host);
+        if (!reflected) {
+            reflected = new Set();
+            reflectingAttributes.set(host, reflected);
+        }
+        reflected.add(input.attribute);
+        try {
+            if (input.type === Boolean) {
+                host.toggleAttribute(input.attribute, !!value);
+            }
+            else if (value === null || value === undefined) {
+                host.removeAttribute(input.attribute);
+            }
+            else {
+                host.setAttribute(input.attribute, String(value));
+            }
+        }
+        finally {
+            reflected.delete(input.attribute);
+        }
+    }
+    function coerceAttributeValue(input, value) {
+        if (input.type === Boolean)
+            return value !== null;
+        if (input.type === Number)
+            return value === null ? undefined : Number(value);
+        if (input.type === String)
+            return value ?? "";
+        return input.type(value);
+    }
+    function coercePropertyValue(input, value) {
+        if (input.type === Boolean)
+            return !!value;
+        if (input.type === Number) {
+            if (value === null || value === undefined || value === "")
+                return undefined;
+            if (isNumber(value))
+                return value;
+            return Number(value);
+        }
+        if (input.type === String) {
+            if (value === null || value === undefined)
+                return "";
+            if (isString(value))
+                return value;
+            return String(value);
+        }
+        return input.type(value);
+    }
+    function renderTemplate(root, host, scope, template, compile) {
+        if (!template)
+            return;
+        clearRenderedContent(root);
+        const linked = compile(template)(scope, undefined, {
+            _futureParentElement: host,
+        });
+        appendLinkedNodes(root, linked);
+    }
+    function appendLinkedNodes(root, linked) {
+        if (!linked)
+            return;
+        if (Array.isArray(linked)) {
+            linked.forEach((node) => root.appendChild(node));
+            return;
+        }
+        root.appendChild(linked);
+    }
+    function clearRenderedContent(root) {
+        dealoc(root.children);
+        root.replaceChildren();
+    }
+    function customElementClassName(name) {
+        return name
+            .split("-")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join("");
+    }
+
     class ManagedWebTransportConnection {
         constructor(url, TransportCtor, transportOptions, config, log) {
             this._encoder = new TextEncoder();
@@ -32327,7 +32788,12 @@
         close(closeInfo) {
             this._closing = true;
             this._clearReconnectTimer();
-            this.transport.close(closeInfo);
+            try {
+                this.transport.close(closeInfo);
+            }
+            catch {
+                this._settleClosed();
+            }
         }
         _open(attempt = 0, previousError) {
             let transport;
@@ -32341,10 +32807,12 @@
             }
             this.transport = transport;
             this.ready = transport.ready.then(async () => {
-                this._readDatagrams(transport);
+                void this._readDatagrams(transport);
                 if (attempt > 0) {
                     await this._notifyReconnect(attempt, previousError);
                 }
+                if (this._closing || this._closedSettled)
+                    return this;
                 this._config.onOpen?.();
                 return this;
             }, (error) => {
@@ -32369,6 +32837,8 @@
                 });
             }
             catch (nextError) {
+                if (this._closing || this._closedSettled)
+                    return;
                 this._config.onError?.(nextError);
                 this._log.error("WebTransport reconnect hook failed", nextError);
             }
@@ -32599,157 +33069,234 @@
     }
 
     /**
+     * Runtime identity and DOM globals.
+     *
+     * Custom runtimes almost always want these values, even when they do not include
+     * browser I/O, router, animation, or platform integration services.
+     */
+    function registerRuntimeHostValues(angular, $provide) {
+        $provide.provider(_angular, class {
+            constructor() {
+                this.$get = () => angular;
+            }
+        });
+        $provide.value(_window, window);
+        $provide.value(_document, document);
+    }
+    /** Providers required by scopes, expressions, filters, controllers, and compile. */
+    const ngCoreProviders = {
+        $controller: ControllerProvider,
+        $exceptionHandler: ExceptionHandlerProvider,
+        $filter: FilterProvider,
+        $interpolate: InterpolateProvider,
+        $parse: ParseProvider,
+        $rootScope: RootScopeProvider,
+    };
+    /** Browser services that are useful in normal apps but optional for small runtimes. */
+    const ngBrowserProviders = {
+        $anchorScroll: AnchorScrollProvider,
+        $aria: AriaProvider,
+        $cookie: CookieProvider,
+        $http: HttpProvider,
+        $httpParamSerializer: HttpParamSerializerProvider,
+        $location: LocationProvider,
+        $log: LogProvider,
+        $templateCache: TemplateCacheProvider,
+        $templateRequest: TemplateRequestProvider,
+    };
+    /** Strict contextual escaping providers. */
+    const ngSecurityProviders = {
+        $sce: SceProvider,
+        $sceDelegate: SceDelegateProvider,
+    };
+    /** Animation providers. Omit this group for runtimes that use native transitions only. */
+    const ngAnimationProviders = {
+        $animate: AnimateProvider,
+        $$animation: AnimationProvider,
+        $animateCss: AnimateCssProvider,
+        $$animateCssDriver: AnimateCssDriverProvider,
+        $$animateJs: AnimateJsProvider,
+        $$animateJsDriver: AnimateJsDriverProvider,
+        $$animateQueue: AnimateQueueProvider,
+    };
+    /** State-router providers. Omit this group for custom-element or widget runtimes without routing. */
+    const ngRouterProviders = {
+        [_router]: RouterProvider,
+        $view: ViewService,
+        $transitions: TransitionProvider,
+        $templateFactory: TemplateFactoryProvider,
+        $stateRegistry: StateRegistryProvider,
+        $state: StateProvider,
+    };
+    /** Network, messaging, persistence, and worker-style integration providers. */
+    const ngIntegrationProviders = {
+        $eventBus: PubSubProvider,
+        $rest: RestProvider,
+        $sse: SseProvider,
+        $stream: StreamProvider,
+        $wasm: WasmProvider,
+        $webComponent: WebComponentProvider,
+        $websocket: WebSocketProvider,
+        $webTransport: WebTransportProvider,
+        $worker: WorkerProvider,
+    };
+    /** Element, form, and script directives for normal HTML integration. */
+    const ngElementDirectives = {
+        input: inputDirective,
+        textarea: inputDirective,
+        form: formDirective,
+        script: scriptDirective,
+        select: selectDirective,
+        option: optionDirective,
+        ngForm: ngFormDirective,
+    };
+    /** Template binding and DOM update directives. */
+    const ngBindingDirectives = {
+        ngBind: ngBindDirective,
+        ngBindHtml: ngBindHtmlDirective,
+        ngBindTemplate: ngBindTemplateDirective,
+        ngClass: classDirective,
+        ngCloak: ngCloakDirective,
+        ngEl: ngElDirective,
+        ngHide: ngHideDirective,
+        ngRef: ngRefDirective,
+        ngShow: ngShowDirective,
+        ngStyle: ngStyleDirective,
+        ngValue: ngValueDirective,
+    };
+    /** Control-flow and composition directives. */
+    const ngTemplateDirectives = {
+        ngController: ngControllerDirective,
+        ngIf: ngIfDirective,
+        ngInclude: ngIncludeDirective,
+        ngInject: ngInjectDirective,
+        ngInit: ngInitDirective,
+        ngListener: ngListenerDirective,
+        ngNonBindable: ngNonBindableDirective,
+        ngRepeat: ngRepeatDirective,
+        ngScope: ngScopeDirective,
+        ngSetter: ngSetterDirective,
+        ngSwitch: ngSwitchDirective,
+        ngSwitchWhen: ngSwitchWhenDirective,
+        ngSwitchDefault: ngSwitchDefaultDirective,
+        ngTransclude: ngTranscludeDirective,
+    };
+    /** Form model, validation, selection, and message directives. */
+    const ngFormDirectives = {
+        ngMessages: ngMessagesDirective,
+        ngMessage: ngMessageDirective,
+        ngMessageExp: ngMessageExpDirective,
+        ngMessagesInclude: ngMessagesIncludeDirective,
+        ngMessageDefault: ngMessageDefaultDirective,
+        ngModel: ngModelDirective,
+        ngModelOptions: ngModelOptionsDirective,
+        ngOptions: ngOptionsDirective,
+        pattern: patternDirective,
+        ngPattern: patternDirective,
+        required: requiredDirective,
+        ngRequired: requiredDirective,
+        ngMinlength: minlengthDirective,
+        minlength: minlengthDirective,
+        ngMaxlength: maxlengthDirective,
+        maxlength: maxlengthDirective,
+    };
+    /** HTTP, streaming, WebAssembly, WebTransport, and Worker directives. */
+    const ngIntegrationDirectives = {
+        ngChannel: ngChannelDirective,
+        ngDelete: ngDeleteDirective,
+        ngGet: ngGetDirective,
+        ngPost: ngPostDirective,
+        ngPut: ngPutDirective,
+        ngSse: ngSseDirective,
+        ngViewport: ngViewportDirective,
+        ngWasm: ngWasmDirective,
+        ngWebTransport: ngWebTransportDirective,
+        ngWorker: ngWorkerDirective,
+    };
+    /** Animation directives. */
+    const ngAnimationDirectives = {
+        ngAnimateSwap: ngAnimateSwapDirective,
+        ngAnimateChildren: $$AnimateChildrenDirective,
+    };
+    /** Accessibility enhancement directives layered onto normal template directives. */
+    const ngAriaDirectives = {
+        ngChecked: ngCheckedAriaDirective,
+        ngClick: ngClickAriaDirective,
+        ngDblclick: ngDblclickAriaDirective,
+        ngDisabled: ngDisabledAriaDirective,
+        ngHide: ngHideAriaDirective,
+        ngShow: ngShowAriaDirective,
+        ngMessages: ngMessagesAriaDirective,
+        ngModel: ngModelAriaDirective,
+        ngReadonly: ngReadonlyAriaDirective,
+        ngRequired: ngRequiredAriaDirective,
+        ngValue: ngValueAriaDirective,
+    };
+    /** State-router directives. */
+    const ngRouterDirectives = {
+        ngSref: StateRefDirective,
+        ngSrefActive: StateRefActiveDirective,
+        ngSrefActiveEq: StateRefActiveDirective,
+        ngState: StateRefDynamicDirective,
+        ngView: ViewDirective,
+    };
+    /** Fill/transclusion directives that intentionally register after their base directive. */
+    const ngFillDirectives = {
+        input: hiddenInputDirective,
+        ngInclude: ngIncludeFillContentDirective,
+        ngView: ViewDirectiveFill,
+    };
+    /** Provider groups included by the default full `ng` runtime. */
+    const ngDefaultProviderGroups = [
+        ngCoreProviders,
+        ngBrowserProviders,
+        ngSecurityProviders,
+        ngAnimationProviders,
+        ngRouterProviders,
+        ngIntegrationProviders,
+    ];
+    /** Directive groups included by the default full `ng` runtime. */
+    const ngDefaultDirectiveGroups = [
+        ngElementDirectives,
+        ngBindingDirectives,
+        ngTemplateDirectives,
+        ngFormDirectives,
+        ngIntegrationDirectives,
+        ngAnimationDirectives,
+        ngAriaDirectives,
+        ngRouterDirectives,
+        ngFillDirectives,
+        ngAttributeAliasDirectives,
+        ngEventDirectives,
+    ];
+    /**
      * Initializes and registers the core `ng` module.
      *
      * This wires together the built-in providers, directives, services, and
      * router integrations that make up the default AngularTS runtime.
      */
     function registerNgModule(angular) {
-        return angular
-            .module("ng", [], [
+        const ngModule = angular.module("ng", [], [
             _provide,
             ($provide) => {
-                $provide.provider(_angular, class {
-                    constructor() {
-                        this.$get = () => angular;
-                    }
+                registerRuntimeHostValues(angular, $provide);
+                const $compileProvider = $provide.provider(_compile, CompileProvider);
+                ngDefaultDirectiveGroups.forEach((directives) => {
+                    $compileProvider.directive(directives);
                 });
-                $provide.value(_window, window);
-                $provide.value(_document, document);
-                $provide
-                    .provider(_compile, CompileProvider)
-                    .directive({
-                    input: inputDirective,
-                    textarea: inputDirective,
-                    form: formDirective,
-                    script: scriptDirective,
-                    select: selectDirective,
-                    option: optionDirective,
-                    ngBind: ngBindDirective,
-                    ngBindHtml: ngBindHtmlDirective,
-                    ngBindTemplate: ngBindTemplateDirective,
-                    ngChannel: ngChannelDirective,
-                    ngClass: classDirective,
-                    ngCloak: ngCloakDirective,
-                    ngController: ngControllerDirective,
-                    ngDelete: ngDeleteDirective,
-                    ngDisabled: ngDisabledAriaDirective,
-                    ngEl: ngElDirective,
-                    ngForm: ngFormDirective,
-                    ngGet: ngGetDirective,
-                    ngHide: ngHideDirective,
-                    ngIf: ngIfDirective,
-                    ngInclude: ngIncludeDirective,
-                    ngInject: ngInjectDirective,
-                    ngInit: ngInitDirective,
-                    ngListener: ngListenerDirective,
-                    ngMessages: ngMessagesDirective,
-                    ngMessage: ngMessageDirective,
-                    ngMessageExp: ngMessageExpDirective,
-                    ngMessagesInclude: ngMessagesIncludeDirective,
-                    ngMessageDefault: ngMessageDefaultDirective,
-                    ngNonBindable: ngNonBindableDirective,
-                    ngPost: ngPostDirective,
-                    ngPut: ngPutDirective,
-                    ngRef: ngRefDirective,
-                    ngRepeat: ngRepeatDirective,
-                    ngSetter: ngSetterDirective,
-                    ngShow: ngShowDirective,
-                    ngStyle: ngStyleDirective,
-                    ngSse: ngSseDirective,
-                    ngSwitch: ngSwitchDirective,
-                    ngSwitchWhen: ngSwitchWhenDirective,
-                    ngSwitchDefault: ngSwitchDefaultDirective,
-                    ngOptions: ngOptionsDirective,
-                    ngTransclude: ngTranscludeDirective,
-                    ngModel: ngModelDirective,
-                    pattern: patternDirective,
-                    ngPattern: patternDirective,
-                    required: requiredDirective,
-                    ngRequired: requiredDirective,
-                    ngMinlength: minlengthDirective,
-                    minlength: minlengthDirective,
-                    ngMaxlength: maxlengthDirective,
-                    maxlength: maxlengthDirective,
-                    ngValue: ngValueDirective,
-                    ngModelOptions: ngModelOptionsDirective,
-                    ngViewport: ngViewportDirective,
-                    ngWasm: ngWasmDirective,
-                    ngWebTransport: ngWebTransportDirective,
-                    ngWorker: ngWorkerDirective,
-                    ngScope: ngScopeDirective,
-                })
-                    .directive({
-                    input: hiddenInputDirective,
-                    ngAnimateSwap: ngAnimateSwapDirective,
-                    ngAnimateChildren: $$AnimateChildrenDirective,
-                    // aria directives
-                    ngChecked: ngCheckedAriaDirective,
-                    ngClick: ngClickAriaDirective,
-                    ngDblclick: ngDblclickAriaDirective,
-                    ngInclude: ngIncludeFillContentDirective,
-                    ngHide: ngHideAriaDirective,
-                    ngShow: ngShowAriaDirective,
-                    ngMessages: ngMessagesAriaDirective,
-                    ngModel: ngModelAriaDirective,
-                    ngReadonly: ngReadonlyAriaDirective,
-                    ngRequired: ngRequiredAriaDirective,
-                    ngValue: ngValueAriaDirective,
-                    // router directives
-                    ngSref: StateRefDirective,
-                    ngSrefActive: StateRefActiveDirective,
-                    ngSrefActiveEq: StateRefActiveDirective,
-                    ngState: StateRefDynamicDirective,
-                    ngView: ViewDirective,
-                })
-                    .directive({
-                    ngView: ViewDirectiveFill,
-                })
-                    .directive(ngAttributeAliasDirectives)
-                    .directive(ngEventDirectives);
-                $provide.provider({
-                    $aria: AriaProvider,
-                    $anchorScroll: AnchorScrollProvider,
-                    $animate: AnimateProvider,
-                    $$animation: AnimationProvider,
-                    $animateCss: AnimateCssProvider,
-                    $$animateCssDriver: AnimateCssDriverProvider,
-                    $$animateJs: AnimateJsProvider,
-                    $$animateJsDriver: AnimateJsDriverProvider,
-                    $$animateQueue: AnimateQueueProvider,
-                    $controller: ControllerProvider,
-                    $cookie: CookieProvider,
-                    $exceptionHandler: ExceptionHandlerProvider,
-                    $filter: FilterProvider,
-                    $interpolate: InterpolateProvider,
-                    $http: HttpProvider,
-                    $httpParamSerializer: HttpParamSerializerProvider,
-                    $location: LocationProvider,
-                    $log: LogProvider,
-                    $parse: ParseProvider,
-                    $rest: RestProvider,
-                    $rootScope: RootScopeProvider,
-                    [_router]: RouterProvider,
-                    $sce: SceProvider,
-                    $sceDelegate: SceDelegateProvider,
-                    $stream: StreamProvider,
-                    $sse: SseProvider,
-                    $templateCache: TemplateCacheProvider,
-                    $templateRequest: TemplateRequestProvider,
-                    $view: ViewService,
-                    $transitions: TransitionProvider,
-                    $templateFactory: TemplateFactoryProvider,
-                    $stateRegistry: StateRegistryProvider,
-                    $state: StateProvider,
-                    $eventBus: PubSubProvider,
-                    $webTransport: WebTransportProvider,
-                    $websocket: WebSocketProvider,
-                    $worker: WorkerProvider,
-                    $wasm: WasmProvider,
+                ngDefaultProviderGroups.forEach((providers) => {
+                    $provide.provider(providers);
                 });
             },
-        ])
-            .factory("$stateParams", [
+        ]);
+        registerRouterAliases(ngModule);
+        return ngModule;
+    }
+    /**
+     * Router compatibility aliases layered on top of the router provider group.
+     */
+    function registerRouterAliases(ngModule) {
+        return ngModule.factory("$stateParams", [
             _router,
             /**
              * Exposes the router's current parameter bag as `$stateParams`.

@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Web Component Microapp Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/src/services/rest/rest-demo.css" />
+    <script type="module" src="./web-component-microapp-demo.js"></script>
+    <script type="module">
+      const microapp = document.querySelector("aw-inventory-microapp");
+      const status = document.getElementById("host-status");
+      const reset = document.getElementById("host-reset");
+      const rename = document.getElementById("host-rename");
+
+      microapp.addEventListener("inventory-change", (event) => {
+        status.textContent = `${event.detail.action}: ${event.detail.total} units`;
+      });
+
+      reset.addEventListener("click", () => {
+        microapp.resetToken = Date.now();
+      });
+
+      rename.addEventListener("click", () => {
+        microapp.title = "Host renamed microapp";
+      });
+    </script>
+  </head>
+  <body>
+    <main>
+      <section class="workspace">
+        <header class="toolbar">
+          <h1>Standalone Microapp</h1>
+          <div id="host-status" class="notice" role="status">Waiting</div>
+        </header>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Host shell</h2>
+          </div>
+          <div class="form-grid">
+            <label>
+              Native element
+              <input value="<aw-inventory-microapp>" readonly />
+            </label>
+            <div class="actions">
+              <button id="host-rename" type="button">Rename from host</button>
+              <button id="host-reset" type="button" class="primary">
+                Reset from host
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>AngularTS microapp</h2>
+          </div>
+          <aw-inventory-microapp title="Inventory Microapp"></aw-inventory-microapp>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

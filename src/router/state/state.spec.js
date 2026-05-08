@@ -142,6 +142,26 @@ describe("$state", () => {
         $stateProvider.state({ name: "hasName", url: "/to-string" });
       }).not.toThrowError(/stateinvalid/);
     });
+
+    it("should accept state name and definition as separate arguments", () => {
+      expect(() => {
+        $stateProvider.state("named", {
+          url: "/named",
+          template: "named",
+        });
+      }).not.toThrowError();
+
+      expect($stateProvider.get("named").url).toBe("/named");
+    });
+
+    it("should reject mismatched separate state names", () => {
+      expect(() => {
+        $stateProvider.state("expected", {
+          name: "actual",
+          url: "/actual",
+        });
+      }).toThrowError(/does not match/);
+    });
   });
 
   describe(".transitionTo()", function () {

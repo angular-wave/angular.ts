@@ -80,6 +80,60 @@ const injector = angular.injector(["ng", "myApp"], true);
 const $http = injector.get("$http");
 ```
 
+## Publish A Standalone Custom Element
+
+Use `defineAngularElement()` from `@angular-wave/angular.ts/runtime/web-component`
+when an AngularTS feature should ship as a native web component. The helper
+creates a custom runtime, registers only the directives and services you list,
+defines the custom element, and builds the injector without requiring a host
+page bootstrap.
+
+```typescript
+import { defineAngularElement } from "@angular-wave/angular.ts/runtime/web-component";
+import { ngClickDirective } from "@angular-wave/angular.ts/directives/events";
+
+defineAngularElement("billing-summary", {
+  ngModule: {
+    directives: {
+      ngClick: ngClickDirective,
+    },
+    services: {
+      billingApi: BillingApi,
+    },
+  },
+  component: {
+    shadow: true,
+    inputs: {
+      accountId: String,
+    },
+    template: `
+      <button ng-click="refresh()">
+        {{ accountId }} / {{ status }}
+      </button>
+    `,
+    connected({ dispatch, injector, scope }) {
+      const api = injector.get("billingApi");
+
+      scope.status = "ready";
+      scope.refresh = () => {
+        scope.status = api.status(scope.accountId);
+        dispatch("billing-refresh", { status: scope.status });
+      };
+    },
+  },
+});
+```
+
+Consumers only need the bundled module and the native element:
+
+```html
+<script type="module" src="/widgets/billing-summary.js"></script>
+<billing-summary account-id="acct_123"></billing-summary>
+```
+
+Inputs are DOM attributes or properties. Outputs should be `CustomEvent`s
+dispatched with the `dispatch()` helper from the component context.
+
 ## Bridge External Code
 
 `angular.emit()` and `angular.call()` evaluate expressions against an injectable

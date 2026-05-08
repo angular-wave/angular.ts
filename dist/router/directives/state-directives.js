@@ -1,6 +1,6 @@
 import { _state, _rootScope, _stateRegistry, _transitions, _parse, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { isObject, keys, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
+import { isObject, keys, isString, isArray, assign, isNullOrUndefined, arrayFrom } from '../../shared/utils.js';
 import { getInheritedData } from '../../shared/dom.js';
 
 const noopDeregister = () => undefined;

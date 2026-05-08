@@ -18,6 +18,30 @@ class PubSubProvider {
     }
 }
 PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
+/**
+ * Creates a small domain-specific facade around the application event bus.
+ *
+ * `createTopicService(eventBus, "tasks").publish("saved", task)` maps to
+ * `$eventBus.publish("tasks:saved", task)`.
+ */
+function createTopicService(eventBus, topic) {
+    const eventName = (event) => (event ? `${topic}:${event}` : topic);
+    return {
+        topic,
+        publish(event, ...args) {
+            return eventBus.publish(eventName(event), ...args);
+        },
+        subscribe(event, fn, context = undefined) {
+            return eventBus.subscribe(eventName(event), fn, context);
+        },
+        subscribeOnce(event, fn, context = undefined) {
+            return eventBus.subscribeOnce(eventName(event), fn, context);
+        },
+        getCount(event) {
+            return eventBus.getCount(eventName(event));
+        },
+    };
+}
 class PubSub {
     /**
      * Create a publish/subscribe event bus.
@@ -166,4 +190,4 @@ class PubSub {
     }
 }
 
-export { PubSub, PubSubProvider };
+export { PubSub, PubSubProvider, createTopicService };

@@ -48,6 +48,7 @@ export const _templateRequest = "$templateRequest" as const;
 export const _transitions = "$transitions" as const;
 export const _view = "$view" as const;
 export const _window = "$window" as const;
+export const _webComponent = "$webComponent" as const;
 export const _webTransport = "$webTransport" as const;
 export const _websocket = "$websocket" as const;
 export const _worker = "$worker" as const;
@@ -85,6 +86,7 @@ export const _templateFactoryProvider = "$templateFactoryProvider" as const;
 export const _templateRequestProvider = "$templateRequestProvider" as const;
 export const _transitionsProvider = "$transitionsProvider" as const;
 export const _viewProvider = "$viewProvider" as const;
+export const _webComponentProvider = "$webComponentProvider" as const;
 export const _webTransportProvider = "$webTransportProvider" as const;
 export const _websocketProvider = "$websocketProvider" as const;
 export const _workerProvider = "$workerProvider" as const;
@@ -139,6 +141,7 @@ export const $injectTokens = {
   _transitions,
   _view,
   _window,
+  _webComponent,
   _webTransport,
   _websocket,
   _worker,
@@ -175,6 +178,7 @@ export const $injectTokens = {
   _templateRequestProvider,
   _transitionsProvider,
   _viewProvider,
+  _webComponentProvider,
   _webTransportProvider,
   _websocketProvider,
   _workerProvider,

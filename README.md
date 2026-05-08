@@ -84,7 +84,52 @@ angular.module("app", []);
 angular.bootstrap(document, ["app"]);
 ```
 
-The example above currently comes in around **32KB** gzip.
+Custom runtime can also be published as a micro app, wrapped in a standalone custom
+element (Web Component):
+
+```js
+import { defineAngularElement } from "@angular-wave/angular.ts/runtime/web-component";
+import { ngClickDirective } from "@angular-wave/angular.ts/directives/events";
+
+defineAngularElement("billing-summary", {
+  ngModule: {
+    directives: {
+      ngClick: ngClickDirective,
+    },
+    services: {
+      billingApi: BillingApi,
+    },
+  },
+  component: {
+    shadow: true,
+    inputs: {
+      accountId: String,
+    },
+    template: `
+      <button ng-click="refresh()">
+        {{ accountId }} / {{ status }}
+      </button>
+    `,
+    connected({ dispatch, injector, scope }) {
+      const api = injector.get("billingApi");
+
+      scope.status = "ready";
+      scope.refresh = () => {
+        scope.status = api.status(scope.accountId);
+        dispatch("billing-refresh", { status: scope.status });
+      };
+    },
+  },
+});
+```
+
+```html
+<script type="module" src="/widgets/billing-summary.js"></script>
+<billing-summary account-id="acct_123"></billing-summary>
+```
+
+The minimal directive runtime example above currently comes in around
+**32KB** gzip.
 
 For a complete starting point, see
 [angular-seed](https://github.com/angular-wave/angular-seed).
