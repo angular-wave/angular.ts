@@ -1,4 +1,4 @@
-import { isDefined, minErr, isString } from "../../../shared/utils.ts";
+import { isDefined, minErr } from "../../../shared/utils.ts";
 import type { Token } from "./token.ts";
 
 export type { Token } from "./token.ts";
@@ -17,8 +17,17 @@ const ESCAPE: Record<string, string> = {
 };
 /* eslint-enable id-length */
 
-const OPERATORS = new Set<string>(
-  "+ - * / % ++ -- === !== == != < > <= >= && || ! = |".split(" "),
+const [
+  CHAR_0,
+  CHAR_9,
+  CHAR_A,
+  CHAR_Z,
+  CHAR_LOWER_A,
+  CHAR_LOWER_Z,
+  CHAR_DOLLAR,
+  CHAR_UNDERSCORE,
+] = ["0", "9", "A", "Z", "a", "z", "$", "_"].map((value) =>
+  value.charCodeAt(0),
 );
 
 /**
@@ -50,149 +59,136 @@ export class Lexer {
     this._index = 0;
     this._tokens = [];
 
-    while (this._index < this._text.length) {
-      const ch = this._text.charAt(this._index);
+    const textLength = text.length;
 
-      const peek = this._peek();
+    while (this._index < textLength) {
+      const index = this._index;
+
+      const ch = text.charAt(index);
+
+      const code = text.charCodeAt(index);
 
       if (ch === '"' || ch === "'") {
         this._readString(ch);
-      } else if (this._isNumber(ch) || (ch === "." && this._isNumber(peek))) {
+        continue;
+      }
+
+      if (
+        (code >= CHAR_0 && code <= CHAR_9) ||
+        (ch === "." &&
+          text.charCodeAt(index + 1) >= CHAR_0 &&
+          text.charCodeAt(index + 1) <= CHAR_9)
+      ) {
         this._readNumber();
-      } else if (this._isIdentifierStart(this._peekMultichar())) {
+        continue;
+      }
+
+      if (
+        (code >= CHAR_LOWER_A && code <= CHAR_LOWER_Z) ||
+        (code >= CHAR_A && code <= CHAR_Z) ||
+        code === CHAR_UNDERSCORE ||
+        code === CHAR_DOLLAR
+      ) {
         this._readIdent();
-      } else if (this._is(ch, "(){}[].,;:?")) {
-        this._tokens.push({ _index: this._index, _text: ch });
+        continue;
+      }
+
+      if (
+        ch === " " ||
+        ch === "\r" ||
+        ch === "\t" ||
+        ch === "\n" ||
+        ch === "\v"
+      ) {
         this._index++;
-      } else if (this._isWhitespace(ch)) {
-        this._index++;
+        continue;
+      }
+
+      switch (ch) {
+        case "(":
+        case ")":
+        case "{":
+        case "}":
+        case "[":
+        case "]":
+        case ".":
+        case ",":
+        case ";":
+        case ":":
+          this._tokens.push({ _index: index, _text: ch });
+          this._index++;
+          continue;
+        case "?":
+          if (text.charAt(index + 1) !== "?") {
+            this._tokens.push({ _index: index, _text: ch });
+            this._index++;
+            continue;
+          }
+          break;
+      }
+
+      const peek = index + 1 < textLength ? text.charAt(index + 1) : "";
+
+      let token: string | undefined;
+
+      switch (ch) {
+        case "=":
+          token =
+            peek === "="
+              ? text.charAt(index + 2) === "="
+                ? "==="
+                : "=="
+              : "=";
+          break;
+        case "!":
+          token =
+            peek === "="
+              ? text.charAt(index + 2) === "="
+                ? "!=="
+                : "!="
+              : "!";
+          break;
+        case "<":
+          token = peek === "=" ? "<=" : "<";
+          break;
+        case ">":
+          token = peek === "=" ? ">=" : ">";
+          break;
+        case "&":
+          token = peek === "&" ? "&&" : undefined;
+          break;
+        case "|":
+          token = peek === "|" ? "||" : "|";
+          break;
+        case "?":
+          token = "??";
+          break;
+        case "+":
+          token = peek === "+" ? "++" : "+";
+          break;
+        case "-":
+          token = peek === "-" ? "--" : "-";
+          break;
+        case "*":
+        case "/":
+        case "%":
+          token = ch;
+          break;
+      }
+
+      if (token) {
+        this._tokens.push({
+          _index: index,
+          _text: token,
+          _operator: true,
+        });
+        this._index += token.length;
       } else {
-        const ch2 = ch + (peek || "");
-
-        const ch3 = ch2 + (this._peek(2) || "");
-
-        const op1 = OPERATORS.has(ch);
-
-        const op2 = OPERATORS.has(ch2);
-
-        const op3 = OPERATORS.has(ch3);
-
-        if (op1 || op2 || op3) {
-          const token = op3 ? ch3 : op2 ? ch2 : ch;
-
-          this._tokens.push({
-            _index: this._index,
-            _text: token,
-            _operator: true,
-          });
-          this._index += token.length;
-        } else {
-          this._throwError(
-            "Unexpected next character ",
-            this._index,
-            this._index + 1,
-          );
-        }
+        this._throwError("Unexpected next character ", index, index + 1);
       }
     }
 
     return this._tokens;
-  }
-
-  /**
-   * Checks if a character is contained in a set of characters.
-   */
-  /** @internal */
-  _is(ch: string, chars: string): boolean {
-    return chars.indexOf(ch) !== -1;
-  }
-
-  /**
-   * Peeks at the next character in the text.
-   */
-  /** @internal */
-  _peek(i = 1): string | false {
-    return this._index + i < this._text.length
-      ? this._text.charAt(this._index + i)
-      : false;
-  }
-
-  /**
-   * Checks if a character is a number.
-   */
-  /** @internal */
-  _isNumber(ch: unknown): boolean {
-    return isString(ch) && ch >= "0" && ch <= "9";
-  }
-
-  /**
-   * Checks if a character is whitespace.
-   */
-  /** @internal */
-  _isWhitespace(ch: string): boolean {
-    return (
-      ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v"
-    );
-  }
-
-  /**
-   * Checks if a character is a valid identifier start.
-   */
-  /** @internal */
-  _isIdentifierStart(ch: string): boolean {
-    return (
-      (ch >= "a" && ch <= "z") ||
-      (ch >= "A" && ch <= "Z") ||
-      ch === "_" ||
-      ch === "$"
-    );
-  }
-
-  /**
-   * Checks if a character is a valid identifier continuation.
-   */
-  /** @internal */
-  _isIdentifierContinue(ch: string): boolean {
-    return (
-      (ch >= "a" && ch <= "z") ||
-      (ch >= "A" && ch <= "Z") ||
-      ch === "_" ||
-      ch === "$" ||
-      (ch >= "0" && ch <= "9")
-    );
-  }
-
-  /**
-   * Peeks at the next multicharacter sequence in the text.
-   */
-  /** @internal */
-  _peekMultichar(): string {
-    const ch = this._text.charAt(this._index);
-
-    const peek = this._peek();
-
-    if (!peek) {
-      return ch;
-    }
-
-    const cp1 = ch.charCodeAt(0);
-
-    const cp2 = peek.charCodeAt(0);
-
-    // eslint-disable-next-line no-magic-numbers
-    if (cp1 >= 0xd800 && cp1 <= 0xdbff && cp2 >= 0xdc00 && cp2 <= 0xdfff) {
-      return ch + peek;
-    }
-
-    return ch;
-  }
-
-  /**
-   * Checks if a character is an exponent operator.
-   */
-  /** @internal */
-  _isExpOperator(ch: unknown): boolean {
-    return ch === "-" || ch === "+" || this._isNumber(ch);
   }
 
   /**
@@ -217,38 +213,57 @@ export class Lexer {
    */
   /** @internal */
   _readNumber(): void {
-    let number = "";
-
     const start = this._index;
 
     while (this._index < this._text.length) {
-      const ch = this._text.charAt(this._index).toLowerCase();
+      const ch = this._text.charAt(this._index);
 
-      if (ch === "." || this._isNumber(ch)) {
-        number += ch;
+      const code = ch.charCodeAt(0);
+
+      if (ch === "." || (code >= CHAR_0 && code <= CHAR_9)) {
+        this._index++;
       } else {
-        const peekCh = this._peek();
-
-        if (ch === "e" && this._isExpOperator(peekCh)) {
-          number += ch;
-        } else if (
-          this._isExpOperator(ch) &&
-          this._isNumber(peekCh) &&
-          number.charAt(number.length - 1) === "e"
-        ) {
-          number += ch;
-        } else if (
-          this._isExpOperator(ch) &&
-          !this._isNumber(peekCh) &&
-          number.charAt(number.length - 1) === "e"
-        ) {
-          this._throwError("Invalid exponent");
-        } else {
+        if (ch !== "e" && ch !== "E") {
           break;
         }
+
+        let exponentIndex = this._index + 1;
+
+        const exponentMarker = this._text.charAt(exponentIndex);
+
+        if (exponentMarker === "-" || exponentMarker === "+") {
+          exponentIndex++;
+        }
+
+        const exponentCode = this._text.charCodeAt(exponentIndex);
+
+        if (!(exponentCode >= CHAR_0 && exponentCode <= CHAR_9)) {
+          const markerCode = exponentMarker.charCodeAt(0);
+
+          if (
+            exponentMarker === "-" ||
+            exponentMarker === "+" ||
+            (markerCode >= CHAR_0 && markerCode <= CHAR_9)
+          ) {
+            this._throwError("Invalid exponent");
+          }
+
+          break;
+        }
+
+        this._index = exponentIndex + 1;
+
+        while (
+          this._index < this._text.length &&
+          this._text.charCodeAt(this._index) >= CHAR_0 &&
+          this._text.charCodeAt(this._index) <= CHAR_9
+        ) {
+          this._index++;
+        }
       }
-      this._index++;
     }
+
+    const number = this._text.slice(start, this._index);
 
     this._tokens.push({
       _index: start,
@@ -265,15 +280,23 @@ export class Lexer {
   _readIdent(): void {
     const start = this._index;
 
-    this._index += this._peekMultichar().length;
+    this._index++;
 
     while (this._index < this._text.length) {
-      const ch = this._peekMultichar();
+      const code = this._text.charCodeAt(this._index);
 
-      if (!this._isIdentifierContinue(ch)) {
+      if (
+        !(
+          (code >= CHAR_LOWER_A && code <= CHAR_LOWER_Z) ||
+          (code >= CHAR_A && code <= CHAR_Z) ||
+          (code >= CHAR_0 && code <= CHAR_9) ||
+          code === CHAR_UNDERSCORE ||
+          code === CHAR_DOLLAR
+        )
+      ) {
         break;
       }
-      this._index += ch.length;
+      this._index++;
     }
 
     this._tokens.push({
@@ -290,11 +313,33 @@ export class Lexer {
   _readString(quote: string): void {
     const start = this._index;
 
-    let string = "";
+    this._index++;
+
+    while (this._index < this._text.length) {
+      const ch = this._text[this._index];
+
+      if (ch === quote) {
+        this._tokens.push({
+          _index: start,
+          _text: this._text.slice(start, this._index + 1),
+          _constant: true,
+          _value: this._text.slice(start + 1, this._index),
+        });
+        this._index++;
+
+        return;
+      }
+
+      if (ch === "\\") {
+        break;
+      }
+
+      this._index++;
+    }
+
+    let string = this._text.slice(start + 1, this._index);
 
     let escape = false;
-
-    this._index++;
 
     while (this._index < this._text.length) {
       const ch = this._text[this._index];

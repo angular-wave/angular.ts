@@ -148,6 +148,29 @@ describe("parser", () => {
         expect(evaluateExpression(scope, "false||a.b.c")).toEqual(undefined);
       });
 
+      it("should parse nullish coalescing", () => {
+        scope.zero = 0;
+        scope.empty = "";
+        scope.falseValue = false;
+        scope.nullValue = null;
+        scope.undefinedValue = undefined;
+
+        expect(evaluateExpression(scope, "nullValue ?? 'fallback'")).toEqual(
+          "fallback",
+        );
+        expect(
+          evaluateExpression(scope, "undefinedValue ?? 'fallback'"),
+        ).toEqual("fallback");
+        expect(evaluateExpression(scope, "zero ?? 1")).toEqual(0);
+        expect(evaluateExpression(scope, "empty ?? 'fallback'")).toEqual("");
+        expect(evaluateExpression(scope, "falseValue ?? true")).toEqual(false);
+        expect(evaluateExpression(scope, "nullValue ?? 0 || 2")).toEqual(2);
+        expect(evaluateExpression(scope, "0 || nullValue ?? 2")).toEqual(2);
+        expect(evaluateExpression(scope, "zero ?? 1 ? 'yes' : 'no'")).toEqual(
+          "no",
+        );
+      });
+
       it("should parse ternary", () => {
         const returnTrue = (scope.returnTrue = function () {
           return true;
@@ -808,6 +831,22 @@ describe("parser", () => {
         };
         expect(evaluateExpression(scope, "true || run()")).toBe(true);
         expect(evaluateExpression(scope, "true || false || run()")).toBe(true);
+      });
+
+      it("should short-circuit nullish coalescing operator", () => {
+        scope.run = function () {
+          throw new Error("IT SHOULD NOT HAVE RUN");
+        };
+        scope.value = 0;
+        scope.missing = null;
+        scope.fallback = function () {
+          return "fallback";
+        };
+
+        expect(evaluateExpression(scope, "value ?? run()")).toBe(0);
+        expect(evaluateExpression(scope, "missing ?? fallback()")).toBe(
+          "fallback",
+        );
       });
 
       it("should throw TypeError on using a 'broken' object as a key to access a property", () => {

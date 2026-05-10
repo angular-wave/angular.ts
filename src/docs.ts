@@ -56,6 +56,13 @@ export type {
   FilterFn,
   FilterService,
 } from "./filters/filter.ts";
+export type { EntryFilterItem } from "./filters/collection.ts";
+export type { DateFilterFormat, DateFilterOptions } from "./filters/date.ts";
+export type {
+  CurrencyFilterOptions,
+  NumberFilterOptions,
+} from "./filters/number.ts";
+export type { RelativeTimeFilterOptions } from "./filters/relative-time.ts";
 export { InterpolateProvider } from "./core/interpolate/interpolate.ts";
 export type {
   InterpolateService,

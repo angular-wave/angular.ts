@@ -145,7 +145,7 @@ export class AST {
    */
   /** @internal */
   _ternary(): ASTNode {
-    const test: ASTNode = this._logicalOR();
+    const test: ASTNode = this._nullishCoalescing();
 
     if (this._expect("?")) {
       const alternate: ASTNode = this._assignment();
@@ -163,6 +163,26 @@ export class AST {
     }
 
     return test;
+  }
+
+  /**
+   * Parses a nullish coalescing expression.
+   * @returns {ASTNode} The nullish coalescing expression node.
+   */
+  /** @internal */
+  _nullishCoalescing(): ASTNode {
+    let left: ASTNode = this._logicalOR();
+
+    while (this._expect("??")) {
+      left = {
+        _type: ASTType._LogicalExpression,
+        _operator: "??",
+        _left: left,
+        _right: this._logicalOR(),
+      };
+    }
+
+    return left;
   }
 
   /**
@@ -376,35 +396,48 @@ export class AST {
   _primary(): ASTNode {
     let primary: ASTNode;
 
-    const peekToken = this._peek();
+    const peekToken = this._peekToken();
 
-    if (this._expect("(")) {
+    if (peekToken._text === "(") {
+      this._index++;
       primary = this._filterChain();
       this._consume(")");
-    } else if (this._expect("[")) {
+    } else if (peekToken._text === "[") {
+      this._index++;
       primary = this._arrayDeclaration();
-    } else if (this._expect("{")) {
+    } else if (peekToken._text === "{") {
+      this._index++;
       primary = this._object();
-    } else if (hasOwn(this._selfReferential, (peekToken as Token)._text)) {
+    } else if (hasOwn(this._selfReferential, peekToken._text)) {
+      this._index++;
       primary = cloneSelfReferentialNode(
-        this._selfReferential[this._consume()._text],
+        this._selfReferential[peekToken._text],
       );
-    } else if (hasOwn(literals, (peekToken as Token)._text)) {
+    } else if (hasOwn(literals, peekToken._text)) {
+      this._index++;
       primary = {
         _type: ASTType._Literal,
-        _value: literals[this._consume()._text as keyof typeof literals],
+        _value: literals[peekToken._text as keyof typeof literals],
       };
-    } else if ((peekToken as Token)._identifier) {
-      primary = this._identifier();
-    } else if ((peekToken as Token)._constant) {
-      primary = this._constant();
+    } else if (peekToken._identifier) {
+      this._index++;
+      primary = { _type: ASTType._Identifier, _name: peekToken._text };
+    } else if (peekToken._constant) {
+      this._index++;
+      primary = { _type: ASTType._Literal, _value: peekToken._value };
     } else {
-      this._throwError("not a primary expression", this._peek() as Token);
+      this._throwError("not a primary expression", peekToken);
     }
 
-    let next: Token | false;
+    while (this._tokens && this._index < this._tokens.length) {
+      const next = this._tokens[this._index];
 
-    while ((next = this._expect("(", "[", "."))) {
+      if (next._text !== "(" && next._text !== "[" && next._text !== ".") {
+        break;
+      }
+
+      this._index++;
+
       if (next._text === "(") {
         primary = {
           _type: ASTType._CallExpression,
@@ -613,7 +646,11 @@ export class AST {
       );
     }
 
-    const token = isDefined(e1) ? this._expect(e1) : this._expect();
+    const token = isDefined(e1)
+      ? this._tokens[this._index]?._text === e1
+        ? this._tokens[this._index++]
+        : false
+      : this._tokens[this._index++];
 
     if (!token) {
       return this._throwError(
@@ -648,24 +685,16 @@ export class AST {
    * @returns {Token|boolean} The next token if it matches, otherwise false.
    */
   /** @internal */
-  _peek(...expected: string[]): Token | false {
+  _peek(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
     const token = this._tokens && this._tokens[this._index];
 
     if (!token) return false;
 
-    const j = expected.length;
-
-    if (!j) return token;
+    if (!isDefined(e1)) return token;
 
     const txt = token._text;
 
-    if (expected.length === 1) return expected[0] === txt ? token : false;
-
-    for (let i = 0; i < j; i++) {
-      if (expected[i] === txt || !expected[i]) return token;
-    }
-
-    return false;
+    return e1 === txt || e2 === txt || e3 === txt || e4 === txt ? token : false;
   }
 
   /**
@@ -674,8 +703,18 @@ export class AST {
    * @returns {Token|boolean} The consumed token if it matches, otherwise false.
    */
   /** @internal */
-  _expect(...expected: string[]): Token | false {
-    const token = this._peek(...expected);
+  _expect(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
+    const token = this._tokens && this._tokens[this._index];
+
+    if (!token) return false;
+
+    if (isDefined(e1)) {
+      const txt = token._text;
+
+      if (e1 !== txt && e2 !== txt && e3 !== txt && e4 !== txt) {
+        return false;
+      }
+    }
 
     if (token) {
       this._index++;

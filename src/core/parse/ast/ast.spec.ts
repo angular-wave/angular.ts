@@ -616,7 +616,7 @@ describe("ast", () => {
   });
 
   it("should understand logical operators", () => {
-    ["||", "&&"].forEach((operator) => {
+    ["||", "&&", "??"].forEach((operator) => {
       expect(createAst(`foo${operator}bar`)).toEqual({
         _type: ASTType._Program,
         _body: [
@@ -635,7 +635,7 @@ describe("ast", () => {
   });
 
   it("should associate logical operators left-to-right", () => {
-    ["||", "&&"].forEach((op) => {
+    ["||", "&&", "??"].forEach((op) => {
       expect(createAst(`foo${op}bar${op}baz`)).toEqual({
         _type: ASTType._Program,
         _body: [
@@ -655,6 +655,33 @@ describe("ast", () => {
           },
         ],
       });
+    });
+  });
+
+  it("should give higher precedence to logical `or` than to nullish coalescing", () => {
+    expect(createAst("foo||bar??man||shell")).toEqual({
+      _type: ASTType._Program,
+      _body: [
+        {
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._LogicalExpression,
+            _operator: "??",
+            _left: {
+              _type: ASTType._LogicalExpression,
+              _operator: "||",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
+            },
+            _right: {
+              _type: ASTType._LogicalExpression,
+              _operator: "||",
+              _left: { _type: ASTType._Identifier, _name: "man" },
+              _right: { _type: ASTType._Identifier, _name: "shell" },
+            },
+          },
+        },
+      ],
     });
   });
 
@@ -815,6 +842,28 @@ describe("ast", () => {
             _test: {
               _type: ASTType._LogicalExpression,
               _operator: "||",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
+            },
+            _alternate: { _type: ASTType._Identifier, _name: "man" },
+            _consequent: { _type: ASTType._Identifier, _name: "shell" },
+          },
+        },
+      ],
+    });
+  });
+
+  it("should give higher precedence to nullish coalescing than to the conditional operator", () => {
+    expect(createAst("foo??bar?man:shell")).toEqual({
+      _type: ASTType._Program,
+      _body: [
+        {
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ConditionalExpression,
+            _test: {
+              _type: ASTType._LogicalExpression,
+              _operator: "??",
               _left: { _type: ASTType._Identifier, _name: "foo" },
               _right: { _type: ASTType._Identifier, _name: "bar" },
             },
