@@ -1002,7 +1002,7 @@ function normalizeStringArray(arr) {
 function directiveNormalize(name) {
     return name
         .replace(PREFIX_REGEXP, "")
-        .replace(SPECIAL_CHARS_REGEXP, (_name, letter, offset) => offset ? letter.toUpperCase() : letter);
+        .replace(SPECIAL_CHARS_REGEXP, (_name, letter, offset) => offset ? uppercase(letter) : letter);
 }
 /**
  * Returns whether an element should participate in animation handling.

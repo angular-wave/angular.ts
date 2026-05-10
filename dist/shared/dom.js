@@ -1,5 +1,5 @@
 import { _scope, _injector } from '../injection-tokens.js';
-import { isInstanceOf, isArray, arrayFrom, isDefined, hasOwn, assign, isString, isObject } from './utils.js';
+import { isInstanceOf, isArray, arrayFrom, isDefined, hasOwn, uppercase, assign, isString, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -54,7 +54,7 @@ const BOOLEAN_ELEMENTS_SET = new Set(BOOLEAN_ELEMENTS);
 ////////////        HELPER FUNCTIONS      /////////////////////////
 ///////////////////////////////////////////////////////////////////
 function fnCamelCaseReplace(_all, letter) {
-    return letter.toUpperCase();
+    return uppercase(letter);
 }
 /**
  * Converts kebab-case to camelCase.

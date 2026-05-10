@@ -25,6 +25,7 @@ import {
   isInstanceOf,
   isObject,
   toKeyValue,
+  uppercase,
   wait,
   isString,
 } from "../../shared/utils.ts";
@@ -97,7 +98,7 @@ function defineDirective(
   attrOverride?: string,
 ): ng.DirectiveFactory {
   const attrName =
-    attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
+    attrOverride || `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
 
   const directive = createHttpDirective(
     method,

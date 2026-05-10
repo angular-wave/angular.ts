@@ -16,6 +16,7 @@ import {
   isNumber,
   isObject,
   isString,
+  uppercase,
 } from "../../shared/utils.ts";
 
 type WebComponentInputType =
@@ -633,6 +634,6 @@ function clearRenderedContent(root: HTMLElement | ShadowRoot): void {
 function customElementClassName(name: string): string {
   return name
     .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => uppercase(part.charAt(0)) + part.slice(1))
     .join("");
 }

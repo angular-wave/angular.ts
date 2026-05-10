@@ -8,6 +8,7 @@ import {
   isInstanceOf,
   isObject,
   isString,
+  uppercase,
 } from "./utils.js";
 import { NodeType } from "./node.ts";
 import type { ExpandoStore } from "../interface.ts";
@@ -101,7 +102,7 @@ const BOOLEAN_ELEMENTS_SET = new Set(BOOLEAN_ELEMENTS);
 ///////////////////////////////////////////////////////////////////
 
 function fnCamelCaseReplace(_all: string, letter: string): string {
-  return letter.toUpperCase();
+  return uppercase(letter);
 }
 
 /**

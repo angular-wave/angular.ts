@@ -1,4 +1,4 @@
-.PHONY: build build-ts test types coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
+.PHONY: build build-ts check test test-types types docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -59,8 +59,18 @@ lint:
 	@npx eslint ./src --fix
 
 check: ensure-deps
-	@echo "Typechecking Js"
+	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
+	@$(MAKE) test-types
+	@$(MAKE) docs-examples-check
+
+test-types: ensure-deps
+	@echo "Typechecking tests"
+	./node_modules/.bin/tsc --project tsconfig.test.json
+
+docs-examples-check: ensure-deps
+	@echo "Checking docs example API references"
+	@node ./utils/check-docs-examples.mjs
 
 types: ensure-deps
 	@echo "Generating *.d.ts"
@@ -109,4 +119,4 @@ coverage-open: ensure-deps
 	@node ./utils/open-coverage.mjs
 
 hugo:
-	hugo server --source=docs --disableFastRender
+	cd docs && npm run _hugo-dev -- serve --disableFastRender --ignoreCache --noHTTPCache

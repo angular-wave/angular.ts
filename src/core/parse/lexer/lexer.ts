@@ -33,15 +33,7 @@ export class Lexer {
   /** @internal */
   _tokens: Token[];
 
-  /**
-   * The optional parameter is ignored and only exists to preserve current JS
-   * call sites that still instantiate the lexer with an unused config object.
-   *
-   * @param _options
-   */
-  constructor(options?: unknown) {
-    void options;
-
+  constructor() {
     this._text = "";
     this._index = 0;
     this._tokens = [];

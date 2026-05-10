@@ -1,7 +1,7 @@
 import { _injector, _rootScope, _compile, _scope } from '../../injection-tokens.js';
 import { getScope, getInheritedData, setScope, dealoc } from '../../shared/dom.js';
 import { kebobString } from '../../shared/strings.js';
-import { isFunction, isNumber, isString, isObject } from '../../shared/utils.js';
+import { isFunction, isNumber, isString, uppercase, isObject } from '../../shared/utils.js';
 
 const pendingValueStore = new WeakMap();
 /** Provider for scoped custom element integration. */
@@ -349,7 +349,7 @@ function clearRenderedContent(root) {
 function customElementClassName(name) {
     return name
         .split("-")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .map((part) => uppercase(part.charAt(0)) + part.slice(1))
         .join("");
 }
 

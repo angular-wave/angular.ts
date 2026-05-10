@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 8, 2026 14:29:07 */
+/* Version: 0.27.0 - May 10, 2026 03:02:39 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1189,7 +1189,7 @@
     function directiveNormalize(name) {
         return name
             .replace(PREFIX_REGEXP, "")
-            .replace(SPECIAL_CHARS_REGEXP, (_name, letter, offset) => offset ? letter.toUpperCase() : letter);
+            .replace(SPECIAL_CHARS_REGEXP, (_name, letter, offset) => offset ? uppercase(letter) : letter);
     }
     /**
      * Returns whether an element should participate in animation handling.
@@ -1410,7 +1410,7 @@
     ////////////        HELPER FUNCTIONS      /////////////////////////
     ///////////////////////////////////////////////////////////////////
     function fnCamelCaseReplace(_all, letter) {
-        return letter.toUpperCase();
+        return uppercase(letter);
     }
     /**
      * Converts kebab-case to camelCase.
@@ -4352,7 +4352,7 @@
                             afterFn = "afterLeave";
                         }
                         else {
-                            beforeFn = `before${event.charAt(0).toUpperCase()}${event.substring(1)}`;
+                            beforeFn = `before${uppercase(event.charAt(0))}${event.substring(1)}`;
                             afterFn = event;
                         }
                         if (event !== "enter" && event !== "move") {
@@ -10920,7 +10920,7 @@
                                             .replace(PREFIX_REGEXP, "")
                                             .toLowerCase()
                                             .substring(4 + ngPrefixMatch[1].length)
-                                            .replace(/_(.)/g, (match, letter) => letter.toUpperCase());
+                                            .replace(/_(.)/g, (_match, letter) => uppercase(letter));
                                     }
                                     if (isNgProp || isNgEvent || isWindow) {
                                         attrs[nName] = value;
@@ -13388,13 +13388,7 @@
      * expression string and returns an array of tokens parsed from that string.
      */
     class Lexer {
-        /**
-         * The optional parameter is ignored and only exists to preserve current JS
-         * call sites that still instantiate the lexer with an unused config object.
-         *
-         * @param _options
-         */
-        constructor(options) {
+        constructor() {
             this._text = "";
             this._index = 0;
             this._tokens = [];
@@ -13788,8 +13782,7 @@
                         const arg = args[0];
                         return args.length
                             ? (scope, locals, assign) => {
-                                const runtimeScope = scope;
-                                const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                                const rhs = right(scope, locals, assign);
                                 let value;
                                 if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                                     const res = arg(scope, locals, assign);
@@ -13798,8 +13791,7 @@
                                 return context ? { value } : value;
                             }
                             : (scope, locals, assign) => {
-                                const runtimeScope = scope;
-                                const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                                const rhs = right(scope, locals, assign);
                                 const value = !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
                                     ? rhs.value.call(rhs.context)
                                     : undefined;
@@ -13821,8 +13813,7 @@
                                 : value();
                         }
                         : (scope, locals, assign) => {
-                            const runtimeScope = scope;
-                            const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                            const rhs = right(scope, locals, assign);
                             let value;
                             if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                                 const values = [];
@@ -14238,9 +14229,7 @@
                 }
                 let value = undefined;
                 if (base) {
-                    value = (create
-                        ? base
-                        : deProxy(base))[name];
+                    value = base[name];
                 }
                 if (context) {
                     return { context: base, name, value };
@@ -14326,7 +14315,7 @@
         const base = locals && head in locals
             ? locals
             : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-        return base ? deProxy(base) : undefined;
+        return base;
     }
     function createPathGetter(path) {
         const p0 = path[0];
@@ -17576,7 +17565,7 @@
 
     /** Creates a directive factory wrapper for one HTTP method attribute. */
     function defineDirective(method, attrOverride) {
-        const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
+        const attrName = attrOverride || `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
         const directive = createHttpDirective(method, attrName);
         directive.$inject = [
             _http,
@@ -22857,7 +22846,7 @@
                 let connection;
                 let streamReader = null;
                 function attr(name) {
-                    return (attrs[name] || attrs[`data${name[0].toUpperCase()}${name.slice(1)}`]);
+                    return (attrs[name] || attrs[`data${uppercase(name[0])}${name.slice(1)}`]);
                 }
                 function evaluate(expression, locals) {
                     if (!expression)
@@ -26229,7 +26218,7 @@
             return undefined;
         const camelNameFromTag = directiveEl.tagName
             .toLowerCase()
-            .replace(/-([a-z])/g, (_all, letter) => letter.toUpperCase());
+            .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
         const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
             getInheritedData(directiveEl, "$isolateScope") ||
             getCacheData(directiveEl, "$scope") ||
@@ -32734,7 +32723,7 @@
     function customElementClassName(name) {
         return name
             .split("-")
-            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .map((part) => uppercase(part.charAt(0)) + part.slice(1))
             .join("");
     }
 

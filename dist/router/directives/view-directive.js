@@ -1,5 +1,5 @@
 import { _view, _state, _anchorScroll, _interpolate, _parse, _compile, _controller, _transitions, _injector } from '../../injection-tokens.js';
-import { assign, isString, isDefined, isFunction, isInstanceOf, isArray, arrayFrom } from '../../shared/utils.js';
+import { assign, isString, isDefined, isFunction, isInstanceOf, isArray, arrayFrom, uppercase } from '../../shared/utils.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { dealoc, getCacheData, setCacheData, getInheritedData, removeElement } from '../../shared/dom.js';
 import { getLocals } from '../state/state-registry.js';
@@ -74,7 +74,7 @@ function getComponentController(element, componentName, tagRegexp) {
         return undefined;
     const camelNameFromTag = directiveEl.tagName
         .toLowerCase()
-        .replace(/-([a-z])/g, (_all, letter) => letter.toUpperCase());
+        .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
     const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
         getInheritedData(directiveEl, "$isolateScope") ||
         getCacheData(directiveEl, "$scope") ||

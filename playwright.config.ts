@@ -20,7 +20,7 @@ const isCI =
  */
 export default defineConfig({
   testDir: "./src",
-  testMatch: "**/*.test.js",
+  testMatch: ["**/*.test.ts"],
   testIgnore: ["docs/public/**"],
   /* Run tests in files in parallel */
   fullyParallel: false,

@@ -17,5 +17,5 @@
     "src/runtime/index.ts",
     "src/runtime/web-component.ts"
   ],
-  "exclude": ["**/*.test.js", "**/*.spec.js"]
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }

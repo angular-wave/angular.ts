@@ -1245,7 +1245,7 @@ export function directiveNormalize(name: string): string {
     .replace(
       SPECIAL_CHARS_REGEXP,
       (_name: string, letter: string, offset: number) =>
-        offset ? letter.toUpperCase() : letter,
+        offset ? uppercase(letter) : letter,
     );
 }
 
