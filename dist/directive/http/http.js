@@ -3,7 +3,7 @@ import { Http } from '../../services/http/http.js';
 import { NodeType } from '../../shared/node.js';
 import { emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { isDefined, callBackAfterFirst, wait, toKeyValue, isString, isInstanceOf, isObject, arrayFrom, isArray } from '../../shared/utils.js';
+import { uppercase, isDefined, callBackAfterFirst, wait, toKeyValue, isString, isInstanceOf, isObject, arrayFrom, isArray } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 
 /**
@@ -31,7 +31,7 @@ const SwapMode = {
 };
 /** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(method, attrOverride) {
-    const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
+    const attrName = attrOverride || `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
     const directive = createHttpDirective(method, attrName);
     directive.$inject = [
         _http,

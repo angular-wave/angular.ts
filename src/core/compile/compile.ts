@@ -58,6 +58,7 @@ import {
   stringify,
   trim,
   isString,
+  uppercase,
 } from "../../shared/utils.ts";
 import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
@@ -2186,7 +2187,7 @@ export class CompileProvider {
                     .replace(PREFIX_REGEXP, "")
                     .toLowerCase()
                     .substring(4 + ngPrefixMatch[1].length)
-                    .replace(/_(.)/g, (match, letter) => letter.toUpperCase());
+                    .replace(/_(.)/g, (_match, letter) => uppercase(letter));
                 }
 
                 if (isNgProp || isNgEvent || isWindow) {

@@ -1,5 +1,5 @@
 import { _injector, _animateProvider } from '../injection-tokens.js';
-import { isArray, isFunction, isInstanceOf, isObject } from '../shared/utils.js';
+import { uppercase, isArray, isFunction, isInstanceOf, isObject } from '../shared/utils.js';
 import { prepareAnimationOptions, applyAnimationStyles, applyAnimationClasses } from './shared.js';
 import { AnimateRunner } from './runner/animate-runner.js';
 
@@ -45,7 +45,7 @@ function AnimateJsProvider($animateProvider) {
                         afterFn = "afterLeave";
                     }
                     else {
-                        beforeFn = `before${event.charAt(0).toUpperCase()}${event.substring(1)}`;
+                        beforeFn = `before${uppercase(event.charAt(0))}${event.substring(1)}`;
                         afterFn = event;
                     }
                     if (event !== "enter" && event !== "move") {

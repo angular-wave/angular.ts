@@ -5,6 +5,7 @@ import {
   isFunction,
   isInstanceOf,
   isObject,
+  uppercase,
 } from "../shared/utils.ts";
 import {
   applyAnimationClasses,
@@ -114,7 +115,7 @@ export function AnimateJsProvider(
             beforeFn = "leave";
             afterFn = "afterLeave";
           } else {
-            beforeFn = `before${event.charAt(0).toUpperCase()}${event.substring(1)}`;
+            beforeFn = `before${uppercase(event.charAt(0))}${event.substring(1)}`;
             afterFn = event;
           }
 

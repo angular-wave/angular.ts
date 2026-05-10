@@ -9,6 +9,7 @@ import {
   isObject,
   isString,
   isUndefined,
+  uppercase,
 } from "../../shared/utils.ts";
 
 type WebTransportDirectiveMode = "datagram" | "stream" | "unidirectional";
@@ -59,7 +60,7 @@ export function ngWebTransportDirective(
 
       function attr(name: string): string | undefined {
         return (
-          attrs[name] || attrs[`data${name[0].toUpperCase()}${name.slice(1)}`]
+          attrs[name] || attrs[`data${uppercase(name[0])}${name.slice(1)}`]
         );
       }
 

@@ -1,5 +1,5 @@
 import { _webTransport, _parse, _log, _exceptionHandler } from '../../injection-tokens.js';
-import { isString, isObject, isFunction, isUndefined } from '../../shared/utils.js';
+import { isString, isObject, uppercase, isFunction, isUndefined } from '../../shared/utils.js';
 
 ngWebTransportDirective.$inject = [
     _webTransport,
@@ -22,7 +22,7 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
             let connection;
             let streamReader = null;
             function attr(name) {
-                return (attrs[name] || attrs[`data${name[0].toUpperCase()}${name.slice(1)}`]);
+                return (attrs[name] || attrs[`data${uppercase(name[0])}${name.slice(1)}`]);
             }
             function evaluate(expression, locals) {
                 if (!expression)

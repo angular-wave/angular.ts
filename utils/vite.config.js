@@ -7,7 +7,7 @@ export default defineConfig({
     ? [
         istanbul({
           include: ["src/**/*.js", "src/**/*.ts"],
-          exclude: ["src/**/*.spec.js", "src/**/*.test.js", "src/**/*.html"],
+          exclude: ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.html"],
           extension: [".js", ".ts"],
           requireEnv: false,
           checkProd: false,

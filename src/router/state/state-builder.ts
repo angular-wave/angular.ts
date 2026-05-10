@@ -507,7 +507,7 @@ export class StateBuilder {
 
     if (state.parent && state.parent.data) {
       state.data = state.self.data = assign(
-        createObject(state.parent.data),
+        createObject(state.parent.data as object),
         state.data,
       );
     }

@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "checkJs": true,
     "noEmit": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -11,5 +10,5 @@
     "target": "ES2023"
   },
   "include": ["src"],
-  "exclude": ["**/*.d.ts", "node_modules", "**/*.spec.js", "**/*.test.js"]
+  "exclude": ["**/*.d.ts", "node_modules", "**/*.spec.ts", "**/*.test.ts"]
 }

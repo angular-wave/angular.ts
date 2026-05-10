@@ -154,6 +154,11 @@ import type {
   WebComponentService as TWebComponentService,
 } from "./services/web-component/web-component.ts";
 import type {
+  AngularElementDefinition as TAngularElementDefinition,
+  AngularElementModuleOptions as TAngularElementModuleOptions,
+  AngularElementOptions as TAngularElementOptions,
+} from "./runtime/web-component.ts";
+import type {
   NativeWebTransport as TNativeWebTransport,
   WebTransportBufferInput as TWebTransportBufferInput,
   WebTransportCertificateHash as TWebTransportCertificateHash,
@@ -307,6 +312,13 @@ declare global {
       TAnnotatedFactory<T>;
 
     export type AnimationOptions = TAnimationOptions;
+
+    export type AngularElementDefinition = TAngularElementDefinition;
+
+    export type AngularElementModuleOptions = TAngularElementModuleOptions;
+
+    export type AngularElementOptions<T extends object = Record<string, any>> =
+      TAngularElementOptions<T>;
 
     export type ControllerConstructor = TControllerConstructor;
 

@@ -5,7 +5,7 @@ import { NodeRef } from '../../shared/noderef.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
 import { getSecurityAdapter } from '../security/security-adapter.js';
-import { isDefined, assign, getNodeName, directiveNormalize, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, stringify, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, simpleCompare, isScope, equals } from '../../shared/utils.js';
+import { isDefined, assign, getNodeName, directiveNormalize, uppercase, hasOwn, isObject, nullObject, isFunction, trim, isString, arrayFrom, inherit, stringify, isInstanceOf, isArray, entries, assertArg, assertNotHasOwnProperty, deProxy, isError, keys, isUndefined, minErr, extend, isBoolean, simpleCompare, isScope, equals } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP } from '../../shared/constants.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
@@ -889,7 +889,7 @@ class CompileProvider {
                                         .replace(PREFIX_REGEXP, "")
                                         .toLowerCase()
                                         .substring(4 + ngPrefixMatch[1].length)
-                                        .replace(/_(.)/g, (match, letter) => letter.toUpperCase());
+                                        .replace(/_(.)/g, (_match, letter) => uppercase(letter));
                                 }
                                 if (isNgProp || isNgEvent || isWindow) {
                                     attrs[nName] = value;

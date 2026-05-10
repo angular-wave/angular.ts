@@ -141,8 +141,7 @@ class ASTInterpreter {
                     const arg = args[0];
                     return args.length
                         ? (scope, locals, assign) => {
-                            const runtimeScope = scope;
-                            const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                            const rhs = right(scope, locals, assign);
                             let value;
                             if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                                 const res = arg(scope, locals, assign);
@@ -151,8 +150,7 @@ class ASTInterpreter {
                             return context ? { value } : value;
                         }
                         : (scope, locals, assign) => {
-                            const runtimeScope = scope;
-                            const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                            const rhs = right(scope, locals, assign);
                             const value = !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
                                 ? rhs.value.call(rhs.context)
                                 : undefined;
@@ -174,8 +172,7 @@ class ASTInterpreter {
                             : value();
                     }
                     : (scope, locals, assign) => {
-                        const runtimeScope = scope;
-                        const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
+                        const rhs = right(scope, locals, assign);
                         let value;
                         if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                             const values = [];
@@ -591,9 +588,7 @@ class ASTInterpreter {
             }
             let value = undefined;
             if (base) {
-                value = (create
-                    ? base
-                    : deProxy(base))[name];
+                value = base[name];
             }
             if (context) {
                 return { context: base, name, value };
@@ -679,7 +674,7 @@ function getPathBase(head, scope, locals) {
     const base = locals && head in locals
         ? locals
         : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-    return base ? deProxy(base) : undefined;
+    return base;
 }
 function createPathGetter(path) {
     const p0 = path[0];

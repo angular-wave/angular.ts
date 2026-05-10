@@ -17,6 +17,7 @@ import {
   isFunction,
   isInstanceOf,
   isString,
+  uppercase,
 } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import {
@@ -191,7 +192,7 @@ function getComponentController(
 
   const camelNameFromTag = directiveEl.tagName
     .toLowerCase()
-    .replace(/-([a-z])/g, (_all, letter: string) => letter.toUpperCase());
+    .replace(/-([a-z])/g, (_all, letter: string) => uppercase(letter));
 
   const scopeWithCtrl =
     (getCacheData(directiveEl, "$isolateScope") as

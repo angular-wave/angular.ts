@@ -18,13 +18,7 @@ const OPERATORS = new Set("+ - * / % ++ -- === !== == != < > <= >= && || ! = |".
  * expression string and returns an array of tokens parsed from that string.
  */
 class Lexer {
-    /**
-     * The optional parameter is ignored and only exists to preserve current JS
-     * call sites that still instantiate the lexer with an unused config object.
-     *
-     * @param _options
-     */
-    constructor(options) {
+    constructor() {
         this._text = "";
         this._index = 0;
         this._tokens = [];
