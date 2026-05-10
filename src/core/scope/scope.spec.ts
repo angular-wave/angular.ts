@@ -3906,14 +3906,19 @@ describe("Scope", () => {
       });
     });
 
-    // it("should clean up all watchers for child", () => {
-    //   const scope = createScope();
-    //   scope.$watch("a", () => { /* empty */ });
-    //   expect(scope.$handler._watchers.size).toEqual(1);
-    //
-    //   scope.$destroy();
-    //   expect(scope.$handler._watchers.size).toEqual(0);
-    // })
+    it("should clean up all watchers for child", () => {
+      const scope = createScope();
+
+      scope.$watch("a", () => {
+        // Intentionally empty; this test verifies watcher cleanup.
+      });
+
+      expect(scope.$handler._watchers.size).toEqual(1);
+
+      scope.$destroy();
+
+      expect(scope.$handler._watchers.size).toEqual(0);
+    });
   });
 
   describe("doc examples", () => {

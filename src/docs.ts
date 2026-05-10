@@ -69,11 +69,19 @@ export type {
   InterpolationFunction,
 } from "./core/interpolate/interpolate.ts";
 
-export type { AnimationOptions } from "./animations/interface.ts";
-export { AnimateRunner } from "./animations/runner/animate-runner.ts";
 export { AnimateProvider } from "./animations/animate.ts";
-export type { AnimateService } from "./animations/animate.ts";
-export type { AnimateCssService } from "./animations/css/animate-css.ts";
+export type {
+  AnimateService,
+  AnimationContext,
+  AnimationHandle,
+  AnimationLifecycleCallback,
+  AnimationPhase,
+  AnimationPreset,
+  AnimationPresetHandler,
+  AnimationResult,
+  AnimationOptions,
+  NativeAnimationOptions,
+} from "./animations/animate.ts";
 
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 export type { AnchorScrollService } from "./services/anchor-scroll/anchor-scroll.ts";
@@ -207,7 +215,18 @@ export type {
   WasmService,
 } from "./services/wasm/wasm.ts";
 export type { AriaService } from "./directive/aria/aria.ts";
-export { SwapMode } from "./directive/http/http.ts";
+export {
+  SwapMode,
+  getRealtimeProtocolContent,
+  isRealtimeProtocolMessage,
+} from "./directive/realtime/protocol.ts";
+export type {
+  RealtimeProtocolEventDetail,
+  RealtimeProtocolMessage,
+  SseProtocolEventDetail,
+  SseProtocolMessage,
+  SwapModeType,
+} from "./directive/realtime/protocol.ts";
 export { NgModelController } from "./directive/model/model.ts";
 export { ngWebTransportDirective } from "./directive/webtransport/webtransport.ts";
 

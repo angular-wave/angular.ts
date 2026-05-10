@@ -709,55 +709,64 @@ describe("form", () => {
       expect(grandchild.$submitted).toBeTruthy();
     });
 
-    // TODO These tests relied on JQ lite to call destroy on the elements being removed
-    // it("should deregister a child form when its DOM is removed", async () => {
-    //   doc = createElementFromHTML(
-    //     '<form name="parent">' +
-    //       '<div ng-form name="child">' +
-    //       '<input ng-model="modelA" name="inputA" required>' +
-    //       "</div>" +
-    //       "</form>",
-    //   );
-    //   $compile(doc)(scope);
-    //   await wait();
-    //
-    //   const parent = scope.parent,
-    //     child = scope.child;
-    //
-    //   expect(parent).toBeDefined();
-    //   expect(child).toBeDefined();
-    //   expect(parent.$error.required).toEqual([child]);
-    //
-    //   doc.replaceChildren(); //remove child
-    //   expect(parent.child).toBeUndefined();
-    //   expect(scope.child).toBeUndefined();
-    //   expect(parent.$error.required).toBeFalsy();
-    // });
-    //
-    // it("should deregister a child form whose name is an expression when its DOM is removed", async () => {
-    //   doc = createElementFromHTML(
-    //     '<form name="parent">' +
-    //       '<div ng-form name="child.form">' +
-    //       '<input ng-model="modelA" name="inputA" required>' +
-    //       "</div>" +
-    //       "</form>",
-    //   );
-    //   $compile(doc)(scope);
-    //   await wait();
-    //
-    //   const { parent } = scope;
-    //   const child = scope.child.form;
-    //   expect(parent).toBeDefined();
-    //   expect(child).toBeDefined();
-    //   expect(parent.$error.required).toEqual([child]);
-    //   doc.replaceChildren(); // remove child
-    //
-    //   await wait();
-    //
-    //   expect(parent.child.form).toBeUndefined();
-    //   expect(scope.child.form).toBeUndefined();
-    //   expect(parent.$error.required).toBeFalsy();
-    // });
+    it("should deregister a child form when its element is destroyed", async () => {
+      doc = createElementFromHTML(
+        '<form name="parent">' +
+          '<div ng-form name="child">' +
+          '<input ng-model="modelA" name="inputA" required>' +
+          "</div>" +
+          "</form>",
+      );
+      $compile(doc)(scope);
+      await wait();
+
+      const { parent, child } = scope;
+
+      expect(parent).toBeDefined();
+      expect(child).toBeDefined();
+      expect(parent.$error.required).toEqual([child]);
+
+      const childElement = doc.querySelector("[ng-form]");
+
+      childElement.dispatchEvent(new Event("$destroy"));
+      childElement.remove();
+      await wait();
+
+      expect(parent.child).toBeUndefined();
+      expect(scope.child).toBeUndefined();
+      expect(parent.$error.required).toBeFalsy();
+    });
+
+    it("should deregister a child form whose name is an expression when its element is destroyed", async () => {
+      scope.child = {};
+      doc = createElementFromHTML(
+        '<form name="parent">' +
+          '<div ng-form name="child.form">' +
+          '<input ng-model="modelA" name="inputA" required>' +
+          "</div>" +
+          "</form>",
+      );
+      $compile(doc)(scope);
+      await wait();
+
+      const { parent } = scope;
+
+      const child = scope.child.form;
+
+      expect(parent).toBeDefined();
+      expect(child).toBeDefined();
+      expect(parent.$error.required).toEqual([child]);
+
+      const childElement = doc.querySelector("[ng-form]");
+
+      childElement.dispatchEvent(new Event("$destroy"));
+      childElement.remove();
+      await wait();
+
+      expect(parent["child.form"]).toBeUndefined();
+      expect(scope.child.form).toBeUndefined();
+      expect(parent.$error.required).toBeFalsy();
+    });
 
     it("should deregister a input when it is removed from DOM", async () => {
       doc = createElementFromHTML(

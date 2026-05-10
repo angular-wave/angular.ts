@@ -291,7 +291,7 @@ export class StateRegistryProvider {
   /** @internal */
   _attachRoute(state: StateObject): void {
     if (!state.self.abstract && state._url) {
-      this._routerState._registerStateRoute(state);
+      this._routerState._routeTable._add(state);
     }
   }
 
@@ -332,7 +332,7 @@ export class StateRegistryProvider {
     deregistered.push(state);
 
     deregistered.forEach((_state) => {
-      this._routerState._removeStateRoute(_state as StateObject);
+      this._routerState._routeTable._remove(_state as StateObject);
       // Remove state from registry
       delete this._states[_state.name];
     });

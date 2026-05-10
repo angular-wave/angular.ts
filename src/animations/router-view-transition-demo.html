@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS router view transition demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        window.angular.module("routerMotionDemo", []).config([
+          "$stateProvider",
+          ($stateProvider) => {
+            $stateProvider
+              .state({
+                name: "overview",
+                url: "/src/animations/router-view-transition-demo.html",
+                template: `
+                  <main class="route-view">
+                    <p class="eyebrow">Overview</p>
+                    <h1>Operational snapshot</h1>
+                    <p>Router navigation commits through the browser View Transition API when it is available.</p>
+                    <div class="metrics">
+                      <span><strong>28</strong> tasks</span>
+                      <span><strong>4</strong> deploys</span>
+                      <span><strong>99%</strong> health</span>
+                    </div>
+                  </main>
+                `,
+              })
+              .state({
+                name: "activity",
+                url: "/activity",
+                template: `
+                  <main class="route-view">
+                    <p class="eyebrow">Activity</p>
+                    <h1>Recent changes</h1>
+                    <p>The route content changes normally. CSS owns the visual transition for the named view.</p>
+                    <div class="metrics">
+                      <span><strong>12</strong> commits</span>
+                      <span><strong>3</strong> reviews</span>
+                      <span><strong>7</strong> checks</span>
+                    </div>
+                  </main>
+                `,
+              })
+              .state({
+                name: "settings",
+                url: "/settings",
+                template: `
+                  <main class="route-view">
+                    <p class="eyebrow">Settings</p>
+                    <h1>Runtime controls</h1>
+                    <p>The same navigation API works with or without browser support for view transitions.</p>
+                    <div class="metrics">
+                      <span><strong>5</strong> flags</span>
+                      <span><strong>2</strong> profiles</span>
+                      <span><strong>8</strong> tokens</span>
+                    </div>
+                  </main>
+                `,
+              });
+          },
+        ]);
+      });
+    </script>
+    <style>
+      :root {
+        --surface: #f8fafc;
+        --panel: #ffffff;
+        --text: #111827;
+        --muted: #4b5563;
+        --line: #d1d5db;
+        --accent: #2563eb;
+        --motion-in: cubic-bezier(0, 0, 0, 1);
+        --motion-out: cubic-bezier(0.3, 0, 1, 1);
+      }
+
+      body {
+        background: var(--surface);
+        color: var(--text);
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      nav {
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        padding: 28px 18px;
+      }
+
+      nav h1 {
+        font-size: 18px;
+        line-height: 1.2;
+        margin: 0 0 12px;
+      }
+
+      nav a {
+        border-radius: 10px;
+        color: var(--muted);
+        padding: 10px 12px;
+        text-decoration: none;
+      }
+
+      nav a:hover {
+        background: #eff6ff;
+        color: var(--accent);
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .route-view {
+        view-transition-name: angular-route-view;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 16px 48px rgb(15 23 42 / 0.08);
+        min-height: 360px;
+        padding: 32px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      .route-view h1 {
+        font-size: 32px;
+        line-height: 1.15;
+        margin: 0 0 12px;
+      }
+
+      .route-view p {
+        color: var(--muted);
+        margin: 0;
+        max-width: 620px;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 28px;
+      }
+
+      .metrics span {
+        background: #f9fafb;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--muted);
+        padding: 16px;
+      }
+
+      .metrics strong {
+        color: var(--text);
+        display: block;
+        font-size: 24px;
+      }
+
+      ::view-transition-old(angular-route-view) {
+        animation: route-view-out 160ms var(--motion-out) both;
+      }
+
+      ::view-transition-new(angular-route-view) {
+        animation: route-view-in 260ms var(--motion-in) both;
+      }
+
+      @keyframes route-view-in {
+        from {
+          opacity: 0;
+          transform: translateY(16px) scale(0.99);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes route-view-out {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-8px) scale(0.99);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        ::view-transition-old(angular-route-view),
+        ::view-transition-new(angular-route-view) {
+          animation: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        nav {
+          border-bottom: 1px solid var(--line);
+          border-right: 0;
+          display: flex;
+          overflow-x: auto;
+          padding: 14px;
+        }
+
+        nav h1 {
+          margin: 0 8px 0 0;
+          white-space: nowrap;
+        }
+
+        .content {
+          padding: 18px;
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body ng-app="routerMotionDemo">
+    <div class="shell">
+      <nav aria-label="Demo views">
+        <h1>Router motion</h1>
+        <a ng-sref="overview">Overview</a>
+        <a ng-sref="activity">Activity</a>
+        <a ng-sref="settings">Settings</a>
+      </nav>
+      <section class="content">
+        <ng-view></ng-view>
+      </section>
+    </div>
+  </body>
+</html>

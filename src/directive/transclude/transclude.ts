@@ -4,7 +4,7 @@ import {
   isArray,
   isFunction,
   isInstanceOf,
-  minErr,
+  createErrorFactory,
 } from "../../shared/utils.ts";
 import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
@@ -14,7 +14,7 @@ import type {
   TranscludedNodes,
 } from "../../core/compile/compile.ts";
 
-const ngTranscludeMinErr = minErr("ngTransclude");
+const ngTranscludeError = createErrorFactory("ngTransclude");
 
 ngTranscludeDirective.$inject = [_compile];
 
@@ -35,7 +35,7 @@ export function ngTranscludeDirective(
         $transclude?: TranscludeFn,
       ) {
         if (!$transclude) {
-          throw ngTranscludeMinErr(
+          throw ngTranscludeError(
             "orphan",
             "Illegal use of ngTransclude directive in the template! " +
               "No parent directive that requires a transclusion found. " +

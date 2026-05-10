@@ -10,7 +10,7 @@ import {
   isDefined,
   isInstanceOf,
   isProxy,
-  minErr,
+  createErrorFactory,
   nullObject,
   values,
 } from "../../shared/utils.ts";
@@ -29,7 +29,7 @@ import { NodeType } from "../../shared/node.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 
-const ngRepeatMinErr = minErr("ngRepeat");
+const ngRepeatError = createErrorFactory("ngRepeat");
 
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
@@ -505,7 +505,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       );
 
       if (!match) {
-        throw ngRepeatMinErr(
+        throw ngRepeatError(
           "iexp",
           "Expected expression in form of '_item_ in _collection_' but got '{0}'.",
           expression,
@@ -521,7 +521,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       match = lhs.match(VAR_OR_TUPLE_REGEX);
 
       if (!match) {
-        throw ngRepeatMinErr(
+        throw ngRepeatError(
           "iidexp",
           "'_item_' in '_item_ in _collection_' should be an identifier or '(_key_, _value_)' expression, but got '{0}'.",
           lhs,
@@ -538,7 +538,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             aliasAs,
           ))
       ) {
-        throw ngRepeatMinErr(
+        throw ngRepeatError(
           "badident",
           "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.",
           aliasAs,
@@ -777,7 +777,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 values(nextBlockOrder).forEach((x: RepeatBlock | undefined) => {
                   if (x && x._scope) lastBlockMap[x._id] = block;
                 });
-                throw ngRepeatMinErr(
+                throw ngRepeatError(
                   "dupes",
                   "Duplicates keys in a repeater are not allowed. Repeater: {0}, Duplicate key: {1} for value: {2}",
                   expression,

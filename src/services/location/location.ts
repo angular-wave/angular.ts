@@ -15,7 +15,7 @@ import {
   isObject,
   isString,
   isUndefined,
-  minErr,
+  createErrorFactory,
   parseKeyValue,
   startsWith,
   toKeyValue,
@@ -93,7 +93,7 @@ export interface UrlParts {
 
 const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
 
-const $locationMinErr = minErr("$location");
+const $locationError = createErrorFactory("$location");
 
 let urlUpdatedByLocation = false;
 
@@ -175,7 +175,7 @@ export class Location {
     const match = PATH_MATCH.exec(url);
 
     if (!match) {
-      throw $locationMinErr("badurl", 'Invalid url "{0}".', url);
+      throw $locationError("badurl", 'Invalid url "{0}".', url);
     }
 
     if (match[1] || url === "") {
@@ -291,7 +291,7 @@ export class Location {
 
           _search = clonedSearch;
         } else {
-          throw $locationMinErr(
+          throw $locationError(
             "isrcharg",
             "The first argument of the `$location#search()` call must be a string or an object.",
           );
@@ -368,7 +368,7 @@ export class Location {
    */
   setState(state: any) {
     if (!this.html5) {
-      throw $locationMinErr(
+      throw $locationError(
         "nostate",
         "History API state support is available only in HTML5 mode",
       );
@@ -454,7 +454,7 @@ export class Location {
       const pathUrl = stripBaseUrl(this.appBaseNoFile, url);
 
       if (!isString(pathUrl)) {
-        throw $locationMinErr(
+        throw $locationError(
           "ipthprfx",
           'Invalid url "{0}", missing path prefix "{1}".',
           url,
@@ -668,7 +668,7 @@ export class LocationProvider {
 
       if (this.html5ModeConf.enabled) {
         if (!baseHref && this.html5ModeConf.requireBase) {
-          throw $locationMinErr(
+          throw $locationError(
             "nobase",
             "$location in HTML5 mode requires a <base> tag to be present!",
           );
@@ -1068,7 +1068,7 @@ export function normalizePath(
  */
 export function parseAppUrl(url: string, html5Mode: boolean): void {
   if (/^\s*[\\/]{2,}/.test(url)) {
-    throw $locationMinErr("badpath", 'Invalid url "{0}".', url);
+    throw $locationError("badpath", 'Invalid url "{0}".', url);
   }
 
   const prefixed = url.charAt(0) !== "/";

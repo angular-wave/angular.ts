@@ -6,7 +6,7 @@ import {
   getNodeName,
   isNullOrUndefined,
   isString,
-  minErr,
+  createErrorFactory,
   trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
@@ -14,7 +14,7 @@ import type { Attributes } from "../../core/compile/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
-const $compileMinErr = minErr("$compile");
+const $compileError = createErrorFactory("$compile");
 
 function sanitizeSrcset(
   $sce: ng.SceService,
@@ -26,7 +26,7 @@ function sanitizeSrcset(
   }
 
   if (!isString(value)) {
-    throw $compileMinErr(
+    throw $compileError(
       "srcset",
       'Can\'t pass trusted values to `{0}`: "{1}"',
       invokeType,

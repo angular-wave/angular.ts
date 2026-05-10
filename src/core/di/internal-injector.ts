@@ -3,7 +3,7 @@ import {
   hasOwn,
   isArray,
   isArrowFunction,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
@@ -11,7 +11,7 @@ import { annotate, isClass } from "./di.ts";
 import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 
 export const providerSuffix = "Provider";
 
@@ -45,7 +45,7 @@ class AbstractInjector {
   get(serviceName: string): any {
     if (hasOwn(this._cache, serviceName)) {
       if (this._cache[serviceName] === true) {
-        throw $injectorMinErr(
+        throw $injectorError(
           "cdep",
           "Circular dependency found: {0}",
           `${serviceName} <- ${this._path.join(" <- ")}`,
@@ -89,7 +89,7 @@ class AbstractInjector {
 
     $inject.forEach((key) => {
       if (!isString(key)) {
-        throw $injectorMinErr(
+        throw $injectorError(
           "itkn",
           "Incorrect injection token! Expected service name as string, got {0}",
           key,
@@ -210,7 +210,7 @@ export class ProviderInjector extends AbstractInjector {
   _factory(caller: string): never {
     this._path.push(caller);
     // prevents lookups to providers through get
-    throw $injectorMinErr(
+    throw $injectorError(
       "unpr",
       "Unknown provider: {0}",
       this._path.join(" <- "),

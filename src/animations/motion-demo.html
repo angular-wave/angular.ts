@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Motion demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <script type="module">
+      import { animate } from "https://cdn.jsdelivr.net/npm/motion@latest/+esm";
+
+      window.motionAnimate = animate;
+    </script>
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const runMotion = (context, controls) =>
+          new Promise((resolve) => {
+            context.signal.addEventListener(
+              "abort",
+              () => {
+                controls.stop();
+                resolve();
+              },
+              { once: true },
+            );
+            controls.then(resolve, resolve);
+          });
+
+        window.angular
+          .module("motionDemo", [])
+          .animation("motion-card", () => ({
+            enter(element, context) {
+              return runMotion(
+                context,
+                window.motionAnimate(
+                  element,
+                  {
+                    opacity: [0, 1],
+                    y: [24, 0],
+                    scale: [0.96, 1],
+                  },
+                  {
+                    type: "spring",
+                    visualDuration: 0.45,
+                    bounce: 0.25,
+                  },
+                ),
+              );
+            },
+            leave(element, context) {
+              return runMotion(
+                context,
+                window.motionAnimate(
+                  element,
+                  {
+                    opacity: 0,
+                    y: 12,
+                    scale: 0.98,
+                  },
+                  {
+                    duration: 0.2,
+                    ease: "easeIn",
+                  },
+                ),
+              );
+            },
+          }));
+      });
+    </script>
+
+    <style>
+      body {
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+
+      button {
+        cursor: pointer;
+        margin: 4px 6px 4px 0;
+      }
+
+      .motion-card {
+        border: 1px solid #ccc;
+        margin-top: 16px;
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body ng-app="motionDemo">
+    <main>
+      <h1>Motion with AngularTS</h1>
+      <p>
+        AngularTS owns the directive lifecycle. Motion owns the animation
+        playback.
+      </p>
+
+      <button ng-click="visible=true">Show</button>
+      <button ng-click="visible=false">Hide</button>
+
+      <div ng-if="visible" class="motion-card" data-animate="motion-card">
+        This card enters and leaves through a Motion-powered AngularTS animation
+        preset.
+      </div>
+    </main>
+  </body>
+</html>

@@ -3,6 +3,10 @@ import {
   ConnectionManager,
   type ConnectionConfig,
 } from "../connection/connection-manager.ts";
+import {
+  isRealtimeProtocolMessage,
+  type RealtimeProtocolMessage,
+} from "../../directive/realtime/protocol.ts";
 import type { LogService } from "../log/log.ts";
 
 /**
@@ -11,6 +15,11 @@ import type { LogService } from "../log/log.ts";
 export interface WebSocketConfig extends ConnectionConfig {
   /** Optional WebSocket subprotocols */
   protocols?: string[];
+  /** Called when a decoded message uses the realtime protocol shape. */
+  onProtocolMessage?: (
+    data: RealtimeProtocolMessage,
+    event: Event | MessageEvent,
+  ) => void;
 }
 
 /**
@@ -85,6 +94,10 @@ export class WebSocketProvider {
           {
             ...mergedConfig,
             onMessage: (data: unknown, event: Event | MessageEvent) => {
+              if (isRealtimeProtocolMessage(data)) {
+                mergedConfig.onProtocolMessage?.(data, event);
+              }
+
               mergedConfig.onMessage?.(data, event);
             },
             onOpen: (event: Event) => {

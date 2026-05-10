@@ -73,6 +73,32 @@ describe("$webTransport", () => {
     expect(messages).toContain("text:hello");
   });
 
+  it("reports realtime protocol datagrams", async () => {
+    const protocolMessages = [];
+
+    const datagrams = [];
+
+    const { url, config } = await webTransportTestConfig({
+      onProtocolMessage: (message) => protocolMessages.push(message),
+      onDatagram: ({ message }) => datagrams.push(message),
+      transformDatagram: (data) => JSON.parse(decode(data)),
+    });
+
+    const connection = track(webTransport(url, config));
+
+    await connection.ready;
+    await connection.sendText(
+      JSON.stringify({
+        html: "<strong>Live</strong>",
+        target: "#feed",
+      }),
+    );
+    await eventually(() => protocolMessages.length === 1);
+
+    expect(protocolMessages[0].target).toBe("#feed");
+    expect(datagrams.length).toBe(1);
+  });
+
   it("sends reliable unidirectional streams", async () => {
     const messages = [];
 
@@ -403,6 +429,44 @@ describe("ngWebTransport", () => {
     expect(closed).toBe(true);
   });
 
+  it("applies realtime protocol JSON datagrams", async () => {
+    const { url, config } = await webTransportTestConfig();
+
+    $scope.transportUrl = url;
+    $scope.transportConfig = config;
+    $scope.label = "Updated";
+
+    compileDirective('<div id="feed"></div>');
+    const host = compileDirective(`
+      <div
+        ng-web-transport="transportUrl"
+        data-config="transportConfig"
+        data-as="session"
+        data-transform="json"
+      ></div>
+    `);
+
+    let swapped = false;
+
+    host.addEventListener("ng:webtransport:swapped", () => {
+      swapped = true;
+    });
+
+    await eventually(() => $scope.session);
+    track($scope.session);
+    await $scope.session.sendText(
+      JSON.stringify({
+        html: "<span>{{ label }}</span>",
+        target: "#feed",
+        swap: "innerHTML",
+      }),
+    );
+    await eventually(() => el.querySelector("#feed").textContent === "Updated");
+
+    expect(el.querySelector("#feed").innerHTML).toBe("<span>Updated</span>");
+    expect(swapped).toBe(true);
+  });
+
   function compileDirective(template) {
     const node = $compile(template.trim())($scope);
 
@@ -420,6 +484,10 @@ describe("ngWebTransport", () => {
 
 async function webTransportTestConfig(config = {}) {
   const response = await fetch("http://localhost:3000/webtransport/cert-hash");
+
+  if (!response.ok) {
+    pending("WebTransport test backend is unavailable");
+  }
 
   const metadata = await response.json();
 

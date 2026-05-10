@@ -10,7 +10,7 @@ import {
   isNullOrUndefined,
   isObject,
   isUndefined,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
 import {
@@ -32,7 +32,7 @@ import type {
 } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 
@@ -108,7 +108,7 @@ export function createInjector(
     }
 
     if (!newProvider.$get) {
-      throw $injectorMinErr(
+      throw $injectorError(
         "pget",
         "Provider '{0}' must define $get factory method.",
         name,
@@ -131,7 +131,7 @@ export function createInjector(
         const result = instanceInjector.invoke(factoryFn, this);
 
         if (isUndefined(result)) {
-          throw $injectorMinErr(
+          throw $injectorError(
             "undef",
             "Provider '{0}' must return a value from $get factory method.",
             name,
@@ -357,7 +357,7 @@ export function createInjector(
         // If module is array, fallback to last element for error message
         const moduleName = isArray(module) ? module[module.length - 1] : module;
 
-        throw $injectorMinErr(
+        throw $injectorError(
           "modulerr",
           "Failed to instantiate module {0} due to:\n{1}",
           moduleName,

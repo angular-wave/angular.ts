@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-types types docs-examples-check benchmark-parse coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
+.PHONY: build build-ts check test test-types types docs-examples-check benchmark-parse benchmark-compile benchmark-link coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -74,6 +74,12 @@ docs-examples-check: ensure-deps
 
 benchmark-parse: ensure-deps
 	@node ./utils/run-parse-benchmark.mjs $(ARGS)
+
+benchmark-compile: ensure-deps
+	@node ./utils/run-compile-benchmark.mjs $(ARGS)
+
+benchmark-link: ensure-deps
+	@node ./utils/run-link-benchmark.mjs $(ARGS)
 
 types: ensure-deps
 	@echo "Generating *.d.ts"

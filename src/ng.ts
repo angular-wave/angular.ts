@@ -7,15 +7,7 @@ import {
   _router,
   _window,
 } from "./injection-tokens.ts";
-import { $$AnimateChildrenDirective } from "./animations/animate-children-directive.ts";
-import { AnimateCssDriverProvider } from "./animations/animate-css-driver.ts";
-import { AnimateJsDriverProvider } from "./animations/animate-js-driver.ts";
-import { AnimateJsProvider } from "./animations/animate-js.ts";
-import { ngAnimateSwapDirective } from "./animations/animate-swap.ts";
 import { AnimateProvider } from "./animations/animate.ts";
-import { AnimationProvider } from "./animations/animation.ts";
-import { AnimateCssProvider } from "./animations/css/animate-css.ts";
-import { AnimateQueueProvider } from "./animations/queue/animate-queue.ts";
 import { CompileProvider } from "./core/compile/compile.ts";
 import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
@@ -249,15 +241,9 @@ export const ngSecurityProviders = {
   $sceDelegate: SceDelegateProvider,
 } satisfies ProviderGroup;
 
-/** Animation providers. Omit this group for runtimes that use native transitions only. */
+/** Native animation provider. */
 export const ngAnimationProviders = {
   $animate: AnimateProvider,
-  $$animation: AnimationProvider,
-  $animateCss: AnimateCssProvider,
-  $$animateCssDriver: AnimateCssDriverProvider,
-  $$animateJs: AnimateJsProvider,
-  $$animateJsDriver: AnimateJsDriverProvider,
-  $$animateQueue: AnimateQueueProvider,
 } satisfies ProviderGroup;
 
 /** State-router providers. Omit this group for custom-element or widget runtimes without routing. */
@@ -361,12 +347,6 @@ export const ngIntegrationDirectives = {
   ngWorker: ngWorkerDirective,
 } satisfies DirectiveGroup;
 
-/** Animation directives. */
-export const ngAnimationDirectives = {
-  ngAnimateSwap: ngAnimateSwapDirective,
-  ngAnimateChildren: $$AnimateChildrenDirective,
-} satisfies DirectiveGroup;
-
 /** Accessibility enhancement directives layered onto normal template directives. */
 export const ngAriaDirectives = {
   ngChecked: ngCheckedAriaDirective,
@@ -416,7 +396,6 @@ export const ngDefaultDirectiveGroups = [
   ngTemplateDirectives,
   ngFormDirectives,
   ngIntegrationDirectives,
-  ngAnimationDirectives,
   ngAriaDirectives,
   ngRouterDirectives,
   ngFillDirectives,

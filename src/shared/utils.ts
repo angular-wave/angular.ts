@@ -1,5 +1,8 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.ts";
+import type { ErrorHandlingConfig } from "./interface.ts";
 import { NodeType } from "./node.ts";
+
+export type { ErrorHandlingConfig } from "./interface.ts";
 
 export const isProxySymbol = Symbol("isProxy");
 
@@ -21,7 +24,7 @@ export function deProxy<T>(val: T | (T & { $target: T })): T {
   return isProxy(val) ? (val as T & { $target: T }).$target : val;
 }
 
-const ngMinErr = minErr("ng");
+const ngError = createErrorFactory("ng");
 
 let uid = 0;
 
@@ -661,15 +664,11 @@ export function equals(o1: any, o2: any): boolean {
  * throw error if the name given is hasOwnProperty
  * @param name the name to test
  * @param context the context in which the name is used, such as module or directive
- * @throws AngularTS minErr when `name` would shadow `hasOwnProperty`.
+ * @throws AngularTS error when `name` would shadow `hasOwnProperty`.
  */
 export function assertNotHasOwnProperty(name: string, context: string): void {
   if (name === "hasOwnProperty") {
-    throw ngMinErr(
-      "badname",
-      "hasOwnProperty is not a valid {0} name",
-      context,
-    );
+    throw ngError("badname", "hasOwnProperty is not a valid {0} name", context);
   }
 }
 
@@ -981,11 +980,11 @@ export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
 /**
  * Throws a typed AngularTS argument error when the argument is falsy.
  *
- * @throws AngularTS minErr when `arg` is falsy.
+ * @throws AngularTS error when `arg` is falsy.
  */
 export function assertArg<T>(arg: T, name: string, reason?: string): T {
   if (!arg) {
-    throw ngMinErr(
+    throw ngError(
       "areq",
       "Argument '{0}' is {1}",
       name || "?",
@@ -999,7 +998,7 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
 /**
  * Asserts that a value is a function, optionally unwrapping array-annotation first.
  *
- * @throws AngularTS minErr when `arg` is not a function.
+ * @throws AngularTS error when `arg` is not a function.
  */
 export function assertArgFn(
   arg: string | Function | any[],
@@ -1023,29 +1022,9 @@ export function assertArgFn(
   return arg;
 }
 
-const minErrConfig = {
+const errorConfig = {
   objectMaxDepth: 5,
-  urlErrorParamsEnabled: true,
 };
-
-/**
- * Error configuration object. May only contain the options that need to be updated.
- */
-export interface ErrorHandlingConfig {
-  /**
-   * The max depth for stringifying objects.
-   * Setting to a non-positive or non-numeric value removes the max depth limit.
-   * Default: 5.
-   */
-  objectMaxDepth?: number;
-
-  /**
-   * Specifies whether the generated error URL will contain the parameters
-   * of the thrown error. Default: true.
-   * When used without argument, it returns the current value.
-   */
-  urlErrorParamsEnabled?: boolean;
-}
 
 /**
  * Gets or updates the global error-handling configuration.
@@ -1057,69 +1036,72 @@ export function errorHandlingConfig(
 ): ErrorHandlingConfig {
   if (isObject(config)) {
     if (isDefined(config.objectMaxDepth)) {
-      minErrConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
+      errorConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
         ? config.objectMaxDepth
         : NaN;
     }
-
-    if (
-      isDefined(config.urlErrorParamsEnabled) &&
-      isBoolean(config.urlErrorParamsEnabled)
-    ) {
-      minErrConfig.urlErrorParamsEnabled = config.urlErrorParamsEnabled;
-    }
   }
 
-  return minErrConfig;
+  return errorConfig;
 }
 
 /**
- * This object provides a utility for producing rich Error messages within
- * AngularTS. It can be called as follows:
- *
- * let exampleMinErr = minErr('example');
- * throw exampleMinErr('one', 'This {0} is {1}', foo, bar);
- *
- * The above creates an instance of minErr in the example namespace. The
- * resulting error will have a namespaced error code of example.one.  The
- * resulting error will replace {0} with the value of foo, and {1} with the
- * value of bar. The object is not restricted in the number of arguments it can
- * take.
- *
- * If fewer arguments are specified than necessary for interpolation, the extra
- * interpolation markers will be preserved in the final string.
- *
- * Since data will be parsed statically during a build step, some restrictions
- * are applied with respect to how minErr instances are created and called.
- * Instances should have names of the form namespaceMinErr for a minErr created
- * using minErr('namespace'). Error codes, namespaces and template strings
- * should all be static strings, not variables or general expressions.
- *
- * @param module The namespace to use for the new minErr instance.
- * @returns minErr instance
+ * Namespaced AngularTS error with structured code metadata.
  */
-export function minErr(module: string): (...args: any[]) => Error {
-  return function (...args: any[]) {
-    const code = args[0];
+export class AngularTSError extends Error {
+  readonly code: string;
+  readonly namespace: string;
+  readonly params: readonly unknown[];
 
-    const template = args[1];
+  constructor(
+    namespace: string,
+    code: string,
+    template: string,
+    params: readonly unknown[] = [],
+  ) {
+    super(formatErrorMessage(namespace, code, template, params));
+    this.name = "AngularTSError";
+    this.code = code;
+    this.namespace = namespace;
+    this.params = params;
+  }
+}
 
-    let message = `[${module ? `${module}:` : ""}${code}] `;
+export type ErrorFactory = (
+  code: string,
+  template: string,
+  ...params: unknown[]
+) => AngularTSError;
 
-    const templateArgs = sliceArgs(args, 2).map((arg) => toDebugString(arg));
+/**
+ * Creates a namespaced AngularTS error factory.
+ */
+export function createErrorFactory(namespace: string): ErrorFactory {
+  return (code, template, ...params) =>
+    new AngularTSError(namespace, code, template, params);
+}
 
-    message += template.replace(/\{\d+\}/g, (match: string) => {
-      const index = +match.slice(1, -1);
+function formatErrorMessage(
+  namespace: string,
+  code: string,
+  template: string,
+  params: readonly unknown[],
+): string {
+  let message = `[${namespace ? `${namespace}:` : ""}${code}] `;
 
-      if (index < templateArgs.length) {
-        return templateArgs[index];
-      }
+  const templateArgs = params.map((arg) => toDebugString(arg));
 
-      return match;
-    });
+  message += template.replace(/\{\d+\}/g, (match: string) => {
+    const index = +match.slice(1, -1);
 
-    return new Error(message);
-  };
+    if (index < templateArgs.length) {
+      return templateArgs[index];
+    }
+
+    return match;
+  });
+
+  return message;
 }
 
 /**
@@ -1263,9 +1245,9 @@ function hasCustomOrDataAttribute(node: Node, attr: string): boolean {
   if (node.nodeType !== NodeType._ELEMENT_NODE) return false;
   const element = node as HTMLElement;
 
-  return (
-    element.dataset[attr] === "true" || element.getAttribute(attr) === "true"
-  );
+  const value = element.dataset[attr] ?? element.getAttribute(attr);
+
+  return value !== null && value !== undefined && value !== "false";
 }
 
 /**

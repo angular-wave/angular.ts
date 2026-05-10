@@ -1,9 +1,9 @@
-import { isDefined, minErr } from "../../../shared/utils.ts";
+import { isDefined, createErrorFactory } from "../../../shared/utils.ts";
 import type { Token } from "./token.ts";
 
 export type { Token } from "./token.ts";
 
-const $parseMinErr = minErr("$parse");
+const $parseError = createErrorFactory("$parse");
 
 /* eslint-disable id-length */
 const ESCAPE: Record<string, string> = {
@@ -202,7 +202,7 @@ export class Lexer {
       ? `s ${start}-${this._index} [${this._text.substring(start, endIndex)}]`
       : ` ${endIndex}`;
 
-    throw $parseMinErr(
+    throw $parseError(
       "lexerr",
       `Lexer Error: ${error} at column${colStr} in expression [${this._text}].`,
     );

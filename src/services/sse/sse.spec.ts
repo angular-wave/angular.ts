@@ -221,4 +221,95 @@ describe("$sse", () => {
     await wait(1000);
     expect(messageCount).toBe(before);
   });
+
+  it("should apply realtime protocol html messages in ng-sse", async () => {
+    const restore = mockEventSource([{ html: "<span>Live</span>" }]);
+
+    try {
+      const node = compileDirective(
+        '<div ng-sse="/mock/events" trigger="connect"></div>',
+      );
+
+      node.dispatchEvent(new Event("connect"));
+
+      await wait(50);
+      expect(node.innerHTML).toBe("<span>Live</span>");
+    } finally {
+      restore();
+    }
+  });
+
+  it("should apply realtime protocol target and swap overrides in ng-sse", async () => {
+    const restore = mockEventSource([
+      { html: "<li>Second</li>", target: "#items", swap: "beforeend" },
+    ]);
+
+    try {
+      const host = compileDirective(`
+        <section>
+          <ul id="items"><li>First</li></ul>
+          <div ng-sse="/mock/events" trigger="connect"></div>
+        </section>
+      `);
+
+      host.querySelector("[ng-sse]").dispatchEvent(new Event("connect"));
+
+      await wait(50);
+      expect(el.querySelector("#items").textContent).toBe("FirstSecond");
+    } finally {
+      restore();
+    }
+  });
+
+  it("should apply realtime protocol textContent messages in ng-sse", async () => {
+    const restore = mockEventSource([{ data: "Ready", swap: "textContent" }]);
+
+    try {
+      const node = compileDirective(
+        '<div ng-sse="/mock/events" trigger="connect"></div>',
+      );
+
+      node.dispatchEvent(new Event("connect"));
+
+      await wait(50);
+      expect(node.textContent).toBe("Ready");
+    } finally {
+      restore();
+    }
+  });
+
+  function compileDirective(template) {
+    const node = $compile(template.trim())($scope);
+
+    el.appendChild(node);
+
+    return node;
+  }
+
+  function mockEventSource(messages) {
+    const RealEventSource = window.EventSource;
+
+    window.EventSource = function () {
+      this.listeners = {};
+      this.addEventListener = (type, fn) => {
+        this.listeners[type] = fn;
+      };
+      this.close = () => {
+        /* empty */
+      };
+      setTimeout(() => {
+        this.listeners.open?.({ type: "open" });
+        messages.forEach((message) => {
+          this.listeners.message?.({
+            type: "message",
+            data: JSON.stringify(message),
+          });
+        });
+      }, 10);
+    };
+
+    return () => {
+      window.EventSource = RealEventSource;
+    };
+  }
 });

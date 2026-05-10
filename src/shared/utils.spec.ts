@@ -12,6 +12,7 @@ import {
   callBackAfterFirst,
   callBackOnce,
   concat,
+  createErrorFactory,
   createObject,
   deProxy,
   directiveNormalize,
@@ -49,7 +50,6 @@ import {
   isValidObjectMaxDepth,
   keys,
   lowercase,
-  minErr,
   nextUid,
   ngAttrPrefixes,
   notNullOrUndefined,
@@ -1406,18 +1406,16 @@ describe("utility functions", () => {
 
       errorHandlingConfig({
         objectMaxDepth: 2,
-        urlErrorParamsEnabled: false,
       });
       expect(errorHandlingConfig()).toEqual({
         objectMaxDepth: 2,
-        urlErrorParamsEnabled: false,
       });
 
       errorHandlingConfig(previous);
     });
 
     it("should create namespaced errors", () => {
-      const err = minErr("mod")("code", "Value {0}", "x");
+      const err = createErrorFactory("mod")("code", "Value {0}", "x");
 
       expect(err instanceof Error).toBe(true);
       expect(err.message).toBe("[mod:code] Value x");

@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <title>AngularTS</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
     <script type="module" src="/src/index.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -68,63 +72,137 @@
     </script>
 
     <style>
+      body {
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      section {
+        margin: 24px 0;
+      }
+
+      button {
+        cursor: pointer;
+        margin: 4px 6px 4px 0;
+      }
+
       .fade {
-        background-color: red;
-      }
-      /* The starting CSS styles for the enter animation */
-      .fade.ng-enter {
-        transition: 0.5s linear all;
-        background-color: unset;
-        opacity: 0;
+        --ng-enter-animation: fade-in 500ms linear both;
+        --ng-leave-animation: fade-out 500ms linear both;
+        background: red;
+        margin-top: 12px;
+        padding: 12px;
       }
 
-      /* The finishing CSS styles for the enter animation */
-      .fade.ng-enter.ng-enter-active {
-        opacity: 1;
-        background-color: red;
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
-      /* The starting CSS styles for the leave animation */
-      .fade.ng-leave {
-        transition: 0.5s linear all;
-        opacity: 1;
+      @keyframes fade-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
       }
 
-      /* The finishing CSS styles for the leave animation */
-      .fade.ng-leave.ng-leave-active {
-        opacity: 0;
-        background-color: unset;
+      .animate-css-demo {
+        --ng-enter-animation: fadeInDown 600ms both;
+        --ng-leave-animation: fadeOutDown 450ms both;
+        border: 1px solid #ccc;
+        margin-top: 12px;
+        padding: 12px;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translate3d(0, -100%, 0);
+        }
+        to {
+          opacity: 1;
+          transform: translate3d(0, 0, 0);
+        }
+      }
+
+      @keyframes fadeOutDown {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+          transform: translate3d(0, 100%, 0);
+        }
       }
     </style>
   </head>
   <body ng-app="todo">
-    <div id="$ctrl" ng-controller="TodoCtrl as $ctrl">
+    <main id="$ctrl" ng-controller="TodoCtrl as $ctrl">
       <h3>{{ $ctrl.greeting }}</h3>
-      <button ng-click="$ctrl.archive()">Archive</button>
-      <button
-        onclick="angular.getScope(this.parentElement).$ctrl.greeting = 'woot'"
-      >
-        test
-      </button>
-      <ul>
-        <li ng-repeat="todo in $ctrl.tasks">
-          {{ todo.task }} {{ todo.done }}
-          <input type="checkbox" ng-click="todo.done = !todo.done" />
-        </li>
-      </ul>
-      <form ng-submit="$ctrl.add(newTodo)">
-        <input type="text" ng-model="newTodo" ng-required="true" />
-        <button type="submit">Add</button>
-      </form>
+      <section>
+        <button ng-click="$ctrl.archive()">Archive</button>
+        <button
+          onclick="
+            angular.getScope(this.parentElement.parentElement).$ctrl.greeting =
+              'woot'
+          "
+        >
+          test
+        </button>
+        <ul>
+          <li ng-repeat="todo in $ctrl.tasks" data-animate="fade-slide">
+            {{ todo.task }} {{ todo.done }}
+            <input type="checkbox" ng-click="todo.done = !todo.done" />
+          </li>
+        </ul>
+        <form ng-submit="$ctrl.add(newTodo)">
+          <input type="text" ng-model="newTodo" ng-required="true" />
+          <button type="submit">Add</button>
+        </form>
+      </section>
 
-      <button ng-get="/mock/div" target="#p" trigger="click" animate="true">
-        Get
-      </button>
-      <div id="p"></div>
+      <section>
+        <h4>HTTP target animation</h4>
+        <button
+          ng-get="/mock/div"
+          target="#p"
+          trigger="click"
+          data-animate="fade-slide"
+        >
+          Get
+        </button>
+        <div id="p"></div>
+      </section>
 
-      <div ng-if="bool" class="fade" animate="true">Fade me in out</div>
-      <button ng-click="bool=true">Fade In!</button>
-      <button ng-click="bool=false">Fade Out!</button>
-    </div>
+      <section>
+        <h4>Fade animation</h4>
+        <div ng-if="bool" class="fade" animate>Fade me in out</div>
+        <button ng-click="bool=true">Fade In!</button>
+        <button ng-click="bool=false">Fade Out!</button>
+      </section>
+
+      <section>
+        <h4>animate.css keyframes</h4>
+        <div ng-if="animateCssVisible" class="animate-css-demo" animate>
+          Uses animate.css fadeInDown and fadeOutDown through CSS variables.
+        </div>
+        <button ng-click="animateCssVisible=true">Show animate.css</button>
+        <button ng-click="animateCssVisible=false">Hide animate.css</button>
+      </section>
+    </main>
   </body>
 </html>

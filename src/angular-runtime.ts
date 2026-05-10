@@ -12,7 +12,7 @@ import {
   isArray,
   isInstanceOf,
   isObject,
-  minErr,
+  createErrorFactory,
   ngAttrPrefixes,
   values,
   isString,
@@ -28,9 +28,9 @@ import { createInjector } from "./core/di/injector.ts";
 import { NgModule } from "./core/di/ng-module/ng-module.ts";
 import { validateIsString } from "./shared/validate.ts";
 
-const ngMinErr = minErr("ng");
+const ngError = createErrorFactory("ng");
 
-const $injectorMinErr = minErr("$injector");
+const $injectorError = createErrorFactory("$injector");
 
 const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
 
@@ -151,7 +151,7 @@ export class AngularRuntime extends EventTarget {
    */
   registerNgModule(): ng.NgModule {
     if (!builtinNgModuleRegistrar) {
-      throw ngMinErr(
+      throw ngError(
         "nobuiltins",
         "Built-in AngularTS modules are not configured for this runtime. Import the full runtime entrypoint or construct with registerBuiltins: false.",
       );
@@ -217,7 +217,7 @@ export class AngularRuntime extends EventTarget {
 
     return ensure(moduleRegistry, name, () => {
       if (!requires) {
-        throw $injectorMinErr(
+        throw $injectorError(
           "nomod",
           "Module '{0}' is not available. Possibly misspelled or not loaded",
           name,
@@ -363,7 +363,7 @@ export class AngularRuntime extends EventTarget {
       (isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
       getInjector(element as unknown as Element)
     ) {
-      throw ngMinErr("btstrpd", "App already bootstrapped");
+      throw ngError("btstrpd", "App already bootstrapped");
     }
 
     if (isArray(modules)) {

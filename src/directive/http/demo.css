@@ -117,21 +117,6 @@ code {
 .animate {
   border: 1px solid var(--line);
   padding: 10px;
-  transition:
-    opacity 0.35s linear,
-    transform 0.35s linear;
-}
-
-.animate.ng-enter,
-.animate.ng-leave.ng-leave-active {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.animate.ng-leave,
-.animate.ng-enter.ng-enter-active {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 @media (max-width: 720px) {

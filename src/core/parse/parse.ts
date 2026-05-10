@@ -70,62 +70,84 @@ export class ParseProvider {
 
     this.$get = [
       _injector,
-      ($injector: ng.InjectorService): ParseService => {
-        let $filter: FilterService | undefined;
-
-        const lazyFilter: FilterService = (name: string) => {
-          $filter ??= $injector.get(_filter) as FilterService;
-
-          return $filter(name);
-        };
-
-        const parser = new Parser(lexer, lazyFilter);
-
-        const $parse: ParseService = (exp, interceptorFn) => {
-          validateRequired(exp, "exp");
-
-          const cacheKey = exp.trim();
-
-          let parsedExpression = cache[cacheKey];
-
-          if (!parsedExpression) {
-            parsedExpression = parser._parse(cacheKey);
-            cache[cacheKey] = parsedExpression;
-          }
-
-          return addInterceptor(parsedExpression, interceptorFn);
-        };
-
-        return $parse;
-      },
+      ($injector: ng.InjectorService): ParseService =>
+        createParseService($injector, cache),
     ];
-
-    function addInterceptor(
-      parsedExpression: CompiledExpression,
-      interceptorFn?: (value: any) => any,
-    ): CompiledExpression {
-      if (!interceptorFn) {
-        return parsedExpression;
-      }
-
-      const fn = function interceptedExpression(scope, locals, assign) {
-        if ((scope as { getter?: boolean } | undefined)?.getter) {
-          return undefined;
-        }
-
-        const value = parsedExpression(scope, locals, assign);
-
-        const res = isFunction(value) ? value() : value;
-
-        return interceptorFn(deProxy(res));
-      } as CompiledExpression;
-
-      fn._interceptor = interceptorFn;
-      fn._literal = parsedExpression._literal;
-      fn._constant = parsedExpression._constant;
-      fn._decoratedNode = parsedExpression._decoratedNode;
-
-      return fn;
-    }
   }
+}
+
+function createParseService(
+  $injector: ng.InjectorService,
+  cache: Record<string, CompiledExpression>,
+): ParseService {
+  const parser = new Parser(lexer, createLazyFilter($injector));
+
+  return (exp, interceptorFn) => {
+    const parsedExpression = getParsedExpression(
+      parser,
+      cache,
+      normalizeExpression(exp),
+    );
+
+    return addInterceptor(parsedExpression, interceptorFn);
+  };
+}
+
+function createLazyFilter($injector: ng.InjectorService): FilterService {
+  let $filter: FilterService | undefined;
+
+  return (name: string) => {
+    $filter ??= $injector.get(_filter) as FilterService;
+
+    return $filter(name);
+  };
+}
+
+function normalizeExpression(exp: string): string {
+  validateRequired(exp, "exp");
+
+  return exp.trim();
+}
+
+function getParsedExpression(
+  parser: Parser,
+  cache: Record<string, CompiledExpression>,
+  cacheKey: string,
+): CompiledExpression {
+  let parsedExpression = cache[cacheKey];
+
+  if (!parsedExpression) {
+    parsedExpression = parser._parse(cacheKey);
+    cache[cacheKey] = parsedExpression;
+  }
+
+  return parsedExpression;
+}
+
+function addInterceptor(
+  parsedExpression: CompiledExpression,
+  interceptorFn?: (value: any) => any,
+): CompiledExpression {
+  if (!interceptorFn) {
+    return parsedExpression;
+  }
+
+  const fn = function interceptedExpression(scope, locals, assign) {
+    if ((scope as { getter?: boolean } | undefined)?.getter) {
+      return undefined;
+    }
+
+    const value = parsedExpression(scope, locals, assign);
+
+    const res = isFunction(value) ? value() : value;
+
+    return interceptorFn(deProxy(res));
+  } as CompiledExpression;
+
+  fn._interceptor = interceptorFn;
+  fn._literal = parsedExpression._literal;
+  fn._constant = parsedExpression._constant;
+  fn._decoratedNode = parsedExpression._decoratedNode;
+
+  return fn;
 }

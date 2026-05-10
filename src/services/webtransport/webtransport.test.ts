@@ -11,6 +11,12 @@ test("webtransport unit tests contain no errors", async ({ page }) => {
 test("webtransport demo receives datagram and stream data", async ({
   page,
 }) => {
+  const metadata = await page.request.get(
+    "http://localhost:3000/webtransport/cert-hash",
+  );
+
+  test.skip(!metadata.ok(), "WebTransport test backend is unavailable");
+
   await page.goto("src/services/webtransport/webtransport-demo.html");
 
   await page.getByRole("button", { name: "Send" }).click();

@@ -40,6 +40,10 @@ describe("ngMessages", () => {
     return isString(value) ? value.trim() : value;
   }
 
+  function toLabel(value) {
+    return JSON.stringify(value) ?? String(value);
+  }
+
   let element;
 
   it("should render based off of a hashmap collection", async () => {
@@ -177,84 +181,71 @@ describe("ngMessages", () => {
     expect(element.textContent).not.toContain("Message is crazy");
   });
 
-  // they(
-  //   "should render empty when $prop is used as a collection value",
-  //   {
-  //     null: null,
-  //     false: false,
-  //     0: 0,
-  //     "[]": [],
-  //     "[{}]": [{}],
-  //     "": "",
-  //     "{ val2 : true }": { val2: true },
-  //   },
-  //   (prop) => {
-  //     () => {
-  //       element = $compile(
-  //         '<div ng-messages="col">' +
-  //           '  <div ng-message="val">Message is set</div>' +
-  //           "</div>",
-  //       )($rootScope);
-  //       ;
+  [null, false, 0, [], [{}], "", { val2: true }].forEach((collection) => {
+    it(`should render empty when ${toLabel(collection)} is used as the collection value`, async () => {
+      element = $compile(
+        '<div ng-messages="col">' +
+          '  <div ng-message="val">Message is set</div>' +
+          "</div>",
+      )($rootScope);
+      await wait();
 
-  //         $rootScope.col = prop;
-  //       });
-  //       expect(element.textContent).not.toContain("Message is set");
-  //     });
-  //   },
-  // );
+      $rootScope.col = collection;
+      await wait();
 
-  // they(
-  //   "should insert and remove matching inner elements when $prop is used as a value",
-  //   { true: true, 1: 1, "{}": {}, "[]": [], "[null]": [null] },
-  //   (prop) => {
-  //     () => {
-  //       element = $compile(
-  //         '<div ng-messages="col">' +
-  //           '  <div ng-message="blue">This message is blue</div>' +
-  //           '  <div ng-message="red">This message is red</div>' +
-  //           "</div>",
-  //       )($rootScope);
+      expect(element.textContent).not.toContain("Message is set");
+    });
+  });
 
-  //         $rootScope.col = {};
-  //       });
+  [true, 1, {}, [], [null]].forEach((value) => {
+    it(`should insert and remove matching inner elements when ${toLabel(value)} is used as a value`, async () => {
+      element = $compile(
+        '<div ng-messages="col">' +
+          '  <div ng-message="blue">This message is blue</div>' +
+          '  <div ng-message="red">This message is red</div>' +
+          "</div>",
+      )($rootScope);
+      await wait();
 
-  //       expect(messageChildren(element).length).toBe(0);
-  //       expect(trim(element.textContent)).toEqual("");
+      $rootScope.col = {};
+      await wait();
 
-  //         $rootScope.col = {
-  //           blue: true,
-  //           red: false,
-  //         };
-  //       });
+      expect(messageChildren(element).length).toBe(0);
+      expect(trim(element.textContent)).toEqual("");
 
-  //       expect(messageChildren(element).length).toBe(1);
-  //       expect(trim(element.textContent)).toEqual("This message is blue");
+      $rootScope.col = {
+        blue: true,
+        red: false,
+      };
+      await wait();
 
-  //         $rootScope.col = {
-  //           red: prop,
-  //         };
-  //       });
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toEqual("This message is blue");
 
-  //       expect(messageChildren(element).length).toBe(1);
-  //       expect(trim(element.textContent)).toEqual("This message is red");
+      $rootScope.col = {
+        red: value,
+      };
+      await wait();
 
-  //         $rootScope.col = null;
-  //       });
-  //       expect(messageChildren(element).length).toBe(0);
-  //       expect(trim(element.textContent)).toEqual("");
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toEqual("This message is red");
 
-  //         $rootScope.col = {
-  //           blue: 0,
-  //           red: null,
-  //         };
-  //       });
+      $rootScope.col = null;
+      await wait();
 
-  //       expect(messageChildren(element).length).toBe(0);
-  //       expect(trim(element.textContent)).toEqual("");
-  //     });
-  //   },
-  // );
+      expect(messageChildren(element).length).toBe(0);
+      expect(trim(element.textContent)).toEqual("");
+
+      $rootScope.col = {
+        blue: 0,
+        red: null,
+      };
+      await wait();
+
+      expect(messageChildren(element).length).toBe(0);
+      expect(trim(element.textContent)).toEqual("");
+    });
+  });
 
   it("should display the elements in the order defined in the DOM", async () => {
     element = $compile(
@@ -428,32 +419,6 @@ describe("ngMessages", () => {
     expect(newMessageNode).not.toBe(oldMessageNode);
   });
 
-  // it("should render animations when the active/inactive classes are added/removed", async () => {
-  //   // module("ngAnimate");
-  //   // module("ngAnimateMock");
-  //   element = $compile(
-  //     '<div ng-messages="col">' +
-  //       '  <div ng-message="ready">This message is ready</div>' +
-  //       "</div>",
-  //   )($rootScope);
-
-  //     $rootScope.col = {};
-  //   });
-
-  //   let event = $animate.queue.pop();
-  //   expect(event.event).toBe("setClass");
-  //   expect(event.args[1]).toBe("ng-inactive");
-  //   expect(event.args[2]).toBe("ng-active");
-
-  //     $rootScope.col = { ready: true };
-  //   });
-
-  //   event = $animate.queue.pop();
-  //   expect(event.event).toBe("setClass");
-  //   expect(event.args[1]).toBe("ng-active");
-  //   expect(event.args[2]).toBe("ng-inactive");
-  // });
-
   describe("ngMessage nested nested inside elements", () => {
     it(
       "should not crash or leak memory when the messages are transcluded, the first message is " +
@@ -479,67 +444,72 @@ describe("ngMessages", () => {
       },
     );
 
-    // it(
-    //   "should not crash, but show deeply nested messages correctly after a message " +
-    //     "has been removed",
-    //   () => {
-    //     element = $compile(
-    //       '<div ng-messages="col" ng-messages-multiple>' +
-    //         '<div class="another-wrapper">' +
-    //         '<div ng-message="a">A</div>' +
-    //         '<div class="wrapper">' +
-    //         '<div ng-message="b">B</div>' +
-    //         '<div ng-message="c">C</div>' +
-    //         "</div>" +
-    //         '<div ng-message="d">D</div>' +
-    //         "</div>" +
-    //         "</div>",
-    //     )($rootScope);
-    //
-    //       $rootScope.col = {
-    //         a: true,
-    //         b: true,
-    //       };
-    //     });
-    //
-    //     expect(messageChildren(element).length).toBe(2);
-    //     expect(trim(element.textContent)).toEqual("AB");
-    //
-    //     const ctrl = element.controller("ngMessages");
-    //     const deregisterSpy = spyOn(ctrl, "deregister").and.callThrough();
-    //
-    //     const nodeB = element.querySelector('[ng-message="b"]');
-    //     nodeB.remove(); // The next digest triggers the error
-    //     // Make sure removing the element triggers the deregistration in ngMessages
-    //     expect(trim(deregisterSpy.calls.mostRecent().args[0].nodeValue)).toBe(
-    //       "",
-    //     );
-    //     expect(messageChildren(element).length).toBe(1);
-    //     expect(trim(element.textContent)).toEqual("A");
-    //   },
-    // );
+    it(
+      "should not crash, but show deeply nested messages correctly after a message " +
+        "has been destroyed",
+      async () => {
+        element = $compile(
+          '<div ng-messages="col" ng-messages-multiple>' +
+            '<div class="another-wrapper">' +
+            '<div ng-message="a">A</div>' +
+            '<div class="wrapper">' +
+            '<div ng-message="b">B</div>' +
+            '<div ng-message="c">C</div>' +
+            "</div>" +
+            '<div ng-message="d">D</div>' +
+            "</div>" +
+            "</div>",
+        )($rootScope);
+        await wait();
+
+        $rootScope.col = {
+          a: true,
+          b: true,
+        };
+        await wait();
+
+        expect(messageChildren(element).length).toBe(2);
+        expect(trim(element.textContent)).toEqual("AB");
+
+        const ctrl = getController(element, "ngMessages");
+
+        const deregisterSpy = spyOn(ctrl, "deregister").and.callThrough();
+
+        const nodeB = element.querySelector('[ng-message="b"]');
+
+        nodeB.dispatchEvent(new Event("$destroy"));
+        nodeB.remove();
+        await wait();
+
+        expect(deregisterSpy).toHaveBeenCalled();
+        expect(messageChildren(element).length).toBe(1);
+        expect(trim(element.textContent)).toEqual("A");
+      },
+    );
   });
 
-  // it("should clean-up the ngMessage scope when a message is removed", async () => {
-  //   const html =
-  //     '<div ng-messages="items">' +
-  //     '<div ng-message="a">{{forA}}</div>' +
-  //     "</div>";
-  //
-  //   element = $compile(html)($rootScope);
-  //     $rootScope.forA = "A";
-  //     $rootScope.items = { a: true };
-  //   });
-  //
-  //   expect(element.textContent).toBe("A");
-  //   const watchers = countWatchers($rootScope);
-  //
-  //
-  //   expect(element.textContent).toBe("");
-  //   // We don't know exactly how many watchers are on the scope, only that there should be
-  //   // one less now
-  //   expect(countWatchers($rootScope)).toBe(watchers - 1);
-  // });
+  it("should remove the rendered ngMessage when the message no longer matches", async () => {
+    const html =
+      '<div ng-messages="items">' +
+      '<div ng-message="a">{{forA}}</div>' +
+      "</div>";
+
+    element = $compile(html)($rootScope);
+
+    $rootScope.forA = "A";
+    $rootScope.items = { a: true };
+    await wait();
+
+    const renderedMessage = messageChildren(element)[0];
+
+    expect(element.textContent).toBe("A");
+
+    $rootScope.items = {};
+    await wait();
+
+    expect(element.textContent).toBe("");
+    expect(renderedMessage.isConnected).toBeFalse();
+  });
 
   it("should unregister the ngMessage even if it was never attached", async () => {
     const html =
@@ -675,144 +645,86 @@ describe("ngMessages", () => {
   });
 
   describe("when including templates", () => {
-    // they(
-    //   "should work with a dynamic collection model which is managed by ngRepeat",
-    //   {
-    //     '<div ng-messages-include="...">':
-    //       '<div ng-messages="item">' +
-    //       '<div ng-messages-include="abc.html"></div>' +
-    //       "</div>",
-    //     '<ng-messages-include src="...">':
-    //       '<ng-messages for="item">' +
-    //       '<ng-messages-include src="abc.html"></ng-messages-include>' +
-    //       "</ng-messages>",
-    //   },
-    //   (html) => {
-    //     inject(($compile, $rootScope, $templateCache) => {
-    //       $templateCache.set(
-    //         "abc.html",
-    //         '<div ng-message="a">A</div>' +
-    //           '<div ng-message="b">B</div>' +
-    //           '<div ng-message="c">C</div>',
-    //       );
+    it("should work with a dynamic collection model managed by ngRepeat", async () => {
+      $templateCache.set(
+        "abc.html",
+        '<div ng-message="a">A</div>' +
+          '<div ng-message="b">B</div>' +
+          '<div ng-message="c">C</div>',
+      );
 
-    //       html = `<div><div ng-repeat="item in items">${html}</div></div>`;
-    //       $rootScope.items = [{}, {}, {}];
+      $rootScope.items = [{}, {}, {}];
 
-    //       element = $compile(html)($rootScope);
-    //         $rootScope.items[0].a = true;
-    //         $rootScope.items[1].b = true;
-    //         $rootScope.items[2].c = true;
-    //       });
+      element = $compile(
+        '<div><div ng-repeat="item in items">' +
+          '<div ng-messages="item">' +
+          '<div ng-messages-include="abc.html"></div>' +
+          "</div>" +
+          "</div></div>",
+      )($rootScope);
+      await wait();
 
-    //       const elements = element.querySelectorAll("[ng-repeat]");
+      $rootScope.items[0].a = true;
+      $rootScope.items[1].b = true;
+      $rootScope.items[2].c = true;
+      await wait();
 
-    //       // all three collections should have at least one error showing up
-    //       expect(messageChildren(element).length).toBe(3);
-    //       expect(messageChildren(elements[0]).length).toBe(1);
-    //       expect(messageChildren(elements[1]).length).toBe(1);
-    //       expect(messageChildren(elements[2]).length).toBe(1);
+      const repeated = element.children;
 
-    //       // this is the standard order of the displayed error messages
-    //       expect(element.textContent.trim()).toBe("ABC");
+      expect(messageChildren(element).length).toBe(3);
+      expect(messageChildren(repeated[0]).length).toBe(1);
+      expect(messageChildren(repeated[1]).length).toBe(1);
+      expect(messageChildren(repeated[2]).length).toBe(1);
+      expect(s(element.textContent)).toBe("ABC");
 
-    //         $rootScope.items[0].a = false;
-    //         $rootScope.items[0].c = true;
+      $rootScope.items[0].a = false;
+      $rootScope.items[0].c = true;
+      $rootScope.items[1].b = false;
+      $rootScope.items[2].c = false;
+      $rootScope.items[2].a = true;
+      await wait();
 
-    //         $rootScope.items[1].b = false;
+      expect(s(element.textContent)).toBe("CA");
 
-    //         $rootScope.items[2].c = false;
-    //         $rootScope.items[2].a = true;
-    //       });
+      $rootScope.items[1].b = true;
+      $rootScope.items.reverse();
+      await wait();
 
-    //       // with the 2nd item gone and the values changed
-    //       // we should see both 1 and 3 changed
-    //       expect(element.textContent.trim()).toBe("A");
+      expect(s(element.textContent)).toBe("ABC");
+    });
 
-    //         // add the value for the 2nd item back
-    //         $rootScope.items[1].b = true;
-    //         $rootScope.items.reverse();
-    //       });
+    it("should load a remote template using the src attribute form", async () => {
+      $templateCache.set(
+        "abc.html",
+        '<div ng-message="a">A</div>' +
+          '<div ng-message="b">B</div>' +
+          '<div ng-message="c">C</div>',
+      );
 
-    //       // when reversed we get back to our original value
-    //       expect(element.textContent.trim()).toBe("ABC");
-    //     });
-    //   },
-    // );
+      element = $compile(
+        '<ng-messages for="data">' +
+          '<ng-messages-include src="abc.html"></ng-messages-include>' +
+          "</ng-messages>",
+      )($rootScope);
 
-    // they(
-    //   "should remove the $prop element and place a comment anchor node where it used to be",
-    //   {
-    //     '<div ng-messages-include="...">':
-    //       '<div ng-messages="data">' +
-    //       '<div ng-messages-include="abc.html"></div>' +
-    //       "</div>",
-    //     '<ng-messages-include src="...">':
-    //       '<ng-messages for="data">' +
-    //       '<ng-messages-include src="abc.html"></ng-messages-include>' +
-    //       "</ng-messages>",
-    //   },
-    //   (html) => {
-    //     inject(($compile, $rootScope, $templateCache) => {
-    //       $templateCache.set("abc.html", "<div></div>");
+      $rootScope.data = {
+        a: 1,
+        b: 2,
+        c: 3,
+      };
+      await wait();
 
-    //       element = $compile(html)($rootScope);
-    //       ;
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toEqual("A");
 
-    //       const includeElement = element.querySelector(
-    //         "[ng-messages-include], ng-messages-include",
-    //       );
-    //       expect(includeElement).toBeFalsy();
+      $rootScope.data = {
+        c: 3,
+      };
+      await wait();
 
-    //       const comment = element.childNodes[0];
-    //       expect(comment.nodeType).toBe(8);
-    //       expect(comment.nodeValue).toBe(" ngMessagesInclude: abc.html ");
-    //     });
-    //   },
-    // );
-
-    // they(
-    //   "should load a remote template using $prop",
-    //   {
-    //     '<div ng-messages-include="...">':
-    //       '<div ng-messages="data">' +
-    //       '<div ng-messages-include="abc.html"></div>' +
-    //       "</div>",
-    //     '<ng-messages-include src="...">':
-    //       '<ng-messages for="data">' +
-    //       '<ng-messages-include src="abc.html"></ng-messages-include>' +
-    //       "</ng-messages>",
-    //   },
-    //   (html) => {
-    //     inject(($compile, $rootScope, $templateCache) => {
-    //       $templateCache.set(
-    //         "abc.html",
-    //         '<div ng-message="a">A</div>' +
-    //           '<div ng-message="b">B</div>' +
-    //           '<div ng-message="c">C</div>',
-    //       );
-
-    //       element = $compile(html)($rootScope);
-    //         $rootScope.data = {
-    //           a: 1,
-    //           b: 2,
-    //           c: 3,
-    //         };
-    //       });
-
-    //       expect(messageChildren(element).length).toBe(1);
-    //       expect(trim(element.textContent)).toEqual("A");
-
-    //         $rootScope.data = {
-    //           c: 3,
-    //         };
-    //       });
-
-    //       expect(messageChildren(element).length).toBe(1);
-    //       expect(trim(element.textContent)).toEqual("C");
-    //     });
-    //   },
-    // );
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toEqual("C");
+    });
 
     it("should cache the template after download", async () => {
       expect($templateCache.get("/mock/hello")).toBeUndefined();
@@ -888,32 +800,28 @@ describe("ngMessages", () => {
       expect(trim(element.textContent)).toEqual("C");
     });
 
-    // it("should properly detect a previous message, even if it was registered later", async () => {
-    //   $templateCache.set("include.html", '<div ng-message="a">A</div>');
-    //   const html =
-    //     '<div ng-messages="items">' +
-    //     "<div ng-include=\"'include.html'\"></div>" +
-    //     '<div ng-message="b">B</div>' +
-    //     '<div ng-message="c">C</div>' +
-    //     "</div>";
+    it("should prioritize an included previous message even if it registered later", async () => {
+      $templateCache.set("include.html", '<div ng-message="a">A</div>');
 
-    //   element = $compile(html)($rootScope);
+      const html =
+        '<div ng-messages="items">' +
+        "<div ng-include=\"'include.html'\"></div>" +
+        '<div ng-message="b">B</div>' +
+        '<div ng-message="c">C</div>' +
+        "</div>";
 
-    //   expect(element.textContent).toBe("B");
+      $rootScope.items = {
+        a: true,
+        b: true,
+        c: true,
+      };
 
-    //   const ctrl = element.controller("ngMessages");
-    //   const deregisterSpy = spyOn(ctrl, "deregister").and.callThrough();
+      element = $compile(html)($rootScope);
+      await wait();
 
-    //   const nodeB = element.querySelector('[ng-message="b"]');
-    //   (nodeB).remove();
-
-    //   // Make sure removing the element triggers the deregistration in ngMessages
-    //   expect(trim(deregisterSpy.calls.mostRecent().args[0].nodeValue)).toBe(
-    //     "ngMessage: b",
-    //   );
-
-    //   expect(element.textContent).toBe("A");
-    // });
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toBe("A");
+    });
 
     it("should not throw if the template is empty", async () => {
       const html =
@@ -932,31 +840,28 @@ describe("ngMessages", () => {
   });
 
   describe("when multiple", () => {
-    // they(
-    //   "should show all truthy messages when the $prop attr is present",
-    //   { multiple: "multiple", "ng-messages-multiple": "ng-messages-multiple" },
-    //   (prop) => {
-    //     () => {
-    //       element = $compile(
-    //         `<div ng-messages="data" ${prop}>` +
-    //           `  <div ng-message="one">1</div>` +
-    //           `  <div ng-message="two">2</div>` +
-    //           `  <div ng-message="three">3</div>` +
-    //           `</div>`,
-    //       )($rootScope);
+    ["multiple", "ng-messages-multiple"].forEach((attribute) => {
+      it(`should show all truthy messages when ${attribute} is present`, async () => {
+        element = $compile(
+          `<div ng-messages="data" ${attribute}>` +
+            `  <div ng-message="one">1</div>` +
+            `  <div ng-message="two">2</div>` +
+            `  <div ng-message="three">3</div>` +
+            `</div>`,
+        )($rootScope);
+        await wait();
 
-    //         $rootScope.data = {
-    //           one: true,
-    //           two: false,
-    //           three: true,
-    //         };
-    //       });
+        $rootScope.data = {
+          one: true,
+          two: false,
+          three: true,
+        };
+        await wait();
 
-    //       expect(messageChildren(element).length).toBe(2);
-    //       expect(s(element.textContent)).toContain("13");
-    //     });
-    //   },
-    // );
+        expect(messageChildren(element).length).toBe(2);
+        expect(s(element.textContent)).toContain("13");
+      });
+    });
 
     it("should render all truthy messages from a remote template", async () => {
       $templateCache.set(

@@ -1,4 +1,8 @@
 import { _log } from "../../injection-tokens.ts";
+import {
+  isRealtimeProtocolMessage,
+  type RealtimeProtocolMessage,
+} from "../../directive/realtime/protocol.ts";
 import { isFunction, isNumber, isString } from "../../shared/utils.ts";
 import type { LogService } from "../log/log.ts";
 
@@ -79,6 +83,11 @@ export interface WebTransportConfig extends WebTransportOptions {
   onError?: (error: unknown) => void;
   /** Called with each incoming datagram. */
   onDatagram?: (event: WebTransportDatagramEvent) => void;
+  /** Called when a decoded datagram uses the realtime protocol shape. */
+  onProtocolMessage?: (
+    message: RealtimeProtocolMessage,
+    event: WebTransportDatagramEvent<RealtimeProtocolMessage>,
+  ) => void;
   /** Converts incoming datagram bytes into the value passed as `event.message`. */
   transformDatagram?: (data: Uint8Array) => unknown;
   /** Reopen the native WebTransport session when it closes unexpectedly. */
@@ -359,7 +368,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   }
 
   private async _readDatagrams(transport: NativeWebTransport): Promise<void> {
-    if (!this._config.onDatagram) return;
+    if (!this._config.onDatagram && !this._config.onProtocolMessage) return;
 
     const reader = transport.datagrams.readable.getReader();
 
@@ -384,7 +393,16 @@ class ManagedWebTransportConnection implements WebTransportConnection {
           continue;
         }
 
-        this._config.onDatagram({ data, message });
+        const event = { data, message };
+
+        if (isRealtimeProtocolMessage(message)) {
+          this._config.onProtocolMessage?.(
+            message,
+            event as WebTransportDatagramEvent<RealtimeProtocolMessage>,
+          );
+        }
+
+        this._config.onDatagram?.(event);
       }
     } catch (error) {
       if (
@@ -450,6 +468,7 @@ export class WebTransportProvider {
           onClose,
           onError,
           onDatagram,
+          onProtocolMessage,
           transformDatagram,
           reconnect,
           retryDelay,
@@ -467,6 +486,7 @@ export class WebTransportProvider {
             onClose,
             onError,
             onDatagram,
+            onProtocolMessage,
             transformDatagram,
             reconnect,
             retryDelay,

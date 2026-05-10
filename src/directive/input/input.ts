@@ -14,7 +14,7 @@ import {
   trim,
   isString,
 } from "../../shared/utils.ts";
-import { ngModelMinErr } from "./../model/model.ts";
+import { ngModelError } from "./../model/model.ts";
 
 export type NgModelControllerProxied = ScopeProxied<NgModelController>;
 
@@ -278,7 +278,7 @@ export function createStringDateInputType(
       if (ctrl.$isEmpty(value)) return "";
 
       if (!isString(value)) {
-        throw ngModelMinErr("datefmt", "Expected `{0}` to be a string", value);
+        throw ngModelError("datefmt", "Expected `{0}` to be a string", value);
       }
 
       return value;
@@ -369,7 +369,7 @@ export function numberFormatterParser(ctrl: ModelCtrl): void {
   ctrl.$formatters.push((value: any) => {
     if (!ctrl.$isEmpty(value)) {
       if (!isNumber(value)) {
-        throw ngModelMinErr("numfmt", "Expected `{0}` to be a number", value);
+        throw ngModelError("numfmt", "Expected `{0}` to be a number", value);
       }
       value = value.toString();
     }
@@ -854,7 +854,7 @@ function parseConstantExpr(
     parseFn = $parse(expression);
 
     if (!parseFn._constant) {
-      throw ngModelMinErr(
+      throw ngModelError(
         "constexpr",
         "Expected constant expression for `{0}`, but saw " + "`{1}`.",
         name,

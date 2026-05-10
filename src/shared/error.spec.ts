@@ -1,7 +1,8 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import {
-  minErr,
+  AngularTSError,
+  createErrorFactory,
   isDefined,
   toDebugString,
   errorHandlingConfig,
@@ -9,27 +10,32 @@ import {
 
 describe("errors", () => {
   afterEach(() => {
-    /* empty */
+    errorHandlingConfig({
+      objectMaxDepth: 5,
+    });
   });
 
-  describe("minErr", () => {
+  describe("createErrorFactory", () => {
     const supportStackTraces = function () {
       const e = new Error();
 
       return isDefined(e.stack);
     };
 
-    const emptyTestError = minErr("");
+    const emptyTestError = createErrorFactory("");
 
-    const testError = minErr("test");
+    const testError = createErrorFactory("test");
 
     it("should return an Error factory", () => {
       const myError = testError("test", "Oops");
 
       expect(myError instanceof Error).toBe(true);
+      expect(myError instanceof AngularTSError).toBe(true);
+      expect(myError.code).toBe("test");
+      expect(myError.namespace).toBe("test");
     });
 
-    it("should generate stack trace at the frame where the minErr instance was called", () => {
+    it("should generate stack trace at the frame where the error factory was called", () => {
       let myError;
 
       function someFn() {
@@ -151,32 +157,28 @@ describe("errors", () => {
       expect(myNamespacedError.message).toMatch(/^\[test:26] That is a Bar/);
     });
 
-    // it("should strip error reference urls from the error message parameters", () => {
-    //   const firstError = testError("firstcode", "longer string and so on");
+    it("should preserve nested error messages without appending reference urls", () => {
+      const firstError = testError("firstcode", "longer string and so on");
 
-    //   const error = testError(
-    //     "secondcode",
-    //     "description {0}, and {1}",
-    //     "a",
-    //     firstError.message,
-    //   );
+      const error = testError(
+        "secondcode",
+        "description {0}, and {1}",
+        "a",
+        firstError.message,
+      );
 
-    //   expect(error.message).toBe(
-    //     "[test:secondcode] description a, and [test:firstcode] longer " +
-    //       'string and so on\n\nhttps://errors.angularjs.org/"NG_VERSION_FULL"/test/' +
-    //       "secondcode?p0=a&p1=%5Btest%3Afirstcode%5D%20longer%20string%20and%20so%20on%0Ahttps" +
-    //       "%3A%2F%2Ferrors.angularjs.org%2F%22NG_VERSION_FULL%22%2Ftest%2Ffirstcode",
-    //   );
-    // });
+      expect(error.message).toBe(
+        "[test:secondcode] description a, and [test:firstcode] longer string and so on",
+      );
+      expect(error.message).not.toContain("errors.angularjs.org");
+    });
 
-    // it("should not generate URL query parameters when urlErrorParamsEnabled is  false", () => {
-    //   errorHandlingConfig({ urlErrorParamsEnabled: false });
-    //
-    //   expect(testError("acode", "aproblem", "a", "b", "c").message).toBe(
-    //     "[test:acode] aproblem\n" +
-    //       'https://errors.angularjs.org/"NG_VERSION_FULL"/test/acode',
-    //   );
-    // });
+    it("should keep unused params as structured metadata", () => {
+      const error = testError("acode", "aproblem", "a", "b", "c");
+
+      expect(error.message).toBe("[test:acode] aproblem");
+      expect(error.params).toEqual(["a", "b", "c"]);
+    });
   });
 });
 

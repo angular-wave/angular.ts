@@ -8,7 +8,7 @@ import {
   isFunction,
   isObject,
   keys,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
 
@@ -30,7 +30,7 @@ type InjectableController = Injectable<ControllerConstructor>;
 
 type ControllerInstance = Record<string, any>;
 
-const $controllerMinErr = minErr("$controller");
+const $controllerError = createErrorFactory("$controller");
 
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 
@@ -59,7 +59,7 @@ function normalizeControllerDef(
     return def as InjectableController;
   }
 
-  throw $controllerMinErr(
+  throw $controllerError(
     "ctrlreg",
     "Controller '{0}' must be a function or an array-annotated injectable.",
     name,
@@ -108,7 +108,7 @@ export class ControllerProvider {
             const match = expression.match(CNTRL_REG);
 
             if (!match) {
-              throw $controllerMinErr(
+              throw $controllerError(
                 "ctrlfmt",
                 "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.",
                 expression,
@@ -121,7 +121,7 @@ export class ControllerProvider {
             const lookedUp = this._controllers.get(constructorName);
 
             if (!lookedUp) {
-              throw $controllerMinErr(
+              throw $controllerError(
                 "ctrlreg",
                 "The controller with the name '{0}' is not registered.",
                 constructorName,
@@ -231,7 +231,7 @@ export class ControllerProvider {
     name: string,
   ): void {
     if (!(locals && isObject(locals.$scope))) {
-      throw minErr("$controller")(
+      throw $controllerError(
         "noscp",
         "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.",
         name,

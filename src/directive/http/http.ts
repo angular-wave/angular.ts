@@ -30,6 +30,21 @@ import {
   isString,
 } from "../../shared/utils.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
+import {
+  getRealtimeProtocolContent,
+  isRealtimeProtocolMessage,
+  type RealtimeProtocolMessage,
+  type SwapModeType,
+} from "../realtime/protocol.ts";
+
+export {
+  SwapMode,
+  type RealtimeProtocolEventDetail,
+  type RealtimeProtocolMessage,
+  type SseProtocolEventDetail,
+  type SseProtocolMessage,
+  type SwapModeType,
+} from "../realtime/protocol.ts";
 
 type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
 
@@ -47,50 +62,6 @@ type SwapNodes = Array<Node | ChildNode>;
 type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
   headers?: Record<string, string>;
 };
-
-type SseProtocolMessage = {
-  data?: unknown;
-  html?: unknown;
-  target?: string;
-  swap?: SwapModeType;
-};
-
-/**
- * Possible values for `data-swap` attribute
- */
-export const SwapMode = {
-  /** (default) Replaces the contents inside the element */
-  innerHTML: "innerHTML",
-
-  /** Replaces the entire element, including the tag itself */
-  outerHTML: "outerHTML",
-
-  /** Inserts plain text (without parsing HTML) */
-  textContent: "textContent",
-
-  /** Inserts HTML immediately before the element itself */
-  beforebegin: "beforebegin",
-
-  /** Inserts HTML inside the element, before its first child */
-  afterbegin: "afterbegin",
-
-  /** Inserts HTML inside the element, after its last child */
-  beforeend: "beforeend",
-
-  /** Inserts HTML immediately after the element itself */
-  afterend: "afterend",
-
-  /** Removes the element entirely */
-  delete: "delete",
-
-  /** Performs no insertion (no-op) */
-  none: "none",
-} as const;
-
-/**
- * Union type representing all possible DOM insertion modes.
- */
-export type SwapModeType = keyof typeof SwapMode;
 
 /** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(
@@ -552,22 +523,13 @@ export function createHttpDirective(
             .filter(Boolean);
         }
 
-        function isSseProtocolMessage(
-          data: unknown,
-        ): data is SseProtocolMessage {
-          return (
-            isObject(data) &&
-            ("html" in data || "target" in data || "swap" in data)
-          );
-        }
-
         function handleSseProtocolMessage(
-          data: SseProtocolMessage,
+          data: RealtimeProtocolMessage,
           swap: SwapModeType,
           event: Event | MessageEvent,
           source: ng.SseConnection,
         ): void {
-          const html = "html" in data ? data.html : data.data;
+          const html = getRealtimeProtocolContent(data);
 
           const nextSwap = data.swap || swap;
 
@@ -755,10 +717,10 @@ export function createHttpDirective(
                       return;
                     }
 
-                    if (!isSseProtocolMessage(data)) return;
+                    if (!isRealtimeProtocolMessage(data)) return;
                   }
 
-                  if (isSseProtocolMessage(data)) {
+                  if (isRealtimeProtocolMessage(data)) {
                     handleSseProtocolMessage(data, swap, messageEvent, source);
 
                     return;
