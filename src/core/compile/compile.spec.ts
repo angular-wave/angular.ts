@@ -272,17 +272,37 @@ describe("$compile", () => {
 
       const stableNodes = buildStableNodeList(
         {
-          _linkFnsList: [{ _index: 0 }, { _index: 1 }],
+          _linkMappings: [{ _index: 0 }, { _index: 1 }],
           _nodeRefList: nodeRef,
-          _nodeLinkFnFound: () => {
-            /* empty */
-          },
+          _hasNodeLinkFn: true,
           _transcludeFn: null,
         },
         nodeRef,
       );
 
       expect(stableNodes).toEqual([first, second]);
+    });
+
+    it("builds a compact stable node list from sparse mappings", () => {
+      const first = document.createElement("div");
+
+      const second = document.createElement("span");
+
+      const third = document.createElement("p");
+
+      const nodeRef = new NodeRef([first, second, third]);
+
+      const stableNodes = buildStableNodeList(
+        {
+          _linkMappings: [{ _index: 2 }],
+          _nodeRefList: nodeRef,
+          _hasNodeLinkFn: false,
+          _transcludeFn: null,
+        },
+        nodeRef,
+      );
+
+      expect(stableNodes).toEqual([third]);
     });
 
     it("creates cloned Attributes with independent observer storage", () => {
@@ -12874,7 +12894,7 @@ describe("$compile", () => {
           // a-dir will cause a ctreq error to be thrown. Previously, the error would reference
           // the last directive in the chain (which in this case would be ngClick), based on
           // priority and alphabetical ordering. This test verifies that the ordering does not
-          // affect which directive is referenced in the minErr message.
+          // affect which directive is referenced in the AngularTS error message.
           element = $compile('<a-dir ng-click="foo=bar"></a-dir>')($rootScope);
         }).toThrowError(/ctreq/);
       });

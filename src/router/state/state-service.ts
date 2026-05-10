@@ -11,13 +11,11 @@ import {
 } from "../../injection-tokens.ts";
 import { defaults } from "../../shared/common.ts";
 import {
-  assign,
   isDefined,
-  isInstanceOf,
   isArray,
   isNullOrUndefined,
   isObject,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
 import { PathNode } from "../path/path-node.ts";
@@ -25,12 +23,11 @@ import {
   defaultTransOpts,
   type TransitionProvider,
 } from "../transition/transition-service.ts";
-import { RejectType, Rejection } from "../transition/reject-factory.ts";
+import { Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
 import type { RawParams } from "../params/interface.ts";
-import type { Transition } from "../transition/transition.ts";
 import type { ViewService } from "../view/view.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
 import type {
@@ -45,40 +42,22 @@ import type {
 import type { StateObject } from "./state-object.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { RouterProvider } from "../router.ts";
+import {
+  silentRejection,
+  silenceUncaughtInPromise,
+  transitionToState,
+} from "./state-transition.ts";
 
-const stdErr = minErr("$stateProvider");
+const stateProviderError = createErrorFactory("$stateProvider");
 
-type LazyStateRegistration = {
+export type LazyStateRegistration = {
   prefix: string;
   loader: LazyStateLoader;
   promise?: Promise<void>;
   loaded: boolean;
 };
 
-/**
- * Attaches a catch handler to silence unhandled rejection warnings,
- * while preserving the original promise.
- *
- * @template T
- * @param {Promise<T>} promise
- * @returns {Promise<T>}
- */
-function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
-  promise.catch(() => undefined);
-
-  return promise;
-}
-
-/**
- * Creates a rejected promise whose rejection is intentionally silenced.
- *
- * @template [E=unknown]
- * @param {E} error
- * @returns {Promise<never>}
- */
-export function silentRejection<E = unknown>(error: E): Promise<never> {
-  return silenceUncaughtInPromise(Promise.reject(error));
-}
+export { silentRejection, silenceUncaughtInPromise };
 
 /**
  * Provides services related to ng-router states.
@@ -210,13 +189,13 @@ export class StateProvider {
     );
 
     if (!stateDefinition.name) {
-      throw stdErr("stateinvalid", `'name' required`);
+      throw stateProviderError("stateinvalid", `'name' required`);
     }
 
     try {
       this._getRegistry().register(stateDefinition);
     } catch (err) {
-      throw stdErr("stateinvalid", (err as Error).message);
+      throw stateProviderError("stateinvalid", (err as Error).message);
     }
 
     return this;
@@ -475,65 +454,6 @@ export class StateProvider {
       : [new PathNode(this._getRegistry().root())];
   }
 
-  /** @internal */
-  _handleTransitionRejection(
-    trans: Transition,
-    error: unknown,
-  ): Promise<StateTransitionResult> {
-    if (isInstanceOf(error, Rejection)) {
-      const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
-
-      if (error.type === RejectType._IGNORED) {
-        isLatest && this._routerState._update();
-
-        // Consider ignored `Transition.run()` as a successful `transitionTo`.
-        return Promise.resolve(this._routerState._current);
-      }
-
-      const { detail } = error;
-
-      if (
-        error.type === RejectType._SUPERSEDED &&
-        error.redirected &&
-        isInstanceOf(detail, TargetState)
-      ) {
-        const redirect = trans.redirect(detail);
-
-        return this._runRedirectTransition(redirect);
-      }
-
-      if (error.type === RejectType._ABORTED) {
-        isLatest && this._routerState._update();
-
-        return Promise.reject(error);
-      }
-    }
-
-    this.defaultErrorHandler()(error);
-
-    return Promise.reject(error);
-  }
-
-  /** @internal */
-  async _runRedirectTransition(
-    redirect: Transition,
-  ): Promise<StateTransitionResult> {
-    try {
-      return await redirect.run();
-    } catch (reason) {
-      return this._handleTransitionRejection(redirect, reason);
-    }
-  }
-
-  /** @internal */
-  async _runTransitionTo(trans: Transition): Promise<StateTransitionResult> {
-    try {
-      return await trans.run();
-    } catch (error) {
-      return this._handleTransitionRejection(trans, error);
-    }
-  }
-
   /**
    * Low-level method for transitioning to a new state.
    *
@@ -562,35 +482,7 @@ export class StateProvider {
     toParams: RawParams = {},
     options: TransitionOptions = {},
   ): TransitionPromise | Promise<StateTransitionResult> {
-    options = defaults(options, defaultTransOpts);
-    const getCurrent = () => this._routerState._transition;
-
-    options = assign(options, { current: getCurrent });
-    const ref = this.target(to, toParams, options);
-
-    const currentPath = this.getCurrentPath();
-
-    if (!ref.exists()) return this._loadLazyTargetState(ref);
-
-    if (!ref.valid()) return silentRejection(ref.error());
-
-    /**
-     * Special handling for Ignored, Aborted, and Redirected transitions
-     *
-     * The semantics for the transition.run() promise and the StateService.transitionTo()
-     * promise differ. For instance, the run() promise may be rejected because it was
-     * IGNORED, but the transitionTo() promise is resolved because from the user perspective
-     * no error occurred.  Likewise, the transition.run() promise may be rejected because of
-     * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
-     */
-    const transition = this._transitionService.create(currentPath, ref);
-
-    const transitionToPromise = this._runTransitionTo(transition);
-
-    silenceUncaughtInPromise(transitionToPromise); // issue #2676
-
-    // Return a promise for the transition, which also has the transition object on it.
-    return assign(transitionToPromise, { transition });
+    return transitionToState(this, to, toParams, options);
   }
 
   /**
@@ -758,7 +650,7 @@ export class StateProvider {
       return null;
     }
 
-    return this._routerState._href(nav._url, params, {
+    return this._routerState._urlRuntime._href(nav._url, params, {
       absolute: options?.absolute,
     });
   }
@@ -809,7 +701,7 @@ function normalizeStateDeclaration(
 ): StateDeclaration {
   if (isString(nameOrDefinition)) {
     if (!isObject(definition)) {
-      throw stdErr("stateinvalid", `'definition' required`);
+      throw stateProviderError("stateinvalid", `'definition' required`);
     }
 
     const namedDefinition = definition as StateDeclaration;
@@ -818,7 +710,7 @@ function normalizeStateDeclaration(
       isDefined(namedDefinition.name) &&
       namedDefinition.name !== nameOrDefinition
     ) {
-      throw stdErr(
+      throw stateProviderError(
         "stateinvalid",
         `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`,
       );

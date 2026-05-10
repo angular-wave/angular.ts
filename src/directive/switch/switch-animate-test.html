@@ -27,26 +27,13 @@
       }
 
       .animate-switch {
+        background: white;
         padding: 10px;
-      }
-
-      .animate-switch.ng-animate {
-        transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
-
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-      }
-
-      .animate-switch.ng-leave.ng-leave-active,
-      .animate-switch.ng-enter {
-        top: -50px;
-      }
-      .animate-switch.ng-leave,
-      .animate-switch.ng-enter.ng-enter-active {
-        top: 0;
       }
     </style>
   </head>
@@ -58,16 +45,20 @@
       <div class="animate-switch-container" ng-switch on="selection">
         <div
           class="animate-switch"
-          animate="true"
+          data-animate="fade-slide"
           ng-switch-when="settings|options"
           ng-switch-when-separator="|"
         >
           Settings Div
         </div>
-        <div class="animate-switch" animate="true" ng-switch-when="home">
+        <div
+          class="animate-switch"
+          data-animate="fade-slide"
+          ng-switch-when="home"
+        >
           Home Span
         </div>
-        <div class="animate-switch" animate="true" ng-switch-default>
+        <div class="animate-switch" data-animate="fade-slide" ng-switch-default>
           default
         </div>
       </div>

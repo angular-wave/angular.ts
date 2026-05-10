@@ -8,13 +8,6 @@ export interface ErrorHandlingConfig {
    * Default: 5.
    */
   objectMaxDepth?: number;
-
-  /**
-   * Specifies whether the generated error URL will contain the parameters
-   * of the thrown error. Default: true.
-   * When used without argument, it returns the current value.
-   */
-  urlErrorParamsEnabled?: boolean;
 }
 
 export type Validator = (value: unknown) => boolean;

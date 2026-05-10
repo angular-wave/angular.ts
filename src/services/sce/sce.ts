@@ -20,7 +20,7 @@ import {
   isRegExp,
   isString,
   isUndefined,
-  minErr,
+  createErrorFactory,
 } from "../../shared/utils.ts";
 
 import { snakeToCamel } from "../../shared/dom.ts";
@@ -29,7 +29,7 @@ export { SCE_CONTEXTS } from "./context.ts";
 export type { SceContext } from "./context.ts";
 import { SCE_CONTEXTS, type SceContext } from "./context.ts";
 
-const $sceMinErr = minErr("$sce");
+const $sceError = createErrorFactory("$sce");
 
 const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST =
   /^\s*(https?|s?ftp|mailto|tel|file):/;
@@ -139,7 +139,7 @@ export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
     // '**' matches any character (like .* in a RegExp).
     // More than 2 *'s raises an error as it's ill defined.
     if (matcher.indexOf("***") > -1) {
-      throw $sceMinErr(
+      throw $sceError(
         "iwcard",
         "Illegal sequence *** in string matcher.  String: {0}",
         matcher,
@@ -158,7 +158,7 @@ export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
     // Flags are reset (i.e. no global, ignoreCase or multiline)
     return new RegExp(`^${matcher.source}$`);
   }
-  throw $sceMinErr(
+  throw $sceError(
     "imatcher",
     'Matchers may only be "self", string patterns or RegExp objects',
   );
@@ -456,7 +456,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
 
         let htmlSanitizer: (...args: any[]) => any = function () {
           $exceptionHandler(
-            $sceMinErr(
+            $sceError(
               "unsafe",
               "Attempting to use an unsafe value in a safe context.",
             ),
@@ -611,7 +611,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
 
           if (!Constructor) {
             $exceptionHandler(
-              $sceMinErr(
+              $sceError(
                 "icontext",
                 "Attempted to trust a value in invalid context. Context: {0}; Value: {1}",
                 type,
@@ -634,7 +634,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
           // mutable objects, we ensure here that the value passed in is actually a string.
           if (!isString(trustedValue)) {
             $exceptionHandler(
-              $sceMinErr(
+              $sceError(
                 "itype",
                 "Attempted to trust a non-string value in a content requiring a string: Context: {0}",
                 type,
@@ -744,7 +744,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
               return maybeTrusted;
             }
             $exceptionHandler(
-              $sceMinErr(
+              $sceError(
                 "insecurl",
                 "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}",
                 maybeTrusted.toString(),
@@ -759,7 +759,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
 
           // Default error when the $sce service has no way to make the input safe.
           return $exceptionHandler(
-            $sceMinErr(
+            $sceError(
               "unsafe",
               "Attempting to use an unsafe value in a safe context.",
             ),

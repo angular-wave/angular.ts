@@ -14,11 +14,11 @@ import {
   isArrayLike,
   isDefined,
   isNull,
-  minErr,
+  createErrorFactory,
 } from "../../shared/utils.ts";
 import { SelectController } from "../select/select-ctrl.ts";
 
-const ngOptionsMinErr = minErr("ngOptions");
+const ngOptionsError = createErrorFactory("ngOptions");
 
 const optionTemplate = document.createElement("option");
 
@@ -88,7 +88,7 @@ export function ngOptionsDirective(
     const match = optionsExp.match(NG_OPTIONS_REGEXP);
 
     if (!match) {
-      throw ngOptionsMinErr(
+      throw ngOptionsError(
         "iexp",
         "Expected expression in form of " +
           "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +

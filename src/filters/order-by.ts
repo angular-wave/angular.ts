@@ -6,9 +6,11 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../shared/utils.ts";
+
+const orderByError = createErrorFactory("orderBy");
 
 type PredicateValue = { value: any; type: string; index: number };
 
@@ -55,11 +57,7 @@ export function orderByFilter($parse: ng.ParseService) {
     if (isFunction(array)) return array();
 
     if (!isArrayLike(array)) {
-      throw minErr("orderBy")(
-        "notarray",
-        "Expected array but received: {0}",
-        array,
-      );
+      throw orderByError("notarray", "Expected array but received: {0}", array);
     }
 
     if (!isArray(sortPredicate)) {

@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS animate.css demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        window.angular.module("animateCssDemo", []);
+      });
+    </script>
+
+    <style>
+      body {
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+
+      button {
+        cursor: pointer;
+        margin: 4px 6px 4px 0;
+      }
+
+      .animate-css-panel {
+        --ng-enter-animation: fadeInDown 600ms both;
+        --ng-leave-animation: fadeOutDown 450ms both;
+        border: 1px solid #ccc;
+        margin-top: 16px;
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body ng-app="animateCssDemo">
+    <main>
+      <h1>animate.css with AngularTS</h1>
+      <p>
+        AngularTS reads CSS animation variables and runs the keyframes supplied
+        by animate.css.
+      </p>
+
+      <button ng-click="visible=true">Show</button>
+      <button ng-click="visible=false">Hide</button>
+
+      <div ng-if="visible" class="animate-css-panel" animate>
+        Uses animate.css <code>fadeInDown</code> and
+        <code>fadeOutDown</code> through AngularTS animation variables.
+      </div>
+    </main>
+  </body>
+</html>

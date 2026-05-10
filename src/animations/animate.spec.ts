@@ -1,541 +1,410 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { createElementFromHTML, dealoc } from "../shared/dom.ts";
 import { Angular } from "../angular.ts";
-import { isFunction, isObject, wait } from "../shared/utils.ts";
-import { createInjector } from "../core/di/injector.ts";
+import { createElementFromHTML, dealoc } from "../shared/dom.ts";
+import { wait } from "../shared/test-utils.ts";
 
 describe("$animate", () => {
-  describe("with animation", () => {
-    let element = document.getElementById("app");
+  let host;
 
-    let $compile;
+  let $animate;
 
-    let $rootElement;
+  let style;
 
-    let $rootScope;
+  beforeEach(() => {
+    host = document.getElementById("app");
+    host.innerHTML = "";
+    style = document.createElement("style");
+    document.head.append(style);
 
-    let defaultModule;
+    const angular = new Angular();
 
-    let injector;
-
-    let $animate;
-
-    beforeEach(() => {
-      element = document.getElementById("app");
-      dealoc(element);
-      window.angular = new Angular();
-      defaultModule = window.angular.module("defaultModule", ["ng"]);
-      injector = window.angular.bootstrap(element, ["defaultModule"]);
-      injector.invoke(
-        (_$compile_, _$rootElement_, _$rootScope_, _$animate_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $rootElement = _$rootElement_;
-          $animate = _$animate_;
-        },
-      );
+    angular.bootstrap(host, []).invoke((_$animate_) => {
+      $animate = _$animate_;
     });
+  });
 
-    afterEach(() => {
-      $rootScope.$flushQueue();
-      dealoc(document.getElementById("app"));
-    });
+  afterEach(() => {
+    style.remove();
+    dealoc(host);
+  });
 
-    it("should add element at the start of enter animation", () => {
-      const child = createElementFromHTML("<div></div>");
+  it("inserts elements before running enter animations", async () => {
+    const child = createElementFromHTML('<div animate="fade">child</div>');
 
-      expect(element.childNodes.length).toBe(0);
-      element = $compile(element)($rootScope);
-      $animate.enter(child, element);
-      expect(element.childNodes.length).toBe(1);
-    });
+    const handle = $animate.enter(child, host, null, { duration: 1 });
 
-    it("should enter the element to the start of the parent container", () => {
-      for (let i = 0; i < 5; i++) {
-        element.append(createElementFromHTML(`<div>${i}</div>`));
+    expect(host.firstElementChild).toBe(child);
+    await handle.finished;
+  });
+
+  it("removes elements after leave animations finish", async () => {
+    const child = createElementFromHTML('<div animate="fade">child</div>');
+
+    host.append(child);
+
+    const handle = $animate.leave(child, { duration: 1 });
+
+    expect(host.firstElementChild).toBe(child);
+    await handle.finished;
+    expect(host.firstElementChild).toBeNull();
+  });
+
+  it("moves elements immediately and returns a native handle", async () => {
+    const first = createElementFromHTML('<div animate="fade">first</div>');
+
+    const second = createElementFromHTML("<div>second</div>");
+
+    host.append(first, second);
+
+    const handle = $animate.move(first, host, second, { duration: 1 });
+
+    expect(host.textContent).toBe("secondfirst");
+    expect(handle.finished.then).toBeDefined();
+    await handle.finished;
+  });
+
+  it("applies class changes directly", async () => {
+    const child = createElementFromHTML('<div animate="fade"></div>');
+
+    host.append(child);
+
+    await $animate.addClass(child, "active", { duration: 1 }).finished;
+    expect(child.classList.contains("active")).toBe(true);
+
+    await $animate.removeClass(child, "active", { duration: 1 }).finished;
+    expect(child.classList.contains("active")).toBe(false);
+  });
+
+  it("runs inline keyframe animations with final styles", async () => {
+    const child = createElementFromHTML('<div animate="fade"></div>');
+
+    host.append(child);
+
+    await $animate.animate(
+      child,
+      { opacity: "0" },
+      { opacity: "1", color: "red" },
+      undefined,
+      { duration: 1 },
+    ).finished;
+
+    expect(child.style.opacity).toBe("1");
+    expect(child.style.color).toBe("red");
+  });
+
+  it("runs CSS custom property enter animations", async () => {
+    style.textContent = `
+      @keyframes css-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
-      const child = createElementFromHTML("<div>first</div>");
 
-      element = $compile(element)($rootScope);
-      $animate.enter(child, element);
-      expect(element.textContent).toEqual("first01234");
-    });
-
-    it("should remove the element at the end of leave animation", async () => {
-      const child = createElementFromHTML("<div>test</div>");
-
-      element.append(child);
-      element = $compile(element)($rootScope);
-      expect(element.childNodes.length).toBe(1);
-      $animate.leave(child);
-      $rootScope.$flushQueue();
-      expect(element.childNodes.length).toBe(0);
-    });
-
-    it("should reorder the move animation", () => {
-      const child1 = createElementFromHTML("<div>1</div>");
-
-      const child2 = createElementFromHTML("<div>2</div>");
-
-      element.append(child1);
-      element.append(child2);
-      element = $compile(element)($rootScope);
-      expect(element.textContent).toBe("12");
-      $animate.move(child1, element, child2);
-      expect(element.textContent).toBe("21");
-    });
-
-    it("should apply styles instantly to the element", async () => {
-      element = $compile(element)($rootScope);
-      $animate.animate(element, { color: "rgb(0, 0, 0)" });
-      expect(element.style.color).toBe("rgb(0, 0, 0)");
-      $rootScope.$flushQueue();
-
-      $animate.animate(
-        element,
-        { color: "rgb(255, 0, 0)" },
-        { color: "rgb(0, 255, 0)" },
-      );
-      $rootScope.$flushQueue();
-      expect(element.style.color).toBe("rgb(0, 255, 0)");
-    });
-
-    it("should perform DOM operations (post-digest)", async () => {
-      expect(element.classList.contains("ng-hide")).toBeFalse();
-      $animate.addClass(element, "ng-hide");
-      await wait(100);
-      expect(element.classList.contains("ng-hide")).toBeTrue();
-    });
-
-    it("should run each method and return a promise", () => {
-      const element = createElementFromHTML("<div></div>");
-
-      const move = createElementFromHTML("<div></div>");
-
-      const parent = document.body;
-
-      parent.append(move);
-
-      expect($animate.enter(element, parent).then).toBeDefined();
-      expect($animate.move(element, move).then).toBeDefined();
-      expect($animate.addClass(element, "on").then).toBeDefined();
-      expect($animate.removeClass(element, "off").then).toBeDefined();
-      expect($animate.setClass(element, "on", "off").then).toBeDefined();
-      expect($animate.leave(element).then).toBeDefined();
-    });
-
-    it("should provide and `cancel` methods", () => {
-      expect($animate.cancel({})).toBeUndefined();
-    });
-
-    it("should provide the `on` and `off` methods", () => {
-      expect(isFunction($animate.on)).toBe(true);
-      expect(isFunction($animate.off)).toBe(true);
-    });
-
-    it("should add and remove classes on SVG elements", () => {
-      if (!window.SVGElement) return;
-      const svg = createElementFromHTML("<svg><rect></rect></svg>");
-
-      const rect = svg.firstElementChild;
-
-      expect(rect.classList.contains("ng-hide")).toBeFalse();
-      $animate.addClass(rect, "ng-hide");
-      expect(rect.classList.contains("ng-hide")).toBeTrue();
-      $animate.removeClass(rect, "ng-hide");
-      expect(rect.classList.contains("ng-hide")).toBeFalse();
-    });
-
-    it("should throw error on wrong selector", () => {
-      createInjector([
-        "ng",
-        ($animateProvider) => {
-          expect(() => {
-            $animateProvider.register("abc", null);
-          }).toThrowError(/notcsel/);
-        },
-      ]);
-    });
-
-    it("should register the animation and be available for lookup", () => {
-      let provider;
-
-      createInjector([
-        "ng",
-        ($animateProvider) => {
-          provider = $animateProvider;
-        },
-      ]);
-      // by using hasOwnProperty we know for sure that the lookup object is an empty object
-      // instead of inheriting properties from its original prototype.
-      expect(provider._registeredAnimations.hasOwnProperty).toBeFalsy();
-
-      provider.register(".filter", () => {
-        /* empty */
-      });
-      expect(provider._registeredAnimations.filter).toBe(".filter-animation");
-    });
-
-    it("should apply and retain inline styles on the element that is animated", () => {
-      const element = createElementFromHTML("<div></div>");
-
-      const parent = createElementFromHTML("<div></div>");
-
-      const other = createElementFromHTML("<div></div>");
-
-      parent.append(other);
-
-      $animate.enter(element, parent, null, {
-        to: { color: "red" },
-      });
-      assertColor("red");
-
-      $animate.move(element, null, other, {
-        to: { color: "yellow" },
-      });
-      assertColor("yellow");
-
-      $animate.addClass(element, "on", {
-        to: { color: "green" },
-      });
-      assertColor("green");
-
-      $animate.setClass(element, "off", "on", {
-        to: { color: "black" },
-      });
-      assertColor("black");
-
-      $animate.removeClass(element, "off", {
-        to: { color: "blue" },
-      });
-      assertColor("blue");
-
-      $animate.leave(element, {
-        to: { color: "yellow" },
-      });
-      assertColor("yellow");
-
-      function assertColor(color) {
-        expect(element.style.color).toBe(color);
+      .css-fade {
+        --ng-enter-animation: css-fade-in 20ms linear both;
       }
+    `;
+
+    const child = createElementFromHTML(
+      '<div class="css-fade" data-animate="css-fade"></div>',
+    );
+
+    let started = false;
+
+    child.addEventListener("animationstart", () => {
+      started = true;
     });
 
-    it("should merge the from and to styles that are provided", () => {
-      const element = createElementFromHTML("<div></div>");
+    await $animate.enter(child, host, null).finished;
 
-      element.style.color = "red";
-      $animate.addClass(element, "on", {
-        from: { color: "green" },
-        to: { borderColor: "purple" },
-      });
-      const { style } = element;
+    expect(started).toBe(true);
+    expect(child.style.animation).toBe("");
+  });
 
-      expect(style.color).toBe("green");
-      expect(style.borderColor).toBe("purple");
+  it("lets CSS custom properties override built-in presets", async () => {
+    style.textContent = `
+      @keyframes css-built-in-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .css-fade {
+        --ng-enter-animation: css-built-in-fade 20ms linear both;
+      }
+    `;
+
+    const child = createElementFromHTML(
+      '<div class="css-fade" data-animate="fade"></div>',
+    );
+
+    let animationName;
+
+    child.addEventListener("animationstart", (event) => {
+      animationName = event.animationName;
     });
 
-    it("should avoid cancelling out add/remove when the element already contains the class", () => {
-      const element = createElementFromHTML('<div class="ng-hide"></div>');
+    await $animate.enter(child, host, null).finished;
 
-      $animate.addClass(element, "ng-hide");
-      $animate.removeClass(element, "ng-hide");
-      expect(element.classList.contains("ng-hide")).toBeFalse();
+    expect(animationName).toBe("css-built-in-fade");
+  });
+
+  it("keeps registered presets ahead of CSS custom properties", async () => {
+    style.textContent = `
+      @keyframes css-registered-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .css-fade {
+        --ng-enter-animation: css-registered-fade 20ms linear both;
+      }
+    `;
+
+    const child = createElementFromHTML(
+      '<div class="css-fade" data-animate="registered-fade"></div>',
+    );
+
+    let cssStarted = false;
+
+    child.addEventListener("animationstart", () => {
+      cssStarted = true;
+    });
+    $animate.define("registered-fade", {
+      enter: [{ opacity: 0.2 }, { opacity: 1 }],
     });
 
-    it("should avoid cancelling out remove/add if the element does not contain the class", () => {
-      const element = createElementFromHTML("<div></div>");
+    await $animate.enter(child, host, null, { duration: 1 }).finished;
 
-      $animate.removeClass(element, "ng-hide");
-      $animate.addClass(element, "ng-hide");
-      expect(element.classList.contains("ng-hide")).toBeTrue();
+    expect(cssStarted).toBe(false);
+  });
+
+  it("runs CSS custom property leave animations before removal", async () => {
+    style.textContent = `
+      @keyframes css-fade-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+
+      .css-fade {
+        --ng-leave-animation: css-fade-out 20ms linear both;
+      }
+    `;
+
+    const child = createElementFromHTML(
+      '<div class="css-fade" data-animate="css-fade"></div>',
+    );
+
+    let started = false;
+
+    child.addEventListener("animationstart", () => {
+      started = true;
+    });
+    host.append(child);
+
+    await $animate.leave(child).finished;
+
+    expect(started).toBe(true);
+    expect(host.firstElementChild).toBeNull();
+  });
+
+  it("switches from CSS enter to leave when animations overlap", async () => {
+    style.textContent = `
+      @keyframes css-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes css-fade-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+
+      .css-fade {
+        --ng-enter-animation: css-fade-in 80ms linear both;
+        --ng-leave-animation: css-fade-out 80ms linear both;
+      }
+    `;
+
+    const child = createElementFromHTML('<div class="css-fade" animate></div>');
+
+    const started = [];
+
+    child.addEventListener("animationstart", (event) => {
+      started.push(event.animationName);
     });
 
-    ["enter", "move"].forEach((method) => {
-      it('should accept an unwrapped "parent" element for the $prop event', () => {
-        const element = createElementFromHTML("<div></div>");
+    $animate.enter(child, host, null);
+    await wait(20);
+    await $animate.leave(child).finished;
 
-        const parent = document.createElement("div");
+    expect(started).toContain("css-fade-out");
+    expect(started[started.length - 1]).toBe("css-fade-out");
+    expect(host.firstElementChild).toBeNull();
+  });
 
-        $rootElement.append(parent);
+  it("supports named JavaScript animation presets", async () => {
+    const child = createElementFromHTML('<div animate="instant"></div>');
 
-        $animate[method](element, parent);
-        expect(element.parentNode).toBe(parent);
-      });
+    let called = false;
+
+    $animate.define("instant", {
+      enter(element) {
+        called = true;
+        element.setAttribute("data-animated", "true");
+      },
     });
 
-    ["enter", "move"].forEach((method) => {
-      it('should accept an unwrapped "after" element for the $prop event', () => {
-        const element = createElementFromHTML("<div></div>");
+    host.append(child);
+    await $animate.enter(child, host, null).finished;
 
-        const after = document.createElement("div");
+    expect(called).toBe(true);
+    expect(child.getAttribute("data-animated")).toBe("true");
+  });
 
-        $rootElement.append(after);
+  it("ships small built-in native presets", async () => {
+    const child = createElementFromHTML('<div animate="scale"></div>');
 
-        $animate[method](element, null, after);
-        expect(element.previousSibling).toBe(after);
-      });
+    host.append(child);
+    spyOn(child, "animate").and.callThrough();
+
+    await $animate.enter(child, host, null, { duration: 1 }).finished;
+
+    const keyframes = child.animate.calls.mostRecent().args[0];
+
+    expect(keyframes[0].transform).toBe("scale(0.96)");
+    expect(keyframes[1].transform).toBe("scale(1)");
+  });
+
+  it("animates auto-height presets with cleanup", async () => {
+    const child = createElementFromHTML(
+      '<div animate="collapse" style="height: 40px">content</div>',
+    );
+
+    host.append(child);
+    spyOn(child, "animate").and.callThrough();
+
+    await $animate.leave(child, { duration: 1 }).finished;
+
+    const keyframes = child.animate.calls.mostRecent().args[0];
+
+    expect(keyframes[0].height).toBe("40px");
+    expect(keyframes[1].height).toBe("0px");
+    expect(child.style.height).toBe("40px");
+  });
+
+  it("runs lifecycle callbacks and removes temporary classes", async () => {
+    const child = createElementFromHTML('<div animate="fade"></div>');
+
+    const events = [];
+
+    host.append(child);
+
+    await $animate.enter(child, host, null, {
+      duration: 1,
+      tempClasses: "is-animating",
+      onStart(element, context) {
+        events.push(`start:${context.phase}:${element.className}`);
+      },
+      onDone(element, context) {
+        events.push(`done:${context.phase}:${element.className}`);
+      },
+    }).finished;
+
+    expect(events).toEqual(["start:enter:is-animating", "done:enter:"]);
+    expect(child.classList.contains("is-animating")).toBe(false);
+  });
+
+  it("runs cancel callbacks for cancelled animations", async () => {
+    const child = createElementFromHTML('<div animate="fade"></div>');
+
+    const events = [];
+
+    host.append(child);
+
+    const handle = $animate.enter(child, host, null, {
+      duration: 1000,
+      onCancel(element, context) {
+        events.push(`cancel:${context.phase}:${element === child}`);
+      },
     });
 
-    [
-      "enter",
-      "move",
-      "leave",
-      "addClass",
-      "removeClass",
-      "setClass",
-      "animate",
-    ].forEach((event) => {
-      it("$prop() should operate using a native DOM element", () => {
-        const captureSpy = jasmine.createSpy();
+    handle.cancel();
+    await wait(10);
 
-        const dummy = document.getElementById("app");
+    expect(events).toEqual(["cancel:enter:true"]);
+  });
 
-        dealoc(dummy);
-        window.angular = new Angular();
-        defaultModule = window.angular
-          .module("defaultModule", ["ng"])
-          .value("$$animateQueue", {
-            push: captureSpy,
-          });
-        injector = window.angular.bootstrap(dummy, ["defaultModule"]);
-        injector.invoke(
-          (_$compile_, _$rootElement_, _$rootScope_, _$animate_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $rootElement = _$rootElement_;
-            $animate = _$animate_;
-          },
-        );
+  it("skips animations for reduced motion by default", async () => {
+    spyOn(window, "matchMedia").and.returnValue({ matches: true });
 
-        element = createElementFromHTML("<div></div>");
-        const parent2 = createElementFromHTML("<div></div>");
+    const child = createElementFromHTML('<div animate="fade"></div>');
 
-        const parent = $rootElement;
+    host.append(child);
+    spyOn(child, "animate").and.callThrough();
 
-        parent.append(parent2);
+    await $animate.enter(child, host, null).finished;
 
-        if (event !== "enter" && event !== "move") {
-          parent.append(element);
-        }
+    expect(child.animate).not.toHaveBeenCalled();
+  });
 
-        let fn;
+  it("does not allow animation options to override reduced-motion preference", async () => {
+    spyOn(window, "matchMedia").and.returnValue({ matches: true });
 
-        const invalidOptions = function () {};
+    const child = createElementFromHTML('<div animate="fade"></div>');
 
-        switch (event) {
-          case "enter":
-          case "move":
-            fn = function () {
-              $animate[event](element, parent, parent2, invalidOptions);
-            };
-            break;
+    host.append(child);
+    spyOn(child, "animate").and.callThrough();
 
-          case "addClass":
-            fn = function () {
-              $animate.addClass(element, "klass", invalidOptions);
-            };
-            break;
+    await $animate.enter(child, host, null, {
+      duration: 1,
+      animation: "scale",
+    }).finished;
 
-          case "removeClass":
-            element.className = "klass";
-            fn = function () {
-              $animate.removeClass(element, "klass", invalidOptions);
-            };
-            break;
+    expect(child.animate).not.toHaveBeenCalled();
+  });
 
-          case "setClass":
-            element.className = "two";
-            fn = function () {
-              $animate.setClass(element, "one", "two", invalidOptions);
-            };
-            break;
+  it("supports provider registration without class selectors", async () => {
+    const registeredHost = document.createElement("div");
 
-          case "leave":
-            fn = function () {
-              $animate.leave(element, invalidOptions);
-            };
-            break;
+    const angular = new Angular();
 
-          case "animate":
-            const toStyles = { color: "red" };
+    angular.module("animations", []).animation("registered", () => ({
+      enter(element) {
+        element.setAttribute("data-registered", "true");
+      },
+    }));
 
-            fn = function () {
-              $animate.animate(element, {}, toStyles, "klass", invalidOptions);
-            };
-            break;
-        }
+    document.body.append(registeredHost);
 
-        expect(() => {
-          fn();
-        }).not.toThrow();
-
-        const optionsArg = captureSpy.calls.mostRecent().args[2];
-
-        expect(optionsArg).not.toBe(invalidOptions);
-        expect(isObject(optionsArg)).toBeTruthy();
-      });
+    angular.bootstrap(registeredHost, ["animations"]).invoke((_$animate_) => {
+      $animate = _$animate_;
     });
 
-    it("should not break postDigest for subsequent elements if addClass contains non-valid CSS class names", () => {
-      const element1 = createElementFromHTML("<div></div>");
+    const child = createElementFromHTML('<div animate="registered"></div>');
 
-      const element2 = createElementFromHTML("<div></div>");
+    await $animate.enter(child, registeredHost, null).finished;
 
-      $animate.enter(element1, $rootElement, null, { addClass: " " });
-      $animate.enter(element2, $rootElement, null, { addClass: "valid-name" });
-      $rootScope.$flushQueue();
-      expect(element2.classList.contains("valid-name")).toBeTruthy();
+    expect(child.getAttribute("data-registered")).toBe("true");
+
+    dealoc(registeredHost);
+    registeredHost.remove();
+  });
+
+  it("cancels active native animations", async () => {
+    const child = createElementFromHTML('<div animate="fade"></div>');
+
+    host.append(child);
+
+    const handle = $animate.enter(child, host, null, { duration: 1000 });
+
+    let status;
+
+    handle.done((ok) => {
+      status = ok;
     });
+    $animate.cancel(handle);
+    await wait(10);
 
-    it("should normalize the provided options input while queueing the animation", () => {
-      const element = createElementFromHTML("<div></div>");
-
-      const parent = $rootElement;
-
-      const initialOptions = {
-        from: { height: "50px" },
-        to: { width: "50px" },
-        addClass: "one",
-        removeClass: "two",
-      };
-
-      const copiedOptions = structuredClone(initialOptions);
-
-      expect(copiedOptions).toEqual(initialOptions);
-
-      $animate.enter(element, parent, null, copiedOptions);
-      expect(copiedOptions.from).toEqual(initialOptions.from);
-      expect(copiedOptions.to).toEqual(initialOptions.to);
-      expect(copiedOptions.addClass).toBe("one");
-      expect(copiedOptions.removeClass).toBeUndefined();
-      expect(copiedOptions._prepared).toBeTrue();
-      expect(typeof copiedOptions.domOperation).toBe("function");
-    });
-
-    describe("CSS class DOM manipulation", () => {
-      let element;
-
-      afterEach(() => {
-        dealoc(element);
-      });
-
-      it("should apply class manipulation consistently", () => {
-        element = createElementFromHTML("<p>test</p>");
-
-        $animate.addClass(element, "test-class1");
-        expect(element.classList.contains("test-class1")).toBeTrue();
-
-        $animate.removeClass(element, "test-class1");
-
-        $animate.addClass(element, "test-class2");
-        expect(element.classList.contains("test-class2")).toBeTrue();
-
-        $animate.setClass(element, "test-class3", "test-class4");
-        expect(element.classList.contains("test-class3")).toBeTrue();
-        expect(element.classList.contains("test-class4")).toBeFalse();
-        $rootScope.$flushQueue();
-
-        expect(element.classList.contains("test-class1")).toBeFalse();
-        expect(element.classList.contains("test-class4")).toBeFalse();
-        expect(element.classList.contains("test-class2")).toBeTrue();
-        expect(element.classList.contains("test-class3")).toBeTrue();
-      });
-
-      it("should defer class manipulation until postDigest when outside of digest", () => {
-        element = createElementFromHTML('<p class="test-class4">test</p>');
-
-        $animate.addClass(element, "test-class1");
-        $animate.removeClass(element, "test-class1");
-        $animate.addClass(element, "test-class2");
-        $animate.setClass(element, "test-class3", "test-class4");
-        $rootScope.$flushQueue();
-        expect(element.classList.contains("test-class1")).toBeFalse();
-        expect(element.classList.contains("test-class2")).toBeTrue();
-        expect(element.classList.contains("test-class3")).toBeTrue();
-      });
-
-      it("should perform class manipulation in expected order at end of digest", () => {
-        element = createElementFromHTML('<p class="test-class3">test</p>');
-
-        $animate.addClass(element, "test-class1");
-        $animate.addClass(element, "test-class2");
-        $animate.removeClass(element, "test-class1");
-        $animate.removeClass(element, "test-class3");
-        $animate.addClass(element, "test-class3");
-        $rootScope.$flushQueue();
-        expect(element.classList.contains("test-class3")).toBeTrue();
-      });
-
-      it("should return a promise which is resolved on a different turn", () => {
-        element = createElementFromHTML('<p class="test2">test</p>');
-
-        $animate.addClass(element, "test1");
-        $animate.removeClass(element, "test2");
-
-        element = createElementFromHTML('<p class="test4">test</p>');
-
-        $animate.addClass(element, "test3");
-        $animate.removeClass(element, "test4");
-        $rootScope.$flushQueue();
-
-        expect(element.classList.contains("test3")).toBeTrue();
-      });
-
-      it("should apply class manipulation consistently for SVG", () => {
-        if (!window.SVGElement) return;
-
-        element = createElementFromHTML("<svg><g></g></svg>");
-        const target = element.children[0];
-
-        $animate.addClass(target, "test-class1");
-
-        $animate.removeClass(target, "test-class1");
-
-        $animate.addClass(target, "test-class2");
-        expect(target.classList.contains("test-class2")).toBeTrue();
-
-        $animate.setClass(target, "test-class3", "test-class4");
-        expect(target.classList.contains("test-class3")).toBeTrue();
-        expect(target.classList.contains("test-class4")).toBeFalse();
-        $rootScope.$flushQueue();
-
-        expect(target.classList.contains("test-class2")).toBeTrue();
-      });
-
-      it("should defer class manipulation until postDigest when outside of digest for SVG", () => {
-        if (!window.SVGElement) return;
-
-        element = createElementFromHTML(
-          '<svg><g class="test-class4"></g></svg>',
-        );
-        const target = element.children[0];
-
-        $animate.addClass(target, "test-class1");
-        $animate.removeClass(target, "test-class1");
-        $animate.addClass(target, "test-class2");
-        $animate.setClass(target, "test-class3", "test-class4");
-        $rootScope.$flushQueue();
-
-        expect(target.classList.contains("test-class2")).toBeTrue();
-        expect(target.classList.contains("test-class3")).toBeTrue();
-      });
-
-      it("should perform class manipulation in expected order at end of digest for SVG", () => {
-        if (!window.SVGElement) return;
-        element = createElementFromHTML(
-          '<svg><g class="test-class3"></g></svg>',
-        );
-        const target = element.children[0];
-
-        $animate.addClass(target, "test-class1");
-        $animate.addClass(target, "test-class2");
-        $animate.removeClass(target, "test-class1");
-        $animate.removeClass(target, "test-class3");
-        $animate.addClass(target, "test-class3");
-        $rootScope.$flushQueue();
-        expect(target.classList.contains("test-class3")).toBeTrue();
-      });
-    });
+    expect(status).toBe(false);
   });
 });

@@ -2994,7 +2994,7 @@ describe("http", () => {
 
 //             expect(callback).not.toHaveBeenCalled();
 //             expect(errCallback).toHaveBeenCalled();
-//             expect(errCallback.calls.mostRecent().args[0]).toEqualMinErr(
+//             expect(errCallback.calls.mostRecent().args[0]).toEqualAngularError(
 //               "$http",
 //               "baddata",
 //             );

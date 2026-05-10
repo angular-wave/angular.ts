@@ -4,11 +4,13 @@ import {
   isFunction,
   isNumberNaN,
   isUndefined,
-  minErr,
+  createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
 import { startingTag } from "../../shared/dom.ts";
+
+const ngPatternError = createErrorFactory("ngPattern");
 
 type ValidatingNgModelController = ng.NgModelController & {
   $validators: Record<string, (modelValue: any, viewValue: any) => boolean>;
@@ -359,7 +361,7 @@ function parsePatternAttr(
   }
 
   if (!isFunction(regex.test)) {
-    throw minErr("ngPattern")(
+    throw ngPatternError(
       "noregexp",
       "Expected {0} to be a RegExp but was {1}. Element: {2}",
       patternExp,

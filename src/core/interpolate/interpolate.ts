@@ -4,7 +4,7 @@ import {
   isDefined,
   isFunction,
   isUndefined,
-  minErr,
+  createErrorFactory,
   stringify,
 } from "../../shared/utils.ts";
 import type { ParseService } from "../parse/parse.ts";
@@ -36,10 +36,10 @@ export interface InterpolateService {
   startSymbol(): string;
 }
 
-const $interpolateMinErr = minErr("$interpolate");
+const $interpolateError = createErrorFactory("$interpolate");
 
 function throwNoconcat(text: string): never {
-  throw $interpolateMinErr(
+  throw $interpolateError(
     "noconcat",
     "Error while interpolating: {0}\nSecurity contexts disallow " +
       "interpolations that concatenate multiple expressions when a trusted value is " +
@@ -49,7 +49,7 @@ function throwNoconcat(text: string): never {
 }
 
 function interr(text: string, err: Error): never {
-  throw $interpolateMinErr(
+  throw $interpolateError(
     "interr",
     "Can't interpolate: {0}\n{1}",
     text,

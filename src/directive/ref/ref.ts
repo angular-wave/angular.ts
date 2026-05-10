@@ -3,11 +3,11 @@ import {
   directiveNormalize,
   getNodeName,
   hasOwn,
-  minErr,
+  createErrorFactory,
 } from "../../shared/utils.ts";
 import { getCacheData } from "../../shared/dom.ts";
 
-const ngRefMinErr = minErr("ngRef");
+const ngRefError = createErrorFactory("ngRef");
 
 ngRefDirective.$inject = [_parse];
 
@@ -23,7 +23,7 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
       const setter =
         getter._assign ||
         function () {
-          throw ngRefMinErr(
+          throw ngRefError(
             "nonassign",
             'Expression in ngRef="{0}" is non-assignable!',
             tAttrs.ngRef,

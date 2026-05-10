@@ -172,8 +172,6 @@ export class ASTInterpreter {
     const self = this as unknown as ASTInterpreter &
       Record<string, (...args: any[]) => CompiledExpressionFunction>;
 
-    let args: any[];
-
     switch (ast._type) {
       case ASTType._Literal:
         return this._value((ast as LiteralNode)._value, context);
@@ -215,595 +213,28 @@ export class ASTInterpreter {
           context,
         );
       case ASTType._Identifier:
-        return self._identifier(
+        return this._identifier(
           (ast as LiteralNode)._name as string,
           context,
           create,
         );
       case ASTType._MemberExpression:
-        left = this._recurse(
-          (ast as ExpressionNode)._object as ASTNode,
-          false,
-          !!create,
+        return this._compileMemberExpression(
+          ast as ExpressionNode,
+          context,
+          create,
         );
-
-        if (!ast._computed) {
-          right = ((ast as ExpressionNode)._property as LiteralNode)._name;
-        }
-
-        if (ast._computed) {
-          right = this._recurse((ast as ExpressionNode)._property as ASTNode);
-        }
-
-        return ast._computed
-          ? this._computedMember(
-              left,
-              right as CompiledExpressionFunction,
-              context,
-              create,
-            )
-          : this._nonComputedMember(left, right as string, context, create);
       case ASTType._CallExpression:
-        args = [];
-        const callArguments = (ast as ExpressionNode)._arguments as ASTNode[];
-
-        for (let i = 0, l = callArguments.length; i < l; i++) {
-          const expr = callArguments[i];
-
-          args.push(self._recurse(expr));
-        }
-
-        if ((ast as ExpressionNode)._filter)
-          right = this._$filter(
-            ((ast as ExpressionNode)._callee as LiteralNode)._name as string,
-          );
-
-        if (!(ast as ExpressionNode)._filter) {
-          right = this._recurse(
-            (ast as ExpressionNode)._callee as ASTNode,
-            true,
-          );
-        }
-
-        if (!(ast as ExpressionNode)._filter && !context && args.length === 2) {
-          const callee = (ast as ExpressionNode)._callee as ASTNode;
-
-          if (callee._type === ASTType._Identifier) {
-            const calleeName = (callee as LiteralNode)._name as string;
-
-            const argPath0 = getNonComputedPath(callArguments[0]);
-
-            const argPath1 = getNonComputedPath(callArguments[1]);
-
-            if (argPath0?.length === 1 && argPath1?.length === 1) {
-              const argName0 = argPath0[0];
-
-              const argName1 = argPath1[0];
-
-              return (scope, locals) => {
-                const runtimeScope = scope as any;
-
-                const base = (runtimeScope && runtimeScope.$proxy) ?? scope;
-
-                if (!locals) {
-                  if (isNullOrUndefined(base)) {
-                    return undefined;
-                  }
-
-                  const calleeValue = (base as Record<string, any>)[calleeName];
-
-                  if (typeof calleeValue !== "function") {
-                    return undefined;
-                  }
-
-                  const value0 = (base as Record<string, any>)[argName0];
-
-                  const value1 = (base as Record<string, any>)[argName1];
-
-                  return calleeValue.call(
-                    base,
-                    typeof value0 === "function" ? value0() : value0,
-                    typeof value1 === "function" ? value1() : value1,
-                  );
-                }
-
-                const calleeBase =
-                  locals && calleeName in locals
-                    ? (locals as Record<string, any>)
-                    : base;
-
-                if (isNullOrUndefined(calleeBase)) {
-                  return undefined;
-                }
-
-                const calleeValue = (calleeBase as Record<string, any>)[
-                  calleeName
-                ];
-
-                if (typeof calleeValue !== "function") {
-                  return undefined;
-                }
-
-                const argBase0 =
-                  locals && argName0 in locals
-                    ? (locals as Record<string, any>)
-                    : base;
-
-                const argBase1 =
-                  locals && argName1 in locals
-                    ? (locals as Record<string, any>)
-                    : base;
-
-                const value0 = argBase0?.[argName0];
-
-                const value1 = argBase1?.[argName1];
-
-                return calleeValue.call(
-                  calleeBase,
-                  typeof value0 === "function" ? value0() : value0,
-                  typeof value1 === "function" ? value1() : value1,
-                );
-              };
-            }
-
-            const arg0 = args[0];
-
-            const arg1 = args[1];
-
-            return (scope, locals, assign) => {
-              const runtimeScope = scope as any;
-
-              const base =
-                locals && calleeName in locals
-                  ? (locals as Record<string, any>)
-                  : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-
-              if (isNullOrUndefined(base)) {
-                return undefined;
-              }
-
-              const calleeValue = (base as Record<string, any>)[calleeName];
-
-              if (typeof calleeValue !== "function") {
-                return undefined;
-              }
-
-              const res0 = arg0(scope, locals, assign);
-
-              const res1 = arg1(scope, locals, assign);
-
-              return calleeValue.call(
-                base,
-                typeof res0 === "function" ? res0() : res0,
-                typeof res1 === "function" ? res1() : res1,
-              );
-            };
-          }
-        }
-
-        if (!(ast as ExpressionNode)._filter && args.length <= 1) {
-          const arg = args[0];
-
-          return args.length
-            ? (scope, locals, assign) => {
-                const rhs = (right as Function)(scope, locals, assign);
-
-                let value: any;
-
-                if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-                  const res = arg(scope, locals, assign);
-
-                  value = rhs.value.call(
-                    rhs.context,
-                    isFunction(res) ? res() : res,
-                  );
-                }
-
-                return context ? { value } : value;
-              }
-            : (scope, locals, assign) => {
-                const rhs = (right as Function)(scope, locals, assign);
-
-                const value =
-                  !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
-                    ? rhs.value.call(rhs.context)
-                    : undefined;
-
-                return context ? { value } : value;
-              };
-        }
-
-        if (!(ast as ExpressionNode)._filter && args.length === 2) {
-          const arg0 = args[0];
-
-          const arg1 = args[1];
-
-          if (!context) {
-            return (scope, locals, assign) => {
-              const rhs = (right as Function)(scope, locals, assign);
-
-              if (isNullOrUndefined(rhs.value) || !isFunction(rhs.value)) {
-                return undefined;
-              }
-
-              const res0 = arg0(scope, locals, assign);
-
-              const res1 = arg1(scope, locals, assign);
-
-              return rhs.value.call(
-                rhs.context,
-                isFunction(res0) ? res0() : res0,
-                isFunction(res1) ? res1() : res1,
-              );
-            };
-          }
-
-          return (scope, locals, assign) => {
-            const rhs = (right as Function)(scope, locals, assign);
-
-            let value: any;
-
-            if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-              const res0 = arg0(scope, locals, assign);
-
-              const res1 = arg1(scope, locals, assign);
-
-              value = rhs.value.call(
-                rhs.context,
-                isFunction(res0) ? res0() : res0,
-                isFunction(res1) ? res1() : res1,
-              );
-            }
-
-            return { value };
-          };
-        }
-
-        if ((ast as ExpressionNode)._filter) {
-          const filter = right as Function;
-
-          if (args.length === 1) {
-            const arg0 = args[0];
-
-            if (!context) {
-              const argPath = getNonComputedPath(callArguments[0]);
-
-              if (argPath?.length === 1) {
-                const argName = argPath[0];
-
-                return (scope, locals) => {
-                  const evalScope = scope && deProxy(scope);
-
-                  const runtimeScope = evalScope as any;
-
-                  const base =
-                    locals && argName in locals
-                      ? (locals as Record<string, any>)
-                      : ((runtimeScope && runtimeScope.$proxy) ?? evalScope);
-
-                  return filter(base?.[argName]);
-                };
-              }
-            }
-
-            return context
-              ? (scope, locals, assign) => {
-                  const evalScope = scope && deProxy(scope);
-
-                  const value = () => filter(arg0(evalScope, locals, assign));
-
-                  return { context: undefined, name: undefined, value };
-                }
-              : (scope, locals, assign) =>
-                  filter(arg0(scope && deProxy(scope), locals, assign));
-          }
-
-          if (args.length === 2) {
-            const arg0 = args[0];
-
-            const arg1 = args[1];
-
-            return context
-              ? (scope, locals, assign) => {
-                  const evalScope = scope && deProxy(scope);
-
-                  const value = () =>
-                    filter(
-                      arg0(evalScope, locals, assign),
-                      arg1(evalScope, locals, assign),
-                    );
-
-                  return { context: undefined, name: undefined, value };
-                }
-              : (scope, locals, assign) => {
-                  const evalScope = scope && deProxy(scope);
-
-                  return filter(
-                    arg0(evalScope, locals, assign),
-                    arg1(evalScope, locals, assign),
-                  );
-                };
-          }
-
-          return (scope, locals, assign) => {
-            const values: any[] = [];
-
-            const evalScope = scope && deProxy(scope);
-
-            for (let i = 0; i < args.length; ++i) {
-              const res = args[i](evalScope, locals, assign);
-
-              values.push(res);
-            }
-            const value = () => {
-              return filter.apply(undefined, values);
-            };
-
-            return context
-              ? { context: undefined, name: undefined, value }
-              : value();
-          };
-        }
-
-        return (scope, locals, assign) => {
-          const rhs = (right as Function)(scope, locals, assign);
-
-          let value: any;
-
-          if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-            const values: any[] = [];
-
-            for (let i = 0; i < args.length; ++i) {
-              const res = args[i](scope, locals, assign);
-
-              values.push(isFunction(res) ? res() : res);
-            }
-            value = rhs.value.apply(rhs.context, values);
-          }
-
-          return context ? { value } : value;
-        };
+        return this._compileCallExpression(ast as ExpressionNode, context);
       case ASTType._AssignmentExpression:
-        left = this._recurse((ast as ExpressionNode)._left as ASTNode, true, 1);
-        right = this._recurse((ast as ExpressionNode)._right as ASTNode);
-
-        return (scope, locals, assign) => {
-          const lhs = left(scope, locals, assign);
-
-          const rhs = (right as Function)(scope, locals, assign);
-
-          // lhs.context[lhs.name] = rhs;
-          const ctx = isProxy(lhs.context)
-            ? lhs.context
-            : (lhs.context.$proxy ?? lhs.context);
-
-          ctx[lhs.name] = rhs;
-
-          return context ? { value: rhs } : rhs;
-        };
+        return this._compileAssignmentExpression(
+          ast as ExpressionNode,
+          context,
+        );
       case ASTType._ArrayExpression:
-        args = [];
-        const elements = (ast as ExpressionNode)._elements || [];
-
-        for (let i = 0, l = elements.length; i < l; i++) {
-          const expr = elements[i] as ASTNode;
-
-          args.push(self._recurse(expr));
-        }
-
-        return (scope, locals, assign) => {
-          const value: any[] = [];
-
-          for (let i = 0; i < args.length; ++i) {
-            value.push(args[i](scope, locals, assign));
-          }
-
-          return context ? { value } : value;
-        };
+        return this._compileArrayExpression(ast as ExpressionNode, context);
       case ASTType._ObjectExpression:
-        args = [];
-        const properties = ((ast as ObjectNode)._properties ||
-          []) as ObjectPropertyNode[];
-
-        if (!context && properties.length === 1 && !properties[0]._computed) {
-          const property = properties[0];
-
-          const key =
-            (property._key as ASTNode)._type === ASTType._Identifier
-              ? (property._key as LiteralNode)._name
-              : `${(property._key as LiteralNode)._value}`;
-
-          const value = self._recurse(property._value as ASTNode);
-
-          return (scope, locals, assign) => {
-            const object: Record<string, any> = {};
-
-            object[key as string] = value(scope, locals, assign);
-
-            return object;
-          };
-        }
-
-        let hasComputedProperty = false;
-
-        if (!context && (properties.length === 2 || properties.length === 3)) {
-          for (let i = 0; i < properties.length; i++) {
-            if (properties[i]._computed) {
-              hasComputedProperty = true;
-              break;
-            }
-          }
-        }
-
-        if (
-          !context &&
-          (properties.length === 2 || properties.length === 3) &&
-          !hasComputedProperty
-        ) {
-          const property0 = properties[0];
-
-          const property1 = properties[1];
-
-          const key0 =
-            (property0._key as ASTNode)._type === ASTType._Identifier
-              ? (property0._key as LiteralNode)._name
-              : `${(property0._key as LiteralNode)._value}`;
-
-          const key1 =
-            (property1._key as ASTNode)._type === ASTType._Identifier
-              ? (property1._key as LiteralNode)._name
-              : `${(property1._key as LiteralNode)._value}`;
-
-          if (properties.length === 2) {
-            const value0 = self._recurse(property0._value as ASTNode);
-
-            const value1 = self._recurse(property1._value as ASTNode);
-
-            return (scope, locals, assign) => {
-              const object: Record<string, any> = {};
-
-              object[key0 as string] = value0(scope, locals, assign);
-              object[key1 as string] = value1(scope, locals, assign);
-
-              return object;
-            };
-          }
-
-          const property2 = properties[2];
-
-          const key2 =
-            (property2._key as ASTNode)._type === ASTType._Identifier
-              ? (property2._key as LiteralNode)._name
-              : `${(property2._key as LiteralNode)._value}`;
-
-          const valuePath0 = getNonComputedPath(property0._value as ASTNode);
-
-          const valuePath1 = getNonComputedPath(property1._value as ASTNode);
-
-          const valuePath2 = getNonComputedPath(property2._value as ASTNode);
-
-          if (
-            valuePath0?.length === 2 &&
-            valuePath1?.length === 2 &&
-            valuePath2?.length === 2 &&
-            valuePath0[0] === valuePath1[0] &&
-            valuePath0[0] === valuePath2[0]
-          ) {
-            const sourceKey = valuePath0[0];
-
-            const valueKey0 = valuePath0[1];
-
-            const valueKey1 = valuePath1[1];
-
-            const valueKey2 = valuePath2[1];
-
-            return (scope, locals) => {
-              const runtimeScope = scope as any;
-
-              if (!locals) {
-                const base = (runtimeScope && runtimeScope.$proxy) ?? scope;
-
-                const source = base?.[sourceKey];
-
-                const object: Record<string, any> = {};
-
-                if (isNullOrUndefined(source)) {
-                  object[key0 as string] = undefined;
-                  object[key1 as string] = undefined;
-                  object[key2 as string] = undefined;
-
-                  return object;
-                }
-
-                object[key0 as string] = source[valueKey0];
-                object[key1 as string] = source[valueKey1];
-                object[key2 as string] = source[valueKey2];
-
-                return object;
-              }
-
-              const base =
-                locals && sourceKey in locals
-                  ? (locals as Record<string, any>)
-                  : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-
-              const source = base?.[sourceKey];
-
-              const object: Record<string, any> = {};
-
-              if (isNullOrUndefined(source)) {
-                object[key0 as string] = undefined;
-                object[key1 as string] = undefined;
-                object[key2 as string] = undefined;
-
-                return object;
-              }
-
-              object[key0 as string] = source[valueKey0];
-              object[key1 as string] = source[valueKey1];
-              object[key2 as string] = source[valueKey2];
-
-              return object;
-            };
-          }
-
-          const value0 = self._recurse(property0._value as ASTNode);
-
-          const value1 = self._recurse(property1._value as ASTNode);
-
-          const value2 = self._recurse(property2._value as ASTNode);
-
-          return (scope, locals, assign) => {
-            const object: Record<string, any> = {};
-
-            object[key0 as string] = value0(scope, locals, assign);
-            object[key1 as string] = value1(scope, locals, assign);
-            object[key2 as string] = value2(scope, locals, assign);
-
-            return object;
-          };
-        }
-
-        for (let i = 0, l = properties.length; i < l; i++) {
-          const property = properties[i];
-
-          if (property._computed) {
-            args.push({
-              key: self._recurse(property._key as ASTNode),
-              computed: true,
-              value: self._recurse(property._value as ASTNode),
-            });
-          } else {
-            args.push({
-              key:
-                (property._key as ASTNode)._type === ASTType._Identifier
-                  ? (property._key as LiteralNode)._name
-                  : `${(property._key as LiteralNode)._value}`,
-              computed: false,
-              value: self._recurse(property._value as ASTNode),
-            });
-          }
-        }
-
-        return (scope, locals, assign) => {
-          const value: Record<string, any> = {};
-
-          for (let i = 0; i < args.length; ++i) {
-            const property = args[i] as any;
-
-            if (property.computed) {
-              value[property.key(scope, locals, assign)] = property.value(
-                scope,
-                locals,
-                assign,
-              );
-            } else {
-              value[property.key] = property.value(scope, locals, assign);
-            }
-          }
-
-          return context ? { value } : value;
-        };
+        return this._compileObjectExpression(ast as ObjectNode, context);
       case ASTType._ThisExpression:
         return (scope) => (context ? { value: scope } : (scope as any)?.$proxy);
       case ASTType._LocalsExpression:
@@ -813,48 +244,598 @@ export class ASTInterpreter {
           context ? { value: assign } : assign;
 
       case ASTType._UpdateExpression: {
-        // Must be assignable: Identifier or MemberExpression
-        // Reuse the "context mode" lvalue resolver that returns { context, name, value }
-        const ref = this._recurse(
-          (ast as ExpressionNode)._argument as ASTNode,
-          true,
-          1,
-        );
-
-        const op = (ast as ExpressionNode)._operator as "++" | "--";
-
-        const prefix = !!ast._prefix;
-
-        return (scope, locals, assign) => {
-          const lhs = ref(scope, locals, assign);
-
-          // No place to assign -> behave like JS (throw) rather than silently no-op
-          if (!lhs || isNullOrUndefined(lhs.context)) {
-            throw new Error(
-              `${op} operand is not assignable (context is ${lhs?.context})`,
-            );
-          }
-
-          // JS-style numeric coercion
-          const oldNum = Number(lhs.value);
-
-          const newNum = op === "++" ? oldNum + 1 : oldNum - 1;
-
-          // Write back (same proxy handling as AssignmentExpression)
-          const ctx = isProxy(lhs.context)
-            ? lhs.context
-            : (lhs.context.$proxy ?? lhs.context);
-
-          ctx[lhs.name] = newNum;
-
-          const out = prefix ? newNum : oldNum;
-
-          return context ? { value: out } : out;
-        };
+        return this._compileUpdateExpression(ast as ExpressionNode, context);
       }
     }
 
     throw new Error(`Unknown AST type ${ast._type}`);
+  }
+
+  /** @internal */
+  _compileCallExpression(
+    ast: ExpressionNode,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const callArguments = (ast._arguments || []) as ASTNode[];
+
+    const args: CompiledExpressionFunction[] = [];
+
+    for (let i = 0, l = callArguments.length; i < l; i++) {
+      args.push(this._recurse(callArguments[i]));
+    }
+
+    if (ast._filter) {
+      return this._compileFilterCall(ast, callArguments, args, context);
+    }
+
+    const callee = ast._callee as ASTNode;
+
+    const right = this._recurse(callee, true);
+
+    if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
+      return this._compileIdentifierTwoArgCall(
+        (callee as LiteralNode)._name as string,
+        callArguments,
+        args,
+      );
+    }
+
+    if (args.length <= 1) {
+      return this._compileSmallCall(right, args[0], args.length, context);
+    }
+
+    if (args.length === 2) {
+      return this._compileTwoArgCall(right, args[0], args[1], context);
+    }
+
+    return this._compileVariadicCall(right, args, context);
+  }
+
+  /** @internal */
+  _compileIdentifierTwoArgCall(
+    calleeName: string,
+    callArguments: ASTNode[],
+    args: CompiledExpressionFunction[],
+  ): CompiledExpressionFunction {
+    const argPath0 = getNonComputedPath(callArguments[0]);
+
+    const argPath1 = getNonComputedPath(callArguments[1]);
+
+    if (argPath0?.length === 1 && argPath1?.length === 1) {
+      const argName0 = argPath0[0];
+
+      const argName1 = argPath1[0];
+
+      return (scope, locals) => {
+        const runtimeScope = scope as any;
+
+        const base = (runtimeScope && runtimeScope.$proxy) ?? scope;
+
+        if (!locals) {
+          if (isNullOrUndefined(base)) {
+            return undefined;
+          }
+
+          const calleeValue = (base as Record<string, any>)[calleeName];
+
+          if (typeof calleeValue !== "function") {
+            return undefined;
+          }
+
+          const value0 = (base as Record<string, any>)[argName0];
+
+          const value1 = (base as Record<string, any>)[argName1];
+
+          return calleeValue.call(
+            base,
+            typeof value0 === "function" ? value0() : value0,
+            typeof value1 === "function" ? value1() : value1,
+          );
+        }
+
+        const calleeBase =
+          calleeName in locals ? (locals as Record<string, any>) : base;
+
+        if (isNullOrUndefined(calleeBase)) {
+          return undefined;
+        }
+
+        const calleeValue = (calleeBase as Record<string, any>)[calleeName];
+
+        if (typeof calleeValue !== "function") {
+          return undefined;
+        }
+
+        const argBase0 =
+          argName0 in locals ? (locals as Record<string, any>) : base;
+
+        const argBase1 =
+          argName1 in locals ? (locals as Record<string, any>) : base;
+
+        const value0 = argBase0?.[argName0];
+
+        const value1 = argBase1?.[argName1];
+
+        return calleeValue.call(
+          calleeBase,
+          typeof value0 === "function" ? value0() : value0,
+          typeof value1 === "function" ? value1() : value1,
+        );
+      };
+    }
+
+    const arg0 = args[0];
+
+    const arg1 = args[1];
+
+    return (scope, locals, assign) => {
+      const runtimeScope = scope as any;
+
+      const base =
+        locals && calleeName in locals
+          ? (locals as Record<string, any>)
+          : ((runtimeScope && runtimeScope.$proxy) ?? scope);
+
+      if (isNullOrUndefined(base)) {
+        return undefined;
+      }
+
+      const calleeValue = (base as Record<string, any>)[calleeName];
+
+      if (typeof calleeValue !== "function") {
+        return undefined;
+      }
+
+      const res0 = arg0(scope, locals, assign);
+
+      const res1 = arg1(scope, locals, assign);
+
+      return calleeValue.call(
+        base,
+        typeof res0 === "function" ? res0() : res0,
+        typeof res1 === "function" ? res1() : res1,
+      );
+    };
+  }
+
+  /** @internal */
+  _compileSmallCall(
+    callee: CompiledExpressionFunction,
+    arg: CompiledExpressionFunction | undefined,
+    argCount: number,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    return argCount
+      ? (scope, locals, assign) => {
+          const rhs = callee(scope, locals, assign);
+
+          let value: any;
+
+          if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+            const res = (arg as CompiledExpressionFunction)(
+              scope,
+              locals,
+              assign,
+            );
+
+            value = rhs.value.call(rhs.context, isFunction(res) ? res() : res);
+          }
+
+          return context ? { value } : value;
+        }
+      : (scope, locals, assign) => {
+          const rhs = callee(scope, locals, assign);
+
+          const value =
+            !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
+              ? rhs.value.call(rhs.context)
+              : undefined;
+
+          return context ? { value } : value;
+        };
+  }
+
+  /** @internal */
+  _compileTwoArgCall(
+    callee: CompiledExpressionFunction,
+    arg0: CompiledExpressionFunction,
+    arg1: CompiledExpressionFunction,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    if (!context) {
+      return (scope, locals, assign) => {
+        const rhs = callee(scope, locals, assign);
+
+        if (isNullOrUndefined(rhs.value) || !isFunction(rhs.value)) {
+          return undefined;
+        }
+
+        const res0 = arg0(scope, locals, assign);
+
+        const res1 = arg1(scope, locals, assign);
+
+        return rhs.value.call(
+          rhs.context,
+          isFunction(res0) ? res0() : res0,
+          isFunction(res1) ? res1() : res1,
+        );
+      };
+    }
+
+    return (scope, locals, assign) => {
+      const rhs = callee(scope, locals, assign);
+
+      let value: any;
+
+      if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+        const res0 = arg0(scope, locals, assign);
+
+        const res1 = arg1(scope, locals, assign);
+
+        value = rhs.value.call(
+          rhs.context,
+          isFunction(res0) ? res0() : res0,
+          isFunction(res1) ? res1() : res1,
+        );
+      }
+
+      return { value };
+    };
+  }
+
+  /** @internal */
+  _compileVariadicCall(
+    callee: CompiledExpressionFunction,
+    args: CompiledExpressionFunction[],
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    return (scope, locals, assign) => {
+      const rhs = callee(scope, locals, assign);
+
+      let value: any;
+
+      if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+        const values: any[] = [];
+
+        for (let i = 0; i < args.length; ++i) {
+          const res = args[i](scope, locals, assign);
+
+          values.push(isFunction(res) ? res() : res);
+        }
+        value = rhs.value.apply(rhs.context, values);
+      }
+
+      return context ? { value } : value;
+    };
+  }
+
+  /** @internal */
+  _compileFilterCall(
+    ast: ExpressionNode,
+    callArguments: ASTNode[],
+    args: CompiledExpressionFunction[],
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const filter = this._$filter((ast._callee as LiteralNode)._name as string);
+
+    if (args.length === 1) {
+      const arg0 = args[0];
+
+      if (!context) {
+        const argPath = getNonComputedPath(callArguments[0]);
+
+        if (argPath?.length === 1) {
+          const argName = argPath[0];
+
+          return (scope, locals) => {
+            const evalScope = scope && deProxy(scope);
+
+            const runtimeScope = evalScope as any;
+
+            const base =
+              locals && argName in locals
+                ? (locals as Record<string, any>)
+                : ((runtimeScope && runtimeScope.$proxy) ?? evalScope);
+
+            return filter(base?.[argName]);
+          };
+        }
+      }
+
+      return context
+        ? (scope, locals, assign) => {
+            const evalScope = scope && deProxy(scope);
+
+            const value = () => filter(arg0(evalScope, locals, assign));
+
+            return { context: undefined, name: undefined, value };
+          }
+        : (scope, locals, assign) =>
+            filter(arg0(scope && deProxy(scope), locals, assign));
+    }
+
+    if (args.length === 2) {
+      const arg0 = args[0];
+
+      const arg1 = args[1];
+
+      return context
+        ? (scope, locals, assign) => {
+            const evalScope = scope && deProxy(scope);
+
+            const value = () =>
+              filter(
+                arg0(evalScope, locals, assign),
+                arg1(evalScope, locals, assign),
+              );
+
+            return { context: undefined, name: undefined, value };
+          }
+        : (scope, locals, assign) => {
+            const evalScope = scope && deProxy(scope);
+
+            return filter(
+              arg0(evalScope, locals, assign),
+              arg1(evalScope, locals, assign),
+            );
+          };
+    }
+
+    return (scope, locals, assign) => {
+      const values: any[] = [];
+
+      const evalScope = scope && deProxy(scope);
+
+      for (let i = 0; i < args.length; ++i) {
+        const res = args[i](evalScope, locals, assign);
+
+        values.push(res);
+      }
+      const value = () => {
+        return (filter as (...args: any[]) => any).apply(undefined, values);
+      };
+
+      return context ? { context: undefined, name: undefined, value } : value();
+    };
+  }
+
+  /** @internal */
+  _compileMemberExpression(
+    ast: ExpressionNode,
+    context?: LinkContext,
+    create?: CreateFlag,
+  ): CompiledExpressionFunction {
+    const left = this._recurse(ast._object as ASTNode, false, !!create);
+
+    if (ast._computed) {
+      return this._computedMember(
+        left,
+        this._recurse(ast._property as ASTNode),
+        context,
+        create,
+      );
+    }
+
+    return this._nonComputedMember(
+      left,
+      (ast._property as LiteralNode)._name as string,
+      context,
+      create,
+    );
+  }
+
+  /** @internal */
+  _compileAssignmentExpression(
+    ast: ExpressionNode,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const left = this._recurse(ast._left as ASTNode, true, 1);
+
+    const right = this._recurse(ast._right as ASTNode);
+
+    return (scope, locals, assign) => {
+      const lhs = left(scope, locals, assign);
+
+      const rhs = right(scope, locals, assign);
+
+      const ctx = isProxy(lhs.context)
+        ? lhs.context
+        : (lhs.context.$proxy ?? lhs.context);
+
+      ctx[lhs.name] = rhs;
+
+      return context ? { value: rhs } : rhs;
+    };
+  }
+
+  /** @internal */
+  _compileArrayExpression(
+    ast: ExpressionNode,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const args: CompiledExpressionFunction[] = [];
+
+    const elements = ast._elements || [];
+
+    for (let i = 0, l = elements.length; i < l; i++) {
+      args.push(this._recurse(elements[i] as ASTNode));
+    }
+
+    return (scope, locals, assign) => {
+      const value: any[] = [];
+
+      for (let i = 0; i < args.length; ++i) {
+        value.push(args[i](scope, locals, assign));
+      }
+
+      return context ? { value } : value;
+    };
+  }
+
+  /** @internal */
+  _compileUpdateExpression(
+    ast: ExpressionNode,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const ref = this._recurse(ast._argument as ASTNode, true, 1);
+
+    const op = ast._operator as "++" | "--";
+
+    const prefix = !!ast._prefix;
+
+    return (scope, locals, assign) => {
+      const lhs = ref(scope, locals, assign);
+
+      if (!lhs || isNullOrUndefined(lhs.context)) {
+        throw new Error(
+          `${op} operand is not assignable (context is ${lhs?.context})`,
+        );
+      }
+
+      const oldNum = Number(lhs.value);
+
+      const newNum = op === "++" ? oldNum + 1 : oldNum - 1;
+
+      const ctx = isProxy(lhs.context)
+        ? lhs.context
+        : (lhs.context.$proxy ?? lhs.context);
+
+      ctx[lhs.name] = newNum;
+
+      const out = prefix ? newNum : oldNum;
+
+      return context ? { value: out } : out;
+    };
+  }
+
+  /** @internal */
+  _compileObjectExpression(
+    ast: ObjectNode,
+    context?: LinkContext,
+  ): CompiledExpressionFunction {
+    const properties = (ast._properties || []) as ObjectPropertyNode[];
+
+    if (!context && properties.length === 1 && !properties[0]._computed) {
+      return this._compileSinglePropertyObject(properties[0]);
+    }
+
+    if (!context && isSmallStaticObject(properties)) {
+      const optimized = this._compileSmallStaticObject(properties);
+
+      if (optimized) {
+        return optimized;
+      }
+    }
+
+    const args = compileObjectProperties(this, properties);
+
+    return (scope, locals, assign) => {
+      const value: Record<string, any> = {};
+
+      for (let i = 0; i < args.length; ++i) {
+        const property = args[i];
+
+        if (property.computed) {
+          value[property.key(scope, locals, assign)] = property.value(
+            scope,
+            locals,
+            assign,
+          );
+        } else {
+          value[property.key] = property.value(scope, locals, assign);
+        }
+      }
+
+      return context ? { value } : value;
+    };
+  }
+
+  /** @internal */
+  _compileSinglePropertyObject(
+    property: ObjectPropertyNode,
+  ): CompiledExpressionFunction {
+    const key = getObjectPropertyKey(property);
+
+    const value = this._recurse(property._value as ASTNode);
+
+    return (scope, locals, assign) => {
+      const object: Record<string, any> = {};
+
+      object[key] = value(scope, locals, assign);
+
+      return object;
+    };
+  }
+
+  /** @internal */
+  _compileSmallStaticObject(
+    properties: ObjectPropertyNode[],
+  ): CompiledExpressionFunction | undefined {
+    const property0 = properties[0];
+
+    const property1 = properties[1];
+
+    const key0 = getObjectPropertyKey(property0);
+
+    const key1 = getObjectPropertyKey(property1);
+
+    if (properties.length === 2) {
+      const value0 = this._recurse(property0._value as ASTNode);
+
+      const value1 = this._recurse(property1._value as ASTNode);
+
+      return (scope, locals, assign) => {
+        const object: Record<string, any> = {};
+
+        object[key0] = value0(scope, locals, assign);
+        object[key1] = value1(scope, locals, assign);
+
+        return object;
+      };
+    }
+
+    const property2 = properties[2];
+
+    const key2 = getObjectPropertyKey(property2);
+
+    const valuePath0 = getNonComputedPath(property0._value as ASTNode);
+
+    const valuePath1 = getNonComputedPath(property1._value as ASTNode);
+
+    const valuePath2 = getNonComputedPath(property2._value as ASTNode);
+
+    if (
+      valuePath0?.length === 2 &&
+      valuePath1?.length === 2 &&
+      valuePath2?.length === 2 &&
+      valuePath0[0] === valuePath1[0] &&
+      valuePath0[0] === valuePath2[0]
+    ) {
+      return compileObjectPathProjection(
+        key0,
+        key1,
+        key2,
+        valuePath0,
+        valuePath1,
+        valuePath2,
+      );
+    }
+
+    const value0 = this._recurse(property0._value as ASTNode);
+
+    const value1 = this._recurse(property1._value as ASTNode);
+
+    const value2 = this._recurse(property2._value as ASTNode);
+
+    return (scope, locals, assign) => {
+      const object: Record<string, any> = {};
+
+      object[key0] = value0(scope, locals, assign);
+      object[key1] = value1(scope, locals, assign);
+      object[key2] = value2(scope, locals, assign);
+
+      return object;
+    };
   }
 
   /**
@@ -1458,6 +1439,109 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
 
   return path;
 }
+
+function getObjectPropertyKey(property: ObjectPropertyNode): string {
+  return (property._key as ASTNode)._type === ASTType._Identifier
+    ? ((property._key as LiteralNode)._name as string)
+    : `${(property._key as LiteralNode)._value}`;
+}
+
+function isSmallStaticObject(properties: ObjectPropertyNode[]): boolean {
+  if (properties.length !== 2 && properties.length !== 3) {
+    return false;
+  }
+
+  for (let i = 0; i < properties.length; i++) {
+    if (properties[i]._computed) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function compileObjectPathProjection(
+  key0: string,
+  key1: string,
+  key2: string,
+  valuePath0: string[],
+  valuePath1: string[],
+  valuePath2: string[],
+): CompiledExpressionFunction {
+  const sourceKey = valuePath0[0];
+
+  const valueKey0 = valuePath0[1];
+
+  const valueKey1 = valuePath1[1];
+
+  const valueKey2 = valuePath2[1];
+
+  return (scope, locals) => {
+    const runtimeScope = scope as any;
+
+    const base =
+      locals && sourceKey in locals
+        ? (locals as Record<string, any>)
+        : ((runtimeScope && runtimeScope.$proxy) ?? scope);
+
+    const source = base?.[sourceKey];
+
+    const object: Record<string, any> = {};
+
+    if (isNullOrUndefined(source)) {
+      object[key0] = undefined;
+      object[key1] = undefined;
+      object[key2] = undefined;
+
+      return object;
+    }
+
+    object[key0] = source[valueKey0];
+    object[key1] = source[valueKey1];
+    object[key2] = source[valueKey2];
+
+    return object;
+  };
+}
+
+function compileObjectProperties(
+  interpreter: ASTInterpreter,
+  properties: ObjectPropertyNode[],
+): CompiledObjectProperty[] {
+  const compiled: CompiledObjectProperty[] = [];
+
+  for (let i = 0, l = properties.length; i < l; i++) {
+    const property = properties[i];
+
+    if (property._computed) {
+      compiled.push({
+        key: interpreter._recurse(property._key as ASTNode),
+        computed: true,
+        value: interpreter._recurse(property._value as ASTNode),
+      });
+    } else {
+      compiled.push({
+        key: getObjectPropertyKey(property),
+        computed: false,
+        value: interpreter._recurse(property._value as ASTNode),
+      });
+    }
+  }
+
+  return compiled;
+}
+
+type CompiledObjectProperty =
+  | {
+      computed: true;
+      key: CompiledExpressionFunction;
+      value: CompiledExpressionFunction;
+    }
+  | {
+      computed: false;
+      key: string;
+      value: CompiledExpressionFunction;
+    };
 
 function createPathGetter(path: string[]): CompiledExpressionFunction {
   const p0 = path[0];

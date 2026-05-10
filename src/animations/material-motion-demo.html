@@ -1,0 +1,418 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Material 3 motion demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        class MaterialMotionController {
+          activePanel = "overview";
+          detailsVisible = false;
+
+          select(panel) {
+            this.activePanel = panel;
+          }
+
+          toggleDetails() {
+            this.detailsVisible = !this.detailsVisible;
+          }
+        }
+
+        window.angular
+          .module("materialMotionDemo", [])
+          .controller("MaterialMotionCtrl", MaterialMotionController);
+      });
+    </script>
+
+    <style>
+      :root {
+        --md-sys-color-primary: #006a6a;
+        --md-sys-color-on-primary: #ffffff;
+        --md-sys-color-primary-container: #6ff7f6;
+        --md-sys-color-on-primary-container: #002020;
+        --md-sys-color-secondary-container: #cce8e7;
+        --md-sys-color-on-secondary-container: #051f1f;
+        --md-sys-color-surface: #fbfcfb;
+        --md-sys-color-surface-container: #eff1f0;
+        --md-sys-color-surface-container-high: #e9ecea;
+        --md-sys-color-on-surface: #191c1c;
+        --md-sys-color-on-surface-variant: #3f4948;
+        --md-sys-color-outline-variant: #bec9c8;
+        --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+        --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+        --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+        --md-sys-motion-easing-emphasized: var(--md-sys-motion-easing-standard);
+        --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(
+          0.3,
+          0,
+          0.8,
+          0.15
+        );
+        --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(
+          0.05,
+          0.7,
+          0.1,
+          1
+        );
+        --md-sys-motion-duration-short4: 200ms;
+        --md-sys-motion-duration-medium2: 300ms;
+        --md-sys-motion-duration-medium4: 400ms;
+        --md-sys-motion-duration-long1: 450ms;
+      }
+
+      body {
+        background: var(--md-sys-color-surface);
+        color: var(--md-sys-color-on-surface);
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      h2 {
+        font-size: 18px;
+        line-height: 1.3;
+      }
+
+      p {
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .intro {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .demo-shell {
+        background: var(--md-sys-color-surface-container);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 28px;
+        display: grid;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .toolbar button,
+      .primary-action {
+        border-radius: 999px;
+        min-height: 40px;
+        padding: 0 18px;
+      }
+
+      .toolbar button {
+        background: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .toolbar button.is-active {
+        background: var(--md-sys-color-secondary-container);
+        color: var(--md-sys-color-on-secondary-container);
+      }
+
+      .primary-action {
+        align-self: start;
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+      }
+
+      .panel-stage {
+        min-height: 250px;
+        position: relative;
+      }
+
+      .panel {
+        --ng-enter-animation: m3-panel-enter
+          var(--md-sys-motion-duration-medium4)
+          var(--md-sys-motion-easing-emphasized-decelerate) both;
+        --ng-leave-animation: m3-panel-leave
+          var(--md-sys-motion-duration-short4)
+          var(--md-sys-motion-easing-emphasized-accelerate) both;
+        background: var(--md-sys-color-surface);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 24px;
+        box-shadow:
+          0 1px 2px rgb(0 0 0 / 0.08),
+          0 2px 6px rgb(0 0 0 / 0.05);
+        display: grid;
+        gap: 16px;
+        left: 0;
+        padding: 20px;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .metric {
+        background: var(--md-sys-color-surface-container-high);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      .metric span {
+        color: var(--md-sys-color-on-surface-variant);
+        display: block;
+        font-size: 13px;
+      }
+
+      .detail-card {
+        --ng-enter-animation: m3-container-enter
+          var(--md-sys-motion-duration-long1)
+          var(--md-sys-motion-easing-emphasized-decelerate) both;
+        --ng-leave-animation: m3-container-leave
+          var(--md-sys-motion-duration-medium2)
+          var(--md-sys-motion-easing-emphasized-accelerate) both;
+        background: var(--md-sys-color-primary-container);
+        border-radius: 24px;
+        color: var(--md-sys-color-on-primary-container);
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+        padding: 18px;
+        transform-origin: top left;
+      }
+
+      .detail-card p {
+        color: var(--md-sys-color-on-primary-container);
+      }
+
+      @keyframes m3-panel-enter {
+        from {
+          opacity: 0;
+          transform: translateY(16px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes m3-panel-leave {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-8px) scale(0.99);
+        }
+      }
+
+      @keyframes m3-container-enter {
+        from {
+          border-radius: 16px;
+          opacity: 0;
+          transform: translateY(12px) scale(0.92);
+        }
+        to {
+          border-radius: 24px;
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes m3-container-leave {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(8px) scale(0.96);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .panel,
+        .detail-card {
+          --ng-enter-animation: none;
+          --ng-leave-animation: none;
+        }
+      }
+
+      @media (max-width: 680px) {
+        body {
+          padding: 18px;
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-stage {
+          min-height: 430px;
+        }
+      }
+    </style>
+  </head>
+  <body ng-app="materialMotionDemo">
+    <main ng-controller="MaterialMotionCtrl as demo">
+      <div class="intro">
+        <h1>Material 3 motion with AngularTS</h1>
+        <p>
+          CSS motion tokens define timing and easing. AngularTS coordinates
+          enter and leave lifecycles.
+        </p>
+      </div>
+
+      <section class="demo-shell" aria-label="Material 3 motion demo">
+        <div class="toolbar" role="tablist" aria-label="Dashboard panels">
+          <button
+            type="button"
+            ng-class="{ 'is-active': demo.activePanel === 'overview' }"
+            ng-click="demo.select('overview')"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            ng-class="{ 'is-active': demo.activePanel === 'billing' }"
+            ng-click="demo.select('billing')"
+          >
+            Billing
+          </button>
+          <button
+            type="button"
+            ng-class="{ 'is-active': demo.activePanel === 'security' }"
+            ng-click="demo.select('security')"
+          >
+            Security
+          </button>
+        </div>
+
+        <div class="panel-stage">
+          <article
+            class="panel"
+            ng-if="demo.activePanel === 'overview'"
+            animate
+          >
+            <h2>Overview</h2>
+            <p>
+              A standard surface transition uses emphasized deceleration on
+              entry and a shorter acceleration on exit.
+            </p>
+            <div class="metrics">
+              <div class="metric">
+                <strong>42</strong>
+                <span>events today</span>
+              </div>
+              <div class="metric">
+                <strong>8ms</strong>
+                <span>median update</span>
+              </div>
+              <div class="metric">
+                <strong>99%</strong>
+                <span>healthy routes</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="primary-action"
+              ng-click="demo.toggleDetails()"
+            >
+              Toggle details
+            </button>
+            <div ng-if="demo.detailsVisible" class="detail-card" animate>
+              <h2>Container transform</h2>
+              <p>
+                The detail surface scales and fades from the action area while
+                preserving the directive lifecycle.
+              </p>
+            </div>
+          </article>
+
+          <article class="panel" ng-if="demo.activePanel === 'billing'" animate>
+            <h2>Billing</h2>
+            <p>
+              Related surfaces stay grounded by moving over short distances and
+              animating only opacity and transform.
+            </p>
+            <div class="metrics">
+              <div class="metric">
+                <strong>$128</strong>
+                <span>monthly spend</span>
+              </div>
+              <div class="metric">
+                <strong>3</strong>
+                <span>active plans</span>
+              </div>
+              <div class="metric">
+                <strong>12</strong>
+                <span>invoices</span>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="panel"
+            ng-if="demo.activePanel === 'security'"
+            animate
+          >
+            <h2>Security</h2>
+            <p>
+              The same tokenized motion applies across panels, so UI changes
+              remain predictable.
+            </p>
+            <div class="metrics">
+              <div class="metric">
+                <strong>2FA</strong>
+                <span>required</span>
+              </div>
+              <div class="metric">
+                <strong>0</strong>
+                <span>open alerts</span>
+              </div>
+              <div class="metric">
+                <strong>14</strong>
+                <span>trusted keys</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

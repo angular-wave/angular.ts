@@ -406,74 +406,93 @@ describe("ngModelOptions", () => {
           expect($rootScope.name).toEqual("a");
         });
 
-        // TODO: This doesnt event work in the original
-        // it("should allow overriding the model update trigger event on checkboxes", () => {
-        //   inputElm = $compile(
-        //     '<input type="checkbox" ng-model="checkbox" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur' }\"" +
-        //       "/>",
-        //   )($rootScope);
+        it("should allow overriding the model update trigger event on checkboxes", async () => {
+          inputElm = $compile(
+            '<input type="checkbox" ng-model="checkbox" ' +
+              "ng-model-options=\"{ updateOn: 'blur' }\"" +
+              "/>",
+          )($rootScope);
 
-        //   browserTrigger(inputElm, "click");
-        //   expect($rootScope.checkbox).toBeUndefined();
+          inputElm.click();
+          browserTrigger(inputElm, "change");
+          await wait();
+          expect($rootScope.checkbox).toBeUndefined();
 
-        //   browserTrigger(inputElm, "blur");
-        //   expect($rootScope.checkbox).toBe(true);
+          browserTrigger(inputElm, "blur");
+          await wait();
+          expect($rootScope.checkbox).toBe(true);
 
-        //   browserTrigger(inputElm, "click");
-        //   expect($rootScope.checkbox).toBe(true);
-        // });
+          inputElm.click();
+          browserTrigger(inputElm, "change");
+          await wait();
+          expect($rootScope.checkbox).toBe(true);
+        });
 
-        // it("should allow keeping the default update behavior on checkboxes", () => {
-        //   inputElm = $compile(
-        //     '<input type="checkbox" ng-model="checkbox" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur default' }\"" +
-        //       "/>",
-        //   )($rootScope);
+        it("should allow keeping the default update behavior on checkboxes", async () => {
+          inputElm = $compile(
+            '<input type="checkbox" ng-model="checkbox" ' +
+              "ng-model-options=\"{ updateOn: 'blur default' }\"" +
+              "/>",
+          )($rootScope);
 
-        //   browserTrigger(inputElm, "click");
-        //   expect($rootScope.checkbox).toBe(true);
+          inputElm.click();
+          browserTrigger(inputElm, "change");
+          await wait();
+          expect($rootScope.checkbox).toBe(true);
 
-        //   browserTrigger(inputElm, "click");
-        //   expect($rootScope.checkbox).toBe(false);
-        // });
+          inputElm.click();
+          browserTrigger(inputElm, "change");
+          await wait();
+          expect($rootScope.checkbox).toBe(false);
+        });
 
-        // it("should allow overriding the model update trigger event on radio buttons", () => {
-        //   inputElm = $compile(
-        //     '<input type="radio" ng-model="color" value="white" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur'}\"" +
-        //       "/>" +
-        //       '<input type="radio" ng-model="color" value="red" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur'}\"" +
-        //       "/>" +
-        //       '<input type="radio" ng-model="color" value="blue" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur'}\"" +
-        //       "/>",
-        //   )($rootScope);
+        it("should allow overriding the model update trigger event on radio buttons", async () => {
+          $rootScope.color = "white";
+          const radioGroup = $compile(
+            '<div><input type="radio" ng-model="color" value="white" ' +
+              "ng-model-options=\"{ updateOn: 'blur'}\"" +
+              "/>" +
+              '<input type="radio" ng-model="color" value="red" ' +
+              "ng-model-options=\"{ updateOn: 'blur'}\"" +
+              "/>" +
+              '<input type="radio" ng-model="color" value="blue" ' +
+              "ng-model-options=\"{ updateOn: 'blur'}\"" +
+              "/></div>",
+          )($rootScope);
 
-        //   browserTrigger(inputElm[2], "click");
-        //   expect($rootScope.color).toBe("white");
+          inputElm = radioGroup.querySelectorAll("input");
+          await wait();
 
-        //   browserTrigger(inputElm[2], "blur");
-        //   expect($rootScope.color).toBe("blue");
-        // });
+          inputElm[2].click();
+          browserTrigger(inputElm[2], "change");
+          await wait();
+          expect($rootScope.color).toBe("white");
 
-        // it("should allow keeping the default update behavior on radio buttons", () => {
-        //   inputElm = $compile(
-        //     '<input type="radio" ng-model="color" value="white" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur default' }\"" +
-        //       "/>" +
-        //       '<input type="radio" ng-model="color" value="red" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur default' }\"" +
-        //       "/>" +
-        //       '<input type="radio" ng-model="color" value="blue" ' +
-        //       "ng-model-options=\"{ updateOn: 'blur default' }\"" +
-        //       "/>",
-        //   )($rootScope);
+          browserTrigger(inputElm[2], "blur");
+          await wait();
+          expect($rootScope.color).toBe("blue");
+        });
 
-        //   browserTrigger((inputElm[2]), "click");
-        //   expect($rootScope.color).toBe("blue");
-        // });
+        it("should allow keeping the default update behavior on radio buttons", async () => {
+          const radioGroup = $compile(
+            '<div><input type="radio" ng-model="color" value="white" ' +
+              "ng-model-options=\"{ updateOn: 'blur default' }\"" +
+              "/>" +
+              '<input type="radio" ng-model="color" value="red" ' +
+              "ng-model-options=\"{ updateOn: 'blur default' }\"" +
+              "/>" +
+              '<input type="radio" ng-model="color" value="blue" ' +
+              "ng-model-options=\"{ updateOn: 'blur default' }\"" +
+              "/></div>",
+          )($rootScope);
+
+          inputElm = radioGroup.querySelectorAll("input");
+
+          inputElm[2].click();
+          browserTrigger(inputElm[2], "change");
+          await wait();
+          expect($rootScope.color).toBe("blue");
+        });
 
         it("should re-set the trigger events when overridden with $overrideModelOptions", async () => {
           inputElm = $compile(
@@ -514,309 +533,146 @@ describe("ngModelOptions", () => {
         });
       });
 
-      //describe("debounce", () => {
-      // it("should trigger only after timeout in text inputs", (done) => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 100 }"' +
-      //       "/>",
-      //   )($rootScope);
+      describe("debounce", () => {
+        function compileDebouncedInput(options) {
+          formElm = $compile(
+            '<form name="form"><input type="text" ng-model="name" name="alias" ' +
+              `ng-model-options="${options}"` +
+              "/></form>",
+          )($rootScope);
+          inputElm = formElm.querySelector("input");
 
-      //   changeGivenInputTo(inputElm, "a");
-      //   changeGivenInputTo(inputElm, "b");
-      //   changeGivenInputTo(inputElm, "c");
-      //   //expect($rootScope.name).toEqual(undefined);
-      //   //$timeout.flush(2000);
-      //   //expect($rootScope.name).toEqual(undefined);
-      //   //$timeout.flush(9000);
-      //   setTimeout(() => {
-      //     expect($rootScope.name).toEqual("c");
-      //     done();
-      //   }, 2000);
+          return $rootScope.form.alias;
+        }
 
-      // });
+        it("should trigger only after timeout in text inputs", async () => {
+          compileDebouncedInput("{ debounce: 25 }");
 
-      // it("should trigger only after timeout in checkboxes", () => {
-      //   inputElm = $compile(
-      //     '<input type="checkbox" ng-model="checkbox" ' +
-      //       'ng-model-options="{ debounce: 10000 }"' +
-      //       "/>",
-      //   )($rootScope);
+          changeGivenInputTo(inputElm, "a");
+          changeGivenInputTo(inputElm, "b");
+          changeGivenInputTo(inputElm, "c");
 
-      //   browserTrigger(inputElm, "click");
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   //$timeout.flush(2000);
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   //$timeout.flush(9000);
-      //   expect($rootScope.checkbox).toBe(true);
-      // });
+          expect($rootScope.name).toBeUndefined();
+          await wait(10);
+          expect($rootScope.name).toBeUndefined();
+          await wait(30);
+          expect($rootScope.name).toBe("c");
+        });
 
-      // it("should trigger only after timeout in radio buttons", () => {
-      //   inputElm = $compile(
-      //     '<input type="radio" ng-model="color" value="white" />' +
-      //       '<input type="radio" ng-model="color" value="red" ' +
-      //       'ng-model-options="{ debounce: 20000 }"' +
-      //       "/>" +
-      //       '<input type="radio" ng-model="color" value="blue" ' +
-      //       'ng-model-options="{ debounce: 30000 }"' +
-      //       "/>",
-      //   )($rootScope);
+        it("should allow selecting different debounce timeouts for each event", async () => {
+          compileDebouncedInput(
+            "{ updateOn: 'default blur mouseup', debounce: { default: 30, blur: 10 } }",
+          );
 
-      //   browserTrigger(inputElm, "click");
-      //   expect($rootScope.color).toBe("white");
-      //   browserTrigger(inputElm[1], "click");
-      //   expect($rootScope.color).toBe("white");
-      //   //$timeout.flush(12000);
-      //   expect($rootScope.color).toBe("white");
-      //   //$timeout.flush(10000);
-      //   expect($rootScope.color).toBe("red");
-      // });
+          changeGivenInputTo(inputElm, "a");
+          expect($rootScope.name).toBeUndefined();
+          await wait(15);
+          expect($rootScope.name).toBeUndefined();
+          await wait(25);
+          expect($rootScope.name).toBe("a");
 
-      // it("should not trigger digest while debouncing", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 10000 }"' +
-      //       "/>",
-      //   )($rootScope);
+          changeGivenInputTo(inputElm, "b");
+          browserTrigger(inputElm, "blur");
+          await wait(5);
+          expect($rootScope.name).toBe("a");
+          await wait(20);
+          expect($rootScope.name).toBe("b");
 
-      //   const watchSpy = jasmine.createSpy("watchSpy");
-      //   $rootScope.$watch(watchSpy);
+          changeGivenInputTo(inputElm, "c");
+          browserTrigger(inputElm, "mouseup");
+          await wait();
+          expect($rootScope.name).toBe("c");
+        });
 
-      //   changeGivenInputTo(inputElm, "a");
-      //   $timeout.flush(2000);
-      //   expect(watchSpy).not.toHaveBeenCalled();
+        it("should use the value of * for programmatic updates without an event trigger", async () => {
+          const ctrl = compileDebouncedInput(
+            "{ updateOn: 'default blur', debounce: { default: 30, blur: 10, '*': 20 } }",
+          );
 
-      //   changeGivenInputTo(inputElm, "b");
-      //   $timeout.flush(2000);
-      //   expect(watchSpy).not.toHaveBeenCalled();
+          ctrl.$setViewValue("a");
+          expect($rootScope.name).toBeUndefined();
+          await wait(10);
+          expect($rootScope.name).toBeUndefined();
+          await wait(20);
+          expect($rootScope.name).toBe("a");
+        });
 
-      //   changeGivenInputTo(inputElm, "c");
-      //   $timeout.flush(10000);
-      //   expect(watchSpy).toHaveBeenCalled();
-      // });
+        it("should trigger immediately for an event without a debounce entry", async () => {
+          compileDebouncedInput(
+            "{ updateOn: 'blur mouseup', debounce: { blur: 30 } }",
+          );
 
-      // it("should allow selecting different debounce timeouts for each event", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{' +
-      //       "updateOn: 'default blur mouseup', " +
-      //       "debounce: { default: 10000, blur: 5000 }" +
-      //       '}"' +
-      //       "/>",
-      //   )($rootScope);
+          changeGivenInputTo(inputElm, "a");
+          expect($rootScope.name).toBeUndefined();
+          browserTrigger(inputElm, "mouseup");
+          await wait();
+          expect($rootScope.name).toBe("a");
+        });
 
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toBeUndefined();
-      //   //$timeout.flush(6000);
-      //   expect($rootScope.name).toBeUndefined();
-      //   //$timeout.flush(4000);
-      //   expect($rootScope.name).toEqual("a");
+        it("should flush debounced events when calling $commitViewValue directly", async () => {
+          const ctrl = compileDebouncedInput("{ debounce: 30 }");
 
-      //   changeGivenInputTo(inputElm, "b");
-      //   browserTrigger(inputElm, "blur");
-      //   //$timeout.flush(4000);
-      //   expect($rootScope.name).toEqual("a");
-      //   //$timeout.flush(2000);
-      //   expect($rootScope.name).toEqual("b");
+          changeGivenInputTo(inputElm, "a");
+          expect($rootScope.name).toBeUndefined();
+          ctrl.$commitViewValue();
+          expect($rootScope.name).toBe("a");
 
-      //   changeGivenInputTo(inputElm, "c");
-      //   browserTrigger(helper.inputElm, "mouseup");
-      //   // `default` in `debounce` only affects the event triggers that are not defined in updateOn
-      //   expect($rootScope.name).toEqual("c");
-      // });
+          ctrl.$setPristine();
+          await wait(40);
+          expect(ctrl.$pristine).toBeTrue();
+        });
 
-      // it("should use the value of * to debounce all unspecified events", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{' +
-      //       "updateOn: 'default blur mouseup', " +
-      //       "debounce: { default: 10000, blur: 5000, '*': 15000 }" +
-      //       '}"' +
-      //       "/>",
-      //   )($rootScope);
+        it("should reset input value if rollbackViewValue is called during a pending update", async () => {
+          const ctrl = compileDebouncedInput("{ updateOn: 'blur' }");
 
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toBeUndefined();
-      //   $timeout.flush(6000);
-      //   expect($rootScope.name).toBeUndefined();
-      //   $timeout.flush(4000);
-      //   expect($rootScope.name).toEqual("a");
+          changeGivenInputTo(inputElm, "a");
+          expect(inputElm.value).toBe("a");
+          ctrl.$rollbackViewValue();
+          expect(inputElm.value).toBe("");
 
-      //   changeGivenInputTo(inputElm, "b");
-      //   browserTrigger(inputElm, "blur");
-      //   $timeout.flush(4000);
-      //   expect($rootScope.name).toEqual("a");
-      //   $timeout.flush(2000);
-      //   expect($rootScope.name).toEqual("b");
+          browserTrigger(inputElm, "blur");
+          await wait();
+          expect(inputElm.value).toBe("");
+          expect($rootScope.name).toBeUndefined();
+        });
 
-      //   changeGivenInputTo(inputElm, "c");
-      //   browserTrigger(helper.inputElm, "mouseup");
-      //   expect($rootScope.name).toEqual("b");
-      //   $timeout.flush(10000); // flush default
-      //   expect($rootScope.name).toEqual("b");
-      //   $timeout.flush(5000);
-      //   expect($rootScope.name).toEqual("c");
-      // });
+        it("should allow canceling pending updates", async () => {
+          const ctrl = compileDebouncedInput("{ updateOn: 'blur' }");
 
-      // it("should trigger immediately for the event if not listed in the debounce list", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{' +
-      //       "updateOn: 'default blur foo', " +
-      //       "debounce: { blur: 5000 }" +
-      //       '}"' +
-      //       "/>",
-      //   )($rootScope);
+          changeGivenInputTo(inputElm, "a");
+          expect($rootScope.name).toBeUndefined();
+          ctrl.$rollbackViewValue();
 
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toEqual("a");
+          browserTrigger(inputElm, "blur");
+          await wait();
+          expect($rootScope.name).toBeUndefined();
+        });
 
-      //   changeGivenInputTo(inputElm, "b");
-      //   browserTrigger(inputElm, "foo");
-      //   expect($rootScope.name).toEqual("b");
-      // });
+        it("should allow canceling debounced updates", async () => {
+          const ctrl = compileDebouncedInput("{ debounce: 30 }");
 
-      // it("should allow selecting different debounce timeouts for each event on checkboxes", () => {
-      //   inputElm = $compile(
-      //     '<input type="checkbox" ng-model="checkbox" ' +
-      //       'ng-model-options="{ ' +
-      //       "updateOn: 'default blur', debounce: { default: 10000, blur: 5000 } }\"" +
-      //       "/>",
-      //   )($rootScope);
+          changeGivenInputTo(inputElm, "a");
+          expect($rootScope.name).toBeUndefined();
+          await wait(10);
+          ctrl.$rollbackViewValue();
 
-      //   inputElm.checked = false;
-      //   browserTrigger(inputElm, "click");
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   $timeout.flush(8000);
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   $timeout.flush(3000);
-      //   expect($rootScope.checkbox).toBe(true);
-      //   inputElm.checked = true;
-      //   browserTrigger(inputElm, "click");
-      //   browserTrigger(inputElm, "blur");
-      //   $timeout.flush(3000);
-      //   expect($rootScope.checkbox).toBe(true);
-      //   $timeout.flush(3000);
-      //   expect($rootScope.checkbox).toBe(false);
-      // });
+          await wait(40);
+          expect($rootScope.name).toBeUndefined();
+        });
 
-      // it("should allow selecting 0 for non-default debounce timeouts for each event on checkboxes", () => {
-      //   inputElm = $compile(
-      //     '<input type="checkbox" ng-model="checkbox" ' +
-      //       'ng-model-options="{ ' +
-      //       "updateOn: 'default blur', debounce: { default: 10000, blur: 0 } }\"" +
-      //       "/>",
-      //   )($rootScope);
+        it("should reset input value if rollbackViewValue is called during debounce", async () => {
+          const ctrl = compileDebouncedInput("{ debounce: 30 }");
 
-      //   inputElm.checked = false;
-      //   browserTrigger(inputElm, "click");
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   $timeout.flush(8000);
-      //   expect($rootScope.checkbox).toBeUndefined();
-      //   $timeout.flush(3000);
-      //   expect($rootScope.checkbox).toBe(true);
-      //   inputElm.checked = true;
-      //   browserTrigger(inputElm, "click");
-      //   browserTrigger(inputElm, "blur");
-      //   $timeout.flush(0);
-      //   expect($rootScope.checkbox).toBe(false);
-      // });
+          changeGivenInputTo(inputElm, "a");
+          expect(inputElm.value).toBe("a");
+          ctrl.$rollbackViewValue();
+          expect(inputElm.value).toBe("");
 
-      // it("should flush debounced events when calling $commitViewValue directly", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 1000 }" />',
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toEqual(undefined);
-      //   $rootScope.form.alias.$commitViewValue();
-      //   expect($rootScope.name).toEqual("a");
-      // });
-
-      // it("should cancel debounced events when calling $commitViewValue", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 1000 }"/>',
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   $rootScope.form.alias.$commitViewValue();
-      //   expect($rootScope.name).toEqual("a");
-
-      //   $rootScope.form.alias.$setPristine();
-      //   $timeout.flush(1000);
-      //   expect($rootScope.form.alias.$pristine).toBeTruthy();
-      // });
-
-      // it("should reset input val if rollbackViewValue called during pending update", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       "ng-model-options=\"{ updateOn: 'blur' }\" />",
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect(inputElm.value).toBe("a");
-      //   $rootScope.form.alias.$rollbackViewValue();
-      //   expect(inputElm.value).toBe("");
-      //   browserTrigger(inputElm, "blur");
-      //   expect(inputElm.value).toBe("");
-      // });
-
-      // it("should allow canceling pending updates", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       "ng-model-options=\"{ updateOn: 'blur' }\" />",
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toEqual(undefined);
-      //   $rootScope.form.alias.$rollbackViewValue();
-      //   expect($rootScope.name).toEqual(undefined);
-      //   browserTrigger(inputElm, "blur");
-      //   expect($rootScope.name).toEqual(undefined);
-      // });
-
-      // it("should allow canceling debounced updates", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 10000 }" />',
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect($rootScope.name).toEqual(undefined);
-      //   $timeout.flush(2000);
-      //   $rootScope.form.alias.$rollbackViewValue();
-      //   expect($rootScope.name).toEqual(undefined);
-      //   $timeout.flush(10000);
-      //   expect($rootScope.name).toEqual(undefined);
-      // });
-
-      // it("should handle model updates correctly even if rollbackViewValue is not invoked", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       "ng-model-options=\"{ updateOn: 'blur' }\" />",
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   browserTrigger(inputElm, "blur");
-      //   expect($rootScope.name).toBe("b");
-      // });
-
-      // it("should reset input val if rollbackViewValue called during debounce", () => {
-      //   inputElm = $compile(
-      //     '<input type="text" ng-model="name" name="alias" ' +
-      //       'ng-model-options="{ debounce: 2000 }" />',
-      //   )($rootScope);
-
-      //   changeGivenInputTo(inputElm, "a");
-      //   expect(inputElm.value).toBe("a");
-      //   $rootScope.form.alias.$rollbackViewValue();
-      //   expect(inputElm.value).toBe("");
-      //   $timeout.flush(3000);
-      //   expect(inputElm.value).toBe("");
-      // });
-      //});
+          await wait(40);
+          expect(inputElm.value).toBe("");
+          expect($rootScope.name).toBeUndefined();
+        });
+      });
 
       describe("getterSetter", () => {
         it("should not try to invoke a model if getterSetter is false", () => {

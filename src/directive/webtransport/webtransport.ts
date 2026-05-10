@@ -1,16 +1,25 @@
 import {
+  _compile,
   _exceptionHandler,
   _log,
   _parse,
   _webTransport,
 } from "../../injection-tokens.ts";
 import {
+  isDefined,
   isFunction,
   isObject,
   isString,
   isUndefined,
   uppercase,
 } from "../../shared/utils.ts";
+import {
+  SwapMode,
+  getRealtimeProtocolContent,
+  isRealtimeProtocolMessage,
+  type RealtimeProtocolMessage,
+  type SwapModeType,
+} from "../realtime/protocol.ts";
 
 type WebTransportDirectiveMode = "datagram" | "stream" | "unidirectional";
 
@@ -27,6 +36,7 @@ type MessageLocals = {
 ngWebTransportDirective.$inject = [
   _webTransport,
   _parse,
+  _compile,
   _log,
   _exceptionHandler,
 ];
@@ -38,6 +48,7 @@ ngWebTransportDirective.$inject = [
 export function ngWebTransportDirective(
   $webTransport: ng.WebTransportService,
   $parse: ng.ParseService,
+  $compile: ng.CompileService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive {
@@ -199,6 +210,130 @@ export function ngWebTransportDirective(
         return { $message: JSON.parse(text), $text: text };
       }
 
+      function parseSwapMode(
+        value: string | undefined,
+      ): SwapModeType | undefined {
+        if (isString(value) && value in SwapMode) {
+          return value as SwapModeType;
+        }
+
+        return undefined;
+      }
+
+      function compileContent(content: unknown): ChildNode[] {
+        const compiled = $compile(String(content))(scope) as
+          | ChildNode
+          | DocumentFragment;
+
+        return compiled instanceof DocumentFragment
+          ? Array.from(compiled.childNodes)
+          : [compiled];
+      }
+
+      function handleProtocolMessage(
+        message: RealtimeProtocolMessage,
+        event: Event | null,
+      ): boolean {
+        const swap = message.swap || parseSwapMode(attr("swap")) || "innerHTML";
+
+        const content = getRealtimeProtocolContent(message);
+
+        if (!isDefined(content) && swap !== "delete" && swap !== "none") {
+          return false;
+        }
+
+        const target = message.target
+          ? document.querySelector(message.target)
+          : element;
+
+        if (!target) {
+          $log.warn(`ngWebTransport: target "${message.target}" not found`);
+
+          return false;
+        }
+
+        switch (swap) {
+          case "textContent":
+            target.textContent = String(content);
+            break;
+
+          case "delete":
+            target.remove();
+            break;
+
+          case "none":
+            break;
+
+          case "outerHTML": {
+            const parent = target.parentNode;
+
+            if (!parent) return false;
+
+            const fragment = document.createDocumentFragment();
+
+            compileContent(content).forEach((node) =>
+              fragment.appendChild(node),
+            );
+            parent.replaceChild(fragment, target);
+            break;
+          }
+
+          case "beforebegin": {
+            const parent = target.parentNode;
+
+            if (!parent) return false;
+
+            compileContent(content).forEach((node) =>
+              parent.insertBefore(node, target),
+            );
+            break;
+          }
+
+          case "afterbegin": {
+            const { firstChild } = target;
+
+            compileContent(content).forEach((node) =>
+              target.insertBefore(node, firstChild),
+            );
+            break;
+          }
+
+          case "beforeend":
+            compileContent(content).forEach((node) => target.appendChild(node));
+            break;
+
+          case "afterend": {
+            const parent = target.parentNode;
+
+            if (!parent) return false;
+
+            const { nextSibling } = target;
+
+            compileContent(content).forEach((node) =>
+              parent.insertBefore(node, nextSibling),
+            );
+            break;
+          }
+
+          case "innerHTML":
+          default:
+            target.replaceChildren(...compileContent(content));
+            break;
+        }
+
+        if (isFunction(scope.$flushQueue)) {
+          scope.$flushQueue();
+        }
+
+        dispatch("swapped", {
+          connection,
+          data: message,
+          event,
+        });
+
+        return true;
+      }
+
       function handleMessage(data: Uint8Array, event: Event | null = null) {
         if (!connection) return;
 
@@ -229,6 +364,12 @@ export function ngWebTransportDirective(
         }
 
         evaluate(attr("onMessage"), locals);
+
+        if (isRealtimeProtocolMessage(locals.$message)) {
+          handleProtocolMessage(locals.$message, event);
+
+          return;
+        }
 
         if (isUndefined(attr("onMessage"))) {
           element.textContent = isString(locals.$message)

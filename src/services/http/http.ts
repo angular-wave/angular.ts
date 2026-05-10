@@ -30,7 +30,7 @@ import {
   isUndefined,
   keys,
   lowercase,
-  minErr,
+  createErrorFactory,
   nullObject,
   shallowCopy,
   toJson,
@@ -289,7 +289,7 @@ const JSON_ENDS: Record<string, RegExp> = {
 
 const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
 
-const $httpMinErr = minErr("$http");
+const $httpError = createErrorFactory("$http");
 
 /** Serializes a request param value into a transport-safe primitive. */
 function serializeValue(
@@ -386,7 +386,7 @@ export function defaultHttpResponseTransform(
           if (!hasJsonContentType) {
             return data;
           }
-          throw $httpMinErr(
+          throw $httpError(
             "baddata",
             'Data must be a valid JSON object. Received: "{0}". ' +
               'Parse error: "{1}"',
@@ -700,7 +700,7 @@ export function HttpProvider(this: any): void {
        */
       const $http = function <T>(requestConfig: RequestConfig): HttpPromise<T> {
         if (!isObject(requestConfig)) {
-          throw minErr("$http")(
+          throw $httpError(
             "badreq",
             "Http request configuration must be an object.  Received: {0}",
             requestConfig,
@@ -708,7 +708,7 @@ export function HttpProvider(this: any): void {
         }
 
         if (!isString($sce.valueOf(requestConfig.url))) {
-          throw minErr("$http")(
+          throw $httpError(
             "badreq",
             "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
             requestConfig.url,

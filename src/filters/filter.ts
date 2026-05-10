@@ -10,8 +10,10 @@ import {
   isNullOrUndefined,
   isObject,
   isUndefined,
-  minErr,
+  createErrorFactory,
 } from "../shared/utils.ts";
+
+const filterError = createErrorFactory("filter");
 
 export type FilterFn = (input: any, ...args: any[]) => any;
 
@@ -41,11 +43,7 @@ export function filterFilter() {
       if (isNullOrUndefined(array)) {
         return array;
       }
-      throw minErr("filter")(
-        "notarray",
-        "Expected array but received: {0}",
-        array,
-      );
+      throw filterError("notarray", "Expected array but received: {0}", array);
     }
 
     anyPropertyKey = anyPropertyKey || "$";

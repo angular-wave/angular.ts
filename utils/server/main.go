@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -57,6 +58,7 @@ var initialTasks = []task{
 }
 
 var webTransportCloseOnce sync.Map
+var webTransportAvailable atomic.Bool
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -84,8 +86,10 @@ func main() {
 
 	go func() {
 		log.Printf("WebTransport test backend listening on %s", webTransportURL)
+		webTransportAvailable.Store(true)
 		if err := wtServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("WebTransport server failed: %v", err)
+			webTransportAvailable.Store(false)
+			log.Printf("WebTransport server unavailable: %v", err)
 		}
 	}()
 
@@ -223,6 +227,11 @@ func newHTTPMux(certHash []byte) *http.ServeMux {
 		case strings.TrimSuffix(r.URL.Path, "/") == "/users":
 			writeJSON(w, http.StatusOK, []map[string]any{{"id": 1, "name": "Bob"}, {"id": 2, "name": "Ken"}})
 		case r.URL.Path == "/webtransport/cert-hash":
+			if !webTransportAvailable.Load() {
+				http.Error(w, "WebTransport test backend unavailable", http.StatusServiceUnavailable)
+
+				return
+			}
 			writeJSON(w, http.StatusOK, map[string]any{
 				"url":       webTransportURL,
 				"algorithm": "sha-256",

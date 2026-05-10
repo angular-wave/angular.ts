@@ -2,6 +2,7 @@ import { stringify } from "../../shared/strings.ts";
 import { assign, isObject, isUndefined, keys } from "../../shared/utils.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { buildHooksForPhase } from "./hook-builder.ts";
+import { TransitionRunner } from "./transition-runner.ts";
 import {
   applyViewConfigs,
   buildToPath,
@@ -63,10 +64,6 @@ function createDeferredPromise<T>(): DeferredPromise<T> {
   });
 
   return { promise, resolve, reject };
-}
-
-function resolvedPromise(): Promise<void> {
-  return Promise.resolve();
 }
 
 function nodeIsReloading(node: PathNode, reloadState?: StateObject): boolean {
@@ -501,54 +498,6 @@ export class Transition {
     return Promise.resolve();
   }
 
-  /** @internal */
-  _runTransitionHooks(): Promise<unknown> {
-    // Wait to build the RUN hook chain until BEFORE hooks have completed.
-    // This allows a BEFORE hook to add more RUN hooks dynamically.
-    const allRunHooks = this._getHooksFor(TransitionHookPhase._RUN);
-
-    return TransitionHook._invokeHooks(allRunHooks, resolvedPromise);
-  }
-
-  /** @internal */
-  _resolveTransition(): void {
-    this._deferred.resolve(this.to());
-  }
-
-  /** @internal */
-  _transitionSuccess(): void {
-    this.success = true;
-
-    const hooks = this._getHooksFor(TransitionHookPhase._SUCCESS);
-
-    void this._runSuccessHooks(hooks);
-  }
-
-  /** @internal */
-  async _runSuccessHooks(hooks: TransitionHook[]): Promise<void> {
-    try {
-      await TransitionHook._invokeHooks(hooks, resolvedPromise);
-      this._resolveTransition();
-    } catch (reason) {
-      this._transitionError(reason);
-    }
-  }
-
-  /** @internal */
-  _transitionError(reason: unknown): void {
-    const rejection = Rejection.normalize(reason);
-
-    this.success = false;
-    this._deferred.reject(rejection);
-    this._error = rejection;
-
-    const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
-
-    hooks.forEach((hook) => {
-      hook._invokeHook();
-    });
-  }
-
   /**
    * Runs the transition
    *
@@ -559,22 +508,9 @@ export class Transition {
    * @returns {Promise<StateDeclaration>} a promise for a successful transition.
    */
   run(): Promise<StateDeclaration> {
-    void this._run();
+    TransitionRunner._run(this);
 
     return this.promise;
-  }
-
-  /** @internal */
-  async _run(): Promise<void> {
-    try {
-      const allBeforeHooks = this._getHooksFor(TransitionHookPhase._BEFORE);
-
-      await TransitionHook._invokeHooks(allBeforeHooks, this);
-      await this._runTransitionHooks();
-      this._transitionSuccess();
-    } catch (reason) {
-      this._transitionError(reason);
-    }
   }
 
   /** Checks if this transition is currently active/running. */

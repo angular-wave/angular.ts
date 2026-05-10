@@ -3,11 +3,11 @@ import {
   assertArgFn,
   isArray,
   isFunction,
-  minErr,
+  createErrorFactory,
 } from "../../shared/utils.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 
 const ARROW_ARG = /^([^(]+?)=>/;
 
@@ -44,7 +44,7 @@ export function annotate(
     if (!fn.$inject) {
       if (fn.length > 0) {
         if (strictDi) {
-          throw $injectorMinErr(
+          throw $injectorError(
             "strictdi",
             "{0} is not using explicit annotation and cannot be invoked in strict mode",
             name,

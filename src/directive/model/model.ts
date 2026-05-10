@@ -30,7 +30,7 @@ import {
   isPromiseLike,
   isUndefined,
   keys,
-  minErr,
+  createErrorFactory,
   snakeCase,
   values,
 } from "../../shared/utils.ts";
@@ -50,7 +50,7 @@ import {
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 
-export const ngModelMinErr = minErr("ngModel");
+export const ngModelError = createErrorFactory("ngModel");
 
 export interface ModelValidators {
   /**
@@ -532,7 +532,7 @@ export class NgModelController {
         }
       };
     } else if (!this._parsedNgModel._assign) {
-      throw ngModelMinErr(
+      throw ngModelError(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
         this._attr.ngModel,
@@ -953,7 +953,7 @@ export class NgModelController {
         const promise = validator(modelValue, viewValue);
 
         if (!isPromiseLike(promise)) {
-          throw ngModelMinErr(
+          throw ngModelError(
             "nopromise",
             "Expected asynchronous validator to return a promise but got '{0}' instead.",
             promise,

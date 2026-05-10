@@ -101,6 +101,11 @@ import {
   TranscludeFn as TTranscludeFn,
 } from "./core/compile/compile.ts";
 import type {
+  RealtimeProtocolEventDetail as TRealtimeProtocolEventDetail,
+  RealtimeProtocolMessage as TRealtimeProtocolMessage,
+  SwapModeType as TSwapModeType,
+} from "./directive/realtime/protocol.ts";
+import type {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
 } from "./directive/worker/worker.ts";
@@ -108,12 +113,18 @@ import type {
   Location as TLocationService,
   LocationProvider as TLocationProvider,
 } from "./services/location/location.ts";
-import { AnimationOptions as TAnimationOptions } from "./animations/interface.ts";
 import {
+  AnimationContext as TAnimationContext,
+  AnimationHandle as TAnimationHandle,
+  AnimationLifecycleCallback as TAnimationLifecycleCallback,
+  AnimationPhase as TAnimationPhase,
+  AnimationPreset as TAnimationPreset,
+  AnimationPresetHandler as TAnimationPresetHandler,
+  AnimationResult as TAnimationResult,
   AnimateProvider,
   type AnimateService as TAnimateService,
+  NativeAnimationOptions as TNativeAnimationOptions,
 } from "./animations/animate.ts";
-import type { AnimateCssService as TAnimateCssService } from "./animations/css/animate-css.ts";
 import type {
   StorageBackend as TStorageBackend,
   StorageType as TStorageType,
@@ -180,7 +191,6 @@ import type {
   WebTransportRetryDelay as TWebTransportRetryDelay,
   WebTransportService as TWebTransportService,
 } from "./services/webtransport/webtransport.ts";
-import type { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import type { AriaService as TAriaService } from "./directive/aria/aria.ts";
@@ -253,9 +263,11 @@ declare global {
 
     export type AnimateService = TAnimateService;
 
-    export type AnimateCssService = TAnimateCssService;
+    export type AnimationHandle = TAnimationHandle;
 
-    export type AnimateRunner = TAnimateRunner;
+    export type AnimationContext = TAnimationContext;
+
+    export type AnimationLifecycleCallback = TAnimationLifecycleCallback;
 
     export type AriaService = TAriaService;
 
@@ -321,6 +333,20 @@ declare global {
 
     export type SseConnection = TSseConnection;
 
+    export type RealtimeProtocolEventDetail<
+      T = unknown,
+      TSource = unknown,
+    > = TRealtimeProtocolEventDetail<T, TSource>;
+
+    export type RealtimeProtocolMessage = TRealtimeProtocolMessage;
+
+    export type SseProtocolEventDetail<T = unknown> =
+      TRealtimeProtocolEventDetail<T, TSseConnection>;
+
+    export type SseProtocolMessage = TRealtimeProtocolMessage;
+
+    export type SwapModeType = TSwapModeType;
+
     export type TemplateCacheService = Map<string, string>;
 
     export type TemplateRequestService = TTemplateRequestService;
@@ -333,7 +359,17 @@ declare global {
     export type AnnotatedFactory<T extends (...args: any[]) => any> =
       TAnnotatedFactory<T>;
 
-    export type AnimationOptions = TAnimationOptions;
+    export type AnimationOptions = TNativeAnimationOptions;
+
+    export type NativeAnimationOptions = TNativeAnimationOptions;
+
+    export type AnimationPhase = TAnimationPhase;
+
+    export type AnimationPreset = TAnimationPreset;
+
+    export type AnimationPresetHandler = TAnimationPresetHandler;
+
+    export type AnimationResult = TAnimationResult;
 
     export type AngularElementDefinition = TAngularElementDefinition;
 
