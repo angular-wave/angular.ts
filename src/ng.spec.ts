@@ -1,6 +1,7 @@
 /// <reference types="jasmine" />
 import { createInjector } from "./core/di/injector.ts";
 import { Angular } from "./angular.ts";
+import { ngBuiltInFilters, ngCoreProviders, ngFilterProviders } from "./ng.ts";
 
 describe("public", () => {
   beforeEach(() => {
@@ -21,6 +22,20 @@ describe("public", () => {
     const injector = createInjector(["ng"]);
 
     expect(injector.has("$filter")).toBe(true);
+  });
+
+  it("keeps filters outside the core provider group", () => {
+    expect("$filter" in ngCoreProviders).toBe(false);
+    expect("$filter" in ngFilterProviders).toBe(true);
+  });
+
+  it("registers built-in filters separately from the filter provider", () => {
+    const injector = createInjector(["ng"]);
+
+    const $filter = injector.get("$filter") as ng.FilterService;
+
+    expect("json" in ngBuiltInFilters).toBe(true);
+    expect($filter("json")({ ok: true })).toBe('{\n  "ok": true\n}');
   });
 
   it("sets up the $parse service", () => {

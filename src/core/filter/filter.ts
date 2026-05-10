@@ -1,14 +1,6 @@
 import { _injector, _provide } from "../../injection-tokens.ts";
-import {
-  filterFilter,
-  type FilterFactory,
-  type FilterService,
-} from "../../filters/filter.ts";
-import { jsonFilter } from "../../filters/json.ts";
-import { limitToFilter } from "../../filters/limit-to.ts";
-import { orderByFilter } from "../../filters/order-by.ts";
-import type { Provider } from "../../interface.ts";
-import { entries, isFunction } from "../../shared/utils.ts";
+import type { FilterFactory, FilterService } from "../../filters/filter.ts";
+import { isFunction } from "../../shared/utils.ts";
 import { validate, validateIsString } from "../../shared/validate.ts";
 
 const SUFFIX = "Filter";
@@ -17,20 +9,11 @@ export class FilterProvider {
   static $inject = [_provide];
 
   /** @internal */
-  _$provide: Provider;
+  _$provide: ng.ProvideService;
   $get: [string, ($injector: ng.InjectorService) => FilterService];
 
-  constructor($provide: Provider) {
+  constructor($provide: ng.ProvideService) {
     this._$provide = $provide;
-
-    entries({
-      filter: filterFilter,
-      json: jsonFilter,
-      limitTo: limitToFilter,
-      orderBy: orderByFilter,
-    }).forEach(([key, value]) => {
-      this.register(key, value as FilterFactory);
-    });
 
     this.$get = [
       _injector,

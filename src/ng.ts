@@ -2,6 +2,7 @@ import {
   _angular,
   _compile,
   _document,
+  _filter,
   _provide,
   _router,
   _window,
@@ -21,6 +22,26 @@ import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
 import { RootScopeProvider } from "./core/scope/scope.ts";
+import {
+  entriesFilter,
+  keysFilter,
+  valuesFilter,
+} from "./filters/collection.ts";
+import { dateFilter } from "./filters/date.ts";
+import {
+  filterFilter,
+  type FilterFactory,
+  type FilterFn,
+} from "./filters/filter.ts";
+import { jsonFilter } from "./filters/json.ts";
+import { limitToFilter } from "./filters/limit-to.ts";
+import {
+  currencyFilter,
+  numberFilter,
+  percentFilter,
+} from "./filters/number.ts";
+import { orderByFilter } from "./filters/order-by.ts";
+import { relativeTimeFilter } from "./filters/relative-time.ts";
 import {
   AriaProvider,
   ngCheckedAriaDirective,
@@ -142,10 +163,15 @@ import { WebTransportProvider } from "./services/webtransport/webtransport.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
+import { entries } from "./shared/utils.ts";
 
 type ProviderGroup = Record<string, Function>;
 
 type DirectiveGroup = Record<string, ng.DirectiveFactory>;
+
+type BuiltInFilterFactory = (...args: any[]) => FilterFn;
+
+type FilterGroup = Record<string, BuiltInFilterFactory>;
 
 /**
  * Runtime identity and DOM globals.
@@ -167,15 +193,42 @@ function registerRuntimeHostValues(
   $provide.value(_document, document);
 }
 
-/** Providers required by scopes, expressions, filters, controllers, and compile. */
+/** Registers built-in filters against the already-registered `$filter` provider. */
+function registerBuiltInFilters($filterProvider: FilterProvider): void {
+  entries(ngBuiltInFilters).forEach(([name, factory]) => {
+    $filterProvider.register(name, factory as FilterFactory);
+  });
+}
+
+/** Providers required by scopes, expressions, controllers, and compile. */
 export const ngCoreProviders = {
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
-  $filter: FilterProvider,
   $interpolate: InterpolateProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
 } satisfies ProviderGroup;
+
+/** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */
+export const ngFilterProviders = {
+  $filter: FilterProvider,
+} satisfies ProviderGroup;
+
+/** Built-in filters included by the default full `ng` runtime. */
+export const ngBuiltInFilters = {
+  date: dateFilter,
+  entries: entriesFilter,
+  filter: filterFilter,
+  json: jsonFilter,
+  keys: keysFilter,
+  limitTo: limitToFilter,
+  currency: currencyFilter,
+  number: numberFilter,
+  orderBy: orderByFilter,
+  percent: percentFilter,
+  relativeTime: relativeTimeFilter,
+  values: valuesFilter,
+} satisfies FilterGroup;
 
 /** Browser services that are useful in normal apps but optional for small runtimes. */
 export const ngBrowserProviders = {
@@ -348,6 +401,7 @@ export const ngFillDirectives = {
 /** Provider groups included by the default full `ng` runtime. */
 export const ngDefaultProviderGroups = [
   ngCoreProviders,
+  ngFilterProviders,
   ngBrowserProviders,
   ngSecurityProviders,
   ngAnimationProviders,
@@ -394,9 +448,21 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
           $compileProvider.directive(directives);
         });
 
+        let $filterProvider: FilterProvider | undefined;
+
         ngDefaultProviderGroups.forEach((providers) => {
-          $provide.provider(providers);
+          entries(providers).forEach(([name, provider]) => {
+            const registeredProvider = $provide.provider(name, provider);
+
+            if (name === _filter) {
+              $filterProvider = registeredProvider as unknown as FilterProvider;
+            }
+          });
         });
+
+        if ($filterProvider) {
+          registerBuiltInFilters($filterProvider);
+        }
       },
     ],
   );

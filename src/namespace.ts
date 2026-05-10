@@ -40,6 +40,16 @@ import {
   FilterService as TFilterService,
   FilterFn as TFilterFn,
 } from "./filters/filter.ts";
+import type { EntryFilterItem as TEntryFilterItem } from "./filters/collection.ts";
+import type {
+  DateFilterFormat as TDateFilterFormat,
+  DateFilterOptions as TDateFilterOptions,
+} from "./filters/date.ts";
+import type {
+  CurrencyFilterOptions as TCurrencyFilterOptions,
+  NumberFilterOptions as TNumberFilterOptions,
+} from "./filters/number.ts";
+import type { RelativeTimeFilterOptions as TRelativeTimeFilterOptions } from "./filters/relative-time.ts";
 import type { FilterProvider as TFilterProvider } from "./core/filter/filter.ts";
 import type {
   InterpolateService as TInterpolateService,
@@ -262,6 +272,18 @@ declare global {
     export type FilterFactory = TFilterFactory;
 
     export type FilterService = TFilterService;
+
+    export type EntryFilterItem = TEntryFilterItem;
+
+    export type DateFilterFormat = TDateFilterFormat;
+
+    export type DateFilterOptions = TDateFilterOptions;
+
+    export type NumberFilterOptions = TNumberFilterOptions;
+
+    export type CurrencyFilterOptions = TCurrencyFilterOptions;
+
+    export type RelativeTimeFilterOptions = TRelativeTimeFilterOptions;
 
     export type HttpParamSerializerSerService = THttpParamSerializer;
 

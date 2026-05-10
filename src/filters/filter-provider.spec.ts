@@ -1,16 +1,15 @@
 /// <reference types="jasmine" />
 import { Angular } from "../angular.ts";
 import { createInjector } from "../core/di/injector.ts";
-import { toJson, wait } from "../shared/utils.ts";
+import { wait } from "../shared/utils.ts";
 
-describe("filters", () => {
-  let filter: ng.FilterService;
-
+describe("FilterProvider", () => {
   let filterProvider: ng.FilterProvider;
 
   const el = document.getElementById("app") as HTMLElement;
 
   beforeEach(() => {
+    el.innerHTML = "";
     window.angular = new Angular();
     window.angular
       .module("myModule", ["ng"])
@@ -19,9 +18,7 @@ describe("filters", () => {
         // @ts-expect-error test filter factories do not carry $$moduleName metadata.
         filterProvider.register("test", () => (x: any) => `${x}_test`);
       });
-    const injector = createInjector(["myModule"]);
-
-    filter = injector.get("$filter") as ng.FilterService;
+    createInjector(["myModule"]);
   });
 
   it("should be available at config phase", () => {
@@ -58,6 +55,7 @@ describe("filters", () => {
   it("should call the filter when evaluating expression", () => {
     const filter = jasmine.createSpy("myFilter");
 
+    window.angular = new Angular();
     createInjector([
       "ng",
       function ($filterProvider: ng.FilterProvider) {
@@ -68,14 +66,5 @@ describe("filters", () => {
       $parse("10|myFilter")($rootScope);
     });
     expect(filter).toHaveBeenCalledWith(10);
-  });
-
-  describe("json", () => {
-    it("should do basic filter", () => {
-      expect(filter("json")({ a: "b" })).toEqual(toJson({ a: "b" }, true));
-    });
-    it("should allow custom indentation", () => {
-      expect(filter("json")({ a: "b" }, 4)).toEqual(toJson({ a: "b" }, 4));
-    });
   });
 });

@@ -38,15 +38,21 @@ describe("lexer", () => {
       };
     });
 
-    it("should only match number chars with isNumber", () => {
-      expect(Lexer.prototype._isNumber("0")).toBe(true);
-      expect(Lexer.prototype._isNumber("")).toBeFalsy();
-      expect(Lexer.prototype._isNumber(" ")).toBeFalsy();
-      expect(Lexer.prototype._isNumber(0)).toBeFalsy();
-      expect(Lexer.prototype._isNumber(false)).toBeFalsy();
-      expect(Lexer.prototype._isNumber(true)).toBeFalsy();
-      expect(Lexer.prototype._isNumber(undefined)).toBeFalsy();
-      expect(Lexer.prototype._isNumber(null)).toBeFalsy();
+    it("should tokenize digit characters as numbers without consuming identifiers", () => {
+      const tokens = lex("0 9 .5 a0 value");
+
+      expect(tokens.map((token) => token._text)).toEqual([
+        "0",
+        "9",
+        ".5",
+        "a0",
+        "value",
+      ]);
+      expect(tokens[0]._value).toEqual(0);
+      expect(tokens[1]._value).toEqual(9);
+      expect(tokens[2]._value).toEqual(0.5);
+      expect(tokens[3]._identifier).toEqual(true);
+      expect(tokens[4]._identifier).toEqual(true);
     });
 
     it("should tokenize a string", () => {
@@ -182,13 +188,14 @@ describe("lexer", () => {
       expect(tokens[8]._text).toEqual("!==");
     });
 
-    it("should tokenize logical and ternary", () => {
-      const tokens = lex("&& || ? :");
+    it("should tokenize logical, nullish coalescing and ternary", () => {
+      const tokens = lex("&& || ?? ? :");
 
       expect(tokens[0]._text).toEqual("&&");
       expect(tokens[1]._text).toEqual("||");
-      expect(tokens[2]._text).toEqual("?");
-      expect(tokens[3]._text).toEqual(":");
+      expect(tokens[2]._text).toEqual("??");
+      expect(tokens[3]._text).toEqual("?");
+      expect(tokens[4]._text).toEqual(":");
     });
 
     it("should tokenize statements", () => {
