@@ -2,12 +2,13 @@ import { chromium } from "playwright";
 import { createServer } from "vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { printAndSaveBenchmarkResult } from "./benchmark-report.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "..");
+const rootDir = path.resolve(__dirname, "../..");
 
-const DEFAULT_PORT = 4179;
-const DEFAULT_ITERATIONS = 5_000;
+const DEFAULT_PORT = 4177;
+const DEFAULT_ITERATIONS = 100_000;
 const DEFAULT_SAMPLES = 7;
 
 const options = parseArgs(process.argv.slice(2));
@@ -33,38 +34,53 @@ try {
 
   browser = await chromium.launch({ headless: !options.headful });
   const page = await browser.newPage();
-  const url = new URL("utils/link-benchmark.html", baseUrl);
+  const url = new URL("utils/benchmarks/parse-benchmark.html", baseUrl);
   url.searchParams.set("iterations", String(options.iterations));
   url.searchParams.set("samples", String(options.samples));
-
-  const pageErrors = [];
+  url.searchParams.set("kind", options.kind);
 
   page.on("pageerror", (error) => {
-    pageErrors.push(error.stack || error.message);
     console.error(error.stack || error.message);
   });
 
   await page.goto(url.toString());
   await page.waitForFunction(
-    () => window.__linkBenchmarkResults || window.__linkBenchmarkError,
+    () => window.__parseBenchmarkResults || window.__parseBenchmarkError,
     { timeout: 120_000 },
   );
 
-  const error = await page.evaluate(() => window.__linkBenchmarkError || null);
+  const error = await page.evaluate(() => window.__parseBenchmarkError || null);
 
   if (error) {
     throw new Error(error);
   }
 
-  if (pageErrors.length) {
-    throw new Error(
-      `Link benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
-    );
-  }
+  const result = await page.evaluate(() => window.__parseBenchmarkResults);
 
-  const result = await page.evaluate(() => window.__linkBenchmarkResults);
-
-  printResult(result);
+  await printAndSaveBenchmarkResult({
+    id: `parse-${options.kind}`,
+    title: "AngularTS parse benchmark",
+    result,
+    iterationsLabel: (benchmarkResult) =>
+      `Iterations: ${benchmarkResult.iterations.toLocaleString()} eval/lexer, ${Math.max(
+        1,
+        Math.floor(benchmarkResult.iterations / 20),
+      ).toLocaleString()} compile`,
+    groups: [
+      {
+        title: "lexer",
+        filter: (entry) => entry.kind === "lexer",
+      },
+      {
+        title: "compile",
+        filter: (entry) => entry.kind === "compile",
+      },
+      {
+        title: "evaluate",
+        filter: (entry) => entry.kind === "evaluate",
+      },
+    ],
+  });
 } finally {
   await browser?.close();
   await server?.close();
@@ -74,6 +90,7 @@ function parseArgs(args) {
   const parsed = {
     iterations: DEFAULT_ITERATIONS,
     samples: DEFAULT_SAMPLES,
+    kind: "all",
     port: Number(process.env.PORT || DEFAULT_PORT),
     headful: false,
   };
@@ -87,6 +104,9 @@ function parseArgs(args) {
         break;
       case "--samples":
         parsed.samples = readPositiveInteger(args[++i], "--samples");
+        break;
+      case "--kind":
+        parsed.kind = readKind(args[++i]);
         break;
       case "--port":
         parsed.port = readPositiveInteger(args[++i], "--port");
@@ -106,6 +126,22 @@ function parseArgs(args) {
   return parsed;
 }
 
+function readKind(value) {
+  switch (value) {
+    case "all":
+    case "lexer":
+    case "compile":
+    case "evaluate":
+      return value;
+    case "interpreter":
+      return "evaluate";
+    default:
+      throw new Error(
+        "--kind expects one of: all, lexer, compile, evaluate, interpreter.",
+      );
+  }
+}
+
 function readPositiveInteger(value, flag) {
   const parsed = Number(value);
 
@@ -117,29 +153,13 @@ function readPositiveInteger(value, flag) {
 }
 
 function printHelp() {
-  console.log(`Usage: node utils/run-link-benchmark.mjs [options]
+  console.log(`Usage: node utils/benchmarks/run-parse-benchmark.mjs [options]
 
 Options:
-  --iterations <n>  Link iterations per sample.
+  --iterations <n>  Evaluation and lexer iterations per sample.
   --samples <n>     Number of timing samples per case.
+  --kind <kind>      Benchmark kind: all, lexer, compile, evaluate, interpreter.
   --port <n>        Vite server port.
   --headful         Run Chromium with a visible window.
 `);
-}
-
-function printResult(result) {
-  console.log("AngularTS link benchmark");
-  console.log(`Browser: ${result.userAgent}`);
-  console.log(`Iterations: ${result.iterations.toLocaleString()} link`);
-  console.log(`Samples: ${result.samples}`);
-  console.log("");
-
-  console.table(
-    result.results.map((entry) => ({
-      case: entry.name,
-      "ops/sec": Math.round(entry.opsPerSecond).toLocaleString(),
-      "median ms": entry.medianMs.toFixed(2),
-      "min ms": entry.minMs.toFixed(2),
-    })),
-  );
 }

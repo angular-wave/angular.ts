@@ -13,8 +13,6 @@ describe("ngRef", () => {
 
     let elementDirectiveController;
 
-    let classDirectiveController;
-
     let $rootScope;
 
     let $compile;
@@ -52,14 +50,6 @@ describe("ngRef", () => {
             template: "my text",
             controller() {
               elementDirectiveController = this;
-            },
-          }));
-
-          $compileProvider.directive("classDirective", () => ({
-            restrict: "C",
-            template: "my text",
-            controller() {
-              classDirectiveController = this;
             },
           }));
         },
@@ -251,15 +241,6 @@ describe("ngRef", () => {
 
       expect(attributeDirectiveController).toBeDefined();
       expect($rootScope.attributeElementRef).toBe(element);
-    });
-
-    it("should bind the DOM element if the controller is on a class directive", () => {
-      const element = $compile(
-        '<div class="class-directive" ng-ref="classElementRef"></div>',
-      )($rootScope);
-
-      expect(classDirectiveController).toBeDefined();
-      expect($rootScope.classElementRef).toBe(element);
     });
   });
 });

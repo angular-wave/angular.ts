@@ -2,12 +2,13 @@ import { chromium } from "playwright";
 import { createServer } from "vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { printAndSaveBenchmarkResult } from "./benchmark-report.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "..");
+const rootDir = path.resolve(__dirname, "../..");
 
-const DEFAULT_PORT = 4177;
-const DEFAULT_ITERATIONS = 100_000;
+const DEFAULT_PORT = 4178;
+const DEFAULT_ITERATIONS = 5_000;
 const DEFAULT_SAMPLES = 7;
 
 const options = parseArgs(process.argv.slice(2));
@@ -33,30 +34,51 @@ try {
 
   browser = await chromium.launch({ headless: !options.headful });
   const page = await browser.newPage();
-  const url = new URL("utils/parse-benchmark.html", baseUrl);
+  const url = new URL("utils/benchmarks/compile-benchmark.html", baseUrl);
   url.searchParams.set("iterations", String(options.iterations));
   url.searchParams.set("samples", String(options.samples));
-  url.searchParams.set("kind", options.kind);
+
+  const pageErrors = [];
 
   page.on("pageerror", (error) => {
+    pageErrors.push(error.stack || error.message);
     console.error(error.stack || error.message);
   });
 
   await page.goto(url.toString());
   await page.waitForFunction(
-    () => window.__parseBenchmarkResults || window.__parseBenchmarkError,
+    () => window.__compileBenchmarkResults || window.__compileBenchmarkError,
     { timeout: 120_000 },
   );
 
-  const error = await page.evaluate(() => window.__parseBenchmarkError || null);
+  const error = await page.evaluate(
+    () => window.__compileBenchmarkError || null,
+  );
 
   if (error) {
     throw new Error(error);
   }
 
-  const result = await page.evaluate(() => window.__parseBenchmarkResults);
+  if (pageErrors.length) {
+    throw new Error(
+      `Compile benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
+    );
+  }
 
-  printResult(result);
+  const result = await page.evaluate(() => window.__compileBenchmarkResults);
+
+  await printAndSaveBenchmarkResult({
+    id: "compile",
+    title: "AngularTS compile benchmark",
+    result,
+    iterationsLabel: (benchmarkResult) =>
+      `Iterations: ${benchmarkResult.iterations.toLocaleString()} compile`,
+    groups: [
+      {
+        filter: () => true,
+      },
+    ],
+  });
 } finally {
   await browser?.close();
   await server?.close();
@@ -66,7 +88,6 @@ function parseArgs(args) {
   const parsed = {
     iterations: DEFAULT_ITERATIONS,
     samples: DEFAULT_SAMPLES,
-    kind: "all",
     port: Number(process.env.PORT || DEFAULT_PORT),
     headful: false,
   };
@@ -80,9 +101,6 @@ function parseArgs(args) {
         break;
       case "--samples":
         parsed.samples = readPositiveInteger(args[++i], "--samples");
-        break;
-      case "--kind":
-        parsed.kind = readKind(args[++i]);
         break;
       case "--port":
         parsed.port = readPositiveInteger(args[++i], "--port");
@@ -102,22 +120,6 @@ function parseArgs(args) {
   return parsed;
 }
 
-function readKind(value) {
-  switch (value) {
-    case "all":
-    case "lexer":
-    case "compile":
-    case "evaluate":
-      return value;
-    case "interpreter":
-      return "evaluate";
-    default:
-      throw new Error(
-        "--kind expects one of: all, lexer, compile, evaluate, interpreter.",
-      );
-  }
-}
-
 function readPositiveInteger(value, flag) {
   const parsed = Number(value);
 
@@ -129,44 +131,12 @@ function readPositiveInteger(value, flag) {
 }
 
 function printHelp() {
-  console.log(`Usage: node utils/run-parse-benchmark.mjs [options]
+  console.log(`Usage: node utils/benchmarks/run-compile-benchmark.mjs [options]
 
 Options:
-  --iterations <n>  Evaluation and lexer iterations per sample.
+  --iterations <n>  Compile iterations per sample.
   --samples <n>     Number of timing samples per case.
-  --kind <kind>      Benchmark kind: all, lexer, compile, evaluate, interpreter.
   --port <n>        Vite server port.
   --headful         Run Chromium with a visible window.
 `);
-}
-
-function printResult(result) {
-  console.log(`AngularTS parse benchmark`);
-  console.log(`Browser: ${result.userAgent}`);
-  console.log(
-    `Iterations: ${result.iterations.toLocaleString()} eval/lexer, ${Math.max(
-      1,
-      Math.floor(result.iterations / 20),
-    ).toLocaleString()} compile`,
-  );
-  console.log(`Samples: ${result.samples}`);
-
-  for (const kind of ["lexer", "compile", "evaluate"]) {
-    const rows = result.results
-      .filter((entry) => entry.kind === kind)
-      .map((entry) => ({
-        case: entry.name,
-        "ops/sec": Math.round(entry.opsPerSecond).toLocaleString(),
-        "median ms": entry.medianMs.toFixed(2),
-        "min ms": entry.minMs.toFixed(2),
-      }));
-
-    if (!rows.length) {
-      continue;
-    }
-
-    console.log("");
-    console.log(kind);
-    console.table(rows);
-  }
 }

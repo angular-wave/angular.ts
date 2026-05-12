@@ -2,11 +2,12 @@ import { chromium } from "playwright";
 import { createServer } from "vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { printAndSaveBenchmarkResult } from "./benchmark-report.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "..");
+const rootDir = path.resolve(__dirname, "../..");
 
-const DEFAULT_PORT = 4178;
+const DEFAULT_PORT = 4179;
 const DEFAULT_ITERATIONS = 5_000;
 const DEFAULT_SAMPLES = 7;
 
@@ -33,7 +34,7 @@ try {
 
   browser = await chromium.launch({ headless: !options.headful });
   const page = await browser.newPage();
-  const url = new URL("utils/compile-benchmark.html", baseUrl);
+  const url = new URL("utils/benchmarks/link-benchmark.html", baseUrl);
   url.searchParams.set("iterations", String(options.iterations));
   url.searchParams.set("samples", String(options.samples));
 
@@ -46,13 +47,11 @@ try {
 
   await page.goto(url.toString());
   await page.waitForFunction(
-    () => window.__compileBenchmarkResults || window.__compileBenchmarkError,
+    () => window.__linkBenchmarkResults || window.__linkBenchmarkError,
     { timeout: 120_000 },
   );
 
-  const error = await page.evaluate(
-    () => window.__compileBenchmarkError || null,
-  );
+  const error = await page.evaluate(() => window.__linkBenchmarkError || null);
 
   if (error) {
     throw new Error(error);
@@ -60,13 +59,24 @@ try {
 
   if (pageErrors.length) {
     throw new Error(
-      `Compile benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
+      `Link benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
     );
   }
 
-  const result = await page.evaluate(() => window.__compileBenchmarkResults);
+  const result = await page.evaluate(() => window.__linkBenchmarkResults);
 
-  printResult(result);
+  await printAndSaveBenchmarkResult({
+    id: "link",
+    title: "AngularTS link benchmark",
+    result,
+    iterationsLabel: (benchmarkResult) =>
+      `Iterations: ${benchmarkResult.iterations.toLocaleString()} link`,
+    groups: [
+      {
+        filter: () => true,
+      },
+    ],
+  });
 } finally {
   await browser?.close();
   await server?.close();
@@ -119,29 +129,12 @@ function readPositiveInteger(value, flag) {
 }
 
 function printHelp() {
-  console.log(`Usage: node utils/run-compile-benchmark.mjs [options]
+  console.log(`Usage: node utils/benchmarks/run-link-benchmark.mjs [options]
 
 Options:
-  --iterations <n>  Compile iterations per sample.
+  --iterations <n>  Link iterations per sample.
   --samples <n>     Number of timing samples per case.
   --port <n>        Vite server port.
   --headful         Run Chromium with a visible window.
 `);
-}
-
-function printResult(result) {
-  console.log("AngularTS compile benchmark");
-  console.log(`Browser: ${result.userAgent}`);
-  console.log(`Iterations: ${result.iterations.toLocaleString()} compile`);
-  console.log(`Samples: ${result.samples}`);
-  console.log("");
-
-  console.table(
-    result.results.map((entry) => ({
-      case: entry.name,
-      "ops/sec": Math.round(entry.opsPerSecond).toLocaleString(),
-      "median ms": entry.medianMs.toFixed(2),
-      "min ms": entry.minMs.toFixed(2),
-    })),
-  );
 }

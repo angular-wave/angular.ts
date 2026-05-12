@@ -24,9 +24,13 @@ export const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
+const HTML_PARSE_CACHE_MAX_SIZE = 256;
+
 let expandoCache = new WeakMap<object, ExpandoStore>();
 
 let cacheSize = 0;
+
+const htmlParseCache = new Map<string, DocumentFragment>();
 
 export const Cache = {
   get size() {
@@ -629,12 +633,38 @@ export function getInjector(element: Element): ng.InjectorService {
  * @param htmlString - Markup to parse.
  * @returns The parsed fragment.
  */
-function parseHTML(htmlString: string): DocumentFragment {
+function parseHTMLPrototype(htmlString: string): DocumentFragment {
   const template = document.createElement("template");
 
   template.innerHTML = htmlString.trim();
 
   return template.content;
+}
+
+function cacheParsedHTML(htmlString: string): DocumentFragment {
+  let parsed = htmlParseCache.get(htmlString);
+
+  if (parsed) {
+    return parsed;
+  }
+
+  parsed = parseHTMLPrototype(htmlString);
+
+  htmlParseCache.set(htmlString, parsed);
+
+  if (htmlParseCache.size > HTML_PARSE_CACHE_MAX_SIZE) {
+    const oldestKey = htmlParseCache.keys().next().value;
+
+    if (oldestKey !== undefined) {
+      htmlParseCache.delete(oldestKey);
+    }
+  }
+
+  return parsed;
+}
+
+function parseHTML(htmlString: string): DocumentFragment {
+  return cacheParsedHTML(htmlString).cloneNode(true) as DocumentFragment;
 }
 
 /**

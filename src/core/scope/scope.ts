@@ -934,9 +934,9 @@ function removeObjectListenerKey(
 }
 
 function getCachedScopeProxy(target: any, handler: Scope): any {
-  if (!isObject(target) || isNonScope(target)) return target;
-
   if (isProxy(target)) return target;
+
+  if (!isObject(target) || isNonScope(target)) return target;
 
   const objectTarget = target as object;
 

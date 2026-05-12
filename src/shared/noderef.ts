@@ -9,6 +9,20 @@ import { NodeType } from "./node.ts";
 export class NodeRef {
   static $nonscope = true;
   /** @internal */
+  static _fromNode(node: Node | ChildNode): NodeRef {
+    const ref = Object.create(NodeRef.prototype) as NodeRef;
+
+    ref._node = node;
+    ref._element =
+      node.nodeType === NodeType._ELEMENT_NODE ? (node as Element) : undefined;
+    ref._nodes = [];
+    ref._nodeList = undefined;
+    ref._isList = false;
+
+    return ref;
+  }
+
+  /** @internal */
   _node: Node | ChildNode | undefined;
   /** @internal */
   _element: Element | undefined;
@@ -236,7 +250,7 @@ export class NodeRef {
   /** @internal */
   _clone(): NodeRef {
     if (!this._isList) {
-      return new NodeRef(this.node.cloneNode(true));
+      return NodeRef._fromNode(this.node.cloneNode(true));
     }
 
     const collection = this._collection();
