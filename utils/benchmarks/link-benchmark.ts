@@ -1,6 +1,10 @@
-import { Angular } from "../src/angular.ts";
-import { createInjector } from "../src/core/di/injector.ts";
-import type { Scope } from "../src/core/scope/scope.ts";
+import { Angular } from "../../src/angular.ts";
+import type {
+  CloneAttachFn,
+  PublicLinkFn,
+} from "../../src/core/compile/compile.ts";
+import { createInjector } from "../../src/core/di/injector.ts";
+import type { Scope } from "../../src/core/scope/scope.ts";
 import { compileLinkBenchmarkCases } from "./compile-link-benchmark-cases.ts";
 
 type BenchmarkSummary = {
@@ -26,12 +30,19 @@ type BenchmarkOptions = {
   samples?: number;
 };
 
-type CompileService = (template: string | Node | NodeList) => Function;
+type CompileService = (template: string | Node | NodeList) => PublicLinkFn;
+
+type RuntimeServices = {
+  $compile: CompileService;
+  $rootScope: Scope;
+};
+
+type BenchmarkScope = Scope & Record<string, unknown>;
 
 declare global {
   interface Window {
-    __compileBenchmarkResults?: BenchmarkResult;
-    __compileBenchmarkError?: string;
+    __linkBenchmarkResults?: BenchmarkResult;
+    __linkBenchmarkError?: string;
   }
 }
 
@@ -58,12 +69,15 @@ function positiveInteger(value: string | null, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function createCompileService(): CompileService {
+function createRuntimeServices(): RuntimeServices {
   window.angular = new Angular();
 
   const injector = createInjector(["ng"]);
 
-  return injector.get("$compile") as CompileService;
+  return {
+    $compile: injector.get("$compile") as CompileService,
+    $rootScope: injector.get("$rootScope") as Scope,
+  };
 }
 
 function measure(
@@ -107,20 +121,54 @@ function measure(
   };
 }
 
-export async function runCompileBenchmark(
+function linkWithNewScope(
+  linkFn: PublicLinkFn,
+  $rootScope: Scope,
+  createScopeData?: () => Record<string, unknown>,
+): unknown {
+  const scope = $rootScope.$new() as BenchmarkScope;
+
+  if (createScopeData) {
+    Object.assign(scope, createScopeData());
+  }
+
+  try {
+    const linkedNodes = linkFn(scope, captureClone);
+
+    scope.$flushQueue();
+
+    return linkedNodes;
+  } finally {
+    scope.$destroy();
+  }
+}
+
+const captureClone: CloneAttachFn = (clone) => {
+  sink = clone;
+};
+
+export async function runLinkBenchmark(
   options: BenchmarkOptions = {},
 ): Promise<BenchmarkResult> {
   const iterations = options.iterations ?? DEFAULT_ITERATIONS;
 
   const samples = options.samples ?? DEFAULT_SAMPLES;
 
-  const $compile = createCompileService();
+  const { $compile, $rootScope } = createRuntimeServices();
 
-  const results = compileLinkBenchmarkCases.map((benchmark) =>
-    measure(benchmark.name, benchmark.template, iterations, samples, () =>
-      $compile(benchmark.template),
-    ),
-  );
+  const results = compileLinkBenchmarkCases
+    .filter((benchmark) => benchmark.includeInLink !== false)
+    .map((benchmark) => {
+      const linkFn = $compile(benchmark.template);
+
+      return measure(
+        benchmark.name,
+        benchmark.template,
+        iterations,
+        samples,
+        () => linkWithNewScope(linkFn, $rootScope, benchmark.createScopeData),
+      );
+    });
 
   return {
     userAgent: navigator.userAgent,
@@ -133,14 +181,12 @@ export async function runCompileBenchmark(
 try {
   const options = readOptions();
 
-  window.__compileBenchmarkResults = await runCompileBenchmark(options);
-  document.getElementById("status")!.textContent =
-    "Compile benchmark complete.";
+  window.__linkBenchmarkResults = await runLinkBenchmark(options);
+  document.getElementById("status")!.textContent = "Link benchmark complete.";
 } catch (error) {
-  window.__compileBenchmarkError =
+  window.__linkBenchmarkError =
     error instanceof Error ? error.stack || error.message : String(error);
-  document.getElementById("status")!.textContent =
-    window.__compileBenchmarkError;
+  document.getElementById("status")!.textContent = window.__linkBenchmarkError;
   throw error;
 } finally {
   document.body.dataset.sink = String(Boolean(sink));

@@ -272,7 +272,9 @@ describe("$compile", () => {
 
       const stableNodes = buildStableNodeList(
         {
-          _linkMappings: [{ _index: 0 }, { _index: 1 }],
+          _nodeIndices: [0, 1],
+          _nodeLinkPlans: [null, null],
+          _childLinkExecutors: [null, null],
           _nodeRefList: nodeRef,
           _hasNodeLinkFn: true,
           _transcludeFn: null,
@@ -294,7 +296,9 @@ describe("$compile", () => {
 
       const stableNodes = buildStableNodeList(
         {
-          _linkMappings: [{ _index: 2 }],
+          _nodeIndices: [2],
+          _nodeLinkPlans: [null],
+          _childLinkExecutors: [null],
           _nodeRefList: nodeRef,
           _hasNodeLinkFn: false,
           _transcludeFn: null,

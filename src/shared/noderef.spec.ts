@@ -1,7 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { NodeRef } from "./noderef.js";
-import { createDocumentFragment } from "./dom.ts";
+import { createDocumentFragment, createNodelistFromHTML } from "./dom.ts";
 
 describe("NodeRef", () => {
   let div;
@@ -71,6 +71,21 @@ describe("NodeRef", () => {
       expect(ref.element.textContent).toBe("hi");
     });
 
+    it("wraps repeated HTML strings with independent nodes", () => {
+      const html = "<section><p>hi</p></section>";
+
+      const first = new NodeRef(html);
+
+      first.element.setAttribute("data-mutated", "yes");
+      first.element.querySelector("p")!.textContent = "changed";
+
+      const second = new NodeRef(html);
+
+      expect(second.element).not.toBe(first.element);
+      expect(second.element.getAttribute("data-mutated")).toBeNull();
+      expect(second.element.querySelector("p")!.textContent).toBe("hi");
+    });
+
     it("handles HTML string with multiple nodes", () => {
       const html = "<div>A</div><span>B</span>";
 
@@ -85,6 +100,23 @@ describe("NodeRef", () => {
       );
       expect(() => new NodeRef(null)).toThrow();
       expect(() => new NodeRef(undefined)).toThrow();
+    });
+  });
+
+  describe("HTML fragment helpers", () => {
+    it("returns fresh node lists for repeated HTML fragments", () => {
+      const html = "<span>A</span><span>B</span>";
+
+      const first = createNodelistFromHTML(html);
+
+      (first[0] as Element).setAttribute("data-mutated", "yes");
+
+      const second = createNodelistFromHTML(html);
+
+      expect(second.length).toBe(2);
+      expect(second[0]).not.toBe(first[0]);
+      expect((second[0] as Element).getAttribute("data-mutated")).toBeNull();
+      expect(second[1].textContent).toBe("B");
     });
   });
 

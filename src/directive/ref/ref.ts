@@ -1,5 +1,6 @@
 import { _parse } from "../../injection-tokens.ts";
 import {
+  deProxy,
   directiveNormalize,
   getNodeName,
   hasOwn,
@@ -44,10 +45,23 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
             getCacheData(element, `$${controllerName}Controller`) || element;
         }
 
-        setter(scope, refValue);
+        refValue = deProxy(refValue);
+
+        if (refValue && typeof refValue === "object") {
+          try {
+            Object.defineProperty(refValue, "$nonscope", {
+              configurable: true,
+              value: true,
+            });
+          } catch {
+            // Non-extensible refs can still be assigned; they may be proxied on read.
+          }
+        }
+
+        setter(deProxy(scope), refValue);
 
         scope.$on("$destroy", () => {
-          setter(scope, null);
+          setter(deProxy(scope), null);
         });
       };
     },

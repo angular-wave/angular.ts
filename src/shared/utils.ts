@@ -572,7 +572,7 @@ export function simpleCompare(val1: unknown, val2: unknown): boolean {
           $scope.user1 = {};
           $scope.user2 = {};
           $scope.compare = function() {
-            $scope.result = angular.equals($scope.user1, $scope.user2);
+            $scope.result = JSON.stringify($scope.user1) === JSON.stringify($scope.user2);
           };
         }]);
     </file>
