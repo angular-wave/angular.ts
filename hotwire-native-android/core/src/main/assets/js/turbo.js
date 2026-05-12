@@ -1,113 +1,141 @@
 // Reference-only Hotwire/Turbo native adapter. Runtime now uses no-turbo-bridge.js.
 (() => {
-  const TURBO_LOAD_TIMEOUT = 4000
-  const PENDING_VISIT_KEY = "hotwire-native-fallback-visit"
+  const TURBO_LOAD_TIMEOUT = 4000;
+  const PENDING_VISIT_KEY = "hotwire-native-fallback-visit";
 
   // Bridge between Turbo JS and native code. Built for Turbo 7
   // with backwards compatibility for Turbolinks 5
   class TurboNative {
     constructor() {
-      this.fallbackVisitIdentifier = 0
+      this.fallbackVisitIdentifier = 0;
     }
 
     registerAdapter() {
       if (window.Turbo) {
-        Turbo.registerAdapter(this)
-        TurboSession.turboIsReady(true)
+        Turbo.registerAdapter(this);
+        TurboSession.turboIsReady(true);
         if (TurboSession.setTurboEnabled) {
-          TurboSession.setTurboEnabled(true)
+          TurboSession.setTurboEnabled(true);
         }
       } else if (window.Turbolinks) {
-        Turbolinks.controller.adapter = this
-        TurboSession.turboIsReady(true)
+        Turbolinks.controller.adapter = this;
+        TurboSession.turboIsReady(true);
         if (TurboSession.setTurboEnabled) {
-          TurboSession.setTurboEnabled(true)
+          TurboSession.setTurboEnabled(true);
         }
       } else {
-        TurboSession.setTurboEnabled(false)
-        TurboSession.turboIsReady(true)
+        TurboSession.setTurboEnabled(false);
+        TurboSession.turboIsReady(true);
       }
     }
 
     pageLoaded() {
-      let restorationIdentifier = ""
+      let restorationIdentifier = "";
 
       if (window.Turbo) {
-        restorationIdentifier = Turbo.navigator.restorationIdentifier
+        restorationIdentifier = Turbo.navigator.restorationIdentifier;
       } else if (window.Turbolinks) {
-        restorationIdentifier = Turbolinks.controller.restorationIdentifier
+        restorationIdentifier = Turbolinks.controller.restorationIdentifier;
       }
 
-      this.afterNextRepaint(function() {
-        TurboSession.pageLoaded(restorationIdentifier)
-        window.turboNative.finishPendingNavigation()
-      })
+      this.afterNextRepaint(function () {
+        TurboSession.pageLoaded(restorationIdentifier);
+        window.turboNative.finishPendingNavigation();
+      });
     }
 
     pageLoadFailed() {
-      TurboSession.turboFailedToLoad()
+      TurboSession.turboFailedToLoad();
     }
 
-    visitLocationWithOptionsAndRestorationIdentifier(location, optionsJSON, restorationIdentifier) {
-      let options = JSON.parse(optionsJSON)
-      let action = options.action
-      const normalizedLocation = new URL(location, window.location.href).toString()
+    visitLocationWithOptionsAndRestorationIdentifier(
+      location,
+      optionsJSON,
+      restorationIdentifier,
+    ) {
+      let options = JSON.parse(optionsJSON);
+      let action = options.action;
+      const normalizedLocation = new URL(
+        location,
+        window.location.href,
+      ).toString();
 
       if (window.Turbo) {
-        if (Turbo.navigator.locationWithActionIsSamePage(new URL(location), action)) {
+        if (
+          Turbo.navigator.locationWithActionIsSamePage(
+            new URL(location),
+            action,
+          )
+        ) {
           // Skip the same-page anchor scrolling behavior for visits initiated from the native
           // side. The page content may be stale and we want a fresh request from the network.
-          Turbo.navigator.startVisit(location, restorationIdentifier, { "action": "replace" })
+          Turbo.navigator.startVisit(location, restorationIdentifier, {
+            action: "replace",
+          });
         } else {
-          Turbo.navigator.startVisit(location, restorationIdentifier, options)
+          Turbo.navigator.startVisit(location, restorationIdentifier, options);
         }
       } else if (window.Turbolinks) {
         if (Turbolinks.controller.startVisitToLocationWithAction) {
           // Turbolinks 5
-          Turbolinks.controller.startVisitToLocationWithAction(location, action, restorationIdentifier)
+          Turbolinks.controller.startVisitToLocationWithAction(
+            location,
+            action,
+            restorationIdentifier,
+          );
         } else {
           // Turbolinks 5.3
-          Turbolinks.controller.startVisitToLocation(location, restorationIdentifier, options)
+          Turbolinks.controller.startVisitToLocation(
+            location,
+            restorationIdentifier,
+            options,
+          );
         }
       } else {
-        const visitIdentifier = this.nextFallbackVisitIdentifier()
+        const visitIdentifier = this.nextFallbackVisitIdentifier();
 
-        TurboSession.visitStarted(visitIdentifier, false, false, normalizedLocation)
-        TurboSession.visitRequestStarted(visitIdentifier)
+        TurboSession.visitStarted(
+          visitIdentifier,
+          false,
+          false,
+          normalizedLocation,
+        );
+        TurboSession.visitRequestStarted(visitIdentifier);
         this.setPendingVisit({
           identifier: visitIdentifier,
           location: normalizedLocation,
-        })
+        });
 
         if (action === "replace") {
-          window.location.replace(normalizedLocation)
+          window.location.replace(normalizedLocation);
         } else {
-          window.location.assign(normalizedLocation)
+          window.location.assign(normalizedLocation);
         }
       }
     }
 
     finishPendingNavigation() {
-      const pendingVisit = this.getPendingVisit()
+      const pendingVisit = this.getPendingVisit();
 
       if (!pendingVisit) {
-        return
+        return;
       }
 
-      const isCurrentLocation = new URL(window.location.href).toString() === pendingVisit.location
+      const isCurrentLocation =
+        new URL(window.location.href).toString() === pendingVisit.location;
 
       if (!isCurrentLocation) {
-        return
+        return;
       }
 
-      this.clearPendingVisit()
-      TurboSession.visitRequestCompleted(pendingVisit.identifier)
-      TurboSession.visitRequestFinished(pendingVisit.identifier)
+      this.clearPendingVisit();
+      TurboSession.visitRequestCompleted(pendingVisit.identifier);
+      TurboSession.visitRequestFinished(pendingVisit.identifier);
 
-      this.afterNextRepaint(function() {
-        TurboSession.visitRendered(pendingVisit.identifier)
-        TurboSession.visitCompleted(pendingVisit.identifier, "")
-      })
+      this.afterNextRepaint(function () {
+        TurboSession.visitRendered(pendingVisit.identifier);
+        TurboSession.visitCompleted(pendingVisit.identifier, "");
+      });
     }
 
     restoreCurrentVisit() {
@@ -117,12 +145,12 @@
       // since they are already connected. We need to notify the web bridge library
       // that the webview has been reattached to manually trigger connect() and notify
       // the native app so the native bridge component view state can be restored.
-      document.dispatchEvent(new Event("native:restore"))
+      document.dispatchEvent(new Event("native:restore"));
     }
 
     cacheSnapshot() {
       if (window.Turbo) {
-        Turbo.session.view.cacheSnapshot()
+        Turbo.session.view.cacheSnapshot();
       }
     }
 
@@ -130,169 +158,208 @@
 
     issueRequestForVisitWithIdentifier(identifier) {
       if (identifier == this.currentVisit.identifier) {
-        this.currentVisit.issueRequest()
+        this.currentVisit.issueRequest();
       }
     }
 
     changeHistoryForVisitWithIdentifier(identifier) {
       if (identifier == this.currentVisit.identifier) {
-        this.currentVisit.changeHistory()
+        this.currentVisit.changeHistory();
       }
     }
 
     loadCachedSnapshotForVisitWithIdentifier(identifier) {
       if (identifier == this.currentVisit.identifier) {
-        this.currentVisit.loadCachedSnapshot()
+        this.currentVisit.loadCachedSnapshot();
       }
     }
 
     loadResponseForVisitWithIdentifier(identifier) {
       if (identifier == this.currentVisit.identifier) {
-        this.currentVisit.loadResponse()
+        this.currentVisit.loadResponse();
       }
     }
 
     cancelVisitWithIdentifier(identifier) {
       if (identifier == this.currentVisit.identifier) {
-        this.currentVisit.cancel()
+        this.currentVisit.cancel();
       }
     }
 
     visitRenderedForColdBoot(visitIdentifier) {
-      this.afterNextRepaint(function() {
-          TurboSession.visitRendered(visitIdentifier)
-      })
+      this.afterNextRepaint(function () {
+        TurboSession.visitRendered(visitIdentifier);
+      });
     }
 
     // Adapter interface
 
     visitProposedToLocation(location, options) {
-      if (window.Turbo && Turbo.navigator.locationWithActionIsSamePage(location, options.action)) {
+      if (
+        window.Turbo &&
+        Turbo.navigator.locationWithActionIsSamePage(location, options.action)
+      ) {
         // Scroll to the anchor on the page
-        TurboSession.visitProposalScrollingToAnchor(location.toString(), JSON.stringify(options))
-        Turbo.navigator.view.scrollToAnchorFromLocation(location)
-      } else if (window.Turbo && Turbo.navigator.location?.href === location.href) {
+        TurboSession.visitProposalScrollingToAnchor(
+          location.toString(),
+          JSON.stringify(options),
+        );
+        Turbo.navigator.view.scrollToAnchorFromLocation(location);
+      } else if (
+        window.Turbo &&
+        Turbo.navigator.location?.href === location.href
+      ) {
         // Refresh the page without native proposal
-        TurboSession.visitProposalRefreshingPage(location.toString(), JSON.stringify(options))
-        this.visitLocationWithOptionsAndRestorationIdentifier(location, JSON.stringify(options), Turbo.navigator.restorationIdentifier)
+        TurboSession.visitProposalRefreshingPage(
+          location.toString(),
+          JSON.stringify(options),
+        );
+        this.visitLocationWithOptionsAndRestorationIdentifier(
+          location,
+          JSON.stringify(options),
+          Turbo.navigator.restorationIdentifier,
+        );
       } else {
         // Propose the visit
-        TurboSession.visitProposedToLocation(location.toString(), JSON.stringify(options))
+        TurboSession.visitProposedToLocation(
+          location.toString(),
+          JSON.stringify(options),
+        );
       }
     }
 
     // Turbolinks 5
     visitProposedToLocationWithAction(location, action) {
-      this.visitProposedToLocation(location, { action })
+      this.visitProposedToLocation(location, { action });
     }
 
     visitStarted(visit) {
-      TurboSession.visitStarted(visit.identifier, visit.hasCachedSnapshot(), visit.isPageRefresh || false, visit.location.toString())
-      this.currentVisit = visit
-      this.issueRequestForVisitWithIdentifier(visit.identifier)
-      this.changeHistoryForVisitWithIdentifier(visit.identifier)
-      this.loadCachedSnapshotForVisitWithIdentifier(visit.identifier)
+      TurboSession.visitStarted(
+        visit.identifier,
+        visit.hasCachedSnapshot(),
+        visit.isPageRefresh || false,
+        visit.location.toString(),
+      );
+      this.currentVisit = visit;
+      this.issueRequestForVisitWithIdentifier(visit.identifier);
+      this.changeHistoryForVisitWithIdentifier(visit.identifier);
+      this.loadCachedSnapshotForVisitWithIdentifier(visit.identifier);
     }
 
     visitRequestStarted(visit) {
-      TurboSession.visitRequestStarted(visit.identifier)
+      TurboSession.visitRequestStarted(visit.identifier);
     }
 
     visitRequestCompleted(visit) {
-      TurboSession.visitRequestCompleted(visit.identifier)
-      this.loadResponseForVisitWithIdentifier(visit.identifier)
+      TurboSession.visitRequestCompleted(visit.identifier);
+      this.loadResponseForVisitWithIdentifier(visit.identifier);
     }
 
     visitRequestFailedWithStatusCode(visit, statusCode) {
-      const location = visit.location.toString()
+      const location = visit.location.toString();
 
       // Non-HTTP status codes are sent by Turbo for network failures, including
       // cross-origin fetch redirect attempts. For non-HTTP status codes, pass to
       // the native side to determine whether a cross-origin redirect visit should
       // be proposed.
       if (statusCode <= 0) {
-        TurboSession.visitRequestFailedWithNonHttpStatusCode(location, visit.identifier, visit.hasCachedSnapshot())
+        TurboSession.visitRequestFailedWithNonHttpStatusCode(
+          location,
+          visit.identifier,
+          visit.hasCachedSnapshot(),
+        );
       } else {
-        TurboSession.visitRequestFailedWithStatusCode(location, visit.identifier, visit.hasCachedSnapshot(), statusCode)
+        TurboSession.visitRequestFailedWithStatusCode(
+          location,
+          visit.identifier,
+          visit.hasCachedSnapshot(),
+          statusCode,
+        );
       }
     }
 
     visitRequestFinished(visit) {
-      TurboSession.visitRequestFinished(visit.identifier)
+      TurboSession.visitRequestFinished(visit.identifier);
     }
 
     visitRendered(visit) {
-      this.afterNextRepaint(function() {
-        TurboSession.visitRendered(visit.identifier)
-      })
+      this.afterNextRepaint(function () {
+        TurboSession.visitRendered(visit.identifier);
+      });
     }
 
     visitCompleted(visit) {
-      this.afterNextRepaint(function() {
-        TurboSession.visitCompleted(visit.identifier, visit.restorationIdentifier)
-      })
+      this.afterNextRepaint(function () {
+        TurboSession.visitCompleted(
+          visit.identifier,
+          visit.restorationIdentifier,
+        );
+      });
     }
 
     formSubmissionStarted(formSubmission) {
-      TurboSession.formSubmissionStarted(formSubmission.location.toString())
+      TurboSession.formSubmissionStarted(formSubmission.location.toString());
     }
 
     formSubmissionFinished(formSubmission) {
-      TurboSession.formSubmissionFinished(formSubmission.location.toString())
+      TurboSession.formSubmissionFinished(formSubmission.location.toString());
     }
 
     pageInvalidated() {
-      TurboSession.pageInvalidated()
+      TurboSession.pageInvalidated();
     }
 
     linkPrefetchingIsEnabledForLocation(location) {
       // Disable link prefetching since it can be activated by link taps. We
       // don't want to prefetch links that may correspond to native screens.
-      return false
+      return false;
     }
 
     getPendingVisit() {
-      const value = window.sessionStorage.getItem(PENDING_VISIT_KEY)
+      const value = window.sessionStorage.getItem(PENDING_VISIT_KEY);
 
       if (!value) {
-        return null
+        return null;
       }
 
       try {
-        const payload = JSON.parse(value)
+        const payload = JSON.parse(value);
 
-        if (typeof payload.identifier === "string" && typeof payload.location === "string") {
-          return payload
+        if (
+          typeof payload.identifier === "string" &&
+          typeof payload.location === "string"
+        ) {
+          return payload;
         }
       } catch (error) {
-        this.clearPendingVisit()
+        this.clearPendingVisit();
       }
 
-      return null
+      return null;
     }
 
     setPendingVisit(payload) {
-      window.sessionStorage.setItem(PENDING_VISIT_KEY, JSON.stringify(payload))
+      window.sessionStorage.setItem(PENDING_VISIT_KEY, JSON.stringify(payload));
     }
 
     clearPendingVisit() {
-      window.sessionStorage.removeItem(PENDING_VISIT_KEY)
+      window.sessionStorage.removeItem(PENDING_VISIT_KEY);
     }
 
     nextFallbackVisitIdentifier() {
-      this.fallbackVisitIdentifier += 1
-      return `fallback-${this.fallbackVisitIdentifier}`
+      this.fallbackVisitIdentifier += 1;
+      return `fallback-${this.fallbackVisitIdentifier}`;
     }
 
     // Private
 
     afterNextRepaint(callback) {
       if (document.hidden) {
-        callback()
+        callback();
       } else {
-        requestAnimationFrame(function() {
-          requestAnimationFrame(callback)
-        })
+        requestAnimationFrame(function () {
+          requestAnimationFrame(callback);
+        });
       }
     }
   }
@@ -300,68 +367,70 @@
   // Touch detection for elements marked to opt out of pull-to-refresh.
 
   const elementTouchStart = (event) => {
-    if (!event.target) return
+    if (!event.target) return;
 
-    var element = event.target
+    var element = event.target;
 
     while (element) {
-      const preventPullToRefresh = !!element.closest("[data-native-prevent-pull-to-refresh]")
+      const preventPullToRefresh = !!element.closest(
+        "[data-native-prevent-pull-to-refresh]",
+      );
 
       if (preventPullToRefresh) {
-        TurboSession.elementTouchStarted(true)
-        break
+        TurboSession.elementTouchStarted(true);
+        break;
       }
 
-      element = element.parentElement
+      element = element.parentElement;
     }
 
     if (!element) {
-      TurboSession.elementTouchStarted(false)
+      TurboSession.elementTouchStarted(false);
     }
-  }
+  };
 
   const elementTouchEnd = () => {
-    TurboSession.elementTouchEnded()
-  }
+    TurboSession.elementTouchEnded();
+  };
 
   // Setup and register adapter
 
-  window.turboNative = new TurboNative()
+  window.turboNative = new TurboNative();
 
-  const setup = function() {
-    window.turboNative.registerAdapter()
-    window.turboNative.pageLoaded()
+  const setup = function () {
+    window.turboNative.registerAdapter();
+    window.turboNative.pageLoaded();
 
-    document.removeEventListener("turbo:load", setup)
-    document.removeEventListener("turbolinks:load", setup)
+    document.removeEventListener("turbo:load", setup);
+    document.removeEventListener("turbolinks:load", setup);
 
-    document.addEventListener("touchstart", elementTouchStart)
-    document.addEventListener("touchend", elementTouchEnd)
-  }
+    document.addEventListener("touchstart", elementTouchStart);
+    document.addEventListener("touchend", elementTouchEnd);
+  };
 
   const setupOnLoad = () => {
-    document.addEventListener("turbo:load", setup)
-    document.addEventListener("turbolinks:load", setup)
+    document.addEventListener("turbo:load", setup);
+    document.addEventListener("turbolinks:load", setup);
 
     if (!window.Turbo && !window.Turbolinks) {
       // Experiment mode: some pages intentionally do not ship with Hotwire.
       // Treat absence of Turbo/Turbolinks as a non-fatal state and initialize
       // the native bridge in non-Turbo mode immediately.
-      setup()
+      setup();
     } else {
       setTimeout(() => {
-        if (!window.turboNative) return
+        if (!window.turboNative) return;
 
         if (!window.Turbo && !window.Turbolinks) {
-          setup()
+          setup();
         }
-      }, TURBO_LOAD_TIMEOUT)
+      }, TURBO_LOAD_TIMEOUT);
     }
-  }
+  };
 
   if (window.Turbo || window.Turbolinks) {
-    setup()
+    setup();
   } else {
-    setupOnLoad()
+    setupOnLoad();
   }
-})()
+})();

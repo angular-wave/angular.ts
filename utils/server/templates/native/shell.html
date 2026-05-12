@@ -1,6 +1,8 @@
 <section class="demo-panel native-panel">
   <h2>Native bridge view</h2>
-  <p>This compact shell is rendered by the Go backend and compiled by AngularTS.</p>
+  <p>
+    This compact shell is rendered by the Go backend and compiled by AngularTS.
+  </p>
 
   <div class="demo-actions">
     <button
@@ -11,7 +13,13 @@
     >
       Share
     </button>
-    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo')">Open full backend demo</button>
+    <button
+      ng-native="navigation"
+      data-event="visit"
+      data-params="demo.nativeRoute('/native/demo')"
+    >
+      Open full backend demo
+    </button>
   </div>
 
   <p>Share: {{ demo.shareResult.text || "No share yet" }}</p>

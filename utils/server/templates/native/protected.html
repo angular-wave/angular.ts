@@ -1,6 +1,9 @@
 <section class="demo-panel">
   <h2>Protected page</h2>
-  <p>This page requires authorization. The Go backend rendered it because the native demo session is signed in.</p>
+  <p>
+    This page requires authorization. The Go backend rendered it because the
+    native demo session is signed in.
+  </p>
   <form ng-post="/native/demo/signout" data-target="#native-view">
     <button type="submit">Sign out</button>
   </form>

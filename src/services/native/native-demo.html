@@ -162,7 +162,11 @@
             const shellUrl = new URL(window.location.href);
 
             shellUrl.searchParams.set("view", route);
-            window.history.replaceState(null, "", `${shellUrl.pathname}${shellUrl.search}`);
+            window.history.replaceState(
+              null,
+              "",
+              `${shellUrl.pathname}${shellUrl.search}`,
+            );
 
             const swap = () => {
               target.innerHTML = response.data;
@@ -232,7 +236,8 @@
                 .slice(2)}`;
 
               scope[propsId] = readNativeImageProps(node);
-              host.className = node.getAttribute("class") || "native-image-host";
+              host.className =
+                node.getAttribute("class") || "native-image-host";
               host.setAttribute("ng-native-component", "native-image");
               host.setAttribute("data-props", propsId);
               node.replaceWith(host);
@@ -244,9 +249,7 @@
         ngNativeImageDirective.$inject = ["$compile"];
 
         function readChildText(element, selector) {
-          return element
-            .querySelector(selector)
-            ?.textContent?.trim();
+          return element.querySelector(selector)?.textContent?.trim();
         }
 
         function readNativeImage(element) {
@@ -282,9 +285,12 @@
     ng-controller="NativeDemoCtrl as demo"
   >
     <main class="demo-shell">
-
       <section>
-        <div id="native-initial-view" trigger="load" target="#native-view"></div>
+        <div
+          id="native-initial-view"
+          trigger="load"
+          target="#native-view"
+        ></div>
         <script>
           document
             .getElementById("native-initial-view")

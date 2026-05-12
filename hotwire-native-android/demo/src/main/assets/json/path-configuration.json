@@ -2,9 +2,7 @@
   "settings": {},
   "rules": [
     {
-      "patterns": [
-        ".*"
-      ],
+      "patterns": [".*"],
       "properties": {
         "context": "default",
         "uri": "hotwire://fragment/web",
@@ -47,20 +45,14 @@
       }
     },
     {
-      "patterns": [
-        "/new$",
-        "/edit$",
-        "/modal"
-      ],
+      "patterns": ["/new$", "/edit$", "/modal"],
       "properties": {
         "context": "modal",
         "pull_to_refresh_enabled": false
       }
     },
     {
-      "patterns": [
-        "/numbers$"
-      ],
+      "patterns": ["/numbers$"],
       "properties": {
         "uri": "hotwire://fragment/numbers",
         "title": "Numbers",
@@ -68,9 +60,7 @@
       }
     },
     {
-      "patterns": [
-        "/numbers/[0-9]+$"
-      ],
+      "patterns": ["/numbers/[0-9]+$"],
       "properties": {
         "context": "modal",
         "uri": "hotwire://fragment/web/modal/sheet",
@@ -78,9 +68,7 @@
       }
     },
     {
-      "patterns": [
-        ".+\\.(?:bmp|gif|heic|jpg|jpeg|png|svg|webp)"
-      ],
+      "patterns": [".+\\.(?:bmp|gif|heic|jpg|jpeg|png|svg|webp)"],
       "properties": {
         "context": "modal",
         "uri": "hotwire://fragment/image_viewer"

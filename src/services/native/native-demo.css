@@ -237,8 +237,16 @@ body.native-demo-page {
 
 .native-card-fallback__image {
   background:
-    radial-gradient(circle at 20% 20%, rgba(243, 201, 95, 0.9), transparent 34%),
-    radial-gradient(circle at 78% 24%, rgba(13, 125, 103, 0.65), transparent 30%),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(243, 201, 95, 0.9),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 78% 24%,
+      rgba(13, 125, 103, 0.65),
+      transparent 30%
+    ),
     linear-gradient(135deg, #2b5f8d, #8fd0b5);
   height: 150px;
 }

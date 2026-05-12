@@ -299,7 +299,9 @@ function shouldUseViewTransition(
   const attrValue = attrs.viewTransition ?? attrs.dataViewTransition;
   const targetValue = target.getAttribute("data-view-transition");
 
-  return isTruthyTransitionFlag(attrValue) || isTruthyTransitionFlag(targetValue);
+  return (
+    isTruthyTransitionFlag(attrValue) || isTruthyTransitionFlag(targetValue)
+  );
 }
 
 function isTruthyTransitionFlag(value: unknown): boolean {

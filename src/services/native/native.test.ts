@@ -20,9 +20,7 @@ test("native drawer demo loads the server route app", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("native drawer demo routes between server fragments", async ({
-  page,
-}) => {
+test("native drawer demo routes between server fragments", async ({ page }) => {
   await page.goto("src/services/native/native-demo.html");
 
   await page.getByText("Menu").click();
@@ -41,7 +39,9 @@ test("native drawer demo routes between server fragments", async ({
 
   await page.getByText("Menu").click();
   await page.getByRole("button", { name: "Native Card" }).click();
-  await expect(page.getByRole("heading", { name: "Native Card" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Native Card" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Elevated Jetpack Compose card" }),
   ).toBeVisible();

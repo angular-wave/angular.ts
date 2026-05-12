@@ -11,10 +11,7 @@ type NativeBridgeWindow = Window & {
 
 let nativeNavigationId = 0;
 
-function createNativeNavigationCall(
-  location: string,
-  action: string,
-): string {
+function createNativeNavigationCall(location: string, action: string): string {
   return JSON.stringify({
     id: `angular-native-navigation-${Date.now()}-${nativeNavigationId++}`,
     target: "navigation",
@@ -26,7 +23,10 @@ function createNativeNavigationCall(
   });
 }
 
-function dispatchNativeNavigation(location: string, action = "advance"): boolean {
+function dispatchNativeNavigation(
+  location: string,
+  action = "advance",
+): boolean {
   const nativeWindow = window as NativeBridgeWindow;
   const payload = createNativeNavigationCall(location, action);
   const adapter =
@@ -71,7 +71,11 @@ function normalizeNavigationHref(href: string): string | null {
   const current = new URL(window.location.href);
 
   if (url.origin !== current.origin) return null;
-  if (url.pathname === current.pathname && url.search === current.search && url.hash) {
+  if (
+    url.pathname === current.pathname &&
+    url.search === current.search &&
+    url.hash
+  ) {
     return null;
   }
 
@@ -86,11 +90,8 @@ function installNativeLinkInterception(): void {
 
     if (!anchor || !shouldInterceptAnchorClick(event, anchor)) return;
 
-    const action =
-      anchor.getAttribute("data-native-action") || "advance";
-    const location = normalizeNavigationHref(
-      anchor.getAttribute("href") || "",
-    );
+    const action = anchor.getAttribute("data-native-action") || "advance";
+    const location = normalizeNavigationHref(anchor.getAttribute("href") || "");
 
     if (!location) return;
 

@@ -1,9 +1,25 @@
 <section class="demo-panel">
   <h2>Native menu component</h2>
-  <p>The page defines menu options, and the native shell can render them as a platform bottom sheet.</p>
+  <p>
+    The page defines menu options, and the native shell can render them as a
+    platform bottom sheet.
+  </p>
   <div class="demo-actions">
-    <button ng-native="menu" data-event="show" data-params="{ title: 'Select an option', items: ['Option one', 'Option two', 'Option three', 'Option four'] }" data-on-result="demo.menu = $result">Open native menu</button>
-    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo', 'replace')">Back to demo menu</button>
+    <button
+      ng-native="menu"
+      data-event="show"
+      data-params="{ title: 'Select an option', items: ['Option one', 'Option two', 'Option three', 'Option four'] }"
+      data-on-result="demo.menu = $result"
+    >
+      Open native menu
+    </button>
+    <button
+      ng-native="navigation"
+      data-event="visit"
+      data-params="demo.nativeRoute('/native/demo', 'replace')"
+    >
+      Back to demo menu
+    </button>
   </div>
   <p class="demo-note">Selected: {{ demo.menu.item || "None" }}</p>
 </section>

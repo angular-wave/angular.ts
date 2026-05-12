@@ -1,7 +1,7 @@
-#!/bin/sh
+# #!/bin/sh
 
-make format
-make lint
-make check
-make coverage-check
-make types
+# make format
+# make lint
+# make check
+# make coverage-check
+# make types

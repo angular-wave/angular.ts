@@ -2,7 +2,19 @@
   <h2>Push or replace?</h2>
   <p>%%ACTION_MESSAGE%%</p>
   <div class="demo-actions">
-    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/one')">Back to previous web screen</button>
-    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo', 'replace')">Back to demo menu</button>
+    <button
+      ng-native="navigation"
+      data-event="visit"
+      data-params="demo.nativeRoute('/native/demo/one')"
+    >
+      Back to previous web screen
+    </button>
+    <button
+      ng-native="navigation"
+      data-event="visit"
+      data-params="demo.nativeRoute('/native/demo', 'replace')"
+    >
+      Back to demo menu
+    </button>
   </div>
 </section>
