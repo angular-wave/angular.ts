@@ -4,14 +4,13 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.vanniktech.maven.publish")
 }
 
 val libVersionName by extra(version as String)
-val libraryName by extra("Hotwire Native for Android - Fragment Navigation")
-val libraryDescription by extra("Android framework for making Hotwire Native apps")
+val libraryName by extra("Angular Native for Android - Fragment Navigation")
+val libraryDescription by extra("Android framework for making Angular Native apps")
 
 val publishedGroupId by extra("dev.hotwire")
 val publishedArtifactId by extra("navigation-fragments")
@@ -27,7 +26,7 @@ val developerEmail by extra("androidteam@basecamp.com")
 
 android {
     namespace = "dev.hotwire.navigation"
-    compileSdk = 35
+    compileSdk = 36
 
     testOptions.unitTests.isIncludeAndroidResources = true
     testOptions.unitTests.isReturnDefaultValues = true
@@ -61,9 +60,9 @@ android {
     }
 
     sourceSets {
-        named("main")  { java { srcDirs("src/main/kotlin") } }
-        named("test")  { java { srcDirs("src/test/kotlin") } }
-        named("debug") { java { srcDirs("src/debug/kotlin") } }
+        named("main") { java.directories.clear(); java.directories.add("src/main/kotlin") }
+        named("test") { java.directories.clear(); java.directories.add("src/test/kotlin") }
+        named("debug") { java.directories.clear(); java.directories.add("src/debug/kotlin") }
     }
 }
 
@@ -81,31 +80,31 @@ dependencies {
 
     // AndroidX
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.lifecycle:lifecycle-common:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-common:2.10.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Material
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2025.10.01"))
+    implementation(platform("androidx.compose:compose-bom:2026.05.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
     // Browser
-    implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.browser:browser:1.10.0")
 
     // Exported AndroidX dependencies
-    api("androidx.activity:activity-ktx:1.10.1")
-    api("androidx.fragment:fragment-ktx:1.8.6")
-    api("androidx.navigation:navigation-fragment-ktx:2.8.9")
-    api("androidx.navigation:navigation-ui-ktx:2.8.9")
+    api("androidx.activity:activity-ktx:1.13.0")
+    api("androidx.fragment:fragment-ktx:1.8.9")
+    api("androidx.navigation:navigation-fragment-ktx:2.9.8")
+    api("androidx.navigation:navigation-ui-ktx:2.9.8")
 
     // Tests
-    testImplementation("androidx.test:core:1.6.1") // Robolectric
+    testImplementation("androidx.test:core:1.7.0") // Robolectric
     testImplementation("org.assertj:assertj-core:3.26.3")
-    testImplementation("androidx.navigation:navigation-testing:2.8.9")
+    testImplementation("androidx.navigation:navigation-testing:2.9.8")
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("org.mockito:mockito-core:5.14.2")
     testImplementation("com.nhaarman:mockito-kotlin:1.6.0")

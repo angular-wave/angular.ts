@@ -1,18 +1,31 @@
+// Reference-only Hotwire/Turbo native adapter. Runtime now uses no-turbo-bridge.js.
 (() => {
   const TURBO_LOAD_TIMEOUT = 4000
+  const PENDING_VISIT_KEY = "hotwire-native-fallback-visit"
 
   // Bridge between Turbo JS and native code. Built for Turbo 7
   // with backwards compatibility for Turbolinks 5
   class TurboNative {
+    constructor() {
+      this.fallbackVisitIdentifier = 0
+    }
+
     registerAdapter() {
       if (window.Turbo) {
         Turbo.registerAdapter(this)
         TurboSession.turboIsReady(true)
+        if (TurboSession.setTurboEnabled) {
+          TurboSession.setTurboEnabled(true)
+        }
       } else if (window.Turbolinks) {
         Turbolinks.controller.adapter = this
         TurboSession.turboIsReady(true)
+        if (TurboSession.setTurboEnabled) {
+          TurboSession.setTurboEnabled(true)
+        }
       } else {
-        throw new Error("Failed to register the TurboNative adapter")
+        TurboSession.setTurboEnabled(false)
+        TurboSession.turboIsReady(true)
       }
     }
 
@@ -27,6 +40,7 @@
 
       this.afterNextRepaint(function() {
         TurboSession.pageLoaded(restorationIdentifier)
+        window.turboNative.finishPendingNavigation()
       })
     }
 
@@ -37,6 +51,7 @@
     visitLocationWithOptionsAndRestorationIdentifier(location, optionsJSON, restorationIdentifier) {
       let options = JSON.parse(optionsJSON)
       let action = options.action
+      const normalizedLocation = new URL(location, window.location.href).toString()
 
       if (window.Turbo) {
         if (Turbo.navigator.locationWithActionIsSamePage(new URL(location), action)) {
@@ -54,7 +69,45 @@
           // Turbolinks 5.3
           Turbolinks.controller.startVisitToLocation(location, restorationIdentifier, options)
         }
+      } else {
+        const visitIdentifier = this.nextFallbackVisitIdentifier()
+
+        TurboSession.visitStarted(visitIdentifier, false, false, normalizedLocation)
+        TurboSession.visitRequestStarted(visitIdentifier)
+        this.setPendingVisit({
+          identifier: visitIdentifier,
+          location: normalizedLocation,
+        })
+
+        if (action === "replace") {
+          window.location.replace(normalizedLocation)
+        } else {
+          window.location.assign(normalizedLocation)
+        }
       }
+    }
+
+    finishPendingNavigation() {
+      const pendingVisit = this.getPendingVisit()
+
+      if (!pendingVisit) {
+        return
+      }
+
+      const isCurrentLocation = new URL(window.location.href).toString() === pendingVisit.location
+
+      if (!isCurrentLocation) {
+        return
+      }
+
+      this.clearPendingVisit()
+      TurboSession.visitRequestCompleted(pendingVisit.identifier)
+      TurboSession.visitRequestFinished(pendingVisit.identifier)
+
+      this.afterNextRepaint(function() {
+        TurboSession.visitRendered(pendingVisit.identifier)
+        TurboSession.visitCompleted(pendingVisit.identifier, "")
+      })
     }
 
     restoreCurrentVisit() {
@@ -198,6 +251,39 @@
       return false
     }
 
+    getPendingVisit() {
+      const value = window.sessionStorage.getItem(PENDING_VISIT_KEY)
+
+      if (!value) {
+        return null
+      }
+
+      try {
+        const payload = JSON.parse(value)
+
+        if (typeof payload.identifier === "string" && typeof payload.location === "string") {
+          return payload
+        }
+      } catch (error) {
+        this.clearPendingVisit()
+      }
+
+      return null
+    }
+
+    setPendingVisit(payload) {
+      window.sessionStorage.setItem(PENDING_VISIT_KEY, JSON.stringify(payload))
+    }
+
+    clearPendingVisit() {
+      window.sessionStorage.removeItem(PENDING_VISIT_KEY)
+    }
+
+    nextFallbackVisitIdentifier() {
+      this.fallbackVisitIdentifier += 1
+      return `fallback-${this.fallbackVisitIdentifier}`
+    }
+
     // Private
 
     afterNextRepaint(callback) {
@@ -211,8 +297,7 @@
     }
   }
 
-  // Touch detection, allowing vertically scrollable elements
-  // to scroll properly without triggering pull-to-refresh.
+  // Touch detection for elements marked to opt out of pull-to-refresh.
 
   const elementTouchStart = (event) => {
     if (!event.target) return
@@ -220,12 +305,9 @@
     var element = event.target
 
     while (element) {
-      const canScroll = element.scrollHeight > element.clientHeight
-      const overflowY = window.getComputedStyle(element).overflowY
-      const isScrollable = canScroll && (overflowY === "scroll" || overflowY === "auto")
       const preventPullToRefresh = !!element.closest("[data-native-prevent-pull-to-refresh]")
 
-      if (isScrollable || preventPullToRefresh) {
+      if (preventPullToRefresh) {
         TurboSession.elementTouchStarted(true)
         break
       }
@@ -261,12 +343,20 @@
     document.addEventListener("turbo:load", setup)
     document.addEventListener("turbolinks:load", setup)
 
-    setTimeout(() => {
-      if (!window.Turbo && !window.Turbolinks) {
-        TurboSession.turboIsReady(false)
-        window.turboNative.pageLoadFailed()
-      }
-    }, TURBO_LOAD_TIMEOUT)
+    if (!window.Turbo && !window.Turbolinks) {
+      // Experiment mode: some pages intentionally do not ship with Hotwire.
+      // Treat absence of Turbo/Turbolinks as a non-fatal state and initialize
+      // the native bridge in non-Turbo mode immediately.
+      setup()
+    } else {
+      setTimeout(() => {
+        if (!window.turboNative) return
+
+        if (!window.Turbo && !window.Turbolinks) {
+          setup()
+        }
+      }, TURBO_LOAD_TIMEOUT)
+    }
   }
 
   if (window.Turbo || window.Turbolinks) {

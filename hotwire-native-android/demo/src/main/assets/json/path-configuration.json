@@ -21,6 +21,7 @@
       ],
       "properties": {
         "presentation": "clear_all",
+        "pull_to_refresh_enabled": true,
         "comment": "Clear navigation stack when visiting root page."
       }
     },

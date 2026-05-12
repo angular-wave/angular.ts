@@ -14,16 +14,15 @@ private const val bridgeJavascriptInterface = "BridgeComponentsNative"
 @Suppress("unused")
 class Bridge internal constructor(webView: WebView) {
     private var componentsAreRegistered: Boolean = false
-    private val webViewRef: WeakReference<WebView>
+    // Use a weak reference in case the WebView is no longer being
+    // used by the app, such as when the render process is gone.
+    private val webViewRef: WeakReference<WebView> = WeakReference(webView)
 
     internal val webView: WebView? get() = webViewRef.get()
     internal var repository = Repository()
     internal var delegate: BridgeDelegate<*>? = null
 
     init {
-        // Use a weak reference in case the WebView is no longer being
-        // used by the app, such as when the render process is gone.
-        webViewRef = WeakReference(webView)
 
         // The JavascriptInterface must be added before the page is loaded
         webView.addJavascriptInterface(this, bridgeJavascriptInterface)

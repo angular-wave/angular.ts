@@ -11,16 +11,13 @@ internal class HotwireSwipeRefreshLayout @JvmOverloads constructor(context: Cont
 
     init {
         disableCustomDrawingOrder()
+        isNestedScrollingEnabled = false
     }
 
     override fun canChildScrollUp(): Boolean {
-        val webView = children.firstOrNull() as? HotwireWebView
+        val webView = children.firstOrNull { it is HotwireWebView } as? HotwireWebView
 
-        return if (webView != null) {
-            webView.scrollY > 0 || webView.elementTouchPreventsPullsToRefresh
-        } else {
-            false
-        }
+        return webView?.let { it.canScrollVertically(-1) || it.scrollY > 0 } ?: super.canChildScrollUp()
     }
 
     /**

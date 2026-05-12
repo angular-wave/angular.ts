@@ -45,6 +45,8 @@ import dev.hotwire.core.turbo.webview.HotwireWebView
 import dev.hotwire.core.turbo.webview.WebViewInfo
 import dev.hotwire.core.turbo.webview.WebViewVersionCompatibility
 import kotlinx.coroutines.launch
+import java.net.URI
+import java.util.Locale
 import java.util.Date
 
 /**
@@ -64,6 +66,7 @@ class Session(
     internal var coldBootVisitIdentifier = ""
     internal var previousOverrideUrlTime = 0L
     internal var isColdBooting = false
+    private var isHistoryRestoring = false
     internal var visitPending = false
     internal var restorationIdentifiers = SparseArray<String>()
     internal val context: Context = activity.applicationContext
@@ -84,6 +87,16 @@ class Session(
      */
     var isReady = false
         internal set
+
+    /**
+     * Indicates whether Turbo is currently enabled for this session.
+     */
+    fun isTurboEnabled(): Boolean = turboBridgeEnabled
+
+    /**
+     * Indicates whether Turbo/Turbolinks is active for this session.
+     */
+    private var turboBridgeEnabled = false
 
     /**
      * Specifies whether the render process is gone for the WebView instance. If the
@@ -141,6 +154,7 @@ class Session(
         visitPending = false
         isReady = false
         isColdBooting = false
+        isHistoryRestoring = false
     }
 
     fun visit(visit: Visit) {
@@ -152,8 +166,10 @@ class Session(
         }
 
         when {
+            visit.options.action == VisitAction.RESTORE && !isColdBooting && restoreVisitFromHistory(visit) -> {}
             isColdBooting -> visitPending = true
-            isReady -> visitLocation(visit)
+            isReady && turboBridgeEnabled -> visitLocation(visit)
+            isReady -> visitLocationAsColdBoot(visit)
             else -> visitLocationAsColdBoot(visit)
         }
     }
@@ -166,8 +182,10 @@ class Session(
     fun restoreCurrentVisit(callback: SessionCallback): Boolean {
         val visit = currentVisit ?: return false
         val restorationIdentifier = restorationIdentifiers[visit.destinationIdentifier]
+        val currentUrl = webView.url
+        val canRestoreCurrentLocation = currentUrl?.isSameLocationAs(visit.location) == true
 
-        if (!isReady || restorationIdentifier == null) {
+        if (!isReady || restorationIdentifier == null || !canRestoreCurrentLocation) {
             return false
         }
 
@@ -599,6 +617,20 @@ class Session(
     }
 
     /**
+     * Sets whether this session should use Turbo/Turbolinks navigation.
+     *
+     * Some pages intentionally omit Hotwire, and still need full page navigation
+     * with native shell handoff.
+     *
+     * @param isTurboEnabled true when a Turbo bridge is present.
+     */
+    @JavascriptInterface
+    fun setTurboEnabled(isTurboEnabled: Boolean) {
+        logEvent("setTurboEnabled", "isTurboEnabled" to isTurboEnabled)
+        this.turboBridgeEnabled = isTurboEnabled
+    }
+
+    /**
      * Called when a touched element event has started.
      *
      * Warning: This method is public so it can be used as a Javascript Interface.
@@ -659,6 +691,99 @@ class Session(
             true -> webView.reload()
             else -> webView.loadUrl(visit.location)
         }
+    }
+
+    private fun restoreVisitFromHistory(visit: Visit): Boolean {
+        val backForwardList = webView.copyBackForwardList()
+        val currentIndex = backForwardList.currentIndex
+        val itemCount = backForwardList.size
+
+        val normalizedVisitLocation = visit.location.normalizedLocation()
+
+        if (currentIndex < 0 || itemCount == 0) {
+            return false
+        }
+
+        for (index in 0 until itemCount) {
+            val item = backForwardList.getItemAtIndex(index)
+            if (item?.url?.normalizedLocation() == normalizedVisitLocation) {
+                val offset = index - currentIndex
+
+                when {
+                    offset == 0 -> {
+                        logEvent("restoreVisitFromHistoryNoOp", "location" to visit.location)
+                        restoreCurrentHistoryVisit(useCurrentVisitIdentifier = true)
+                    }
+                    else -> {
+                        logEvent(
+                            "restoreVisitFromHistory",
+                            "location" to visit.location,
+                            "offset" to offset
+                        )
+                        isHistoryRestoring = true
+                        webView.goBackOrForward(offset)
+                    }
+                }
+
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun restoreCurrentHistoryVisit(useCurrentVisitIdentifier: Boolean = false) {
+        val restorationIdentifier = currentVisit?.let { currentVisit ->
+            restorationIdentifiers[currentVisit.destinationIdentifier]
+                ?: ""
+        } ?: ""
+
+        val visitIdentifier = currentVisit?.identifier?.ifEmpty {
+            when {
+                useCurrentVisitIdentifier -> currentVisit?.identifier ?: ""
+                else -> currentVisit?.location?.historyIdentifier() ?: ""
+            }
+        } ?: ""
+
+        visitRendered(visitIdentifier)
+        visitCompleted(currentVisit?.identifier ?: "", restorationIdentifier)
+    }
+
+    private fun String.historyIdentifier(): String {
+        return hashCode().toString()
+    }
+
+    private fun String.normalizedLocation(): String {
+        return try {
+            val uri = URI(this)
+            val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: ""
+            val host = uri.host?.lowercase(Locale.ROOT) ?: ""
+            val port = uri.port
+                .takeIf { it != -1 && it != defaultPortFor(scheme) }
+                ?.let { ":$it" }
+                ?: ""
+            val path = uri.path.orEmpty().ifBlank { "/" }.let { rawPath ->
+                when {
+                    rawPath == "/" -> rawPath
+                    rawPath.endsWith("/") -> rawPath.dropLastWhile { it == '/' }
+                    else -> rawPath
+                }
+            }
+            val query = uri.rawQuery.orEmpty().let { if (it.isBlank()) "" else "?$it" }
+            "$scheme://$host$port$path$query"
+        } catch (_: Throwable) {
+            trim()
+        }
+    }
+
+    private fun String.isSameLocationAs(location: String): Boolean {
+        return normalizedLocation() == location.normalizedLocation()
+    }
+
+    private fun defaultPortFor(scheme: String): Int = when (scheme.lowercase(Locale.ROOT)) {
+        "http" -> 80
+        "https" -> 443
+        else -> -1
     }
 
     private fun visitPendingLocation(visit: Visit) {
@@ -734,11 +859,12 @@ class Session(
         }
     }
 
-    private fun installBridge(location: String) {
+    private fun installBridge(location: String, onBridgeInstalled: () -> Unit = {}) {
         logEvent("installBridge", "location" to location)
 
         webView.installBridge {
             callback { it.onPageFinished(location) }
+            onBridgeInstalled()
         }
     }
 
@@ -784,7 +910,9 @@ class Session(
                 return
             }
 
-            if (!isColdBooting) {
+            val shouldHandleColdBootCompletion = isColdBooting || isHistoryRestoring || !turboBridgeEnabled
+
+            if (!shouldHandleColdBootCompletion) {
                 // We can get here even when the page failed to load. If
                 // onReceivedError() or onReceivedHttpError() are called,
                 // they reset the session, so we're no longer cold booting.
@@ -794,7 +922,13 @@ class Session(
             logEvent("onPageFinished", "location" to location, "progress" to view.progress)
             coldBootVisitIdentifier = location.identifier()
             currentVisit?.identifier = coldBootVisitIdentifier
-            installBridge(location)
+            installBridge(location) {
+                if (isHistoryRestoring) {
+                    isColdBooting = false
+                    isHistoryRestoring = false
+                    restoreCurrentHistoryVisit()
+                }
+            }
         }
 
         override fun onPageCommitVisible(view: WebView, location: String) {

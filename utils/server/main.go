@@ -658,12 +658,18 @@ func nativeDemoRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch {
-	case path == "/shell":
-		nativeShellView(w)
-	case path == "/one":
-		writeHTMLTemplate(w, http.StatusOK, "one.html", map[string]string{
-			"RENDERED_AT": time.Now().Format(time.RFC1123),
-		})
+		case path == "/shell":
+			nativeShellView(w)
+		case path == "/projects":
+			writeHTMLTemplate(w, http.StatusOK, "projects.html", nil)
+		case path == "/native-card":
+			writeHTMLTemplate(w, http.StatusOK, "native-card.html", nil)
+		case path == "/settings":
+			writeHTMLTemplate(w, http.StatusOK, "settings.html", nil)
+		case path == "/one":
+			writeHTMLTemplate(w, http.StatusOK, "one.html", map[string]string{
+				"RENDERED_AT": time.Now().Format(time.RFC1123),
+			})
 	case path == "/two":
 		message := "This screen was pushed onto the navigation stack through an advance action."
 		if r.URL.Query().Get("action") == "replace" {

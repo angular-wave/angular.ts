@@ -18,7 +18,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "hotwire-native-android"
+rootProject.name = "angular-native-android"
 include(":core")
 include(":demo")
 include(":navigation-fragments")

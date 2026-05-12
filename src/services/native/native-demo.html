@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="/src/services/native/native-demo.css" />
     <script type="module" src="/src/index.ts"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const decoder = new TextDecoder();
+      window.__isNativeShell = Boolean(window.AngularNative);
 
+      document.addEventListener("DOMContentLoaded", () => {
         if (!window.AngularNative) {
           window.AngularNative = {
             async receive(message) {
@@ -33,7 +33,7 @@
                       error: error.message || String(error),
                     });
                   });
-              }, 160);
+              }, 120);
             },
           };
         }
@@ -43,7 +43,6 @@
             const fragmentUrl = call.params.fragmentUrl || call.params.url;
             const response = await fetch(fragmentUrl);
             const html = await response.text();
-
             const historyMethod =
               call.params.action === "replace" ? "replaceState" : "pushState";
 
@@ -69,6 +68,18 @@
             }
 
             if (call.params.name === "compose-drawer") {
+              const items = call.params.props.items || [];
+              const buttons = items
+                .map((item) => {
+                  const payload = JSON.stringify({ item }).replace(
+                    /'/g,
+                    "&#39;",
+                  );
+
+                  return `<button type="button" ng-click='demo.selectDrawerRoute(${payload})'>${item.label}</button>`;
+                })
+                .join("");
+
               return {
                 target: `#${call.params.id}`,
                 swap: "innerHTML",
@@ -77,128 +88,57 @@
                     <summary>${call.params.props.text}</summary>
                     <div class="native-drawer-fallback__sheet">
                       <strong>${call.params.props.title}</strong>
-                      <button type="button" ng-click="demo.refreshNativeDrawerCard()">
-                        ${call.params.props.items[0]}
-                      </button>
+                      ${buttons}
                     </div>
                   </details>
                 `,
               };
             }
 
-            if (call.params.name.includes("button")) {
+            if (call.params.name === "native-card") {
+              const props = call.params.props || {};
+
               return {
                 target: `#${call.params.id}`,
                 swap: "innerHTML",
-                html: `<button type="button">${call.params.props.text}</button>`,
+                html: `
+                  <article class="native-card-fallback">
+                    <div class="native-card-fallback__image"></div>
+                    <strong>${props.title}</strong>
+                    <p>${props.subtitle}</p>
+                  </article>
+                `,
               };
             }
 
-            return {
-              target: `#${call.params.id}`,
-              swap: "innerHTML",
-              html: `<strong>${call.params.props.text}</strong>`,
-            };
-          }
-
-          if (call.target === "share") {
-            return {
-              text: `Shared ${call.params.title}`,
-              url: call.params.url,
-            };
-          }
-
-          if (call.target === "camera") {
-            return {
-              uri: "content://angular-ts-native/demo-photo.jpg",
-              quality: call.params.quality,
-            };
-          }
-
-          if (call.target === "feed") {
-            return {
-              target: "#native-feed",
-              swap: "afterbegin",
-              html: `<article class="event-card"><strong>Native patch</strong><span>${new Date().toLocaleTimeString()}</span></article>`,
-            };
-          }
-
-          if (call.target === "numbers") {
-            return {
-              title: "A list of numbers",
-              component: "NativeNumbersScreen",
-            };
-          }
-
-          if (call.target === "browser" || call.target === "file") {
-            return {
-              opened: true,
-              url: call.params.url,
-            };
-          }
-
-          if (
-            call.target === "menu" ||
-            call.target === "overflow-menu" ||
-            call.target === "form"
-          ) {
-            return {
-              item: call.params.items ? call.params.items[0] : "Submit",
-            };
+            if (call.params.name === "native-image") {
+              return {
+                target: `#${call.params.id}`,
+                swap: "innerHTML",
+                html: `<div class="native-card-fallback__image"></div>`,
+              };
+            }
           }
 
           return { ok: true };
         }
 
         class NativeDemoController {
-          static $inject = [
-            "$scope",
-            "$http",
-            "$rest",
-            "$websocket",
-            "$webTransport",
-          ];
+          static $inject = ["$scope", "$http", "$compile"];
 
-          constructor($scope, $http, $rest, $websocket, $webTransport) {
+          constructor($scope, $http, $compile) {
             this.$scope = $scope;
             this.$http = $http;
-            this.$rest = $rest;
-            this.$websocket = $websocket;
-            this.$webTransport = $webTransport;
-            this.tasks = $rest("/api/tasks");
-            this.title = "AngularTS native bridge";
-            this.url = "https://angular-ts.local/native";
-            this.network = { online: true };
-            this.restTasks = [];
-            this.restNotice = "REST is idle";
-            this.websocketEvents = [];
-            this.websocketText = "Hello WebSocket";
-            this.websocketNotice = "WebSocket is idle";
-            this.webTransportEvents = [];
-            this.webTransportText = "Hello WebTransport";
-            this.webTransportNotice = "WebTransport is idle";
-            this.webTransportMetadata = null;
-            this.webTransportConnection = null;
-            this.transportConfig = {};
-            this.initialView =
+            this.$compile = $compile;
+            this.drawerRoutes = [
+              { label: "Today", route: "/native/demo" },
+              { label: "Projects", route: "/native/demo/projects" },
+              { label: "Native Card", route: "/native/demo/native-card" },
+              { label: "Settings", route: "/native/demo/settings" },
+            ];
+            this.selectedRoute =
               new URLSearchParams(window.location.search).get("view") ||
               "/native/demo";
-          }
-
-          title = "AngularTS native bridge";
-          url = "https://angular-ts.local/native";
-          network = { online: true };
-
-          refreshNativeServerCard() {
-            document
-              .getElementById("native-server-card-refresh")
-              ?.dispatchEvent(new Event("click"));
-          }
-
-          refreshNativeDrawerCard() {
-            document
-              .getElementById("native-drawer-card-refresh")
-              ?.dispatchEvent(new Event("click"));
           }
 
           nativeRoute(fragmentUrl, action = "advance") {
@@ -213,146 +153,125 @@
             };
           }
 
-          pushNetworkStatus() {
-            this.network = { online: !this.network.online };
-            window.angularNative.dispatch({
-              target: "network",
-              event: "status",
-              data: this.network,
-            });
-          }
+          async selectDrawerRoute(data) {
+            const route = data?.item?.route || "/native/demo";
 
-          async loadRestTasks() {
-            await this.$http.post("/api/tasks/reset", {});
-            this.restTasks = await this.tasks.list();
-            this.restNotice = `Loaded ${this.restTasks.length} tasks`;
-          }
+            this.selectedRoute = route;
+            const response = await this.$http.get(route);
+            const target = document.getElementById("native-view");
+            const shellUrl = new URL(window.location.href);
 
-          async createRestTask() {
-            const task = await this.tasks.create({
-              title: "Native bridge review",
-              owner: "Ada",
-              status: "Open",
-            });
+            shellUrl.searchParams.set("view", route);
+            window.history.replaceState(null, "", `${shellUrl.pathname}${shellUrl.search}`);
 
-            this.restTasks = [task].concat(this.restTasks);
-            this.restNotice = `Created task #${task.id}`;
-          }
+            const swap = () => {
+              target.innerHTML = response.data;
+              this.$compile(target)(this.$scope);
+              this.$scope.$flushQueue();
+            };
 
-          connectWebSocket() {
-            if (this.websocketConnection) {
-              this.websocketConnection.close();
+            if (!window.__isNativeShell && document.startViewTransition) {
+              document.startViewTransition(swap);
+            } else {
+              swap();
             }
-
-            const protocol =
-              window.location.protocol === "https:" ? "wss:" : "ws:";
-            const url = `${protocol}//${window.location.host}/native/websocket`;
-
-            this.websocketConnection = this.$websocket(url, [], {
-              heartbeatTimeout: 0,
-              onOpen: () => {
-                this.websocketNotice = "WebSocket connected";
-                this.$scope.$flushQueue();
-              },
-              onMessage: (message) => {
-                this.websocketEvents = [message].concat(this.websocketEvents);
-                this.$scope.$flushQueue();
-              },
-              onClose: () => {
-                this.websocketNotice = "WebSocket closed";
-                this.$scope.$flushQueue();
-              },
-              onError: () => {
-                this.websocketNotice = "WebSocket error";
-                this.$scope.$flushQueue();
-              },
-            });
           }
+        }
 
-          sendWebSocket() {
-            if (!this.websocketConnection) {
-              this.connectWebSocket();
-            }
+        function ngNativeCardDirective($compile) {
+          return {
+            restrict: "E",
+            terminal: true,
+            priority: 1000,
+            link(scope, element) {
+              const node = element[0] || element;
+              const title =
+                readChildText(node, "title") || "Random native picture";
+              const subtitle =
+                readChildText(node, "subtitle") ||
+                "ElevatedCard rendered by Android from an AngularTS component host.";
+              const host = document.createElement("div");
+              const propsId = `nativeCard${scope.$id}_${Math.random()
+                .toString(36)
+                .slice(2)}`;
 
-            this.websocketConnection?.send({
-              text: this.websocketText,
-              time: new Date().toLocaleTimeString(),
-            });
-          }
-
-          async connectWebTransport() {
-            if (!this.webTransportMetadata) {
-              const response = await this.$http.get("/webtransport/cert-hash");
-
-              this.webTransportMetadata = response.data;
-              this.transportConfig = {
-                serverCertificateHashes: [
-                  {
-                    algorithm: this.webTransportMetadata.algorithm,
-                    value: this.bytesFromBase64(
-                      this.webTransportMetadata.value,
-                    ),
-                  },
-                ],
+              scope[propsId] = {
+                title,
+                subtitle,
               };
-            }
 
-            this.webTransportConnection = this.$webTransport(
-              this.webTransportMetadata.url,
-              {
-                ...this.transportConfig,
-                transformDatagram(data) {
-                  return JSON.parse(decoder.decode(data));
-                },
-                onDatagram: ({ message }) => {
-                  this.webTransportEvents = [message].concat(
-                    this.webTransportEvents,
-                  );
-                  this.$scope.$flushQueue();
-                },
-                onOpen: () => {
-                  this.webTransportNotice = "WebTransport connected";
-                  this.$scope.$flushQueue();
-                },
-                onError: (error) => {
-                  this.webTransportNotice =
-                    error.message || "WebTransport error";
-                  this.$scope.$flushQueue();
-                },
-              },
-            );
+              const image = readNativeImage(node);
+              if (image) {
+                scope[propsId].image = image;
+              }
 
-            await this.webTransportConnection.ready;
-          }
+              host.className = node.getAttribute("class") || "native-card-host";
+              host.setAttribute("ng-native-component", "native-card");
+              host.setAttribute("data-props", propsId);
+              node.replaceWith(host);
+              $compile(host)(scope);
+            },
+          };
+        }
 
-          async sendWebTransport() {
-            if (!this.webTransportConnection) {
-              await this.connectWebTransport();
-            }
+        ngNativeCardDirective.$inject = ["$compile"];
 
-            await this.webTransportConnection.sendDatagram(
-              JSON.stringify({
-                channel: "webtransport",
-                text: this.webTransportText,
-                time: new Date().toLocaleTimeString(),
-              }),
-            );
-          }
+        function ngNativeImageDirective($compile) {
+          return {
+            restrict: "E",
+            terminal: true,
+            priority: 1000,
+            link(scope, element) {
+              const node = element[0] || element;
 
-          bytesFromBase64(value) {
-            const binary = atob(value);
-            const bytes = new Uint8Array(binary.length);
+              if (node.closest("ng-native-card")) return;
 
-            for (let i = 0; i < binary.length; i++) {
-              bytes[i] = binary.charCodeAt(i);
-            }
+              const host = document.createElement("div");
+              const propsId = `nativeImage${scope.$id}_${Math.random()
+                .toString(36)
+                .slice(2)}`;
 
-            return bytes;
-          }
+              scope[propsId] = readNativeImageProps(node);
+              host.className = node.getAttribute("class") || "native-image-host";
+              host.setAttribute("ng-native-component", "native-image");
+              host.setAttribute("data-props", propsId);
+              node.replaceWith(host);
+              $compile(host)(scope);
+            },
+          };
+        }
+
+        ngNativeImageDirective.$inject = ["$compile"];
+
+        function readChildText(element, selector) {
+          return element
+            .querySelector(selector)
+            ?.textContent?.trim();
+        }
+
+        function readNativeImage(element) {
+          const image = element.querySelector("ng-native-image, native-image");
+
+          if (!image) return undefined;
+
+          return readNativeImageProps(image);
+        }
+
+        function readNativeImageProps(image) {
+          return {
+            contentDescription:
+              image.getAttribute("content-description") ||
+              image.getAttribute("alt") ||
+              "",
+            contentScale: image.getAttribute("content-scale") || "crop",
+            height: Number(image.getAttribute("height") || 132),
+          };
         }
 
         window.angular
           .module("nativeDemo", [])
+          .directive("ngNativeCard", ngNativeCardDirective)
+          .directive("ngNativeImage", ngNativeImageDirective)
           .controller("NativeDemoCtrl", NativeDemoController);
       });
     </script>
@@ -363,15 +282,8 @@
     ng-controller="NativeDemoCtrl as demo"
   >
     <main class="demo-shell">
-      <header class="demo-hero">
-        <h1>AngularTS Native Bridge</h1>
-        <p>
-          A forked native shell exposes Android capabilities through a generic
-          AngularTS-aware bridge protocol.
-        </p>
-      </header>
 
-      <section class="demo-content">
+      <section>
         <div id="native-initial-view" trigger="load" target="#native-view"></div>
         <script>
           document
@@ -381,8 +293,14 @@
               new URLSearchParams(window.location.search).get("view") ||
                 "/native/demo",
             );
+
+          if (!window.__isNativeShell) {
+            document
+              .getElementById("native-view")
+              .setAttribute("data-view-transition", "");
+          }
         </script>
-        <div id="native-view" data-view-transition></div>
+        <div id="native-view"></div>
       </section>
     </main>
   </body>

@@ -1,0 +1,29 @@
+<div class="native-app">
+  <header class="native-app__header">
+    <div>
+      <p class="native-app__eyebrow">Server route</p>
+      <h1>Native Card</h1>
+    </div>
+    <div
+      class="native-drawer-host"
+      ng-native-component="compose-drawer"
+      data-props="{ text: 'Menu', title: 'AngularTS Native', items: demo.drawerRoutes }"
+      data-on-select="demo.selectDrawerRoute($data)"
+    ></div>
+  </header>
+
+  <section class="native-route-card">
+    <p class="native-route-card__label">AngularTS creates native UI</p>
+    <h2>Elevated Jetpack Compose card</h2>
+    <p>
+      This route is server-rendered HTML, but the card below is mounted by
+      AngularTS as a native Jetpack Compose component.
+    </p>
+  </section>
+
+  <ng-native-card class="native-card-host">
+    <ng-native-image content-scale="crop" height="132"></ng-native-image>
+    <title>Random native picture</title>
+    <subtitle>ElevatedCard rendered by Android from an AngularTS component host.</subtitle>
+  </ng-native-card>
+</div>

@@ -4,14 +4,13 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.vanniktech.maven.publish")
 }
 
 val libVersionName by extra(version as String)
-val libraryName by extra("Hotwire Native for Android - Core")
-val libraryDescription by extra("Android framework for making Hotwire Native apps")
+val libraryName by extra("Angular Native for Android - Core")
+val libraryDescription by extra("Android framework for making Angular Native apps")
 
 val publishedGroupId by extra("dev.hotwire")
 val publishedArtifactId by extra("core")
@@ -27,7 +26,7 @@ val developerEmail by extra("androidteam@basecamp.com")
 
 android {
     namespace = "dev.hotwire.core"
-    compileSdk = 35
+    compileSdk = 36
 
     testOptions.unitTests.isIncludeAndroidResources = true
     testOptions.unitTests.isReturnDefaultValues = true
@@ -58,9 +57,9 @@ android {
     }
 
     sourceSets {
-        named("main")  { java { srcDirs("src/main/kotlin") } }
-        named("test")  { java { srcDirs("src/test/kotlin") } }
-        named("debug") { java { srcDirs("src/debug/kotlin") } }
+        named("main") { java.directories.clear(); java.directories.add("src/main/kotlin") }
+        named("test") { java.directories.clear(); java.directories.add("src/test/kotlin") }
+        named("debug") { java.directories.clear(); java.directories.add("src/debug/kotlin") }
     }
 }
 
@@ -75,11 +74,11 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.3.0")
 
     // Material
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // AndroidX
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.lifecycle:lifecycle-common:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-common:2.10.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // JSON
@@ -96,13 +95,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 
     // Exported AndroidX dependencies
-    api("androidx.appcompat:appcompat:1.7.0")
-    api("androidx.core:core-ktx:1.16.0")
-    api("androidx.webkit:webkit:1.13.0")
+    api("androidx.appcompat:appcompat:1.7.1")
+    api("androidx.core:core-ktx:1.18.0")
+    api("androidx.webkit:webkit:1.16.0")
 
     // Tests
-    testImplementation("androidx.test:core:1.6.1") // Robolectric
-    testImplementation("androidx.navigation:navigation-testing:2.8.9")
+    testImplementation("androidx.test:core:1.7.0") // Robolectric
+    testImplementation("androidx.navigation:navigation-testing:2.9.8")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("org.assertj:assertj-core:3.26.3")

@@ -1,0 +1,38 @@
+<div class="native-app">
+  <header class="native-app__header">
+    <div>
+      <p class="native-app__eyebrow">Server route</p>
+      <h1>Settings</h1>
+    </div>
+    <div
+      class="native-drawer-host"
+      ng-native-component="compose-drawer"
+      data-props="{ text: 'Menu', title: 'AngularTS Native', items: demo.drawerRoutes }"
+      data-on-select="demo.selectDrawerRoute($data)"
+    ></div>
+  </header>
+
+  <section class="native-route-card">
+    <p class="native-route-card__label">Preferences</p>
+    <h2>Native app boundaries</h2>
+    <p>
+      Keep platform UI in the shell, keep route content on the server, and let
+      AngularTS coordinate the small contract between them.
+    </p>
+  </section>
+
+  <section class="native-settings">
+    <label>
+      <span>Native transitions</span>
+      <strong>Enabled</strong>
+    </label>
+    <label>
+      <span>Legacy Turbo runtime</span>
+      <strong>Reference only</strong>
+    </label>
+    <label>
+      <span>Route source</span>
+      <strong>Go templates</strong>
+    </label>
+  </section>
+</div>

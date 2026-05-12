@@ -1,7 +1,6 @@
 package dev.hotwire.demo
 
 import android.app.Application
-import dev.hotwire.core.BuildConfig
 import dev.hotwire.core.bridge.BridgeComponentFactory
 import dev.hotwire.core.bridge.KotlinXJsonConverter
 import dev.hotwire.core.config.Hotwire

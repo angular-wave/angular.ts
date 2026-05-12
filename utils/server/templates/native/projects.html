@@ -1,0 +1,47 @@
+<div class="native-app">
+  <header class="native-app__header">
+    <div>
+      <p class="native-app__eyebrow">Server route</p>
+      <h1>Projects</h1>
+    </div>
+    <div
+      class="native-drawer-host"
+      ng-native-component="compose-drawer"
+      data-props="{ text: 'Menu', title: 'AngularTS Native', items: demo.drawerRoutes }"
+      data-on-select="demo.selectDrawerRoute($data)"
+    ></div>
+  </header>
+
+  <section class="native-route-card">
+    <p class="native-route-card__label">Active work</p>
+    <h2>Three backend fragments</h2>
+    <p>
+      The drawer points at concrete server URLs. AngularTS compiles the returned
+      fragment and preserves native component hosts after each swap.
+    </p>
+  </section>
+
+  <section class="native-list">
+    <article>
+      <span>A</span>
+      <div>
+        <h3>Native drawer route</h3>
+        <p>Compose emits the selected item and AngularTS routes through the shell.</p>
+      </div>
+    </article>
+    <article>
+      <span>B</span>
+      <div>
+        <h3>Backend rendered</h3>
+        <p>The server owns the markup for every route in this app.</p>
+      </div>
+    </article>
+    <article>
+      <span>C</span>
+      <div>
+        <h3>Small surface area</h3>
+        <p>The demo now focuses on routing instead of unrelated capability samples.</p>
+      </div>
+    </article>
+  </section>
+</div>

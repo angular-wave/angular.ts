@@ -41,6 +41,8 @@ open class HotwireWebView @JvmOverloads constructor(
         settings.domStorageEnabled = true
         settings.userAgentString = Hotwire.config.userAgentWithWebViewDefault(context)
         settings.setSupportMultipleWindows(true)
+        isNestedScrollingEnabled = false
+        overScrollMode = OVER_SCROLL_ALWAYS
         layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         initDayNightTheming()
     }
@@ -82,13 +84,15 @@ open class HotwireWebView @JvmOverloads constructor(
 
     internal fun installBridge(onBridgeInstalled: () -> Unit) {
         val script = "window.turboNative == null"
-        val bridge = context.contentFromAsset("js/turbo.js")
+        val bridge = context.contentFromAsset("js/no-turbo-bridge.js")
 
         runJavascript(script) { s ->
             if (s?.toBoolean() == true) {
                 runJavascript(bridge) {
                     onBridgeInstalled()
                 }
+            } else {
+                onBridgeInstalled()
             }
         }
     }

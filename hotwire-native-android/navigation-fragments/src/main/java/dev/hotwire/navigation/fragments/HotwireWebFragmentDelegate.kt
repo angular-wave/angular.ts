@@ -25,7 +25,8 @@ import dev.hotwire.navigation.util.dispatcherProvider
 import dev.hotwire.navigation.views.HotwireView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.random.Random
+import java.net.URI
+import java.util.Locale
 
 /**
  * Provides all the hooks for a web Fragment to delegate its lifecycle events
@@ -37,10 +38,12 @@ internal class HotwireWebFragmentDelegate(
     private val callback: HotwireWebFragmentCallback
 ) : SessionCallback, VisitDestination {
 
-    private val location = navDestination.location
+    private val location: String
+        get() = destinationLocation
+    private val destinationLocation: String
+        get() = navDestination.location
     private val visitOptions = currentVisitOptions()
     private val identifier = generateIdentifier()
-    private var isInitialVisit = true
     private var isWebViewAttachedToNewDestination = false
     private val screenshotHolder = HotwireViewScreenshotHolder()
     private val navigator get() = navDestination.navigator
@@ -148,16 +151,23 @@ internal class HotwireWebFragmentDelegate(
      * Should be called by the implementing Fragment during [HotwireDestination.refresh].
      */
     fun refresh(displayProgress: Boolean) {
-        if (webView.url == null) return
+        val refreshLocation = currentRefreshLocation().takeIf { it.isNotBlank() } ?: return
 
         hotwireView?.webViewRefresh?.apply {
             if (displayProgress && !isRefreshing) {
                 isRefreshing = true
             }
         }
+        hotwireView?.removeProgressView()
+        hotwireView?.removeScreenshot()
+        hotwireView?.removeErrorView()
 
         isWebViewAttachedToNewDestination = false
-        visit(location, restoreWithCachedSnapshot = false, reload = true)
+        if (session.isTurboEnabled()) {
+            visit(refreshLocation, restoreWithCachedSnapshot = false, reload = true)
+        } else {
+            webView.reload()
+        }
     }
 
     /**
@@ -193,6 +203,11 @@ internal class HotwireWebFragmentDelegate(
 
     override fun onPageFinished(location: String) {
         callback.onColdBootPageCompleted(location)
+        if (!session.isTurboEnabled()) {
+            hotwireView?.webViewRefresh?.isRefreshing = false
+            hotwireView?.removeScreenshot()
+            hotwireView?.removeErrorView()
+        }
     }
 
     override fun onZoomed(newScale: Float) {
@@ -216,33 +231,33 @@ internal class HotwireWebFragmentDelegate(
     }
 
     override fun visitRendered() {
-        callback.onVisitRendered(location)
+        callback.onVisitRendered(destinationLocation)
         navDestination.fragmentViewModel.setTitle(title())
         removeTransitionalViews()
     }
 
     override fun visitRequestFinished() {
-        callback.onVisitRequestFinished(location)
+        callback.onVisitRequestFinished(destinationLocation)
     }
 
     override fun visitCompleted(completedOffline: Boolean) {
-        callback.onVisitCompleted(location, completedOffline)
+        callback.onVisitCompleted(destinationLocation, completedOffline)
         navDestination.fragmentViewModel.setTitle(title())
     }
 
     override fun onReceivedError(error: VisitError) {
-        callback.onVisitErrorReceived(location, error)
+        callback.onVisitErrorReceived(destinationLocation, error)
     }
 
     override fun onRenderProcessGone() {
-        navigator.route(location, VisitOptions(action = VisitAction.REPLACE))
+        navigator.route(destinationLocation, VisitOptions(action = VisitAction.REPLACE))
     }
 
     override fun requestFailedWithError(visitHasCachedSnapshot: Boolean, error: VisitError) {
         if (visitHasCachedSnapshot) {
-            callback.onVisitErrorReceivedWithCachedSnapshotAvailable(location, error)
+            callback.onVisitErrorReceivedWithCachedSnapshotAvailable(destinationLocation, error)
         } else {
-            callback.onVisitErrorReceived(location, error)
+            callback.onVisitErrorReceived(destinationLocation, error)
         }
     }
 
@@ -347,14 +362,15 @@ internal class HotwireWebFragmentDelegate(
 
             // Visit every time the WebView is reattached to the current Fragment.
             if (isWebViewAttachedToNewDestination) {
-                val currentSessionVisitRestored = !isInitialVisit &&
+                val shouldRestoreWithCachedSnapshot = session.currentVisit != null
+                val currentSessionVisitRestored = shouldRestoreWithCachedSnapshot &&
                     session.currentVisit?.destinationIdentifier == identifier &&
+                    webView.url?.isSameLocationAs(destinationLocation) == true &&
                     session.restoreCurrentVisit(this)
 
                 if (!currentSessionVisitRestored) {
-                    showProgressView(location)
-                    visit(location, restoreWithCachedSnapshot = !isInitialVisit, reload = false)
-                    isInitialVisit = false
+                    showProgressView(destinationLocation)
+                    visit(destinationLocation, restoreWithCachedSnapshot = shouldRestoreWithCachedSnapshot, reload = false)
                 }
             }
         }
@@ -391,7 +407,7 @@ internal class HotwireWebFragmentDelegate(
 
         viewTreeLifecycleOwner?.lifecycleScope?.launch {
             val snapshot = when (options.action) {
-                VisitAction.ADVANCE -> fetchCachedSnapshot()
+                VisitAction.ADVANCE -> fetchCachedSnapshot(location)
                 else -> null
             }
 
@@ -410,7 +426,17 @@ internal class HotwireWebFragmentDelegate(
         }
     }
 
-    private suspend fun fetchCachedSnapshot(): String? {
+    private fun currentRefreshLocation(): String {
+        val sessionLocation = session.currentVisit?.location
+            ?.takeIf { it.isNotBlank() && it != "about:blank" }
+
+        return sessionLocation
+            ?: webView.url
+            ?.takeIf { it.isNotBlank() && it != "about:blank" }
+            ?: destinationLocation
+    }
+
+    private suspend fun fetchCachedSnapshot(location: String): String? {
         return withContext(dispatcherProvider.io) {
             val response = Hotwire.config.offlineRequestHandler?.getCachedSnapshot(
                 url = location
@@ -435,6 +461,9 @@ internal class HotwireWebFragmentDelegate(
 
     private fun initializePullToRefresh(hotwireView: HotwireView) {
         hotwireView.webViewRefresh?.apply {
+            val density = resources.displayMetrics.density
+            setDistanceToTriggerSync((70 * density).toInt())
+            setProgressViewOffset(false, ( -12 * density).toInt(), (64 * density).toInt())
             isEnabled = navDestination.pathProperties.pullToRefreshEnabled
             setOnRefreshListener {
                 refresh(displayProgress = true)
@@ -463,6 +492,39 @@ internal class HotwireWebFragmentDelegate(
     }
 
     private fun generateIdentifier(): Int {
-        return Random.nextInt(0, 999999999)
+        return destinationLocation.normalizedLocation().hashCode()
+    }
+
+    private fun String.normalizedLocation(): String {
+        return try {
+            val uri = URI(this)
+            val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: ""
+            val host = uri.host?.lowercase(Locale.ROOT) ?: ""
+            val port = uri.port
+                .takeIf { it != -1 && it != defaultPortFor(scheme) }
+                ?.let { ":$it" }
+                ?: ""
+            val path = uri.path.orEmpty().ifBlank { "/" }.let { rawPath ->
+                when {
+                    rawPath == "/" -> rawPath
+                    rawPath.endsWith("/") -> rawPath.dropLastWhile { it == '/' }
+                    else -> rawPath
+                }
+            }
+            val query = uri.rawQuery.orEmpty().let { if (it.isBlank()) "" else "?$it" }
+            "$scheme://$host$port$path$query"
+        } catch (_: Throwable) {
+            trim()
+        }
+    }
+
+    private fun String.isSameLocationAs(location: String): Boolean {
+        return normalizedLocation() == location.normalizedLocation()
+    }
+
+    private fun defaultPortFor(scheme: String): Int = when (scheme.lowercase(Locale.ROOT)) {
+        "http" -> 80
+        "https" -> 443
+        else -> -1
     }
 }

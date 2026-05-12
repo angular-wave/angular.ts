@@ -2,13 +2,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
     namespace = "dev.hotwire.demo"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.hotwire.demo"
@@ -34,6 +33,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -42,9 +42,9 @@ android {
     }
 
     sourceSets {
-        named("main")  { java { srcDirs("src/main/kotlin") } }
-        named("test")  { java { srcDirs("src/test/kotlin") } }
-        named("debug") { java { srcDirs("src/debug/kotlin") } }
+        named("main") { java.directories.clear(); java.directories.add("src/main/kotlin") }
+        named("test") { java.directories.clear(); java.directories.add("src/test/kotlin") }
+        named("debug") { java.directories.clear(); java.directories.add("src/debug/kotlin") }
     }
 }
 
@@ -59,7 +59,7 @@ dependencies {
     implementation(project(":navigation-fragments"))
 
     // Material
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // AndroidX
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
