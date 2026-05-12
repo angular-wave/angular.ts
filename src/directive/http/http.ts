@@ -9,18 +9,10 @@ import {
   _stream,
 } from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
-import { NodeType } from "../../shared/node.ts";
-import {
-  createDocumentFragment,
-  emptyElement,
-  removeElement,
-} from "../../shared/dom.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import type { ConnectionEvent } from "../../services/connection/connection-manager.ts";
 import {
-  arrayFrom,
   callBackAfterFirst,
-  isArray,
   isDefined,
   isInstanceOf,
   isObject,
@@ -36,6 +28,7 @@ import {
   type RealtimeProtocolMessage,
   type SwapModeType,
 } from "../realtime/protocol.ts";
+import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 
 export {
   SwapMode,
@@ -56,8 +49,6 @@ type HttpDirectiveElement = HTMLElement & {
 };
 
 type HttpResponsePayload = ReadableStream<Uint8Array> | string | object;
-
-type SwapNodes = Array<Node | ChildNode>;
 
 type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
   headers?: Record<string, string>;
@@ -193,8 +184,6 @@ export function createHttpDirective(
 
         const tag = element.tagName.toLowerCase();
 
-        let content: ChildNode | ChildNode[] | undefined;
-
         if (isDefined(attrs.latch)) {
           attrs.$observe(
             "latch",
@@ -232,243 +221,15 @@ export function createHttpDirective(
           );
         }
 
-        /**
-         * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
-         */
-        function handleSwapResponse(
-          html: string | object,
-          swap: SwapModeType,
-          scopeParam: ng.Scope,
-          attrsParam: ng.Attributes & Record<string, any>,
-          elementParam: Element,
-        ): void {
-          let animationEnabled = false;
-
-          if (attrsParam.animate) {
-            animationEnabled = true;
-          }
-          const animate = animationEnabled ? getAnimate() : undefined;
-
-          let nodes: SwapNodes = [];
-
-          if (!["textcontent", "delete", "none"].includes(swap)) {
-            if (!html) return;
-            const compiled = $compile(String(html))(scopeParam) as
-              | DocumentFragment
-              | ChildNode;
-
-            nodes = isInstanceOf(compiled, DocumentFragment)
-              ? arrayFrom(compiled.childNodes)
-              : [compiled];
-          }
-
-          const targetSelector = attrsParam.target;
-
-          const target = targetSelector
-            ? document.querySelector(targetSelector)
-            : elementParam;
-
-          if (!target) {
-            $log.warn(`${attrName}: target "${targetSelector}" not found`);
-
-            return;
-          }
-
-          switch (swap) {
-            case "outerHTML": {
-              const parent = target.parentNode;
-
-              if (!parent) return;
-
-              // Build fragment for static replacement OR a list for animation
-              const frag = createDocumentFragment();
-
-              nodes.forEach((x) => frag.appendChild(x));
-
-              if (!animationEnabled) {
-                parent.replaceChild(frag, target);
-                break;
-              }
-
-              const placeholder = document.createElement("span");
-
-              placeholder.style.display = "none";
-              parent.insertBefore(placeholder, target.nextSibling);
-
-              animate!.leave(target).done(() => {
-                const insertedNodes = arrayFrom(frag.childNodes);
-
-                // Insert each node in order
-                for (const x of insertedNodes) {
-                  if (x.nodeType === NodeType._ELEMENT_NODE) {
-                    // Animate elements
-                    animate!.enter(
-                      x as Element,
-                      parent as Element,
-                      placeholder,
-                    );
-                  } else {
-                    // Insert text nodes statically
-                    parent.insertBefore(x, placeholder);
-                  }
-                }
-
-                content = insertedNodes;
-                scopeParam.$flushQueue(); // flush once after all insertions
-              });
-
-              scopeParam.$flushQueue(); // flush leave animation
-              break;
-            }
-
-            case "textContent":
-              if (animationEnabled) {
-                animate!.leave(target).done(() => {
-                  target.textContent = html;
-                  animate!.enter(target, target.parentNode as Element);
-                  scopeParam.$flushQueue();
-                });
-
-                scopeParam.$flushQueue();
-              } else {
-                target.textContent = html;
-              }
-              break;
-
-            case "beforebegin": {
-              const parent = target.parentNode;
-
-              if (!parent) break;
-
-              nodes.forEach((node) => {
-                if (
-                  animationEnabled &&
-                  node.nodeType === NodeType._ELEMENT_NODE
-                ) {
-                  animate!.enter(node as Element, parent as Element, target); // insert before target
-                } else {
-                  parent.insertBefore(node, target);
-                }
-              });
-
-              if (animationEnabled) scopeParam.$flushQueue();
-              break;
-            }
-
-            case "afterbegin": {
-              const { firstChild } = target;
-
-              [...nodes].reverse().forEach((node) => {
-                if (
-                  animationEnabled &&
-                  node.nodeType === NodeType._ELEMENT_NODE
-                ) {
-                  animate!.enter(
-                    node as Element,
-                    target,
-                    firstChild as Element,
-                  ); // insert before first child
-                } else {
-                  target.insertBefore(node, firstChild);
-                }
-              });
-
-              if (animationEnabled) scopeParam.$flushQueue();
-              break;
-            }
-
-            case "beforeend": {
-              nodes.forEach((node) => {
-                if (
-                  animationEnabled &&
-                  node.nodeType === NodeType._ELEMENT_NODE
-                ) {
-                  animate!.enter(node as Element, target); // append at end
-                } else {
-                  target.appendChild(node);
-                }
-              });
-
-              if (animationEnabled) scopeParam.$flushQueue();
-              break;
-            }
-
-            case "afterend": {
-              const parent = target.parentNode;
-
-              if (!parent) break;
-              const { nextSibling } = target;
-
-              [...nodes].reverse().forEach((node) => {
-                if (
-                  animationEnabled &&
-                  node.nodeType === NodeType._ELEMENT_NODE
-                ) {
-                  animate!.enter(
-                    node as Element,
-                    parent as Element,
-                    nextSibling as Element,
-                  ); // insert after target
-                } else {
-                  parent.insertBefore(node, nextSibling);
-                }
-              });
-
-              if (animationEnabled) scopeParam.$flushQueue();
-              break;
-            }
-
-            case "delete":
-              if (animationEnabled) {
-                animate!.leave(target).done(() => {
-                  removeElement(target); // safety: actually remove in case $animate.leave didn't
-                  scopeParam.$flushQueue();
-                });
-                scopeParam.$flushQueue();
-              } else {
-                removeElement(target);
-              }
-              break;
-
-            case "none":
-              break;
-
-            case "innerHTML":
-            default:
-              if (animationEnabled) {
-                if (
-                  content &&
-                  !isArray(content) &&
-                  content.nodeType !== NodeType._TEXT_NODE
-                ) {
-                  animate!.leave(content as Element).done(() => {
-                    content = nodes[0] as ChildNode;
-                    animate!.enter(nodes[0] as Element, target);
-                    scopeParam.$flushQueue();
-                  });
-                  scopeParam.$flushQueue();
-                } else {
-                  content = nodes[0] as ChildNode;
-
-                  if (
-                    content &&
-                    !isArray(content) &&
-                    content.nodeType === NodeType._TEXT_NODE
-                  ) {
-                    emptyElement(target);
-                    target.replaceChildren(...nodes);
-                  } else {
-                    animate!.enter(nodes[0] as Element, target);
-                    scopeParam.$flushQueue();
-                  }
-                }
-              } else {
-                emptyElement(target);
-                target.replaceChildren(...nodes);
-              }
-              break;
-          }
-        }
+        const handleSwapResponse = createRealtimeSwapHandler({
+          $compile,
+          $log,
+          getAnimate,
+          scope,
+          attrs,
+          element,
+          logPrefix: attrName,
+        });
 
         async function handleStreamResponse(
           stream: ReadableStream<Uint8Array>,
@@ -477,7 +238,7 @@ export function createHttpDirective(
           await $stream.consumeText(stream, {
             signal: destroyController.signal,
             onChunk(chunk) {
-              if (chunk) handleSwapResponse(chunk, swap, scope, attrs, element);
+              if (chunk) handleSwapResponse(chunk, swap);
             },
           });
         }
@@ -533,8 +294,6 @@ export function createHttpDirective(
 
           const nextSwap = data.swap || swap;
 
-          const previousTarget = attrs.target;
-
           if (!dispatchSseEvent("message", { data, event, source })) {
             source.close();
 
@@ -542,26 +301,12 @@ export function createHttpDirective(
           }
 
           if (isDefined(html)) {
-            if (data.target) attrs.target = data.target;
-
-            try {
-              handleSwapResponse(
-                isString(html) || isObject(html) ? html : String(html),
-                nextSwap,
-                scope,
-                attrs,
-                element,
-              );
-              dispatchSseEvent("swapped", { data, event, source });
-            } finally {
-              if (data.target) {
-                if (isDefined(previousTarget)) {
-                  attrs.target = previousTarget;
-                } else {
-                  delete attrs.target;
-                }
-              }
-            }
+            handleSwapResponse(
+              isString(html) || isObject(html) ? html : String(html),
+              nextSwap,
+              { targetSelector: data.target },
+            );
+            dispatchSseEvent("swapped", { data, event, source });
           }
         }
 
@@ -625,7 +370,7 @@ export function createHttpDirective(
                 scope.$merge(html);
               }
             } else if (isString(html)) {
-              handleSwapResponse(html, swap, scope, attrs, element);
+              handleSwapResponse(html, swap);
             }
           };
 

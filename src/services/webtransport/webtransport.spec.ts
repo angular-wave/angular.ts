@@ -240,7 +240,7 @@ describe("$webTransport", () => {
 });
 
 describe("ngWebTransport", () => {
-  let el, $compile, $scope;
+  let el, $animate, $compile, $scope;
 
   const connections = [];
 
@@ -250,7 +250,8 @@ describe("ngWebTransport", () => {
 
     const angular = new Angular();
 
-    angular.bootstrap(el, []).invoke((_$compile_, _$rootScope_) => {
+    angular.bootstrap(el, []).invoke((_$animate_, _$compile_, _$rootScope_) => {
+      $animate = _$animate_;
       $compile = _$compile_;
       $scope = _$rootScope_;
     });
@@ -465,6 +466,41 @@ describe("ngWebTransport", () => {
 
     expect(el.querySelector("#feed").innerHTML).toBe("<span>Updated</span>");
     expect(swapped).toBe(true);
+  });
+
+  it("uses $animate for realtime protocol swaps when animate is enabled", async () => {
+    const { url, config } = await webTransportTestConfig();
+
+    $scope.transportUrl = url;
+    $scope.transportConfig = config;
+
+    compileDirective('<ul id="feed"></ul>');
+    compileDirective(`
+      <div
+        ng-web-transport="transportUrl"
+        data-config="transportConfig"
+        data-as="session"
+        data-transform="json"
+        animate="true"
+      ></div>
+    `);
+
+    spyOn($animate, "enter").and.callThrough();
+
+    await eventually(() => $scope.session);
+    track($scope.session);
+    await $scope.session.sendText(
+      JSON.stringify({
+        html: "<li>Animated</li>",
+        target: "#feed",
+        swap: "beforeend",
+      }),
+    );
+    await eventually(
+      () => el.querySelector("#feed").textContent === "Animated",
+    );
+
+    expect($animate.enter).toHaveBeenCalled();
   });
 
   function compileDirective(template) {
