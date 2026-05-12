@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Hotwire Native</string>
+    <string name="menu_progress">Loading…</string>
+</resources>
