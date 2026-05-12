@@ -1,0 +1,9 @@
+<section class="demo-panel">
+  <h2>Handling files</h2>
+  <p>Native shells often intercept same-origin file links and open them in an in-app viewer instead of a browser tab.</p>
+  <div class="demo-actions">
+    <button ng-native="file" data-event="open" data-params="{ url: '/native/demo/files/sample.jpg' }" data-on-result="demo.file = $result">Open file natively</button>
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo', 'replace')">Back to demo menu</button>
+  </div>
+  <p class="demo-note" ng-if="demo.file.url">Native file request: {{ demo.file.url }}</p>
+</section>

@@ -1,0 +1,389 @@
+<!doctype html>
+<html class="platform-web">
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Native Bridge Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/css/angular-animate.css" />
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
+    <link rel="stylesheet" href="/src/services/native/native-demo.css" />
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const decoder = new TextDecoder();
+
+        if (!window.AngularNative) {
+          window.AngularNative = {
+            async receive(message) {
+              const call = JSON.parse(message);
+
+              setTimeout(() => {
+                nativeResult(call)
+                  .then((result) => {
+                    window.angularNative.receive({
+                      id: call.id,
+                      ok: true,
+                      result,
+                    });
+                  })
+                  .catch((error) => {
+                    window.angularNative.receive({
+                      id: call.id,
+                      ok: false,
+                      error: error.message || String(error),
+                    });
+                  });
+              }, 160);
+            },
+          };
+        }
+
+        async function nativeResult(call) {
+          if (call.target === "navigation") {
+            const fragmentUrl = call.params.fragmentUrl || call.params.url;
+            const response = await fetch(fragmentUrl);
+            const html = await response.text();
+
+            const historyMethod =
+              call.params.action === "replace" ? "replaceState" : "pushState";
+
+            window.history[historyMethod](null, "", call.params.url);
+
+            return {
+              target: "#native-view",
+              swap: "innerHTML",
+              html,
+            };
+          }
+
+          if (call.target === "component") {
+            if (call.method === "unmount") {
+              return { ok: true };
+            }
+
+            if (
+              call.method === "update" &&
+              call.params.name === "compose-drawer"
+            ) {
+              return { swap: "none" };
+            }
+
+            if (call.params.name === "compose-drawer") {
+              return {
+                target: `#${call.params.id}`,
+                swap: "innerHTML",
+                html: `
+                  <details class="native-drawer-fallback">
+                    <summary>${call.params.props.text}</summary>
+                    <div class="native-drawer-fallback__sheet">
+                      <strong>${call.params.props.title}</strong>
+                      <button type="button" ng-click="demo.refreshNativeDrawerCard()">
+                        ${call.params.props.items[0]}
+                      </button>
+                    </div>
+                  </details>
+                `,
+              };
+            }
+
+            if (call.params.name.includes("button")) {
+              return {
+                target: `#${call.params.id}`,
+                swap: "innerHTML",
+                html: `<button type="button">${call.params.props.text}</button>`,
+              };
+            }
+
+            return {
+              target: `#${call.params.id}`,
+              swap: "innerHTML",
+              html: `<strong>${call.params.props.text}</strong>`,
+            };
+          }
+
+          if (call.target === "share") {
+            return {
+              text: `Shared ${call.params.title}`,
+              url: call.params.url,
+            };
+          }
+
+          if (call.target === "camera") {
+            return {
+              uri: "content://angular-ts-native/demo-photo.jpg",
+              quality: call.params.quality,
+            };
+          }
+
+          if (call.target === "feed") {
+            return {
+              target: "#native-feed",
+              swap: "afterbegin",
+              html: `<article class="event-card"><strong>Native patch</strong><span>${new Date().toLocaleTimeString()}</span></article>`,
+            };
+          }
+
+          if (call.target === "numbers") {
+            return {
+              title: "A list of numbers",
+              component: "NativeNumbersScreen",
+            };
+          }
+
+          if (call.target === "browser" || call.target === "file") {
+            return {
+              opened: true,
+              url: call.params.url,
+            };
+          }
+
+          if (
+            call.target === "menu" ||
+            call.target === "overflow-menu" ||
+            call.target === "form"
+          ) {
+            return {
+              item: call.params.items ? call.params.items[0] : "Submit",
+            };
+          }
+
+          return { ok: true };
+        }
+
+        class NativeDemoController {
+          static $inject = [
+            "$scope",
+            "$http",
+            "$rest",
+            "$websocket",
+            "$webTransport",
+          ];
+
+          constructor($scope, $http, $rest, $websocket, $webTransport) {
+            this.$scope = $scope;
+            this.$http = $http;
+            this.$rest = $rest;
+            this.$websocket = $websocket;
+            this.$webTransport = $webTransport;
+            this.tasks = $rest("/api/tasks");
+            this.title = "AngularTS native bridge";
+            this.url = "https://angular-ts.local/native";
+            this.network = { online: true };
+            this.restTasks = [];
+            this.restNotice = "REST is idle";
+            this.websocketEvents = [];
+            this.websocketText = "Hello WebSocket";
+            this.websocketNotice = "WebSocket is idle";
+            this.webTransportEvents = [];
+            this.webTransportText = "Hello WebTransport";
+            this.webTransportNotice = "WebTransport is idle";
+            this.webTransportMetadata = null;
+            this.webTransportConnection = null;
+            this.transportConfig = {};
+            this.initialView =
+              new URLSearchParams(window.location.search).get("view") ||
+              "/native/demo";
+          }
+
+          title = "AngularTS native bridge";
+          url = "https://angular-ts.local/native";
+          network = { online: true };
+
+          refreshNativeServerCard() {
+            document
+              .getElementById("native-server-card-refresh")
+              ?.dispatchEvent(new Event("click"));
+          }
+
+          refreshNativeDrawerCard() {
+            document
+              .getElementById("native-drawer-card-refresh")
+              ?.dispatchEvent(new Event("click"));
+          }
+
+          nativeRoute(fragmentUrl, action = "advance") {
+            const shellUrl = new URL(window.location.href);
+
+            shellUrl.searchParams.set("view", fragmentUrl);
+
+            return {
+              url: `${shellUrl.pathname}${shellUrl.search}`,
+              fragmentUrl,
+              action,
+            };
+          }
+
+          pushNetworkStatus() {
+            this.network = { online: !this.network.online };
+            window.angularNative.dispatch({
+              target: "network",
+              event: "status",
+              data: this.network,
+            });
+          }
+
+          async loadRestTasks() {
+            await this.$http.post("/api/tasks/reset", {});
+            this.restTasks = await this.tasks.list();
+            this.restNotice = `Loaded ${this.restTasks.length} tasks`;
+          }
+
+          async createRestTask() {
+            const task = await this.tasks.create({
+              title: "Native bridge review",
+              owner: "Ada",
+              status: "Open",
+            });
+
+            this.restTasks = [task].concat(this.restTasks);
+            this.restNotice = `Created task #${task.id}`;
+          }
+
+          connectWebSocket() {
+            if (this.websocketConnection) {
+              this.websocketConnection.close();
+            }
+
+            const protocol =
+              window.location.protocol === "https:" ? "wss:" : "ws:";
+            const url = `${protocol}//${window.location.host}/native/websocket`;
+
+            this.websocketConnection = this.$websocket(url, [], {
+              heartbeatTimeout: 0,
+              onOpen: () => {
+                this.websocketNotice = "WebSocket connected";
+                this.$scope.$flushQueue();
+              },
+              onMessage: (message) => {
+                this.websocketEvents = [message].concat(this.websocketEvents);
+                this.$scope.$flushQueue();
+              },
+              onClose: () => {
+                this.websocketNotice = "WebSocket closed";
+                this.$scope.$flushQueue();
+              },
+              onError: () => {
+                this.websocketNotice = "WebSocket error";
+                this.$scope.$flushQueue();
+              },
+            });
+          }
+
+          sendWebSocket() {
+            if (!this.websocketConnection) {
+              this.connectWebSocket();
+            }
+
+            this.websocketConnection?.send({
+              text: this.websocketText,
+              time: new Date().toLocaleTimeString(),
+            });
+          }
+
+          async connectWebTransport() {
+            if (!this.webTransportMetadata) {
+              const response = await this.$http.get("/webtransport/cert-hash");
+
+              this.webTransportMetadata = response.data;
+              this.transportConfig = {
+                serverCertificateHashes: [
+                  {
+                    algorithm: this.webTransportMetadata.algorithm,
+                    value: this.bytesFromBase64(
+                      this.webTransportMetadata.value,
+                    ),
+                  },
+                ],
+              };
+            }
+
+            this.webTransportConnection = this.$webTransport(
+              this.webTransportMetadata.url,
+              {
+                ...this.transportConfig,
+                transformDatagram(data) {
+                  return JSON.parse(decoder.decode(data));
+                },
+                onDatagram: ({ message }) => {
+                  this.webTransportEvents = [message].concat(
+                    this.webTransportEvents,
+                  );
+                  this.$scope.$flushQueue();
+                },
+                onOpen: () => {
+                  this.webTransportNotice = "WebTransport connected";
+                  this.$scope.$flushQueue();
+                },
+                onError: (error) => {
+                  this.webTransportNotice =
+                    error.message || "WebTransport error";
+                  this.$scope.$flushQueue();
+                },
+              },
+            );
+
+            await this.webTransportConnection.ready;
+          }
+
+          async sendWebTransport() {
+            if (!this.webTransportConnection) {
+              await this.connectWebTransport();
+            }
+
+            await this.webTransportConnection.sendDatagram(
+              JSON.stringify({
+                channel: "webtransport",
+                text: this.webTransportText,
+                time: new Date().toLocaleTimeString(),
+              }),
+            );
+          }
+
+          bytesFromBase64(value) {
+            const binary = atob(value);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+
+            return bytes;
+          }
+        }
+
+        window.angular
+          .module("nativeDemo", [])
+          .controller("NativeDemoCtrl", NativeDemoController);
+      });
+    </script>
+  </head>
+  <body
+    class="native-demo-page"
+    ng-app="nativeDemo"
+    ng-controller="NativeDemoCtrl as demo"
+  >
+    <main class="demo-shell">
+      <header class="demo-hero">
+        <h1>AngularTS Native Bridge</h1>
+        <p>
+          A forked native shell exposes Android capabilities through a generic
+          AngularTS-aware bridge protocol.
+        </p>
+      </header>
+
+      <section class="demo-content">
+        <div id="native-initial-view" trigger="load" target="#native-view"></div>
+        <script>
+          document
+            .getElementById("native-initial-view")
+            .setAttribute(
+              "ng-get",
+              new URLSearchParams(window.location.search).get("view") ||
+                "/native/demo",
+            );
+        </script>
+        <div id="native-view" data-view-transition></div>
+      </section>
+    </main>
+  </body>
+</html>

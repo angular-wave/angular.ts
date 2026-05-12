@@ -191,6 +191,15 @@ import type {
   WebTransportRetryDelay as TWebTransportRetryDelay,
   WebTransportService as TWebTransportService,
 } from "./services/webtransport/webtransport.ts";
+import type {
+  NativeBridgeAdapter as TNativeBridgeAdapter,
+  NativeCallMessage as TNativeCallMessage,
+  NativeCallOptions as TNativeCallOptions,
+  NativeEventHandler as TNativeEventHandler,
+  NativeEventMessage as TNativeEventMessage,
+  NativeReplyMessage as TNativeReplyMessage,
+  NativeService as TNativeService,
+} from "./services/native/native.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import type { AriaService as TAriaService } from "./directive/aria/aria.ts";
@@ -308,6 +317,8 @@ declare global {
     export type LocationService = TLocationService;
 
     export type LogService = TLogService;
+
+    export type NativeService = TNativeService;
 
     export type ParseService = TParseService;
 
@@ -491,6 +502,22 @@ declare global {
     export type WebSocketService = TWebSocketService;
 
     export type NativeWebTransport = TNativeWebTransport;
+
+    export type NativeBridgeAdapter = TNativeBridgeAdapter;
+
+    export type NativeCallMessage<TParams = unknown> =
+      TNativeCallMessage<TParams>;
+
+    export type NativeCallOptions = TNativeCallOptions;
+
+    export type NativeEventHandler<TData = unknown> =
+      TNativeEventHandler<TData>;
+
+    export type NativeEventMessage<TData = unknown> =
+      TNativeEventMessage<TData>;
+
+    export type NativeReplyMessage<TResult = unknown> =
+      TNativeReplyMessage<TResult>;
 
     export type WebTransportBufferInput = TWebTransportBufferInput;
 

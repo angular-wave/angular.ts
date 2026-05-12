@@ -27,6 +27,15 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/mock/, ""),
       },
+      "/native": {
+        target: "http://localhost:3000/",
+        changeOrigin: true,
+        ws: true,
+      },
+      "/webtransport": {
+        target: "http://localhost:3000/",
+        changeOrigin: true,
+      },
     },
   },
 });

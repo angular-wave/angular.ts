@@ -1,0 +1,186 @@
+<div class="native-home">
+  <section class="demo-panel native-panel">
+    <h2>Native bridge view</h2>
+    <p>This view is rendered by the Go backend and compiled by AngularTS.</p>
+
+    <div class="demo-actions">
+      <button
+        ng-native="share"
+        data-event="open"
+        data-params="{ title: demo.title, url: demo.url }"
+        data-on-result="demo.shareResult = $result"
+      >
+        Share
+      </button>
+      <button
+        ng-native="camera"
+        data-event="pickPhoto"
+        data-params="{ quality: 0.8 }"
+        data-on-result="demo.photo = $result"
+      >
+        Pick photo
+      </button>
+      <button ng-native="feed" data-event="append" animate="true">
+        Native DOM patch
+      </button>
+      <button type="button" ng-click="demo.pushNetworkStatus()">
+        Push native event
+      </button>
+    </div>
+
+    <div class="demo-grid">
+      <section class="demo-panel">
+        <h2>Replies</h2>
+        <p>Share: {{ demo.shareResult.text || "No share yet" }}</p>
+        <p>Photo: {{ demo.photo.uri || "No photo yet" }}</p>
+        <p>Network: {{ demo.network.online === false ? "Offline" : "Online" }}</p>
+      </section>
+
+      <section class="demo-panel">
+        <h2>Native feed</h2>
+        <div id="native-feed" class="demo-stack"></div>
+      </section>
+
+      <section class="demo-panel">
+        <h2>Native component</h2>
+        <div
+          class="demo-output"
+          ng-native-component="hello"
+          data-props="{ text: 'Hello from an Android View mounted by AngularTS' }"
+        ></div>
+      </section>
+
+      <section class="demo-panel">
+        <h2>Server component</h2>
+        <div
+          class="demo-output"
+          ng-native-component="material-button"
+          data-props="{ text: 'Refresh server component' }"
+          data-on-click="demo.refreshNativeServerCard()"
+        ></div>
+        <button
+          id="native-server-card-refresh"
+          hidden
+          ng-get="/native/demo/server-card"
+          data-target="#native-server-card"
+        ></button>
+        <div id="native-server-card" class="demo-stack"></div>
+      </section>
+
+      <section class="demo-panel">
+        <h2>Compose drawer</h2>
+        <div
+          class="demo-output"
+          style="min-height: 180px"
+          ng-native-component="compose-drawer"
+          data-props="{ text: 'Open Compose drawer', title: 'Server actions', items: ['Refresh from server'] }"
+          data-on-select="demo.refreshNativeDrawerCard()"
+        ></div>
+        <button
+          id="native-drawer-card-refresh"
+          hidden
+          ng-get="/native/demo/drawer-card"
+          data-target="#native-drawer-card"
+        ></button>
+        <div id="native-drawer-card" class="demo-stack"></div>
+      </section>
+    </div>
+
+    <div ng-native-event="network.status" data-on-event="demo.network = $data"></div>
+  </section>
+
+  <section class="demo-panel native-menu">
+    <h2>Backend screens</h2>
+    <p>These screens mirror the Turbo Native demo features, but the HTML comes from the Go server and AngularTS compiles each fragment after it is swapped into this view.</p>
+
+    <h3>Basic features</h3>
+    <div class="demo-actions">
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/one')">Navigate to another webpage</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/slow')">Open a slow-loading webpage</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/long')">Try scroll restoration</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/nonexistent')">Hit an HTTP 404 error</button>
+    </div>
+
+    <h3>Advanced features</h3>
+    <div class="demo-actions">
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/protected')">Intercept unauthorized access</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/new')">Load a webpage modally</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/numbers')">Intercept with a native view</button>
+      <button ng-native="browser" data-event="open" data-params="{ url: 'https://angular.dev' }" data-on-result="demo.external = $result">Follow an external link</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/follow')">Follow a redirect</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/files')">See how files work</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/reference')">Reference</button>
+    </div>
+
+    <h3>Native components</h3>
+    <div class="demo-actions">
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/strada-form')">Form example</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/strada-menu')">Menu example</button>
+      <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/strada-overflow')">Overflow + menu example</button>
+    </div>
+
+    <p class="demo-note" ng-if="demo.nativeScreen.title">Native screen: {{ demo.nativeScreen.title }}</p>
+    <p class="demo-note" ng-if="demo.external.url">External URL proposed to native browser: {{ demo.external.url }}</p>
+  </section>
+
+  <section class="demo-panel native-transports">
+    <h2>Backend data channels</h2>
+    <p>These panels exercise the same Go backend through REST, SSE, WebSocket, and WebTransport while staying inside the native bridge demo.</p>
+
+    <div class="demo-grid">
+      <section class="demo-panel">
+        <h3>REST</h3>
+        <div class="demo-actions">
+          <button ng-click="demo.loadRestTasks()">Load tasks</button>
+          <button ng-click="demo.createRestTask()">Create task</button>
+        </div>
+        <p class="demo-note">{{ demo.restNotice }}</p>
+        <div class="demo-stack">
+          <article class="event-card" ng-repeat="task in demo.restTasks" data-index="id">
+            <strong>{{ task.title }}</strong>
+            <span>{{ task.owner }} - {{ task.status }}</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="demo-panel">
+        <h3>SSE</h3>
+        <button id="native-sse-stream" ng-sse="/mock/sse-demo" sse-events="stats" trigger="click">
+          Start SSE stream
+        </button>
+        <p id="sse-stats" class="demo-note">No SSE updates yet.</p>
+        <div id="sse-feed" class="demo-stack"></div>
+      </section>
+
+      <section class="demo-panel">
+        <h3>WebSocket</h3>
+        <div class="demo-actions">
+          <button ng-click="demo.connectWebSocket()">Connect</button>
+          <button ng-click="demo.sendWebSocket()">Send</button>
+        </div>
+        <p class="demo-note">{{ demo.websocketNotice }}</p>
+        <div class="demo-stack">
+          <article class="event-card" ng-repeat="event in demo.websocketEvents" data-index="count">
+            <strong>{{ event.text }}</strong>
+            <span>{{ event.time }}</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="demo-panel">
+        <h3>WebTransport</h3>
+        <div class="demo-actions">
+          <button ng-click="demo.connectWebTransport()">Connect</button>
+          <button ng-click="demo.sendWebTransport()">Send datagram</button>
+        </div>
+        <p class="demo-note">{{ demo.webTransportNotice }}</p>
+        <div class="demo-stack">
+          <article class="event-card" ng-repeat="event in demo.webTransportEvents" data-index="time">
+            <strong>{{ event.text }}</strong>
+            <span>{{ event.channel }}</span>
+          </article>
+        </div>
+      </section>
+    </div>
+  </section>
+</div>

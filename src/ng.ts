@@ -84,6 +84,11 @@ import { ngListenerDirective } from "./directive/listener/listener.ts";
 import { ngModelDirective } from "./directive/model/model.ts";
 import { ngModelOptionsDirective } from "./directive/model-options/model-options.ts";
 import {
+  ngNativeComponentDirective,
+  ngNativeDirective,
+  ngNativeEventDirective,
+} from "./directive/native/native.ts";
+import {
   ngMessageDefaultDirective,
   ngMessageDirective,
   ngMessageExpDirective,
@@ -143,6 +148,7 @@ import {
 } from "./services/http/http.ts";
 import { LocationProvider } from "./services/location/location.ts";
 import { LogProvider } from "./services/log/log.ts";
+import { NativeProvider } from "./services/native/native.ts";
 import { PubSubProvider } from "./services/pubsub/pubsub.ts";
 import { RestProvider } from "./services/rest/rest.ts";
 import { SceDelegateProvider, SceProvider } from "./services/sce/sce.ts";
@@ -259,6 +265,7 @@ export const ngRouterProviders = {
 /** Network, messaging, persistence, and worker-style integration providers. */
 export const ngIntegrationProviders = {
   $eventBus: PubSubProvider,
+  $native: NativeProvider,
   $rest: RestProvider,
   $sse: SseProvider,
   $stream: StreamProvider,
@@ -338,6 +345,9 @@ export const ngIntegrationDirectives = {
   ngChannel: ngChannelDirective,
   ngDelete: ngDeleteDirective,
   ngGet: ngGetDirective,
+  ngNative: ngNativeDirective,
+  ngNativeComponent: ngNativeComponentDirective,
+  ngNativeEvent: ngNativeEventDirective,
   ngPost: ngPostDirective,
   ngPut: ngPutDirective,
   ngSse: ngSseDirective,

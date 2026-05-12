@@ -41,6 +41,13 @@ export type RealtimeSwapHandler = (
   options?: RealtimeSwapOptions,
 ) => boolean;
 
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (updateCallback: () => void) => {
+    updateCallbackDone?: Promise<void>;
+    finished?: Promise<void>;
+  };
+};
+
 /** Creates a per-directive realtime DOM swap handler. */
 export function createRealtimeSwapHandler({
   $compile,
@@ -88,177 +95,213 @@ export function createRealtimeSwapHandler({
       return false;
     }
 
-    switch (swap) {
-      case "outerHTML": {
-        const parent = target.parentNode;
+    const commitSwap = (): boolean => {
+      switch (swap) {
+        case "outerHTML": {
+          const parent = target.parentNode;
 
-        if (!parent) return false;
+          if (!parent) return false;
 
-        const frag = createDocumentFragment();
+          const frag = createDocumentFragment();
 
-        nodes.forEach((x) => frag.appendChild(x));
+          nodes.forEach((x) => frag.appendChild(x));
 
-        if (!animationEnabled) {
-          parent.replaceChild(frag, target);
+          if (!animationEnabled) {
+            parent.replaceChild(frag, target);
+            break;
+          }
+
+          const placeholder = document.createElement("span");
+
+          placeholder.style.display = "none";
+          parent.insertBefore(placeholder, target.nextSibling);
+
+          animate!.leave(target).done(() => {
+            const insertedNodes = arrayFrom(frag.childNodes);
+
+            for (const x of insertedNodes) {
+              if (x.nodeType === NodeType._ELEMENT_NODE) {
+                animate!.enter(x as Element, parent as Element, placeholder);
+              } else {
+                parent.insertBefore(x, placeholder);
+              }
+            }
+
+            content = insertedNodes;
+            scope.$flushQueue();
+          });
+
+          scope.$flushQueue();
           break;
         }
 
-        const placeholder = document.createElement("span");
+        case "textContent":
+          if (animationEnabled) {
+            animate!.leave(target).done(() => {
+              target.textContent = String(html);
+              animate!.enter(target, target.parentNode as Element);
+              scope.$flushQueue();
+            });
 
-        placeholder.style.display = "none";
-        parent.insertBefore(placeholder, target.nextSibling);
-
-        animate!.leave(target).done(() => {
-          const insertedNodes = arrayFrom(frag.childNodes);
-
-          for (const x of insertedNodes) {
-            if (x.nodeType === NodeType._ELEMENT_NODE) {
-              animate!.enter(x as Element, parent as Element, placeholder);
-            } else {
-              parent.insertBefore(x, placeholder);
-            }
-          }
-
-          content = insertedNodes;
-          scope.$flushQueue();
-        });
-
-        scope.$flushQueue();
-        break;
-      }
-
-      case "textContent":
-        if (animationEnabled) {
-          animate!.leave(target).done(() => {
+            scope.$flushQueue();
+          } else {
             target.textContent = String(html);
-            animate!.enter(target, target.parentNode as Element);
-            scope.$flushQueue();
+          }
+          break;
+
+        case "beforebegin": {
+          const parent = target.parentNode;
+
+          if (!parent) return false;
+
+          nodes.forEach((node) => {
+            if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
+              animate!.enter(node as Element, parent as Element, target);
+            } else {
+              parent.insertBefore(node, target);
+            }
           });
 
-          scope.$flushQueue();
-        } else {
-          target.textContent = String(html);
+          if (animationEnabled) scope.$flushQueue();
+          break;
         }
-        break;
 
-      case "beforebegin": {
-        const parent = target.parentNode;
+        case "afterbegin": {
+          const { firstChild } = target;
 
-        if (!parent) return false;
-
-        nodes.forEach((node) => {
-          if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, parent as Element, target);
-          } else {
-            parent.insertBefore(node, target);
-          }
-        });
-
-        if (animationEnabled) scope.$flushQueue();
-        break;
-      }
-
-      case "afterbegin": {
-        const { firstChild } = target;
-
-        [...nodes].reverse().forEach((node) => {
-          if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, target, firstChild as Element);
-          } else {
-            target.insertBefore(node, firstChild);
-          }
-        });
-
-        if (animationEnabled) scope.$flushQueue();
-        break;
-      }
-
-      case "beforeend": {
-        nodes.forEach((node) => {
-          if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, target);
-          } else {
-            target.appendChild(node);
-          }
-        });
-
-        if (animationEnabled) scope.$flushQueue();
-        break;
-      }
-
-      case "afterend": {
-        const parent = target.parentNode;
-
-        if (!parent) return false;
-        const { nextSibling } = target;
-
-        [...nodes].reverse().forEach((node) => {
-          if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(
-              node as Element,
-              parent as Element,
-              nextSibling as Element,
-            );
-          } else {
-            parent.insertBefore(node, nextSibling);
-          }
-        });
-
-        if (animationEnabled) scope.$flushQueue();
-        break;
-      }
-
-      case "delete":
-        if (animationEnabled) {
-          animate!.leave(target).done(() => {
-            removeElement(target);
-            scope.$flushQueue();
+          [...nodes].reverse().forEach((node) => {
+            if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
+              animate!.enter(node as Element, target, firstChild as Element);
+            } else {
+              target.insertBefore(node, firstChild);
+            }
           });
-          scope.$flushQueue();
-        } else {
-          removeElement(target);
+
+          if (animationEnabled) scope.$flushQueue();
+          break;
         }
-        break;
 
-      case "none":
-        break;
+        case "beforeend": {
+          nodes.forEach((node) => {
+            if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
+              animate!.enter(node as Element, target);
+            } else {
+              target.appendChild(node);
+            }
+          });
 
-      case "innerHTML":
-      default:
-        if (animationEnabled) {
-          if (
-            content &&
-            !isArray(content) &&
-            content.nodeType !== NodeType._TEXT_NODE
-          ) {
-            animate!.leave(content as Element).done(() => {
-              content = nodes[0] as ChildNode;
-              animate!.enter(nodes[0] as Element, target);
+          if (animationEnabled) scope.$flushQueue();
+          break;
+        }
+
+        case "afterend": {
+          const parent = target.parentNode;
+
+          if (!parent) return false;
+          const { nextSibling } = target;
+
+          [...nodes].reverse().forEach((node) => {
+            if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
+              animate!.enter(
+                node as Element,
+                parent as Element,
+                nextSibling as Element,
+              );
+            } else {
+              parent.insertBefore(node, nextSibling);
+            }
+          });
+
+          if (animationEnabled) scope.$flushQueue();
+          break;
+        }
+
+        case "delete":
+          if (animationEnabled) {
+            animate!.leave(target).done(() => {
+              removeElement(target);
               scope.$flushQueue();
             });
             scope.$flushQueue();
           } else {
-            content = nodes[0] as ChildNode;
+            removeElement(target);
+          }
+          break;
 
+        case "none":
+          break;
+
+        case "innerHTML":
+        default:
+          if (animationEnabled) {
             if (
               content &&
               !isArray(content) &&
-              content.nodeType === NodeType._TEXT_NODE
+              content.nodeType !== NodeType._TEXT_NODE
             ) {
-              emptyElement(target);
-              target.replaceChildren(...nodes);
-            } else {
-              animate!.enter(nodes[0] as Element, target);
+              animate!.leave(content as Element).done(() => {
+                content = nodes[0] as ChildNode;
+                animate!.enter(nodes[0] as Element, target);
+                scope.$flushQueue();
+              });
               scope.$flushQueue();
+            } else {
+              content = nodes[0] as ChildNode;
+
+              if (
+                content &&
+                !isArray(content) &&
+                content.nodeType === NodeType._TEXT_NODE
+              ) {
+                emptyElement(target);
+                target.replaceChildren(...nodes);
+              } else {
+                animate!.enter(nodes[0] as Element, target);
+                scope.$flushQueue();
+              }
             }
+          } else {
+            emptyElement(target);
+            target.replaceChildren(...nodes);
           }
-        } else {
-          emptyElement(target);
-          target.replaceChildren(...nodes);
-        }
-        break;
+          break;
+      }
+
+      return true;
+    };
+
+    if (shouldUseViewTransition(attrs, target, animationEnabled)) {
+      let committed = false;
+
+      (document as ViewTransitionDocument).startViewTransition!(() => {
+        committed = commitSwap();
+      });
+
+      return committed;
     }
 
-    return true;
+    return commitSwap();
   };
+}
+
+function shouldUseViewTransition(
+  attrs: ng.Attributes & Record<string, any>,
+  target: Element,
+  animationEnabled: boolean,
+): boolean {
+  if (animationEnabled) return false;
+
+  const documentWithTransitions = document as ViewTransitionDocument;
+
+  if (!documentWithTransitions.startViewTransition) return false;
+  if (!target.isConnected) return false;
+
+  const attrValue = attrs.viewTransition ?? attrs.dataViewTransition;
+  const targetValue = target.getAttribute("data-view-transition");
+
+  return isTruthyTransitionFlag(attrValue) || isTruthyTransitionFlag(targetValue);
+}
+
+function isTruthyTransitionFlag(value: unknown): boolean {
+  return value === "" || value === true || value === "true";
 }

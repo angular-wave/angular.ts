@@ -1,0 +1,12 @@
+<section class="demo-panel">
+  <h2>A really long page</h2>
+  <p>Scroll down, then navigate forward. Native shells use this kind of page to verify scroll restoration and screenshot transitions.</p>
+  <p>AngularTS keeps this as ordinary backend HTML, so the same endpoint can serve browser users and native-web users.</p>
+  <p><button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/scroll')">Navigate to another screen</button></p>
+  <p>Server-rendered applications often contain long operational screens. This paragraph repeats the shape of a long document without coupling the demo to Turbo-specific APIs.</p>
+  <p>Each visit still flows through the same HTTP directive, so animation, error handling, and target swapping stay consistent.</p>
+  <p>Native wrappers can layer platform navigation around these backend views while AngularTS keeps the view reactive.</p>
+  <p><button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/scroll')">Navigate to another screen</button></p>
+  <p>Because the fragment is compiled after insertion, any AngularTS bindings and directives inside the backend response are live.</p>
+  <p id="bottom"><button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/scroll')">Navigate from the bottom</button></p>
+</section>

@@ -13,6 +13,8 @@ The `$animate` service sits between directives and the animation drivers. It que
 
 AngularTS provides two built-in drivers that are consulted in sequence. The JS driver is checked first; if it returns a handler, the CSS driver is skipped for that element. If no JS handler matches, the CSS driver reads the element's computed styles to detect transitions or keyframe animations.
 
+The default `fade`, `fade-slide`, `scale`, `slide-start`, and `slide-end` presets are shipped as CSS in `dist/angular-animate.css`. Include that stylesheet when you want the built-in CSS presets; `dist/angular.css` only contains the base framework styles such as cloak and anchor helpers.
+
 #### [CSS driver]({{< relref "/docs/animations/css-animations" >}})
 
 Reads `transitionDuration`, `animationDuration`, and related computed style properties after applying preparation classes. Handles staggering, delays, and both CSS transitions and `@keyframes` animations with no JavaScript required.

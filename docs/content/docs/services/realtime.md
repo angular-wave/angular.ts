@@ -144,6 +144,9 @@ does not remember across HTTP/3 sessions.
 For template-level feeds, `ng-web-transport` connects on load by default and
 evaluates lifecycle expressions. `data-mode="datagram"` is the default;
 `data-mode="stream"` reads server-opened unidirectional streams.
+Realtime protocol swaps reuse the same DOM swap helper as HTTP and SSE
+directives, so adding `animate="true"` routes inserted, replaced, or removed
+elements through `$animate`.
 
 ```html
 <div
@@ -153,6 +156,7 @@ evaluates lifecycle expressions. `data-mode="datagram"` is the default;
   data-transform="json"
   data-as="session"
   data-reconnect="true"
+  animate="true"
   data-on-message="events.push($message)"
   data-on-reconnect="reconnects = $attempt"
   data-on-error="error = $error"

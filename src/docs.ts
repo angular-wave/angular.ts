@@ -120,6 +120,16 @@ export type {
 } from "./services/location/location.ts";
 export type { LogService } from "./services/log/log.ts";
 export { LogProvider } from "./services/log/log.ts";
+export { NativeProvider } from "./services/native/native.ts";
+export type {
+  NativeBridgeAdapter,
+  NativeCallMessage,
+  NativeCallOptions,
+  NativeEventHandler,
+  NativeEventMessage,
+  NativeReplyMessage,
+  NativeService,
+} from "./services/native/native.ts";
 export {
   createTopicService,
   PubSub,
@@ -229,6 +239,10 @@ export type {
 } from "./directive/realtime/protocol.ts";
 export { NgModelController } from "./directive/model/model.ts";
 export { ngWebTransportDirective } from "./directive/webtransport/webtransport.ts";
+export {
+  ngNativeDirective,
+  ngNativeEventDirective,
+} from "./directive/native/native.ts";
 
 export type { ParamDeclaration, RawParams } from "./router/params/interface.ts";
 export type {

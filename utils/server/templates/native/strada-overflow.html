@@ -1,0 +1,9 @@
+<section class="demo-panel">
+  <h2>Overflow + menu component</h2>
+  <p>The page exposes lower-priority actions that a native shell can render from the toolbar overflow button.</p>
+  <div class="demo-actions">
+    <button ng-native="overflow-menu" data-event="show" data-params="{ title: 'Options', items: ['Archive', 'Share', 'Delete'] }" data-on-result="demo.overflow = $result">Open overflow menu</button>
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo', 'replace')">Back to demo menu</button>
+  </div>
+  <p class="demo-note">Selected: {{ demo.overflow.item || "None" }}</p>
+</section>

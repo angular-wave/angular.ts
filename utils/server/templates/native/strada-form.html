@@ -1,0 +1,15 @@
+<section class="demo-panel">
+  <h2>Native form component</h2>
+  <p>The web form exposes a submit action that a native shell can promote into a platform toolbar button.</p>
+  <form ng-post="/native/demo/strada-form" data-target="#native-view">
+    <label>
+      First name
+      <input type="text" name="first-name" placeholder="Type your first name" />
+    </label>
+    <label>
+      Last name
+      <input type="text" name="last-name" placeholder="Type your last name" />
+    </label>
+    <button type="submit" ng-native="form" data-event="submit" data-on-result="demo.formBridge = $result">Submit form</button>
+  </form>
+</section>

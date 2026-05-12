@@ -1,9 +1,14 @@
-.PHONY: build build-ts check test test-types types docs-examples-check benchmark-parse benchmark-compile benchmark-link coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
+.PHONY: build build-ts check test test-types types docs-examples-check benchmark-parse benchmark-compile benchmark-link coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps emulator-list emulator emulator-native-demo
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
 MIN_JS      := dist/angular-ts.umd.min.js
 GZ_JS  		:= $(MIN_JS).gz
+EMULATOR_FLAGS ?= -netdelay none -netspeed full
+NATIVE_DEMO_URL ?= http://127.0.0.1:4000/src/services/native/native-demo.html
+ANDROID_SDK_CANDIDATES := $(ANDROID_HOME) $(ANDROID_SDK_ROOT) $(HOME)/Android/Sdk $(HOME)/.android/sdk /opt/android-sdk /usr/lib/android-sdk
+ANDROID_EMULATOR ?= $(or $(shell command -v emulator 2>/dev/null),$(firstword $(wildcard $(addsuffix /emulator/emulator,$(ANDROID_SDK_CANDIDATES)))))
+ADB ?= $(or $(shell command -v adb 2>/dev/null),$(firstword $(wildcard $(addsuffix /platform-tools/adb,$(ANDROID_SDK_CANDIDATES)))))
 
 
 setup:
@@ -98,6 +103,43 @@ serve: ensure-deps
 	@node_modules/.bin/vite --config utils/vite.config.js & \
 	(cd utils/server && go run .) & \
 	wait
+
+emulator-list:
+	@emulator_bin="$(ANDROID_EMULATOR)"; \
+	if [ -z "$$emulator_bin" ]; then \
+		echo "Android emulator command not found. Install Android Studio or add the SDK emulator directory to PATH."; \
+		exit 1; \
+	fi; \
+	"$$emulator_bin" -list-avds
+
+emulator:
+	@emulator_bin="$(ANDROID_EMULATOR)"; \
+	if [ -z "$$emulator_bin" ]; then \
+		echo "Android emulator command not found. Install Android Studio or add the SDK emulator directory to PATH."; \
+		exit 1; \
+	fi; \
+	avd="$(AVD)"; \
+	if [ -z "$$avd" ]; then \
+		avd="$$("$$emulator_bin" -list-avds | head -n 1)"; \
+	fi; \
+	if [ -z "$$avd" ]; then \
+		echo "No Android AVD found. Create one in Android Studio, or pass AVD=<name>."; \
+		exit 1; \
+	fi; \
+	echo "Starting Android emulator: $$avd"; \
+	exec "$$emulator_bin" -avd "$$avd" $(EMULATOR_FLAGS)
+
+emulator-native-demo:
+	@adb_bin="$(ADB)"; \
+	if [ -z "$$adb_bin" ]; then \
+		echo "adb command not found. Install Android platform-tools or add them to PATH."; \
+		exit 1; \
+	fi; \
+	"$$adb_bin" wait-for-device; \
+	"$$adb_bin" reverse tcp:4000 tcp:4000; \
+	"$$adb_bin" reverse tcp:3000 tcp:3000; \
+	"$$adb_bin" reverse tcp:4433 tcp:4433; \
+	"$$adb_bin" shell am start -a android.intent.action.VIEW -d "$(NATIVE_DEMO_URL)"
 
 prepare-release: build test check types doc format gzip version size-html
 

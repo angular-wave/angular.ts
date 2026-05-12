@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -31,12 +32,16 @@ import (
 
 	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/webtransport-go"
+	"golang.org/x/net/websocket"
 )
 
 const (
 	httpAddr        = ":3000"
 	webTransportURL = "https://localhost:4433/webtransport"
 )
+
+//go:embed templates/native/*.html
+var serverTemplates embed.FS
 
 type task struct {
 	ID     int    `json:"id"`
@@ -210,6 +215,12 @@ func newHTTPMux(certHash []byte) *http.ServeMux {
 			sseCustom(w, r)
 		case r.URL.Path == "/sse-demo":
 			sseDemo(w, r)
+		case r.URL.Path == "/native/websocket":
+			websocket.Handler(nativeWebSocket).ServeHTTP(w, r)
+		case strings.HasPrefix(r.URL.Path, "/native/demo"):
+			nativeDemoRoute(w, r)
+		case r.URL.Path == "/native/views/shell":
+			nativeShellView(w)
 		case r.URL.Path == "/eventsoject":
 			eventsObject(w, r)
 		case r.URL.Path == "/subscribe":
@@ -638,6 +649,192 @@ func sseDemo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func nativeDemoRoute(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/native/demo")
+	if path == "" || path == "/" {
+		writeHTMLTemplate(w, http.StatusOK, "home.html", nil)
+
+		return
+	}
+
+	switch {
+	case path == "/shell":
+		nativeShellView(w)
+	case path == "/one":
+		writeHTMLTemplate(w, http.StatusOK, "one.html", map[string]string{
+			"RENDERED_AT": time.Now().Format(time.RFC1123),
+		})
+	case path == "/two":
+		message := "This screen was pushed onto the navigation stack through an advance action."
+		if r.URL.Query().Get("action") == "replace" {
+			message = "This screen was loaded with a replace action. Going back now returns to the previous stable screen."
+		}
+		writeHTMLTemplate(w, http.StatusOK, "two.html", map[string]string{
+			"ACTION_MESSAGE": html.EscapeString(message),
+		})
+	case path == "/long":
+		writeHTMLTemplate(w, http.StatusOK, "long.html", nil)
+	case path == "/scroll":
+		writeHTMLTemplate(w, http.StatusOK, "scroll.html", nil)
+	case path == "/follow":
+		http.Redirect(w, r, "/native/demo/redirected", http.StatusFound)
+	case path == "/redirected":
+		writeHTMLTemplate(w, http.StatusOK, "redirected.html", nil)
+	case path == "/reference":
+		writeHTMLTemplate(w, http.StatusOK, "reference.html", nil)
+	case path == "/files":
+		writeHTMLTemplate(w, http.StatusOK, "files.html", nil)
+	case path == "/new" && r.Method == http.MethodGet:
+		writeHTMLTemplate(w, http.StatusOK, "new.html", nil)
+	case path == "/new" && r.Method == http.MethodPost:
+		writeHTMLTemplate(w, http.StatusOK, "success.html", nil)
+	case path == "/strada-form" && r.Method == http.MethodGet:
+		writeHTMLTemplate(w, http.StatusOK, "strada-form.html", nil)
+	case path == "/strada-form" && r.Method == http.MethodPost:
+		time.Sleep(1500 * time.Millisecond)
+		writeHTMLTemplate(w, http.StatusOK, "success.html", nil)
+	case path == "/strada-menu":
+		writeHTMLTemplate(w, http.StatusOK, "strada-menu.html", nil)
+	case path == "/strada-overflow":
+		writeHTMLTemplate(w, http.StatusOK, "strada-overflow.html", nil)
+	case path == "/success":
+		writeHTMLTemplate(w, http.StatusOK, "success.html", nil)
+	case path == "/numbers":
+		writeHTMLTemplate(w, http.StatusOK, "numbers.html", nil)
+	case path == "/server-card":
+		writeHTMLTemplate(w, http.StatusOK, "server-card.html", map[string]string{
+			"RENDERED_AT": time.Now().Format(time.RFC3339),
+		})
+	case path == "/drawer-card":
+		writeHTMLTemplate(w, http.StatusOK, "drawer-card.html", map[string]string{
+			"RENDERED_AT": time.Now().Format(time.RFC3339),
+		})
+	case path == "/protected":
+		if nativeAuthenticated(r) {
+			writeHTMLTemplate(w, http.StatusOK, "protected.html", nil)
+		} else {
+			writeHTMLTemplate(w, http.StatusUnauthorized, "unauthorized.html", nil)
+		}
+	case path == "/signin" && r.Method == http.MethodGet:
+		writeHTMLTemplate(w, http.StatusOK, "signin.html", nil)
+	case path == "/signin" && r.Method == http.MethodPost:
+		form := readFormOrJSONBody(r)
+		name := strings.TrimSpace(fmt.Sprint(form["name"]))
+		if name == "" {
+			name = "Native user"
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "native_authenticated",
+			Value:    name,
+			Path:     "/native/demo",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+		writeHTMLTemplate(w, http.StatusOK, "home.html", nil)
+	case path == "/signout" && r.Method == http.MethodPost:
+		http.SetCookie(w, &http.Cookie{
+			Name:     "native_authenticated",
+			Value:    "",
+			Path:     "/native/demo",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+		writeHTMLTemplate(w, http.StatusOK, "home.html", nil)
+	case path == "/slow":
+		time.Sleep(3 * time.Second)
+		writeHTMLTemplate(w, http.StatusOK, "slow.html", map[string]string{
+			"RENDERED_AT": time.Now().Format(time.RFC1123),
+		})
+	case path == "/reference/turbo-drive":
+		writeHTMLTemplate(w, http.StatusOK, "reference-drive.html", nil)
+	case path == "/reference/turbo-frames":
+		writeHTMLTemplate(w, http.StatusOK, "reference-frames.html", nil)
+	case path == "/reference/turbo-streams":
+		writeHTMLTemplate(w, http.StatusOK, "reference-streams.html", nil)
+	case path == "/reference/turbo-native":
+		writeHTMLTemplate(w, http.StatusOK, "reference-native.html", nil)
+	case path == "/reference.json":
+		nativeReferenceJSON(w)
+	case path == "/nonexistent":
+		writeHTMLTemplate(w, http.StatusNotFound, "not-found.html", nil)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func nativeShellView(w http.ResponseWriter) {
+	writeHTMLTemplate(w, http.StatusOK, "shell.html", nil)
+}
+
+func nativeAuthenticated(r *http.Request) bool {
+	cookie, err := r.Cookie("native_authenticated")
+
+	return err == nil && cookie.Value != ""
+}
+
+func nativeReferenceJSON(w http.ResponseWriter) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"subtitle": "Reference",
+		"items": []map[string]any{
+			{
+				"id":          1,
+				"title":       "AngularTS Router",
+				"description": "Server-rendered fragments are fetched, compiled, and swapped without replacing the native shell.",
+				"path":        "/native/demo/reference/turbo-drive",
+			},
+			{
+				"id":          2,
+				"title":       "Backend Views",
+				"description": "Every screen in this demo is emitted by the Go backend and enhanced by AngularTS.",
+				"path":        "/native/demo/reference/turbo-frames",
+			},
+			{
+				"id":          3,
+				"title":       "Realtime Swaps",
+				"description": "Native calls, SSE, HTTP, and WebTransport can share the same HTML swap protocol.",
+				"path":        "/native/demo/reference/turbo-streams",
+			},
+			{
+				"id":          4,
+				"title":       "AngularTS Native",
+				"description": "A forked native shell can expose platform components through the generic $native bridge.",
+				"path":        "/native/demo/reference/turbo-native",
+			},
+		},
+	})
+}
+
+func nativeWebSocket(ws *websocket.Conn) {
+	defer ws.Close()
+
+	count := 0
+	for {
+		var payload string
+		if err := websocket.Message.Receive(ws, &payload); err != nil {
+			return
+		}
+
+		count++
+		var message map[string]any
+		if err := json.Unmarshal([]byte(payload), &message); err != nil {
+			message = map[string]any{"text": payload}
+		}
+
+		reply := map[string]any{
+			"channel": "websocket",
+			"count":   count,
+			"text":    fmt.Sprintf("Echo %d: %v", count, message["text"]),
+			"time":    time.Now().Format("15:04:05"),
+		}
+		data, _ := json.Marshal(reply)
+		if err := websocket.Message.Send(ws, string(data)); err != nil {
+			return
+		}
+	}
+}
+
 func eventsObject(w http.ResponseWriter, r *http.Request) {
 	sseHeaders(w)
 	ticker := time.NewTicker(time.Second)
@@ -735,6 +932,22 @@ func writeHTML(w http.ResponseWriter, status int, value string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(value))
+}
+
+func writeHTMLTemplate(w http.ResponseWriter, status int, name string, values map[string]string) {
+	content, err := serverTemplates.ReadFile("templates/native/" + name)
+	if err != nil {
+		http.Error(w, "Template not found", http.StatusInternalServerError)
+
+		return
+	}
+
+	htmlFragment := string(content)
+	for key, value := range values {
+		htmlFragment = strings.ReplaceAll(htmlFragment, "%%"+key+"%%", value)
+	}
+
+	writeHTML(w, status, htmlFragment)
 }
 
 func writeText(w http.ResponseWriter, status int, value string) {

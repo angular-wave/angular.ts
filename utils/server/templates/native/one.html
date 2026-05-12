@@ -1,0 +1,14 @@
+<section class="demo-panel">
+  <h2>How did you get here?</h2>
+  <p>When a user taps a link, the native shell can decide whether to keep the visit in the web view or hand it to a native screen.</p>
+  <p>In this demo, AngularTS performs the visit by fetching a Go-rendered fragment and swapping it into the current screen.</p>
+
+  <div class="demo-actions">
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/two')">Advance to another webpage</button>
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/two?action=replace', 'replace')">Replace with another webpage</button>
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo/one', 'replace')">Refresh</button>
+    <button ng-native="navigation" data-event="visit" data-params="demo.nativeRoute('/native/demo', 'replace')">Back to demo menu</button>
+  </div>
+
+  <footer class="demo-note">Rendered %%RENDERED_AT%% by the Go backend.</footer>
+</section>
