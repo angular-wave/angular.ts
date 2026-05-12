@@ -232,8 +232,6 @@ const DEFAULT_DURATION = 150;
 
 const DEFAULT_EASING = "cubic-bezier(0.2, 0, 0, 1)";
 
-const ENTER_EASING = "cubic-bezier(0, 0, 0, 1)";
-
 const CSS_ANIMATION_PROPERTIES: Record<AnimationPhase, string> = {
   enter: "--ng-enter-animation",
   leave: "--ng-leave-animation",
@@ -244,68 +242,17 @@ const CSS_ANIMATION_PROPERTIES: Record<AnimationPhase, string> = {
   animate: "--ng-style-animation",
 };
 
+const CSS_BUILT_IN_PRESETS = new Set([
+  "fade",
+  "fade-slide",
+  "scale",
+  "slide-start",
+  "slide-end",
+]);
+
 const BUILT_IN_PRESETS: Record<string, AnimationPreset> = {
-  fade: {
-    enter: [{ opacity: 0 }, { opacity: 1 }],
-    leave: [{ opacity: 1 }, { opacity: 0 }],
-    options: { duration: DEFAULT_DURATION, easing: ENTER_EASING, fill: "both" },
-  },
-  "fade-slide": {
-    enter: [
-      { opacity: 0, transform: "translateY(8px)" },
-      { opacity: 1, transform: "translateY(0)" },
-    ],
-    leave: [
-      { opacity: 1, transform: "translateY(0)" },
-      { opacity: 0, transform: "translateY(8px)" },
-    ],
-    move: [
-      { opacity: 0.8, transform: "translateY(4px)" },
-      { opacity: 1, transform: "translateY(0)" },
-    ],
-    options: { duration: 160, easing: ENTER_EASING, fill: "both" },
-  },
-  scale: {
-    enter: [
-      { opacity: 0, transform: "scale(0.96)" },
-      { opacity: 1, transform: "scale(1)" },
-    ],
-    leave: [
-      { opacity: 1, transform: "scale(1)" },
-      { opacity: 0, transform: "scale(0.96)" },
-    ],
-    options: { duration: 180, easing: DEFAULT_EASING, fill: "both" },
-  },
-  "slide-start": {
-    enter: [
-      { opacity: 0, transform: "translateX(-12px)" },
-      { opacity: 1, transform: "translateX(0)" },
-    ],
-    leave: [
-      { opacity: 1, transform: "translateX(0)" },
-      { opacity: 0, transform: "translateX(-12px)" },
-    ],
-    move: [
-      { opacity: 0.8, transform: "translateX(-6px)" },
-      { opacity: 1, transform: "translateX(0)" },
-    ],
-    options: { duration: 180, easing: DEFAULT_EASING, fill: "both" },
-  },
-  "slide-end": {
-    enter: [
-      { opacity: 0, transform: "translateX(12px)" },
-      { opacity: 1, transform: "translateX(0)" },
-    ],
-    leave: [
-      { opacity: 1, transform: "translateX(0)" },
-      { opacity: 0, transform: "translateX(12px)" },
-    ],
-    move: [
-      { opacity: 0.8, transform: "translateX(6px)" },
-      { opacity: 1, transform: "translateX(0)" },
-    ],
-    options: { duration: 180, easing: DEFAULT_EASING, fill: "both" },
-  },
+  // CSS-defined presets live in css/angular.css. Height presets stay here
+  // because they need runtime measurements before each animation.
   collapse: {
     enter: expandHeight,
     leave: collapseHeight,
@@ -403,9 +350,20 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
           elementClassList.add(...tempClasses);
         }
 
+        const animationName = animationNameFor(element, options);
+
+        const cssPresetClass =
+          animationName && !this._registeredAnimations[animationName]
+            ? cssPresetClassFor(animationName)
+            : undefined;
+
         const finishCleanup = (ok: boolean): void => {
           if (tempClasses.length) {
             elementClassList.remove(...tempClasses);
+          }
+
+          if (cssPresetClass) {
+            elementClassList.remove(cssPresetClass);
           }
 
           if (ok) {
@@ -424,6 +382,10 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
         }
 
         options.onStart?.(element, context);
+
+        if (cssPresetClass) {
+          elementClassList.add(cssPresetClass);
+        }
 
         const resolvedPreset = resolvePreset(element, options);
 
@@ -612,6 +574,12 @@ function splitOptionClasses(className?: string | string[]): string[] {
 
 function normalizeAnimationName(name: string): string {
   return name.charAt(0) === "." ? name.slice(1) : name;
+}
+
+function cssPresetClassFor(name: string): string | undefined {
+  return CSS_BUILT_IN_PRESETS.has(name)
+    ? `ng-animate-preset-${name}`
+    : undefined;
 }
 
 function animationNameFor(

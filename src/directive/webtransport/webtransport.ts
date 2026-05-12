@@ -1,10 +1,12 @@
 import {
   _compile,
   _exceptionHandler,
+  _injector,
   _log,
   _parse,
   _webTransport,
 } from "../../injection-tokens.ts";
+import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   isDefined,
   isFunction,
@@ -20,6 +22,7 @@ import {
   type RealtimeProtocolMessage,
   type SwapModeType,
 } from "../realtime/protocol.ts";
+import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 
 type WebTransportDirectiveMode = "datagram" | "stream" | "unidirectional";
 
@@ -39,6 +42,7 @@ ngWebTransportDirective.$inject = [
   _compile,
   _log,
   _exceptionHandler,
+  _injector,
 ];
 
 /**
@@ -51,8 +55,11 @@ export function ngWebTransportDirective(
   $compile: ng.CompileService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
+  $injector: ng.InjectorService,
 ): ng.Directive {
   const decoder = new TextDecoder();
+
+  const getAnimate = createLazyAnimate($injector);
 
   return {
     restrict: "A",
@@ -220,15 +227,15 @@ export function ngWebTransportDirective(
         return undefined;
       }
 
-      function compileContent(content: unknown): ChildNode[] {
-        const compiled = $compile(String(content))(scope) as
-          | ChildNode
-          | DocumentFragment;
-
-        return compiled instanceof DocumentFragment
-          ? Array.from(compiled.childNodes)
-          : [compiled];
-      }
+      const handleSwapResponse = createRealtimeSwapHandler({
+        $compile,
+        $log,
+        getAnimate,
+        scope,
+        attrs,
+        element,
+        logPrefix: "ngWebTransport",
+      });
 
       function handleProtocolMessage(
         message: RealtimeProtocolMessage,
@@ -252,78 +259,13 @@ export function ngWebTransportDirective(
           return false;
         }
 
-        switch (swap) {
-          case "textContent":
-            target.textContent = String(content);
-            break;
+        const swapped = handleSwapResponse(
+          isString(content) || isObject(content) ? content : String(content),
+          swap,
+          { targetSelector: message.target },
+        );
 
-          case "delete":
-            target.remove();
-            break;
-
-          case "none":
-            break;
-
-          case "outerHTML": {
-            const parent = target.parentNode;
-
-            if (!parent) return false;
-
-            const fragment = document.createDocumentFragment();
-
-            compileContent(content).forEach((node) =>
-              fragment.appendChild(node),
-            );
-            parent.replaceChild(fragment, target);
-            break;
-          }
-
-          case "beforebegin": {
-            const parent = target.parentNode;
-
-            if (!parent) return false;
-
-            compileContent(content).forEach((node) =>
-              parent.insertBefore(node, target),
-            );
-            break;
-          }
-
-          case "afterbegin": {
-            const { firstChild } = target;
-
-            compileContent(content).forEach((node) =>
-              target.insertBefore(node, firstChild),
-            );
-            break;
-          }
-
-          case "beforeend":
-            compileContent(content).forEach((node) => target.appendChild(node));
-            break;
-
-          case "afterend": {
-            const parent = target.parentNode;
-
-            if (!parent) return false;
-
-            const { nextSibling } = target;
-
-            compileContent(content).forEach((node) =>
-              parent.insertBefore(node, nextSibling),
-            );
-            break;
-          }
-
-          case "innerHTML":
-          default:
-            target.replaceChildren(...compileContent(content));
-            break;
-        }
-
-        if (isFunction(scope.$flushQueue)) {
-          scope.$flushQueue();
-        }
+        if (!swapped) return false;
 
         dispatch("swapped", {
           connection,

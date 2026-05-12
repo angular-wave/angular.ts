@@ -261,18 +261,39 @@ describe("$animate", () => {
     expect(child.getAttribute("data-animated")).toBe("true");
   });
 
-  it("ships small built-in native presets", async () => {
+  it("ships built-in presets through angular.css", async () => {
     const child = createElementFromHTML('<div animate="scale"></div>');
 
     host.append(child);
     spyOn(child, "animate").and.callThrough();
 
-    await $animate.enter(child, host, null, { duration: 1 }).finished;
+    let animationName;
 
-    const keyframes = child.animate.calls.mostRecent().args[0];
+    child.addEventListener("animationstart", (event) => {
+      animationName = event.animationName;
+    });
 
-    expect(keyframes[0].transform).toBe("scale(0.96)");
-    expect(keyframes[1].transform).toBe("scale(1)");
+    await $animate.enter(child, host, null).finished;
+
+    expect(animationName).toBe("ng-scale-enter");
+    expect(child.animate).not.toHaveBeenCalled();
+  });
+
+  it("supports CSS built-in presets selected through options", async () => {
+    const child = createElementFromHTML("<div></div>");
+
+    host.append(child);
+
+    let animationName;
+
+    child.addEventListener("animationstart", (event) => {
+      animationName = event.animationName;
+    });
+
+    await $animate.enter(child, host, null, { animation: "scale" }).finished;
+
+    expect(animationName).toBe("ng-scale-enter");
+    expect(child.classList.contains("ng-animate-preset-scale")).toBe(false);
   });
 
   it("animates auto-height presets with cleanup", async () => {
