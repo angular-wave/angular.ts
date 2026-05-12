@@ -1,0 +1,32 @@
+{
+  "framework": "react-classes-v19.0.0-keyed",
+  "keyed": true,
+  "benchmark": "01_run1k",
+  "type": "cpu",
+  "values": {
+    "total": {
+      "min": 69.1,
+      "max": 69.1,
+      "median": 69.1,
+      "mean": 69.1,
+      "stddev": null,
+      "values": [69.1]
+    },
+    "script": {
+      "min": 16.7,
+      "max": 16.7,
+      "median": 16.7,
+      "mean": 16.7,
+      "stddev": null,
+      "values": [16.7]
+    },
+    "paint": {
+      "min": 51.8,
+      "max": 51.8,
+      "median": 51.8,
+      "mean": 51.8,
+      "stddev": null,
+      "values": [51.8]
+    }
+  }
+}

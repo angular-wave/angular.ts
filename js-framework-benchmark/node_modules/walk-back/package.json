@@ -1,0 +1,50 @@
+{
+  "name": "walk-back",
+  "author": "Lloyd Brookes <opensource@75lb.com>",
+  "version": "5.1.2",
+  "description": "Walk up the directory tree until the specified path is found.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/75lb/walk-back.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "import": "./index.js",
+    "require": "./dist/index.cjs"
+  },
+  "keywords": [
+    "walk",
+    "up",
+    "back",
+    "filesystem",
+    "fs",
+    "find",
+    "file",
+    "search",
+    "system",
+    "config"
+  ],
+  "engines": {
+    "node": ">=12.17"
+  },
+  "scripts": {
+    "test": "npm run dist && npm run test:ci",
+    "test:ci": "75lb-nature test-runner test/test.js test/test.cjs",
+    "docs": "75lb-nature jsdoc2md -t README.hbs index.js > README.md",
+    "dist": "75lb-nature cjs-build index.js"
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "@75lb/nature": "latest"
+  },
+  "peerDependenciesMeta": {
+    "@75lb/nature": {
+      "optional": true
+    }
+  },
+  "files": [
+    "index.js",
+    "dist"
+  ]
+}

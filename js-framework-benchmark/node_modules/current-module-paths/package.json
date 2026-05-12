@@ -1,0 +1,42 @@
+{
+  "name": "current-module-paths",
+  "author": "Lloyd Brookes <opensource@75lb.com>",
+  "version": "1.1.3",
+  "type": "module",
+  "description": "Access to __filename and __dirname within ECMAScript modules",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/75lb/current-module-paths.git"
+  },
+  "exports": {
+    "import": "./index.js",
+    "require": "./dist/index.cjs"
+  },
+  "keywords": [
+    "__dirname",
+    "__filename",
+    "module",
+    "paths",
+    "modules",
+    "ESM",
+    "ECMAScript",
+    "import",
+    "commonjs",
+    "cjs",
+    "mjs"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.17"
+  },
+  "scripts": {
+    "test": "npm run dist && npm run test:ci",
+    "dist": "75lb-nature cjs-build index.js",
+    "test:ci": "75lb-nature test-runner test/test.mjs test/test.cjs"
+  },
+  "files": [
+    "index.js",
+    "dist"
+  ],
+  "devDependencies": {}
+}

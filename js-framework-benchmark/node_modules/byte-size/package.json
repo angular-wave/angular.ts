@@ -1,0 +1,60 @@
+{
+  "name": "byte-size",
+  "author": "Lloyd Brookes <opensource@75lb.com>",
+  "version": "9.0.1",
+  "description": "Convert a bytes or octets value (e.g. 34565346) to a human-readable string ('34.6 MB'). Choose between metric or IEC units.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/75lb/byte-size.git"
+  },
+  "type": "module",
+  "exports": {
+    "import": "./index.js",
+    "require": "./dist/index.cjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.17"
+  },
+  "files": [
+    "index.js",
+    "dist"
+  ],
+  "keywords": [
+    "convert",
+    "bytes",
+    "octet",
+    "size",
+    "human",
+    "readable",
+    "metric",
+    "IEC"
+  ],
+  "scripts": {
+    "test": "npm run dist && npm run test:ci",
+    "test:ci": "75lb-nature test-runner test*.js",
+    "docs": "75lb-nature jsdoc2md -t README.hbs index.js > README.md",
+    "dist": "75lb-nature cjs-build index.js"
+  },
+  "devDependencies": {},
+  "standard": {
+    "ignore": [
+      "dist"
+    ]
+  },
+  "peerDependencies": {
+    "@75lb/nature": "latest"
+  },
+  "peerDependenciesMeta": {
+    "@75lb/nature": {
+      "optional": true
+    }
+  },
+  "contributors": [
+    {
+      "name": "Raul Perez",
+      "email": "repejota@gmail.com",
+      "url": "http://repejota.com"
+    }
+  ]
+}

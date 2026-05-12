@@ -1,0 +1,32 @@
+{
+  "name": "koa-route",
+  "description": "Koa route middleware",
+  "repository": "koajs/route",
+  "version": "4.0.1",
+  "keywords": [
+    "koa",
+    "middleware",
+    "routes",
+    "router",
+    "route"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "devDependencies": {
+    "koa": "^2.15.0",
+    "mocha": "^10.3.0",
+    "should": "*",
+    "supertest": "^6.3.4"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "debug": "*",
+    "methods": "~1.1.0",
+    "path-to-regexp": "^6.2.1"
+  },
+  "scripts": {
+    "test": "NODE_ENV=test mocha --harmony --require should --reporter spec --exit"
+  }
+}
