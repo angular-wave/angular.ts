@@ -1,10 +1,6 @@
-import { Angular } from "../src/angular.ts";
-import type {
-  CloneAttachFn,
-  PublicLinkFn,
-} from "../src/core/compile/compile.ts";
-import { createInjector } from "../src/core/di/injector.ts";
-import type { Scope } from "../src/core/scope/scope.ts";
+import { Angular } from "../../src/angular.ts";
+import { createInjector } from "../../src/core/di/injector.ts";
+import type { Scope } from "../../src/core/scope/scope.ts";
 import { compileLinkBenchmarkCases } from "./compile-link-benchmark-cases.ts";
 
 type BenchmarkSummary = {
@@ -30,19 +26,12 @@ type BenchmarkOptions = {
   samples?: number;
 };
 
-type CompileService = (template: string | Node | NodeList) => PublicLinkFn;
-
-type RuntimeServices = {
-  $compile: CompileService;
-  $rootScope: Scope;
-};
-
-type BenchmarkScope = Scope & Record<string, unknown>;
+type CompileService = (template: string | Node | NodeList) => Function;
 
 declare global {
   interface Window {
-    __linkBenchmarkResults?: BenchmarkResult;
-    __linkBenchmarkError?: string;
+    __compileBenchmarkResults?: BenchmarkResult;
+    __compileBenchmarkError?: string;
   }
 }
 
@@ -69,15 +58,12 @@ function positiveInteger(value: string | null, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function createRuntimeServices(): RuntimeServices {
+function createCompileService(): CompileService {
   window.angular = new Angular();
 
   const injector = createInjector(["ng"]);
 
-  return {
-    $compile: injector.get("$compile") as CompileService,
-    $rootScope: injector.get("$rootScope") as Scope,
-  };
+  return injector.get("$compile") as CompileService;
 }
 
 function measure(
@@ -121,54 +107,20 @@ function measure(
   };
 }
 
-function linkWithNewScope(
-  linkFn: PublicLinkFn,
-  $rootScope: Scope,
-  createScopeData?: () => Record<string, unknown>,
-): unknown {
-  const scope = $rootScope.$new() as BenchmarkScope;
-
-  if (createScopeData) {
-    Object.assign(scope, createScopeData());
-  }
-
-  try {
-    const linkedNodes = linkFn(scope, captureClone);
-
-    scope.$flushQueue();
-
-    return linkedNodes;
-  } finally {
-    scope.$destroy();
-  }
-}
-
-const captureClone: CloneAttachFn = (clone) => {
-  sink = clone;
-};
-
-export async function runLinkBenchmark(
+export async function runCompileBenchmark(
   options: BenchmarkOptions = {},
 ): Promise<BenchmarkResult> {
   const iterations = options.iterations ?? DEFAULT_ITERATIONS;
 
   const samples = options.samples ?? DEFAULT_SAMPLES;
 
-  const { $compile, $rootScope } = createRuntimeServices();
+  const $compile = createCompileService();
 
-  const results = compileLinkBenchmarkCases
-    .filter((benchmark) => benchmark.includeInLink !== false)
-    .map((benchmark) => {
-      const linkFn = $compile(benchmark.template);
-
-      return measure(
-        benchmark.name,
-        benchmark.template,
-        iterations,
-        samples,
-        () => linkWithNewScope(linkFn, $rootScope, benchmark.createScopeData),
-      );
-    });
+  const results = compileLinkBenchmarkCases.map((benchmark) =>
+    measure(benchmark.name, benchmark.template, iterations, samples, () =>
+      $compile(benchmark.template),
+    ),
+  );
 
   return {
     userAgent: navigator.userAgent,
@@ -181,12 +133,14 @@ export async function runLinkBenchmark(
 try {
   const options = readOptions();
 
-  window.__linkBenchmarkResults = await runLinkBenchmark(options);
-  document.getElementById("status")!.textContent = "Link benchmark complete.";
+  window.__compileBenchmarkResults = await runCompileBenchmark(options);
+  document.getElementById("status")!.textContent =
+    "Compile benchmark complete.";
 } catch (error) {
-  window.__linkBenchmarkError =
+  window.__compileBenchmarkError =
     error instanceof Error ? error.stack || error.message : String(error);
-  document.getElementById("status")!.textContent = window.__linkBenchmarkError;
+  document.getElementById("status")!.textContent =
+    window.__compileBenchmarkError;
   throw error;
 } finally {
   document.body.dataset.sink = String(Boolean(sink));

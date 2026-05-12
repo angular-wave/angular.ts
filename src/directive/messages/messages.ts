@@ -9,7 +9,7 @@ import {
   getAnimateForNode,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
-import { removeElement } from "../../shared/dom.ts";
+import { createNodelistFromHTML, removeElement } from "../../shared/dom.ts";
 import {
   entries,
   hasOwn,
@@ -111,6 +111,7 @@ class NgMessageCtrl {
 
   /** @internal */
   _render(collection: MessageCollection = {}): void {
+    collection = collection || {};
     this._renderLater = false;
     this._cachedCollection = collection;
 
@@ -327,16 +328,35 @@ export function ngMessagesIncludeDirective(
           // Empty template - nothing to compile
         } else {
           // Non-empty template - compile and link
-          $compile(html)($scope, ((
-            contents?: Node | Element | Node[] | NodeList | null,
-          ) => {
-            isInstanceOf(contents, Node) && element.after(contents);
-          }) as (contents?: Node | Element | Node[] | NodeList | null) => void);
+          $compile(createNodelistFromHTML(html))(
+            $scope,
+            insertCompiledMessageTemplate(element),
+          );
 
           ngMessagesCtrl.reRender();
         }
       });
     },
+  };
+}
+
+function insertCompiledMessageTemplate(
+  anchor: Element,
+): (contents?: Node | Element | Node[] | NodeList | null) => void {
+  return (contents?: Node | Element | Node[] | NodeList | null) => {
+    if (!contents) {
+      return;
+    }
+
+    const nodes = isInstanceOf(contents, Node)
+      ? [contents]
+      : isArray(contents)
+        ? contents
+        : Array.from(contents);
+
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      anchor.after(nodes[i]);
+    }
   };
 }
 

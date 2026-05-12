@@ -195,31 +195,6 @@ export type CompileFn = (
 ) => PublicLinkFn;
 
 /**
- * Represents a mapping of linking functions.
- */
-export interface TemplateLinkMapping {
-  /** @internal */
-  _index: number;
-  /** @internal */
-  _nodeLinkPlan?: NodeLinkPlan;
-  /** @internal */
-  _childLinkExecutor?: ChildLinkFn | TemplateLinkExecutor | null;
-}
-
-export type LinkFnMapping = TemplateLinkMapping;
-
-export interface TemplateNodePlan {
-  /** @internal */
-  _index: number;
-  /** @internal */
-  _nodeRefList: NodeRef | null;
-  /** @internal */
-  _nodeLinkPlan?: NodeLinkPlan;
-  /** @internal */
-  _childLinkExecutor?: ChildLinkFn | TemplateLinkExecutor | null;
-}
-
-/**
  * Plans a template node list and returns the executor used during linking.
  */
 export type CompileTemplateFn = (
@@ -948,11 +923,15 @@ export interface DelayedTemplateNodeLinkResult {
 
 export interface TemplateLinkPlan {
   /** @internal */
-  _linkMappings: TemplateLinkMapping[];
+  _nodeIndices: number[];
+  /** @internal */
+  _nodeLinkPlans: Array<NodeLinkPlan | null>;
+  /** @internal */
+  _childLinkExecutors: Array<ChildLinkFn | TemplateLinkExecutor | null>;
   /** @internal */
   _nodeRefList: NodeRef | null;
   /** @internal */
-  _transcludeFn?: ChildTranscludeOrLinkFn;
+  _transcludeFn?: ChildTranscludeOrLinkFn | null;
 }
 
 export type CompositeLinkState = TemplateLinkPlan;
@@ -980,6 +959,10 @@ const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
 const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
 
 type NgPrefixBinding = "Attr" | "Prop" | "On" | "Observe" | "Window";
+
+const LOWERCASE_N_CHAR_CODE = "n".charCodeAt(0);
+
+const LOWERCASE_G_CHAR_CODE = "g".charCodeAt(0);
 
 const ISOLATE_BINDING_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
 
@@ -1219,6 +1202,7 @@ export class CompileProvider {
                     normalizedDirective.restrict,
                     name,
                   );
+
                   normalizedDirective.restrict = restrict;
                   normalizedDirective._restrictElement =
                     restrict.indexOf("E") !== -1;
@@ -2051,10 +2035,15 @@ export class CompileProvider {
           scope: Scope,
           _parentBoundTranscludeFn: BoundTranscludeFn | null,
         ): void {
-          for (let i = 0, l = plan._linkMappings.length; i < l; i++) {
+          const nodeLinkPlans = plan._nodeLinkPlans;
+
+          const childLinkExecutors = plan._childLinkExecutors;
+
+          for (let i = 0, l = plan._nodeIndices.length; i < l; i++) {
             executeTemplateLinkMapping(
               plan,
-              plan._linkMappings[i],
+              nodeLinkPlans[i],
+              childLinkExecutors[i],
               stableNodeList[i],
               scope,
               _parentBoundTranscludeFn,
@@ -2064,28 +2053,27 @@ export class CompileProvider {
 
         function executeTemplateLinkMapping(
           plan: TemplateLinkPlan,
-          mapping: TemplateLinkMapping,
+          nodeLinkPlan: NodeLinkPlan | null,
+          childLinkExecutor: ChildLinkFn | TemplateLinkExecutor | null,
           node: Node,
           scope: Scope,
           _parentBoundTranscludeFn: BoundTranscludeFn | null,
         ): void {
-          const { _nodeLinkPlan, _childLinkExecutor } = mapping;
-
           let childScope: Scope;
 
           let childBoundTranscludeFn: BoundTranscludeFn | null;
 
-          if (_nodeLinkPlan) {
-            childScope = _nodeLinkPlan._newScope ? scope.$new() : scope;
+          if (nodeLinkPlan) {
+            childScope = nodeLinkPlan._newScope ? scope.$new() : scope;
 
-            if (_nodeLinkPlan._transcludeOnThisElement) {
+            if (nodeLinkPlan._transcludeOnThisElement) {
               childBoundTranscludeFn = createBoundTranscludeFn(
                 scope,
-                _nodeLinkPlan._transclude as ng.TranscludeFn,
+                nodeLinkPlan._transclude as ng.TranscludeFn,
                 _parentBoundTranscludeFn || null,
               );
             } else if (
-              !_nodeLinkPlan._templateOnThisElement &&
+              !nodeLinkPlan._templateOnThisElement &&
               _parentBoundTranscludeFn
             ) {
               childBoundTranscludeFn = _parentBoundTranscludeFn;
@@ -2100,34 +2088,30 @@ export class CompileProvider {
             }
 
             if (
-              _nodeLinkPlan._newScope &&
+              nodeLinkPlan._newScope &&
               node.nodeType === NodeType._ELEMENT_NODE
             ) {
               setScope(node, childScope);
             }
 
-            if (_nodeLinkPlan._nodeLinkFnState !== undefined) {
-              (_nodeLinkPlan._nodeLinkFn as StoredNodeLinkExecutor)(
-                _nodeLinkPlan._nodeLinkFnState,
-                _childLinkExecutor,
+            if (nodeLinkPlan._nodeLinkFnState !== undefined) {
+              (nodeLinkPlan._nodeLinkFn as StoredNodeLinkExecutor)(
+                nodeLinkPlan._nodeLinkFnState,
+                childLinkExecutor,
                 childScope,
                 node,
                 childBoundTranscludeFn,
               );
             } else {
-              (_nodeLinkPlan._nodeLinkFn as NodeLinkExecutor)(
-                _childLinkExecutor,
+              (nodeLinkPlan._nodeLinkFn as NodeLinkExecutor)(
+                childLinkExecutor,
                 childScope,
                 node,
                 childBoundTranscludeFn,
               );
             }
-          } else if (_childLinkExecutor) {
-            _childLinkExecutor(
-              scope,
-              node.childNodes,
-              _parentBoundTranscludeFn,
-            );
+          } else if (childLinkExecutor) {
+            childLinkExecutor(scope, node.childNodes, _parentBoundTranscludeFn);
           }
         }
 
@@ -2199,27 +2183,76 @@ export class CompileProvider {
           let templatePlan: TemplateLinkPlan | null = null;
 
           for (let i = 0, l = getTemplateNodeCount(nodeRefList); i < l; i++) {
-            const nodePlan = planNode(
-              nodeRefList,
-              nodeRefPlan,
-              i,
-              transcludeFn,
-              i === 0 ? maxPriority : undefined,
-              ignoreDirective,
-              previousCompileContext,
-            );
+            const templateNode = getPlanningNodeAt(nodeRefList, nodeRefPlan, i);
 
-            if (!nodePlan) {
-              previousCompileContext = null;
-              continue;
+            let attrs: Attributes | undefined;
+
+            let directives: DirectiveMatchList;
+
+            if (templateNode.nodeType === NodeType._ELEMENT_NODE) {
+              const elementDirectives: DirectiveMatchList = [];
+
+              attrs = collectElementDirectiveMatches(
+                templateNode as Element,
+                attrs,
+                elementDirectives,
+                i === 0 ? maxPriority : undefined,
+                ignoreDirective,
+              );
+
+              directives = finalizeDirectiveMatches(elementDirectives);
+            } else {
+              directives = collectDirectiveMatches(
+                templateNode,
+                undefined,
+                i === 0 ? maxPriority : undefined,
+                ignoreDirective,
+              );
             }
 
-            nodeRefPlan = nodePlan._nodeRefList;
+            let nodeLinkPlan: NodeLinkPlan | null = null;
 
-            templatePlan =
-              templatePlan || createTemplateLinkPlan(nodeRefPlan, transcludeFn);
+            if (directives.length) {
+              attrs = attrs || createEmptyAttributes();
+              nodeRefPlan = nodeRefPlan || ensureCompileNodeRef(nodeRefList);
 
-            applyTemplateNodePlan(templatePlan, nodePlan);
+              nodeLinkPlan = applyDirectivesToNode(
+                directives,
+                templateNode,
+                attrs,
+                transcludeFn as ChildTranscludeOrLinkFn,
+                null,
+                undefined,
+                undefined,
+                createNodePreviousCompileContext(
+                  previousCompileContext,
+                  i,
+                  nodeRefPlan,
+                ),
+              );
+            }
+
+            const childLinkExecutor = planChildLinkExecutor(
+              templateNode,
+              nodeRefPlan,
+              i,
+              nodeLinkPlan || undefined,
+              transcludeFn,
+            );
+
+            if (nodeLinkPlan || childLinkExecutor) {
+              templatePlan =
+                templatePlan ||
+                createTemplateLinkPlan(nodeRefPlan, transcludeFn);
+
+              appendTemplateNodePlan(
+                templatePlan,
+                i,
+                nodeRefPlan,
+                nodeLinkPlan,
+                childLinkExecutor,
+              );
+            }
 
             // use the previous context only for the first element in the virtual group
             previousCompileContext = null;
@@ -2233,101 +2266,12 @@ export class CompileProvider {
           transcludeFn?: ChildTranscludeOrLinkFn,
         ): TemplateLinkPlan {
           return {
-            _linkMappings: [],
+            _nodeIndices: [],
+            _nodeLinkPlans: [],
+            _childLinkExecutors: [],
             _nodeRefList: nodeRefList,
             _transcludeFn: transcludeFn,
           };
-        }
-
-        function planNode(
-          nodeRefList: TemplatePlanNodeList,
-          templateNodeRef: NodeRef | null,
-          index: number,
-          transcludeFn: ChildTranscludeOrLinkFn | undefined,
-          maxPriority: number | undefined,
-          ignoreDirective: string | undefined,
-          previousCompileContext: PreviousCompileContext | null | undefined,
-        ): TemplateNodePlan | null {
-          const templateNode = getPlanningNodeAt(
-            nodeRefList,
-            templateNodeRef,
-            index,
-          );
-
-          let attrs: Attributes | undefined;
-
-          let directives: DirectiveMatchList;
-
-          if (templateNode.nodeType === NodeType._ELEMENT_NODE) {
-            const elementDirectives: DirectiveMatchList = [];
-
-            attrs = collectElementDirectiveMatches(
-              templateNode as Element,
-              attrs,
-              elementDirectives,
-              maxPriority,
-              ignoreDirective,
-            );
-
-            directives = finalizeDirectiveMatches(elementDirectives);
-          } else {
-            directives = collectDirectiveMatches(
-              templateNode,
-              undefined,
-              maxPriority,
-              ignoreDirective,
-            );
-          }
-
-          let nodeLinkPlan: NodeLinkPlan | undefined;
-
-          if (directives.length) {
-            attrs = attrs || createEmptyAttributes();
-            templateNodeRef =
-              templateNodeRef || ensureCompileNodeRef(nodeRefList);
-
-            nodeLinkPlan = applyDirectivesToNode(
-              directives,
-              templateNode,
-              attrs,
-              transcludeFn as ChildTranscludeOrLinkFn,
-              null,
-              undefined,
-              undefined,
-              createNodePreviousCompileContext(
-                previousCompileContext,
-                index,
-                templateNodeRef,
-              ),
-            );
-          }
-
-          const childLinkExecutor = planChildLinkExecutor(
-            templateNode,
-            templateNodeRef,
-            index,
-            nodeLinkPlan,
-            transcludeFn,
-          );
-
-          if (!nodeLinkPlan) {
-            if (!childLinkExecutor) {
-              return null;
-            }
-
-            return createMinimalTemplateNodePlan(
-              index,
-              templateNodeRef,
-              childLinkExecutor,
-            );
-          }
-
-          return createTemplateNodePlan(
-            index,
-            templateNodeRef,
-            nodeLinkPlan,
-            childLinkExecutor,
-          );
         }
 
         function createNodePreviousCompileContext(
@@ -2350,39 +2294,18 @@ export class CompileProvider {
           });
         }
 
-        function createMinimalTemplateNodePlan(
-          index: number,
-          templateNodeRef: NodeRef | null,
-          childLinkExecutor: TemplateLinkExecutor | ChildLinkFn | null,
-        ): TemplateNodePlan {
-          return {
-            _index: index,
-            _nodeRefList: templateNodeRef,
-            _childLinkExecutor: childLinkExecutor,
-          };
-        }
-
-        function createTemplateNodePlan(
-          index: number,
-          templateNodeRef: NodeRef | null,
-          nodeLinkPlan: NodeLinkPlan,
-          childLinkExecutor: TemplateLinkExecutor | ChildLinkFn | null,
-        ): TemplateNodePlan {
-          return {
-            _index: index,
-            _nodeRefList: templateNodeRef,
-            _nodeLinkPlan: nodeLinkPlan,
-            _childLinkExecutor: childLinkExecutor,
-          };
-        }
-
-        function applyTemplateNodePlan(
+        function appendTemplateNodePlan(
           templatePlan: TemplateLinkPlan,
-          nodePlan: TemplateNodePlan,
+          index: number,
+          nodeRefPlan: NodeRef | null,
+          nodeLinkPlan: NodeLinkPlan | null,
+          childLinkExecutor: TemplateLinkExecutor | ChildLinkFn | null,
         ): void {
-          templatePlan._nodeRefList = nodePlan._nodeRefList;
+          templatePlan._nodeRefList = nodeRefPlan;
 
-          templatePlan._linkMappings.push(nodePlan);
+          templatePlan._nodeIndices.push(index);
+          templatePlan._nodeLinkPlans.push(nodeLinkPlan);
+          templatePlan._childLinkExecutors.push(childLinkExecutor);
         }
 
         function planChildLinkExecutor(
@@ -2425,8 +2348,12 @@ export class CompileProvider {
         function createTemplateLinkExecutor(
           templatePlan: TemplateLinkPlan,
         ): TemplateLinkExecutor {
-          if (templatePlan._linkMappings.length === 1) {
-            const mapping = templatePlan._linkMappings[0];
+          if (templatePlan._nodeIndices.length === 1) {
+            const index = templatePlan._nodeIndices[0];
+
+            const nodeLinkPlan = templatePlan._nodeLinkPlans[0];
+
+            const childLinkExecutor = templatePlan._childLinkExecutors[0];
 
             return function singleTemplateLinkExecutor(
               scope,
@@ -2435,8 +2362,9 @@ export class CompileProvider {
             ) {
               executeTemplateLinkMapping(
                 templatePlan,
-                mapping,
-                getTemplateNodeAt(nodeRef, mapping._index) as Node,
+                nodeLinkPlan,
+                childLinkExecutor,
+                getTemplateNodeAt(nodeRef, index) as Node,
                 scope,
                 _parentBoundTranscludeFn || null,
               );
@@ -2662,7 +2590,8 @@ export class CompileProvider {
           const attrsMap = attrs.$attr;
 
           const ngPrefixMatch =
-            nName.charCodeAt(0) === 110 && nName.charCodeAt(1) === 103
+            nName.charCodeAt(0) === LOWERCASE_N_CHAR_CODE &&
+            nName.charCodeAt(1) === LOWERCASE_G_CHAR_CODE
               ? NG_PREFIX_BINDING.exec(nName)
               : null;
 
@@ -3243,7 +3172,8 @@ export class CompileProvider {
 
             try {
               if (oldClasses !== "") {
-                const classList = compileNodeRef.element.classList;
+                const { classList } = compileNodeRef.element;
+
                 const targetClassList = (beforeTemplateLinkNode as Element)
                   .classList;
 
@@ -3677,7 +3607,7 @@ export class CompileProvider {
             attrs = nodeLinkState._templateAttrs;
             $element = nodeLinkState._templateAttrs._nodeRef as NodeRef;
           } else {
-            $element = new NodeRef(linkNode);
+            $element = NodeRef._fromNode(linkNode);
             registerScopeOwnedNodeRef(scope, $element);
             attrs = new Attributes(
               $injector,
@@ -3724,7 +3654,7 @@ export class CompileProvider {
 
           if (nodeLinkState._controllerDirectives) {
             elementControllers = setupControllers(
-              $element,
+              $element.node,
               attrs,
               transcludeFn as ng.TranscludeFn,
               nodeLinkState._controllerDirectives,
@@ -3984,7 +3914,7 @@ export class CompileProvider {
 
           let hasTemplate = false;
 
-          let compileNodeRef = new NodeRef(compileNode);
+          let compileNodeRef = NodeRef._fromNode(compileNode);
 
           const { _index } = previousCompileContext;
 
@@ -4038,7 +3968,7 @@ export class CompileProvider {
 
             applyDirectiveScopeEffect(
               directive,
-              compileNodeRef,
+              compileNode,
               directiveEffectState,
             );
 
@@ -4053,7 +3983,7 @@ export class CompileProvider {
             applyDirectiveControllerEffect(
               directive,
               directiveName,
-              compileNodeRef,
+              compileNode,
               directiveEffectState,
             );
 
@@ -4079,16 +4009,15 @@ export class CompileProvider {
                 previousCompileContext,
               );
 
-              hasTranscludeDirective =
-                transclusionResult._hasTranscludeDirective;
-              _hasElementTranscludeDirective =
-                transclusionResult._hasElementTranscludeDirective;
-              _nonTlbTranscludeDirective =
-                transclusionResult._nonTlbTranscludeDirective;
-              terminalPriority = transclusionResult._terminalPriority;
-              compileNodeRef = transclusionResult._compileNodeRef;
-              compileNode = transclusionResult._compileNode;
-              childTranscludeFn = transclusionResult._childTranscludeFn;
+              ({
+                _childTranscludeFn: childTranscludeFn,
+                _compileNode: compileNode,
+                _compileNodeRef: compileNodeRef,
+                _hasElementTranscludeDirective,
+                _hasTranscludeDirective: hasTranscludeDirective,
+                _nonTlbTranscludeDirective,
+                _terminalPriority: terminalPriority,
+              } = transclusionResult);
             }
 
             if (directive.template) {
@@ -4110,15 +4039,19 @@ export class CompileProvider {
                 replaceDirective,
               );
 
-              compileNode = inlineTemplate._compileNode;
-              directives = inlineTemplate._directives;
-              ii = inlineTemplate._directiveCount;
-              _templateDirective = inlineTemplate._templateDirective;
-              replaceDirective = inlineTemplate._replaceDirective;
+              ({
+                _compileNode: compileNode,
+                _directiveCount: ii,
+                _directives: directives,
+                _replaceDirective: replaceDirective,
+                _templateDirective,
+              } = inlineTemplate);
             }
 
             if (directive.templateUrl) {
               hasTemplate = true;
+              preLinkFns = preLinkFns || [];
+              postLinkFns = postLinkFns || [];
 
               const templateUrlResult = applyTemplateUrlDirective(
                 directives,
@@ -4129,8 +4062,8 @@ export class CompileProvider {
                 compileNode,
                 hasTranscludeDirective,
                 childTranscludeFn,
-                preLinkFns || EMPTY_LINK_FN_RECORDS,
-                postLinkFns || EMPTY_LINK_FN_RECORDS,
+                preLinkFns,
+                postLinkFns,
                 _index,
                 directiveEffectState._controllerDirectives,
                 directiveEffectState._newScopeDirective,
@@ -4141,11 +4074,13 @@ export class CompileProvider {
                 previousCompileContext,
               );
 
-              nodeLinkFn = templateUrlResult._nodeLinkFn;
-              nodeLinkFnState = templateUrlResult._nodeLinkFnState;
-              _templateDirective = templateUrlResult._templateDirective;
-              replaceDirective = templateUrlResult._replaceDirective;
-              ii = templateUrlResult._directiveCount;
+              ({
+                _directiveCount: ii,
+                _nodeLinkFn: nodeLinkFn,
+                _nodeLinkFnState: nodeLinkFnState,
+                _replaceDirective: replaceDirective,
+                _templateDirective,
+              } = templateUrlResult);
             } else if (directive.compile) {
               preLinkFns = preLinkFns || [];
               postLinkFns = postLinkFns || [];
@@ -4153,7 +4088,7 @@ export class CompileProvider {
               collectDirectiveLinkFns(
                 directive,
                 directiveName,
-                compileNodeRef,
+                compileNode,
                 templateAttrs,
                 childTranscludeFn,
                 preLinkFns,
@@ -4164,6 +4099,7 @@ export class CompileProvider {
 
             if (directive.terminal) {
               terminal = true;
+
               if (terminalPriority < directivePriority) {
                 terminalPriority = directivePriority;
               }
@@ -4222,7 +4158,7 @@ export class CompileProvider {
             applyDirectiveTransclusionOwnershipEffect(
               directive,
               directiveName,
-              compileNodeRef,
+              compileNode,
               nonTlbTranscludeDirective,
             );
 
@@ -4289,18 +4225,18 @@ export class CompileProvider {
             "template",
             templateDirective,
             directive,
-            compileNodeRef,
+            compileNode,
           );
 
           const directiveValue = resolveDirectiveTemplateValue(
             directive,
-            compileNodeRef,
+            compileNode,
             templateAttrs,
           );
 
           if (!directive.replace) {
-            if (compileNodeRef._isElement()) {
-              compileNodeRef.element.innerHTML = directiveValue;
+            if (compileNode.nodeType === NodeType._ELEMENT_NODE) {
+              (compileNode as Element).innerHTML = directiveValue;
             }
 
             return {
@@ -4316,6 +4252,7 @@ export class CompileProvider {
             directive,
             directiveValue,
           );
+
           const replacementNode = getSingleElementTemplateRoot(
             templateNodes,
             directiveName,
@@ -4439,7 +4376,7 @@ export class CompileProvider {
             "template",
             templateDirective,
             directive,
-            compileNodeRef,
+            compileNode,
           );
 
           const nextTemplateDirective = directive;
@@ -4543,7 +4480,7 @@ export class CompileProvider {
         ): ElementTransclusionDirectiveResult {
           const transcludedTemplateRef = templateNodeRef;
 
-          const compileNodeRef = new NodeRef(document.createComment(""));
+          const compileNodeRef = NodeRef._fromNode(document.createComment(""));
 
           templateAttrs._nodeRef = compileNodeRef;
 
@@ -4558,7 +4495,7 @@ export class CompileProvider {
           }
 
           replaceWith(
-            new NodeRef(transcludedTemplateRef._element as Element),
+            transcludedTemplateRef._element as Element,
             compileNode,
             index,
           );
@@ -4621,15 +4558,12 @@ export class CompileProvider {
 
         function resolveDirectiveTemplateValue(
           directive: InternalDirective,
-          compileNodeRef: NodeRef,
+          compileNode: Node | Element,
           templateAttrs: Attributes,
         ): string {
           const template =
             typeof directive.template === "function"
-              ? directive.template(
-                  compileNodeRef.element as HTMLElement,
-                  templateAttrs,
-                )
+              ? directive.template(compileNode as HTMLElement, templateAttrs)
               : directive.template;
 
           return denormalizeTemplate(template as string);
@@ -4868,7 +4802,7 @@ export class CompileProvider {
 
         function applyDirectiveScopeEffect(
           directive: InternalDirective,
-          compileNodeRef: NodeRef,
+          compileNode: Node | Element,
           state: DirectiveCompileEffectState,
         ): void {
           const directiveScope = directive.scope;
@@ -4884,7 +4818,7 @@ export class CompileProvider {
                 "new/isolated scope",
                 state._newIsolateScopeDirective || state._newScopeDirective,
                 directive,
-                compileNodeRef,
+                compileNode,
               );
               state._newIsolateScopeDirective = directive;
             } else {
@@ -4892,7 +4826,7 @@ export class CompileProvider {
                 "new/isolated scope",
                 state._newIsolateScopeDirective,
                 directive,
-                compileNodeRef,
+                compileNode,
               );
             }
           }
@@ -4922,7 +4856,7 @@ export class CompileProvider {
         function applyDirectiveTransclusionOwnershipEffect(
           directive: InternalDirective,
           directiveName: string,
-          compileNodeRef: NodeRef,
+          compileNode: Node | Element,
           nonTlbTranscludeDirective: ng.Directive | null | undefined,
         ): ng.Directive | null | undefined {
           // Special case ngIf and ngRepeat so that we don't complain about duplicate transclusion.
@@ -4936,7 +4870,7 @@ export class CompileProvider {
             "transclusion",
             nonTlbTranscludeDirective,
             directive,
-            compileNodeRef,
+            compileNode,
           );
 
           return directive;
@@ -4961,6 +4895,7 @@ export class CompileProvider {
           directive: ng.Directive,
         ): InternalDirective {
           const internalDirective = directive as InternalDirective;
+
           internalDirective.priority = internalDirective.priority || 0;
           internalDirective.index = internalDirective.index || 0;
 
@@ -5009,7 +4944,7 @@ export class CompileProvider {
         function applyDirectiveControllerEffect(
           directive: InternalDirective,
           directiveName: string,
-          compileNodeRef: NodeRef,
+          compileNode: Node | Element,
           state: DirectiveCompileEffectState,
         ): void {
           if (directive.templateUrl || !directive.controller) {
@@ -5024,7 +4959,7 @@ export class CompileProvider {
             `'${directiveName}' controller`,
             controllerDirectives[directiveName],
             directive,
-            compileNodeRef,
+            compileNode,
           );
 
           controllerDirectives[directiveName] = directive;
@@ -5033,7 +4968,7 @@ export class CompileProvider {
         function collectDirectiveLinkFns(
           directive: InternalDirective,
           directiveName: string,
-          compileNodeRef: NodeRef,
+          compileNode: Node | Element,
           templateAttrs: Attributes,
           childTranscludeFn: ChildTranscludeOrLinkFn,
           preLinkFns: LinkFnRecord[],
@@ -5042,7 +4977,7 @@ export class CompileProvider {
         ): void {
           try {
             const linkFn = directive.compile!(
-              compileNodeRef._getAny() as HTMLElement,
+              compileNode as HTMLElement,
               templateAttrs,
               childTranscludeFn,
             ) as CompileDirectiveLinkResult;
@@ -5229,7 +5164,7 @@ export class CompileProvider {
 
         /** Instantiates and stores directive controllers for the current node. */
         function setupControllers(
-          $element: NodeRef,
+          node: Node | Element,
           attrs: Attributes,
           transcludeFn: ng.TranscludeFn,
           _controllerDirectives: Record<string, InternalDirective>,
@@ -5248,7 +5183,7 @@ export class CompileProvider {
                 directive._isolateScope
                   ? isolateScope
                   : scope,
-              $element: $element.node,
+              $element: node,
               $attrs: attrs,
               $transclude: transcludeFn,
             };
@@ -5272,9 +5207,9 @@ export class CompileProvider {
             // later, once we have the actual element.
             elementControllers[directive.name] = controllerInstance;
 
-            if ($element._isElement()) {
+            if (node.nodeType === NodeType._ELEMENT_NODE) {
               setCacheData(
-                $element.element,
+                node as Element,
                 `$${directive.name}Controller`,
                 controllerInstance._instance,
               );
@@ -5428,6 +5363,7 @@ export class CompileProvider {
 
           if (!directiveMayHaveBindings(directive)) {
             directive._bindings = EMPTY_PARSED_DIRECTIVE_BINDINGS;
+
             return;
           }
 
@@ -5614,7 +5550,7 @@ export class CompileProvider {
             | null
             | undefined,
           directive: ng.Directive<any> | InternalDirective,
-          element: NodeRef,
+          node: Node | Element,
         ): void {
           if (previousDirective) {
             throw $compileError(
@@ -5623,7 +5559,7 @@ export class CompileProvider {
               previousDirective.name,
               directive.name,
               what,
-              startingTag(element._getAny()),
+              startingTag(node),
             );
           }
         }
@@ -6346,10 +6282,12 @@ export function buildStableNodeList(
 ): Node[] {
   const nodeRefIsNodeRef = nodeRef instanceof NodeRef;
 
-  const stableNodeList = new Array(plan._linkMappings.length);
+  const nodeIndices = plan._nodeIndices;
 
-  for (let i = 0, l = plan._linkMappings.length; i < l; i++) {
-    const { _index: idx } = plan._linkMappings[i];
+  const stableNodeList = new Array(nodeIndices.length);
+
+  for (let i = 0, l = nodeIndices.length; i < l; i++) {
+    const idx = nodeIndices[i];
 
     stableNodeList[i] = nodeRefIsNodeRef
       ? (nodeRef._getIndex(idx) as Node)
@@ -6430,11 +6368,16 @@ export function wrapTemplate(
  * in a fragment so traversal and later queries continue to work during compilation.
  */
 export function replaceWith(
-  elementsToRemove: NodeRef,
+  elementsToRemove: NodeRef | Node | Element | ChildNode,
   newNode: Node | Element | ChildNode,
   index?: number,
 ): void {
-  const firstElementToRemove = elementsToRemove._getAny();
+  const elementsToRemoveRef: NodeRef | null =
+    elementsToRemove instanceof NodeRef ? elementsToRemove : null;
+
+  const firstElementToRemove = (
+    elementsToRemoveRef ? elementsToRemoveRef._getAny() : elementsToRemove
+  ) as Node | ChildNode;
 
   const parent = firstElementToRemove.parentNode;
 
@@ -6452,11 +6395,15 @@ export function replaceWith(
 
   const fragment = createDocumentFragment();
 
-  const removedElements = elementsToRemove._collection();
+  const removedElements: Array<Element | Node | ChildNode> = elementsToRemoveRef
+    ? elementsToRemoveRef._collection()
+    : [firstElementToRemove];
 
   for (let i = 0, l = removedElements.length; i < l; i++) {
     fragment.appendChild(removedElements[i]);
   }
 
-  elementsToRemove.node = newNode;
+  if (elementsToRemoveRef) {
+    elementsToRemoveRef.node = newNode;
+  }
 }

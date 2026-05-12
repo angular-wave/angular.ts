@@ -1,0 +1,40 @@
+{
+  "savedAt": "2026-05-11T23:10:13.997Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 1000,
+    "samples": 7,
+    "results": [
+      {
+        "name": "static tree",
+        "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 3,
+        "medianMs": 4.799999997019768,
+        "meanMs": 4.3857142850756645,
+        "opsPerSecond": 228013.0293491628
+      },
+      {
+        "name": "text interpolation",
+        "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 7.5,
+        "medianMs": 10.5,
+        "meanMs": 9.714285714285714,
+        "opsPerSecond": 102941.17647058824
+      },
+      {
+        "name": "bindings and events",
+        "template": "<button ng-click=\"save(item)\">{{label}}</button>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 6.399999998509884,
+        "medianMs": 7.399999998509884,
+        "meanMs": 8.114285713859967,
+        "opsPerSecond": 123239.43662618454
+      }
+    ]
+  }
+}

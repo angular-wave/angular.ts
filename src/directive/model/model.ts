@@ -807,6 +807,7 @@ export class NgModelController {
    */
   $rollbackViewValue() {
     this._pendingDebounce && clearTimeout(this._pendingDebounce);
+    this._pendingViewValue = undefined;
     this.$viewValue = this._lastCommittedViewValue;
     this.$render();
   }
@@ -1039,6 +1040,7 @@ export class NgModelController {
 
     this._updateEmptyClasses(this.$viewValue);
     this._lastCommittedViewValue = this.$viewValue;
+    this._pendingViewValue = undefined;
 
     // change to dirty
     if (this.$pristine) {
@@ -1178,6 +1180,7 @@ export class NgModelController {
    */
   $setViewValue(value: any, trigger?: string) {
     this.$viewValue = value;
+    this._pendingViewValue = value;
 
     if (this.$options?.getOption("updateOnDefault")) {
       this._debounceViewValueCommit(trigger);
@@ -1213,9 +1216,12 @@ export class NgModelController {
     this._pendingDebounce && clearTimeout(this._pendingDebounce);
     const that = this;
 
+    const pendingViewValue = this.$viewValue;
+
     if ((debounceDelay as number) > 0) {
       // this fails if debounceDelay is an object
       this._pendingDebounce = setTimeout(() => {
+        that.$viewValue = pendingViewValue;
         that.$commitViewValue();
       }, debounceDelay as number);
     } else {
@@ -1457,6 +1463,10 @@ export class NgModelController {
    */
   /** @internal */
   _updateEventHandler(ev: Event) {
+    if (!isUndefined(this._pendingViewValue)) {
+      this.$viewValue = this._pendingViewValue;
+    }
+
     this._debounceViewValueCommit(ev && ev.type);
   }
 }
@@ -1477,6 +1487,10 @@ function setupModelWatcher(
   // 4. view should be changed back to 'a'
   return (ctrl._scope.$watch("value", () => {
     const modelValue = ctrl._ngModelGet(ctrl._scope);
+
+    if (isUndefined(modelValue) && Number.isNaN(ctrl.$modelValue)) {
+      return;
+    }
 
     // if scope model value and ngModel value are out of sync
     // This cannot be moved to the action function, because it would not catch the

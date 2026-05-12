@@ -1,0 +1,60 @@
+{
+  "savedAt": "2026-05-11T23:09:56.617Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 1000,
+    "samples": 7,
+    "results": [
+      {
+        "name": "static tree",
+        "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 5.399999998509884,
+        "medianMs": 6.700000002980232,
+        "meanMs": 7.100000000425747,
+        "opsPerSecond": 140845.07041408954
+      },
+      {
+        "name": "text interpolation",
+        "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 7.699999995529652,
+        "medianMs": 8.200000002980232,
+        "meanMs": 8.300000000212874,
+        "opsPerSecond": 120481.92770775333
+      },
+      {
+        "name": "bindings and events",
+        "template": "<button ng-click=\"save(item)\">{{label}}</button>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 3.600000001490116,
+        "medianMs": 3.899999998509884,
+        "meanMs": 3.9714285720671927,
+        "opsPerSecond": 251798.56111058893
+      },
+      {
+        "name": "repeat list",
+        "template": "<ul><li ng-repeat=\"item in items\"><span>{{item.name}}</span><button ng-click=\"select(item)\">Select</button></li></ul>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 3.899999998509884,
+        "medianMs": 5.399999998509884,
+        "meanMs": 6.67142857078995,
+        "opsPerSecond": 149892.93363319215
+      },
+      {
+        "name": "nested template",
+        "template": "<section ng-if=\"ready\"><header ng-bind=\"title\"></header><div ng-repeat=\"group in groups\"><h3>{{group.name}}</h3><p ng-repeat=\"item in group.items\">{{item.label}}</p></div></section>",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 3,
+        "medianMs": 3.100000001490116,
+        "meanMs": 3.4714285720671927,
+        "opsPerSecond": 288065.84356840514
+      }
+    ]
+  }
+}

@@ -26,6 +26,16 @@ export type InputTypeHandler = (
   $parse: ng.ParseService,
 ) => void;
 
+function unwrapNgModelController(
+  ctrl: NgModelControllerProxied,
+): NgModelControllerProxied {
+  while (isProxy(ctrl)) {
+    ctrl = ctrl.$target as NgModelControllerProxied;
+  }
+
+  return ctrl;
+}
+
 // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
 export const ISO_DATE_REGEXP =
   /^\d{4,}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+(?:[+-][0-2]\d:[0-5]\d|Z)$/;
@@ -188,7 +198,7 @@ function baseInputType(
       ctrl.$viewValue !== value ||
       (value === "" && ctrl._hasNativeValidators)
     ) {
-      ctrl.$target.$setViewValue(value, event);
+      ctrl.$setViewValue(value, event);
     }
   };
 
@@ -936,6 +946,8 @@ export function inputDirective($parse: ng.ParseService): ng.Directive {
         ctrls: any[],
       ) {
         if (ctrls[0]) {
+          const ctrl = unwrapNgModelController(ctrls[0]);
+
           const typeName = attr.type?.toLowerCase() as
             | keyof typeof inputType
             | undefined;
@@ -944,7 +956,7 @@ export function inputDirective($parse: ng.ParseService): ng.Directive {
             scope,
             element as HTMLInputElement,
             attr,
-            ctrls[0],
+            ctrl,
             $parse,
           );
         }

@@ -1,7 +1,7 @@
-import { Lexer } from "../src/core/parse/lexer/lexer.ts";
-import { Parser } from "../src/core/parse/parser/parser.ts";
-import type { CompiledExpression } from "../src/core/parse/parse.ts";
-import type { FilterFn } from "../src/filters/filter.ts";
+import { Lexer } from "../../src/core/parse/lexer/lexer.ts";
+import { Parser } from "../../src/core/parse/parser/parser.ts";
+import type { CompiledExpression } from "../../src/core/parse/parse.ts";
+import type { FilterFn } from "../../src/filters/filter.ts";
 
 type BenchmarkKind = "lexer" | "compile" | "evaluate";
 
