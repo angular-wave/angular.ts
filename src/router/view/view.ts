@@ -118,7 +118,7 @@ export function normalizeNgViewTarget(
     ngViewName = relativeViewNameSugar[2];
   }
 
-  if (ngViewName.charAt(0) === "!") {
+  if (ngViewName.startsWith("!")) {
     ngViewName = ngViewName.substring(1);
     ngViewContextAnchor = "";
   }
@@ -137,7 +137,7 @@ export function normalizeNgViewTarget(
     }
 
     for (let i = 0; i < hops; i++) {
-      anchorState = anchorState && anchorState.parent;
+      anchorState = anchorState?.parent;
     }
 
     if (!anchorState) {
@@ -159,7 +159,7 @@ function contextDepth(context: ViewContext): number {
 
   let depth = 1;
 
-  while (cursor && cursor.parent) {
+  while (cursor?.parent) {
     depth += 1;
     cursor = cursor.parent;
   }
@@ -192,7 +192,7 @@ function viewConfigDepth(
 
   if (cached !== undefined) return cached;
 
-  let context = config._viewDecl._context as ViewContext;
+  let context = config._viewDecl._context!;
 
   let count = 0;
 
@@ -310,7 +310,7 @@ export class ViewService {
         }
       });
 
-      if (this._ngViews.indexOf(ngView) !== -1) {
+      if (this._ngViews.includes(ngView)) {
         ngView._configUpdated(selectedViewConfig);
       }
     });
@@ -342,7 +342,7 @@ export class ViewService {
     ngView: ActiveNgView,
     viewConfig: ViewConfig,
   ): boolean {
-    if (!viewConfig || !viewConfig._viewDecl) return false;
+    if (!viewConfig?._viewDecl) return false;
 
     const ngViewContext = ngView._creationContext;
 
@@ -356,7 +356,7 @@ export class ViewService {
 
     if (normalizedTarget !== ngView._fqn) return false;
 
-    const viewContext = viewDecl._context as ViewContext;
+    const viewContext = viewDecl._context!;
 
     if (
       viewContext.name !== ngViewContext.name &&

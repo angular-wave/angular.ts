@@ -3,9 +3,9 @@ import { hasOwn } from "../../shared/utils.ts";
 import type { SceContext } from "../../services/sce/context.ts";
 
 export interface SecurityAdapter {
-  getTrusted(context: SceContext | undefined, value: any): any;
-  getTrustedMediaUrl(value: any): any;
-  valueOf(value?: any): any;
+  getTrusted<T>(context: SceContext | undefined, value: T): T;
+  getTrustedMediaUrl<T>(value: T): T;
+  valueOf<T>(value?: T): T | undefined;
 }
 
 const passThroughSecurity: SecurityAdapter = {

@@ -28,13 +28,13 @@ type WebTransportDirectiveMode = "datagram" | "stream" | "unidirectional";
 
 type WebTransportDirectiveTransform = "bytes" | "text" | "json";
 
-type MessageLocals = {
+interface MessageLocals {
   $connection: ng.WebTransportConnection;
   $data: Uint8Array;
   $event: Event | null;
   $message: unknown;
   $text?: string;
-};
+}
 
 ngWebTransportDirective.$inject = [
   _webTransport,
@@ -179,7 +179,9 @@ export function ngWebTransportDirective(
           current.close(reason ? { reason } : undefined);
         } catch {
           current.ready
-            .then(() => current.close(reason ? { reason } : undefined))
+            .then(() => {
+              current.close(reason ? { reason } : undefined);
+            })
             .catch(() => {
               // The browser may reject a connection that is destroyed while opening.
             });
@@ -357,7 +359,7 @@ export function ngWebTransportDirective(
         }
 
         closeConnection("reconnect");
-        streamReader?.cancel("reconnect");
+        void streamReader?.cancel("reconnect");
 
         const userConfig = resolveConfig();
 
@@ -385,7 +387,7 @@ export function ngWebTransportDirective(
             evaluate(attr("onOpen"), { $connection: connection, $url: url });
 
             if (mode !== "datagram") {
-              readIncomingStreams(connection).catch((error) => {
+              readIncomingStreams(connection).catch((error: unknown) => {
                 if (!scope._destroyed) handleError(error);
               });
             }
@@ -432,11 +434,13 @@ export function ngWebTransportDirective(
       }
 
       element.addEventListener(eventName, () => {
-        connect().catch((error) => handleError(error));
+        connect().catch((error: unknown) => {
+          handleError(error);
+        });
       });
 
       scope.$on("$destroy", () => {
-        streamReader?.cancel("scope destroyed");
+        void streamReader?.cancel("scope destroyed");
         closeConnection("scope destroyed");
       });
 

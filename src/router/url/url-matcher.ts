@@ -82,7 +82,7 @@ function pushStaticSegmentWeights(weights: number[], segment: string): void {
 }
 
 function getMatcherWeights(matcher: UrlMatcher): number[] {
-  if (matcher._cache._weights) return matcher._cache._weights as number[];
+  if (matcher._cache._weights) return matcher._cache._weights;
 
   const path = matcher._cache._path || [matcher];
 
@@ -136,7 +136,7 @@ function appendPathParam(
 
   if (isString(squash)) return path + squash;
 
-  if (squash !== false || isNullOrUndefined(encoded)) return path;
+  if (squash || isNullOrUndefined(encoded)) return path;
 
   if (isArray(encoded)) return null;
 
@@ -144,7 +144,7 @@ function appendPathParam(
 }
 
 function appendQueryParam(
-  queryParts: Array<string | undefined>,
+  queryParts: (string | undefined)[],
   param: Param,
   values: RawParams,
 ): boolean {
@@ -210,7 +210,7 @@ function appendMatcherPath(
 }
 
 function appendMatcherQueryParams(
-  queryParts: Array<string | undefined>,
+  queryParts: (string | undefined)[],
   matcher: UrlMatcher,
   values: RawParams,
 ): boolean {
@@ -228,7 +228,7 @@ function appendMatcherQueryParams(
 function formatUrl(matchers: UrlMatcher[], values: RawParams): string | null {
   let path: string | null = "";
 
-  const queryParts: Array<string | undefined> = [];
+  const queryParts: (string | undefined)[] = [];
 
   for (let i = 0; i < matchers.length; i++) {
     path = appendMatcherPath(path, matchers[i], values);
@@ -321,7 +321,7 @@ function getParamType(
 
   return !regexp
     ? defaultType
-    : (paramTypes[regexp] as ParamType | undefined) ||
+    : paramTypes[regexp] ||
         makeRegexpType(defaultType, regexp, config.caseInsensitive);
 }
 
@@ -449,15 +449,9 @@ export class UrlMatcher {
 
       const pathSegment = pattern.substring(last, matchArray.index);
 
-      if (pathSegment.indexOf("?") >= 0) break; // we're into the search part
+      if (pathSegment.includes("?")) break; // we're into the search part
       checkParamErrors(id, pattern, this._params);
-      this._params.push(
-        paramFactory.fromPath(
-          id,
-          paramType,
-          config.state as ng.StateDeclaration,
-        ),
-      );
+      this._params.push(paramFactory.fromPath(id, paramType, config.state!));
       this._segments.push(pathSegment);
       this._compiled += quoteRegExp(
         pathSegment,
@@ -490,11 +484,7 @@ export class UrlMatcher {
 
           checkParamErrors(id, pattern, this._params);
           this._params.push(
-            paramFactory.fromSearch(
-              id,
-              paramType,
-              config.state as ng.StateDeclaration,
-            ),
+            paramFactory.fromSearch(id, paramType, config.state!),
           );
           last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
           // check if ?&
@@ -608,7 +598,13 @@ export class UrlMatcher {
    * @returns {Param | null}
    */
   _parameter(id: string, opts?: { inherit?: boolean }): Param | null {
-    let matcher: UrlMatcher | undefined = this;
+    for (let i = 0; i < this._params.length; i++) {
+      const param = this._params[i];
+
+      if (param.id === id) return param;
+    }
+
+    let matcher = opts?.inherit !== false ? this._cache._parent : undefined;
 
     while (matcher) {
       for (let i = 0; i < matcher._params.length; i++) {
@@ -617,7 +613,7 @@ export class UrlMatcher {
         if (param.id === id) return param;
       }
 
-      matcher = opts?.inherit !== false ? matcher._cache._parent : undefined;
+      matcher = matcher._cache._parent;
     }
 
     return null;

@@ -2,21 +2,19 @@ import { _http, _templateCache } from "../../injection-tokens.ts";
 import { defaultHttpResponseTransform } from "../http/http.ts";
 import { extend, isArray } from "../../shared/utils.ts";
 
-export interface TemplateRequestService {
-  /**
-   * Downloads a template using $http and, upon success, stores the
-   * contents inside of $templateCache.
-   *
-   * If the HTTP request fails or the response data of the HTTP request is
-   * empty then a $compile error will be thrown (unless
-   * {ignoreRequestError} is set to true).
-   *
-   * @param templateUrl The template URL.
-   *
-   * @returns A promise whose value is the template content.
-   */
-  (templateUrl: string): Promise<string>;
-}
+/**
+ * Downloads a template using $http and, upon success, stores the
+ * contents inside of $templateCache.
+ *
+ * If the HTTP request fails or the response data of the HTTP request is
+ * empty then a $compile error will be thrown (unless
+ * {ignoreRequestError} is set to true).
+ *
+ * @param templateUrl The template URL.
+ *
+ * @returns A promise whose value is the template content.
+ */
+export type TemplateRequestService = (templateUrl: string) => Promise<string>;
 
 /**
  * Provider for the `$templateRequest` service.
@@ -73,7 +71,7 @@ export class TemplateRequestProvider {
        */
       const fetchTemplate = (templateUrl: string): Promise<string> => {
         // Filter out default transformResponse for template requests
-        let transformResponse = $http.defaults?.transformResponse ?? null;
+        let transformResponse = $http.defaults.transformResponse ?? null;
 
         if (isArray(transformResponse)) {
           transformResponse = transformResponse.filter(
@@ -88,19 +86,14 @@ export class TemplateRequestProvider {
             cache: $templateCache,
             transformResponse,
           },
-          this.httpOptions || {},
+          this.httpOptions,
         ) as ng.RequestShortcutConfig;
 
-        return $http.get<string>(templateUrl, config).then(
-          (response) => {
-            $templateCache.set(templateUrl, response.data);
+        return $http.get<string>(templateUrl, config).then((response) => {
+          $templateCache.set(templateUrl, response.data);
 
-            return response.data;
-          },
-          (resp) => {
-            return Promise.reject(resp);
-          },
-        );
+          return response.data;
+        });
       };
 
       return fetchTemplate;

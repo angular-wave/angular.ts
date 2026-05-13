@@ -239,7 +239,7 @@ export function dealoc(
 
     return;
   } else {
-    const singleNode = element as (Element & Record<string, any>) | Document;
+    const singleNode = element;
 
     const domElement =
       singleNode.nodeType === NodeType._DOCUMENT_NODE
@@ -259,7 +259,7 @@ export function dealoc(
       cleanElementData(domElement.querySelectorAll("*"));
     }
   }
-  const singleNode = element as (Element & Record<string, any>) | Document;
+  const singleNode = element;
 
   if (
     singleNode.nodeType !== NodeType._DOCUMENT_NODE &&
@@ -378,7 +378,7 @@ export function getCacheData(element: Element, key?: string): any {
       return undefined;
     }
 
-    return expandoStore && expandoStore[kebabToCamel(key)];
+    return expandoStore?.[kebabToCamel(key)];
   }
 
   return undefined;
@@ -422,7 +422,7 @@ export function setScope(
   element: Element | Node | ChildNode,
   scope: ng.Scope,
 ): void {
-  return setCacheData(element, SCOPE_KEY, scope);
+  setCacheData(element, SCOPE_KEY, scope);
 }
 
 /**
@@ -432,7 +432,7 @@ export function setScope(
  * @param scope - The isolate scope to attach to this element.
  */
 export function setIsolateScope(element: Element, scope: ng.Scope): void {
-  return setCacheData(element, ISOLATE_SCOPE_KEY, scope);
+  setCacheData(element, ISOLATE_SCOPE_KEY, scope);
 }
 
 /**
@@ -539,7 +539,7 @@ export function startingTag(elementOrStr: string | Element | Node): string {
     } else if (clone.nodeType === NodeType._COMMENT_NODE) {
       return `<!--${(clone as Comment).data.trim()}-->`;
     } else {
-      const match = elemHtml.match(/^(<[^>]+>)/);
+      const match = /^(<[^>]+>)/.exec(elemHtml);
 
       if (match) {
         return match[1].replace(/^<([\w-]+)/, (_match, nodeName) => {
@@ -787,7 +787,7 @@ export function extractElementNode(element: NodeList | Node): Node | undefined {
   const nodeList = element as NodeListOf<Node>;
 
   for (let i = 0; i < nodeList.length; i++) {
-    const elm = nodeList[i] as Node;
+    const elm = nodeList[i];
 
     if (elm.nodeType === NodeType._ELEMENT_NODE) {
       return elm;

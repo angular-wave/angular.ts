@@ -37,7 +37,10 @@ const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
 type ModuleRegistry = Record<string, NgModule | null>;
 
 /** @internal */
-type AppElement = { _element: HTMLElement; _module: string | null };
+interface AppElement {
+  _element: HTMLElement;
+  _module: string | null;
+}
 
 const moduleRegistry: ModuleRegistry = {};
 
@@ -99,7 +102,7 @@ export class AngularRuntime extends EventTarget {
   /** @internal */
   public _subapp: boolean;
   /** @internal */
-  public _bootsrappedModules: Array<string | any> = [];
+  public _bootsrappedModules: any[] = [];
 
   /** Application-wide event bus, available after bootstrap providers are created. */
   public $eventBus!: ng.PubSubService;
@@ -352,7 +355,7 @@ export class AngularRuntime extends EventTarget {
    */
   bootstrap(
     element: string | HTMLElement | HTMLDocument,
-    modules?: Array<string | any>,
+    modules?: any[],
     config: AngularBootstrapConfig = { strictDi: false },
   ): ng.InjectorService {
     if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {

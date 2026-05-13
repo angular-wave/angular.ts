@@ -101,7 +101,7 @@ async function consumeText(
 
     options.signal?.addEventListener("abort", cancelReader, { once: true });
 
-    while (true) {
+    for (;;) {
       if (options.signal?.aborted) {
         await reader.cancel(options.signal.reason);
 

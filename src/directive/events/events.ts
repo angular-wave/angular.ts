@@ -1,5 +1,5 @@
 import { _exceptionHandler, _parse } from "../../injection-tokens.ts";
-import { directiveNormalize } from "../../shared/utils.ts";
+import { directiveNormalize, isString } from "../../shared/utils.ts";
 import { Attributes } from "../../core/compile/attributes.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
@@ -36,13 +36,15 @@ export type NgEventName = (typeof EVENT_NAMES)[number];
 
 export type NgEventDirectiveName = `ng${Capitalize<NgEventName>}`;
 
+type EventDirectiveFactory = ng.DirectiveFactory;
+
 function directiveNameForEvent(eventName: NgEventName): NgEventDirectiveName {
   return directiveNormalize(`ng-${eventName}`) as NgEventDirectiveName;
 }
 
 function createEventDirectiveFactory(
   eventName: NgEventName,
-): ng.Injectable<any> {
+): EventDirectiveFactory {
   const directiveName = directiveNameForEvent(eventName);
 
   return [
@@ -70,7 +72,7 @@ export const ngClickDirective = createEventDirectiveFactory("click");
 
 export const ngEventDirectives: Record<
   NgEventDirectiveName,
-  ng.Injectable<any>
+  EventDirectiveFactory
 > = EVENT_NAMES.reduce(
   (directives, eventName) => {
     directives[directiveNameForEvent(eventName)] =
@@ -78,7 +80,7 @@ export const ngEventDirectives: Record<
 
     return directives;
   },
-  {} as Record<NgEventDirectiveName, ng.Injectable<any>>,
+  {} as Record<NgEventDirectiveName, EventDirectiveFactory>,
 );
 
 /**
@@ -92,8 +94,12 @@ export function createEventDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    compile(_element: Element, attr: Attributes & Record<string, string>) {
-      const fn = $parse(attr[directiveName]);
+    compile(_element: Element, attr: Attributes) {
+      const expression: unknown = attr[directiveName];
+
+      if (!isString(expression)) return () => undefined;
+
+      const fn = $parse(expression);
 
       return (scope: ng.Scope, element: Element): void => {
         const handler = (event: Event): void => {
@@ -108,9 +114,9 @@ export function createEventDirective(
 
         element.addEventListener(eventName, handler);
 
-        scope.$on("$destroy", () =>
-          element.removeEventListener(eventName, handler),
-        );
+        scope.$on("$destroy", () => {
+          element.removeEventListener(eventName, handler);
+        });
       };
     },
   };
@@ -128,8 +134,12 @@ export function createWindowEventDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    compile(_element: Element, attr: Attributes & Record<string, string>) {
-      const fn = $parse(attr[directiveName]);
+    compile(_element: Element, attr: Attributes) {
+      const expression: unknown = attr[directiveName];
+
+      if (!isString(expression)) return () => undefined;
+
+      const fn = $parse(expression);
 
       return (scope: ng.Scope): void => {
         const handler = (event: Event): void => {
@@ -144,16 +154,16 @@ export function createWindowEventDirective(
 
         $window.addEventListener(eventName, handler);
 
-        scope.$on("$destroy", () =>
-          $window.removeEventListener(eventName, handler),
-        );
+        scope.$on("$destroy", () => {
+          $window.removeEventListener(eventName, handler);
+        });
       };
     },
   };
 }
 
 function flushScopeQueue(scope: ng.Scope): void {
-  const rootScope = scope.$root || scope;
+  const rootScope = (scope.$root as ng.Scope | undefined) ?? scope;
 
   if (typeof rootScope.$flushQueue === "function") {
     rootScope.$flushQueue();

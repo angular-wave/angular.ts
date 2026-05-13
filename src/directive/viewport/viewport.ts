@@ -9,15 +9,15 @@ export function ngViewportDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
-      const attrMap = attrs as Attributes & Record<string, string>;
+      const enterExpr: unknown = attrs.onEnter;
 
-      const enterExpr = attrMap.onEnter;
+      const leaveExpr: unknown = attrs.onLeave;
 
-      const leaveExpr = attrMap.onLeave;
+      const enterFn =
+        typeof enterExpr === "string" ? $parse(enterExpr) : undefined;
 
-      const enterFn = enterExpr ? $parse(enterExpr) : undefined;
-
-      const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
+      const leaveFn =
+        typeof leaveExpr === "string" ? $parse(leaveExpr) : undefined;
 
       const observer = new IntersectionObserver(
         (entries: IntersectionObserverEntry[]) => {

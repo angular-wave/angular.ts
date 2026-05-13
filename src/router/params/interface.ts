@@ -22,9 +22,7 @@ export type ParamDefaultValueProvider =
  * }
  * ```
  */
-export interface RawParams {
-  [key: string]: unknown;
-}
+export type RawParams = Record<string, unknown>;
 
 /**
  * Configuration for a single Parameter

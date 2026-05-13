@@ -33,7 +33,13 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
 
       let previousElements: Element | null | undefined;
 
-      $scope.$watch($attr.ngIf, (value: any) => {
+      const expression: unknown = $attr.ngIf;
+
+      if (typeof expression !== "string") {
+        return;
+      }
+
+      $scope.$watch(expression, (value: unknown) => {
         if (value) {
           if (!childScope) {
             $transclude((clone, newScope) => {
@@ -74,7 +80,7 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
 
             if (animate) {
               animate.leave(previousElements).done((response: boolean) => {
-                if (response !== false) previousElements = null;
+                if (response) previousElements = null;
               });
             } else {
               const currentElement = $element.nextElementSibling;

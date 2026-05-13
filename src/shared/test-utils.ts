@@ -50,7 +50,7 @@ export function wait(timeout = 0): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
-export let ELEMENT: HTMLElement;
+export let ELEMENT: HTMLElement | null | undefined;
 
 /**
  * Helper for bootstraping content onto default element
@@ -60,12 +60,15 @@ export function bootstrap(
   htmlContent: string,
   moduleName?: string,
 ): ng.InjectorService {
-  if (!ELEMENT) {
-    ELEMENT = document.getElementById("app") as HTMLElement;
+  const element = ELEMENT ?? document.getElementById("app");
+
+  if (!element) {
+    throw new Error("Missing #app test element");
   }
 
-  dealoc(ELEMENT);
-  ELEMENT.innerHTML = htmlContent;
+  ELEMENT = element;
+  dealoc(element);
+  element.innerHTML = htmlContent;
 
-  return window.angular.bootstrap(ELEMENT, [moduleName || "myModule"]);
+  return window.angular.bootstrap(element, [moduleName ?? "myModule"]);
 }

@@ -23,7 +23,13 @@ export function ngShowDirective($injector: ng.InjectorService): ng.Directive {
       element: Element,
       $attr: Attributes & Record<string, string>,
     ): void {
-      scope.$watch($attr.ngShow, (value: boolean) => {
+      const expression: unknown = $attr.ngShow;
+
+      if (typeof expression !== "string") {
+        return;
+      }
+
+      scope.$watch(expression, (value: boolean) => {
         // we're adding a temporary, animation-specific class for ng-hide since this way
         // we can control when the element is actually displayed on screen without having
         // to have a global/greedy CSS selector that breaks when other animations are run.
@@ -60,7 +66,13 @@ export function ngHideDirective($injector: ng.InjectorService): ng.Directive {
       element: Element,
       attr: Attributes & Record<string, string>,
     ): void {
-      scope.$watch(attr.ngHide, (value: boolean) => {
+      const expression: unknown = attr.ngHide;
+
+      if (typeof expression !== "string") {
+        return;
+      }
+
+      scope.$watch(expression, (value: boolean) => {
         // The comment inside of the ngShowDirective explains why we add and
         // remove a temporary class for the show/hide animation
         const animate = getAnimateForNode(getAnimate, element);

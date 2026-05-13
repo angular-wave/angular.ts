@@ -8,10 +8,10 @@ import {
   values,
 } from "../shared/utils.ts";
 
-export type EntryFilterItem = {
+export interface EntryFilterItem {
   key: any;
   value: any;
-};
+}
 
 type IterableMethodName = "keys" | "values" | "entries";
 

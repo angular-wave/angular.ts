@@ -24,14 +24,12 @@ export interface RestDefinition<T = any> {
 }
 
 /** Constructor type for mapping JSON objects to entity instances. */
-export interface EntityClass<T = any> {
-  /**
-   * Creates a new entity instance from raw response data.
-   *
-   * @param data - Raw data, typically parsed JSON.
-   */
-  new (data: any): T;
-}
+/**
+ * Creates a new entity instance from raw response data.
+ *
+ * @param data - Raw data, typically parsed JSON.
+ */
+export type EntityClass<T = any> = new (data: any) => T;
 
 /**
  * Normalized request object passed from {@link RestService} to a
@@ -374,7 +372,7 @@ export class RestService<T = any, ID = any> {
     return expandUriTemplate(template, params || {});
   }
 
-  private _mapEntity(data: unknown): T | unknown {
+  private _mapEntity(data: unknown): unknown {
     if (!data) return data;
 
     return this._entityClass ? new this._entityClass(data) : data;
@@ -404,10 +402,7 @@ export class RestService<T = any, ID = any> {
    * @returns The mapped entity, raw response value, or `null` when empty.
    * @throws Error when `id` is null or undefined.
    */
-  async get(
-    id: ID,
-    params: Record<string, any> = {},
-  ): Promise<T | unknown | null> {
+  async get(id: ID, params: Record<string, any> = {}): Promise<unknown> {
     if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
     const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
 
@@ -432,7 +427,7 @@ export class RestService<T = any, ID = any> {
    * @returns The server representation, mapped through `entityClass` when set.
    * @throws Error when `item` is null or undefined.
    */
-  async create(item: T): Promise<T | unknown> {
+  async create(item: T): Promise<unknown> {
     if (isNullOrUndefined(item)) throw new Error(`badarg:item ${item}`);
     const resp = await this._request<unknown>(
       "POST",
@@ -453,7 +448,7 @@ export class RestService<T = any, ID = any> {
    * @returns The updated entity, raw value, or `null` when the request fails.
    * @throws Error when `id` is null or undefined.
    */
-  async update(id: ID, item: Partial<T>): Promise<T | unknown | null> {
+  async update(id: ID, item: Partial<T>): Promise<unknown> {
     if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
     const url = `${this._baseUrl}/${id}`;
 

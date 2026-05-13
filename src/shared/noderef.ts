@@ -27,7 +27,7 @@ export class NodeRef {
   /** @internal */
   _element: Element | undefined;
   /** @internal */
-  _nodes: Array<Node>;
+  _nodes: Node[];
   /** @internal */
   _nodeList: NodeList | undefined;
   /** @internal */
@@ -84,9 +84,9 @@ export class NodeRef {
     // Handle array of elements
     else if (isArray(element)) {
       if (element.length === 1) {
-        this.node = element[0] as Node;
+        this.node = element[0];
       } else {
-        this.nodes = element as Node[];
+        this.nodes = element;
       }
     } else {
       throw new Error("Invalid element passed to NodeRef");
@@ -95,7 +95,7 @@ export class NodeRef {
 
   /** @returns The wrapped element. */
   get element(): Element {
-    return this._element as Element;
+    return this._element!;
   }
 
   /** @param el The element to wrap. */
@@ -125,14 +125,14 @@ export class NodeRef {
   }
 
   /** @param nodes The node collection to wrap. */
-  set nodes(nodes: Array<Node>) {
+  set nodes(nodes: Node[]) {
     this._nodes = nodes;
     this._nodeList = undefined;
     this._isList = true;
   }
 
   /** @returns The wrapped node collection. */
-  get nodes(): Array<Node> {
+  get nodes(): Node[] {
     if (this._nodeList) return arrayFrom(this._nodeList);
 
     return this._nodes;
@@ -194,7 +194,7 @@ export class NodeRef {
 
   /** @returns All wrapped nodes or the single wrapped node. */
   /** @internal */
-  _getAll(): Element | Array<Node> | Node | ChildNode {
+  _getAll(): Element | Node[] | Node | ChildNode {
     if (this._isList) {
       return this.nodes;
     } else {
@@ -204,7 +204,7 @@ export class NodeRef {
 
   /** @returns A collection view of the wrapped nodes. */
   /** @internal */
-  _collection(): Array<Element | Node | ChildNode> {
+  _collection(): (Element | Node | ChildNode)[] {
     if (this._isList) {
       return this.nodes;
     } else {

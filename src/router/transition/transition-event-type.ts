@@ -45,8 +45,10 @@ export class TransitionEventType {
     hookOrder: number,
     criteriaMatchPath: PathType,
     reverseSort = false,
-    resultHandler: TransitionResultHandler = TransitionHook._handleResult,
-    errorHandler: TransitionErrorHandler = TransitionHook._rejectError,
+    resultHandler: TransitionResultHandler = (hook, result) =>
+      TransitionHook._handleResult(hook, result),
+    errorHandler: TransitionErrorHandler = (hook, error) =>
+      TransitionHook._rejectError(hook, error),
     synchronous = false,
   ) {
     this._name = name;

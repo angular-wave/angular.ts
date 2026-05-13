@@ -19,10 +19,10 @@ import type {
   ViewDeclarationCommon,
 } from "./state/interface.ts";
 
-type BindingTuple = {
+interface BindingTuple {
   name: string;
   type: string;
-};
+}
 
 type TemplateResult =
   | Promise<{ _template: string | undefined }>
@@ -31,8 +31,6 @@ type TemplateResult =
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 
 const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
-
-type TemplateConfigType = "template" | "templateUrl" | "component" | "default";
 
 function asTemplate(
   result: string | Promise<string> | null,
@@ -54,16 +52,6 @@ function toTemplateResult(str: string | null): {
 
 function toComponentResult(str: string): { _component: string } {
   return { _component: str };
-}
-
-function getConfigType(config: ViewDeclarationCommon): TemplateConfigType {
-  if (isDefined(config.template)) return "template";
-
-  if (isDefined(config.templateUrl)) return "templateUrl";
-
-  if (isDefined(config.component)) return "component";
-
-  return "default";
 }
 
 function componentElementName(camelCase: string): string {
@@ -106,16 +94,21 @@ export class TemplateFactoryProvider {
     config: ViewDeclarationCommon,
     params: RawParams,
   ): TemplateResult {
-    switch (getConfigType(config)) {
-      case "template":
-        return asTemplate(this._fromString(config.template!, params));
-      case "templateUrl":
-        return asTemplate(this._fromUrl(config.templateUrl!, params));
-      case "component":
-        return asComponent(config.component as string);
-      default:
-        return asTemplate(DEFAULT_TEMPLATE);
+    const { template, templateUrl, component } = config;
+
+    if (isDefined(template)) {
+      return asTemplate(this._fromString(template, params));
     }
+
+    if (isDefined(templateUrl)) {
+      return asTemplate(this._fromUrl(templateUrl, params));
+    }
+
+    if (isDefined(component)) {
+      return asComponent(component);
+    }
+
+    return asTemplate(DEFAULT_TEMPLATE);
   }
 
   /**
@@ -138,7 +131,7 @@ export class TemplateFactoryProvider {
 
     if (isNullOrUndefined(templateUrl)) return null;
 
-    return this._templateRequest!(templateUrl);
+    return this._getTemplateRequest()(templateUrl);
   }
 
   /**
@@ -151,7 +144,7 @@ export class TemplateFactoryProvider {
     component: string,
     bindings?: Record<string, string>,
   ): string {
-    bindings = bindings || {};
+    bindings = bindings ?? {};
     const componentBindings = getComponentBindings(this._injector, component);
 
     const attrs: string[] = [];
@@ -165,6 +158,15 @@ export class TemplateFactoryProvider {
     const kebobName = componentElementName(component);
 
     return `<${kebobName} ${attrs.join(" ")}></${kebobName}>`;
+  }
+
+  /** @internal */
+  _getTemplateRequest(): ng.TemplateRequestService {
+    if (!this._templateRequest) {
+      throw new Error("$templateRequest is not available");
+    }
+
+    return this._templateRequest;
   }
 }
 
@@ -184,21 +186,23 @@ function componentAttributeTemplate(
     return `${attrName}='${existingAttr}'`;
   }
 
-  const resolveName = bindings[name] || name;
+  const boundName = bindings[name];
+
+  const resolveName = boundName ? boundName : name;
 
   if (type === "@") return `${attrName}='{{$resolve.${resolveName}}}'`;
 
   if (type === "&") {
     const res = context.getResolvable(resolveName);
 
-    const fn = res && res.data;
+    const fn = res?.data;
 
     const args =
       fn && (isFunction(fn) || isArray(fn))
-        ? (annotate(fn as RouterInjectable) as string[])
+        ? annotate(fn as RouterInjectable)
         : [];
 
-    const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
+    const arrayIdxStr = isArray(fn) ? `[${String(fn.length - 1)}]` : "";
 
     return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
   }
@@ -217,7 +221,7 @@ function getComponentBindings(
     | ng.Directive[]
     | undefined;
 
-  if (!cmpDefs || !cmpDefs.length) {
+  if (!cmpDefs?.length) {
     throw new Error(`Unable to find component named '${name}'`);
   }
 
@@ -242,14 +246,14 @@ function getBindings(def: ng.Directive): BindingTuple[] {
     isObject(def.scope) &&
     !keys(def.scope).length
   ) {
-    return scopeBindings(componentBindings as Record<string, string>);
+    return scopeBindings(componentBindings);
   }
 
   return [];
 }
 
 function scopeBindings(bindingsObj: Record<string, string>): BindingTuple[] {
-  const bindingKeys = keys(bindingsObj || {});
+  const bindingKeys = keys(bindingsObj);
 
   const bindings: BindingTuple[] = [];
 
@@ -257,7 +261,7 @@ function scopeBindings(bindingsObj: Record<string, string>): BindingTuple[] {
     const match = BINDING_MATCH.exec(bindingsObj[key] || "");
 
     if (match) {
-      bindings.push({ name: match[2] || key, type: match[1] });
+      bindings.push({ name: match[2] ? match[2] : key, type: match[1] });
     }
   });
 

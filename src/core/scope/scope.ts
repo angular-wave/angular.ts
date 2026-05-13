@@ -59,50 +59,50 @@ interface Listener {
   _watchLiteralInput?: boolean;
 }
 
-type ForeignListenerRef = {
+interface ForeignListenerRef {
   _handler: Scope;
   _key: string;
   _id: number;
-};
+}
 
 type ForeignListenerHashIndex = Map<string, Map<unknown, Listener[]>>;
 
 type ListenerIndex = Map<string, Map<number, number>>;
 
-type ListenerStats = {
+interface ListenerStats {
   _nestedCandidateCount: number;
-};
+}
 
-type WatcherRef = {
+interface WatcherRef {
   _key: string;
   _id: number;
-};
+}
 
 type ListenerScheduleFilter = (listeners: Listener[]) => Listener[];
 
-type ScheduledListenerTask = {
+interface ScheduledListenerTask {
   _kind: "listener";
   _listeners: Listener[];
   _target: Scope | ScopeProxy | undefined;
   _filter?: ListenerScheduleFilter;
-};
+}
 
-type ScheduledCallbackTask = {
+interface ScheduledCallbackTask {
   _kind: "callback";
   _callback: () => void;
-};
+}
 
 type ScheduledTask = ScheduledListenerTask | ScheduledCallbackTask;
 
-type ListenerSchedulerState = {
+interface ListenerSchedulerState {
   _queue: ScheduledTask[];
   _index: number;
   _queued: boolean;
   _flushing: boolean;
   _flushTask: () => void;
-};
+}
 
-export type ArrayMutationMeta = {
+export interface ArrayMutationMeta {
   _version: number;
   _kind: "splice" | "reorder" | "swap";
   _index: number;
@@ -114,14 +114,14 @@ export type ArrayMutationMeta = {
   _tailDeletes: boolean;
   _swapFromIndex: number;
   _swapToIndex: number;
-};
+}
 
-type ArraySwapCandidate = {
+interface ArraySwapCandidate {
   _index: number;
   _oldValue: unknown;
   _newValue: unknown;
   _length: number;
-};
+}
 
 export interface ScopeEvent {
   targetScope: typeof Proxy<ng.Scope>;
@@ -164,7 +164,7 @@ let $parse: ng.ParseService;
 let $exceptionHandler: ng.ExceptionHandlerService;
 
 /** @internal */
-export const $postUpdateQueue: Array<() => void> = [];
+export const $postUpdateQueue: (() => void)[] = [];
 
 const arrayMutationMeta = new WeakMap<object, ArrayMutationMeta>();
 
@@ -387,8 +387,7 @@ function trackArraySwapMutation(
   const candidate = arraySwapCandidates.get(proxy as unknown as object);
 
   if (
-    candidate &&
-    candidate._length === currentLength &&
+    candidate?._length === currentLength &&
     candidate._index !== index &&
     candidate._oldValue === normalizedNewValue &&
     candidate._newValue === normalizedOldValue
@@ -614,7 +613,7 @@ function pushUniqueListenerKey(
 function registerListenerKeys(
   scope: Scope,
   listener: Listener,
-  watchKeys: Array<string | undefined>,
+  watchKeys: (string | undefined)[],
   schedule = false,
 ): void {
   for (let i = 0, l = watchKeys.length; i < l; i++) {
@@ -630,7 +629,7 @@ function registerListenerKeys(
 function deregisterListenerKeys(
   scope: Scope,
   listenerId: number,
-  watchKeys: Array<string | undefined>,
+  watchKeys: (string | undefined)[],
 ): void {
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
@@ -857,11 +856,11 @@ function unwrapScopeValue(value: any): any {
   return isProxy(value) ? value.$target : value;
 }
 
-type AssignedScopeValue = {
+interface AssignedScopeValue {
   _rawValue: any;
   _storedValue: any;
   _isProxy: boolean;
-};
+}
 
 function getAssignedScopeValue(value: any): AssignedScopeValue {
   const rawValue = unwrapScopeValue(value);
@@ -1239,7 +1238,7 @@ export class Scope {
     }
 
     if (isProxy(value)) {
-      const scopeValue = value as ScopeProxy;
+      const scopeValue = value;
 
       if (this._children.includes(scopeValue)) {
         if (scopeValue.$handler._destroyed) return;
@@ -1366,7 +1365,7 @@ export class Scope {
       return true;
     }
 
-    if (oldValue && oldValue[isProxySymbol]) {
+    if (oldValue?.[isProxySymbol]) {
       if (isArray(rawValue)) {
         const isProxyRebind = valueIsProxy;
 
@@ -1485,7 +1484,7 @@ export class Scope {
 
           const v = tgt[k];
 
-          if (v && v[isProxySymbol]) {
+          if (v?.[isProxySymbol]) {
             called = true;
           }
         }
@@ -1677,7 +1676,7 @@ export class Scope {
         if (
           isObject(target[property]) &&
           (isArray(target[property])
-            ? this._hasObjectMutationWatchers(String(property))
+            ? this._hasObjectMutationWatchers(property)
             : isUndefined(oldValue))
         ) {
           const childObjectListenerTarget = getObjectListenerTarget(
@@ -1725,7 +1724,7 @@ export class Scope {
 
         if (isDefined(targetHashKey)) {
           const hashedPropListeners = this._watchersByHash
-            .get(String(property))
+            .get(property)
             ?.get(targetHashKey);
 
           if (hashedPropListeners) {
@@ -1830,9 +1829,7 @@ export class Scope {
 
           if (isDefined(hashKey)) {
             scheduled =
-              this._foreignListenersByHash
-                .get(String(property))
-                ?.get(hashKey) ?? [];
+              this._foreignListenersByHash.get(property)?.get(hashKey) ?? [];
           }
 
           if (scheduled.length > 0) {
@@ -2054,7 +2051,7 @@ export class Scope {
     }
 
     // Currently deletes $model
-    if (target[property] && target[property][isProxySymbol]) {
+    if (target[property]?.[isProxySymbol]) {
       target[property] = undefined;
 
       const listeners = this._watchers.get(String(property));
@@ -2296,9 +2293,7 @@ export class Scope {
     listeners: Listener[],
     filterOrTarget?: ListenerScheduleFilter | Scope | ScopeProxy,
   ): void {
-    const filter = isFunction(filterOrTarget)
-      ? (filterOrTarget as ListenerScheduleFilter)
-      : undefined;
+    const filter = isFunction(filterOrTarget) ? filterOrTarget : undefined;
 
     const target = filter ? this.$target : (filterOrTarget ?? this.$target);
 
@@ -2703,10 +2698,7 @@ export class Scope {
       child = createObject(this.$target);
     }
 
-    const proxy = new Proxy(
-      child,
-      new Scope(this) as ProxyHandler<ng.Scope>,
-    ) as ng.Scope;
+    const proxy = new Proxy(child, new Scope(this) as ProxyHandler<ng.Scope>);
 
     this._children.push(proxy);
     this._childIndices.set(
@@ -3280,7 +3272,7 @@ export class Scope {
         try {
           const cb = listeners[i];
 
-          cb.apply(null, listenerArgs);
+          cb(...listenerArgs);
 
           const currentLength = listeners.length;
 
@@ -3335,10 +3327,8 @@ export class Scope {
 
   /** Queues a callback to run after the current listener batch completes. */
   $postUpdate(fn: () => void): void {
-    const owner = this;
-
     $postUpdateQueue.push(() => {
-      if (owner._destroyed) return;
+      if (this._destroyed) return;
       fn();
     });
   }

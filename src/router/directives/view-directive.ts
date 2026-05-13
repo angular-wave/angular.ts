@@ -39,11 +39,11 @@ import {
   type ViewControllerInstance,
 } from "./view-controller-hooks.ts";
 
-type PromiseResolvers<T> = {
+interface PromiseResolvers<T> {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
   reject: (reason?: unknown) => void;
-};
+}
 
 function getFirstElementFromClone(
   clone: Node | Node[] | NodeList | DocumentFragment | null | undefined,
@@ -91,21 +91,21 @@ function getRootNodesFromClone(
     : [clone];
 }
 
-type NgViewAnimData = {
+interface NgViewAnimData {
   $animEnter: Promise<void>;
   $animLeave: Promise<void>;
   $$animLeave: PromiseResolvers<void>;
-};
+}
 
-type NgViewData = {
+interface NgViewData {
   $cfg?: ViewConfig;
   $ngView: ActiveNgView;
-};
+}
 
-type ActiveNgViewRootData = {
+interface ActiveNgViewRootData {
   $cfg: { _viewDecl: { _context: ViewContext } };
   $ngView: Partial<ActiveNgView>;
-};
+}
 
 function withResolvers<T>(): PromiseResolvers<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -210,7 +210,7 @@ export function ViewDirective(
       _tAttrs: ng.Attributes,
       $transclude?: ng.TranscludeFn,
     ) {
-      const transclude = $transclude as ng.TranscludeFn;
+      const transclude = $transclude!;
 
       return function (
         scope: ng.Scope,
@@ -224,11 +224,8 @@ export function ViewDirective(
               | ActiveNgViewRootData
               | undefined) || rootData,
           name =
-            (
-              $interpolate(
-                attrs.ngView || attrs.name || "",
-              ) as ng.InterpolationFunction
-            )(scope) || "$default";
+            $interpolate(attrs.ngView || attrs.name || "")!(scope) ||
+            "$default";
 
         const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 
@@ -254,9 +251,7 @@ export function ViewDirective(
           _configUpdated: configUpdatedCallback,
           get _creationContext(): ViewContext {
             // Inherit the parent view context for nested ng-view elements.
-            const fromParentTag = inherited.$ngView._creationContext as
-              | ViewContext
-              | undefined;
+            const fromParentTag = inherited.$ngView._creationContext;
 
             return (
               inherited.$cfg._viewDecl._context ||
@@ -386,7 +381,7 @@ export function ViewDirective(
            *
            * @param event Event object.
            */
-          currentScope!.$emit("$viewContentLoaded", config || viewConfig);
+          currentScope.$emit("$viewContentLoaded", config || viewConfig);
           onloadFn?.(currentScope);
         }
       };
@@ -440,11 +435,7 @@ export function ViewDirectiveFill(
           cfg._path && new ResolveContext(cfg._path, $injector);
 
         $element.innerHTML = data.$cfg
-          ? getViewTemplate(
-              data.$cfg,
-              $element,
-              resolveCtx as ResolveContext,
-            ) || initial
+          ? getViewTemplate(data.$cfg, $element, resolveCtx!) || initial
           : initial;
         const link = $compile(
           ($element as HTMLIFrameElement).contentDocument ||
@@ -528,7 +519,9 @@ export function ViewDirectiveFill(
               return;
             }
 
-            queueMicrotask(() => registerComponentCallbacks(attempt + 1));
+            queueMicrotask(() => {
+              registerComponentCallbacks(attempt + 1);
+            });
           };
 
           registerComponentCallbacks();

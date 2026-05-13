@@ -4,6 +4,7 @@ import {
   isDefined,
   isNull,
   isNullOrUndefined,
+  isString,
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
@@ -12,17 +13,15 @@ import type { Attributes } from "../../core/compile/attributes.ts";
 /** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {
   return {
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attr: Attributes & Record<string, string>,
-    ): void {
+    link(scope: ng.Scope, element: HTMLElement, attr: Attributes): void {
+      if (!isString(attr.ngBind)) return;
+
       scope.$watch(
         attr.ngBind,
-        (value: any) => {
+        (value: unknown) => {
           const text = stringify(deProxy(value));
 
-          element.textContent = isNullOrUndefined(text) ? "" : String(text);
+          element.textContent = isString(text) ? text : "";
         },
         isDefined(attr.lazy),
       );
@@ -46,17 +45,21 @@ ngBindHtmlDirective.$inject = [_parse];
 export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
-    compile(_tElement: Element, tAttrs: Attributes & Record<string, string>) {
-      $parse(tAttrs.ngBindHtml); // checks for interpolation errors
+    compile(_tElement: Element, tAttrs: Attributes) {
+      const expression: unknown = tAttrs.ngBindHtml;
+
+      if (!isString(expression)) return () => undefined;
+
+      $parse(expression); // checks for interpolation errors
 
       return (
         /** Watches the expression and writes the resulting HTML into the element. */
         (scope: ng.Scope, element: HTMLElement): void => {
-          scope.$watch(tAttrs.ngBindHtml, (val: any) => {
-            if (isUndefined(val) || isNull(val)) {
-              val = "";
-            }
-            element.innerHTML = val;
+          scope.$watch(expression, (val: unknown) => {
+            const html =
+              isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
+
+            element.innerHTML = isString(html) ? html : "";
           });
         }
       );

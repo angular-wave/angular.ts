@@ -47,11 +47,21 @@ export function ngTranscludeDirective(
         if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
           $attrs.ngTransclude = "";
         }
-        const slotName = $attrs.ngTransclude || $attrs.ngTranscludeSlot;
+        const transcludeName: unknown = $attrs.ngTransclude;
+
+        const transcludeSlot: unknown = $attrs.ngTranscludeSlot;
+
+        const slotNameValue =
+          typeof transcludeName === "string" && transcludeName.length > 0
+            ? transcludeName
+            : transcludeSlot;
+
+        const slotName =
+          typeof slotNameValue === "string" ? slotNameValue : undefined;
 
         $transclude(ngTranscludeCloneAttachFn, null, slotName);
 
-        if (slotName && !$transclude.isSlotFilled?.(slotName)) {
+        if (slotName && $transclude.isSlotFilled?.(slotName) === false) {
           useFallbackContent();
         }
 
@@ -70,9 +80,8 @@ export function ngTranscludeDirective(
 
             if (
               transcludedScope &&
-              lastNode &&
               "addEventListener" in lastNode &&
-              isFunction(lastNode.addEventListener)
+              isFunction(lastNode.addEventListener.bind(lastNode))
             ) {
               lastNode.addEventListener("$destroy", destroyScope, {
                 once: true,
@@ -90,7 +99,9 @@ export function ngTranscludeDirective(
 
         function useFallbackContent() {
           fallbackLinkFn($scope, ((clone?: TranscludedNodes) => {
-            normalizeNodes(clone).forEach((node) => $element.append(node));
+            normalizeNodes(clone).forEach((node) => {
+              $element.append(node);
+            });
           }) as CloneAttachFn);
         }
 

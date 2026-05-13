@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-types types docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
+.PHONY: build build-ts check test test-types types docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps lint lint-check lint-fix
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -56,9 +56,16 @@ format:
 	@npx prettier ./ --write --cache --log-level=silent
 	
 lint:
+	@$(MAKE) lint-check
+
+lint-check: ensure-deps
+	@npx eslint ./src --max-warnings=0
+
+lint-fix: ensure-deps
 	@npx eslint ./src --fix
 
 check: ensure-deps
+	@$(MAKE) lint-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types

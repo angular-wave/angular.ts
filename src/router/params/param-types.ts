@@ -80,9 +80,8 @@ export function createDefaultParamTypes(): ParamTypeMap {
       is(val: unknown) {
         return (
           !isNullOrUndefined(val) &&
-          ((this as unknown as ParamTypeDefinition).decode?.(
-            val.toString(),
-          ) as unknown) === val
+          (this as unknown as ParamTypeDefinition).decode?.(val.toString()) ===
+            val
         );
       },
       pattern: /-?\d+/,

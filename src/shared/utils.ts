@@ -10,7 +10,7 @@ export const isProxySymbol = Symbol("isProxy");
  * Returns whether a value is one of this scope proxy objects.
  */
 export function isProxy(value: any): value is ng.Scope {
-  return !!(value && value[isProxySymbol]);
+  return !!value?.[isProxySymbol];
 }
 
 /**
@@ -65,7 +65,7 @@ export function isArrayLike(obj: any): boolean {
   //   via the forEach method when constructing the JQLite object in the first place
   if (isArray(obj) || isInstanceOf(obj, Array) || isString(obj)) return true;
 
-  const arrayLikeObj = obj as ArrayLike<any> & Object & Partial<NodeList>;
+  const arrayLikeObj = obj as ArrayLike<any> & object & Partial<NodeList>;
 
   const len = arrayLikeObj.length;
 
@@ -105,9 +105,9 @@ export function isArray<T = any>(array: any): array is T[] {
   return Array.isArray(array);
 }
 
-export type InstanceConstructor<T = any> = {
+export interface InstanceConstructor<T = any> {
   prototype: T;
-};
+}
 
 /**
  * Returns whether a value is an instance of the provided constructor.
@@ -117,7 +117,7 @@ export function isInstanceOf<T>(
   type: InstanceConstructor<T>,
 ): val is T;
 export function isInstanceOf(val: any, type: any): boolean {
-  return val instanceof (type as any);
+  return val instanceof type;
 }
 
 /**
@@ -227,9 +227,7 @@ export function isError(value: any): value is Error {
  * @param value Reference to check.
  * @returns True if `value` is a `Function`.
  */
-export function isFunction<T extends Function = Function>(
-  value: any,
-): value is T {
+export function isFunction(value: any): value is Function {
   return typeof value === "function";
 }
 
@@ -257,7 +255,7 @@ export function isWindow(obj: any): obj is Window {
  * Returns whether a value looks like an Angular scope object.
  */
 export function isScope(obj: any): boolean {
-  return obj && obj.$watch;
+  return obj?.$watch;
 }
 
 /**
@@ -340,7 +338,7 @@ function getGeneratedHashKey(obj: any): string | undefined {
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(obj: { [x: string]: any }, hashkey: any): void {
+export function setHashKey(obj: Record<string, any>, hashkey: any): void {
   const target = getHashKeyTarget(obj);
 
   if (!target) return;
@@ -358,7 +356,7 @@ export function setHashKey(obj: { [x: string]: any }, hashkey: any): void {
 export function getHashKey(obj: any): string | undefined {
   const target = deProxy(obj);
 
-  const key = target && target.$hashKey;
+  const key = target?.$hashKey;
 
   if (key) {
     return isFunction(key) ? key.call(target) : key;
@@ -381,7 +379,7 @@ export function getHashKey(obj: any): string | undefined {
  */
 export function baseExtend(
   dst: Record<string, any>,
-  objs: Array<Record<string, any>>,
+  objs: Record<string, any>[],
   deep = false,
 ): Record<string, any> {
   const hasInternalKey = getGeneratedHashKey(dst);
@@ -638,7 +636,7 @@ export function equals(o1: any, o2: any): boolean {
   for (const key in o1) {
     if (!hasOwn(o1, key)) continue;
 
-    if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
+    if (key.startsWith("$") || isFunction(o1[key])) continue;
 
     if (!equals(o1[key], o2[key])) return false;
     keySet[key] = true;
@@ -649,7 +647,7 @@ export function equals(o1: any, o2: any): boolean {
 
     if (
       !(key in keySet) &&
-      key.charAt(0) !== "$" &&
+      !key.startsWith("$") &&
       isDefined(o2[key]) &&
       !isFunction(o2[key])
     ) {
@@ -675,30 +673,26 @@ export function assertNotHasOwnProperty(name: string, context: string): void {
 /**
  * Converts a value to a display string using AngularTS serialization rules.
  */
-export function stringify(value: unknown): string | unknown {
+export function stringify(value: unknown): string {
   if (isNullOrUndefined(value)) {
     return "";
   }
 
-  const type = typeof value;
-
-  if (type === "string") {
+  if (typeof value === "string") {
     return value;
   }
 
-  if (type === "number") {
+  if (typeof value === "number") {
     return `${value}`;
   }
 
-  const objectValue = value as Object;
+  const objectValue = value as object;
 
   if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-    value = objectValue.toString();
-  } else {
-    value = toJson(value);
+    return objectValue.toString();
   }
 
-  return value;
+  return toJson(value)!;
 }
 
 /**
@@ -729,20 +723,16 @@ export function sliceArgs(args: IArguments | any[], startIndex?: number) {
  * distinguished from [function currying](http://en.wikipedia.org/wiki/Currying#Contrast_with_partial_function_application).
  *
  */
-export function bind(context: any, fn: any) {
-  const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
-
+export function bind(context: any, fn: any, ...curryArgs: any[]) {
   if (isFunction(fn) && !isInstanceOf(fn, RegExp)) {
     return curryArgs.length
-      ? function () {
-          return arguments.length
-            ? fn.apply(context, concat(curryArgs, arguments, 0))
-            : fn.apply(context, curryArgs);
+      ? function (...args: any[]) {
+          return args.length
+            ? fn.call(context, ...curryArgs, ...args)
+            : fn.call(context, ...curryArgs);
         }
-      : function () {
-          return arguments.length
-            ? fn.apply(context, arguments)
-            : fn.call(context);
+      : function (...args: any[]) {
+          return args.length ? fn.call(context, ...args) : fn.call(context);
         };
   }
 
@@ -756,7 +746,7 @@ export function bind(context: any, fn: any) {
 function toJsonReplacer(key: string, value: any): any {
   let val = value;
 
-  if (isString(key) && key.charAt(0) === "$" && key.charAt(1) === "$") {
+  if (isString(key) && key.startsWith("$") && key.charAt(1) === "$") {
     val = undefined;
   } else if (isWindow(value)) {
     val = "$WINDOW";
@@ -795,7 +785,7 @@ export function fromJson(json: any): any {
  * Parses an escaped URL query string into key-value pairs.
  */
 export function parseKeyValue(value: string) {
-  const obj: Record<string, boolean | string | undefined | Array<any>> = {};
+  const obj: Record<string, boolean | string | undefined | any[]> = {};
 
   const res = value || "";
 
@@ -830,7 +820,7 @@ export function parseKeyValue(value: string) {
         if (!hasOwn(obj, decodedKey)) {
           obj[decodedKey] = decodedVal;
         } else if (isArray(obj[decodedKey])) {
-          (obj[decodedKey] as Array<any>).push(decodedVal);
+          obj[decodedKey].push(decodedVal);
         } else {
           obj[decodedKey] = [obj[decodedKey], decodedVal];
         }
@@ -845,7 +835,7 @@ export function parseKeyValue(value: string) {
  * Serializes an object or array-like value into a query-string fragment.
  */
 export function toKeyValue(
-  obj: string | { [s: string]: any } | ArrayLike<any> | null,
+  obj: string | Record<string, any> | ArrayLike<any> | null,
 ): string {
   const parts: string[] = [];
 
@@ -1126,7 +1116,7 @@ export function toDebugString(obj: any): string {
       const replace = toJsonReplacer(key, val);
 
       if (isObject(replace)) {
-        if (seen.indexOf(replace) >= 0) return "...";
+        if (seen.includes(replace)) return "...";
 
         seen.push(replace);
       }
@@ -1253,7 +1243,7 @@ function hasCustomOrDataAttribute(node: Node, attr: string): boolean {
 /**
  * Returns whether an object has no own enumerable keys.
  */
-export function isObjectEmpty(obj: Object | null | undefined): boolean {
+export function isObjectEmpty(obj: object | null | undefined): boolean {
   if (!obj) return true;
 
   return !keys(obj).length;
@@ -1275,6 +1265,16 @@ export function isObjectEmpty(obj: Object | null | undefined): boolean {
  */
 export function hasOwn(obj: any, key: string | number | symbol): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * Removes a property from an object, equivalent to delete target[propertyKey], except it won't throw if target[propertyKey] is non-configurable.
+ */
+export function deleteProperty(
+  obj: object,
+  key: string | number | symbol,
+): boolean {
+  return Reflect.deleteProperty(obj, key);
 }
 
 /**
@@ -1389,7 +1389,7 @@ export function wait(timeout = 0) {
  * // returns false
  */
 export function startsWith(str: string, search: string): boolean {
-  return str.slice(0, search.length) === search;
+  return str.startsWith(search);
 }
 
 /**

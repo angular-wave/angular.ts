@@ -52,7 +52,7 @@ interface BaseNode {
   /** @internal */
   _name?: string;
   /** @internal */
-  _value?: any;
+  _value?: unknown;
   /** @internal */
   _elements?: ASTNode[];
   /** @internal */
@@ -62,7 +62,7 @@ interface BaseNode {
   /** @internal */
   _key?: ASTNode;
   /** @internal */
-  _input?: any;
+  _input?: unknown;
   /** @internal */
   _watchId?: string;
 }
@@ -145,7 +145,7 @@ export interface ExpressionNode extends BaseNode {
 export interface LiteralNode extends BaseNode {
   /** The value of a literal node, e.g., number, string, boolean. */
   /** @internal */
-  _value?: any;
+  _value?: unknown;
 
   /** The name of an identifier node. */
   /** @internal */

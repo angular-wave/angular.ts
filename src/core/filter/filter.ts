@@ -25,7 +25,7 @@ export class FilterProvider {
     ];
   }
 
-  register(name: string, factory: FilterFactory): FilterProvider {
+  register(name: string, factory: FilterFactory): this {
     validateIsString(name, "name");
     validate(isFunction, factory, "factory");
     this._$provide.factory(name + SUFFIX, factory);

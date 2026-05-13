@@ -3,7 +3,6 @@ import {
   assign,
   hasOwn,
   isFunction,
-  isInstanceOf,
   isObject,
   keys,
 } from "../../shared/utils.ts";
@@ -92,7 +91,7 @@ export class StateObject {
 
   /** @returns {StateObject} */
   /** @internal */
-  _state(): StateObject {
+  _state(): this {
     return this;
   }
 
@@ -108,7 +107,7 @@ export class StateObject {
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
   is(ref: StateObject | StateDeclaration | string): boolean {
-    return this === ref || this.self === ref || this.fqn() === ref;
+    return this === ref || this.self === ref || this.pathName() === ref;
   }
 
   /**
@@ -116,11 +115,14 @@ export class StateObject {
    * @returns {string} Returns a dot-separated name of the state.
    */
   fqn(): string {
-    if (!this.parent || !isInstanceOf(this.parent, this.constructor))
-      return this.name;
-    const name = this.parent.fqn();
+    return this.pathName();
+  }
 
-    return name ? `${name}.${this.name}` : this.name;
+  private pathName(): string {
+    return (this.path ?? [])
+      .map((state) => state.name)
+      .filter(Boolean)
+      .join(".");
   }
 
   /**
@@ -129,7 +131,7 @@ export class StateObject {
    * @returns {StateObject} The root of this state's tree.
    */
   root(): StateObject {
-    return (this.parent && this.parent.root()) || this;
+    return this.parent?.root() ?? this;
   }
 
   /**
@@ -147,9 +149,9 @@ export class StateObject {
 
     const matchingKeys = opts?.matchingKeys;
 
-    const inherited =
-      (inherit && this.parent && this.parent.parameters({ matchingKeys })) ||
-      [];
+    const inherited = inherit
+      ? (this.parent?.parameters({ matchingKeys }) ?? [])
+      : [];
 
     const result = inherited.slice();
 
@@ -177,7 +179,7 @@ export class StateObject {
    * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
   parameter(id: string, opts?: StateParamOptions): Param | undefined {
-    const urlParam = this._url && this._url._parameter(id, opts);
+    const urlParam = this._url?._parameter(id, opts);
 
     if (urlParam) return urlParam;
 
@@ -195,7 +197,7 @@ export class StateObject {
   }
 
   toString(): string {
-    return this.fqn();
+    return this.pathName();
   }
 }
 

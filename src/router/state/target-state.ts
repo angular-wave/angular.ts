@@ -78,7 +78,7 @@ export class TargetState {
 
   /** The name of the state this object targets */
   name(): StateOrName {
-    return (this._definition && this._definition.name) || this._identifier;
+    return this._definition?.name || this._identifier;
   }
 
   /** The identifier used when creating this TargetState */
@@ -98,7 +98,7 @@ export class TargetState {
 
   /** The internal state declaration (if it was found) */
   state(): StateDeclaration | undefined {
-    return this._definition && this._definition.self;
+    return this._definition?.self;
   }
 
   /** The target options */
@@ -108,7 +108,7 @@ export class TargetState {
 
   /** True if the target state was found */
   exists(): boolean {
-    return !!(this._definition && this._definition.self);
+    return !!this._definition?.self;
   }
 
   /** True if the object is valid */

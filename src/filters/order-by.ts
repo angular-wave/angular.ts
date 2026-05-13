@@ -12,20 +12,24 @@ import {
 
 const orderByError = createErrorFactory("orderBy");
 
-type PredicateValue = { value: any; type: string; index: number };
+interface PredicateValue {
+  value: any;
+  type: string;
+  index: number;
+}
 
-type ComparisonObject = {
+interface ComparisonObject {
   value: any;
   tieBreaker: PredicateValue;
   predicateValues: PredicateValue[];
-};
+}
 
 type SortPredicate = string | ((value: any) => any);
 
-type PredicateDescriptor = {
+interface PredicateDescriptor {
   get: (value: any) => any;
   descending: number;
-};
+}
 
 orderByFilter.$inject = [_parse];
 
@@ -47,7 +51,7 @@ export function orderByFilter($parse: ng.ParseService) {
    * @throws {Error} Throws if `array` is not array-like.
    */
   return function (
-    array: Array<any> | ArrayLike<any> | Function | null | undefined,
+    array: any[] | ArrayLike<any> | Function | null | undefined,
     sortPredicate?: SortPredicate | SortPredicate[],
     reverseOrder?: boolean,
     compareFn?: (left: PredicateValue, right: PredicateValue) => number,
@@ -164,8 +168,8 @@ export function orderByFilter($parse: ng.ParseService) {
       if (isFunction(predicate)) {
         get = predicate;
       } else if (isString(predicate)) {
-        if (predicate.charAt(0) === "+" || predicate.charAt(0) === "-") {
-          descending = predicate.charAt(0) === "-" ? -1 : 1;
+        if (predicate.startsWith("+") || predicate.startsWith("-")) {
+          descending = predicate.startsWith("-") ? -1 : 1;
           predicate = predicate.substring(1);
         }
 

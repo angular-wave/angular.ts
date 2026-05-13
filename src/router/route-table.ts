@@ -7,18 +7,18 @@ import type { StateObject } from "./state/state-object.ts";
 const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
 
 /** @internal */
-export type RouteMatch = {
+export interface RouteMatch {
   match: RawParams;
   state: StateObject;
   urlMatcher: UrlMatcher;
   weight: number;
-};
+}
 
 function stateRouteMatchPriority(
   urlMatcher: UrlMatcher,
   params: RawParams,
 ): number {
-  const path = urlMatcher._cache._path || [urlMatcher];
+  const path = urlMatcher._cache._path ?? [urlMatcher];
 
   let optionalCount = 0;
 

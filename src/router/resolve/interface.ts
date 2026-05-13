@@ -11,9 +11,7 @@ export type ResolvableToken = unknown;
 
 export type ResolvableData = unknown;
 
-export type ResolveFn = (
-  ...dependencies: ResolvableData[]
-) => ResolvableData | Promise<ResolvableData>;
+export type ResolveFn = (...dependencies: ResolvableData[]) => ResolvableData;
 
 /**
  * A plain object used to describe a [[Resolvable]]

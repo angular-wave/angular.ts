@@ -41,7 +41,7 @@ type ValidatingNgModelController = ng.NgModelController & {
  */
 export const requiredDirective: [
   string,
-  ($parse: ng.ParseService) => ng.Directive<any>,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
   /** Creates the `required` validator directive. */
@@ -123,7 +123,7 @@ export const requiredDirective: [
  */
 export const patternDirective: [
   string,
-  ($parse: ng.ParseService) => ng.Directive<any>,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
   /** Creates the `pattern` validator directive. */
@@ -176,10 +176,7 @@ export const patternDirective: [
 
           regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
 
-          if (
-            (oldRegexp && oldRegexp.toString()) !==
-            (regexp && regexp.toString())
-          ) {
+          if (oldRegexp?.toString() !== regexp?.toString()) {
             ctrl.$validate();
           }
         });
@@ -229,7 +226,7 @@ export const patternDirective: [
  */
 export const maxlengthDirective: [
   string,
-  ($parse: ng.ParseService) => ng.Directive<any>,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
   /** Creates the `maxlength` validator directive. */
@@ -306,7 +303,7 @@ export const maxlengthDirective: [
  */
 export const minlengthDirective: [
   string,
-  ($parse: ng.ParseService) => ng.Directive<any>,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
   /** Creates the `minlength` validator directive. */ (
@@ -355,7 +352,7 @@ function parsePatternAttr(
   let regex: RegExp | string = input;
 
   if (isString(regex)) {
-    const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
+    const match = /^\/(.*)\/([gimsuy]*)$/.exec(regex);
 
     regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
   }

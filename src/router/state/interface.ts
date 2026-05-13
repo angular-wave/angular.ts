@@ -20,7 +20,10 @@ export interface TransitionPromise extends Promise<StateTransitionResult> {
   transition: Transition;
 }
 
-export type LazyStateLoadResult = StateDeclaration | StateDeclaration[] | void;
+export type LazyStateLoadResult =
+  | StateDeclaration
+  | StateDeclaration[]
+  | undefined;
 
 export type LazyStateLoader = (
   target: TargetState,
@@ -49,7 +52,7 @@ export type TemplateUrlFactory = (
  * }
  * ```
  */
-export type StateResolveObject = { [key: string]: RouterInjectable };
+export type StateResolveObject = Record<string, RouterInjectable>;
 
 /**
  * Array-style state resolves.
@@ -140,7 +143,7 @@ export interface ViewDeclarationCommon {
    * ```
    *
    */
-  bindings?: { [key: string]: string };
+  bindings?: Record<string, string>;
 
   /**
    * The view's controller function or name
@@ -242,7 +245,7 @@ export type RedirectToResult =
   | string
   | TargetState
   | { state?: string; params?: RawParams }
-  | void;
+  | undefined;
 
 /**
  * The StateDeclaration object is used to define a state or nested state.
@@ -501,7 +504,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * }
    * ```
    */
-  params?: { [key: string]: ParamDeclaration | unknown };
+  params?: Record<string, ParamDeclaration>;
 
   /**
    * An inherited property to store state data
@@ -770,7 +773,7 @@ export interface HrefOptions {
 /** @internal */
 export type StateDeclarationInput =
   | StateDeclaration
-  | { new (): StateDeclaration };
+  | (new () => StateDeclaration);
 
 /**
  * The signature for the callback function provided to [[StateRegistry.onStatesChanged]].

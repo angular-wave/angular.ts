@@ -1,7 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
 import { assign, isInstanceOf } from "../../shared/utils.ts";
-import type { TargetState } from "../state/target-state.ts";
-import type { Transition } from "./transition.ts";
 
 /**
  * Transition rejection categories used throughout the router pipeline.
@@ -16,28 +14,33 @@ export const RejectType = {
 
 export type RejectTypeValue = (typeof RejectType)[keyof typeof RejectType];
 
-export type TransitionRejectionDetail =
-  | Transition
-  | TargetState
-  | Error
-  | string
-  | unknown;
+export type TransitionRejectionDetail = unknown;
 
 let id = 0;
 
 function detailToString(data: TransitionRejectionDetail): string {
-  return data &&
-    typeof data === "object" &&
-    "toString" in data &&
-    data.toString !== Object.prototype.toString
-    ? String(data.toString())
-    : stringify(data);
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (data && typeof data === "object" && "toString" in data) {
+    const { toString } = data as { toString?: unknown };
+
+    if (
+      typeof toString === "function" &&
+      toString !== Object.prototype.toString
+    ) {
+      return String(Reflect.apply(toString, data, []));
+    }
+  }
+
+  return stringify(data);
 }
 
 /**
  * Normalized representation of a transition failure, abort, ignore, or redirect.
  */
-export class Rejection {
+export class Rejection extends Error {
   $id: number;
   type: RejectTypeValue;
   message: string;
@@ -49,6 +52,9 @@ export class Rejection {
     message: string,
     detail?: TransitionRejectionDetail,
   ) {
+    super(message);
+
+    this.name = "Rejection";
     this.$id = id++;
     this.type = type;
     this.message = message;
@@ -110,7 +116,9 @@ export class Rejection {
   }
 
   toString(): string {
-    return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
+    return `Transition Rejection($id: ${String(this.$id)} type: ${String(
+      this.type,
+    )}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
   }
 
   /**
@@ -118,7 +126,9 @@ export class Rejection {
    */
   /** @internal */
   _toPromise(): Promise<never> & { _transitionRejection: Rejection } {
-    const promise = Promise.reject(this);
+    const promise = Promise.resolve().then<never>(() => {
+      throw this;
+    });
 
     promise.catch(() => 0);
 

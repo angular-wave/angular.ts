@@ -17,7 +17,7 @@ export class StateMatcher {
   isRelative(stateName: string): boolean {
     stateName = stateName || "";
 
-    return stateName.indexOf(".") === 0 || stateName.indexOf("^") === 0;
+    return stateName.startsWith(".") || stateName.startsWith("^");
   }
 
   /**
@@ -26,7 +26,7 @@ export class StateMatcher {
    * @returns {StateObject | undefined}
    */
   find(
-    stateOrName: StateOrName,
+    stateOrName: StateOrName | undefined,
     base?: StateOrName,
     matchGlob = true,
   ): StateObject | undefined {
@@ -35,16 +35,14 @@ export class StateMatcher {
 
     let name = isStr ? stateOrName : stateOrName.name;
 
-    if (this.isRelative(name))
-      name = this.resolvePath(name, base as StateOrName);
-    const state = this._states[name];
+    if (this.isRelative(name)) name = this.resolvePath(name, base);
+    const state = this._states[name] as StateObject | undefined;
 
     if (
       state &&
-      (isStr ||
-        (!isStr && (state === stateOrName || state.self === stateOrName)))
+      (isStr || state === stateOrName || state.self === stateOrName)
     ) {
-      return state as StateObject;
+      return state;
     } else if (isStr && matchGlob) {
       const stateNames = keys(this._states);
 
@@ -55,9 +53,9 @@ export class StateMatcher {
       stateNames.forEach((stateName) => {
         const stateObj = this._states[stateName] as StateObject;
 
-        if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
+        if (stateObj._stateObjectCache.nameGlob?.matches(name)) {
           if (match) {
-            duplicateNames = duplicateNames || [match.name];
+            duplicateNames = duplicateNames ?? [match.name];
             duplicateNames.push(stateObj.name);
           } else {
             match = stateObj;
@@ -67,7 +65,7 @@ export class StateMatcher {
 
       if (duplicateNames) {
         throw new Error(
-          `stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames}`,
+          `stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames.join(", ")}`,
         );
       }
 
@@ -83,7 +81,7 @@ export class StateMatcher {
    * @param {StateOrName} base
    * @returns {string}
    */
-  resolvePath(name: string, base: StateOrName): string {
+  resolvePath(name: string, base: StateOrName | undefined): string {
     if (!base) throw new Error(`No reference point given for path '${name}'`);
     const baseState = this.find(base);
 
@@ -103,7 +101,7 @@ export class StateMatcher {
       if (splitName[i] === "^") {
         if (!current?.parent)
           throw new Error(
-            `Path '${name}' not valid for state '${baseState?.name}'`,
+            `Path '${name}' not valid for state '${baseState?.name ?? "unknown"}'`,
           );
         current = current.parent;
         continue;
@@ -113,7 +111,7 @@ export class StateMatcher {
     const relName = splitName.slice(i).join(".");
 
     return (
-      (current?.name || "") + (current?.name && relName ? "." : "") + relName
+      (current?.name ?? "") + (current?.name && relName ? "." : "") + relName
     );
   }
 }

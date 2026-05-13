@@ -1,15 +1,21 @@
 import { _attrs, _parse, _scope } from "../../injection-tokens.ts";
 import {
   assign,
-  entries,
+  deleteProperty,
   isDefined,
-  keys,
-  trim,
   isString,
+  keys,
 } from "../../shared/utils.ts";
 import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
+
+type ModelOptionValue =
+  | string
+  | boolean
+  | number
+  | Record<string, number>
+  | undefined;
 
 /**
  * Configuration object for ngModelOptions behavior.
@@ -21,7 +27,7 @@ const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
  * @property [updateOnDefault]
  */
 export type ModelOptionsConfig = NgModelOptions & {
-  [key: string]: any;
+  [key: string]: ModelOptionValue;
   updateOnDefault?: boolean;
   "*"?: "$inherit";
 };
@@ -77,9 +83,7 @@ export class ModelOptions {
     this._options = options;
   }
 
-  getOption(
-    name: string,
-  ): string | boolean | number | Record<string, number> | undefined {
+  getOption(name: string): ModelOptionValue {
     return this._options[name];
   }
 
@@ -88,7 +92,7 @@ export class ModelOptions {
 
     const mergedOptions = assign({}, options);
 
-    entries(mergedOptions).forEach(([key, option]) => {
+    for (const [key, option] of Object.entries(mergedOptions)) {
       if (option === "$inherit") {
         if (key === "*") {
           inheritAll = true;
@@ -101,18 +105,18 @@ export class ModelOptions {
         }
       } else if (key === "updateOn" && isString(option)) {
         mergedOptions.updateOnDefault = false;
-        mergedOptions[key] = trim(
-          option.replace(DEFAULT_REGEXP, () => {
+        mergedOptions[key] = option
+          .replace(DEFAULT_REGEXP, () => {
             mergedOptions.updateOnDefault = true;
 
             return " ";
-          }),
-        );
+          })
+          .trim();
       }
-    });
+    }
 
     if (inheritAll) {
-      delete mergedOptions["*"];
+      deleteProperty(mergedOptions, "*");
       defaults(mergedOptions, this._options);
     }
 
@@ -142,7 +146,10 @@ export function ngModelOptionsDirective(): ng.Directive {
 }
 
 // Shallow-copy missing defaults from `src` into `dst`.
-function defaults(dst: ModelOptionsConfig, src: Record<string, any>): void {
+function defaults(
+  dst: ModelOptionsConfig,
+  src: Record<string, ModelOptionValue>,
+): void {
   keys(src).forEach((key) => {
     if (!isDefined(dst[key])) {
       dst[key] = src[key];

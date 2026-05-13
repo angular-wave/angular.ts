@@ -13,7 +13,7 @@ describe("ngInit", () => {
 
   let $compile: any;
 
-  let $templateCache;
+  let $templateCache: any;
 
   let injector;
 
@@ -63,12 +63,36 @@ describe("ngInit", () => {
     expect($rootScope.a).toEqual(123);
   });
 
+  it("should initialize object literals used by ngModel and fallback interpolation", async () => {
+    element = document.createElement("body");
+    element.setAttribute("ng-init", "profile={name:'Jane Doe', email:''}");
+    element.innerHTML =
+      '<input ng-model="profile.name" />' +
+      "<div>Preview: {{ profile.name || 'Unnamed' }}</div>";
+
+    element = $compile(element)($rootScope);
+
+    await wait();
+
+    const input = element.querySelector("input") as HTMLInputElement;
+    const preview = element.querySelector("div") as HTMLDivElement;
+
+    expect($rootScope.profile).toEqual({ name: "Jane Doe", email: "" });
+    expect(input.value).toBe("Jane Doe");
+    expect(preview.textContent).toBe("Preview: Jane Doe");
+
+    $rootScope.profile.name = "";
+    await wait();
+
+    expect(preview.textContent).toBe("Preview: Unnamed");
+  });
+
   it("should be evaluated before ngInclude", (done) => {
     element = createElementFromHTML(
       '<div><div ng-include="template" ' +
         "ng-init=\"template='template2.tpl'\"></div></div>",
     );
-    window.angular.module("myModule", []).run(($templateCache) => {
+    window.angular.module("myModule", []).run(($templateCache: any) => {
       $templateCache.set("template1.tpl", "<span>1</span>");
       $templateCache.set("template2.tpl", "<span>2</span>");
     });

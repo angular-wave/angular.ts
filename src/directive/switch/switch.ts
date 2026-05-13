@@ -7,12 +7,12 @@ import { domInsert, removeElement } from "../../shared/dom.ts";
 import { values } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-type NgSwitchBlock = {
+interface NgSwitchBlock {
   /** @internal */
   _clone: Node;
   /** @internal */
   _comment: Comment;
-};
+}
 
 class NgSwitchController {
   /** @internal */
@@ -50,10 +50,10 @@ export function ngSwitchDirective(
 
       const selectedElements: NgSwitchBlock[] = [];
 
-      type LeaveAnimation = {
+      interface LeaveAnimation {
         element: Element;
         handle: ng.AnimationHandle;
-      };
+      }
 
       const previousLeaveAnimations = new Set<LeaveAnimation>();
 
@@ -94,7 +94,7 @@ export function ngSwitchDirective(
             previousLeaveAnimations.add(leaveAnimation);
 
             handle.done((response) => {
-              if (response !== false) {
+              if (response) {
                 previousLeaveAnimations.delete(leaveAnimation);
               }
             });

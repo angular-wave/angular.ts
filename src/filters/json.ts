@@ -4,7 +4,7 @@ import { isUndefined, toJson } from "../shared/utils.ts";
  * Serializes a value to JSON using AngularTS's `toJson` helper.
  */
 export function jsonFilter() {
-  return function (object: any, spacing?: number) {
+  return function (object: unknown, spacing?: number) {
     if (isUndefined(spacing)) {
       spacing = 2;
     }

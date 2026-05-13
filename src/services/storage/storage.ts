@@ -1,4 +1,4 @@
-import { assign } from "../../shared/utils.ts";
+import { assign, deleteProperty } from "../../shared/utils.ts";
 
 export interface StorageBackend {
   /** Read a stored serialized value. */
@@ -50,9 +50,9 @@ export function createPersistentProxy<T extends Record<PropertyKey, unknown>>(
     deserialize?: (value: string) => Partial<T>;
   } = {},
 ): T {
-  const serialize = options.serialize || JSON.stringify;
+  const serialize = options.serialize ?? JSON.stringify;
 
-  const deserialize = options.deserialize || JSON.parse;
+  const deserialize = options.deserialize ?? JSON.parse;
 
   // Restore saved state
   const saved = storage.getItem(key);
@@ -69,7 +69,7 @@ export function createPersistentProxy<T extends Record<PropertyKey, unknown>>(
       return true;
     },
     deleteProperty(obj, prop): boolean {
-      const deleted = delete obj[prop];
+      const deleted = deleteProperty(obj, prop);
 
       storage.setItem(key, serialize(obj));
 

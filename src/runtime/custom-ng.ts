@@ -16,15 +16,21 @@ import { ExceptionHandlerProvider } from "../services/exception/exception.ts";
 import type { Injectable } from "../interface.ts";
 import { keys } from "../shared/utils.ts";
 
+type ProviderFactory =
+  | (new (...args: never[]) => unknown)
+  | ((this: never, ...args: never[]) => unknown);
+
+type ServiceFactory = (...args: never[]) => unknown;
+
 export type DirectiveRegistration = Record<string, ng.DirectiveFactory>;
 
 export type DirectiveRegistrations =
   | DirectiveRegistration
   | DirectiveRegistration[];
 
-export type ProviderRegistration = Record<string, Function>;
+export type ProviderRegistration = Record<string, ProviderFactory>;
 
-export type ServiceRegistration = Record<string, Injectable<any>>;
+export type ServiceRegistration = Record<string, Injectable<ServiceFactory>>;
 
 export type FilterRegistration = Record<string, ng.FilterFactory>;
 

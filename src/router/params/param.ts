@@ -114,12 +114,11 @@ function getType(
 
   if (
     cfg.type &&
-    urlType &&
-    urlType.name === "string" &&
+    urlType?.name === "string" &&
     isString(cfg.type) &&
     paramTypes[cfg.type]
   )
-    return paramTypes[cfg.type] as ParamType;
+    return paramTypes[cfg.type]!;
 
   if (urlType) return urlType;
 
@@ -133,12 +132,10 @@ function getType(
             ? "query"
             : "string";
 
-    return paramTypes[type] as ParamType;
+    return paramTypes[type];
   }
 
-  return isInstanceOf(cfg.type, ParamType)
-    ? cfg.type
-    : (paramTypes[cfg.type as string] as ParamType);
+  return isInstanceOf(cfg.type, ParamType) ? cfg.type : paramTypes[cfg.type]!;
 }
 
 /**
@@ -264,7 +261,7 @@ export class Param {
     type = getType(config, type, location, id, urlConfig._paramTypes);
     const arrayMode = getArrayMode(id, location, config);
 
-    type = arrayMode ? type && type.$asArray(arrayMode) : type;
+    type = arrayMode ? type?.$asArray(arrayMode) : type;
     const isOptional =
       config.value !== undefined || location === DefType._SEARCH;
 
@@ -280,9 +277,7 @@ export class Param {
 
     const replace = getReplace(config, arrayMode, isOptional, squash);
 
-    const inherit = isDefined(config.inherit)
-      ? !!config.inherit
-      : !!type.inherit;
+    const inherit = isDefined(config.inherit) ? config.inherit : type.inherit;
 
     this.isOptional = isOptional;
     this.type = type;

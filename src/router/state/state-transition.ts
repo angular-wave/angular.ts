@@ -30,8 +30,12 @@ export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
  *
  * @internal
  */
-export function silentRejection<E = unknown>(error: E): Promise<never> {
-  return silenceUncaughtInPromise(Promise.reject(error));
+export function silentRejection(error: unknown): Promise<never> {
+  const promise = Promise.resolve().then<never>(() => {
+    throw error instanceof Error ? error : Rejection.errored(error);
+  });
+
+  return silenceUncaughtInPromise(promise);
 }
 
 /** @internal */
@@ -41,11 +45,14 @@ export function transitionToState(
   toParams: RawParams = {},
   options: TransitionOptions = {},
 ): TransitionPromise | Promise<StateTransitionResult> {
-  options = defaults(options, defaultTransOpts);
   const getCurrent = () => stateService._routerState._transition;
 
-  options = assign(options, { current: getCurrent });
-  const ref = stateService.target(to, toParams, options);
+  const transitionOptions = assign(
+    defaults(options, defaultTransOpts) as TransitionOptions,
+    { current: getCurrent },
+  ) as TransitionOptions;
+
+  const ref = stateService.target(to, toParams, transitionOptions);
 
   const currentPath = stateService.getCurrentPath();
 
@@ -66,7 +73,7 @@ export function transitionToState(
 
   const transitionToPromise = runTransitionTo(stateService, transition);
 
-  silenceUncaughtInPromise(transitionToPromise); // issue #2676
+  void silenceUncaughtInPromise(transitionToPromise); // issue #2676
 
   // Return a promise for the transition, which also has the transition object on it.
   return assign(transitionToPromise, { transition });
@@ -105,7 +112,9 @@ function handleTransitionRejection(
     const isLatest = routerState._lastStartedTransitionId <= trans.$id;
 
     if (error.type === RejectType._IGNORED) {
-      isLatest && routerState._urlRuntime._update();
+      if (isLatest) {
+        routerState._urlRuntime._update();
+      }
 
       // Consider ignored `Transition.run()` as a successful `transitionTo`.
       return Promise.resolve(routerState._current);
@@ -124,7 +133,9 @@ function handleTransitionRejection(
     }
 
     if (error.type === RejectType._ABORTED) {
-      isLatest && routerState._urlRuntime._update();
+      if (isLatest) {
+        routerState._urlRuntime._update();
+      }
 
       return Promise.reject(error);
     }
@@ -132,5 +143,5 @@ function handleTransitionRejection(
 
   stateService.defaultErrorHandler()(error);
 
-  return Promise.reject(error);
+  return silentRejection(error);
 }

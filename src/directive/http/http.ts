@@ -134,7 +134,7 @@ export function createHttpDirective(
         if (formId) {
           const maybeForm = document.getElementById(formId);
 
-          if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
+          if (maybeForm?.tagName.toLowerCase() === "form") {
             form = maybeForm as HTMLFormElement;
           }
         }
@@ -310,220 +310,229 @@ export function createHttpDirective(
           }
         }
 
-        element.addEventListener(eventName, async (event: Event) => {
-          if ((element as HTMLButtonElement).disabled) return;
+        element.addEventListener(eventName, (event: Event) => {
+          void (async () => {
+            if ((element as HTMLButtonElement).disabled) return;
 
-          if (tag === "form") event.preventDefault();
-          const swap = (attrs.swap as SwapModeType) || "innerHTML";
+            if (tag === "form") event.preventDefault();
+            const swap = (attrs.swap as SwapModeType) || "innerHTML";
 
-          const url = attrs[attrName];
+            const url = attrs[attrName];
 
-          if (!url) {
-            $log.warn(`${attrName}: no URL specified`);
+            if (!url) {
+              $log.warn(`${attrName}: no URL specified`);
 
-            return;
-          }
+              return;
+            }
 
-          const handler = (res: ng.HttpResponse<any>) => {
+            const handler = (res: ng.HttpResponse<any>) => {
+              if (isDefined(attrs.loading)) {
+                attrs.$set("loading", false);
+              }
+
+              if (isDefined(attrs.loadingClass)) {
+                attrs.$removeClass(attrs.loadingClass);
+              }
+
+              const html = res.data;
+
+              if (
+                Http._OK <= res.status &&
+                res.status <= Http._MultipleChoices - 1
+              ) {
+                if (isDefined(attrs.success)) {
+                  $parse(attrs.success)(scope, { $res: html });
+                }
+
+                if (isDefined(attrs.stateSuccess)) {
+                  void $state.go(attrs.stateSuccess);
+                }
+              } else if (
+                Http._BadRequest <= res.status &&
+                res.status <= Http._ErrorMax
+              ) {
+                if (isDefined(attrs.error)) {
+                  $parse(attrs.error)(scope, { $res: html });
+                }
+
+                if (isDefined(attrs.stateError)) {
+                  void $state.go(attrs.stateError);
+                }
+              }
+
+              if ($stream.isReadableStream(html)) {
+                handleStreamResponse(html, swap).catch((error: unknown) => {
+                  $log.error(`${attrName}: stream error`, error);
+                });
+              } else if (isObject(html)) {
+                if (attrs.target) {
+                  $parse(attrs.target)._assign?.(scope, html);
+                } else {
+                  scope.$merge(html);
+                }
+              } else if (isString(html)) {
+                handleSwapResponse(html, swap);
+              }
+            };
+
+            if (isDefined(attrs.delay)) {
+              await wait(parseInt(attrs.delay) | 0);
+            }
+
+            if (scope._destroyed) return;
+
+            if (throttled) return;
+
+            if (isDefined(attrs.throttle)) {
+              throttled = true;
+              attrs.$set("throttled", true);
+              setTimeout(() => {
+                attrs.$set("throttled", false);
+                throttled = false;
+              }, parseInt(attrs.throttle));
+            }
+
             if (isDefined(attrs.loading)) {
-              attrs.$set("loading", false);
+              attrs.$set("loading", true);
             }
 
             if (isDefined(attrs.loadingClass)) {
-              attrs.$removeClass(attrs.loadingClass);
+              attrs.$addClass(attrs.loadingClass);
             }
 
-            const html = res.data;
+            if (method === "post" || method === "put") {
+              let data: any;
 
-            if (
-              Http._OK <= res.status &&
-              res.status <= Http._MultipleChoices - 1
-            ) {
-              if (isDefined(attrs.success)) {
-                $parse(attrs.success)(scope, { $res: html });
-              }
+              const config = createRequestConfig();
 
-              if (isDefined(attrs.stateSuccess)) {
-                $state.go(attrs.stateSuccess);
-              }
-            } else if (
-              Http._BadRequest <= res.status &&
-              res.status <= Http._ErrorMax
-            ) {
-              if (isDefined(attrs.error)) {
-                $parse(attrs.error)(scope, { $res: html });
-              }
-
-              if (isDefined(attrs.stateError)) {
-                $state.go(attrs.stateError);
-              }
-            }
-
-            if ($stream.isReadableStream(html)) {
-              handleStreamResponse(html, swap).catch((error: unknown) => {
-                $log.error(`${attrName}: stream error`, error);
-              });
-            } else if (isObject(html)) {
-              if (attrs.target) {
-                $parse(attrs.target)._assign?.(scope, html);
+              if (attrs.enctype) {
+                data = toKeyValue(collectFormData(element));
               } else {
-                scope.$merge(html);
+                data = collectFormData(element);
               }
-            } else if (isString(html)) {
-              handleSwapResponse(html, swap);
-            }
-          };
-
-          if (isDefined(attrs.delay)) {
-            await wait(parseInt(attrs.delay) | 0);
-          }
-
-          if (scope._destroyed) return;
-
-          if (throttled) return;
-
-          if (isDefined(attrs.throttle)) {
-            throttled = true;
-            attrs.$set("throttled", true);
-            setTimeout(() => {
-              attrs.$set("throttled", false);
-              throttled = false;
-            }, parseInt(attrs.throttle));
-          }
-
-          if (isDefined(attrs.loading)) {
-            attrs.$set("loading", true);
-          }
-
-          if (isDefined(attrs.loadingClass)) {
-            attrs.$addClass(attrs.loadingClass);
-          }
-
-          if (method === "post" || method === "put") {
-            let data: any;
-
-            const config = createRequestConfig();
-
-            if (attrs.enctype) {
-              data = toKeyValue(collectFormData(element));
+              $http[method](url, data, config).then(handler).catch(handler);
             } else {
-              data = collectFormData(element);
-            }
-            $http[method](url, data, config).then(handler).catch(handler);
-          } else {
-            if (method === "get" && attrs.ngSse) {
-              const sseUrl = url;
+              if (method === "get" && attrs.ngSse) {
+                const sseUrl = url;
 
-              const sourceRef: { current?: ng.SseConnection } = {};
+                const sourceRef: { current?: ng.SseConnection } = {};
 
-              const config: ng.SseConfig = {
-                withCredentials: attrs.withCredentials === "true",
-                eventTypes: parseSseEventTypes(),
-                transformMessage: (data: string) => {
-                  try {
-                    return JSON.parse(data);
-                  } catch {
-                    return data;
-                  }
-                },
-                onOpen: () => {
-                  $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
+                const config: ng.SseConfig = {
+                  withCredentials: attrs.withCredentials === "true",
+                  eventTypes: parseSseEventTypes(),
+                  transformMessage: (data: string) => {
+                    try {
+                      return JSON.parse(data);
+                    } catch {
+                      return data;
+                    }
+                  },
+                  onOpen: () => {
+                    $log.info(
+                      `${attrName}: SSE connection opened to ${sseUrl}`,
+                    );
 
-                  if (!dispatchSseEvent("open", { url: sseUrl })) {
-                    sourceRef.current?.close();
+                    if (!dispatchSseEvent("open", { url: sseUrl })) {
+                      sourceRef.current?.close();
 
-                    return;
-                  }
+                      return;
+                    }
 
-                  if (isDefined(attrs.loading)) attrs.$set("loading", false);
+                    if (isDefined(attrs.loading)) attrs.$set("loading", false);
 
-                  if (isDefined(attrs.loadingClass))
-                    attrs.$removeClass(attrs.loadingClass);
-                },
-                onEvent: ({
-                  data,
-                  event: messageEvent,
-                  type,
-                }: ConnectionEvent) => {
-                  const source = sourceRef.current;
+                    if (isDefined(attrs.loadingClass))
+                      attrs.$removeClass(attrs.loadingClass);
+                  },
+                  onEvent: ({
+                    data,
+                    event: messageEvent,
+                    type,
+                  }: ConnectionEvent) => {
+                    const source = sourceRef.current;
 
-                  if (!source) return;
+                    if (!source) return;
 
-                  if (type !== "message") {
-                    const proceed = dispatchSseEvent(type, {
-                      data,
-                      event: messageEvent,
-                      source,
-                    });
+                    if (type !== "message") {
+                      const proceed = dispatchSseEvent(type, {
+                        data,
+                        event: messageEvent,
+                        source,
+                      });
 
-                    if (!proceed) {
+                      if (!proceed) {
+                        source.close();
+
+                        return;
+                      }
+
+                      if (!isRealtimeProtocolMessage(data)) return;
+                    }
+
+                    if (isRealtimeProtocolMessage(data)) {
+                      handleSseProtocolMessage(
+                        data,
+                        swap,
+                        messageEvent,
+                        source,
+                      );
+
+                      return;
+                    }
+
+                    if (
+                      !dispatchSseEvent("message", {
+                        data,
+                        event: messageEvent,
+                        source,
+                      })
+                    ) {
                       source.close();
 
                       return;
                     }
 
-                    if (!isRealtimeProtocolMessage(data)) return;
-                  }
+                    const res = { status: 200, data };
 
-                  if (isRealtimeProtocolMessage(data)) {
-                    handleSseProtocolMessage(data, swap, messageEvent, source);
-
-                    return;
-                  }
-
-                  if (
-                    !dispatchSseEvent("message", {
+                    handler(res as ng.HttpResponse<HttpResponsePayload>);
+                    dispatchSseEvent("swapped", {
                       data,
                       event: messageEvent,
                       source,
-                    })
-                  ) {
-                    source.close();
+                    });
+                  },
+                  onError: (err: any) => {
+                    const source = sourceRef.current;
 
-                    return;
-                  }
+                    dispatchSseEvent("error", { error: err, source });
+                    $log.error(`${attrName}: SSE error`, err);
+                    const res = { status: 500, data: err };
 
-                  const res = { status: 200, data };
+                    handler(res as ng.HttpResponse<HttpResponsePayload>);
+                  },
+                  onReconnect: (count: number) => {
+                    $log.info(`ngSse: reconnected ${count} time(s)`);
 
-                  handler(res as ng.HttpResponse<HttpResponsePayload>);
-                  dispatchSseEvent("swapped", {
-                    data,
-                    event: messageEvent,
-                    source,
-                  });
-                },
-                onError: (err: any) => {
-                  const source = sourceRef.current;
+                    if (attrs.onReconnect)
+                      $parse(attrs.onReconnect)(scope, { $count: count });
+                  },
+                };
 
-                  dispatchSseEvent("error", { error: err, source });
-                  $log.error(`${attrName}: SSE error`, err);
-                  const res = { status: 500, data: err };
+                const source = $sse(sseUrl, config);
 
-                  handler(res as ng.HttpResponse<HttpResponsePayload>);
-                },
-                onReconnect: (count: number) => {
-                  $log.info(`ngSse: reconnected ${count} time(s)`);
+                sourceRef.current = source;
 
-                  if (attrs.onReconnect)
-                    $parse(attrs.onReconnect)(scope, { $count: count });
-                },
-              };
-
-              const source = $sse(sseUrl, config);
-
-              sourceRef.current = source;
-
-              scope.$on("$destroy", () => {
-                $log.info(`${attrName}: closing SSE connection`);
-                dispatchSseEvent("close", { source });
-                source.close();
-              });
-            } else {
-              $http[method](url, createRequestConfig())
-                .then(handler)
-                .catch(handler);
+                scope.$on("$destroy", () => {
+                  $log.info(`${attrName}: closing SSE connection`);
+                  dispatchSseEvent("close", { source });
+                  source.close();
+                });
+              } else {
+                $http[method](url, createRequestConfig())
+                  .then(handler)
+                  .catch(handler);
+              }
             }
-          }
+          })();
         });
 
         if (eventName === "load") {

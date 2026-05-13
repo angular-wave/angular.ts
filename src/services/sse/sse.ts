@@ -14,7 +14,7 @@ export interface SseConfig extends ConnectionConfig {
   withCredentials?: boolean;
 
   /** Optional query parameters appended to the URL */
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
 
   /** Custom headers (EventSource doesn't natively support headers) */
   headers?: Record<string, string>;
@@ -60,7 +60,7 @@ export class SseProvider {
       heartbeatTimeout: 15000,
       transformMessage(data: string) {
         try {
-          return JSON.parse(data);
+          return JSON.parse(data) as unknown;
         } catch {
           return data;
         }
@@ -103,12 +103,33 @@ export class SseProvider {
    * Builds a URL with serialized query parameters.
    */
   /** @internal */
-  private _buildUrl(url: string, params?: Record<string, any>): string {
+  private _buildUrl(url: string, params?: Record<string, unknown>): string {
     if (!params) return url;
     const query = entries(params)
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .map(
+        ([k, v]) =>
+          `${encodeURIComponent(k)}=${encodeURIComponent(
+            serializeQueryValue(v),
+          )}`,
+      )
       .join("&");
 
     return url + (url.includes("?") ? "&" : "?") + query;
+  }
+}
+
+function serializeQueryValue(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "boolean":
+    case "bigint":
+    case "symbol":
+      return String(value);
+    case "undefined":
+      return "";
+    default:
+      return value === null ? "" : JSON.stringify(value);
   }
 }

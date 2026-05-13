@@ -121,7 +121,7 @@ class AbstractInjector {
       locals = undefined;
     }
 
-    const invocationLocals = locals as Record<string, any> | undefined;
+    const invocationLocals = locals;
 
     const args = this._injectionArgs(
       fn as InjectableFn,
@@ -163,7 +163,7 @@ class AbstractInjector {
     const boundArgs = [null, ...args] as [any, ...any[]];
 
     try {
-      return new (Function.prototype.bind.apply(ctor as Function, boundArgs))();
+      return new (Function.prototype.bind.apply(ctor, boundArgs))();
     } catch (err) {
       // try arrow function
       if (isArrowFunction(ctor)) {
@@ -223,7 +223,7 @@ export class ProviderInjector extends AbstractInjector {
  */
 export class InjectorService extends AbstractInjector {
   loadNewModules: (
-    mods: Array<Function | string | AnnotatedFactory<(...args: any[]) => any>>,
+    mods: (Function | string | AnnotatedFactory<(...args: any[]) => any>)[],
   ) => void = () => {
     /* empty */
   };

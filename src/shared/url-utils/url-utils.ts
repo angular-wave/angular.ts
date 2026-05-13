@@ -59,7 +59,7 @@ const originUrl = urlResolve(window.location.href);
 
 /** Resolves a string URL into its parsed browser components. */
 export function urlResolve(url: ResolvableUrl): ParsedUrl {
-  if (!isString(url)) return url as ParsedUrl;
+  if (!isString(url)) return url;
 
   const urlParsingNode = new URL(url, window.location.href);
 
@@ -77,10 +77,9 @@ export function urlResolve(url: ResolvableUrl): ParsedUrl {
     hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
     hostname,
     port: urlParsingNode.port,
-    pathname:
-      urlParsingNode.pathname.charAt(0) === "/"
-        ? urlParsingNode.pathname
-        : `/${urlParsingNode.pathname}`,
+    pathname: urlParsingNode.pathname.startsWith("/")
+      ? urlParsingNode.pathname
+      : `/${urlParsingNode.pathname}`,
   };
 }
 

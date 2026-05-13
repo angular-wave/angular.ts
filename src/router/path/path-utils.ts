@@ -1,4 +1,4 @@
-import { assign, keys } from "../../shared/utils.ts";
+import { assign, deleteProperty, keys } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import {
@@ -18,9 +18,13 @@ import type { TreeChanges } from "../transition/interface.ts";
 export function buildPath(targetState: TargetState): PathNode[] {
   const toParams = targetState.params();
 
-  const stateObject = targetState.$state() as StateObject;
+  const stateObject = targetState.$state();
 
-  const states = stateObject.path || [];
+  if (!stateObject) {
+    throw new Error("Target state does not resolve to a state object");
+  }
+
+  const states = stateObject.path ?? [];
 
   const path: PathNode[] = [];
 
@@ -62,7 +66,7 @@ export function applyViewConfigs(
 
     if (!stateSet.has(node.state)) continue;
 
-    const viewDecls = node.state._views || {};
+    const viewDecls = node.state._views ?? {};
 
     const viewSubPath = path.slice(0, i + 1);
 
@@ -121,7 +125,9 @@ export function inheritParams(
       }
     }
 
-    noInherit.forEach((key) => delete fromParamVals[key]);
+    noInherit.forEach((key) => {
+      deleteProperty(fromParamVals, key);
+    });
 
     const toParamVals: RawParams = {};
 

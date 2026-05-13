@@ -1,6 +1,7 @@
 import { isInjectable } from "./predicates.ts";
 import type { Validator } from "./interface.ts";
 import {
+  type InstanceConstructor,
   isArray,
   isDefined,
   isInstanceOf,
@@ -64,7 +65,7 @@ export function validateIsNumber(arg: number, name: string): number {
 
 export function validateInstanceOf<T>(
   arg: unknown,
-  type: new (...args: any[]) => T,
+  type: InstanceConstructor<T>,
   name: string,
 ): T {
   return validate((value) => isInstanceOf(value, type), arg, name) as T;

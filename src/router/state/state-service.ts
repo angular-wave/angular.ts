@@ -50,12 +50,12 @@ import {
 
 const stateProviderError = createErrorFactory("$stateProvider");
 
-export type LazyStateRegistration = {
+export interface LazyStateRegistration {
   prefix: string;
   loader: LazyStateLoader;
   promise?: Promise<void>;
   loaded: boolean;
-};
+}
 
 export { silentRejection, silenceUncaughtInPromise };
 
@@ -153,9 +153,9 @@ export class StateProvider {
       this._stateRegistry = $stateRegistry;
       this._routerState = routerState;
       routerState._stateService = this;
-      $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) =>
-        routerState._sync(evt),
-      );
+      $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) => {
+        routerState._sync(evt);
+      });
       this._transitionService._initRuntimeHooks(this, viewService);
       this._$injector = $injector;
       this._routerState._injector = $injector;
@@ -436,7 +436,7 @@ export class StateProvider {
           isString(options.reload)
             ? options.reload
             : isObject(options.reload) && "name" in options.reload
-              ? String(options.reload.name)
+              ? options.reload.name
               : String(options.reload)
         }'`,
       );
@@ -599,7 +599,7 @@ export class StateProvider {
     if (!isDefined(include[state.name])) return false;
 
     if (!params) return true;
-    const schema = (state as StateObject).parameters({
+    const schema = state.parameters({
       inherit: true,
       matchingKeys: params,
     });
@@ -641,7 +641,7 @@ export class StateProvider {
     if (options?.inherit !== false)
       params = this._routerState._params.$inherit(
         params,
-        this.$current as StateObject,
+        this.$current!,
         state,
       );
     const nav = state && options?.lossy !== false ? state.navigable : state;

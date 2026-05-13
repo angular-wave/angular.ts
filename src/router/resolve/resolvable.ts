@@ -25,11 +25,9 @@ async function resolveResolvable(
 ): Promise<ResolvableData> {
   const dependencies = resolveContext.getDependencies(resolvable);
 
-  const dependencyPromises = new Array(dependencies.length);
-
-  dependencies.forEach((dependency, index) => {
-    dependencyPromises[index] = dependency.get(resolveContext, trans);
-  });
+  const dependencyPromises = dependencies.map((dependency) =>
+    dependency.get(resolveContext, trans),
+  );
 
   const resolvedDeps = await Promise.all(dependencyPromises);
 
@@ -69,8 +67,8 @@ export class Resolvable {
    * @throws Error when a resolve function is provided without a token.
    */
   constructor(
-    arg1: Resolvable | ResolvableLiteral | ResolvableToken,
-    resolveFn?: ResolveFn | undefined,
+    arg1: unknown,
+    resolveFn?: ResolveFn,
     deps?: ResolvableToken[],
     eager?: boolean,
     data?: ResolvableData,
@@ -96,7 +94,7 @@ export class Resolvable {
       this.token = arg1;
       this.eager = !!eager;
       this.resolveFn = resolveFn;
-      this.deps = deps || [];
+      this.deps = deps ?? [];
       this.data = data;
       this.resolved = data !== undefined;
       this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
@@ -109,7 +107,7 @@ export class Resolvable {
 
       this.token = literal.token;
       this.resolveFn = literal.resolveFn;
-      this.deps = literal.deps || [];
+      this.deps = literal.deps ?? [];
       this.eager = !!literal.eager;
       this.data = literal.data;
       this.resolved = literal.data !== undefined;
@@ -137,7 +135,7 @@ export class Resolvable {
     resolveContext: ResolveContext,
     trans?: Transition,
   ): Promise<ResolvableData> {
-    return this.promise || this.resolve(resolveContext, trans);
+    return this.promise ?? this.resolve(resolveContext, trans);
   }
 
   /**
@@ -146,7 +144,9 @@ export class Resolvable {
   toString(): string {
     const deps = isArray(this.deps) ? this.deps : [this.deps];
 
-    return `Resolvable(token: ${stringify(this.token)}, requires: [${deps.map(stringify)}])`;
+    return `Resolvable(token: ${stringify(this.token)}, requires: [${deps
+      .map(stringify)
+      .join(", ")}])`;
   }
 
   /**

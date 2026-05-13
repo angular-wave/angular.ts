@@ -2,8 +2,12 @@
 export function ngScopeDirective(): ng.Directive {
   return {
     scope: false,
-    async link($scope: ng.Scope, _: unknown, $attrs: ng.Attributes) {
-      $scope.$scopename = $attrs.ngScope;
+    link($scope: ng.Scope, _: unknown, $attrs: ng.Attributes): void {
+      const scopeName: unknown = $attrs.ngScope;
+
+      if (typeof scopeName === "string") {
+        $scope.$scopename = scopeName;
+      }
     },
   };
 }

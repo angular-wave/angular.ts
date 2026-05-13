@@ -182,7 +182,7 @@ function baseInputType(
     if (composing) return;
     let { value } = element;
 
-    const event = ev && ev.type;
+    const event = ev?.type;
 
     // By default we will trim the value
     // If the attribute ng-trim exists we will avoid trimming
@@ -204,7 +204,9 @@ function baseInputType(
 
   ["input", "change", "paste", "drop", "cut"].forEach((event) => {
     element.addEventListener(event, listener);
-    ctrl._eventRemovers.add(() => element.removeEventListener(event, listener));
+    ctrl._eventRemovers.add(() => {
+      element.removeEventListener(event, listener);
+    });
   });
 
   // Some native input types (date-family) have the ability to change validity without
@@ -241,12 +243,12 @@ function baseInputType(
       PARTIAL_VALIDATION_EVENTS,
       partialValidationListener,
     );
-    ctrl._eventRemovers.add(() =>
+    ctrl._eventRemovers.add(() => {
       element.removeEventListener(
         PARTIAL_VALIDATION_EVENTS,
         partialValidationListener,
-      ),
-    );
+      );
+    });
   }
 
   ctrl.$render = function () {
@@ -822,14 +824,14 @@ function radioInputType(
       if (doTrim) {
         value = trim(value);
       }
-      ctrl.$setViewValue(value, ev && ev.type);
+      ctrl.$setViewValue(value, ev?.type);
     }
   };
 
   element.addEventListener("change", listener);
-  ctrl._eventRemovers.add(() =>
-    element.removeEventListener("change", listener),
-  );
+  ctrl._eventRemovers.add(() => {
+    element.removeEventListener("change", listener);
+  });
   // NgModelController call
   ctrl.$render = function () {
     let { value } = attr;
@@ -905,13 +907,13 @@ function checkboxInputType(
   );
 
   const listener = function (ev: Event) {
-    ctrl.$setViewValue(element.checked, ev && ev.type);
+    ctrl.$setViewValue(element.checked, ev?.type);
   };
 
   element.addEventListener("change", listener);
-  ctrl._eventRemovers.add(() =>
-    element.removeEventListener("change", listener),
-  );
+  ctrl._eventRemovers.add(() => {
+    element.removeEventListener("change", listener);
+  });
 
   ctrl.$render = function () {
     element.checked = ctrl.$viewValue;
@@ -921,7 +923,7 @@ function checkboxInputType(
   // This is because of the parser below, which compares the `$modelValue` with `trueValue` to convert
   // it to a boolean.
   ctrl.$isEmpty = function (value: boolean) {
-    return value === false;
+    return !value;
   };
 
   ctrl.$formatters.push((value: any) => equals(value, trueValue));

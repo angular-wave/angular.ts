@@ -7,18 +7,25 @@ export function ngStyleDirective(): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement, attr: Attributes): void {
-      const attrMap = attr as Attributes & Record<string, string>;
+      const expression: unknown = attr.ngStyle;
+
+      if (typeof expression !== "string") {
+        return;
+      }
 
       let oldStyles: Record<string, string> | null = null;
 
       scope.$watch(
-        attrMap.ngStyle,
+        expression,
         (
-          newStyles: Record<string, string> & {
-            $target?: Record<string, string>;
-          },
+          newStyles:
+            | (Record<string, string> & {
+                $target?: Record<string, string>;
+              })
+            | null
+            | undefined,
         ) => {
-          const target = newStyles?.$target || newStyles;
+          const target = newStyles?.$target ?? newStyles;
 
           if (oldStyles) {
             keys(oldStyles).forEach((key) => {
@@ -26,20 +33,22 @@ export function ngStyleDirective(): ng.Directive {
             });
           }
 
-          if (target) {
-            const nextStyles: Record<string, string> = {};
-
-            keys(target).forEach((key) => {
-              const value = target[key];
-
-              element.style.setProperty(key, value);
-              nextStyles[key] = value;
-            });
-
-            oldStyles = nextStyles;
-          } else {
+          if (!target) {
             oldStyles = null;
+
+            return;
           }
+
+          const nextStyles: Record<string, string> = {};
+
+          keys(target).forEach((key) => {
+            const value = target[key];
+
+            element.style.setProperty(key, value);
+            nextStyles[key] = value;
+          });
+
+          oldStyles = nextStyles;
         },
       );
     },
