@@ -141,14 +141,9 @@ $scope.$watch('getTotal()', handler);              // function call
 $scope.$watch('a || b', handler);                  // logical expression
 $scope.$watch('[firstName, lastName]', handler);   // array expression
 ```
-## Evaluating expressions
+## Merging scope state
 
 ```typescript
-const result = $scope.$eval('user.name');
-
-// $apply evaluates and routes errors through $exceptionHandler
-$scope.$apply('submitForm()');
-
 // $merge copies properties from a plain object into the scope
 $scope.$merge({ name: 'Alice', age: 30 });
 ```
@@ -201,8 +196,6 @@ Directives with `scope: true` get an inherited child scope; directives with `sco
 | `$scope.$on(name, fn)`             | Registers an event listener; returns a deregistration function. |
 | `$scope.$emit(name, ...args)`      | Fires an event upward through the hierarchy.                    |
 | `$scope.$broadcast(name, ...args)` | Fires an event downward to all descendants.                     |
-| `$scope.$eval(expr, locals?)`      | Evaluates an expression in this scope's context.                |
-| `$scope.$apply(expr)`              | Like `$eval` but routes errors through `$exceptionHandler`.     |
 | `$scope.$merge(obj)`               | Copies enumerable properties from `obj` into the scope.         |
 | `$scope.$destroy()`                | Tears down the scope and all its watchers.                      |
 | `$scope.$postUpdate(fn)`           | Queues a callback to run after the current listener flush.      |

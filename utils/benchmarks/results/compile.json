@@ -1,59 +1,59 @@
 {
-  "savedAt": "2026-05-11T23:09:56.617Z",
+  "savedAt": "2026-05-13T00:27:25.184Z",
   "result": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-    "iterations": 1000,
+    "iterations": 5000,
     "samples": 7,
     "results": [
       {
         "name": "static tree",
         "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
-        "iterations": 1000,
+        "iterations": 5000,
         "samples": 7,
-        "minMs": 5.399999998509884,
-        "medianMs": 6.700000002980232,
-        "meanMs": 7.100000000425747,
-        "opsPerSecond": 140845.07041408954
+        "minMs": 24.19999999552965,
+        "medianMs": 34.400000005960464,
+        "meanMs": 32.41428571407284,
+        "opsPerSecond": 154252.97487981428
       },
       {
         "name": "text interpolation",
         "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
-        "iterations": 1000,
+        "iterations": 5000,
         "samples": 7,
-        "minMs": 7.699999995529652,
-        "medianMs": 8.200000002980232,
-        "meanMs": 8.300000000212874,
-        "opsPerSecond": 120481.92770775333
+        "minMs": 28.799999997019768,
+        "medianMs": 31.80000000447035,
+        "meanMs": 33.857142857142854,
+        "opsPerSecond": 147679.32489451478
       },
       {
         "name": "bindings and events",
         "template": "<button ng-click=\"save(item)\">{{label}}</button>",
-        "iterations": 1000,
+        "iterations": 5000,
         "samples": 7,
-        "minMs": 3.600000001490116,
-        "medianMs": 3.899999998509884,
-        "meanMs": 3.9714285720671927,
-        "opsPerSecond": 251798.56111058893
+        "minMs": 13.099999994039536,
+        "medianMs": 15.400000005960464,
+        "meanMs": 16.48571428656578,
+        "opsPerSecond": 303292.89426509733
       },
       {
         "name": "repeat list",
         "template": "<ul><li ng-repeat=\"item in items\"><span>{{item.name}}</span><button ng-click=\"select(item)\">Select</button></li></ul>",
-        "iterations": 1000,
+        "iterations": 5000,
         "samples": 7,
-        "minMs": 3.899999998509884,
-        "medianMs": 5.399999998509884,
-        "meanMs": 6.67142857078995,
-        "opsPerSecond": 149892.93363319215
+        "minMs": 20.899999998509884,
+        "medianMs": 23.899999998509884,
+        "meanMs": 24.328571428145683,
+        "opsPerSecond": 205519.6711721227
       },
       {
         "name": "nested template",
         "template": "<section ng-if=\"ready\"><header ng-bind=\"title\"></header><div ng-repeat=\"group in groups\"><h3>{{group.name}}</h3><p ng-repeat=\"item in group.items\">{{item.label}}</p></div></section>",
-        "iterations": 1000,
+        "iterations": 5000,
         "samples": 7,
-        "minMs": 3,
-        "medianMs": 3.100000001490116,
-        "meanMs": 3.4714285720671927,
-        "opsPerSecond": 288065.84356840514
+        "minMs": 15.799999997019768,
+        "medianMs": 16.700000002980232,
+        "meanMs": 16.65714285735573,
+        "opsPerSecond": 300171.52658278483
       }
     ]
   }

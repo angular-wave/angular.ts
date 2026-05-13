@@ -60,8 +60,7 @@
 -     The function will be given the object value and the predicate value to compare and
 -     should return true if both values should be considered equal.
 -
-- - `true`: A shorthand for
-    `function(actual, expected) { return angular.equals(actual, expected)}`.
+- - `true`: A shorthand for strict value comparison.
 -     This is essentially strict comparison of expected and actual.
 -
 - - `false`: A short hand for a function which will look for a substring match

@@ -15,7 +15,7 @@ import {
   snakeCase,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-import type { NodeRef } from "../../shared/noderef.ts";
+import { NodeRef } from "../../shared/noderef.ts";
 
 const SIMPLE_ATTR_NAME = /^\w/;
 
@@ -71,7 +71,9 @@ export class Attributes {
   _exceptionHandler: ng.ExceptionHandlerService;
   $attr: Record<string, string>;
   /** @internal */
-  _nodeRef: NodeRef | undefined;
+  _node: Node | Element | undefined;
+  /** @internal */
+  _nodeRefCache: NodeRef | undefined;
   /** @internal */
   _observers: ObserverMap | undefined;
   [key: string]: any;
@@ -79,7 +81,7 @@ export class Attributes {
   constructor(
     $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
-    nodeRef?: NodeRef,
+    node?: Node | Element | NodeRef,
     attributesToCopy?: Record<string, any>,
   ) {
     this._getAnimate = getLazyAnimate($injector);
@@ -100,13 +102,36 @@ export class Attributes {
       }
     }
 
-    this._nodeRef = nodeRef;
+    if (node instanceof NodeRef) {
+      this._node = node._getAny();
+      this._nodeRefCache = node;
+    } else {
+      this._node = node;
+      this._nodeRefCache = undefined;
+    }
+  }
+
+  /** @internal */
+  get _nodeRef(): NodeRef | undefined {
+    const node = this._node;
+
+    if (!node) {
+      return undefined;
+    }
+
+    return (this._nodeRefCache ||= NodeRef._fromNode(node));
+  }
+
+  /** @internal */
+  set _nodeRef(nodeRef: NodeRef | undefined) {
+    this._nodeRefCache = nodeRef;
+    this._node = nodeRef?._getAny();
   }
 
   /** @ignore Internal element accessor used by legacy attribute helpers. */
   /** @internal */
   _element(): Node | Element {
-    return this._nodeRef?._getAny() as Node | Element;
+    return this._node as Node | Element;
   }
 
   /**
@@ -130,7 +155,7 @@ export class Attributes {
       if (animate) {
         animate.addClass(element, classVal);
       } else {
-        this._nodeRef?.element.classList.add(classVal);
+        element.classList.add(classVal);
       }
     }
   }
@@ -144,7 +169,7 @@ export class Attributes {
       if (animate) {
         animate.removeClass(element, classVal);
       } else {
-        this._nodeRef?.element.classList.remove(classVal);
+        element.classList.remove(classVal);
       }
     }
   }
@@ -164,7 +189,7 @@ export class Attributes {
       if (animate) {
         animate.addClass(element, toAdd.join(" "));
       } else {
-        this._nodeRef?.element.classList.add(...toAdd);
+        element.classList.add(...toAdd);
       }
     }
 
@@ -174,7 +199,7 @@ export class Attributes {
       if (animate) {
         animate.removeClass(element, toRemove.join(" "));
       } else {
-        this._nodeRef?.element.classList.remove(...toRemove);
+        element.classList.remove(...toRemove);
       }
     }
   }

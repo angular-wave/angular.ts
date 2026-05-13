@@ -36,8 +36,9 @@ class HeaderController {
 
   constructor($eventBus: ng.PubSub, $scope: ng.Scope) {
     const unsubscribe = $eventBus.subscribe("cart:item-added", () => {
-      this.cartCount += 1;
-      $scope.$applyAsync();
+      const view = $scope["$ctrl"] as HeaderController;
+
+      view.cartCount += 1;
     });
 
     $scope.$on("$destroy", unsubscribe);
@@ -80,7 +81,7 @@ $eventBus.publish("order:created", { id: 42 });
 console.log("publisher finished");
 ```
 
-This makes `$eventBus` useful for browser callbacks, WebSocket messages, Web Worker results, and other boundaries where you want the publisher to stay independent of Angular controller timing. When a subscriber changes view state, call `$scope.$applyAsync()` or update through a service that already enters Angular's lifecycle.
+This makes `$eventBus` useful for browser callbacks, WebSocket messages, Web Worker results, and other boundaries where you want the publisher to stay independent of Angular controller timing. When a subscriber changes view state, write through proxied scope or controller state so AngularTS can observe the assignment.
 
 ## Error handling
 

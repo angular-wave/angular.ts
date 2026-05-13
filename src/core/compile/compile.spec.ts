@@ -358,14 +358,17 @@ describe("$compile", () => {
       expect(nodeRef.node).toBe(replacement);
     });
 
-    it("releases scope-owned link node refs on scope destroy", () => {
-      let capturedNodeRef;
+    it("keeps link attrs on raw nodes without materializing node refs", () => {
+      let capturedNode;
+
+      let capturedNodeRefCache;
 
       registerDirectives({
         captureNodeRef: () => ({
           restrict: "A",
           link(_scope, _element, attrs) {
-            capturedNodeRef = attrs._nodeRef;
+            capturedNode = attrs._node;
+            capturedNodeRefCache = attrs._nodeRefCache;
           },
         }),
       });
@@ -382,15 +385,14 @@ describe("$compile", () => {
         /* empty */
       });
 
-      expect(capturedNodeRef).toBeDefined();
-      expect(capturedNodeRef._getAny()).toBeDefined();
+      expect(capturedNode).toBeDefined();
+      expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
+      expect(capturedNodeRefCache).toBeUndefined();
 
       scope.$destroy();
 
-      expect(capturedNodeRef._element).toBeUndefined();
-      expect(capturedNodeRef._node).toBeUndefined();
-      expect(capturedNodeRef._nodes).toEqual([]);
-      expect(capturedNodeRef._isList).toBe(false);
+      expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
+      expect(capturedNodeRefCache).toBeUndefined();
     });
   });
 
