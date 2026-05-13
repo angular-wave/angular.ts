@@ -44,9 +44,9 @@ class NewsFeedController {
       retryDelay: 3000,
       heartbeatTimeout: 30000,
       onMessage: (item: NewsItem) => {
-        this.items.unshift(item);
-        this.items = this.items.slice(0, 50);
-        $scope.$applyAsync();
+        const view = $scope["$ctrl"] as NewsFeedController;
+
+        view.items = [item, ...view.items].slice(0, 50);
       },
       onReconnect: (attempt) => {
         console.log("SSE reconnect", attempt);
@@ -76,8 +76,9 @@ class ChatController {
       retryDelay: 2000,
       maxRetries: 20,
       onMessage: (message: ChatMessage) => {
-        this.messages.push(message);
-        $scope.$applyAsync();
+        const view = $scope["$ctrl"] as ChatController;
+
+        view.messages = [...view.messages, message];
       },
       onClose: (event) => {
         console.log("WebSocket closed", event.code);
@@ -116,8 +117,9 @@ class TelemetryController {
       requireUnreliable: true,
       transformDatagram: (data) => new TextDecoder().decode(data),
       onDatagram: ({ message }) => {
-        this.events.push(String(message));
-        $scope.$applyAsync();
+        const view = $scope["$ctrl"] as TelemetryController;
+
+        view.events = [...view.events, String(message)];
       },
       onReconnect: ({ connection }) => {
         return connection.sendText(JSON.stringify({ subscribe: "telemetry" }));

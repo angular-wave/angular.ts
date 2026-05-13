@@ -42,7 +42,7 @@ Changes to `$location` are applied asynchronously. `$locationChangeStart` and `$
 Configure `$locationProvider` before the application runs.
 
 ```typescript
-angular.config(($locationProvider: ng.LocationProvider) => {
+angular.module("demo", []).config(($locationProvider: ng.LocationProvider) => {
   $locationProvider.html5Mode({
     enabled: true,
     requireBase: false,
@@ -118,7 +118,7 @@ $stateRegistry.register({
 Listen on `$rootScope` for URL-level events when you need a broad guard.
 
 ```typescript
-angular.run(($rootScope, $state, authService) => {
+angular.module("demo").run(($rootScope, $state, authService) => {
   $rootScope.$on("$locationChangeStart", (event, newUrl) => {
     if (newUrl.includes("/admin") && !authService.isAuthenticated()) {
       event.preventDefault();

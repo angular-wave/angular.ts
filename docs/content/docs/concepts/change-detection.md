@@ -62,10 +62,10 @@ When `increment()` fires, the Proxy intercepts the assignment to `count`, finds 
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
 | Detection mechanism | Dirty-checking digest loop                             | ES6 Proxy `set` trap                                         |
 | Watcher lookup cost | O(n) — all watchers checked                            | O(1) — direct Map lookup by property name                    |
-| Trigger             | `$apply()` / `$digest()` required for async code       | Automatic — Proxy intercepts every assignment                |
+| Trigger             | Manual digest entry required for async code            | Automatic — Proxy intercepts every assignment                |
 | Update granularity  | All watchers, all the time                             | Only bindings for the changed property                       |
 | Nested objects      | Shallow by default; `$watchCollection` needed for deep | Deep — nested objects are automatically proxied              |
-| Async code          | Must wrap in `$scope.$apply()`                         | No wrapping needed for standard async (Promise, fetch, etc.) |
+| Async code          | Must manually enter change detection                   | No wrapping needed for standard async (Promise, fetch, etc.) |
 ## When no `$apply` is needed
 
 Because the Proxy fires synchronously on every assignment, any code that assigns to a scope property — whether inside a controller, a service callback, or a Promise handler — automatically triggers the right DOM update:

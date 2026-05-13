@@ -33,7 +33,7 @@ class User {
   }
 }
 
-angular.config(($restProvider: ng.RestProvider) => {
+angular.module("demo", []).config(($restProvider: ng.RestProvider) => {
   $restProvider.rest("users", "/api/users", User, {
     timeout: 5000,
     withCredentials: true,

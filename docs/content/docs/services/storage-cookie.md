@@ -70,7 +70,7 @@ A cookie can only be removed when the `path` and `domain` used for removal match
 Set defaults once when every cookie should share the same attributes.
 
 ```typescript
-angular.config(($cookieProvider: ng.CookieProvider) => {
+angular.module("demo", []).config(($cookieProvider: ng.CookieProvider) => {
   $cookieProvider.defaults = {
     path: "/",
     secure: true,
@@ -127,11 +127,10 @@ class PreferencesStorage {
 Listen for storage changes from other tabs through `$window`.
 
 ```typescript
-angular.run(($window, $rootScope) => {
+angular.module("demo").run(($window, $rootScope) => {
   $window.addEventListener("storage", (event: StorageEvent) => {
     if (event.key === "theme") {
       $rootScope.$broadcast("themeChanged", event.newValue);
-      $rootScope.$applyAsync();
     }
   });
 });

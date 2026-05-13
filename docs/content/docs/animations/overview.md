@@ -99,22 +99,18 @@ The `$animate` service is injectable and provides the full animation API. Every 
 | `setClass(element, add, remove, options?)`         | Add and remove classes as a single atomic animation.                      |
 | `animate(element, from, to, className?, options?)` | Animate from one set of inline styles to another.                         |
 | `cancel(runner)`                                   | Cancel a running animation; the end state is still applied.               |
-| `enabled(element?, enabled?)`                      | Get or set whether animations are enabled globally or per element.        |
-| `on(event, container, callback)`                   | Listen for animation lifecycle events on a container and its descendants. |
-| `off(event, container?, callback?)`                | Remove a previously registered listener.                                  |
-| `pin(element, parentElement)`                      | Associate an element outside the app root with an animation host parent.  |
-### Listening to animation events
+### Observing animation completion
 
-Use `$animate.on()` to observe when animations start and finish. The callback receives the element, a `phase` string (`"start"` or `"close"`), and a data object with the `addClass`, `removeClass`, `from`, and `to` values for that animation.
+Every `$animate` method returns an animation handle. Use `done()` when code needs to run after an animation settles, or pass `onStart`, `onDone`, and `onCancel` callbacks in native animation options when the callback belongs to one request.
 
 ```typescript
-  if (phase === 'close') {
-    console.log('Enter animation finished on', element);
-  }
+const handle = $animate.enter(panelEl, hostEl);
+
+handle.done((completed) => {
+  console.log("Enter animation settled", completed);
 });
 ```
 
-> **Note:** The callback does not trigger a digest. Wrap your call in `scope.$apply()` if you need to propagate changes to the scope.
 ## Filtering animations
 
 Two provider-level hooks let you restrict which elements can be animated. Both are configured during the config phase via `$animateProvider`.

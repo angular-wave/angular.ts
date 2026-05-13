@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-types types docs-examples-check benchmark-parse benchmark-compile benchmark-link coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
+.PHONY: build build-ts check test test-types types docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -72,14 +72,7 @@ docs-examples-check: ensure-deps
 	@echo "Checking docs example API references"
 	@node ./utils/check-docs-examples.mjs
 
-benchmark-parse: ensure-deps
-	@node ./utils/run-parse-benchmark.mjs $(ARGS)
-
-benchmark-compile: ensure-deps
-	@node ./utils/run-compile-benchmark.mjs $(ARGS)
-
-benchmark-link: ensure-deps
-	@node ./utils/run-link-benchmark.mjs $(ARGS)
+include utils/benchmarks/benchmarks.mk
 
 types: ensure-deps
 	@echo "Generating *.d.ts"
