@@ -13,7 +13,7 @@ export class HttpRestBackend implements RestBackend {
     /** Runtime `$http` service used to execute requests. */
     private _$http: HttpService,
     /** Default `$http` options merged into every request. */
-    private _options: Record<string, any> = {},
+    private _options: Record<string, unknown> = {},
   ) {}
 
   /**
@@ -26,9 +26,9 @@ export class HttpRestBackend implements RestBackend {
       method: request.method,
       url: request.url,
       data: request.data ?? null,
-      params: request.params || {},
+      params: request.params ?? {},
       ...this._options,
-      ...(request.options || {}),
+      ...(request.options ?? {}),
     });
   }
 }

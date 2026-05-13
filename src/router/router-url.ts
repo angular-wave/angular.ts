@@ -64,7 +64,7 @@ export class RouterUrlRuntime {
   }
 
   /** @internal */
-  _update(read?: boolean | undefined): void {
+  _update(read?: boolean): void {
     if (read) {
       this._lastUrl = this._url();
 
@@ -81,10 +81,10 @@ export class RouterUrlRuntime {
     params: StateParams,
     options: { replace?: boolean },
   ): void {
-    const url = urlMatcher._format(params || {});
+    const url = urlMatcher._format(params);
 
     if (!isNull(url)) {
-      this._url(url, options && !!options.replace);
+      this._url(url, !!options.replace);
     }
   }
 
@@ -97,7 +97,6 @@ export class RouterUrlRuntime {
     let url = urlMatcher._format(params);
 
     if (isNull(url)) return null;
-    options = options || { absolute: false };
     const isHtml5 = this._locationProvider.html5ModeConf.enabled;
 
     if (!isHtml5) {

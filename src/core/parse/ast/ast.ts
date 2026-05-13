@@ -329,7 +329,7 @@ export class AST {
       this._index++;
       primary = {
         _type: ASTType._Literal,
-        _value: literals[peekToken._text as keyof typeof literals],
+        _value: literals[peekToken._text],
       };
     } else if (peekToken._identifier) {
       this._index++;
@@ -514,7 +514,7 @@ export class AST {
    */
   /** @internal */
   _consume(e1?: string): Token {
-    if (this._tokens && this._tokens.length === this._index) {
+    if (this._tokens?.length === this._index) {
       throw $parseError(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -562,7 +562,7 @@ export class AST {
    */
   /** @internal */
   _peek(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
-    const token = this._tokens && this._tokens[this._index];
+    const token = this._tokens?.[this._index];
 
     if (!token) return false;
 
@@ -580,7 +580,7 @@ export class AST {
    */
   /** @internal */
   _expect(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
-    const token = this._tokens && this._tokens[this._index];
+    const token = this._tokens?.[this._index];
 
     if (!token) return false;
 

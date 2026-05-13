@@ -59,11 +59,17 @@ import type {
   WebComponentService,
 } from "../../../services/web-component/web-component.ts";
 
-type ModuleConfigFn = Injectable<(...args: any[]) => unknown>;
+type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 
-type NamedInjectable = Injectable<(...args: any[]) => unknown>;
+type NamedInjectable = Injectable<(...args: never[]) => unknown>;
 
 type StoreConfig = StorageLike & PersistentStoreConfig;
+
+type StoreFactory = (...args: never[]) => unknown;
+
+type StoreConstructor = new (...args: never[]) => unknown;
+
+type StoreCreator = StoreFactory | StoreConstructor;
 
 type InvokeQueueItem =
   | [typeof _provide, "value", [string, unknown]]
@@ -72,7 +78,11 @@ type InvokeQueueItem =
   | [typeof _provide, "service", [string, NamedInjectable]]
   | [typeof _provide, "provider", [string, NamedInjectable]]
   | [typeof _provide, "decorator", [string, NamedInjectable]]
-  | [typeof _provide, "store", [string, Function, ng.StorageType, StoreConfig?]]
+  | [
+      typeof _provide,
+      "store",
+      [string, StoreCreator, ng.StorageType, StoreConfig?],
+    ]
   | [typeof _injector, "invoke", [ModuleConfigFn]]
   | [typeof _compileProvider, "component", [string, ng.Component]]
   | [typeof _compileProvider, "directive", [string, NamedInjectable]]
@@ -130,7 +140,7 @@ export class NgModule {
    * @param {unknown} object - Allows undefined
    * @returns {NgModule}
    */
-  value(name: string, object: unknown): NgModule {
+  value(name: string, object: unknown): this {
     validate(isString, name, "name");
 
     this._invokeQueue.push([_provide, "value", [name, object]]);
@@ -143,7 +153,7 @@ export class NgModule {
    * @param {Object|string|number} object
    * @returns {NgModule}
    */
-  constant(name: string, object: object | string | number): NgModule {
+  constant(name: string, object: object | string | number): this {
     validate(isString, name, "name");
     validate(isDefined, object, "object");
 
@@ -157,7 +167,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} configFn
    * @returns {NgModule}
    */
-  config(configFn: ModuleConfigFn): NgModule {
+  config(configFn: ModuleConfigFn): this {
     validate(isInjectable, configFn, "configFn");
 
     this._configBlocks.push([_injector, "invoke", [configFn]]);
@@ -169,7 +179,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} block
    * @returns {NgModule}
    */
-  run(block: ModuleConfigFn): NgModule {
+  run(block: ModuleConfigFn): this {
     validate(isInjectable, block, "block");
 
     this._runBlocks.push(block);
@@ -182,7 +192,7 @@ export class NgModule {
    * @param {ng.Component} options
    * @returns {NgModule}
    */
-  component(name: string, options: ng.Component): NgModule {
+  component(name: string, options: ng.Component): this {
     validate(isString, name, "name");
     validate(isDefined, options, "object");
 
@@ -196,7 +206,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} providerFunction
    * @returns {NgModule}
    */
-  factory(name: string, providerFunction: NamedInjectable): NgModule {
+  factory(name: string, providerFunction: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(providerFunction, "providerFunction");
     this._invokeQueue.push([_provide, "factory", [name, providerFunction]]);
@@ -209,7 +219,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} serviceFunction
    * @returns {NgModule}
    */
-  service(name: string, serviceFunction: NamedInjectable): NgModule {
+  service(name: string, serviceFunction: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(serviceFunction, "serviceFunction");
     this._services.push(name);
@@ -223,7 +233,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} providerType
    * @returns {NgModule}
    */
-  provider(name: string, providerType: NamedInjectable): NgModule {
+  provider(name: string, providerType: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(providerType, "providerType");
     this._invokeQueue.push([_provide, "provider", [name, providerType]]);
@@ -236,7 +246,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} decorFn
    * @returns {NgModule}
    */
-  decorator(name: string, decorFn: NamedInjectable): NgModule {
+  decorator(name: string, decorFn: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(decorFn, "decorFn");
     this._configBlocks.push([_provide, "decorator", [name, decorFn]]);
@@ -249,7 +259,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} directiveFactory
    * @returns {NgModule}
    */
-  directive(name: string, directiveFactory: NamedInjectable): NgModule {
+  directive(name: string, directiveFactory: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(directiveFactory, "directiveFactory");
     this._invokeQueue.push([
@@ -266,7 +276,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} animationFactory
    * @returns {NgModule}
    */
-  animation(name: string, animationFactory: NamedInjectable): NgModule {
+  animation(name: string, animationFactory: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(animationFactory, "animationFactory");
     this._invokeQueue.push([
@@ -283,7 +293,7 @@ export class NgModule {
    * @param {ng.FilterFactory} filterFn
    * @return {NgModule}
    */
-  filter(name: string, filterFn: ng.FilterFactory): NgModule {
+  filter(name: string, filterFn: ng.FilterFactory): this {
     validate(isString, name, "name");
     validate(isFunction, filterFn, `filterFn`);
     this._invokeQueue.push([_filterProvider, "register", [name, filterFn]]);
@@ -299,10 +309,7 @@ export class NgModule {
    * @param {ng.Injectable<ng.ControllerConstructor>} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
    * @returns {NgModule}
    */
-  controller(
-    name: string,
-    ctlFn: Injectable<ng.ControllerConstructor>,
-  ): NgModule {
+  controller(name: string, ctlFn: Injectable<ng.ControllerConstructor>): this {
     validate(isString, name, "name");
     validateRequired(ctlFn, `fictlFnlterFn`);
     this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
@@ -335,7 +342,7 @@ export class NgModule {
   state(
     nameOrDefinition: string | StateDeclaration,
     definition?: Omit<StateDeclaration, "name">,
-  ): NgModule {
+  ): this {
     const state = normalizeStateDeclaration(nameOrDefinition, definition);
 
     this._configBlocks.push([_stateProvider, "state", [state]]);
@@ -366,7 +373,7 @@ export class NgModule {
     src: string,
     imports: WebAssembly.Imports = {},
     opts: WasmOptions = {},
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validate(isString, src, "src");
     this._invokeQueue.push([
@@ -393,7 +400,7 @@ export class NgModule {
     name: string,
     scriptPath: string | URL,
     config: WorkerConfig = {},
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validateRequired(scriptPath, "scriptPath");
     this._invokeQueue.push([
@@ -422,10 +429,10 @@ export class NgModule {
    */
   store(
     name: string,
-    ctor: Function | object,
+    ctor: StoreCreator | object,
     type: ng.StorageType,
     backendOrConfig?: StorageLike & PersistentStoreConfig,
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validateRequired(ctor, "ctor");
     this._invokeQueue.push([
@@ -450,12 +457,12 @@ export class NgModule {
    * @param {RestOptions} [options] - Optional RestService options.
    * @returns {NgModule}
    */
-  rest<T = unknown, ID = unknown>(
+  rest<T = unknown>(
     name: string,
     url: string,
     entityClass?: EntityClass<T>,
     options: RestOptions = {},
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
     this._invokeQueue.push([
@@ -463,10 +470,7 @@ export class NgModule {
       "factory",
       [
         name,
-        [
-          _rest,
-          ($rest: RestFactory) => $rest<T, ID>(url, entityClass, options),
-        ],
+        [_rest, ($rest: RestFactory) => $rest<T>(url, entityClass, options)],
       ],
     ]);
 
@@ -483,7 +487,7 @@ export class NgModule {
    * @param {SseConfig} [config] - SSE connection options.
    * @returns {NgModule}
    */
-  sse(name: string, url: string, config: SseConfig = {}): NgModule {
+  sse(name: string, url: string, config: SseConfig = {}): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
     this._invokeQueue.push([
@@ -512,7 +516,7 @@ export class NgModule {
     url: string,
     protocols: string[] = [],
     config: WebSocketConfig = {},
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
     this._invokeQueue.push([
@@ -545,7 +549,7 @@ export class NgModule {
     name: string,
     url: string,
     config: WebTransportConfig = {},
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
     this._invokeQueue.push([
@@ -574,10 +578,10 @@ export class NgModule {
    * @param {WebComponentOptions} options - Custom element options.
    * @returns {NgModule}
    */
-  webComponent<T extends object = Record<string, any>>(
+  webComponent<T extends object = Record<string, unknown>>(
     name: string,
     options: WebComponentOptions<T>,
-  ): NgModule {
+  ): this {
     validate(isString, name, "name");
     validate(isObject, options, "options");
     this._runBlocks.push([
@@ -599,7 +603,7 @@ export class NgModule {
    * @param {string} topic - Base event-bus topic prefix.
    * @returns {NgModule}
    */
-  topic(name: string, topic: string): NgModule {
+  topic(name: string, topic: string): this {
     validate(isString, name, "name");
     validate(isString, topic, "topic");
     this._invokeQueue.push([

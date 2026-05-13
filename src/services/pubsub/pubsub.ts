@@ -4,7 +4,10 @@ import {
 } from "../../injection-tokens.ts";
 import { nullObject } from "../../shared/utils.ts";
 
-type ListenerEntry = { _fn: Function; _context: any };
+interface ListenerEntry {
+  _fn: Function;
+  _context: any;
+}
 let eventBusInstance: PubSub | undefined;
 
 /**
@@ -62,18 +65,10 @@ export function createTopicService(
     publish(event: string, ...args: any[]): boolean {
       return eventBus.publish(eventName(event), ...args);
     },
-    subscribe(
-      event: string,
-      fn: Function,
-      context: any = undefined,
-    ): () => boolean {
+    subscribe(event: string, fn: Function, context?: any): () => boolean {
       return eventBus.subscribe(eventName(event), fn, context);
     },
-    subscribeOnce(
-      event: string,
-      fn: Function,
-      context: any = undefined,
-    ): () => boolean {
+    subscribeOnce(event: string, fn: Function, context?: any): () => boolean {
       return eventBus.subscribeOnce(eventName(event), fn, context);
     },
     getCount(event: string): number {
@@ -99,7 +94,7 @@ export class PubSub {
    * @param $exceptionHandler - Handler invoked when a subscriber throws.
    */
   constructor($exceptionHandler: ng.ExceptionHandlerService) {
-    this._topics = nullObject() as Record<string, ListenerEntry[]>;
+    this._topics = nullObject();
     this._disposed = false;
     this._exceptionHandler = $exceptionHandler;
   }
@@ -110,7 +105,7 @@ export class PubSub {
    * All topics and listeners are removed, and the instance can be reused.
    */
   reset(): void {
-    this._topics = nullObject() as Record<string, ListenerEntry[]>;
+    this._topics = nullObject();
     this._disposed = false;
   }
 
@@ -141,11 +136,7 @@ export class PubSub {
    * @param [context] - Optional `this` context for the callback.
    * @returns A function that unsubscribes this listener.
    */
-  subscribe(
-    topic: string,
-    fn: Function,
-    context: any = undefined,
-  ): () => boolean {
+  subscribe(topic: string, fn: Function, context?: any): () => boolean {
     if (this._disposed) return () => false;
     let listeners = this._topics[topic];
 
@@ -168,11 +159,7 @@ export class PubSub {
    * @param [context] - Optional `this` context for the callback.
    * @returns A function that unsubscribes this listener.
    */
-  subscribeOnce(
-    topic: string,
-    fn: Function,
-    context: any = undefined,
-  ): () => boolean {
+  subscribeOnce(topic: string, fn: Function, context?: any): () => boolean {
     if (this._disposed) return () => false;
 
     let called = false;
@@ -198,7 +185,7 @@ export class PubSub {
    * @param [context] - Optional `this` context.
    * @returns True if the listener was found and removed.
    */
-  unsubscribe(topic: string, fn: Function, context: any = undefined): boolean {
+  unsubscribe(topic: string, fn: Function, context?: any): boolean {
     if (this._disposed) return false;
 
     const listeners = this._topics[topic];

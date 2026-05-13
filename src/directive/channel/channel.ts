@@ -18,22 +18,23 @@ export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
       element: HTMLElement,
       attrs: Attributes & Record<string, string>,
     ): void => {
-      const channel = attrs.ngChannel;
+      const channel: unknown = attrs.ngChannel;
+
+      if (typeof channel !== "string") {
+        return;
+      }
 
       const hasTemplateContent = element.childNodes.length > 0;
 
-      const unsubscribe = $eventBus.subscribe(
-        channel,
-        (value: string | Record<string, any>) => {
-          if (hasTemplateContent) {
-            if (isObject(value)) {
-              scope.$merge(value);
-            }
-          } else {
-            element.innerHTML = isString(value) ? value : String(value);
+      const unsubscribe = $eventBus.subscribe(channel, (value: unknown) => {
+        if (hasTemplateContent) {
+          if (isObject(value)) {
+            scope.$merge(value);
           }
-        },
-      );
+        } else {
+          element.innerHTML = isString(value) ? value : JSON.stringify(value);
+        }
+      });
 
       scope.$on("$destroy", () => unsubscribe());
     },

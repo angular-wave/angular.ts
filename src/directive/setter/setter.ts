@@ -13,11 +13,9 @@ export function ngSetterDirective(
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
-      const attrMap = attrs as Attributes & Record<string, string>;
+      const modelExpression: unknown = attrs.ngSetter;
 
-      const modelExpression = attrMap.ngSetter;
-
-      if (!modelExpression) {
+      if (typeof modelExpression !== "string" || modelExpression === "") {
         $log.warn("ng-setter: expression null");
 
         return;
@@ -59,7 +57,9 @@ export function ngSetterDirective(
         characterData: true,
       });
 
-      scope.$on("$destroy", () => observer.disconnect());
+      scope.$on("$destroy", () => {
+        observer.disconnect();
+      });
       updateModel(element.innerHTML);
     },
   };

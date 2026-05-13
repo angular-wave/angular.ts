@@ -18,10 +18,10 @@ type NgCanExitTransition = ng.Transition & {
   _ngCanExitIds?: Record<number, boolean>;
 };
 
-type ParamSchemaEntry = {
+interface ParamSchemaEntry {
   id: string | number;
   type: { equals: (a: unknown, b: unknown) => boolean };
-};
+}
 
 const controllerRegisteredScopes = new WeakMap<
   ViewControllerInstance,
@@ -176,7 +176,7 @@ export function registerViewControllerCallbacks(
       // Exit early if the $transition$ will exit the state the view is for.
       if (
         $transition$ === viewCreationTrans ||
-        $transition$.exiting().indexOf(viewState) !== -1
+        $transition$.exiting().includes(viewState)
       ) {
         return;
       }
@@ -185,9 +185,9 @@ export function registerViewControllerCallbacks(
 
       const fromParams = $transition$.params("from");
 
-      const toNodes = ($transition$._treeChanges.to || []) as PathNode[];
+      const toNodes = $transition$._treeChanges.to || [];
 
-      const fromNodes = ($transition$._treeChanges.from || []) as PathNode[];
+      const fromNodes = $transition$._treeChanges.from || [];
 
       const toSchema: ParamSchemaEntry[] = [];
 
@@ -295,7 +295,7 @@ export function registerViewControllerCallbacks(
 
       if (!prevTruthyAnswer(trans)) {
         promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
-        promise.then((val) => (ids[id] = val !== false));
+        void promise.then((val) => (ids[id] = val !== false));
       }
 
       return promise;

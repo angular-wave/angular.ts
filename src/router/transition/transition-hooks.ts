@@ -1,5 +1,6 @@
 import {
   assign,
+  deleteProperty,
   isFunction,
   isInstanceOf,
   isObject,
@@ -53,9 +54,9 @@ function runWithViewTransition(updateCallback: () => void): Promise<void> {
     return Promise.resolve();
   }
 
-  let hasCallbackError = false;
-
-  let callbackError: unknown;
+  const callbackState: { hasError: boolean; error?: unknown } = {
+    hasError: false,
+  };
 
   viewTransitionActive = true;
 
@@ -65,8 +66,8 @@ function runWithViewTransition(updateCallback: () => void): Promise<void> {
     try {
       updateCallback();
     } catch (error) {
-      hasCallbackError = true;
-      callbackError = error;
+      callbackState.hasError = true;
+      callbackState.error = error;
       throw error;
     }
   });
@@ -80,8 +81,8 @@ function runWithViewTransition(updateCallback: () => void): Promise<void> {
     },
   );
 
-  if (hasCallbackError) {
-    throw callbackError;
+  if (callbackState.hasError) {
+    throw callbackState.error;
   }
 
   return viewTransition.updateCallbackDone.then(afterViewCommitTask);
@@ -153,7 +154,7 @@ function addTransitionResolvable(
   resolvable: Resolvable,
   stateName: string,
 ): void {
-  const toPath = trans._treeChanges.to || [];
+  const toPath = trans._treeChanges.to;
 
   let targetNode: PathNode | undefined;
 
@@ -177,14 +178,14 @@ function addTransitionResolvable(
 }
 
 function transitionViews(trans: Transition, pathname: string): ViewConfig[] {
-  const path = (trans._treeChanges[pathname] || []) as PathNode[];
+  const path = trans._treeChanges[pathname] ?? [];
 
   const viewConfigs: ViewConfig[] = [];
 
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
 
-    const views = node._views || [];
+    const views = node._views ?? [];
 
     for (let j = 0; j < views.length; j++) {
       const view = views[j];
@@ -338,8 +339,8 @@ function handleRedirectToResult(
 
   if (isObject(result) && ("state" in result || "params" in result)) {
     return stateService.target(
-      result.state || trans.to(),
-      result.params || trans.params(),
+      result.state ?? trans.to(),
+      result.params ?? trans.params(),
       trans._options,
     );
   }
@@ -398,8 +399,14 @@ function lazyResolveState(
   trans: Transition,
   state: StateDeclaration,
 ): Promise<void> {
+  const stateObject = state._state?.();
+
+  if (!stateObject) {
+    throw new Error(`State '${state.name}' is not built`);
+  }
+
   return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
-    .subContext(state._state!())
+    .subContext(stateObject)
     .resolvePath(false, trans)
     .then(noop);
 }
@@ -557,11 +564,11 @@ function registerUpdateGlobalState(
 
     routerState._setSuccessfulTransition(trans);
     routerState._currentState = current;
-    routerState._current = current?.self;
+    routerState._current = current.self;
     const params = routerState._params;
 
     keys(params).forEach((key) => {
-      delete params[key];
+      deleteProperty(params, key);
     });
 
     assign(params, trans.params());

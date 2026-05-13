@@ -47,11 +47,11 @@ export interface Transition {
 export type { TransitionOptions } from "./interface.ts";
 const REDIRECT_MAX = 20;
 
-type DeferredPromise<T> = {
+interface DeferredPromise<T> {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
   reject: (reason?: unknown) => void;
-};
+}
 
 function createDeferredPromise<T>(): DeferredPromise<T> {
   let resolve!: DeferredPromise<T>["resolve"];
@@ -199,7 +199,7 @@ export class Transition {
     );
     const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
 
-    TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
+    void TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
     this.applyViewConfigs();
   }
 
@@ -226,10 +226,10 @@ export class Transition {
     const fromPath = this._treeChanges.from;
 
     const fromNode = fromPath.length
-      ? (fromPath[fromPath.length - 1] as PathNode)
+      ? fromPath[fromPath.length - 1]
       : undefined;
 
-    return fromNode?.state as StateObject;
+    return fromNode!.state;
   }
 
   /**
@@ -238,11 +238,9 @@ export class Transition {
   $to(): StateObject {
     const toPath = this._treeChanges.to;
 
-    const toNode = toPath.length
-      ? (toPath[toPath.length - 1] as PathNode)
-      : undefined;
+    const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
 
-    return toNode?.state as StateObject;
+    return toNode!.state;
   }
 
   /**
@@ -253,7 +251,7 @@ export class Transition {
    * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
    */
   from(): StateDeclaration {
-    return this.$from()!.self;
+    return this.$from().self;
   }
 
   /**
@@ -264,7 +262,7 @@ export class Transition {
    * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
    */
   to(): StateDeclaration {
-    return this.$to()!.self;
+    return this.$to().self;
   }
 
   /**
@@ -272,7 +270,7 @@ export class Transition {
    * @returns {RawParams}
    */
   params(pathname = "to"): RawParams {
-    const path = (this._treeChanges[pathname] || []) as PathNode[];
+    const path = this._treeChanges[pathname] || [];
 
     return Object.freeze(collectPathParams(path));
   }
@@ -316,12 +314,13 @@ export class Transition {
   redirect(targetState: TargetState): Transition {
     let redirects = 1;
 
-    let trans: Transition | null = this;
+    let trans = this._options.redirectedFrom || null;
 
-    while ((trans = trans._options.redirectedFrom || null)) {
+    while (trans) {
       if (++redirects > REDIRECT_MAX) {
         throw new Error(`Too many consecutive Transition redirects (20+)`);
       }
+      trans = trans._options.redirectedFrom || null;
     }
     const redirectOpts: TransitionOptions = {
       redirectedFrom: this,
@@ -463,7 +462,7 @@ export class Transition {
 
     const newTC = this._treeChanges;
 
-    const pendTC = pending && pending._treeChanges;
+    const pendTC = pending?._treeChanges;
 
     if (
       pendTC &&
@@ -549,7 +548,7 @@ export class Transition {
    * @returns a transition rejection explaining why the transition is invalid, or the reason the transition failed.
    */
   error(): Rejection | undefined {
-    const state = this.$to() as StateObject;
+    const state = this.$to();
 
     if (state.self.abstract) {
       return Rejection.invalid(

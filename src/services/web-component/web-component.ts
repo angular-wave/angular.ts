@@ -307,7 +307,7 @@ function createWebComponentClass<T extends object>(
 
     const scope = createElementScope(host, initialState, {
       isolate: options.isolate,
-    }) as ng.Scope & T;
+    });
 
     const context = createContext(host, scope, injector, renderRoot);
 
@@ -375,7 +375,7 @@ function normalizeInputs(inputs: WebComponentInputs = {}): InputDefinition[] {
       };
     }
 
-    const config = input as WebComponentInputConfig;
+    const config = input;
 
     return {
       attribute: config.attribute || kebobString(property),
@@ -392,7 +392,7 @@ function resolveInitialState<T extends object>(
 ): T {
   if (!state) return {} as T;
 
-  return (isFunction(state) ? state() : { ...state }) as T;
+  return isFunction(state) ? state() : { ...state };
 }
 
 function resolveRenderRoot(
@@ -403,9 +403,7 @@ function resolveRenderRoot(
 
   if (host.shadowRoot) return host.shadowRoot;
 
-  const init = isObject(shadow)
-    ? (shadow as ShadowRootInit)
-    : ({ mode: "open" } as ShadowRootInit);
+  const init = isObject(shadow) ? shadow : ({ mode: "open" } as ShadowRootInit);
 
   return host.attachShadow(init);
 }
@@ -485,10 +483,10 @@ function applyAttributes(
   });
 }
 
-function applyPendingValues<T extends object>(
+function applyPendingValues(
   host: HTMLElement,
   inputs: InputDefinition[],
-  scope: ng.Scope & T,
+  scope: ng.Scope,
 ): void {
   const pending = getPendingValues(host);
 

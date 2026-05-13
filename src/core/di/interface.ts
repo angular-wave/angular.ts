@@ -1,5 +1,7 @@
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
 
+type ProviderMethod = (...args: never[]) => unknown;
+
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -14,15 +16,15 @@ export interface PersistentStoreConfig {
 }
 
 export interface ProviderCache {
-  [key: string]: any; // dynamic providers
+  [key: string]: unknown; // dynamic providers
   $provide: {
-    provider: Function;
-    factory: Function;
-    service: Function;
-    value: Function;
-    constant: Function;
-    store: Function;
-    decorator: Function;
+    provider: ProviderMethod;
+    factory: ProviderMethod;
+    service: ProviderMethod;
+    value: ProviderMethod;
+    constant: ProviderMethod;
+    store: ProviderMethod;
+    decorator: ProviderMethod;
   };
   $injectorProvider?: {
     $get: () => InjectorService;

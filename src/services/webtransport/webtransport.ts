@@ -44,9 +44,10 @@ export interface NativeWebTransport {
   >;
 }
 
-interface NativeWebTransportConstructor {
-  new (url: string, options?: WebTransportOptions): NativeWebTransport;
-}
+type NativeWebTransportConstructor = new (
+  url: string,
+  options?: WebTransportOptions,
+) => NativeWebTransport;
 
 /** Event emitted for each incoming WebTransport datagram. */
 export interface WebTransportDatagramEvent<T = unknown> {
@@ -232,7 +233,11 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       transport = new this._TransportCtor(this._url, this._transportOptions);
     } catch (error) {
       this._handleNativeClose(error);
-      this.ready = Promise.reject(error);
+      this.ready = Promise.reject(
+        error instanceof Error
+          ? error
+          : new Error("Failed to open WebTransport", { cause: error }),
+      );
 
       return;
     }
@@ -252,7 +257,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
 
         return this;
       },
-      (error) => {
+      (error: unknown) => {
         this._handleNativeClose(error, transport);
         throw error;
       },
@@ -262,7 +267,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       () => {
         this._handleNativeClose(undefined, transport);
       },
-      (error) => {
+      (error: unknown) => {
         this._handleNativeClose(error, transport);
       },
     );

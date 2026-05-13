@@ -72,41 +72,45 @@ export function ngWorkerDirective(
         },
       });
 
-      element.addEventListener(eventName, async () => {
-        if (element.hasAttribute("disabled")) return;
+      element.addEventListener(eventName, () => {
+        void (async () => {
+          if (element.hasAttribute("disabled")) return;
 
-        if (isDefined(attrs.delay)) {
-          await wait(parseInt(attrs.delay || "", 10) || 0);
-        }
+          if (isDefined(attrs.delay)) {
+            await wait(parseInt(attrs.delay || "", 10) || 0);
+          }
 
-        if (throttled) return;
+          if (throttled) return;
 
-        if (isDefined(attrs.throttle)) {
-          throttled = true;
-          attrs.$set("throttled", true);
-          setTimeout(
-            () => {
-              attrs.$set("throttled", false);
-              throttled = false;
-            },
-            parseInt(attrs.throttle || "", 10),
-          );
-        }
+          if (isDefined(attrs.throttle)) {
+            throttled = true;
+            attrs.$set("throttled", true);
+            setTimeout(
+              () => {
+                attrs.$set("throttled", false);
+                throttled = false;
+              },
+              parseInt(attrs.throttle || "", 10),
+            );
+          }
 
-        let params: unknown;
+          let params: unknown;
 
-        try {
-          params = paramsFn?.(scope);
-        } catch (err) {
-          $log.error("ngWorker: failed to evaluate data-params", err);
-          params = undefined;
-        }
+          try {
+            params = paramsFn?.(scope);
+          } catch (err) {
+            $log.error("ngWorker: failed to evaluate data-params", err);
+            params = undefined;
+          }
 
-        worker.post(params);
+          worker.post(params);
+        })();
       });
 
       if (intervalId) {
-        scope.$on("$destroy", () => clearInterval(intervalId));
+        scope.$on("$destroy", () => {
+          clearInterval(intervalId);
+        });
       }
 
       if (eventName === "load") {

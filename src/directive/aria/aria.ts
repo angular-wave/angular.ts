@@ -14,7 +14,7 @@ export interface AriaService {
 
 const ARIA_DISABLE_ATTR = "ngAriaDisable";
 
-type AriaConfig = {
+interface AriaConfig {
   ariaHidden: boolean;
   ariaChecked: boolean;
   ariaReadonly: boolean;
@@ -25,12 +25,12 @@ type AriaConfig = {
   tabindex: boolean;
   bindKeydown: boolean;
   bindRoleForClick: boolean;
-};
+}
 
-type AriaProviderInstance = {
+interface AriaProviderInstance {
   config: (newConfig: Partial<AriaConfig>) => void;
   $get: () => AriaService;
-};
+}
 
 type AriaNgModelController = ng.NgModelController & {
   $validators: Record<string, any>;
@@ -55,7 +55,7 @@ const isNodeOneOf = function (
   elem: HTMLElement,
   nodeTypeArray: string[],
 ): boolean {
-  return nodeTypeArray.indexOf(elem.nodeName) !== -1;
+  return nodeTypeArray.includes(elem.nodeName);
 };
 
 /**
@@ -207,9 +207,9 @@ export function ngClickAriaDirective(
                 if (keyCode === 13 || keyCode === 32) {
                   // If the event is triggered on a non-interactive element ...
                   if (
-                    nativeAriaNodeNames.indexOf(
+                    !nativeAriaNodeNames.includes(
                       (event.target as Node).nodeName,
-                    ) === -1 &&
+                    ) &&
                     !(event.target as HTMLElement).isContentEditable
                   ) {
                     // ... prevent the default browser behavior (e.g. scrolling when pressing spacebar)
@@ -294,7 +294,7 @@ export function ngReadonlyAriaDirective($aria: AriaService): ng.Directive {
 
 ngModelAriaDirective.$inject = [_aria];
 /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
-export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
+export function ngModelAriaDirective($aria: AriaService): ng.Directive {
   /** Determines whether an ARIA attribute should be attached to an element. */
   function shouldAttachAttr(
     attr: string,

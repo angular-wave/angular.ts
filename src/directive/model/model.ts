@@ -52,28 +52,21 @@ const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 
 export const ngModelError = createErrorFactory("ngModel");
 
-export interface ModelValidators {
-  /**
-   * viewValue is any because it can be an object that is called in the view like $viewValue.name:$viewValue.subName
-   */
-  [index: string]: (modelValue: any, viewValue: any) => boolean;
-}
+export type ModelValidators = Record<
+  string,
+  (modelValue: any, viewValue: any) => boolean
+>;
 
-export interface AsyncModelValidators {
-  [index: string]: (modelValue: any, viewValue: any) => Promise<any>;
-}
+export type AsyncModelValidators = Record<
+  string,
+  (modelValue: any, viewValue: any) => Promise<any>
+>;
 
-export interface ModelParser {
-  (value: any): any;
-}
+export type ModelParser = (value: any) => any;
 
-export interface ModelFormatter {
-  (value: any): any;
-}
+export type ModelFormatter = (value: any) => any;
 
-export interface ModelViewChangeListener {
-  (): void;
-}
+export type ModelViewChangeListener = () => void;
 
 /**
  * Configuration for ngModel behavior.
@@ -159,11 +152,11 @@ export class NgModelController {
 
   $asyncValidators: Record<string, any>;
 
-  $parsers: Array<(value: any) => any>;
+  $parsers: ((value: any) => any)[];
 
-  $formatters: Array<(value: any) => any>;
+  $formatters: ((value: any) => any)[];
 
-  $viewChangeListeners: Array<() => void>;
+  $viewChangeListeners: (() => void)[];
 
   $untouched: boolean;
 
@@ -287,12 +280,7 @@ export class NgModelController {
     this.$error = {}; // keep invalid keys here
     this._success = {}; // keep valid keys here
     this.$pending = undefined; // keep pending keys here
-    this.$name =
-      (
-        $interpolate($attr.name || "", false) as
-          | ng.InterpolationFunction
-          | undefined
-      )?.($scope) || "";
+    this.$name = $interpolate($attr.name || "", false)?.($scope) || "";
     this._parentForm = nullFormCtrl;
     this.$options = defaultModelOptions;
     this._updateEvents = "";
@@ -358,38 +346,36 @@ export class NgModelController {
       return;
     }
 
-    const that = this;
-
     /**
      * Creates a validity bucket if needed and records the given key.
      */
-    function createAndSet(
+    const createAndSet = (
       ctrl: NgModelController & Record<string, any>,
       name: string,
       value: string,
-    ) {
+    ) => {
       if (!ctrl[name]) {
         ctrl[name] = {};
       }
-      that._set(ctrl[name], value);
-    }
+      this._set(ctrl[name], value);
+    };
 
     /**
      * Removes a validity key and clears empty buckets.
      */
-    function unsetAndCleanup(
+    const unsetAndCleanup = (
       ctrl: NgModelController & Record<string, any>,
       name: string,
       value: string,
-    ) {
+    ) => {
       if (ctrl[name]) {
-        that._unset(ctrl[name], value);
+        this._unset(ctrl[name], value);
       }
 
       if (isObjectEmpty(ctrl[name])) {
         ctrl[name] = undefined;
       }
-    }
+    };
 
     /**
      * Updates the CSS validity classes for a specific validation key.
@@ -473,7 +459,7 @@ export class NgModelController {
   _combinedValidityState(
     validationErrorKey: string,
   ): boolean | undefined | null {
-    if (this.$pending && this.$pending[validationErrorKey]) {
+    if (this.$pending?.[validationErrorKey]) {
       return undefined;
     }
 
@@ -806,7 +792,9 @@ export class NgModelController {
    * </example>
    */
   $rollbackViewValue() {
-    this._pendingDebounce && clearTimeout(this._pendingDebounce);
+    if (this._pendingDebounce) {
+      clearTimeout(this._pendingDebounce);
+    }
     this._pendingViewValue = undefined;
     this.$viewValue = this._lastCommittedViewValue;
     this.$render();
@@ -840,8 +828,6 @@ export class NgModelController {
 
     const allowInvalid = this.$options.getOption("allowInvalid");
 
-    const that = this;
-
     this._runValidators(
       modelValue,
       viewValue,
@@ -851,8 +837,8 @@ export class NgModelController {
         if (!allowInvalid && prevValid !== allValid) {
           if (
             allValid &&
-            that.$isEmpty(viewValue) &&
-            !that.$isEmpty(modelValue) &&
+            this.$isEmpty(viewValue) &&
+            !this.$isEmpty(modelValue) &&
             isUndefined(prevModelValue)
           ) {
             return;
@@ -862,10 +848,10 @@ export class NgModelController {
           // external validators (e.g. calculated on the server),
           // that just call $setValidity and need the model value
           // to calculate their validity.
-          that.$modelValue = allValid ? modelValue : undefined;
+          this.$modelValue = allValid ? modelValue : undefined;
 
-          if (that.$modelValue !== prevModelValue) {
-            that._writeModelToScope();
+          if (this.$modelValue !== prevModelValue) {
+            this._writeModelToScope();
           }
         }
       },
@@ -884,50 +870,34 @@ export class NgModelController {
     this._currentValidationRunId++;
     const localValidationRunId = this._currentValidationRunId;
 
-    const that = this;
+    const processParseErrors = () => {
+      const errorKey = this._parserName;
 
-    // check parser error
-    if (!processParseErrors()) {
-      validationDone(false);
-
-      return;
-    }
-
-    if (!processSyncValidators()) {
-      validationDone(false);
-
-      return;
-    }
-    processAsyncValidators();
-
-    function processParseErrors() {
-      const errorKey = that._parserName;
-
-      if (isUndefined(that._parserValid)) {
+      if (isUndefined(this._parserValid)) {
         setValidity(errorKey, null);
       } else {
-        if (!that._parserValid) {
-          keys(that.$validators).forEach((name) => {
+        if (!this._parserValid) {
+          keys(this.$validators).forEach((name) => {
             setValidity(name, null);
           });
-          keys(that.$asyncValidators).forEach((name) => {
+          keys(this.$asyncValidators).forEach((name) => {
             setValidity(name, null);
           });
         }
 
         // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
-        setValidity(errorKey, that._parserValid);
+        setValidity(errorKey, this._parserValid);
 
-        return that._parserValid;
+        return this._parserValid;
       }
 
       return true;
-    }
+    };
 
-    function processSyncValidators() {
+    const processSyncValidators = () => {
       let syncValidatorsValid = true;
 
-      entries(that.$validators).forEach(([name, validator]) => {
+      entries(this.$validators).forEach(([name, validator]) => {
         const result = Boolean(validator(modelValue, viewValue));
 
         syncValidatorsValid = syncValidatorsValid && result;
@@ -935,7 +905,7 @@ export class NgModelController {
       });
 
       if (!syncValidatorsValid) {
-        keys(that.$asyncValidators).forEach((name) => {
+        keys(this.$asyncValidators).forEach((name) => {
           setValidity(name, null);
         });
 
@@ -943,14 +913,14 @@ export class NgModelController {
       }
 
       return true;
-    }
+    };
 
-    function processAsyncValidators() {
+    const processAsyncValidators = () => {
       const validatorPromises: Promise<void>[] = [];
 
       let allValid = true;
 
-      entries(that.$asyncValidators).forEach(([name, validator]) => {
+      entries(this.$asyncValidators).forEach(([name, validator]) => {
         const promise = validator(modelValue, viewValue);
 
         if (!isPromiseLike(promise)) {
@@ -986,25 +956,39 @@ export class NgModelController {
           },
         );
       }
-    }
+    };
 
     /**
      * Applies a validator result if this is still the active validation run.
      */
-    function setValidity(name: string, isValid: boolean | undefined | null) {
-      if (localValidationRunId === that._currentValidationRunId) {
-        that.$setValidity(name, isValid);
+    const setValidity = (name: string, isValid: boolean | undefined | null) => {
+      if (localValidationRunId === this._currentValidationRunId) {
+        this.$setValidity(name, isValid);
       }
-    }
+    };
 
     /**
      * Finalizes the current validation run.
      */
-    function validationDone(allValid: boolean) {
-      if (localValidationRunId === that._currentValidationRunId) {
+    const validationDone = (allValid: boolean) => {
+      if (localValidationRunId === this._currentValidationRunId) {
         doneCallback(allValid);
       }
+    };
+
+    // check parser error
+    if (!processParseErrors()) {
+      validationDone(false);
+
+      return;
     }
+
+    if (!processSyncValidators()) {
+      validationDone(false);
+
+      return;
+    }
+    processAsyncValidators();
   }
 
   /**
@@ -1053,8 +1037,6 @@ export class NgModelController {
   _parseAndValidate() {
     let modelValue = this._lastCommittedViewValue;
 
-    const that = this;
-
     this._parserValid = isUndefined(modelValue) ? undefined : true;
 
     // Reset any previous parse error
@@ -1083,6 +1065,16 @@ export class NgModelController {
 
     this._rawModelValue = modelValue;
 
+    const writeToModelIfNeeded = () => {
+      // intentional loose equality
+      // eslint-disable-next-line eqeqeq
+      if (this.$modelValue != prevModelValue) {
+        if (isNull(this.$modelValue) && prevModelValue === "") return;
+
+        this._writeModelToScope();
+      }
+    };
+
     if (allowInvalid) {
       this.$modelValue = modelValue;
       writeToModelIfNeeded();
@@ -1099,24 +1091,14 @@ export class NgModelController {
           // external validators (e.g. calculated on the server),
           // that just call $setValidity and need the model value
           // to calculate their validity.
-          // if (that.$modelValue ?? that.$modelValue[isProxySymbol]) {
-          //   delete that.$modelValue;
+          // if (this.$modelValue ?? this.$modelValue[isProxySymbol]) {
+          //   delete this.$modelValue;
           // }
-          that.$modelValue = allValid ? modelValue : undefined;
+          this.$modelValue = allValid ? modelValue : undefined;
           writeToModelIfNeeded();
         }
       },
     );
-
-    function writeToModelIfNeeded() {
-      // intentional loose equality
-      // eslint-disable-next-line eqeqeq
-      if (that.$modelValue != prevModelValue) {
-        if (isNull(that.$modelValue) && prevModelValue === "") return;
-
-        that._writeModelToScope();
-      }
-    }
   }
 
   /** @internal */
@@ -1205,7 +1187,7 @@ export class NgModelController {
         debounceDelay = debounceVal;
       } else if (
         isNumber(debounceDelayMap.default) &&
-        updateOn.indexOf(trigger) === -1
+        !updateOn.includes(trigger)
       ) {
         debounceDelay = debounceDelayMap.default;
       }
@@ -1213,16 +1195,16 @@ export class NgModelController {
       debounceDelay = debounceDelayMap["*"];
     }
 
-    this._pendingDebounce && clearTimeout(this._pendingDebounce);
-    const that = this;
-
+    if (this._pendingDebounce) {
+      clearTimeout(this._pendingDebounce);
+    }
     const pendingViewValue = this.$viewValue;
 
     if ((debounceDelay as number) > 0) {
       // this fails if debounceDelay is an object
       this._pendingDebounce = setTimeout(() => {
-        that.$viewValue = pendingViewValue;
-        that.$commitViewValue();
+        this.$viewValue = pendingViewValue;
+        this.$commitViewValue();
       }, debounceDelay as number);
     } else {
       this.$commitViewValue();
@@ -1420,18 +1402,18 @@ export class NgModelController {
    */
   /** @internal */
   _removeAllEventListeners() {
-    this._eventRemovers.forEach((removeCallback: () => void) =>
-      removeCallback(),
-    );
+    this._eventRemovers.forEach((removeCallback: () => void) => {
+      removeCallback();
+    });
     this._eventRemovers.clear();
     this._removeUpdateOnEventListeners();
   }
 
   /** @internal */
   _removeUpdateOnEventListeners() {
-    this._updateEventRemovers.forEach((removeCallback: () => void) =>
-      removeCallback(),
-    );
+    this._updateEventRemovers.forEach((removeCallback: () => void) => {
+      removeCallback();
+    });
     this._updateEventRemovers.clear();
   }
 
@@ -1440,9 +1422,9 @@ export class NgModelController {
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
         this._element.addEventListener(ev, this._updateEventHandler);
-        this._updateEventRemovers.add(() =>
-          this._element.removeEventListener(ev, this._updateEventHandler),
-        );
+        this._updateEventRemovers.add(() => {
+          this._element.removeEventListener(ev, this._updateEventHandler);
+        });
       });
     }
 
@@ -1451,9 +1433,9 @@ export class NgModelController {
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
         this._element.addEventListener(ev, this._updateEventHandler);
-        this._updateEventRemovers.add(() =>
-          this._element.removeEventListener(ev, this._updateEventHandler),
-        );
+        this._updateEventRemovers.add(() => {
+          this._element.removeEventListener(ev, this._updateEventHandler);
+        });
       });
     }
   }
@@ -1467,7 +1449,7 @@ export class NgModelController {
       this.$viewValue = this._pendingViewValue;
     }
 
-    this._debounceViewValueCommit(ev && ev.type);
+    this._debounceViewValueCommit(ev?.type);
   }
 }
 

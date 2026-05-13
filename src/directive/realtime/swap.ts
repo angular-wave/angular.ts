@@ -8,7 +8,7 @@ import { NodeType } from "../../shared/node.ts";
 import { arrayFrom, isArray, isInstanceOf } from "../../shared/utils.ts";
 import type { SwapModeType } from "./protocol.ts";
 
-type SwapNodes = Array<Node | ChildNode>;
+type SwapNodes = (Node | ChildNode)[];
 
 /** Dependencies and per-element state used by realtime DOM swaps. */
 export interface RealtimeSwapContext {

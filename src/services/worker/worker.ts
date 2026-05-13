@@ -62,7 +62,7 @@ export function createWorkerConnection(
         return data;
       }
     },
-    logger: (config?.logger || console) as ng.LogService,
+    logger: config?.logger || console,
     err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
   };
 

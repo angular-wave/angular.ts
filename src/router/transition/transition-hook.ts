@@ -9,6 +9,11 @@ import type { HookResult, HookResultValue } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
+type NullableStateHookFn = (
+  transition: Transition,
+  state: StateDeclaration | null,
+) => HookResult;
+
 /**
  * Transition lifecycle phases used to group and order hook execution.
  *
@@ -27,7 +32,7 @@ export type TransitionHookPhase = number;
 
 /** @internal */
 export interface TransitionHookOptions {
-  _current: () => Transition | void;
+  _current: () => Transition | undefined;
   _transition?: Transition | null;
   _hookType?: string;
   _target?: unknown;
@@ -153,9 +158,11 @@ export class TransitionHook {
     result: HookResult,
   ): undefined {
     if (isPromise(result)) {
-      Promise.resolve(result as Promise<HookResultValue>).catch((err) => {
-        hook._logError(Rejection.normalize(err));
-      });
+      Promise.resolve(result as Promise<HookResultValue>).catch(
+        (err: unknown) => {
+          hook._logError(Rejection.normalize(err));
+        },
+      );
     }
 
     return undefined;
@@ -174,7 +181,9 @@ export class TransitionHook {
     _hook: TransitionHook | undefined,
     error: unknown,
   ): Promise<never> {
-    const promise = Promise.reject(error);
+    const promise = Promise.resolve().then<never>(() => {
+      throw error;
+    });
 
     promise.catch(() => 0);
 
@@ -232,11 +241,9 @@ export class TransitionHook {
   _invokeCallback(hook: RegisteredHook): HookResult {
     const { _options } = this;
 
-    return hook._callback.call(
-      _options._bind,
-      this._transition,
-      this._stateContext as StateDeclaration,
-    ) as HookResult;
+    const callback = hook._callback as NullableStateHookFn;
+
+    return callback.call(_options._bind, this._transition, this._stateContext);
   }
 
   /** @internal */
@@ -336,13 +343,13 @@ export class TransitionHook {
   toString(): string {
     const { _options, _registeredHook } = this;
 
-    const event = _options._hookType || "internal";
+    const event = _options._hookType ?? "internal";
 
     const target = _options._target as
       | { state?: { name?: string }; name?: string }
       | undefined;
 
-    const context = target?.state?.name || target?.name || "unknown";
+    const context = target?.state?.name ?? target?.name ?? "unknown";
 
     const name = fnToString(_registeredHook._callback);
 

@@ -1,5 +1,6 @@
 import {
   assign,
+  hasCustomToString,
   isArray,
   isDefined,
   isNullOrUndefined,
@@ -13,7 +14,27 @@ type ParamTypeConfig = Partial<ParamTypeDefinition> & Record<string, unknown>;
 const emptyParamTypeDefinition: ParamTypeConfig = {};
 
 function valToString(val: unknown): string | undefined {
-  return !isNullOrUndefined(val) ? val.toString() : undefined;
+  if (isNullOrUndefined(val)) {
+    return undefined;
+  }
+
+  switch (typeof val) {
+    case "string":
+      return val;
+    case "number":
+    case "boolean":
+    case "bigint":
+    case "symbol":
+      return String(val);
+    case "function":
+      return val.toString();
+    case "object":
+      return hasCustomToString(val as { toString: () => string })
+        ? (val as { toString: () => string }).toString()
+        : undefined;
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -64,7 +85,7 @@ export class ParamType {
   }
 
   toString() {
-    return `{ParamType:${this.name}}`;
+    return `{ParamType:${this.name ?? ""}}`;
   }
 
   /**
@@ -86,7 +107,9 @@ export class ParamType {
    * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
    * @param {boolean |'auto'} mode
    */
-  $asArray(mode: boolean | "auto"): ParamType {
+  $asArray(mode: false): this;
+  $asArray(mode: true | "auto"): ArrayParamType;
+  $asArray(mode: boolean | "auto"): this | ArrayParamType {
     if (!mode) return this;
 
     return new ArrayParamType(this, mode);
@@ -118,7 +141,7 @@ class ArrayParamType extends ParamType {
     this._type = type;
     this._arrayMode = mode;
     this.dynamic = type.dynamic;
-    this.name = type.name as string | undefined;
+    this.name = type.name;
     this.pattern = type.pattern;
     this.inherit = type.inherit;
     this.raw = type.raw;
@@ -144,7 +167,7 @@ class ArrayParamType extends ParamType {
 
   /** @internal */
   _mapArray(method: ArrayUnaryMethod, val: unknown, allTruthyMode = false) {
-    if (isArray(val) && val.length === 0) return val;
+    if (isArray(val) && val.length === 0) return val as unknown[];
 
     const arr = this._arrayWrap(val);
 

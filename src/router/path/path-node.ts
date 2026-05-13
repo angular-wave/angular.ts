@@ -32,7 +32,7 @@ export class PathNode {
       this.paramSchema = node.paramSchema.slice();
       this.paramValues = assign({}, node.paramValues);
       this.resolvables = node.resolvables.slice();
-      this._views = node._views && node._views.slice();
+      this._views = node._views?.slice();
     } else {
       const state = stateOrNode;
 
@@ -45,7 +45,7 @@ export class PathNode {
       this.paramValues = {};
       this.resolvables = [];
 
-      const resolvables = state.resolvables || [];
+      const resolvables = state.resolvables ?? [];
 
       resolvables.forEach((resolvable) =>
         this.resolvables.push(resolvable.clone()),
@@ -62,7 +62,7 @@ export class PathNode {
    * @param {RawParams} params
    * @returns {PathNode}
    */
-  applyRawParams(params: RawParams): PathNode {
+  applyRawParams(params: RawParams): this {
     const paramValues: RawParams = {};
 
     this.paramSchema.forEach((paramDef) => {

@@ -10,7 +10,7 @@ export type LazyAnimate = () => ng.AnimateService;
 export function createLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   let $animate: ng.AnimateService | undefined;
 
-  return () => ($animate ||= $injector.get(_animate) as ng.AnimateService);
+  return () => ($animate ??= $injector.get(_animate) as ng.AnimateService);
 }
 
 /**

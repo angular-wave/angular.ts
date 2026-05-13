@@ -114,7 +114,7 @@ export class RouterProvider {
 
   /** @internal */
   _sync(evt?: ng.ScopeEvent): void {
-    if (evt && evt.defaultPrevented) return;
+    if (evt?.defaultPrevented) return;
 
     const best = this._routeTable._match(
       this._urlRuntime._path(),
@@ -135,10 +135,10 @@ export class RouterProvider {
 
     const { current } = $state;
 
-    const currentHref = current ? $state.href(current, $state.params) : null;
+    const currentHref = current ? $state.href(current, this._params) : null;
 
     if ($state.href(state, params) !== currentHref) {
-      $state.transitionTo(state, params, { inherit: true, source: "url" });
+      void $state.transitionTo(state, params, { inherit: true, source: "url" });
     }
   }
 

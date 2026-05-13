@@ -7,7 +7,6 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookMatchCriterion,
-  IStateMatch,
   HookRegOptions,
   TreeChanges,
 } from "./interface.ts";
@@ -46,7 +45,7 @@ function matchState(
   }
 
   if (isFunction(criterion)) {
-    return !!(criterion as IStateMatch)(state, transition);
+    return criterion(state, transition);
   }
 
   return false;
@@ -88,14 +87,14 @@ export class RegisteredHook {
     options: HookRegOptions = {},
   ) {
     this._tranSvc = tranSvc;
-    this._eventType = eventType as TransitionEventType;
+    this._eventType = eventType;
     this._callback = callback;
     this._matchCriteria = matchCriteria;
     this._hooks = hooks;
     this._invokeCount = 0;
     this._deregistered = false;
-    this._priority = options.priority || 0;
-    this._bind = options.bind || null;
+    this._priority = options.priority ?? 0;
+    this._bind = options.bind ?? null;
     this._invokeLimit = options.invokeLimit;
   }
 
@@ -130,13 +129,15 @@ export class RegisteredHook {
     for (const name in PATH_TYPES) {
       const pathType = PATH_TYPES[name];
 
-      const path = (treeChanges[pathType._name] || []) as PathNode[];
+      const path = treeChanges[pathType._name] ?? [];
 
       const transitionNode = path.length ? path[path.length - 1] : undefined;
 
-      const criterion = hasOwn(this._matchCriteria, pathType._name)
-        ? (this._matchCriteria[pathType._name] as HookMatchCriterion)
-        : true;
+      const configuredCriterion = hasOwn(this._matchCriteria, pathType._name)
+        ? this._matchCriteria[pathType._name]
+        : undefined;
+
+      const criterion = configuredCriterion ?? true;
 
       if (criterion === true) {
         matchingNodes[pathType._name] = pathType._stateHook
@@ -180,14 +181,12 @@ export class RegisteredHook {
 }
 
 /** @internal */
-export interface RegisteredHooks {
-  [key: string]: RegisteredHook[];
-}
+export type RegisteredHooks = Partial<Record<string, RegisteredHook[]>>;
 
-type HookSource = {
+interface HookSource {
   /** @internal */
   _registeredHooks?: RegisteredHooks;
-};
+}
 
 /**
  * Registers a hook on either the transition service or a single transition.
@@ -203,10 +202,10 @@ export function registerHook(
   options: HookRegOptions = {},
 ): DeregisterFn {
   const _registeredHooks = (hookSource._registeredHooks =
-    hookSource._registeredHooks || ({} as RegisteredHooks));
+    hookSource._registeredHooks ?? {});
 
   const hooks = (_registeredHooks[eventType._name] =
-    _registeredHooks[eventType._name] || []);
+    _registeredHooks[eventType._name] ?? []);
 
   const registeredHook = new RegisteredHook(
     transitionService,
@@ -233,7 +232,7 @@ export function makeEvent(
   eventType: TransitionEventType,
 ): HookRegistrationFn {
   const _registeredHooks = (hookSource._registeredHooks =
-    hookSource._registeredHooks || ({} as RegisteredHooks));
+    hookSource._registeredHooks ?? {});
 
   const hooks = (_registeredHooks[eventType._name] = [] as RegisteredHook[]);
 

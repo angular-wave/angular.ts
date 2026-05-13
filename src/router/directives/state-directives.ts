@@ -24,42 +24,45 @@ import type { StateObject } from "../state/state-object.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
 import type { RouterProvider } from "../router.ts";
 
-type ParsedStateRef = { _state: string | null; _paramExpr: string | null };
+interface ParsedStateRef {
+  _state: string | null;
+  _paramExpr: string | null;
+}
 
 type StateRefOptions = TransitionOptions & { events?: string[] };
 
-type ProcessedDef = {
+interface ProcessedDef {
   _ngState: StateOrName | undefined;
   _ngStateParams: RawParams | undefined;
   _ngStateOpts: StateRefOptions;
   _href: string | null | undefined;
-};
+}
 
-type StateRefDefinition = {
+interface StateRefDefinition {
   _ngState?: StateOrName | null;
   _ngStateParams?: RawParams;
   _ngStateOpts?: StateRefOptions;
-};
+}
 
-type TypeInfo = {
+interface TypeInfo {
   _attr: string;
   _isAnchor: boolean;
   _clickable: boolean;
-};
+}
 
-type ActiveClassState = {
+interface ActiveClassState {
   _state: { name: string };
   _params: unknown;
   _activeClass: string;
-};
+}
 
-type StateRefActiveController = {
+interface StateRefActiveController {
   /** @internal */
   _addStateInfo?: (
     newState: StateOrName | null,
     newParams: unknown,
   ) => (() => void) | undefined;
-};
+}
 
 type WatchDeregFns = Record<string, () => void>;
 
@@ -79,7 +82,9 @@ function appendSplitClasses(classes: string[], value: string): void {
 function getClasses(stateList: ActiveClassState[]): string[] {
   const classes: string[] = [];
 
-  stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
+  stateList.forEach((state) => {
+    appendSplitClasses(classes, state._activeClass);
+  });
 
   return classes;
 }
@@ -94,15 +99,12 @@ function appendUniqueClasses(target: string[], source: string[]): void {
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
 function parseStateRef(ref: string): ParsedStateRef {
-  const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
+  const paramsOnly = /^\s*({[^}]*})\s*$/.exec(ref);
 
   if (paramsOnly) ref = `(${paramsOnly[1]})`;
-  const parsed = ref
-    .replace(/\n/g, " ")
-    .match(/^\s*([^(]*?)\s*(\((.*)\))?\s*$/);
+  const parsed = /^\s*([^(]*?)\s*(\((.*)\))?\s*$/.exec(ref.replace(/\n/g, " "));
 
-  if (!parsed || parsed.length !== 4)
-    throw new Error(`Invalid state ref '${ref}'`);
+  if (parsed?.length !== 4) throw new Error(`Invalid state ref '${ref}'`);
 
   return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
 }
@@ -114,7 +116,7 @@ function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
 
   const path = ($ngView as { $cfg?: { _path?: unknown } } | undefined)?.$cfg
-    ?._path as Array<{ state: { name: string } }> | undefined;
+    ?._path as { state: { name: string } }[] | undefined;
 
   return path ? path[path.length - 1].state.name : undefined;
 }
@@ -127,9 +129,7 @@ function processedDef(
   $element: HTMLElement,
   def: StateRefDefinition,
 ): ProcessedDef {
-  const ngState = (def._ngState || $state.current?.name) as
-    | StateOrName
-    | undefined;
+  const ngState = def._ngState || $state.current?.name;
 
   const ngStateOpts = assign(
     defaultOpts($element, $state),
@@ -212,7 +212,7 @@ function clickHook(
         }
 
         if (!el.getAttribute("disabled") && target._ngState) {
-          $state
+          void $state
             .go(target._ngState, target._ngStateParams, target._ngStateOpts)
             .then(() => {
               scope.$emit("$updateBrowser");
@@ -255,7 +255,7 @@ function bindEvents(
   if (!isArray(events)) {
     events = ["click"];
   }
-  const eventNames = events as string[];
+  const eventNames = events;
   //const on = element.on ? "on" : "bind";
 
   for (const event of eventNames) {
@@ -320,7 +320,7 @@ export function StateRefDirective(
       rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
 
       function update() {
-        rawDef._ngStateParams = assign({}, paramFn && paramFn(scope));
+        rawDef._ngStateParams = assign({}, paramFn?.(scope));
         const def = processedDef($state, element, rawDef);
 
         if (unlinkInfoFn) {
@@ -501,12 +501,7 @@ export function StateRefActiveDirective(
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
       const activeEqClass =
-        (
-          $interpolate(
-            $attrs.ngSrefActiveEq || "",
-            false,
-          ) as ng.InterpolationFunction
-        )($scope) || "";
+        $interpolate($attrs.ngSrefActiveEq || "", false)!($scope) || "";
 
       try {
         ngSrefActive = $attrs.ngSrefActive
@@ -518,12 +513,7 @@ export function StateRefActiveDirective(
       }
       ngSrefActive =
         ngSrefActive ||
-        (
-          $interpolate(
-            $attrs.ngSrefActive || "",
-            false,
-          ) as ng.InterpolationFunction
-        )($scope) ||
+        $interpolate($attrs.ngSrefActive || "", false)!($scope) ||
         "";
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]

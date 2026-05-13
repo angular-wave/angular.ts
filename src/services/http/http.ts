@@ -56,7 +56,7 @@ function withResolvers<T>() {
 /** Reads response headers returned by {@link HttpResponse.headers}. */
 export interface HttpHeadersGetter {
   /** Return all parsed response headers keyed by lowercase header name. */
-  (): { [name: string]: string };
+  (): Record<string, string>;
   /** Return one response header by name, or an empty string when it is absent. */
   (headerName: string): string;
 }
@@ -79,20 +79,23 @@ export interface HttpRequestConfigHeaders {
 
 // See the jsdoc for transformData() at https://github.com/angular/angular.ts/blob/master/src/ng/http.js#L228
 /** Transforms request data before it is sent. */
-export interface HttpRequestTransformer {
-  (data: any, headersGetter: HttpHeadersGetter): any;
-}
+export type HttpRequestTransformer = (
+  data: any,
+  headersGetter: HttpHeadersGetter,
+) => any;
 
 // The definition of fields are the same as HttpResponse
 /** Transforms response data before the returned promise settles. */
-export interface HttpResponseTransformer {
-  (data: any, headersGetter: HttpHeadersGetter, status: number): any;
-}
+export type HttpResponseTransformer = (
+  data: any,
+  headersGetter: HttpHeadersGetter,
+  status: number,
+) => any;
 
-export interface HttpHeaderType {
-  /** @internal */
-  [requestType: string]: string | ((config: RequestConfig) => string);
-}
+export type HttpHeaderType = Record<
+  string,
+  string | ((config: RequestConfig) => string)
+>;
 
 /**
  * Default request settings exposed through `$httpProvider.defaults`.
@@ -150,7 +153,7 @@ export interface RequestShortcutConfig extends HttpProviderDefaults {
   /** Millisecond timeout, or a promise whose resolution aborts the request. */
   timeout?: number | Promise<any> | undefined;
   /** Native fetch response body reader hint. */
-  responseType?: HttpResponseType | string | undefined;
+  responseType?: string | undefined;
 }
 
 /**
@@ -301,7 +304,7 @@ function serializeValue(
     return jsonValue ?? "";
   }
 
-  return v as string | number | boolean;
+  return v;
 }
 
 /**
@@ -329,12 +332,12 @@ export function HttpParamSerializerProvider(this: {
       keys(params)
         .sort()
         .forEach((key) => {
-          const value = params[key as string];
+          const value = params[key];
 
           if (isNullOrUndefined(value) || isFunction(value)) return;
 
           if (isArray(value)) {
-            (value as any[]).forEach((v) => {
+            value.forEach((v) => {
               if (isNullOrUndefined(v) || isFunction(v)) return;
 
               const serializedValue = serializeValue(
@@ -342,7 +345,7 @@ export function HttpParamSerializerProvider(this: {
               );
 
               parts.push(
-                `${encodeUriQuery(key as string)}=${encodeUriQuery(String(serializedValue))}`,
+                `${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`,
               );
             });
           } else {
@@ -354,7 +357,7 @@ export function HttpParamSerializerProvider(this: {
               | Date;
 
             parts.push(
-              `${encodeUriQuery(key as string)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`,
+              `${encodeUriQuery(key)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`,
             );
           }
         });
@@ -376,8 +379,7 @@ export function defaultHttpResponseTransform(
     if (tempData) {
       const contentType = headers("Content-Type");
 
-      const hasJsonContentType =
-        contentType && contentType.indexOf(APPLICATION_JSON) === 0;
+      const hasJsonContentType = contentType?.indexOf(APPLICATION_JSON) === 0;
 
       if (hasJsonContentType || isJsonLike(tempData)) {
         try {
@@ -403,7 +405,7 @@ export function defaultHttpResponseTransform(
 
 /** Returns `true` when a string looks like a JSON payload. */
 function isJsonLike(str: string): boolean {
-  const jsonStart = str.match(JSON_START);
+  const jsonStart = JSON_START.exec(str);
 
   return !!jsonStart && JSON_ENDS[jsonStart[0]].test(str);
 }
@@ -491,14 +493,14 @@ function transformData(
   data: any,
   headers: HttpHeadersGetter,
   status?: number,
-  fns?: ((...args: any[]) => any) | Array<(...args: any[]) => any>,
+  fns?: ((...args: any[]) => any) | ((...args: any[]) => any)[],
 ): any {
   if (isFunction(fns)) {
     return fns(data, headers, status);
   }
 
   if (isArray(fns)) {
-    (fns as Array<(...args: any[]) => any>).forEach((fn) => {
+    (fns as ((...args: any[]) => any)[]).forEach((fn) => {
       data = fn(data, headers, status);
     });
   }
@@ -605,9 +607,7 @@ export function HttpProvider(this: any): void {
    *
    * See the `$http` service documentation for detailed interceptor behavior.
    */
-  this.interceptors = [] as Array<
-    string | ng.Injectable<HttpInterceptorFactory>
-  >;
+  this.interceptors = [] as (string | ng.Injectable<HttpInterceptorFactory>)[];
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
@@ -648,7 +648,7 @@ export function HttpProvider(this: any): void {
   this.xsrfTrustedOrigins = [] as string[];
 
   const that = this as {
-    interceptors: Array<string | ng.Injectable<HttpInterceptorFactory>>;
+    interceptors: (string | ng.Injectable<HttpInterceptorFactory>)[];
     xsrfTrustedOrigins: string[];
     defaults: HttpProviderDefaults;
   };
@@ -740,11 +740,9 @@ export function HttpProvider(this: any): void {
           ? $injector.get(config.paramSerializer)
           : config.paramSerializer;
 
-        const requestInterceptors: Array<((value: any) => any) | undefined> =
-          [];
+        const requestInterceptors: (((value: any) => any) | undefined)[] = [];
 
-        const responseInterceptors: Array<((value: any) => any) | undefined> =
-          [];
+        const responseInterceptors: (((value: any) => any) | undefined)[] = [];
 
         let promise: Promise<any> = Promise.resolve(config);
 
@@ -774,7 +772,7 @@ export function HttpProvider(this: any): void {
         /** Applies a list of interceptor success/error pairs to a promise chain. */
         function chainInterceptors(
           promiseParam: Promise<any>,
-          interceptors: Array<((value: any) => any) | undefined>,
+          interceptors: (((value: any) => any) | undefined)[],
         ): Promise<any> {
           for (let i = 0, ii = interceptors.length; i < ii; ) {
             const thenFn = interceptors[i++];
@@ -817,7 +815,7 @@ export function HttpProvider(this: any): void {
         function mergeHeaders(
           configParam: RequestConfig,
         ): Record<string, string> {
-          let defHeaders = (defaults.headers || {}) as HttpRequestConfigHeaders;
+          let defHeaders = defaults.headers || {};
 
           const reqHeaders = extend(
             {},
@@ -858,7 +856,7 @@ export function HttpProvider(this: any): void {
             undefined,
             (configParam.transformRequest as
               | ((...args: any[]) => any)
-              | Array<(...args: any[]) => any>
+              | ((...args: any[]) => any)[]
               | undefined) || [],
           );
 
@@ -871,7 +869,7 @@ export function HttpProvider(this: any): void {
             });
           }
 
-          const providerDefaults = defaults as HttpProviderDefaults;
+          const providerDefaults = defaults;
 
           if (
             isUndefined(configParam.withCredentials) &&
@@ -900,7 +898,7 @@ export function HttpProvider(this: any): void {
             httpResponse.status,
             (config.transformResponse as
               | ((...args: any[]) => any)
-              | Array<(...args: any[]) => any>
+              | ((...args: any[]) => any)[]
               | undefined) || [],
           );
 
@@ -992,11 +990,11 @@ export function HttpProvider(this: any): void {
         promise.then(removePendingReq, removePendingReq);
 
         if (
-          (config.cache || (defaults as HttpProviderDefaults).cache) &&
+          (config.cache || defaults.cache) &&
           config.cache !== false &&
           config.method === "GET"
         ) {
-          const providerDefaults = defaults as HttpProviderDefaults;
+          const providerDefaults = defaults;
 
           cache = isObject(config.cache)
             ? config.cache
@@ -1074,9 +1072,7 @@ export function HttpProvider(this: any): void {
 
         /** Wraps raw transport event handlers with function/object listener support. */
         function createEventHandlers(
-          eventHandlers:
-            | RequestConfig["eventHandlers"]
-            | RequestConfig["uploadEventHandlers"],
+          eventHandlers: RequestConfig["eventHandlers"],
         ): Record<string, EventListener> {
           if (eventHandlers) {
             const handlers: Record<string, EventListener> = {};
@@ -1176,7 +1172,7 @@ export function HttpProvider(this: any): void {
       /** Appends a serialized query string to a URL when request parameters are present. */
       function buildUrl(url: string, serializedParams: string): string {
         if (serializedParams.length > 0) {
-          url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+          url += (!url.includes("?") ? "?" : "&") + serializedParams;
         }
 
         return url;
@@ -1253,9 +1249,11 @@ export function http(
   }
 
   if (typeof timeout === "number" && timeout > 0) {
-    timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
+    timeoutId = setTimeout(() => {
+      timeoutRequest("timeout");
+    }, timeout);
   } else if (isPromiseLike(timeout)) {
-    (timeout as Promise<any>).then(() => {
+    void (timeout as Promise<any>).then(() => {
       timeoutRequest("abort");
     });
   }
@@ -1281,8 +1279,8 @@ export function http(
         },
       );
     },
-    (error) => {
-      if (error?.name === "AbortError") {
+    (error: unknown) => {
+      if (isObject(error) && "name" in error && error.name === "AbortError") {
         notifyEvent(abortReason, eventHandlers);
         completeRequest(-1, null, null, "", abortReason);
 
@@ -1416,6 +1414,6 @@ function notifyEvent(
     typeof handler === "object" &&
     "handleEvent" in handler
   ) {
-    (handler as EventListenerObject).handleEvent(event);
+    handler.handleEvent(event);
   }
 }

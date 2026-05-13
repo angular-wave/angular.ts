@@ -28,16 +28,16 @@ type MessageCollection = Record<string, any>;
 /** @internal */
 type MessageNodeComment = Comment & { _ngMessageNode?: string };
 
-type LinkedMessageCtrl = {
+interface LinkedMessageCtrl {
   message: MessageInstance;
   comment: MessageNodeComment;
-};
+}
 
-type MessageInstance = {
+interface MessageInstance {
   attach: () => void;
   detach: () => void;
   test: (name: string | number | symbol) => boolean | undefined;
-};
+}
 
 type TruthyExpression = true | ((scope: ng.Scope) => unknown) | undefined;
 
@@ -206,7 +206,7 @@ class NgMessageCtrl {
   reRender(): void {
     if (!this._renderLater) {
       this._renderLater = true;
-      Promise.resolve().then(() => {
+      void Promise.resolve().then(() => {
         if (this._renderLater) {
           this._render(this._cachedCollection ?? {});
         }
@@ -291,7 +291,7 @@ function parseAttrTruthy(
 }
 
 function evalAttrTruthy(scope: ng.Scope, expr: TruthyExpression): boolean {
-  return expr === true || truthy(expr && expr(scope));
+  return expr === true || truthy(expr?.(scope));
 }
 
 /**
@@ -321,7 +321,7 @@ export function ngMessagesIncludeDirective(
     ) {
       const src = attrs.ngMessagesInclude || attrs.src;
 
-      $templateRequest(src).then((html: string) => {
+      void $templateRequest(src).then((html: string) => {
         if ($scope._destroyed) return;
 
         if (isString(html) && !html.trim()) {
@@ -369,10 +369,7 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  */
 function ngMessageDirectiveFactory(
   isDefault: boolean,
-): (
-  $injector: ng.InjectorService,
-  $parse: ng.ParseService,
-) => ng.Directive<any> {
+): ($injector: ng.InjectorService, $parse: ng.ParseService) => ng.Directive {
   ngMessageDirectiveFn.$inject = [_injector, _parse];
   /**
    * Builds a concrete `ngMessage` directive definition.
@@ -380,7 +377,7 @@ function ngMessageDirectiveFactory(
   function ngMessageDirectiveFn(
     $injector: ng.InjectorService,
     $parse: ng.ParseService,
-  ): ng.Directive<any> {
+  ): ng.Directive {
     const getAnimate = createLazyAnimate($injector);
 
     return {
@@ -473,10 +470,7 @@ function ngMessageDirectiveFactory(
                   currentElement.addEventListener("$destroy", () => {
                     // If the message element was removed via a call to `detach` then `currentElement` will be null
                     // So this handler only handles cases where something else removed the message element.
-                    if (
-                      currentElement &&
-                      currentElement._attachId === attachId
-                    ) {
+                    if (currentElement?._attachId === attachId) {
                       ngMessagesCtrl.deregister(commentNode, isDefault);
                       messageCtrl.detach();
                     }
@@ -511,7 +505,7 @@ function ngMessageDirectiveFactory(
           ngMessagesCtrl.deregister(commentNode, isDefault);
         });
       },
-    } as unknown as ng.Directive<any>;
+    } as unknown as ng.Directive;
   }
 
   return ngMessageDirectiveFn;
@@ -521,12 +515,12 @@ function ngMessageDirectiveFactory(
  * Checks whether the given key exists in a message collection.
  */
 function contains(
-  collection: string[] | object | Array<any> | null | undefined,
+  collection: string[] | object | any[] | null | undefined,
   key: string | number | symbol,
 ): boolean | undefined {
   if (collection) {
     return isArray(collection)
-      ? collection.indexOf(String(key)) >= 0
+      ? collection.includes(String(key))
       : hasOwn(collection, key);
   }
 

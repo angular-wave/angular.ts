@@ -33,7 +33,7 @@ export class Parser {
 function isLiteral(ast: BodyNode): boolean {
   const { _body: body } = ast;
 
-  if (!body || body.length !== 1) {
+  if (body.length !== 1) {
     return true;
   }
 

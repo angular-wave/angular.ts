@@ -25,7 +25,7 @@ export function classDirective(): ng.Directive {
 
       if (!classCounts) {
         // Use a null-prototype map to avoid Object.prototype key assumptions.
-        classCounts = nullObject() as Record<string, number>;
+        classCounts = nullObject();
         setCacheData(element, "$classCounts", classCounts);
       }
 
@@ -34,7 +34,13 @@ export function classDirective(): ng.Directive {
       // Cache once; `hasAnimate(element)` should be stable for this directive instance.
       const animate = hasAnimate(element);
 
-      scope.$watch(attr.ngClass, (val) => {
+      const expression: unknown = attr.ngClass;
+
+      if (typeof expression !== "string") {
+        return;
+      }
+
+      scope.$watch(expression, (val) => {
         ngClassWatchAction(toClassString(val));
       });
 
@@ -119,12 +125,12 @@ export function classDirective(): ng.Directive {
  * Returns all items from `tokens1` that are not present in `tokens2`.
  */
 export function arrayDifference(
-  tokens1: string[],
-  tokens2: string[],
+  tokens1: string[] | null | undefined,
+  tokens2: string[] | null | undefined,
 ): string[] {
-  if (!tokens1 || !tokens1.length) return [];
+  if (!tokens1?.length) return [];
 
-  if (!tokens2 || !tokens2.length) return tokens1;
+  if (!tokens2?.length) return tokens1;
 
   if (tokens2.length === 1) {
     const token = tokens2[0];
@@ -201,7 +207,7 @@ export function toClassString(classValue: unknown): string {
   }
 
   if (isObject(classValue)) {
-    const valueMap = classValue as Record<string, any>;
+    const valueMap = classValue as Record<string, unknown>;
 
     let out = "";
 
@@ -218,5 +224,21 @@ export function toClassString(classValue: unknown): string {
     return classValue;
   }
 
-  return String(classValue);
+  return stringifyClassPrimitive(classValue);
+}
+
+function stringifyClassPrimitive(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "boolean":
+    case "bigint":
+    case "symbol":
+      return String(value);
+    case "function":
+      return value.toString();
+    default:
+      return "";
+  }
 }

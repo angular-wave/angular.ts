@@ -12,8 +12,6 @@ import type { TransitionService } from "./transition-service.ts";
 export function defineCoreTransitionEvents(
   transitionService: TransitionService,
 ): void {
-  const TH = TransitionHook;
-
   const paths = PATH_TYPES;
 
   const NORMAL_SORT = false;
@@ -29,8 +27,10 @@ export function defineCoreTransitionEvents(
     0,
     paths.to,
     NORMAL_SORT,
-    TH._logRejectedResult,
-    TH._throwError,
+    (hook, result) => {
+      TransitionHook._logRejectedResult(hook, result);
+    },
+    (hook, error) => TransitionHook._throwError(hook, error),
     SYNCHRONOUS,
   );
   defineTransitionEvent(
@@ -83,8 +83,10 @@ export function defineCoreTransitionEvents(
     0,
     paths.to,
     NORMAL_SORT,
-    TH._logRejectedResult,
-    TH._logError,
+    (hook, result) => {
+      TransitionHook._logRejectedResult(hook, result);
+    },
+    (hook, error) => TransitionHook._logError(hook, error),
     SYNCHRONOUS,
   );
   defineTransitionEvent(
@@ -94,8 +96,10 @@ export function defineCoreTransitionEvents(
     0,
     paths.to,
     NORMAL_SORT,
-    TH._logRejectedResult,
-    TH._logError,
+    (hook, result) => {
+      TransitionHook._logRejectedResult(hook, result);
+    },
+    (hook, error) => TransitionHook._logError(hook, error),
     SYNCHRONOUS,
   );
 }
@@ -107,8 +111,10 @@ function defineTransitionEvent(
   hookOrder: number,
   criteriaMatchPath: PathType,
   reverseSort = false,
-  resultHandler: TransitionResultHandler = TransitionHook._handleResult,
-  errorHandler: TransitionErrorHandler = TransitionHook._rejectError,
+  resultHandler: TransitionResultHandler = (hook, result) =>
+    TransitionHook._handleResult(hook, result),
+  errorHandler: TransitionErrorHandler = (hook, error) =>
+    TransitionHook._rejectError(hook, error),
   synchronous = false,
 ): void {
   const eventType = new TransitionEventType(

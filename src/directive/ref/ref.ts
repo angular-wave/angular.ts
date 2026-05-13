@@ -5,10 +5,13 @@ import {
   getNodeName,
   hasOwn,
   createErrorFactory,
+  isString,
 } from "../../shared/utils.ts";
 import { getCacheData } from "../../shared/dom.ts";
 
 const ngRefError = createErrorFactory("ngRef");
+
+type RefAssignFn = (scope: ng.Scope, value: unknown) => unknown;
 
 ngRefDirective.$inject = [_parse];
 
@@ -19,30 +22,36 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
     compile(tElement: Element, tAttrs: ng.Attributes) {
       const controllerName = directiveNormalize(getNodeName(tElement));
 
-      const getter = $parse(tAttrs.ngRef);
+      const expression: unknown = tAttrs.ngRef;
+
+      if (!isString(expression)) return () => undefined;
+
+      const getter = $parse(expression);
 
       const setter =
-        getter._assign ||
-        function () {
+        (getter._assign as RefAssignFn | undefined) ??
+        function (): never {
           throw ngRefError(
             "nonassign",
             'Expression in ngRef="{0}" is non-assignable!',
-            tAttrs.ngRef,
+            expression,
           );
         };
 
       return (scope: ng.Scope, element: Element, attrs: ng.Attributes) => {
-        let refValue;
+        let refValue: unknown;
 
         if (hasOwn(attrs, "ngRefRead")) {
-          if (attrs.ngRefRead === "$element") {
+          const readTarget: unknown = attrs.ngRefRead;
+
+          if (readTarget === "$element") {
             refValue = element;
-          } else {
-            refValue = getCacheData(element, `$${attrs.ngRefRead}Controller`);
+          } else if (isString(readTarget)) {
+            refValue = getCacheData(element, `$${readTarget}Controller`);
           }
         } else {
           refValue =
-            getCacheData(element, `$${controllerName}Controller`) || element;
+            getCacheData(element, `$${controllerName}Controller`) ?? element;
         }
 
         refValue = deProxy(refValue);
@@ -58,10 +67,12 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
           }
         }
 
-        setter(deProxy(scope), refValue);
+        const targetScope = deProxy(scope) as ng.Scope;
+
+        setter(targetScope, refValue);
 
         scope.$on("$destroy", () => {
-          setter(deProxy(scope), null);
+          setter(targetScope, null);
         });
       };
     },

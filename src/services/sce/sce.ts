@@ -39,26 +39,26 @@ const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST =
 
 type SceMatcher = RegExp | "self";
 
-type TrustedValueHolder = {
+interface TrustedValueHolder {
   /** @internal */
   _unwrapTrustedValue(): string;
   /** @internal */
   _unwrapTrustedType(): unknown;
   valueOf(): string;
   toString(): string;
-};
+}
 
 type TrustedValueHolderConstructor = new (
   trustedValue?: string,
   trustedType?: unknown,
 ) => TrustedValueHolder;
 
-type TrustedTypesPolicy = {
+interface TrustedTypesPolicy {
   createHTML(value: string): unknown;
   createScriptURL(value: string): unknown;
-};
+}
 
-type TrustedTypesFactory = {
+interface TrustedTypesFactory {
   createPolicy(
     policyName: string,
     rules: {
@@ -66,7 +66,7 @@ type TrustedTypesFactory = {
       createScriptURL?: (value: string) => string;
     },
   ): TrustedTypesPolicy;
-};
+}
 
 const trustedTypesPolicyByWindow = new WeakMap<
   Window,
@@ -128,7 +128,7 @@ export function escapeForRegexp(str: string): string {
 /**
  * Adjusts a matcher string or `RegExp` into the normalized SCE matcher form.
  */
-export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
+export function adjustMatcher(matcher: string | RegExp): SceMatcher {
   if (matcher === "self") {
     return matcher;
   }
@@ -138,7 +138,7 @@ export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
     // '*' matches any character except those from the set ':/.?&'.
     // '**' matches any character (like .* in a RegExp).
     // More than 2 *'s raises an error as it's ill defined.
-    if (matcher.indexOf("***") > -1) {
+    if (matcher.includes("***")) {
       throw $sceError(
         "iwcard",
         "Illegal sequence *** in string matcher.  String: {0}",
@@ -564,7 +564,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
             };
           (holderType.prototype as TrustedValueHolder).toString =
             function sceToString() {
-              return this._unwrapTrustedValue().toString();
+              return this._unwrapTrustedValue();
             };
 
           return holderType;

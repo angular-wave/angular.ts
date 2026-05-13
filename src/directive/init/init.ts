@@ -7,7 +7,7 @@ export function ngInitDirective($parse: ng.ParseService): ng.Directive {
   return {
     priority: 450,
     compile(_element: Element, attrs: ng.Attributes) {
-      const initFn = $parse(attrs.ngInit);
+      const initFn = $parse(String(attrs.ngInit));
 
       return {
         pre(scope: ng.Scope, element: Element) {

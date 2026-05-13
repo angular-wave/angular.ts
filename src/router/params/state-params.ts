@@ -29,7 +29,7 @@ export class StateParams {
     const inheritList = new Set<string>();
 
     for (const parent of parents) {
-      if (!parent || !parent.params) continue;
+      if (!parent.params) continue;
       const parentParams = parent.params;
 
       const parentParamsKeys = keys(parentParams);
@@ -37,7 +37,7 @@ export class StateParams {
       if (!parentParamsKeys.length) continue;
 
       for (const key of parentParamsKeys) {
-        if (parentParams[key].inherit === false || inheritList.has(key)) {
+        if (!parentParams[key].inherit || inheritList.has(key)) {
           continue;
         }
 
@@ -60,9 +60,9 @@ export class StateParams {
 function ancestors(first: StateObject, second: StateObject): StateObject[] {
   const path: StateObject[] = [];
 
-  const firstPath = first.path || [];
+  const firstPath = first.path ?? [];
 
-  const secondPath = second.path || [];
+  const secondPath = second.path ?? [];
 
   const len = Math.min(firstPath.length, secondPath.length);
 

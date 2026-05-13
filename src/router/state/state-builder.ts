@@ -15,7 +15,6 @@ import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import { normalizeNgViewTarget } from "../view/view.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
-import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
 import type {
   BuiltStateDeclaration,
@@ -23,7 +22,6 @@ import type {
   StateDeclaration,
   ViewDeclaration,
 } from "./interface.ts";
-import type { PathNode } from "../path/path-node.ts";
 import { DefType, type Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
@@ -42,9 +40,9 @@ type StateLifecycleHookName = "_onEnter" | "_onExit" | "_onRetain";
 
 type StateLifecyclePathName = "to" | "from";
 
-type StateLifecycleHookContext = {
+interface StateLifecycleHookContext {
   _$injector: ng.InjectorService | undefined;
-};
+}
 
 const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = ["templateUrl", "template"];
 
@@ -63,7 +61,7 @@ const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
  */
 function parseUrl(url: unknown): false | { val: string; root: boolean } {
   if (!isString(url)) return false;
-  const root = url.charAt(0) === "^";
+  const root = url.startsWith("^");
 
   return { val: root ? url.substring(1) : url, root };
 }
@@ -88,7 +86,7 @@ function buildUrl(
   if (!isInstanceOf(url, UrlMatcher))
     throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
 
-  const base = ((parent && parent.navigable) || root) as StateObject;
+  const base = (parent?.navigable || root) as StateObject;
 
   return parsed && parsed.root ? url : base._url!._append(url);
 }
@@ -206,7 +204,7 @@ function viewsBuilder(
   keys(viewsObject).forEach((entryName) => {
     let name = entryName;
 
-    let config = viewsObject[entryName] as ViewDeclaration | string;
+    let config = viewsObject[entryName];
 
     name = name || "$default";
 
@@ -214,7 +212,7 @@ function viewsBuilder(
       config = { component: config };
     }
 
-    config = assign({}, config) as ViewDeclaration;
+    config = assign({}, config);
 
     assertNoRemovedViewKeys(
       REMOVED_VIEW_KEYS,
@@ -236,7 +234,7 @@ function viewsBuilder(
 
     const normalized = normalizeNgViewTarget(
       config._context as StateObject,
-      config._name as string,
+      config._name,
     );
 
     config._ngViewName = normalized.ngViewName;
@@ -375,10 +373,10 @@ function invokeStateLifecycleHook(
 
   const hookContext = stateObject._hookContext as StateLifecycleHookContext;
 
-  const $injector = hookContext._$injector as InjectorService;
+  const $injector = hookContext._$injector!;
 
   const resolveContext = new ResolveContext(
-    (trans._treeChanges[pathname] || []) as PathNode[],
+    trans._treeChanges[pathname] || [],
     $injector,
   );
 
@@ -488,7 +486,7 @@ export class StateBuilder {
       ) || undefined;
     state.resolvables = resolvablesBuilder(
       state as StateObject & StateDeclaration,
-      this._$injector && this._$injector.strictDi,
+      this._$injector?.strictDi,
     );
     this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
     this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
@@ -505,7 +503,7 @@ export class StateBuilder {
       this._paramFactory,
     );
 
-    if (state.parent && state.parent.data) {
+    if (state.parent?.data) {
       state.data = state.self.data = assign(
         createObject(state.parent.data as object),
         state.data,
@@ -528,7 +526,7 @@ export class StateBuilder {
    */
   /** @internal */
   _parentName(state: StateObject): string {
-    const rawName = (state.self && state.self.name) || state.name || "";
+    const rawName = state.self?.name || state.name || "";
 
     const name = rawName;
 
@@ -554,9 +552,9 @@ export class StateBuilder {
 
   /** @internal */
   _name(state: StateObject): string {
-    const name = (state.self && state.self.name) || state.name;
+    const name = state.self?.name || state.name;
 
-    if (name.indexOf(".") !== -1 || !state.parent) return name;
+    if (name.includes(".") || !state.parent) return name;
     const parentName = isString(state.parent)
       ? state.parent
       : state.parent.name;

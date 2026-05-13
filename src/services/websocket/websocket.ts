@@ -30,7 +30,7 @@ export interface WebSocketConnection {
   connect(): void;
 
   /** Send a JSON-serialized message through the native WebSocket. */
-  send(data: any): void;
+  send(data: unknown): void;
 
   /** Close the WebSocket connection and stop reconnect attempts. */
   close(): void;
@@ -62,7 +62,7 @@ export class WebSocketProvider {
       heartbeatTimeout: 0,
       transformMessage(data: string) {
         try {
-          return JSON.parse(data);
+          return JSON.parse(data) as unknown;
         } catch {
           return data;
         }

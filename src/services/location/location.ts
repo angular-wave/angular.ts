@@ -83,7 +83,7 @@ export interface UrlParts {
    * The parsed query string as an object.
    * Mirrors AngularJS’s `$location.setSearch()` format.
    */
-  search: Object;
+  search: object;
 
   /**
    * The fragment identifier (everything after `#`, not including the `#` itself).
@@ -203,7 +203,7 @@ export class Location {
   url(): string;
   url(url: string): this;
   url(url?: string) {
-    return arguments.length ? this.setUrl(url as string) : this.getUrl();
+    return arguments.length ? this.setUrl(url!) : this.getUrl();
   }
 
   /**
@@ -218,7 +218,7 @@ export class Location {
     if (this.html5) {
       newPath = decodePath(newPath, this.html5);
     }
-    _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
+    _path = newPath.startsWith("/") ? newPath : `/${newPath}`;
     this._compose();
 
     return this;
@@ -273,7 +273,7 @@ export class Location {
    */
   setSearch(
     search: string | number | Record<string, any>,
-    paramValue?: string | number | Array<string> | boolean | null,
+    paramValue?: string | number | string[] | boolean | null,
   ) {
     validateRequired(search, "search");
     switch (arguments.length) {
@@ -282,7 +282,7 @@ export class Location {
           search = search.toString();
           _search = parseKeyValue(search);
         } else if (isObject(search)) {
-          const clonedSearch = structuredClone(search) as Record<string, any>;
+          const clonedSearch = structuredClone(search);
 
           // remove object undefined or null properties
           entries(clonedSearch).forEach(([key, value]) => {
@@ -324,21 +324,17 @@ export class Location {
   }
 
   search(): Record<string, any>;
-  search(search: string | number | Record<string, any>): this;
   search(
     search: string | number | Record<string, any>,
-    paramValue?: string | number | Array<string> | boolean | null,
+    paramValue?: string | number | string[] | boolean | null,
   ): this;
 
   search(
     search?: string | number | Record<string, any>,
-    paramValue?: string | number | Array<string> | boolean | null,
+    paramValue?: string | number | string[] | boolean | null,
   ) {
     return arguments.length
-      ? this.setSearch(
-          search as string | number | Record<string, any>,
-          paramValue,
-        )
+      ? this.setSearch(search!, paramValue)
       : this.getSearch();
   }
 
@@ -352,7 +348,7 @@ export class Location {
       ? this.appBaseNoFile + this._url.substring(1)
       : this.appBase + (this._url ? this.hashPrefix + this._url : "");
     urlUpdatedByLocation = true;
-    setTimeout(() => this._updateBrowser && this._updateBrowser());
+    setTimeout(() => this._updateBrowser?.());
   }
 
   /**
@@ -398,7 +394,7 @@ export class Location {
   /** Attempts to parse a clicked link into an app-relative URL update. */
   parseLinkUrl(url: string, relHref: string | null): boolean {
     if (this.html5) {
-      if (relHref && relHref[0] === "#") {
+      if (relHref?.[0] === "#") {
         // special case for links to hash fragments:
         // keep the old url and only replace the hash fragment
         this.setHash(relHref.slice(1));
@@ -476,7 +472,7 @@ export class Location {
 
       let withoutHashUrl = "";
 
-      if (withoutBaseUrl !== undefined && withoutBaseUrl.charAt(0) === "#") {
+      if (withoutBaseUrl?.charAt(0) === "#") {
         // The rest of the URL starts with a hash so we have
         // got either a hashbang path or a plain hash fragment
         withoutHashUrl =
@@ -764,7 +760,7 @@ export class LocationProvider {
           // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
           // an animation.
 
-          absHref = new URL((absHref as SVGAnimatedString).animVal).href;
+          absHref = new URL(absHref.animVal).href;
         }
 
         if (!isString(absHref) && "animVal" in absHref) {
@@ -1071,7 +1067,7 @@ export function parseAppUrl(url: string, html5Mode: boolean): void {
     throw $locationError("badpath", 'Invalid url "{0}".', url);
   }
 
-  const prefixed = url.charAt(0) !== "/";
+  const prefixed = !url.startsWith("/");
 
   if (prefixed) {
     url = `/${url}`;
@@ -1079,7 +1075,7 @@ export function parseAppUrl(url: string, html5Mode: boolean): void {
   const match = urlResolve(url);
 
   const path =
-    prefixed && match.pathname.charAt(0) === "/"
+    prefixed && match.pathname.startsWith("/")
       ? match.pathname.substring(1)
       : match.pathname;
 
@@ -1088,7 +1084,7 @@ export function parseAppUrl(url: string, html5Mode: boolean): void {
   _hash = decodeURIComponent(match.hash);
 
   // make sure path starts with '/';
-  if (_path && _path.charAt(0) !== "/") {
+  if (_path && !_path.startsWith("/")) {
     _path = `/${_path}`;
   }
 }

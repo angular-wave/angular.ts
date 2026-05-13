@@ -21,6 +21,6 @@ describe("ParamType", () => {
   it("wraps a type when array mode is enabled", () => {
     const type = createType();
 
-    expect(type.$asArray("auto")).not.toBe(type);
+    expect(type.$asArray("auto")).not.toBe(type as any);
   });
 });

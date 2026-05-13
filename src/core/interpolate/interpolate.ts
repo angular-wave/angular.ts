@@ -79,19 +79,21 @@ export class InterpolateProvider {
       ): InterpolateService => {
         const security: SecurityAdapter = getSecurityAdapter($injector);
 
-        const provider = this;
+        const interpolationStartSymbol = this.startSymbol;
 
-        const startSymbolLength = this.startSymbol.length;
+        const interpolationEndSymbol = this.endSymbol;
 
-        const endSymbolLength = this.endSymbol.length;
+        const startSymbolLength = interpolationStartSymbol.length;
+
+        const endSymbolLength = interpolationEndSymbol.length;
 
         const escapedStartRegexp = new RegExp(
-          provider.startSymbol.replace(/./g, escape),
+          interpolationStartSymbol.replace(/./g, escape),
           "g",
         );
 
         const escapedEndRegexp = new RegExp(
-          provider.endSymbol.replace(/./g, escape),
+          interpolationEndSymbol.replace(/./g, escape),
           "g",
         );
 
@@ -101,8 +103,8 @@ export class InterpolateProvider {
 
         function unescapeText(text: string): string {
           return text
-            .replace(escapedStartRegexp, provider.startSymbol)
-            .replace(escapedEndRegexp, provider.endSymbol);
+            .replace(escapedStartRegexp, interpolationStartSymbol)
+            .replace(escapedEndRegexp, interpolationEndSymbol);
         }
 
         const $interpolate = (
@@ -115,7 +117,7 @@ export class InterpolateProvider {
             trustedContext === SCE_CONTEXTS._URL ||
             trustedContext === SCE_CONTEXTS._MEDIA_URL;
 
-          if (!text.length || text.indexOf(provider.startSymbol) === -1) {
+          if (!text.length || !text.includes(interpolationStartSymbol)) {
             if (mustHaveExpression) {
               return undefined;
             }
@@ -154,12 +156,12 @@ export class InterpolateProvider {
           const expressionPositions: number[] = [];
 
           while (index < textLength) {
-            startIndex = text.indexOf(provider.startSymbol, index);
+            startIndex = text.indexOf(interpolationStartSymbol, index);
             endIndex =
               startIndex === -1
                 ? -1
                 : text.indexOf(
-                    provider.endSymbol,
+                    interpolationEndSymbol,
                     startIndex + startSymbolLength,
                   );
 
@@ -214,7 +216,9 @@ export class InterpolateProvider {
               const fn = ((context: any, cb?: (val: any) => void) => {
                 try {
                   if (cb) {
-                    context.$watch(watchProp, () => cb(compute(context)));
+                    context.$watch(watchProp, () => {
+                      cb(compute(context));
+                    });
                   }
 
                   return compute(context);
@@ -307,8 +311,8 @@ export class InterpolateProvider {
           return undefined;
         };
 
-        $interpolate.startSymbol = () => provider.startSymbol;
-        $interpolate.endSymbol = () => provider.endSymbol;
+        $interpolate.startSymbol = () => interpolationStartSymbol;
+        $interpolate.endSymbol = () => interpolationEndSymbol;
 
         return $interpolate as InterpolateService;
       },

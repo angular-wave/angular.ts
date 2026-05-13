@@ -442,7 +442,7 @@ export class SelectController {
       const shouldUpdateViewValue =
         (this._multiple &&
           isArray(currentValue) &&
-          currentValue.indexOf(removeValue) !== -1) ||
+          currentValue.includes(removeValue)) ||
         currentValue === removeValue;
 
       this._removeOption(removeValue);

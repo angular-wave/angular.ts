@@ -59,7 +59,7 @@ export interface ParentFormController {
   /** @internal */
   _validityPropagationId?: number;
   $addControl(control: NamedControl): void;
-  $getControls(): ReadonlyArray<FormController | NgModelController>;
+  $getControls(): readonly (FormController | NgModelController)[];
   /** @internal */
   _renameControl(control: NamedControl, name: string | number): void;
   $removeControl(control: FormController | NgModelController): void;
@@ -220,11 +220,7 @@ export class FormController {
     this._controls = [];
 
     this.$name =
-      (
-        $interpolate($attrs.name || $attrs.ngForm || "") as
-          | ng.InterpolationFunction
-          | undefined
-      )?.($scope) || "";
+      $interpolate($attrs.name || $attrs.ngForm || "")?.($scope) || "";
 
     /** True if user has already interacted with the form. */
     this.$dirty = false;
@@ -320,10 +316,11 @@ export class FormController {
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
    */
-  $getControls(): ReadonlyArray<FormController | NgModelController> {
-    return shallowCopy(this._controls) as ReadonlyArray<
-      FormController | NgModelController
-    >;
+  $getControls(): readonly (FormController | NgModelController)[] {
+    return shallowCopy(this._controls) as readonly (
+      | FormController
+      | NgModelController
+    )[];
   }
 
   // Private API: rename a form control
@@ -362,18 +359,24 @@ export class FormController {
     ) {
       delete (this as Record<string, any>)[control.$name];
     }
-    this.$pending &&
+
+    if (this.$pending) {
       keys(this.$pending).forEach((name) => {
         this.$setValidity(name, null, control);
       });
-    this.$error &&
+    }
+
+    if (this.$error) {
       keys(this.$error).forEach((name) => {
         this.$setValidity(name, null, control);
       });
-    this._success &&
+    }
+
+    if (this._success) {
       keys(this._success).forEach((name) => {
         this.$setValidity(name, null, control);
       });
+    }
 
     arrayRemove(this._controls, control);
 
@@ -455,7 +458,13 @@ export class FormController {
    * parent forms of the form.
    */
   $setSubmitted(): void {
-    let rootForm: FormController = this;
+    if (!this._parentForm || this._parentForm === nullFormCtrl) {
+      this._setSubmitted();
+
+      return;
+    }
+
+    let rootForm = this._parentForm as FormController;
 
     while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
       rootForm = rootForm._parentForm as FormController;
@@ -563,7 +572,38 @@ export class FormController {
     state: boolean | null | undefined,
     controller: any,
   ): void {
-    const that = this;
+    /**
+     * Creates a controller bucket if needed and records a controller under the given key.
+     */
+    const createAndSet = (
+      ctrl: FormController & Record<string, any>,
+      name: string,
+      value: string,
+      controllerParam: FormController | NgModelController,
+    ) => {
+      if (!ctrl[name]) {
+        ctrl[name] = {};
+      }
+      this._set(ctrl[name], value, controllerParam);
+    };
+
+    /**
+     * Removes a controller from a bucket and cleans up empty containers.
+     */
+    const unsetAndCleanup = (
+      ctrl: FormController & Record<string, any>,
+      name: string,
+      value: string,
+      controllerParam: FormController | NgModelController,
+    ) => {
+      if (ctrl[name]) {
+        this._unset(ctrl[name], value, controllerParam);
+      }
+
+      if (isObjectEmpty(ctrl[name])) {
+        ctrl[name] = undefined;
+      }
+    };
 
     if (isUndefined(state)) {
       createAndSet(this, "$pending", validationErrorKey, controller);
@@ -599,7 +639,7 @@ export class FormController {
     // and does not replace it.
     let combinedState;
 
-    if (this.$pending && this.$pending[validationErrorKey]) {
+    if (this.$pending?.[validationErrorKey]) {
       combinedState = undefined;
     } else if (this.$error[validationErrorKey]) {
       combinedState = false;
@@ -615,39 +655,6 @@ export class FormController {
       combinedState,
       this,
     );
-
-    /**
-     * Creates a controller bucket if needed and records a controller under the given key.
-     */
-    function createAndSet(
-      ctrl: FormController & Record<string, any>,
-      name: string,
-      value: string,
-      controllerParam: FormController | NgModelController,
-    ) {
-      if (!ctrl[name]) {
-        ctrl[name] = {};
-      }
-      that._set(ctrl[name], value, controllerParam);
-    }
-
-    /**
-     * Removes a controller from a bucket and cleans up empty containers.
-     */
-    function unsetAndCleanup(
-      ctrl: FormController & Record<string, any>,
-      name: string,
-      value: string,
-      controllerParam: FormController | NgModelController,
-    ) {
-      if (ctrl[name]) {
-        that._unset(ctrl[name], value, controllerParam);
-      }
-
-      if (isObjectEmpty(ctrl[name])) {
-        ctrl[name] = undefined;
-      }
-    }
 
     /**
      * Updates the CSS validity classes for the controller and validation key.

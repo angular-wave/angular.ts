@@ -199,8 +199,11 @@ export class Lexer {
     const endIndex = end ?? this._index;
 
     const colStr = isDefined(start)
-      ? `s ${start}-${this._index} [${this._text.substring(start, endIndex)}]`
-      : ` ${endIndex}`;
+      ? `s ${String(start)}-${String(this._index)} [${this._text.substring(
+          start,
+          endIndex,
+        )}]`
+      : ` ${String(endIndex)}`;
 
     throw $parseError(
       "lexerr",

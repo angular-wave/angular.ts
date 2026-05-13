@@ -6,14 +6,17 @@ export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,
     link: (scope: ng.Scope, element: HTMLElement, attrs: Attributes): void => {
-      const attrMap = attrs as Attributes & Record<string, string>;
+      const configuredChannel: unknown = attrs.ngListener;
 
-      const channel = attrMap.ngListener || element.id;
+      const channel =
+        typeof configuredChannel === "string" && configuredChannel !== ""
+          ? configuredChannel
+          : element.id;
 
-      const hasTemplateContent = element.childNodes.length;
+      const hasTemplateContent = element.childNodes.length > 0;
 
       const fn = (event: Event) => {
-        const value = (event as CustomEvent).detail;
+        const value = (event as CustomEvent<unknown>).detail;
 
         if (hasTemplateContent) {
           if (isObject(value)) {
@@ -26,7 +29,9 @@ export function ngListenerDirective(): ng.Directive {
 
       element.addEventListener(channel, fn);
 
-      scope.$on("$destroy", () => element.removeEventListener(channel, fn));
+      scope.$on("$destroy", () => {
+        element.removeEventListener(channel, fn);
+      });
     },
   };
 }

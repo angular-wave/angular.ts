@@ -4,7 +4,7 @@ import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { hasOwn, keys, isString } from "../../shared/utils.ts";
+import { deleteProperty, hasOwn, isString, keys } from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuiltStateDeclaration,
@@ -15,6 +15,10 @@ import type {
   StateStore,
 } from "./interface.ts";
 import type { RouterProvider } from "../router.ts";
+
+function stateOrNameToString(stateOrName: StateOrName): string {
+  return isString(stateOrName) ? stateOrName : stateOrName.name;
+}
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -83,7 +87,7 @@ export class StateRegistryProvider {
     const states = this.getAll();
 
     states.forEach((state) => {
-      const resolvables = state._state().resolvables || [];
+      const { resolvables } = state._state();
 
       resolvables.forEach((resolvable) => {
         if (resolvable.deps === "deferred") {
@@ -285,7 +289,9 @@ export class StateRegistryProvider {
     event: "registered" | "deregistered",
     states: StateDeclaration[],
   ): void {
-    this._listeners.forEach((listener) => listener(event, states));
+    this._listeners.forEach((listener) => {
+      listener(event, states);
+    });
   }
 
   /** @internal */
@@ -334,7 +340,7 @@ export class StateRegistryProvider {
     deregistered.forEach((_state) => {
       this._routerState._routeTable._remove(_state as StateObject);
       // Remove state from registry
-      delete this._states[_state.name];
+      deleteProperty(this._states, _state.name);
     });
 
     return deregistered;
@@ -352,8 +358,11 @@ export class StateRegistryProvider {
   deregister(stateOrName: StateOrName): BuiltStateDeclaration[] {
     const state = this.get(stateOrName) as BuiltStateDeclaration | null;
 
-    if (!state)
-      throw new Error(`Can't deregister state; not found: ${stateOrName}`);
+    if (!state) {
+      throw new Error(
+        `Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`,
+      );
+    }
     const deregisteredStates = this._deregisterTree(state._state());
 
     const deregisteredDeclarations: StateDeclaration[] = [];
@@ -404,9 +413,12 @@ export class StateRegistryProvider {
       return states;
     }
 
-    const found = this._matcher.find(stateOrName as StateOrName, base);
+    const found =
+      stateOrName === undefined
+        ? undefined
+        : this._matcher.find(stateOrName, base);
 
-    return (found && found.self) || null;
+    return found?.self ?? null;
   }
 }
 

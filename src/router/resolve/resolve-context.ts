@@ -12,10 +12,10 @@ import type { Transition } from "../transition/transition.ts";
 import { Resolvable, type ResolvableLiteral } from "./resolvable.ts";
 import type { ResolvableData, ResolvableToken } from "./interface.ts";
 
-export type ResolvedToken = {
+export interface ResolvedToken {
   token: ResolvableToken;
   value: ResolvableData;
-};
+}
 
 async function resolveToken(
   resolvable: Resolvable,
@@ -93,17 +93,14 @@ export class ResolveContext {
       }
     }
 
-    return new ResolveContext(
-      (contextPath || this._path) as PathNode[],
-      this._injector,
-    );
+    return new ResolveContext(contextPath ?? this._path, this._injector);
   }
 
   /**
    * Adds or replaces resolvables for a specific state in this path.
    */
   addResolvables(
-    newResolvables: Array<Resolvable | ResolvableLiteral>,
+    newResolvables: (Resolvable | ResolvableLiteral)[],
     state: StateObject,
   ): void {
     let node: PathNode | undefined;

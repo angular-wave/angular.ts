@@ -15,8 +15,13 @@ export function scriptDirective(
     compile(element: HTMLElement, attr: Attributes): void {
       const attrMap = attr as Attributes & Record<string, string>;
 
-      if (attrMap.type === "text/ng-template") {
-        $templateCache.set(attrMap.id, element.innerText);
+      const templateId: unknown = attr.id;
+
+      if (
+        attrMap.type === "text/ng-template" &&
+        typeof templateId === "string"
+      ) {
+        $templateCache.set(templateId, element.innerText);
       }
     },
   };

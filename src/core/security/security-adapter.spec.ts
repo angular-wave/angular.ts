@@ -55,10 +55,12 @@ describe("security adapter", () => {
 
     expect(adapter.getTrusted("url", "safe")).toBe("url:safe");
     expect(adapter.getTrustedMediaUrl("image")).toBe("media:image");
-    expect(adapter.valueOf({ raw: "unwrapped" })).toBe("unwrapped");
+    const wrappedValue = { raw: "unwrapped" };
+
+    expect(adapter.valueOf(wrappedValue)).toBe("unwrapped" as any);
     expect(service.getTrusted).toHaveBeenCalledWith("url", "safe");
     expect(service.getTrustedMediaUrl).toHaveBeenCalledWith("image");
-    expect(service.valueOf).toHaveBeenCalledWith({ raw: "unwrapped" });
+    expect(service.valueOf).toHaveBeenCalledWith(wrappedValue);
   });
 
   it("uses a constant $sce service when registered directly", () => {

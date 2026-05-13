@@ -34,7 +34,7 @@ function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   return getAnimate;
 }
 
-type ObserverList = Array<(value?: unknown) => void> & {
+type ObserverList = ((value?: unknown) => void)[] & {
   /** @internal */
   _inter?: boolean;
   /** @internal */
@@ -131,7 +131,7 @@ export class Attributes {
   /** @ignore Internal element accessor used by legacy attribute helpers. */
   /** @internal */
   _element(): Node | Element {
-    return this._node as Node | Element;
+    return this._node!;
   }
 
   /**
@@ -214,7 +214,7 @@ export class Attributes {
 
     const booleanKey = getBooleanAttrName(node as Element, key);
 
-    const aliasedKey = ALIASED_ATTR[key as keyof typeof ALIASED_ATTR];
+    const aliasedKey = ALIASED_ATTR[key];
 
     let observer = key;
 
@@ -259,7 +259,7 @@ export class Attributes {
 
     const { _observers } = this;
 
-    if (_observers && _observers[observer]) {
+    if (_observers?.[observer]) {
       const observerListeners = _observers[observer];
 
       for (let i = 0, l = observerListeners.length; i < l; i++) {
@@ -272,7 +272,7 @@ export class Attributes {
     }
   }
 
-  $observe<T>(key: string, fn: (value?: T) => any): Function {
+  $observe(key: string, fn: (value?: any) => any): Function {
     const _observers = this._observers || (this._observers = nullObject());
 
     const listeners = _observers[key] || (_observers[key] = [] as ObserverList);
@@ -280,7 +280,7 @@ export class Attributes {
     listeners.push(fn as (value?: unknown) => void);
 
     if (!listeners._inter && hasOwn(this, key) && !isUndefined(this[key])) {
-      fn(this[key] as T);
+      fn(this[key]);
     }
 
     return function () {

@@ -41,13 +41,13 @@ const FN_LENGTH = 9;
 function functionToString(fn: Function): string {
   const fnStr = fnToString(fn);
 
-  const namedFunctionMatch = fnStr.match(/^(function [^ ]+\([^)]*\))/);
+  const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
 
   const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
 
   const fnName = fn.name || "";
 
-  if (fnName && toStr.match(/function \(/)) {
+  if (fnName && /function \(/.exec(toStr)) {
     return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
   }
 
@@ -58,15 +58,20 @@ function functionToString(fn: Function): string {
 export function fnToString(fn: [] | Function): string {
   const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
 
-  return (_fn && _fn.toString()) || "undefined";
+  return _fn?.toString() || "undefined";
 }
 
 /** Converts arbitrary values into short readable debug strings. */
 export function stringify(value: any): string {
   const seen: any[] = [];
 
-  const isRejection = (obj: Promise<any>) => {
-    return obj && isFunction(obj.then) && obj.constructor.name === "Rejection";
+  const isRejection = (obj: unknown) => {
+    return (
+      isObject(obj) &&
+      "then" in obj &&
+      isFunction(obj.then) &&
+      obj.constructor.name === "Rejection"
+    );
   };
 
   const hasToString = (obj: {
@@ -81,7 +86,7 @@ export function stringify(value: any): string {
   /** Formats a single item while tracking circular references. */
   function format(item: any): any {
     if (isObject(item)) {
-      if (seen.indexOf(item) !== -1) return "[circular ref]";
+      if (seen.includes(item)) return "[circular ref]";
       seen.push(item);
     }
 

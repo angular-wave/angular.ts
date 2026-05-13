@@ -34,7 +34,7 @@ export function filterFilter() {
    * @returns Filtered array
    */
   return function (
-    array: Array<any> | ArrayLike<any> | null | undefined,
+    array: any[] | ArrayLike<any> | null | undefined,
     expression: any,
     comparator?: boolean | ((actual: any, expected: any) => boolean),
     anyPropertyKey?: string,
@@ -119,7 +119,7 @@ function createPredicateFn(
   } else if (!isFunction(comparator)) {
     comparator = function (
       actual: string | any[] | null,
-      expected: string | null,
+      expected: unknown,
     ): boolean {
       if (isUndefined(actual)) {
         // No substring matching against `undefined`
@@ -139,10 +139,10 @@ function createPredicateFn(
         return false;
       }
 
-      actual = `${actual}`.toLowerCase();
-      expected = `${expected}`.toLowerCase();
+      actual = String(actual).toLowerCase();
+      const expectedString = stringifyComparable(expected).toLowerCase();
 
-      return actual.indexOf(expected) !== -1;
+      return actual.includes(expectedString);
     };
   }
 
@@ -162,11 +162,28 @@ function createPredicateFn(
       expression,
       comparator,
       anyPropertyKey,
-      !!matchAgainstAnyProp, // coerce undefined → false
+      matchAgainstAnyProp,
     );
   };
 
   return predicateFn;
+}
+
+function stringifyComparable(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "boolean":
+    case "bigint":
+    case "symbol":
+    case "undefined":
+      return String(value);
+    case "function":
+      return value.toString();
+    default:
+      return "";
+  }
 }
 
 /** Recursively compares actual and expected values for the filter predicate. */
@@ -214,11 +231,8 @@ function deepCompare(
         for (const key in actualObj) {
           if (!hasOwn(actualObj, key)) continue;
 
-          // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
-          // See: https://github.com/angular/angular.ts/issues/15644
           if (
-            key.charAt &&
-            key.charAt(0) !== "$" &&
+            !key.startsWith("$") &&
             deepCompare(
               actualObj[key],
               expected,

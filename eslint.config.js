@@ -90,25 +90,6 @@ const typeDeclarationPaddingRule = {
 };
 
 const strictRules = {
-  // ===== Code style =====
-  indent: ["error", 2],
-  quotes: ["error", "single"],
-  semi: ["error", "always"],
-  "comma-dangle": ["error", "never"],
-  "comma-spacing": ["error", { before: false, after: true }],
-  "space-before-function-paren": ["error", "always"],
-  "space-in-parens": ["error", "never"],
-  "space-infix-ops": "error",
-  "object-curly-spacing": ["error", "always"],
-  "array-bracket-spacing": ["error", "never"],
-  "arrow-spacing": ["error", { before: true, after: true }],
-  "block-spacing": "error",
-  "brace-style": ["error", "1tbs", { allowSingleLine: false }],
-  "max-len": [
-    "error",
-    { code: 100, ignoreComments: false, ignoreStrings: false },
-  ],
-
   // ===== Best practices =====
   "no-var": "error",
   "prefer-const": "error",
@@ -214,25 +195,69 @@ const strictRules = {
 
 const typeScriptStrictRules = {
   ...strictRules,
+  "@typescript-eslint/no-base-to-string": "off",
+  "@typescript-eslint/no-dynamic-delete": "off",
   "no-empty-function": "off",
+  "@typescript-eslint/no-explicit-any": "off",
+  "@typescript-eslint/no-floating-promises": "off",
+  "@typescript-eslint/no-invalid-void-type": "off",
+  "@typescript-eslint/no-misused-promises": "off",
+  "@typescript-eslint/no-namespace": "off",
+  "@typescript-eslint/no-non-null-assertion": "off",
   "no-shadow": "off",
+  "@typescript-eslint/no-unnecessary-condition": "off",
   "no-unused-vars": "off",
   "no-useless-constructor": "off",
+  "@typescript-eslint/no-unsafe-argument": "off",
+  "@typescript-eslint/no-unsafe-assignment": "off",
+  "@typescript-eslint/no-unsafe-call": "off",
+  "@typescript-eslint/no-unsafe-declaration-merging": "off",
+  "@typescript-eslint/no-unsafe-function-type": "off",
+  "@typescript-eslint/no-unsafe-member-access": "off",
+  "@typescript-eslint/no-unsafe-return": "off",
+  "@typescript-eslint/prefer-nullish-coalescing": "off",
+  "@typescript-eslint/prefer-promise-reject-errors": "off",
+  "@typescript-eslint/restrict-plus-operands": "off",
+  "@typescript-eslint/restrict-template-expressions": "off",
+  "@typescript-eslint/unbound-method": "off",
   "@typescript-eslint/no-empty-function": "error",
   "@typescript-eslint/no-shadow": "error",
+  "@typescript-eslint/no-this-alias": "error",
   "@typescript-eslint/no-unused-vars": [
     "error",
     { args: "after-used", ignoreRestSiblings: false },
   ],
   "@typescript-eslint/no-useless-constructor": "error",
+  "@typescript-eslint/no-floating-promises": [
+    "error",
+    { ignoreIIFE: true, ignoreVoid: true },
+  ],
+  "@typescript-eslint/no-redundant-type-constituents": "error",
+  "@typescript-eslint/no-misused-promises": "error",
+  "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
+  "@typescript-eslint/no-unnecessary-type-parameters": "error",
+  "@typescript-eslint/no-unnecessary-type-conversion": "error",
+  "@typescript-eslint/prefer-optional-chain": "error",
+  "@typescript-eslint/require-await": "error",
+  "@typescript-eslint/unified-signatures": "error",
+  "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
 };
 
 export default defineConfig([
+  {
+    ignores: ["**/*.{js,mjs,cjs}", "**/*.spec.ts", "**/*.test.ts"],
+  },
+  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.stylisticTypeCheckedOnly,
   {
     files: ["./src/**/*.{ts,mts,cts,tsx}"],
     languageOptions: {
       ...sharedLanguageOptions,
       parser: tseslint.parser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       "@typescript-eslint": tseslint.plugin,
@@ -245,28 +270,6 @@ export default defineConfig([
     rules: {
       ...typeScriptStrictRules,
       "local/type-declaration-padding": "error",
-    },
-    ignores: ["**/*.{js,mjs,cjs}"],
-  },
-  {
-    files: ["./src/**/*.spec.ts", "./src/**/*.test.ts"],
-    rules: {
-      "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-shadow": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-useless-constructor": "off",
-      eqeqeq: "off",
-      "max-classes-per-file": "off",
-      "id-length": "off",
-      "no-console": "off",
-      "no-eval": "off",
-      "no-implicit-globals": "off",
-      "no-invalid-this": "off",
-      "no-magic-numbers": "off",
-      "no-self-compare": "off",
-      "object-shorthand": "off",
-      "prefer-const": "off",
-      "prefer-destructuring": "off",
     },
   },
   eslintPluginPrettierRecommended,

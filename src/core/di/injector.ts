@@ -30,8 +30,6 @@ import type {
   ProviderCache,
   StorageLike,
 } from "./interface.ts";
-import type { NgModule } from "./ng-module/ng-module.ts";
-
 const $injectorError = createErrorFactory(_injector);
 
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
@@ -82,8 +80,9 @@ export function createInjector(
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
-  instanceInjector.loadNewModules = (mods: ModuleLike[]) =>
+  instanceInjector.loadNewModules = (mods: ModuleLike[]) => {
     loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+  };
 
   return instanceInjector;
 
@@ -272,8 +271,7 @@ export function createInjector(
                 // raw Storage object
                 backend = backendOrConfig;
               } else if (isObject(backendOrConfig)) {
-                backend =
-                  (backendOrConfig.backend as StorageLike) || localStorage;
+                backend = backendOrConfig.backend! || localStorage;
                 const {
                   serialize: configSerialize,
                   deserialize: configDeserialize,
@@ -288,15 +286,10 @@ export function createInjector(
               backend = localStorage;
             }
 
-            return createPersistentProxy(
-              instance,
-              name,
-              backend as StorageLike,
-              {
-                serialize,
-                deserialize,
-              },
-            );
+            return createPersistentProxy(instance, name, backend, {
+              serialize,
+              deserialize,
+            });
           }
         }
 
@@ -326,7 +319,7 @@ export function createInjector(
 
       try {
         if (isString(module)) {
-          const moduleFn = window.angular.module(module as string) as NgModule;
+          const moduleFn = window.angular.module(module);
 
           instanceInjector._modules[module] = moduleFn;
 
@@ -341,10 +334,7 @@ export function createInjector(
           invokeQueue.forEach((invokeArgs: any[]) => {
             const providerInstance = providerInjector.get(invokeArgs[0]);
 
-            providerInstance[invokeArgs[1]].apply(
-              providerInstance,
-              invokeArgs[2],
-            );
+            providerInstance[invokeArgs[1]](...invokeArgs[2]);
           });
         } else if (isFunction(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));
@@ -382,7 +372,7 @@ function supportObject<V>(
 ): (key: string | Record<string, V>, value?: V) => any {
   return function (key: string | Record<string, V>, value?: V): any {
     if (isObject(key)) {
-      entries(key as Record<string, V>).forEach(([k, v]) => {
+      entries(key).forEach(([k, v]) => {
         delegate(k, v);
       });
 

@@ -184,8 +184,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
             if (
               attrName === "src" &&
-              ["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
-                -1
+              !["img", "video", "audio", "source", "track"].includes(nodeName)
             ) {
               return $sce.getTrustedResourceUrl(stringValue);
             }
@@ -201,7 +200,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
           // non-interpolated attribute.
           const initialValue = attr[normalized];
 
-          if (initialValue && String(initialValue).indexOf("{{") === -1) {
+          if (initialValue && !String(initialValue).includes("{{")) {
             attr.$set(
               normalized,
               attrName === "srcset"
@@ -210,7 +209,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             );
           }
 
-          attr.$observe<string>(normalized, (value) => {
+          attr.$observe(normalized, (value) => {
             if (!value) {
               if (attrName === "href") {
                 attr.$set(attrName, null);
@@ -222,9 +221,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             if (
               attrName === "href" ||
               (attrName === "src" &&
-                ["img", "video", "audio", "source", "track"].indexOf(
-                  nodeName,
-                ) !== -1)
+                ["img", "video", "audio", "source", "track"].includes(nodeName))
             ) {
               attr.$set(attrName, sanitize(value));
             } else if (attrName === "srcset") {

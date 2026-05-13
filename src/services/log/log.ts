@@ -3,7 +3,7 @@ import { isError } from "../../shared/utils.ts";
 /**
  * A function that logs messages. Accepts any number of arguments.
  */
-export type LogCall = (...args: any[]) => void;
+export type LogCall = (...args: unknown[]) => void;
 
 /**
  * Service for logging messages at various levels.
@@ -38,7 +38,7 @@ export interface LogService {
 /**
  * A function that returns a LogService implementation.
  */
-export type LogServiceFactory = (...args: any[]) => LogService;
+export type LogServiceFactory = (...args: never[]) => LogService;
 
 /**
  * Configuration provider for `$log` service
@@ -70,7 +70,7 @@ export class LogProvider {
     if (isError(arg)) {
       if (arg.stack) {
         arg =
-          arg.message && arg.stack.indexOf(arg.message) === -1
+          arg.message && !arg.stack.includes(arg.message)
             ? `Error: ${arg.message}\n${arg.stack}`
             : arg.stack;
       }
@@ -85,21 +85,16 @@ export class LogProvider {
    */
   /** @internal */
   private _consoleLog(type: string): LogCall {
-    const console =
-      (window.console as Console & Record<string, LogCall>) ||
-      ({} as Partial<Record<string, LogCall>> & Record<string, LogCall>);
+    const consoleRef = window.console as Console &
+      Partial<Record<string, LogCall>>;
 
     const logFn =
-      console[type] ||
-      console.log ||
-      (() => {
-        /* empty */
-      });
+      consoleRef[type]?.bind(consoleRef) ?? consoleRef.log.bind(consoleRef);
 
     return (...args) => {
       const formattedArgs = args.map((arg) => this._formatError(arg));
 
-      return logFn.apply(console, formattedArgs as any[]);
+      logFn(...formattedArgs);
     };
   }
 
@@ -119,7 +114,7 @@ export class LogProvider {
 
         return (...args: unknown[]) => {
           if (this.debug) {
-            fn.apply(this, args);
+            fn(...args);
           }
         };
       })(),

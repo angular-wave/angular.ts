@@ -21,7 +21,7 @@ export interface AngularElementModuleOptions {
 
 /** Options for a standalone AngularTS-backed custom element runtime. */
 export interface AngularElementOptions<
-  T extends object = Record<string, any>,
+  T extends object = Record<string, unknown>,
 > extends AngularRuntimeOptions {
   /** Custom runtime `ng` module configuration. */
   ngModule?: CustomAngularRuntimeOptions["ngModule"];
@@ -55,10 +55,9 @@ export interface AngularElementDefinition {
  * builds an injector so the native custom element can be consumed by any host
  * framework without calling `angular.bootstrap`.
  */
-export function defineAngularElement<T extends object = Record<string, any>>(
-  name: string,
-  options: AngularElementOptions<T>,
-): AngularElementDefinition {
+export function defineAngularElement<
+  T extends object = Record<string, unknown>,
+>(name: string, options: AngularElementOptions<T>): AngularElementDefinition {
   const { component, elementModule, ngModule, ...runtimeOptions } = options;
 
   const ngModuleOptions = ngModule ?? {};
@@ -101,12 +100,19 @@ export function defineAngularElement<T extends object = Record<string, any>>(
     }
   }
 
-  (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope =
-    injector.get(_rootScope);
+  (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope = injector.get(
+    _rootScope,
+  ) as ng.Scope;
+
+  const element = customElements.get(name);
+
+  if (!element) {
+    throw new Error(`Custom element ${name} was not registered`);
+  }
 
   return {
     angular,
-    element: customElements.get(name) as CustomElementConstructor,
+    element,
     elementModule: appModule,
     injector,
     name,

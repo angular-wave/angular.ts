@@ -133,7 +133,7 @@ export class TransitionProvider implements TransitionService {
    * Wires runtime services into the transition service and registers the
    * hooks that depend on state/url/view services.
    */
-  $get(): TransitionProvider {
+  $get(): this {
     return this;
   }
 
@@ -175,7 +175,7 @@ export class TransitionProvider implements TransitionService {
    */
   /** @internal */
   _getHooks(hookName: string): RegisteredHooks[string] {
-    return this._registeredHooks[hookName] || [];
+    return this._registeredHooks[hookName] ?? [];
   }
 
   /**

@@ -43,13 +43,13 @@ type RepeatScope = ng.Scope &
 
 type RepeatClone = Node | Node[];
 
-type RepeatBlock = {
+interface RepeatBlock {
   _id: any;
   _scope?: RepeatScope;
   _clone?: RepeatClone;
   _value?: any;
   _usesPositionLocals?: boolean;
-};
+}
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
 
@@ -344,8 +344,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     blockOrder: RepeatBlock[],
   ): boolean {
     if (
-      !mutationMeta ||
-      mutationMeta._kind !== "splice" ||
+      mutationMeta?._kind !== "splice" ||
       mutationMeta._insertCount !== 0 ||
       mutationMeta._deleteCount === 0
     ) {
@@ -366,7 +365,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     lastBlockOrder: RepeatBlock[],
     nextBlockOrder: RepeatBlock[],
   ): [number, number] | undefined {
-    if (!mutationMeta || mutationMeta._kind !== "swap") {
+    if (mutationMeta?._kind !== "swap") {
       return undefined;
     }
 
@@ -431,8 +430,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     nextBlockOrder: RepeatBlock[],
   ): boolean {
     if (
-      !mutationMeta ||
-      mutationMeta._kind !== "splice" ||
+      mutationMeta?._kind !== "splice" ||
       mutationMeta._deleteCount !== 0 ||
       mutationMeta._insertCount === 0
     ) {
@@ -458,8 +456,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     nextBlockOrder: RepeatBlock[],
   ): number | undefined {
     if (
-      !mutationMeta ||
-      mutationMeta._kind !== "splice" ||
+      mutationMeta?._kind !== "splice" ||
       mutationMeta._insertCount !== 0 ||
       mutationMeta._deleteCount === 0 ||
       !mutationMeta._tailDeletes
@@ -547,9 +544,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
       const swap = callBackOnce(() => {
         if (isDefined($attr.lazy) && isDefined($attr.swap)) {
-          document
-            .querySelectorAll($attr.swap)
-            .forEach((x) => removeElement(x));
+          document.querySelectorAll($attr.swap).forEach((x) => {
+            removeElement(x);
+          });
         }
       });
 
@@ -733,7 +730,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               collectionKeys = [];
 
               for (const itemKey in collection) {
-                if (hasOwn(collection, itemKey) && itemKey.charAt(0) !== "$") {
+                if (hasOwn(collection, itemKey) && !itemKey.startsWith("$")) {
                   collectionKeys.push(itemKey);
                 }
               }
@@ -775,7 +772,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 }
               } else if (nextBlockMap[trackById]) {
                 values(nextBlockOrder).forEach((x: RepeatBlock | undefined) => {
-                  if (x && x._scope) lastBlockMap[x._id] = block;
+                  if (x?._scope) lastBlockMap[x._id] = block;
                 });
                 throw ngRepeatError(
                   "dupes",
@@ -960,7 +957,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               const blockNodes = getBlockNodes(
-                isArray(block._clone) ? block._clone : [block._clone as Node],
+                isArray(block._clone) ? block._clone : [block._clone!],
               );
 
               elementsToRemove = getBlockStart(block) as Element;
@@ -1057,7 +1054,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   nextNode = previousNode.nextSibling;
 
                   if (blockStart !== nextNode) {
-                    while (nextNode && nextNode[NG_REMOVED]) {
+                    while (nextNode?.[NG_REMOVED]) {
                       nextNode = nextNode.nextSibling;
                     }
 

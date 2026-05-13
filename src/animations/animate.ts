@@ -76,7 +76,7 @@ export class AnimationHandle implements PromiseLike<void> {
   readonly finished: Promise<void>;
   private readonly animations: Animation[];
   private readonly cleanup?: (ok: boolean) => void;
-  private doneCallbacks: Array<(ok: boolean) => void> = [];
+  private doneCallbacks: ((ok: boolean) => void)[] = [];
   private settled = false;
   private status = true;
 
@@ -145,22 +145,30 @@ export class AnimationHandle implements PromiseLike<void> {
 
   cancel(): void {
     this.status = false;
-    this.animations.forEach((animation) => animation.cancel());
+    this.animations.forEach((animation) => {
+      animation.cancel();
+    });
     this.controller.abort();
     this.complete(false);
   }
 
   finish(): void {
-    this.animations.forEach((animation) => animation.finish());
+    this.animations.forEach((animation) => {
+      animation.finish();
+    });
     this.complete(true);
   }
 
   pause(): void {
-    this.animations.forEach((animation) => animation.pause());
+    this.animations.forEach((animation) => {
+      animation.pause();
+    });
   }
 
   play(): void {
-    this.animations.forEach((animation) => animation.play());
+    this.animations.forEach((animation) => {
+      animation.play();
+    });
   }
 
   complete(status = true): void {
@@ -173,7 +181,9 @@ export class AnimationHandle implements PromiseLike<void> {
     const callbacks = this.doneCallbacks;
 
     this.doneCallbacks = [];
-    callbacks.forEach((callback) => callback(status));
+    callbacks.forEach((callback) => {
+      callback(status);
+    });
   }
 }
 
@@ -299,7 +309,7 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
 
         if (resolvedPresets.has(name)) {
           return {
-            preset: resolvedPresets.get(name) as AnimationPreset,
+            preset: resolvedPresets.get(name)!,
             custom: this._customAnimationNames.has(name),
           };
         }
@@ -470,20 +480,20 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
         },
 
         enter: (element, parent, after, options) => {
-          domInsert(element, parent as Element, after);
+          domInsert(element, parent!, after);
 
           return run("enter", element, options);
         },
 
         move: (element, parent, after, options) => {
-          domInsert(element, parent as Element, after);
+          domInsert(element, parent!, after);
 
           return run("move", element, options);
         },
 
         leave: (element, options) =>
           run("leave", element, options, {}, (ok) => {
-            if (ok !== false) removeElement(element);
+            if (ok) removeElement(element);
           }),
 
         addClass: (element, className, options) => {
@@ -573,7 +583,7 @@ function splitOptionClasses(className?: string | string[]): string[] {
 }
 
 function normalizeAnimationName(name: string): string {
-  return name.charAt(0) === "." ? name.slice(1) : name;
+  return name.startsWith(".") ? name.slice(1) : name;
 }
 
 function cssPresetClassFor(name: string): string | undefined {
@@ -700,7 +710,7 @@ function runCssAnimation(
   style.animation = "none";
 
   if ("offsetWidth" in animatedElement) {
-    animatedElement.offsetWidth;
+    void animatedElement.offsetWidth;
   }
 
   style.animation = animation;

@@ -66,7 +66,7 @@ export class ParseProvider {
   $get: [string, ($injector: ng.InjectorService) => ParseService];
 
   constructor() {
-    const cache = nullObject() as Record<string, CompiledExpression>;
+    const cache = nullObject();
 
     this.$get = [
       _injector,

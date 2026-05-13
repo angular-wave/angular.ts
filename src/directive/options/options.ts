@@ -58,7 +58,7 @@ class OptionItem {
 
 ngOptionsDirective.$inject = [_compile, _parse];
 
-type NgOptionsCollection = {
+interface NgOptionsCollection {
   /** @internal */
   _items: OptionItem[];
   /** @internal */
@@ -67,14 +67,14 @@ type NgOptionsCollection = {
   _getOptionFromViewValue(value: any): OptionItem | undefined;
   /** @internal */
   _getViewValueFromOption(option: OptionItem): any;
-};
+}
 
-type NgOptionsDefinition = {
+interface NgOptionsDefinition {
   /** @internal */
   _getWatchables: string;
   /** @internal */
   _getOptions(): NgOptionsCollection;
-};
+}
 
 export function ngOptionsDirective(
   $compile: ng.CompileService,
@@ -85,7 +85,7 @@ export function ngOptionsDirective(
     selectElement: HTMLSelectElement,
     scope: ng.Scope,
   ): NgOptionsDefinition {
-    const match = optionsExp.match(NG_OPTIONS_REGEXP);
+    const match = NG_OPTIONS_REGEXP.exec(optionsExp);
 
     if (!match) {
       throw ngOptionsError(
@@ -102,7 +102,7 @@ export function ngOptionsDirective(
 
     const keyName = match[6];
 
-    const selectAs = / as /.test(match[0]) && match[1];
+    const selectAs = match[0].includes(" as ") && match[1];
 
     const valueFn = $parse(match[2] ? match[1] : valueName);
 
@@ -174,7 +174,7 @@ export function ngOptionsDirective(
           }
         } else {
           for (const itemKey in optionValues) {
-            if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
+            if (hasOwn(optionValues, itemKey) && !itemKey.startsWith("$")) {
               addOption(optionValues[itemKey], itemKey);
             }
           }
@@ -275,8 +275,7 @@ export function ngOptionsDirective(
       selectCtrl._writeValue = function writeNgOptionsMultiple(values: any[]) {
         if (!options) return;
 
-        const selectedOptions =
-          (values && values.map(getAndUpdateSelectedOption)) || [];
+        const selectedOptions = values?.map(getAndUpdateSelectedOption) || [];
 
         options._items.forEach((option) => {
           if (option._element?.selected && !includes(selectedOptions, option)) {
@@ -309,15 +308,12 @@ export function ngOptionsDirective(
     }
 
     if (providedEmptyOption) {
-      const linkFn = $compile(selectCtrl._emptyOption as HTMLOptionElement);
+      const linkFn = $compile(selectCtrl._emptyOption!);
 
-      selectNode.prepend(selectCtrl._emptyOption as HTMLOptionElement);
+      selectNode.prepend(selectCtrl._emptyOption!);
       linkFn(scope);
 
-      if (
-        (selectCtrl._emptyOption as HTMLOptionElement).nodeType ===
-        NodeType._COMMENT_NODE
-      ) {
+      if (selectCtrl._emptyOption!.nodeType === NodeType._COMMENT_NODE) {
         selectCtrl._hasEmptyOption = false;
 
         selectCtrl._registerOption = function (
@@ -359,7 +355,7 @@ export function ngOptionsDirective(
     function getAndUpdateSelectedOption(viewValue: any) {
       const option = options?._getOptionFromViewValue(viewValue);
 
-      const element = option && option._element;
+      const element = option?._element;
 
       if (element && !element.selected) element.selected = true;
 

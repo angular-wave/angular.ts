@@ -38,7 +38,7 @@ function buildHooks(
 
   const baseHookOptions = {
     transition,
-    current: () => transition._options.current?.() || undefined,
+    current: () => transition._options.current?.() ?? undefined,
   };
 
   const hookTuples: HookTuple[] = [];
@@ -104,8 +104,8 @@ function compareHookTupleDepth(
   factor: 1 | -1,
 ): number {
   const depthDelta =
-    ((left.node.state.path || []).length -
-      (right.node.state.path || []).length) *
+    ((left.node.state.path ?? []).length -
+      (right.node.state.path ?? []).length) *
     factor;
 
   return depthDelta !== 0

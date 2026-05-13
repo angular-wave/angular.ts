@@ -18,7 +18,7 @@ export function limitToFilter() {
    * `begin` defaults to `0` and negative values are treated as offsets from the end.
    */
   return function (
-    input: Array<any> | ArrayLike<any> | string | number | Function,
+    input: any[] | ArrayLike<any> | string | number | Function,
     limit: string | number,
     begin?: string | number,
   ) {
@@ -84,7 +84,7 @@ function sliceFn(
   input: string | ArrayLike<any>,
   begin?: number,
   end?: number,
-): string | Array<any> {
+): string | any[] {
   if (isString(input)) return input.slice(begin, end);
 
   return [].slice.call(input, begin, end);

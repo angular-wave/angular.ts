@@ -96,7 +96,7 @@ export function ngIncludeDirective(
 
             if (animate) {
               animate.leave(currentElement).done((response: boolean) => {
-                if (response !== false) previousElement = null;
+                if (response) previousElement = null;
               });
             } else {
               removeElement(currentElement);
@@ -107,9 +107,11 @@ export function ngIncludeDirective(
           }
         };
 
-        scope.$watch(srcExp, async (src: string | null | undefined) => {
+        scope.$watch(srcExp, (src: string | null | undefined) => {
           const afterAnimation = function (response: boolean) {
-            response !== false && maybeScroll();
+            if (response) {
+              maybeScroll();
+            }
           };
 
           const thisChangeId = ++changeCounter;
@@ -151,7 +153,7 @@ export function ngIncludeDirective(
 
                 currentScope = newScope;
                 currentElement = clone;
-                currentScope!.$emit("$includeContentLoaded", src);
+                currentScope.$emit("$includeContentLoaded", src);
                 onloadFn?.(scope);
               })
               .catch((err: unknown) => {

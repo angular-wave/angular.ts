@@ -173,9 +173,7 @@ export interface TreeChanges {
  * @returns a [[HookResult]] which may alter the transition
  *
  */
-export interface TransitionHookFn {
-  (transition: Transition): HookResult;
-}
+export type TransitionHookFn = (transition: Transition) => HookResult;
 
 /**
  * The signature for State Transition Hooks.
@@ -216,9 +214,10 @@ export interface TransitionHookFn {
  *
  * @returns an optional [[HookResult]] which may alter the transition
  */
-export interface TransitionStateHookFn {
-  (transition: Transition, state: StateDeclaration): HookResult;
-}
+export type TransitionStateHookFn = (
+  transition: Transition,
+  state: StateDeclaration,
+) => HookResult;
 
 export type HookFn = TransitionHookFn | TransitionStateHookFn;
 
@@ -235,9 +234,9 @@ export type HookFn = TransitionHookFn | TransitionStateHookFn;
  *    - If the promise resolves to anything else, the transition will resume
  * - Anything else: the transition will resume
  */
-export type HookResultValue = boolean | TargetState | void;
+export type HookResultValue = boolean | TargetState | undefined;
 
-export type HookResult = HookResultValue | Promise<HookResultValue>;
+export type HookResult = unknown;
 
 /**
  * These options may be provided when registering a Transition Hook (such as `onStart`)
@@ -788,4 +787,4 @@ export interface HookRegistry {
   ): DeregisterFn;
 }
 
-export interface TransitionService extends HookRegistry {}
+export type TransitionService = HookRegistry;

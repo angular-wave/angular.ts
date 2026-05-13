@@ -155,13 +155,15 @@ import { WebTransportProvider } from "./services/webtransport/webtransport.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
-import { entries } from "./shared/utils.ts";
+type ProviderFactory =
+  | (new (...args: never[]) => unknown)
+  | ((this: never, ...args: never[]) => unknown);
 
-type ProviderGroup = Record<string, Function>;
+type ProviderGroup = Record<string, ProviderFactory>;
 
 type DirectiveGroup = Record<string, ng.DirectiveFactory>;
 
-type BuiltInFilterFactory = (...args: any[]) => FilterFn;
+type BuiltInFilterFactory = (...args: never[]) => FilterFn;
 
 type FilterGroup = Record<string, BuiltInFilterFactory>;
 
@@ -187,7 +189,12 @@ function registerRuntimeHostValues(
 
 /** Registers built-in filters against the already-registered `$filter` provider. */
 function registerBuiltInFilters($filterProvider: FilterProvider): void {
-  entries(ngBuiltInFilters).forEach(([name, factory]) => {
+  const filterEntries = Object.entries(ngBuiltInFilters) as [
+    string,
+    BuiltInFilterFactory,
+  ][];
+
+  filterEntries.forEach(([name, factory]) => {
     $filterProvider.register(name, factory as FilterFactory);
   });
 }
@@ -430,7 +437,12 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
         let $filterProvider: FilterProvider | undefined;
 
         ngDefaultProviderGroups.forEach((providers) => {
-          entries(providers).forEach(([name, provider]) => {
+          const providerEntries = Object.entries(providers) as [
+            string,
+            ProviderFactory,
+          ][];
+
+          providerEntries.forEach(([name, provider]) => {
             const registeredProvider = $provide.provider(name, provider);
 
             if (name === _filter) {

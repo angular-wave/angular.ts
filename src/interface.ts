@@ -6,9 +6,7 @@ import type {
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
 } from "./core/compile/compile.ts";
 
-export interface Constructor<T = any> {
-  new (...args: any[]): T;
-}
+export type Constructor<T = any> = new (...args: any[]) => T;
 
 export const PublicInjectionTokens = {
   $angular: "$angular",
@@ -110,7 +108,7 @@ export interface AngularBootstrapConfig {
  */
 export type Expression = string;
 
-export type ExpandoStore = { [key: string]: any };
+export type ExpandoStore = Record<string, any>;
 
 /**
  * Dependency-annotated factory array used by AngularTS DI system.
@@ -149,13 +147,9 @@ export type Injectable<
       : never)
   | T;
 
-export interface ServiceProviderClass {
-  new (...args: any[]): ServiceProvider;
-}
+export type ServiceProviderClass = new (...args: any[]) => ServiceProvider;
 
-export interface ServiceProviderFactory {
-  (...args: any[]): ServiceProvider;
-}
+export type ServiceProviderFactory = (...args: any[]) => ServiceProvider;
 
 /**
  * An object that defines how a service is constructed.
@@ -167,9 +161,9 @@ export interface ServiceProvider {
   $get: Injectable<any>;
 }
 
-export type AngularServiceProvider = {
+export interface AngularServiceProvider {
   $get: (...args: any[]) => ng.AngularService;
-};
+}
 
 /**
  * The API for registering different types of providers with the injector.
@@ -390,18 +384,18 @@ export interface Component {
    * Define DOM attribute binding to component properties. Component properties are always bound to the component
    * controller and not to the scope.
    */
-  bindings?: { [boundProperty: string]: string } | undefined;
+  bindings?: Record<string, string> | undefined;
   /**
    * Whether transclusion is enabled. Disabled by default.
    */
-  transclude?: boolean | { [slot: string]: string } | undefined;
+  transclude?: boolean | Record<string, string> | undefined;
   /**
    * Requires the controllers of other directives and binds them to this component's controller.
    * The object keys specify the property names under which the required controllers (object values) will be bound.
    * Note that the required controllers will not be available during the instantiation of the controller,
    * but they are guaranteed to be available just before the $onInit method is executed!
    */
-  require?: { [controller: string]: string } | undefined;
+  require?: Record<string, string> | undefined;
 }
 
 /**
@@ -410,7 +404,7 @@ export interface Component {
 export type DirectiveController =
   | Controller
   | Controller[]
-  | { [key: string]: Controller };
+  | Record<string, Controller>;
 
 /**
  * Represents a controller used within directive link functions.
@@ -456,7 +450,7 @@ export interface Directive<TCtrl = any> {
   /** Compile function for the directive */
   compile?: DirectiveCompileFn;
   /** Controller constructor or injectable string name */
-  controller?: string | Injectable<any> | any;
+  controller?: string | Injectable<ControllerConstructor>;
   /** Alias name for the controller in templates */
   controllerAs?: string;
   /** Whether to bind scope to controller */
@@ -492,7 +486,7 @@ export type DirectiveFactoryFn = (
   ...args: any[]
 ) => Directive | DirectiveLinkFn<any>;
 
-export type AnnotatedDirectiveFactory = Array<string | DirectiveFactoryFn>;
+export type AnnotatedDirectiveFactory = (string | DirectiveFactoryFn)[];
 
 export type DirectiveFactory = DirectiveFactoryFn | AnnotatedDirectiveFactory;
 
@@ -512,7 +506,7 @@ export type TemplateLinkingFunction = PublicLinkFn;
 export type TemplateLinkingFunctionOptions =
   CompileTemplateLinkingFunctionOptions;
 
-export interface RootElementService extends HTMLElement {}
+export type RootElementService = HTMLElement;
 
 export interface InvocationDetail {
   expr: string;

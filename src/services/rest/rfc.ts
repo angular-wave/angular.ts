@@ -33,7 +33,7 @@ export function expandUriTemplate(
  */
 export function pctEncode(str: string, allowReserved: boolean): string {
   // encodeURIComponent, then restore reserved if allowed
-  const encoded = encodeURIComponent(String(str));
+  const encoded = encodeURIComponent(str);
 
   if (allowReserved) {
     // Reserved characters per RFC 3986

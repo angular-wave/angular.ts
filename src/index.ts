@@ -23,6 +23,12 @@ export type {
 /**
  * Auto-bootstrap the document once the browser DOM is ready.
  */
-document.addEventListener("DOMContentLoaded", () => angular.init(document), {
-  once: true,
-});
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    angular.init(document);
+  },
+  {
+    once: true,
+  },
+);

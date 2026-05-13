@@ -113,7 +113,7 @@ export function dateFilter() {
 
     if (Number.isNaN(date.getTime())) return "";
 
-    const baseOptions = DATE_FORMATS[format] ?? DATE_FORMATS.mediumDate;
+    const baseOptions = DATE_FORMATS[format];
 
     const options =
       typeof timeZoneOrOptions === "string"

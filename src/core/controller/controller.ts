@@ -24,7 +24,7 @@ export type ControllerService = (
   locals?: ControllerLocals,
   later?: boolean,
   ident?: string,
-) => any | (() => any);
+) => any;
 
 type InjectableController = Injectable<ControllerConstructor>;
 
@@ -105,7 +105,7 @@ export class ControllerProvider {
           later = later === true;
 
           if (isString(expression)) {
-            const match = expression.match(CNTRL_REG);
+            const match = CNTRL_REG.exec(expression);
 
             if (!match) {
               throw $controllerError(
