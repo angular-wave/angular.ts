@@ -28,6 +28,7 @@ import type {
   Injectable,
   ServiceProvider,
 } from "../../interface.ts";
+import type { RuntimeFunction } from "../../shared/utils.ts";
 import type {
   PersistentStoreConfig,
   ProviderCache,
@@ -35,7 +36,7 @@ import type {
 } from "./interface.ts";
 const $injectorError = createErrorFactory(_injector);
 
-type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
+type ModuleLike = string | Injectable<(...args: any[]) => any>;
 
 /**
  *
@@ -49,7 +50,7 @@ export function createInjector(
 ): InjectorService {
   assert(isArray(modulesToLoad), "modules required");
 
-  const loadedModules = new Map<string | Function, boolean>();
+  const loadedModules = new Map<unknown, boolean>();
 
   const providerCache: ProviderCache = {
     $provide: {
@@ -159,7 +160,10 @@ export function createInjector(
    * @param {Function} constructor
    * @returns {ServiceProvider}
    */
-  function service(name: string, constructor: Function): ServiceProvider {
+  function service(
+    name: string,
+    constructor: Injectable<Constructor>,
+  ): ServiceProvider {
     return factory(name, [
       _injector,
       ($injector: InjectorService) =>
@@ -221,7 +225,7 @@ export function createInjector(
    */
   function store(
     name: string,
-    ctor: Constructor | Function,
+    ctor: Constructor | RuntimeFunction,
     type: ng.StorageType,
     backendOrConfig?: StorageLike & PersistentStoreConfig,
   ): ServiceProvider {
@@ -335,7 +339,7 @@ export function createInjector(
     let moduleRunBlocks: any[] = [];
 
     modules.forEach((module: ModuleLike) => {
-      const moduleKey: string | Function = isArray(module)
+      const moduleKey: unknown = isArray(module)
         ? module[module.length - 1]
         : module;
 

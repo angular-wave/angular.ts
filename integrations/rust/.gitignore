@@ -1,0 +1,6 @@
+/target/
+/pkg/
+/dist/
+/.angular-ts/
+/examples/basic_app/.angular-ts/
+/examples/basic_app/pkg/

@@ -8,7 +8,8 @@ import {
   deleteProperty,
   isString,
 } from "../../shared/utils.ts";
-import type { AnnotatedFactory } from "../../interface.ts";
+import type { AnnotatedFactory, Constructor } from "../../interface.ts";
+import type { RuntimeFunction } from "../../shared/utils.ts";
 import { annotate, isClass } from "./di.ts";
 import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
@@ -19,7 +20,11 @@ export const providerSuffix = "Provider";
 
 type Callable = (...args: any[]) => any;
 
-type InjectableFn = Function | Callable | AnnotatedFactory<Callable>;
+type InjectableFn =
+  | Callable
+  | Constructor
+  | AnnotatedFactory<Callable>
+  | Array<string | Callable | Constructor>;
 
 class AbstractInjector {
   /** @internal */
@@ -137,7 +142,7 @@ class AbstractInjector {
       fn = fn[fn.length - 1];
     }
 
-    if (isClass(fn as Function)) {
+    if (isClass(fn as RuntimeFunction)) {
       return Reflect.construct(fn as Callable, args) as unknown;
     } else {
       return callFunction(fn as Callable, self, ...args);
@@ -165,7 +170,7 @@ class AbstractInjector {
       return Reflect.construct(ctor, args) as unknown;
     } catch (err) {
       // try arrow function
-      if (isArrowFunction(ctor as Function)) {
+      if (isArrowFunction(ctor)) {
         return callFunction(ctor, undefined, args);
       } else {
         throw err;
@@ -222,7 +227,7 @@ export class ProviderInjector extends AbstractInjector {
  */
 export class InjectorService extends AbstractInjector {
   loadNewModules: (
-    mods: Array<Function | string | AnnotatedFactory<(...args: any[]) => any>>,
+    mods: Array<string | Callable | AnnotatedFactory<Callable>>,
   ) => void = () => {
     /* empty */
   };

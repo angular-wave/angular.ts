@@ -165,6 +165,11 @@ export interface AngularServiceProvider {
   $get: (...args: any[]) => ng.AngularService;
 }
 
+export type ProviderDefinition =
+  | ServiceProvider
+  | Injectable<(...args: any[]) => any>
+  | Injectable<Constructor>;
+
 /**
  * The API for registering different types of providers with the injector.
  *
@@ -190,13 +195,13 @@ export interface Provider {
    * @param name - The name of the service.
    * @param provider - An object with a `$get` property that defines how the service is created.
    */
-  provider(name: string, provider: Function): Provider;
+  provider(name: string, provider: ProviderDefinition): Provider;
 
   /**
    * Register multiple service providers
    * @param obj
    */
-  provider(obj: Record<string, Function>): Provider;
+  provider(obj: Record<string, ProviderDefinition>): Provider;
 
   /**
    * Register a factory function to create a service.
@@ -231,7 +236,7 @@ export interface Provider {
    * @param name - The name of the service to decorate.
    * @param fn - A function that takes `$delegate` and returns a decorated service.
    */
-  decorator(name: string, fn: Function): Provider;
+  decorator(name: string, fn: Injectable<any>): Provider;
 }
 
 /**

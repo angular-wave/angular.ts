@@ -6,7 +6,9 @@ export type { ErrorHandlingConfig } from "./interface.ts";
 
 export const isProxySymbol = Symbol("isProxy");
 
-type RuntimeFunction = (...args: any[]) => unknown;
+export type RuntimeFunction = (...args: any[]) => unknown;
+
+export type RuntimeConstructor = abstract new (...args: any[]) => unknown;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -1054,7 +1056,7 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
  * @throws AngularTS error when `arg` is not a function.
  */
 export function assertArgFn(
-  arg: string | Function | any[],
+  arg: string | RuntimeFunction | RuntimeConstructor | any[],
   name: string,
   acceptArrayAnnotation?: boolean,
 ) {

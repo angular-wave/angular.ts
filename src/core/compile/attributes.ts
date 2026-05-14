@@ -273,7 +273,7 @@ export class Attributes {
     }
   }
 
-  $observe(key: string, fn: (value?: any) => any): Function {
+  $observe(key: string, fn: (value?: any) => any): () => void {
     const _observers = this._observers || (this._observers = nullObject());
 
     const listeners = _observers[key] || (_observers[key] = [] as ObserverList);

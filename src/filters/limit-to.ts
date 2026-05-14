@@ -6,6 +6,8 @@ import {
   isString,
 } from "../shared/utils.ts";
 
+type LimitToInput = any[] | ArrayLike<any> | string | number;
+
 /** Creates the `limitTo` filter implementation. */
 export function limitToFilter() {
   /**
@@ -18,13 +20,11 @@ export function limitToFilter() {
    * `begin` defaults to `0` and negative values are treated as offsets from the end.
    */
   return function (
-    input: any[] | ArrayLike<any> | string | number | Function,
+    input: LimitToInput | (() => LimitToInput),
     limit: string | number,
     begin?: string | number,
   ) {
-    if (isFunction(input)) {
-      input = input() as any[] | ArrayLike<any> | string | number | Function;
-    }
+    if (isFunction(input)) input = input();
 
     let numericLimit: number;
 

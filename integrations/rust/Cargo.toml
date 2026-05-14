@@ -1,0 +1,14 @@
+[workspace]
+members = [
+  "crates/angular-ts",
+  "crates/angular-ts-build",
+  "crates/angular-ts-macros",
+  "examples/basic_app",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/angular-wave/angular.ts"
+rust-version = "1.77"

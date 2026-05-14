@@ -1629,7 +1629,7 @@ export class CompileProvider {
         }
 
         function removeDirectiveBindingWatches(
-          removeWatchCollection: Array<Function | undefined>,
+          removeWatchCollection: Array<(() => void) | undefined>,
         ): void {
           for (let i = 0, ii = removeWatchCollection.length; i < ii; ++i) {
             removeWatchCollection[i]?.();
@@ -6087,7 +6087,7 @@ export class CompileProvider {
           bindings: IsolateBindingMap | null | undefined,
           directive: InternalDirective,
         ): DirectiveBindingInfo {
-          const removeWatchCollection: Array<Function | undefined> = [];
+          const removeWatchCollection: Array<(() => void) | undefined> = [];
 
           const initialChanges: Record<string, SimpleChange> = {};
 
@@ -6133,7 +6133,7 @@ export class CompileProvider {
 
               let compare: (left: unknown, right: unknown) => boolean;
 
-              let removeWatch: Function | undefined;
+              let removeWatch: (() => void) | undefined;
 
               switch (mode) {
                 case "@": {

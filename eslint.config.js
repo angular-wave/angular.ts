@@ -97,7 +97,6 @@ const angularTsRuntimeCompatibilityRules = {
   "@typescript-eslint/no-unnecessary-condition": "off",
   "@typescript-eslint/no-unsafe-argument": "off",
   "@typescript-eslint/no-unsafe-assignment": "off",
-  "@typescript-eslint/no-unsafe-function-type": "off",
   "@typescript-eslint/prefer-nullish-coalescing": "off",
   "@typescript-eslint/restrict-plus-operands": "off",
   "@typescript-eslint/restrict-template-expressions": "off",
