@@ -1,0 +1,15 @@
+{:source-paths ["src" "demo/src"]
+ :dependencies []
+ :builds
+ {:todo
+  {:target :browser
+   :output-dir "demo/dist"
+   :asset-path "/integrations/closure/clojurescript/demo/dist"
+   :modules {:compiled {:entries [angular-ts.demo.todo]}}
+   :compiler-options {:optimizations :advanced
+                      :language-in :ecmascript-2020
+                      :language-out :ecmascript-2020
+                      :externs ["../externs/angular-ts.externs.js"]
+                      :infer-externs true
+                      :warnings-as-errors true
+                      :warnings {:infer-warning true}}}}}

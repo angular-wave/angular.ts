@@ -1,15 +1,31 @@
 /// <reference types="jasmine" />
 import { Angular } from "../angular.ts";
 import { createInjector } from "../core/di/injector.ts";
+import { createScope } from "../core/scope/scope.ts";
+import { wait } from "../shared/test-utils.ts";
 
 describe("date filter", () => {
+  let $compile: ng.CompileService;
+
+  let $rootScope: ng.RootScopeService;
+
   let filter: ng.FilterService;
 
   const date = new Date(Date.UTC(2020, 0, 2, 15, 4, 5));
 
   beforeEach(() => {
     window.angular = new Angular();
-    filter = createInjector(["ng"]).get("$filter") as ng.FilterService;
+    createInjector(["ng"]).invoke(
+      (
+        _$compile_: ng.CompileService,
+        _$filter_: ng.FilterService,
+        _$rootScope_: ng.RootScopeService,
+      ) => {
+        $compile = _$compile_;
+        filter = _$filter_;
+        $rootScope = _$rootScope_;
+      },
+    );
   });
 
   it("should format dates with the default mediumDate format", () => {
@@ -57,5 +73,31 @@ describe("date filter", () => {
         );
       },
     );
+  });
+
+  it("should format proxied dates", () => {
+    const scope = createScope({
+      createdAt: date,
+    });
+
+    expect(filter("date")(scope.createdAt, "mediumDate", "UTC")).toBe(
+      "Jan 2, 2020",
+    );
+  });
+
+  it("should update interpolation when a proxied Date is mutated", async () => {
+    const element = $compile(
+      "<div>{{ createdAt | date:'mediumDate':'UTC' }}</div>",
+    )($rootScope) as HTMLElement;
+
+    $rootScope.createdAt = new Date(Date.UTC(2020, 0, 2));
+    await wait();
+
+    expect(element.textContent).toBe("Jan 2, 2020");
+
+    $rootScope.createdAt.setUTCFullYear(2021);
+    await wait();
+
+    expect(element.textContent).toBe("Jan 2, 2021");
   });
 });

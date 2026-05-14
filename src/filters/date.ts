@@ -1,4 +1,4 @@
-import { isDate, isNullOrUndefined } from "../shared/utils.ts";
+import { deProxy, isDate, isNullOrUndefined } from "../shared/utils.ts";
 
 export type DateFilterFormat =
   | "short"
@@ -109,7 +109,9 @@ export function dateFilter() {
   ): string {
     if (isNullOrUndefined(input)) return "";
 
-    const date = isDate(input) ? input : new Date(input);
+    const rawInput = deProxy(input);
+
+    const date = isDate(rawInput) ? rawInput : new Date(rawInput);
 
     if (Number.isNaN(date.getTime())) return "";
 

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.angular.ts</groupId>
+  <artifactId>angular-ts-j2cl-todo-demo</artifactId>
+  <version>0.27.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>AngularTS J2CL Todo Demo</name>
+  <description>J2CL todo demo that compiles against generated AngularTS JsInterop bindings.</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>11</maven.compiler.release>
+    <angular.ts.java.dir>${project.basedir}/..</angular.ts.java.dir>
+    <angular.ts.handwritten.sources>${angular.ts.java.dir}/src/main/java</angular.ts.handwritten.sources>
+    <angular.ts.generated.sources>${angular.ts.java.dir}/target/generated-sources/jsinterop</angular.ts.generated.sources>
+    <j2cl.maven.plugin.version>0.22.0</j2cl.maven.plugin.version>
+    <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
+    <jsinterop.base.version>1.1.1</jsinterop.base.version>
+    <guava.version>31.1-jre</guava.version>
+    <turbine.version>v20220503-1</turbine.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+    <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.jsinterop</groupId>
+      <artifactId>jsinterop-annotations</artifactId>
+      <version>${jsinterop.annotations.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.jsinterop</groupId>
+      <artifactId>base</artifactId>
+      <version>${jsinterop.base.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>add-angular-ts-jsinterop-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${angular.ts.handwritten.sources}</source>
+                <source>${angular.ts.generated.sources}</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.vertispan.j2cl</groupId>
+        <artifactId>j2cl-maven-plugin</artifactId>
+        <version>${j2cl.maven.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>com.vertispan.turbine</groupId>
+            <artifactId>turbine</artifactId>
+            <version>${turbine.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>build-j2cl-demo</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <compilationLevel>ADVANCED_OPTIMIZATIONS</compilationLevel>
+          <dependencyMode>PRUNE</dependencyMode>
+          <entrypoint>
+            <entrypoint>goog:org.angular.ts.demo.j2cl.App</entrypoint>
+          </entrypoint>
+          <initialScriptFilename>j2cl-todo/j2cl-todo.js</initialScriptFilename>
+          <webappDirectory>${project.build.directory}/webapp</webappDirectory>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

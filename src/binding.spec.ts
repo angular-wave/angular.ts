@@ -1108,6 +1108,34 @@ describe("binding", () => {
     );
   });
 
+  it("should update ng-repeat when iterating over map.values()", async () => {
+    element = $compile(
+      "<ul>" +
+        '<li ng-repeat="item in map.values()" ng-bind="item.a"></li>' +
+        "</ul>",
+    )($rootScope);
+
+    $rootScope.map = new Map([["a", { a: "A" }]]);
+    await wait();
+
+    expect(element.textContent).toBe("A");
+
+    $rootScope.map.set("b", { a: "B" });
+    await wait();
+
+    expect(element.textContent).toBe("AB");
+
+    $rootScope.map.set("a", { a: "AA" });
+    await wait();
+
+    expect(element.textContent).toBe("AAB");
+
+    $rootScope.map.delete("b");
+    await wait();
+
+    expect(element.textContent).toBe("AA");
+  });
+
   it("should toggle ng-hide from an expression result", async () => {
     element = $compile('<div ng-hide="hidden === 3"/>')($rootScope);
 

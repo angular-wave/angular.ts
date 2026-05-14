@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS ClojureScript Todo Demo</title>
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
+    <style>
+      .todo-row {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+      }
+
+      .todo-row.is-done strong {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+    </style>
+    <script type="module" src="/src/index.ts"></script>
+    <script
+      type="module"
+      src="/integrations/closure/clojurescript/demo/dist/compiled.js?v=todo-submit-done-archive"
+    ></script>
+  </head>
+  <body ng-app="cljsTodo">
+    <main class="demo-shell" ng-controller="TodoCtrl as $ctrl">
+      <section class="demo-hero">
+        <h1>{{ $ctrl.greeting }}</h1>
+        <p cljs-badge></p>
+      </section>
+
+      <section class="demo-content">
+        <form ng-submit="$ctrl.submit($event)">
+          <input
+            aria-label="New ClojureScript todo"
+            id="cljs-new-todo"
+            name="todo"
+            type="text"
+            ng-input="$ctrl.setNewTodo($event.target.value)"
+            ng-required="true"
+            placeholder="What needs doing?"
+          />
+          <button type="submit">Add</button>
+        </form>
+
+        <p id="cljs-remaining" class="demo-note">
+          {{ $ctrl.remainingCount }} of {{ $ctrl.tasks.length }} remaining
+        </p>
+
+        <div class="demo-actions">
+          <button type="button" ng-click="$ctrl.archive()">
+            Archive completed
+          </button>
+        </div>
+
+        <div class="demo-stack">
+          <article
+            class="event-card todo-row"
+            ng-class="{ 'is-done': todo.done }"
+            ng-repeat="todo in $ctrl.tasks"
+            data-index="id"
+          >
+            <strong>{{ todo.task }}</strong>
+            <label>
+              Done
+              <input
+                type="checkbox"
+                ng-checked="todo.done"
+                ng-change="$ctrl.setDone(todo, $event.target.checked)"
+              />
+            </label>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

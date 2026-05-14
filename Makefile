@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-types types docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps lint lint-check lint-fix
+.PHONY: build build-ts check test test-integrations test-types types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps lint lint-check lint-fix
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -87,6 +87,11 @@ types: ensure-deps
 	@./node_modules/.bin/tsc --project tsconfig.types.json
 	@npx prettier ./@types --write --cache --log-level=silent
 
+public-namespace-api: types
+	@$(MAKE) -f integrations/closure/Makefile closure-generate
+
+update-public-namespace-api: public-namespace-api
+
 TYPEDOC_DIR = docs/static/typedoc
 doc: ensure-deps
 	@rm -rf $(TYPEDOC_DIR)
@@ -106,6 +111,11 @@ PLAYWRIGHT_TEST := npx playwright test
 test: ensure-deps
 	@echo $(INFO) "Playwright test JS"
 	@$(PLAYWRIGHT_TEST) 
+	@$(MAKE) test-integrations
+
+test-integrations: ensure-deps
+	@echo $(INFO) "Playwright integration tests"
+	@$(MAKE) -f integrations/closure/Makefile closure-test
 
 test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"

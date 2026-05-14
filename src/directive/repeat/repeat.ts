@@ -10,6 +10,7 @@ import {
   isArray,
   isArrayLike,
   isDefined,
+  isFunction,
   isInstanceOf,
   isProxy,
   createErrorFactory,
@@ -253,6 +254,10 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
         targetMap[retainedBlock._id] = retainedBlock;
       }
     }
+  }
+
+  function isIterableCollection(value: any): value is Iterable<any> {
+    return isDefined(value) && isFunction(value[Symbol.iterator]);
   }
 
   function removeBlockNodes(nodes: Node[]): void {
@@ -790,6 +795,10 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
             if (isIndexKeyedCollection) {
               collectionKeys = arrayFrom(collection as ArrayLike<unknown>);
+              trackByIdFn = createTrackByIdArrayFn(indexProperty);
+            } else if (isIterableCollection(collection)) {
+              collectionKeys = arrayFrom(collection);
+              collection = collectionKeys;
               trackByIdFn = createTrackByIdArrayFn(indexProperty);
             } else {
               trackByIdFn = trackByIdObjFn;

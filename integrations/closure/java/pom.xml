@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.angular-wave</groupId>
+  <artifactId>angular-ts-jsinterop</artifactId>
+  <version>0.27.0</version>
+  <packaging>jar</packaging>
+
+  <name>AngularTS JsInterop Bindings</name>
+  <description>Java JsInterop bindings generated from AngularTS Closure externs.</description>
+  <url>https://github.com/angular-wave/angular.ts</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/license/mit/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>angular-ts</id>
+      <name>AngularTS Contributors</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/angular-wave/angular.ts.git</connection>
+    <developerConnection>scm:git:https://github.com/angular-wave/angular.ts.git</developerConnection>
+    <url>https://github.com/angular-wave/angular.ts</url>
+    <tag>v0.27.0</tag>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>11</maven.compiler.release>
+
+    <angular.ts.root>${project.basedir}/../../..</angular.ts.root>
+    <angular.ts.externs>${project.basedir}/../externs/angular-ts.externs.js</angular.ts.externs>
+    <angular.ts.browser.externs>${project.basedir}/externs/browser.externs.js</angular.ts.browser.externs>
+
+    <jsinterop.generator.version>v20250910</jsinterop.generator.version>
+    <jsinterop.generator.jar>${project.build.directory}/tools/jsinterop-generator/ClosureJsinteropGenerator_deploy.jar</jsinterop.generator.jar>
+    <jsinterop.packagePrefix>org.angular.ts</jsinterop.packagePrefix>
+    <jsinterop.extensionTypePrefix>AngularTs</jsinterop.extensionTypePrefix>
+    <jsinterop.globalScopeClassName>AngularTsGlobals</jsinterop.globalScopeClassName>
+    <jsinterop.generated.srcjar>${project.build.directory}/generated-sources/angular-ts-jsinterop-src.jar</jsinterop.generated.srcjar>
+    <jsinterop.generated.depfile>${project.build.directory}/generated-sources/angular-ts-jsinterop.jdeps</jsinterop.generated.depfile>
+    <jsinterop.generated.sources>${project.build.directory}/generated-sources/jsinterop</jsinterop.generated.sources>
+
+    <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
+    <jsinterop.base.version>1.1.1</jsinterop.base.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+    <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+    <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+    <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+    <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+    <central-publishing-maven-plugin.version>0.8.0</central-publishing-maven-plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.jsinterop</groupId>
+      <artifactId>jsinterop-annotations</artifactId>
+      <version>${jsinterop.annotations.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.jsinterop</groupId>
+      <artifactId>base</artifactId>
+      <version>${jsinterop.base.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>validate-angular-ts-externs</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <workingDirectory>${angular.ts.root}</workingDirectory>
+              <executable>node</executable>
+              <arguments>
+                <argument>integrations/closure/scripts/validate-externs.mjs</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>prepare-jsinterop-generator</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <arguments>
+                <argument>${project.basedir}/scripts/prepare-jsinterop-generator.sh</argument>
+                <argument>${jsinterop.generator.version}</argument>
+                <argument>${jsinterop.generator.jar}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-angular-ts-jsinterop</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <arguments>
+                <argument>${project.basedir}/scripts/generate-jsinterop.sh</argument>
+                <argument>${jsinterop.generator.jar}</argument>
+                <argument>${angular.ts.browser.externs}</argument>
+                <argument>${angular.ts.externs}</argument>
+                <argument>${jsinterop.generated.srcjar}</argument>
+                <argument>${jsinterop.generated.depfile}</argument>
+                <argument>${jsinterop.packagePrefix}</argument>
+                <argument>${jsinterop.extensionTypePrefix}</argument>
+                <argument>${jsinterop.globalScopeClassName}</argument>
+                <argument>${jsinterop.generated.sources}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>verify-angular-ts-jsinterop</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>node</executable>
+              <arguments>
+                <argument>${project.basedir}/scripts/verify-generated-jsinterop.mjs</argument>
+                <argument>${jsinterop.generated.sources}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>add-generated-jsinterop-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${jsinterop.generated.sources}</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>${maven-source-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven-javadoc-plugin.version}</version>
+            <configuration>
+              <failOnError>false</failOnError>
+              <quiet>true</quiet>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven-gpg-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${central-publishing-maven-plugin.version}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,5 @@
+/dist/
+/clojurescript/.shadow-cljs/
+/clojurescript/demo/dist/
+/clojurescript/node_modules/
+/clojurescript/target/
