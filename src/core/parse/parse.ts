@@ -5,7 +5,6 @@ import type { FilterService } from "../../filters/filter.ts";
 import { Lexer } from "./lexer/lexer.ts";
 import { Parser } from "./parser/parser.ts";
 
-import type { Scope } from "../scope/scope.ts";
 import type { BodyNode } from "./ast/ast-node.ts";
 
 /**
@@ -38,10 +37,10 @@ export interface CompiledExpressionProps {
  * Evaluates the compiled expression.
  */
 export type CompiledExpressionFunction = (
-  context?: Scope | typeof Proxy<Scope>,
+  context?: any,
   locals?: object,
-  _assign?: any,
-) => any;
+  _assign?: unknown,
+) => unknown;
 
 /**
  * A compiled expression that is both a function and includes expression metadata.
@@ -126,7 +125,7 @@ function getParsedExpression(
 
 function addInterceptor(
   parsedExpression: CompiledExpression,
-  interceptorFn?: (value: any) => any,
+  interceptorFn?: (value: unknown) => unknown,
 ): CompiledExpression {
   if (!interceptorFn) {
     return parsedExpression;

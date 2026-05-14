@@ -3,7 +3,7 @@ import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
-import { ResolveContext } from "../resolve/resolve-context.ts";
+import type { ResolveContext } from "../resolve/resolve-context.ts";
 import { deleteProperty, hasOwn, isString, keys } from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {

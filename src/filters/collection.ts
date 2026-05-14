@@ -69,8 +69,11 @@ export function entriesFilter() {
 }
 
 function hasIterableMethod<TMethod extends IterableMethodName>(
-  input: any,
+  input: unknown,
   method: TMethod,
 ): input is Pick<IterableRecord, TMethod> {
-  return !isNullOrUndefined(input) && isFunction(input[method]);
+  return (
+    !isNullOrUndefined(input) &&
+    isFunction((input as Partial<IterableRecord>)[method])
+  );
 }

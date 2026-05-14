@@ -7,6 +7,7 @@ import {
 } from "../../injection-tokens.ts";
 import {
   type ParsedUrl,
+  type ResolvableUrl,
   urlIsSameOrigin,
   urlIsSameOriginAsBaseUrl,
   urlResolve,
@@ -484,8 +485,8 @@ export class SceDelegateProvider implements UriSanitizationConfig {
         /**
          * Returns whether a resource URL is permitted by the current policy lists.
          */
-        function isResourceUrlAllowedByPolicy(url: string | object): boolean {
-          const parsedUrl = urlResolve(url.toString());
+        function isResourceUrlAllowedByPolicy(url: ResolvableUrl): boolean {
+          const parsedUrl = urlResolve(url);
 
           let i: number;
 
@@ -734,7 +735,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
           if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
             // we attempt to sanitize non-resource URLs
             return sanitizeUri(
-              maybeTrusted.toString(),
+              String(maybeTrusted),
               type === SCE_CONTEXTS._MEDIA_URL,
             );
           }
@@ -747,7 +748,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
               $sceError(
                 "insecurl",
                 "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}",
-                maybeTrusted.toString(),
+                String(maybeTrusted),
               ),
             );
 
@@ -772,7 +773,12 @@ export class SceDelegateProvider implements UriSanitizationConfig {
   }
 }
 
-export function SceProvider(this: any): void {
+export function SceProvider(this: unknown): void {
+  const provider = this as {
+    enabled?: (value?: boolean) => boolean;
+    $get?: unknown;
+  };
+
   let enabled = true;
 
   /**
@@ -782,7 +788,7 @@ export function SceProvider(this: any): void {
    *
    * Enables/disables SCE and returns the current value.
    */
-  this.enabled = function (value?: boolean) {
+  provider.enabled = function (value?: boolean) {
     if (arguments.length) {
       enabled = !!value;
     }
@@ -790,7 +796,7 @@ export function SceProvider(this: any): void {
     return enabled;
   };
 
-  this.$get = [
+  provider.$get = [
     _parse,
     _sceDelegate,
     /**
@@ -798,7 +804,7 @@ export function SceProvider(this: any): void {
      */
     ($parse: ng.ParseService, $sceDelegate: ng.SceDelegateService) => {
       const sce = {} as ng.SceService &
-        Record<string, any> & {
+        Record<string, unknown> & {
           parseAs: (type: SceContext, expr: string) => CompiledExpression;
         };
 
@@ -820,10 +826,13 @@ export function SceProvider(this: any): void {
         /**
          * Disables trust enforcement when SCE is configured off.
          */
-        sce.trustAs = sce.getTrusted = function (type: SceContext, value: any) {
-          return value;
+        sce.trustAs = sce.getTrusted = function (
+          type: SceContext,
+          value: unknown,
+        ) {
+          return value as never;
         };
-        sce.valueOf = (v?: any) => v;
+        sce.valueOf = (v?: unknown) => v as never;
       }
 
       /**
@@ -848,7 +857,10 @@ export function SceProvider(this: any): void {
           return parsed;
         }
 
-        return $parse(expr, (value: any) => sce.getTrusted(type, value));
+        return $parse(
+          expr,
+          (value: unknown) => sce.getTrusted(type, value) as unknown,
+        );
       };
 
       /**
@@ -1001,12 +1013,12 @@ export function SceProvider(this: any): void {
           return parse(enumValue, expr);
         };
         /** @param value */
-        sce[snakeToCamel(`get_trusted_${lName}`)] = function (value: any) {
-          return getTrusted(enumValue, value);
+        sce[snakeToCamel(`get_trusted_${lName}`)] = function (value: unknown) {
+          return getTrusted(enumValue, value) as unknown;
         };
         /** @param value */
-        sce[snakeToCamel(`trust_as_${lName}`)] = function (value: any) {
-          return trustAs(enumValue, value);
+        sce[snakeToCamel(`trust_as_${lName}`)] = function (value: unknown) {
+          return trustAs(enumValue, value) as unknown;
         };
       });
 

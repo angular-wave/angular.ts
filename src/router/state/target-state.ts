@@ -5,6 +5,17 @@ import type { TransitionOptions } from "../transition/interface.ts";
 import type { StateDeclaration, StateOrName } from "./interface.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateObject } from "./state-object.ts";
+
+function stateNameString(state: StateOrName): string {
+  if (isString(state)) return state;
+
+  if (isObject(state) && isString((state as { name?: unknown }).name)) {
+    return (state as { name: string }).name;
+  }
+
+  return stringify(state);
+}
+
 /**
  * Encapsulate the target (destination) state/params/options of a [[Transition]].
  *
@@ -126,19 +137,21 @@ export class TargetState {
           ? (base as { name: string }).name
           : base;
 
-      return `Could not resolve '${this.name()}' from state '${stateName}'`;
+      return `Could not resolve '${stateNameString(this.name())}' from state '${stateNameString(stateName)}'`;
     }
 
-    if (!this._definition) return `No such state '${this.name()}'`;
+    if (!this._definition) {
+      return `No such state '${stateNameString(this.name())}'`;
+    }
 
     if (!this._definition.self)
-      return `State '${this.name()}' has an invalid definition`;
+      return `State '${stateNameString(this.name())}' has an invalid definition`;
 
     return undefined;
   }
 
   toString(): string {
-    return `'${this.name()}'${stringify(this.params())}`;
+    return `'${stateNameString(this.name())}'${stringify(this.params())}`;
   }
 
   /**

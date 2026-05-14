@@ -2,7 +2,7 @@ import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
-import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
+import { TransitionHook, type TransitionHookPhase } from "./transition-hook.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 

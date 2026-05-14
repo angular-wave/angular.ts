@@ -2,7 +2,7 @@ import {
   _exceptionHandlerProvider,
   _routerProvider,
 } from "../../injection-tokens.ts";
-import { TargetState } from "../state/target-state.ts";
+import type { TargetState } from "../state/target-state.ts";
 import type { RouterProvider } from "../router.ts";
 import { Transition } from "./transition.ts";
 import type { PathNode } from "../path/path-node.ts";
@@ -15,8 +15,8 @@ import type {
   HookRegistry,
   TransitionOptions,
 } from "./interface.ts";
-import { TransitionEventType } from "./transition-event-type.ts";
-import { TransitionHookPhase } from "./transition-hook.ts";
+import type { TransitionEventType } from "./transition-event-type.ts";
+import type { TransitionHookPhase } from "./transition-hook.ts";
 import type { StateProvider } from "../state/state-service.ts";
 import type { ViewService } from "../view/view.ts";
 import { defineCoreTransitionEvents } from "./transition-events.ts";

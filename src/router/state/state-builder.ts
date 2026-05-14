@@ -8,6 +8,7 @@ import {
   isInstanceOf,
   isString,
   keys,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -88,7 +89,7 @@ function buildUrl(
 
   const base = (parent?.navigable || root) as StateObject;
 
-  return parsed && parsed.root ? url : base._url!._append(url);
+  return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
 }
 
 /**
@@ -373,7 +374,7 @@ function invokeStateLifecycleHook(
 
   const hookContext = stateObject._hookContext as StateLifecycleHookContext;
 
-  const $injector = hookContext._$injector!;
+  const $injector = assertDefined(hookContext._$injector);
 
   const resolveContext = new ResolveContext(
     trans._treeChanges[pathname] || [],

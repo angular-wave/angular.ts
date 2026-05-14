@@ -7,6 +7,7 @@ import {
   isObject,
   isUndefined,
   isString,
+  callFunction,
 } from "./utils.ts";
 
 /**
@@ -62,10 +63,12 @@ export function fnToString(fn: [] | Function): string {
 }
 
 /** Converts arbitrary values into short readable debug strings. */
-export function stringify(value: any): string {
-  const seen: any[] = [];
+export function stringify(value: unknown): string {
+  const seen: object[] = [];
 
-  const isRejection = (obj: unknown) => {
+  const isRejection = (
+    obj: unknown,
+  ): obj is { _transitionRejection: unknown } => {
     return (
       isObject(obj) &&
       "then" in obj &&
@@ -74,17 +77,14 @@ export function stringify(value: any): string {
     );
   };
 
-  const hasToString = (obj: {
-    constructor: ObjectConstructor;
-    toString: any;
-  }) =>
+  const hasToString = (obj: unknown): obj is { toString: () => string } =>
     isObject(obj) &&
     !isArray(obj) &&
     obj.constructor !== Object &&
     isFunction(obj.toString);
 
   /** Formats a single item while tracking circular references. */
-  function format(item: any): any {
+  function format(item: unknown): unknown {
     if (isObject(item)) {
       if (seen.includes(item)) return "[circular ref]";
       seen.push(item);
@@ -96,9 +96,9 @@ export function stringify(value: any): string {
 
     if (isPromise(item)) return "[Promise]";
 
-    if (isRejection(item)) return item._transitionRejection.toString();
+    if (isRejection(item)) return String(item._transitionRejection);
 
-    if (hasToString(item)) return item.toString();
+    if (hasToString(item)) return String(callFunction(item.toString, item));
 
     if (isInjectable(item)) return functionToString(item);
 
@@ -109,13 +109,12 @@ export function stringify(value: any): string {
     // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
     // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
     // manually stringifying it.
-    return format(value);
+    return String(format(value));
   }
 
-  return JSON.stringify(value, (_key, item) => format(item)).replace(
-    /\\"/g,
-    '"',
-  );
+  const json = JSON.stringify(value, (_key, item: unknown) => format(item));
+
+  return isString(json) ? json.replace(/\\"/g, '"') : String(json);
 }
 
 export function stripLastPathElement(str: string): string {

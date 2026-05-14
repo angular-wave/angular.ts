@@ -2,7 +2,7 @@ export { angular, HttpRestBackend } from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
 import type { Attributes as TAttributes } from "./core/compile/attributes.ts";
-import {
+import type {
   Scope as TScope,
   ListenerFn as TListenerFn,
   ScopeEvent as TScopeEvent,
@@ -23,19 +23,19 @@ import type {
 import type { ParseService as TParseService } from "./core/parse/parse.ts";
 import type { TemplateRequestService as TTemplateRequestService } from "./services/template-request/template-request.ts";
 
-import {
+import type {
   HttpParamSerializerProvider,
-  type HttpMethod as THttpMethod,
-  type HttpParamSerializer as THttpParamSerializer,
-  type HttpPromise as THttpPromise,
-  type HttpProviderDefaults as THttpProviderDefaults,
-  type HttpResponse as THttpResponse,
-  type HttpResponseStatus as THttpResponseStatus,
-  type HttpService as THttpService,
-  type RequestConfig as TRequestConfig,
-  type RequestShortcutConfig as TRequestShortcutConfig,
+  HttpMethod as THttpMethod,
+  HttpParamSerializer as THttpParamSerializer,
+  HttpPromise as THttpPromise,
+  HttpProviderDefaults as THttpProviderDefaults,
+  HttpResponse as THttpResponse,
+  HttpResponseStatus as THttpResponseStatus,
+  HttpService as THttpService,
+  RequestConfig as TRequestConfig,
+  RequestShortcutConfig as TRequestShortcutConfig,
 } from "./services/http/http.ts";
-import {
+import type {
   FilterFactory as TFilterFactory,
   FilterService as TFilterService,
   FilterFn as TFilterFn,
@@ -56,20 +56,20 @@ import type {
   InterpolationFunction as TInterpolationFunction,
   InterpolateProvider as TInterpolateProvider,
 } from "./core/interpolate/interpolate.ts";
-import {
+import type {
   SceProvider,
-  type SceDelegateProvider as TSceDelegateProvider,
-  type SceDelegateService as TSceDelegateService,
-  type SceService as TSceService,
+  SceDelegateProvider as TSceDelegateProvider,
+  SceDelegateService as TSceDelegateService,
+  SceService as TSceService,
 } from "./services/sce/sce.ts";
 import type { StateProvider as TStateProvider } from "./router/state/state-service.ts";
 import type { LogService as TLogService } from "./services/log/log.ts";
-import {
+import type {
   PubSubProvider as TPubSubProvider,
   PubSub as TPubSub,
-  type TopicService as TTopicService,
+  TopicService as TTopicService,
 } from "./services/pubsub/pubsub.ts";
-import {
+import type {
   AnnotatedFactory as TAnnotatedFactory,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
@@ -94,7 +94,7 @@ import type {
   ErrorHandlingConfig as TErrorHandlingConfig,
   Validator as TValidator,
 } from "./shared/interface.ts";
-import {
+import type {
   BoundTranscludeFn as TBoundTranscludeFn,
   CompileFn as TCompileFn,
   PublicLinkFn as TPublicLinkFn,
@@ -113,7 +113,7 @@ import type {
   Location as TLocationService,
   LocationProvider as TLocationProvider,
 } from "./services/location/location.ts";
-import {
+import type {
   AnimationContext as TAnimationContext,
   AnimationHandle as TAnimationHandle,
   AnimationLifecycleCallback as TAnimationLifecycleCallback,
@@ -122,7 +122,7 @@ import {
   AnimationPresetHandler as TAnimationPresetHandler,
   AnimationResult as TAnimationResult,
   AnimateProvider,
-  type AnimateService as TAnimateService,
+  AnimateService as TAnimateService,
   NativeAnimationOptions as TNativeAnimationOptions,
 } from "./animations/animate.ts";
 import type {
@@ -154,7 +154,7 @@ import type {
   RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
-import {
+import type {
   StateDeclaration as TStateDeclaration,
   StateResolveArray as TStateResolveArray,
   StateResolveObject as TStateResolveObject,

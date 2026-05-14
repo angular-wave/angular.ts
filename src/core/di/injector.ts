@@ -3,6 +3,7 @@ import {
   assert,
   assertArgFn,
   assertNotHasOwnProperty,
+  callFunction,
   entries,
   isArray,
   isFunction,
@@ -12,6 +13,7 @@ import {
   isUndefined,
   createErrorFactory,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 import {
   InjectorService,
@@ -20,6 +22,7 @@ import {
 } from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
 import { validateArray } from "../../shared/validate.ts";
+import type { CookieService } from "../../services/cookie/cookie.ts";
 import type {
   Constructor,
   Injectable,
@@ -78,10 +81,18 @@ export function createInjector(
 
   instanceInjector = protoInstanceInjector.get(_injector);
 
-  runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
+  runBlocks.forEach((fn) => {
+    if (fn) {
+      instanceInjector.invoke(fn);
+    }
+  });
 
   instanceInjector.loadNewModules = (mods: ModuleLike[]) => {
-    loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+    loadModules(mods).forEach((fn) => {
+      if (fn) {
+        instanceInjector.invoke(fn);
+      }
+    });
   };
 
   return instanceInjector;
@@ -103,7 +114,7 @@ export function createInjector(
     if (isFunction(providerDefinition) || isArray(providerDefinition)) {
       newProvider = providerInjector.instantiate(providerDefinition as any);
     } else {
-      newProvider = providerDefinition;
+      newProvider = providerDefinition as ServiceProvider;
     }
 
     if (!newProvider.$get) {
@@ -137,7 +148,7 @@ export function createInjector(
           );
         }
 
-        return result;
+        return result as unknown;
       },
     });
   }
@@ -151,7 +162,8 @@ export function createInjector(
   function service(name: string, constructor: Function): ServiceProvider {
     return factory(name, [
       _injector,
-      ($injector: InjectorService) => $injector.instantiate(constructor),
+      ($injector: InjectorService) =>
+        $injector.instantiate(constructor) as unknown,
     ]);
   }
 
@@ -162,7 +174,9 @@ export function createInjector(
    * @returns {ng.ServiceProvider}
    */
   function value(name: string, val: any): ServiceProvider {
-    return (providerCache[name + providerSuffix] = { $get: () => val });
+    return (providerCache[name + providerSuffix] = {
+      $get: () => val as unknown,
+    });
   }
 
   /**
@@ -183,7 +197,9 @@ export function createInjector(
     serviceName: string,
     decorFn: Injectable<(...args: any[]) => any>,
   ): void {
-    const origProvider = providerInjector.get(serviceName + providerSuffix);
+    const origProvider = providerInjector.get(
+      serviceName + providerSuffix,
+    ) as ServiceProvider;
 
     const origGet = origProvider.$get;
 
@@ -192,7 +208,7 @@ export function createInjector(
 
       return instanceInjector.invoke(decorFn, null, {
         $delegate: origInstance,
-      });
+      }) as unknown;
     };
   }
 
@@ -215,17 +231,25 @@ export function createInjector(
           case "session": {
             const instance = $injector.instantiate(ctor);
 
-            return createPersistentProxy(instance, name, sessionStorage);
+            return createPersistentProxy(
+              instance,
+              name,
+              sessionStorage,
+            ) as unknown;
           }
           case "local": {
             const instance = $injector.instantiate(ctor);
 
-            return createPersistentProxy(instance, name, localStorage);
+            return createPersistentProxy(
+              instance,
+              name,
+              localStorage,
+            ) as unknown;
           }
           case "cookie": {
             const instance = $injector.instantiate(ctor);
 
-            const $cookie = $injector.get(_cookie);
+            const $cookie = $injector.get(_cookie) as CookieService;
 
             const serialize = backendOrConfig?.serialize ?? JSON.stringify;
 
@@ -255,7 +279,7 @@ export function createInjector(
                 serialize,
                 deserialize,
               },
-            );
+            ) as unknown;
           }
           case "custom": {
             const instance = $injector.instantiate(ctor);
@@ -271,7 +295,8 @@ export function createInjector(
                 // raw Storage object
                 backend = backendOrConfig;
               } else if (isObject(backendOrConfig)) {
-                backend = backendOrConfig.backend! || localStorage;
+                backend =
+                  assertDefined(backendOrConfig.backend) || localStorage;
                 const {
                   serialize: configSerialize,
                   deserialize: configDeserialize,
@@ -289,7 +314,7 @@ export function createInjector(
             return createPersistentProxy(instance, name, backend, {
               serialize,
               deserialize,
-            });
+            }) as unknown;
           }
         }
 
@@ -332,9 +357,17 @@ export function createInjector(
           );
 
           invokeQueue.forEach((invokeArgs: any[]) => {
-            const providerInstance = providerInjector.get(invokeArgs[0]);
+            const invokeName = invokeArgs[1] as string;
 
-            providerInstance[invokeArgs[1]](...invokeArgs[2]);
+            const providerInstance = providerInjector.get(
+              invokeArgs[0],
+            ) as Record<string, (...args: any[]) => unknown>;
+
+            callFunction(
+              providerInstance[invokeName],
+              providerInstance,
+              ...invokeArgs[2],
+            );
           });
         } else if (isFunction(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));

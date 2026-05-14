@@ -1,5 +1,5 @@
 import { isObject, isString } from "../../shared/utils.ts";
-import { Attributes } from "../../core/compile/attributes.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(): ng.Directive {

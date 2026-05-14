@@ -4,6 +4,7 @@ import { removeElement } from "../../shared/dom.ts";
 import {
   assertNotHasOwnProperty,
   deProxy,
+  deleteProperty,
   hashKey,
   isArray,
   isDefined,
@@ -178,7 +179,7 @@ export class SelectController {
     const realVal =
       val in this._selectValueMap ? this._selectValueMap[val] : val;
 
-    return this._hasOption(realVal) ? deProxy(realVal) : null;
+    return this._hasOption(realVal) ? (deProxy(realVal) as unknown) : null;
   }
 
   /** @ignore */
@@ -355,7 +356,7 @@ export class SelectController {
 
         if (isDefined(hashedVal)) {
           this._removeOption(oldVal);
-          delete this._selectValueMap[hashedVal];
+          deleteProperty(this._selectValueMap, hashedVal);
           removal = true;
         }
 

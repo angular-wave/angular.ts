@@ -23,7 +23,7 @@ export function limitToFilter() {
     begin?: string | number,
   ) {
     if (isFunction(input)) {
-      input = input();
+      input = input() as any[] | ArrayLike<any> | string | number | Function;
     }
 
     let numericLimit: number;

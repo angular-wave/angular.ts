@@ -5,10 +5,16 @@ import {
   removeElement,
 } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { arrayFrom, isArray, isInstanceOf } from "../../shared/utils.ts";
+import {
+  arrayFrom,
+  isArray,
+  isInstanceOf,
+  stringify,
+  assertDefined,
+} from "../../shared/utils.ts";
 import type { SwapModeType } from "./protocol.ts";
 
-type SwapNodes = (Node | ChildNode)[];
+type SwapNodes = Array<Node | ChildNode>;
 
 /** Dependencies and per-element state used by realtime DOM swaps. */
 export interface RealtimeSwapContext {
@@ -67,7 +73,7 @@ export function createRealtimeSwapHandler({
     if (!["textContent", "delete", "none"].includes(swap)) {
       if (!html) return false;
 
-      const compiled = $compile(String(html))(scope) as
+      const compiled = $compile(stringify(html))(scope) as
         | DocumentFragment
         | ChildNode;
 
@@ -76,9 +82,11 @@ export function createRealtimeSwapHandler({
         : [compiled];
     }
 
-    const targetSelector = options.targetSelector || attrs.target;
+    const targetSelector = (options.targetSelector || attrs.target) as
+      | string
+      | undefined;
 
-    const target = targetSelector
+    const target: Element | null = targetSelector
       ? document.querySelector(targetSelector)
       : element;
 
@@ -108,20 +116,26 @@ export function createRealtimeSwapHandler({
         placeholder.style.display = "none";
         parent.insertBefore(placeholder, target.nextSibling);
 
-        animate!.leave(target).done(() => {
-          const insertedNodes = arrayFrom(frag.childNodes);
+        assertDefined(animate)
+          .leave(target)
+          .done(() => {
+            const insertedNodes = arrayFrom(frag.childNodes);
 
-          for (const x of insertedNodes) {
-            if (x.nodeType === NodeType._ELEMENT_NODE) {
-              animate!.enter(x as Element, parent as Element, placeholder);
-            } else {
-              parent.insertBefore(x, placeholder);
+            for (const x of insertedNodes) {
+              if (x.nodeType === NodeType._ELEMENT_NODE) {
+                assertDefined(animate).enter(
+                  x as Element,
+                  parent as Element,
+                  placeholder,
+                );
+              } else {
+                parent.insertBefore(x, placeholder);
+              }
             }
-          }
 
-          content = insertedNodes;
-          scope.$flushQueue();
-        });
+            content = insertedNodes;
+            scope.$flushQueue();
+          });
 
         scope.$flushQueue();
         break;
@@ -129,15 +143,20 @@ export function createRealtimeSwapHandler({
 
       case "textContent":
         if (animationEnabled) {
-          animate!.leave(target).done(() => {
-            target.textContent = String(html);
-            animate!.enter(target, target.parentNode as Element);
-            scope.$flushQueue();
-          });
+          assertDefined(animate)
+            .leave(target)
+            .done(() => {
+              target.textContent = stringify(html);
+              assertDefined(animate).enter(
+                target,
+                target.parentNode as Element,
+              );
+              scope.$flushQueue();
+            });
 
           scope.$flushQueue();
         } else {
-          target.textContent = String(html);
+          target.textContent = stringify(html);
         }
         break;
 
@@ -148,7 +167,11 @@ export function createRealtimeSwapHandler({
 
         nodes.forEach((node) => {
           if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, parent as Element, target);
+            assertDefined(animate).enter(
+              node as Element,
+              parent as Element,
+              target,
+            );
           } else {
             parent.insertBefore(node, target);
           }
@@ -163,7 +186,11 @@ export function createRealtimeSwapHandler({
 
         [...nodes].reverse().forEach((node) => {
           if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, target, firstChild as Element);
+            assertDefined(animate).enter(
+              node as Element,
+              target,
+              firstChild as Element,
+            );
           } else {
             target.insertBefore(node, firstChild);
           }
@@ -176,7 +203,7 @@ export function createRealtimeSwapHandler({
       case "beforeend": {
         nodes.forEach((node) => {
           if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(node as Element, target);
+            assertDefined(animate).enter(node as Element, target);
           } else {
             target.appendChild(node);
           }
@@ -194,7 +221,7 @@ export function createRealtimeSwapHandler({
 
         [...nodes].reverse().forEach((node) => {
           if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-            animate!.enter(
+            assertDefined(animate).enter(
               node as Element,
               parent as Element,
               nextSibling as Element,
@@ -210,10 +237,12 @@ export function createRealtimeSwapHandler({
 
       case "delete":
         if (animationEnabled) {
-          animate!.leave(target).done(() => {
-            removeElement(target);
-            scope.$flushQueue();
-          });
+          assertDefined(animate)
+            .leave(target)
+            .done(() => {
+              removeElement(target);
+              scope.$flushQueue();
+            });
           scope.$flushQueue();
         } else {
           removeElement(target);
@@ -231,11 +260,13 @@ export function createRealtimeSwapHandler({
             !isArray(content) &&
             content.nodeType !== NodeType._TEXT_NODE
           ) {
-            animate!.leave(content as Element).done(() => {
-              content = nodes[0] as ChildNode;
-              animate!.enter(nodes[0] as Element, target);
-              scope.$flushQueue();
-            });
+            assertDefined(animate)
+              .leave(content as Element)
+              .done(() => {
+                content = nodes[0] as ChildNode;
+                assertDefined(animate).enter(nodes[0] as Element, target);
+                scope.$flushQueue();
+              });
             scope.$flushQueue();
           } else {
             content = nodes[0] as ChildNode;
@@ -248,7 +279,7 @@ export function createRealtimeSwapHandler({
               emptyElement(target);
               target.replaceChildren(...nodes);
             } else {
-              animate!.enter(nodes[0] as Element, target);
+              assertDefined(animate).enter(nodes[0] as Element, target);
               scope.$flushQueue();
             }
           }

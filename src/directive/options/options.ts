@@ -15,8 +15,9 @@ import {
   isDefined,
   isNull,
   createErrorFactory,
+  assertDefined,
 } from "../../shared/utils.ts";
-import { SelectController } from "../select/select-ctrl.ts";
+import type { SelectController } from "../select/select-ctrl.ts";
 
 const ngOptionsError = createErrorFactory("ngOptions");
 
@@ -169,13 +170,17 @@ export function ngOptionsDirective(
         };
 
         if (!keyName && isArrayLike(optionValues)) {
-          for (let index = 0, l = optionValues.length; index < l; index++) {
-            addOption(optionValues[index], index);
+          const arrayLikeOptions = optionValues as ArrayLike<unknown>;
+
+          for (let index = 0, l = arrayLikeOptions.length; index < l; index++) {
+            addOption(arrayLikeOptions[index], index);
           }
         } else {
-          for (const itemKey in optionValues) {
-            if (hasOwn(optionValues, itemKey) && !itemKey.startsWith("$")) {
-              addOption(optionValues[itemKey], itemKey);
+          const optionRecord = optionValues as Record<string, unknown>;
+
+          for (const itemKey in optionRecord) {
+            if (hasOwn(optionRecord, itemKey) && !itemKey.startsWith("$")) {
+              addOption(optionRecord[itemKey], itemKey);
             }
           }
         }
@@ -184,12 +189,12 @@ export function ngOptionsDirective(
           _items: optionItems,
           _selectValueMap: selectValueMap,
           /** @internal */
-          _getOptionFromViewValue(value: any) {
+          _getOptionFromViewValue(value: unknown) {
             return selectValueMap[hashKey(value)];
           },
           /** @internal */
           _getViewValueFromOption(option: OptionItem) {
-            return option._viewValue;
+            return option._viewValue as unknown;
           },
         };
       },
@@ -249,10 +254,10 @@ export function ngOptionsDirective(
             selectCtrl._removeUnknownOption();
 
             selectNode.value = option._selectValue;
-            option._element!.selected = true;
+            assertDefined(option._element).selected = true;
           }
 
-          option._element!.setAttribute("selected", "selected");
+          assertDefined(option._element).setAttribute("selected", "selected");
         } else {
           selectCtrl._selectUnknownOrEmptyOption(value);
         }
@@ -266,7 +271,7 @@ export function ngOptionsDirective(
           selectCtrl._unselectEmptyOption();
           selectCtrl._removeUnknownOption();
 
-          return options._getViewValueFromOption(selectedOption);
+          return options._getViewValueFromOption(selectedOption) as unknown;
         }
 
         return null;
@@ -287,7 +292,7 @@ export function ngOptionsDirective(
       selectCtrl._readValue = () => {
         if (!options) return [];
 
-        const selections: any[] = [];
+        const selections: unknown[] = [];
 
         const optionsEls = selectNode.options;
 
@@ -308,12 +313,15 @@ export function ngOptionsDirective(
     }
 
     if (providedEmptyOption) {
-      const linkFn = $compile(selectCtrl._emptyOption!);
+      const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
 
-      selectNode.prepend(selectCtrl._emptyOption!);
+      selectNode.prepend(assertDefined(selectCtrl._emptyOption));
       linkFn(scope);
 
-      if (selectCtrl._emptyOption!.nodeType === NodeType._COMMENT_NODE) {
+      if (
+        assertDefined(selectCtrl._emptyOption).nodeType ===
+        NodeType._COMMENT_NODE
+      ) {
         selectCtrl._hasEmptyOption = false;
 
         selectCtrl._registerOption = function (

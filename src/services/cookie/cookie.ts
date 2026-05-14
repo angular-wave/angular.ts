@@ -56,7 +56,7 @@ export class CookieProvider {
  */
 export class CookieService {
   /** @internal */
-  private _defaults: ng.CookieOptions;
+  private readonly _defaults: ng.CookieOptions;
 
   /**
    * Accepts the default cookie attributes defined by `$cookiesProvider.defaults`.

@@ -1,5 +1,11 @@
 import { stringify } from "../../shared/strings.ts";
-import { assign, isObject, isUndefined, keys } from "../../shared/utils.ts";
+import {
+  assign,
+  assertDefined,
+  isObject,
+  isUndefined,
+  keys,
+} from "../../shared/utils.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { buildHooksForPhase } from "./hook-builder.ts";
 import { TransitionRunner } from "./transition-runner.ts";
@@ -10,7 +16,7 @@ import {
   nonDynamicParams,
   treeChanges,
 } from "../path/path-utils.ts";
-import { Param } from "../params/param.ts";
+import type { Param } from "../params/param.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { TransitionOptions, TreeChanges } from "./interface.ts";
 import type { PathNode } from "../path/path-node.ts";
@@ -20,29 +26,6 @@ import type { TransitionService } from "./transition-service.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { RouterProvider } from "../router.ts";
-
-export interface Transition {
-  promise: Promise<StateDeclaration>;
-  $id: number;
-  /** @internal */
-  _aborted?: boolean;
-  /** @internal */
-  _routerState: RouterProvider;
-  /** @internal */
-  _transitionService: TransitionService;
-  /** @internal */
-  _treeChanges: TreeChanges;
-  entering(): StateDeclaration[];
-  exiting(): StateDeclaration[];
-  params(pathname?: string): RawParams;
-  valid(): boolean;
-  error(): Rejection | undefined;
-  to(): StateDeclaration;
-  redirect(targetState: TargetState): Transition;
-  run(): Promise<StateDeclaration>;
-  isActive(): boolean;
-  $to(): StateObject;
-}
 
 export type { TransitionOptions } from "./interface.ts";
 const REDIRECT_MAX = 20;
@@ -54,16 +37,20 @@ interface DeferredPromise<T> {
 }
 
 function createDeferredPromise<T>(): DeferredPromise<T> {
-  let resolve!: DeferredPromise<T>["resolve"];
+  let resolve: DeferredPromise<T>["resolve"] | undefined;
 
-  let reject!: DeferredPromise<T>["reject"];
+  let reject: DeferredPromise<T>["reject"] | undefined;
 
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
   });
 
-  return { promise, resolve, reject };
+  return {
+    promise,
+    resolve: assertDefined(resolve),
+    reject: assertDefined(reject),
+  };
 }
 
 function nodeIsReloading(node: PathNode, reloadState?: StateObject): boolean {
@@ -229,7 +216,7 @@ export class Transition {
       ? fromPath[fromPath.length - 1]
       : undefined;
 
-    return fromNode!.state;
+    return assertDefined(fromNode).state;
   }
 
   /**
@@ -240,7 +227,7 @@ export class Transition {
 
     const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
 
-    return toNode!.state;
+    return assertDefined(toNode).state;
   }
 
   /**

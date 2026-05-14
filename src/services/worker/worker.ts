@@ -57,7 +57,7 @@ export function createWorkerConnection(
       }
 
       try {
-        return JSON.parse(data);
+        return JSON.parse(data) as unknown;
       } catch {
         return data;
       }

@@ -2,8 +2,10 @@ import type { Attributes } from "../../core/compile/attributes.ts";
 /** Removes the `ng-cloak` attribute during compilation so cloaked content can render. */
 export function ngCloakDirective(): ng.Directive {
   return {
-    compile(_: Element, attr: Attributes): void {
+    compile(_: Element, attr: Attributes): undefined {
       attr.$set("ngCloak", null);
+
+      return undefined;
     },
   };
 }

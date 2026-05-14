@@ -1,7 +1,7 @@
 import { getBaseHref } from "../shared/dom.ts";
 import { stripLastPathElement } from "../shared/strings.ts";
 import { isDefined, isNull } from "../shared/utils.ts";
-import { UrlMatcher } from "./url/url-matcher.ts";
+import type { UrlMatcher } from "./url/url-matcher.ts";
 import type { RawParams } from "./params/interface.ts";
 import type { StateParams } from "./params/state-params.ts";
 

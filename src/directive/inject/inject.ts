@@ -19,7 +19,7 @@ export function ngInjectDirective(
     ): void {
       const attrMap = attrs as Attributes & Record<string, string>;
 
-      const expr = attrMap.ngInject;
+      const expr = attrMap.ngInject as string | undefined;
 
       if (!expr) return;
       const tokens = expr

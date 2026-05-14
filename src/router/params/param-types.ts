@@ -4,6 +4,7 @@ import {
   isInstanceOf,
   isNullOrUndefined,
   isString,
+  stringify,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
@@ -36,13 +37,13 @@ function decodePathPart(match: string): string {
 
 function encodePath(value: unknown): unknown {
   return !isNullOrUndefined(value)
-    ? value.toString().replace(/([~/])/g, encodePathPart)
+    ? stringify(value).replace(/([~/])/g, encodePathPart)
     : value;
 }
 
 function decodePath(value: unknown): unknown {
   return !isNullOrUndefined(value)
-    ? value.toString().replace(/(~~|~2F)/g, decodePathPart)
+    ? stringify(value).replace(/(~~|~2F)/g, decodePathPart)
     : value;
 }
 
@@ -80,14 +81,14 @@ export function createDefaultParamTypes(): ParamTypeMap {
       is(val: unknown) {
         return (
           !isNullOrUndefined(val) &&
-          (this as unknown as ParamTypeDefinition).decode?.(val.toString()) ===
+          (this as unknown as ParamTypeDefinition).decode?.(stringify(val)) ===
             val
         );
       },
       pattern: /-?\d+/,
     }),
     bool: makeDefaultType({
-      encode: (val: unknown) => ((val && 1) || 0).toString(),
+      encode: (val: unknown) => (val ? "1" : "0"),
       decode: (val: string) => parseInt(val, 10) !== 0,
       is: (val: unknown) =>
         isInstanceOf(val, Boolean) || typeof val === "boolean",
@@ -144,7 +145,7 @@ export function createDefaultParamTypes(): ParamTypeMap {
     }),
     json: makeDefaultType({
       encode: (x: unknown) => JSON.stringify(x),
-      decode: (x: string) => JSON.parse(x),
+      decode: (x: string) => JSON.parse(x) as unknown,
       is: (val: unknown) => isInstanceOf(val, Object),
       equals,
       pattern: /[^/]*/,

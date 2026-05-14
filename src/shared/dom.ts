@@ -2,6 +2,7 @@ import { _injector, _scope } from "../injection-tokens.ts";
 import {
   arrayFrom,
   assign,
+  deleteProperty,
   hasOwn,
   isArray,
   isDefined,
@@ -9,6 +10,7 @@ import {
   isObject,
   isString,
   uppercase,
+  assertDefined,
 } from "./utils.js";
 import { NodeType } from "./node.ts";
 import type { ExpandoStore } from "../interface.ts";
@@ -146,11 +148,11 @@ export function removeElementData(
 
   if (expandoStore) {
     if (name) {
-      delete expandoStore[name];
+      deleteProperty(expandoStore, name);
     } else {
       for (const key in expandoStore) {
         if (hasOwn(expandoStore, key)) {
-          delete expandoStore[key];
+          deleteProperty(expandoStore, key);
         }
       }
     }
@@ -211,7 +213,7 @@ export function dealoc(
   element:
     | (Element & Record<string, any>)
     | Document
-    | (Element & Record<string, any>)[]
+    | Array<Element & Record<string, any>>
     | NodeListOf<Element>
     | HTMLCollectionOf<Element>
     | null
@@ -354,7 +356,7 @@ export function setCacheData(
       true,
     );
 
-    expandoStore![kebabToCamel(key)] = value;
+    assertDefined(expandoStore)[kebabToCamel(key)] = value;
   } else {
     if (element.parentElement) {
       // TODO: check should occur perhaps prior at compilation level that this is a valid element
@@ -378,7 +380,7 @@ export function getCacheData(element: Element, key?: string): any {
       return undefined;
     }
 
-    return expandoStore?.[kebabToCamel(key)];
+    return expandoStore?.[kebabToCamel(key)] as unknown;
   }
 
   return undefined;
@@ -397,7 +399,7 @@ export function deleteCacheData(element: Element, key?: string): void {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
 
     if (expandoStore && hasOwn(expandoStore, kebabToCamel(key))) {
-      delete expandoStore[kebabToCamel(key)];
+      deleteProperty(expandoStore, kebabToCamel(key));
       removeIfEmptyData(element as Element & Record<string, any>);
     }
   }
@@ -409,7 +411,7 @@ export function deleteCacheData(element: Element, key?: string): void {
  * @returns The scope stored on the element.
  */
 export function getScope(element: Element): ng.Scope {
-  return getCacheData(element, SCOPE_KEY);
+  return getCacheData(element, SCOPE_KEY) as ng.Scope;
 }
 
 /**
@@ -448,7 +450,9 @@ export function getController(
   element: Element,
   name?: string,
 ): ng.Scope | undefined {
-  return getInheritedData(element, `$${name || "ngController"}Controller`);
+  return getInheritedData(element, `$${name || "ngController"}Controller`) as
+    | ng.Scope
+    | undefined;
 }
 
 /**
@@ -542,7 +546,7 @@ export function startingTag(elementOrStr: string | Element | Node): string {
       const match = /^(<[^>]+>)/.exec(elemHtml);
 
       if (match) {
-        return match[1].replace(/^<([\w-]+)/, (_match, nodeName) => {
+        return match[1].replace(/^<([\w-]+)/, (_match, nodeName: string) => {
           return `<${nodeName.toLowerCase()}`;
         });
       }
@@ -564,7 +568,7 @@ export function getBlockNodes(nodes: Node[]): Node[] {
 
   const endNode = nodes[nodes.length - 1];
 
-  let blockNodes;
+  let blockNodes: Node[] | undefined;
 
   for (let i = 1; node !== endNode; i++) {
     const next = node.nextSibling;
@@ -576,7 +580,7 @@ export function getBlockNodes(nodes: Node[]): Node[] {
     if (blockNodes || nodes[i] !== node) {
       if (!blockNodes) {
         // use element to avoid circular dependency
-        blockNodes = Array.prototype.slice.call(nodes, 0, i);
+        blockNodes = Array.prototype.slice.call(nodes, 0, i) as Node[];
       }
       blockNodes.push(node);
     }
@@ -608,7 +612,7 @@ export function getBooleanAttrName(
 function cleanSingleElementData(node: Element): void {
   if (
     node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
-    isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))
+    getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined
   ) {
     node.dispatchEvent(new Event("$destroy"));
   }
@@ -624,7 +628,9 @@ function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
 
 /** Returns the nearest injector service found while walking up the element tree. */
 export function getInjector(element: Element): ng.InjectorService {
-  return getInheritedData(element, _injector);
+  return assertDefined(
+    getInheritedData(element, _injector),
+  ) as ng.InjectorService;
 }
 
 /**
@@ -711,7 +717,7 @@ export function emptyElement(element: Element): void {
  */
 export function domInsert(
   element: HTMLElement | Element,
-  parentElement: HTMLElement | Element,
+  parentElement: ParentNode,
   afterElement?: ChildNode | Element | null,
 ): void {
   // if for some reason the previous element was removed

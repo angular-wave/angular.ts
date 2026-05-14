@@ -1,6 +1,9 @@
 import globals from "globals";
+import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
+import importPlugin from "eslint-plugin-import";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import promisePlugin from "eslint-plugin-promise";
 import tseslint from "typescript-eslint";
 
 const sharedLanguageOptions = {
@@ -89,164 +92,57 @@ const typeDeclarationPaddingRule = {
   },
 };
 
-const strictRules = {
-  // ===== Best practices =====
-  "no-var": "error",
-  "prefer-const": "error",
-  eqeqeq: ["error", "always"],
-  curly: ["error", "all"],
-  "no-console": ["error"],
-  "no-debugger": "error",
-  "no-alert": "error",
-  "no-eval": "error",
-  "no-duplicate-imports": "error",
-  "no-unused-vars": [
-    "error",
-    { args: "after-used", ignoreRestSiblings: false },
-  ],
-  "no-implicit-globals": "error",
-  "no-magic-numbers": [
-    "warn",
-    {
-      ignore: [0, 1, -1, 2, -2, 3, 4, 5, 16, 10, 100, 200, 300, 400, 1000],
-      ignoreArrayIndexes: true,
-      enforceConst: true,
-    },
-  ],
-  "no-empty-function": "error",
-  "no-fallthrough": "error",
-  "no-invalid-this": "error",
-  "no-return-assign": "error",
-  "no-self-assign": "error",
-  "no-self-compare": "error",
-  "no-shadow": "error",
-  "no-useless-catch": "error",
-  "no-useless-return": "error",
-
-  // ===== Modern JS =====
-  "prefer-arrow-callback": "error",
-  "prefer-template": "error",
-  "prefer-exponentiation-operator": "error",
-  "prefer-destructuring": ["error", { object: true, array: false }],
-  "object-shorthand": ["error", "always"],
-  "arrow-body-style": ["error", "as-needed"],
-  "no-useless-constructor": "error",
-
-  // ===== Readability & organization =====
-  "newline-per-chained-call": ["error", { ignoreChainWithDepth: 1 }],
-  "padding-line-between-statements": [
-    "error",
-    { blankLine: "always", prev: "*", next: "return" },
-    { blankLine: "always", prev: ["const", "let", "var"], next: "*" },
-    { blankLine: "always", prev: "*", next: "if" },
-    { blankLine: "always", prev: "*", next: "for" },
-    { blankLine: "always", prev: "*", next: "while" },
-    { blankLine: "always", prev: "*", next: "try" },
-  ],
-  "lines-between-class-members": [
-    "error",
-    "always",
-    { exceptAfterSingleLine: true },
-  ],
-  "max-classes-per-file": ["error", 3],
-  "consistent-return": "error",
-  "dot-notation": "error",
-  "id-length": [
-    "warn",
-    {
-      min: 2,
-      exceptions: [
-        "i",
-        "j",
-        "l", // loops
-        "x",
-        "y", // anonymous fn params
-        "k",
-        "v", // key-vals
-        "a",
-        "b", // comparators
-        "_",
-        "__", // ignored
-      ],
-    },
-  ],
-  "sort-imports": [
-    "error",
-    {
-      ignoreCase: false,
-      ignoreDeclarationSort: true,
-      ignoreMemberSort: true,
-      memberSyntaxSortOrder: ["none", "all", "multiple", "single"],
-    },
-  ],
-  "newline-before-return": "error",
-
-  // ===== Security & safety =====
-  "no-prototype-builtins": "error",
-  "no-new-object": "error",
-  "no-new-func": "error",
-  "no-with": "error",
-  "no-implied-eval": "error",
-  "no-proto": "error",
-  strict: ["error", "safe"],
-  "no-octal": "error",
-  "no-unneeded-ternary": "error",
-};
-
-const typeScriptStrictRules = {
-  ...strictRules,
-  "@typescript-eslint/no-base-to-string": "off",
-  "@typescript-eslint/no-dynamic-delete": "off",
-  "no-empty-function": "off",
+const angularTsRuntimeCompatibilityRules = {
   "@typescript-eslint/no-explicit-any": "off",
-  "@typescript-eslint/no-floating-promises": "off",
-  "@typescript-eslint/no-invalid-void-type": "off",
-  "@typescript-eslint/no-misused-promises": "off",
-  "@typescript-eslint/no-namespace": "off",
-  "@typescript-eslint/no-non-null-assertion": "off",
-  "no-shadow": "off",
   "@typescript-eslint/no-unnecessary-condition": "off",
-  "no-unused-vars": "off",
-  "no-useless-constructor": "off",
   "@typescript-eslint/no-unsafe-argument": "off",
   "@typescript-eslint/no-unsafe-assignment": "off",
-  "@typescript-eslint/no-unsafe-call": "off",
-  "@typescript-eslint/no-unsafe-declaration-merging": "off",
   "@typescript-eslint/no-unsafe-function-type": "off",
-  "@typescript-eslint/no-unsafe-member-access": "off",
-  "@typescript-eslint/no-unsafe-return": "off",
   "@typescript-eslint/prefer-nullish-coalescing": "off",
-  "@typescript-eslint/prefer-promise-reject-errors": "off",
   "@typescript-eslint/restrict-plus-operands": "off",
   "@typescript-eslint/restrict-template-expressions": "off",
   "@typescript-eslint/unbound-method": "off",
-  "@typescript-eslint/no-empty-function": "error",
-  "@typescript-eslint/no-shadow": "error",
-  "@typescript-eslint/no-this-alias": "error",
-  "@typescript-eslint/no-unused-vars": [
-    "error",
-    { args: "after-used", ignoreRestSiblings: false },
-  ],
-  "@typescript-eslint/no-useless-constructor": "error",
   "@typescript-eslint/no-floating-promises": [
     "error",
     { ignoreIIFE: true, ignoreVoid: true },
   ],
-  "@typescript-eslint/no-redundant-type-constituents": "error",
   "@typescript-eslint/no-misused-promises": "error",
-  "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
-  "@typescript-eslint/no-unnecessary-type-parameters": "error",
-  "@typescript-eslint/no-unnecessary-type-conversion": "error",
-  "@typescript-eslint/prefer-optional-chain": "error",
-  "@typescript-eslint/require-await": "error",
-  "@typescript-eslint/unified-signatures": "error",
-  "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
+  "@typescript-eslint/no-non-null-assertion": "error",
+
+  // TypeScript-aware replacements for core rules covered by the presets.
+  "no-empty-function": "off",
+  "no-shadow": "off",
+  "no-unused-vars": "off",
+  "no-useless-constructor": "off",
+
+  // The source uses TypeScript files with runtime ESM .js specifiers.
+  "import/no-unresolved": "off",
+  "import/no-duplicates": "error",
+  "import/no-named-as-default": "error",
+  "import/no-named-as-default-member": "error",
+
+  "promise/always-return": ["error", { ignoreLastCallback: true }],
+  "promise/catch-or-return": ["error", { allowThen: true }],
+  "promise/no-callback-in-promise": "error",
+  "promise/no-nesting": "error",
+  "promise/no-promise-in-callback": "off",
+  "promise/valid-params": "error",
 };
 
 export default defineConfig([
   {
     ignores: ["**/*.{js,mjs,cjs}", "**/*.spec.ts", "**/*.test.ts"],
   },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
+      reportUnusedInlineConfigs: "error",
+    },
+  },
+  js.configs.recommended,
+  importPlugin.flatConfigs.recommended,
+  importPlugin.flatConfigs.typescript,
+  promisePlugin.configs["flat/recommended"],
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeCheckedOnly,
   {
@@ -268,8 +164,15 @@ export default defineConfig([
       },
     },
     rules: {
-      ...typeScriptStrictRules,
+      ...angularTsRuntimeCompatibilityRules,
       "local/type-declaration-padding": "error",
+    },
+  },
+  {
+    files: ["./src/namespace.ts"],
+    rules: {
+      // Public declaration entrypoint emitted to @types/namespace.d.ts for JSDoc and global ng users.
+      "@typescript-eslint/no-namespace": "off",
     },
   },
   eslintPluginPrettierRecommended,

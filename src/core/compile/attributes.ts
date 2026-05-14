@@ -13,6 +13,7 @@ import {
   keys,
   nullObject,
   snakeCase,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import { NodeRef } from "../../shared/noderef.ts";
@@ -34,7 +35,7 @@ function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   return getAnimate;
 }
 
-type ObserverList = ((value?: unknown) => void)[] & {
+type ObserverList = Array<(value?: unknown) => void> & {
   /** @internal */
   _inter?: boolean;
   /** @internal */
@@ -131,7 +132,7 @@ export class Attributes {
   /** @ignore Internal element accessor used by legacy attribute helpers. */
   /** @internal */
   _element(): Node | Element {
-    return this._node!;
+    return assertDefined(this._node);
   }
 
   /**

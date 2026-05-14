@@ -16,14 +16,17 @@ export function removeFrom<T>(array: T[], obj: T): T[] {
  * Earlier defaults take precedence over later defaults.
  */
 export function defaults(opts: any, ...defaultsList: any[]): any {
-  const defaultVals = assign({}, ...defaultsList.reverse());
+  const defaultVals = assign({}, ...defaultsList.reverse()) as Record<
+    string,
+    unknown
+  >;
 
-  opts = opts || {};
+  const optionVals = (opts || {}) as Record<string, unknown>;
 
   const defaultKeys = keys(defaultVals);
 
   defaultKeys.forEach((key) => {
-    if (key in opts) defaultVals[key] = opts[key];
+    if (key in optionVals) defaultVals[key] = optionVals[key];
   });
 
   return defaultVals;

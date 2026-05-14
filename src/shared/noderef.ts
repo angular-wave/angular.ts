@@ -1,4 +1,10 @@
-import { arrayFrom, isArray, isInstanceOf, isString } from "./utils.ts";
+import {
+  arrayFrom,
+  assertDefined,
+  isArray,
+  isInstanceOf,
+  isString,
+} from "./utils.ts";
 import { createDocumentFragment, createElementFromHTML } from "./dom.ts";
 import { NodeType } from "./node.ts";
 
@@ -95,7 +101,7 @@ export class NodeRef {
 
   /** @returns The wrapped element. */
   get element(): Element {
-    return this._element!;
+    return assertDefined(this._element);
   }
 
   /** @param el The element to wrap. */
@@ -188,7 +194,10 @@ export class NodeRef {
         | Node
         | ChildNode;
     } else {
-      return (this._element || this._node)! as Element | Node | ChildNode;
+      return assertDefined(this._element || this._node) as
+        | Element
+        | Node
+        | ChildNode;
     }
   }
 
@@ -204,7 +213,7 @@ export class NodeRef {
 
   /** @returns A collection view of the wrapped nodes. */
   /** @internal */
-  _collection(): (Element | Node | ChildNode)[] {
+  _collection(): Array<Element | Node | ChildNode> {
     if (this._isList) {
       return this.nodes;
     } else {

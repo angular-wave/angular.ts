@@ -1,14 +1,14 @@
-import { ParamDeclaration, RawParams } from "../params/interface.ts";
+import type { ParamDeclaration, RawParams } from "../params/interface.ts";
 import type { Param } from "../params/param.ts";
-import { StateObject } from "./state-object.ts";
-import { ViewContext } from "../view/view.ts";
-import { ControllerConstructor, Injectable } from "../../interface.ts";
+import type { StateObject } from "./state-object.ts";
+import type { ViewContext } from "../view/view.ts";
+import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import type { Transition } from "../transition/transition.ts";
-import { TransitionStateHookFn } from "../transition/interface.ts";
-import { ResolvableLiteral } from "../resolve/interface.ts";
-import { Resolvable } from "../resolve/resolvable.ts";
-import { TargetState } from "./target-state.ts";
-import { Glob } from "../glob/glob.ts";
+import type { TransitionStateHookFn } from "../transition/interface.ts";
+import type { ResolvableLiteral } from "../resolve/interface.ts";
+import type { Resolvable } from "../resolve/resolvable.ts";
+import type { TargetState } from "./target-state.ts";
+import type { Glob } from "../glob/glob.ts";
 
 export type StateOrName = string | StateDeclaration | StateObject;
 

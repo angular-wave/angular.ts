@@ -83,7 +83,7 @@ export class PubSub {
   /** @internal */
   private _disposed: boolean;
   /** @internal */
-  private _exceptionHandler: ng.ExceptionHandlerService;
+  private readonly _exceptionHandler: ng.ExceptionHandlerService;
 
   /**
    * Create a publish/subscribe event bus.

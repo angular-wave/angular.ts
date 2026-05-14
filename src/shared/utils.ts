@@ -6,11 +6,19 @@ export type { ErrorHandlingConfig } from "./interface.ts";
 
 export const isProxySymbol = Symbol("isProxy");
 
+type RuntimeFunction = (...args: any[]) => unknown;
+
+type UnknownRecord = Record<string, unknown>;
+
 /**
  * Returns whether a value is one of this scope proxy objects.
  */
-export function isProxy(value: any): value is ng.Scope {
-  return !!value?.[isProxySymbol];
+export function isProxy(value: unknown): value is ng.Scope {
+  if (!isObject(value)) return false;
+
+  return !!(value as UnknownRecord & { [isProxySymbol]?: unknown })[
+    isProxySymbol
+  ];
 }
 
 /**
@@ -42,14 +50,18 @@ export function nextUid() {
 /**
  * Converts the specified string to lowercase.
  */
-export function lowercase(string: any): any {
+export function lowercase(string: string): string;
+export function lowercase<T>(string: T): T;
+export function lowercase(string: unknown): unknown {
   return isString(string) ? string.toLowerCase() : string;
 }
 
 /**
  * Converts the specified string to uppercase.
  */
-export function uppercase(string: any): any {
+export function uppercase(string: string): string;
+export function uppercase<T>(string: T): T;
+export function uppercase(string: unknown): unknown {
   return isString(string) ? string.toUpperCase() : string;
 }
 
@@ -166,9 +178,9 @@ export function isNullOrUndefined(obj: unknown): obj is null | undefined {
  * Determines if a reference is not null or undefined.
  *
  * @param obj Reference to check.
- * @returns True if `value` is null or undefined.
+ * @returns True if `value` is not null or undefined.
  */
-export function notNullOrUndefined(obj: any): boolean {
+export function notNullOrUndefined<T>(obj: T): obj is NonNullable<T> {
   return !isNullOrUndefined(obj);
 }
 
@@ -227,8 +239,16 @@ export function isError(value: any): value is Error {
  * @param value Reference to check.
  * @returns True if `value` is a `Function`.
  */
-export function isFunction(value: any): value is Function {
+export function isFunction(value: unknown): value is RuntimeFunction {
   return typeof value === "function";
+}
+
+export function callFunction(
+  fn: RuntimeFunction,
+  thisArg: unknown,
+  ...args: any[]
+): unknown {
+  return Reflect.apply(fn, thisArg, args) as unknown;
 }
 
 /**
@@ -239,6 +259,10 @@ export function isFunction(value: any): value is Function {
  */
 export function isRegExp(value: any): value is RegExp {
   return toString.call(value) === "[object RegExp]";
+}
+
+function isNodeLike(value: object): value is Node {
+  return "nodeName" in value && isFunction((value as Partial<Node>).cloneNode);
 }
 
 /**
@@ -254,8 +278,8 @@ export function isWindow(obj: any): obj is Window {
 /**
  * Returns whether a value looks like an Angular scope object.
  */
-export function isScope(obj: any): boolean {
-  return obj?.$watch;
+export function isScope(obj: unknown): boolean {
+  return isObject(obj) && isFunction((obj as { $watch?: unknown }).$watch);
 }
 
 /**
@@ -289,14 +313,18 @@ export function isBoolean(value: any): value is boolean {
 /**
  * Returns whether a value looks promise-like.
  */
-export function isPromiseLike(obj: any): boolean {
-  return obj && isFunction(obj.then);
+export function isPromiseLike<T = unknown>(
+  obj: unknown,
+): obj is PromiseLike<T> {
+  return isObject(obj) && isFunction((obj as Partial<PromiseLike<T>>).then);
 }
 
 /**
  * Trims a string value and leaves non-strings unchanged.
  */
-export function trim(value: any): any {
+export function trim(value: string): string;
+export function trim<T>(value: T): T;
+export function trim(value: unknown): unknown {
   return isString(value) ? value.trim() : value;
 }
 
@@ -356,10 +384,14 @@ export function setHashKey(obj: Record<string, any>, hashkey: any): void {
 export function getHashKey(obj: any): string | undefined {
   const target = deProxy(obj);
 
-  const key = target?.$hashKey;
+  const key = isObject(target)
+    ? (target as UnknownRecord & { $hashKey?: unknown }).$hashKey
+    : undefined;
 
   if (key) {
-    return isFunction(key) ? key.call(target) : key;
+    const hashKey = isFunction(key) ? callFunction(key, target) : key;
+
+    return isString(hashKey) ? hashKey : String(hashKey);
   }
 
   const hashKeyTarget = getHashKeyTarget(target);
@@ -379,7 +411,7 @@ export function getHashKey(obj: any): string | undefined {
  */
 export function baseExtend(
   dst: Record<string, any>,
-  objs: Record<string, any>[],
+  objs: Array<Record<string, any>>,
   deep = false,
 ): Record<string, any> {
   const hasInternalKey = getGeneratedHashKey(dst);
@@ -406,7 +438,7 @@ export function baseExtend(
           dst[key] = new Date(src.valueOf());
         } else if (isRegExp(src)) {
           dst[key] = new RegExp(src);
-        } else if (src.nodeName) {
+        } else if (isNodeLike(src)) {
           dst[key] = src.cloneNode(true);
         } else if (key !== "__proto__") {
           if (!isObject(dst[key])) dst[key] = isArray(src) ? [] : {};
@@ -631,14 +663,18 @@ export function equals(o1: any, o2: any): boolean {
     return false;
 
   // Handle general objects
+  const left = o1 as UnknownRecord;
+
+  const right = o2 as UnknownRecord;
+
   const keySet: Record<string, boolean> = nullObject();
 
   for (const key in o1) {
     if (!hasOwn(o1, key)) continue;
 
-    if (key.startsWith("$") || isFunction(o1[key])) continue;
+    if (key.startsWith("$") || isFunction(left[key])) continue;
 
-    if (!equals(o1[key], o2[key])) return false;
+    if (!equals(left[key], right[key])) return false;
     keySet[key] = true;
   }
 
@@ -648,8 +684,8 @@ export function equals(o1: any, o2: any): boolean {
     if (
       !(key in keySet) &&
       !key.startsWith("$") &&
-      isDefined(o2[key]) &&
-      !isFunction(o2[key])
+      isDefined(right[key]) &&
+      !isFunction(right[key])
     ) {
       return false;
     }
@@ -689,10 +725,10 @@ export function stringify(value: unknown): string {
   const objectValue = value as object;
 
   if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-    return objectValue.toString();
+    return String(callFunction(objectValue.toString, value));
   }
 
-  return toJson(value)!;
+  return assertDefined(toJson(value));
 }
 
 /**
@@ -705,15 +741,19 @@ export function isValidObjectMaxDepth(maxDepth: any): boolean {
 /**
  * Concatenates a real array with an array-like collection.
  */
-export function concat(array1: any[], array2: any, index?: number) {
-  return array1.concat(Array.prototype.slice.call(array2, index));
+export function concat<T>(
+  array1: T[],
+  array2: ArrayLike<T>,
+  index?: number,
+): T[] {
+  return array1.concat(Array.prototype.slice.call(array2, index) as T[]);
 }
 
 /**
  * Converts `arguments` or an array-like value into a real array.
  */
-export function sliceArgs(args: IArguments | any[], startIndex?: number) {
-  return Array.prototype.slice.call(args, startIndex || 0);
+export function sliceArgs<T>(args: IArguments | T[], startIndex?: number): T[] {
+  return Array.prototype.slice.call(args, startIndex || 0) as T[];
 }
 
 /**
@@ -723,16 +763,22 @@ export function sliceArgs(args: IArguments | any[], startIndex?: number) {
  * distinguished from [function currying](http://en.wikipedia.org/wiki/Currying#Contrast_with_partial_function_application).
  *
  */
-export function bind(context: any, fn: any, ...curryArgs: any[]) {
+export function bind(
+  context: unknown,
+  fn: unknown,
+  ...curryArgs: any[]
+): unknown {
   if (isFunction(fn) && !isInstanceOf(fn, RegExp)) {
     return curryArgs.length
       ? function (...args: any[]) {
           return args.length
-            ? fn.call(context, ...curryArgs, ...args)
-            : fn.call(context, ...curryArgs);
+            ? callFunction(fn, context, ...curryArgs, ...args)
+            : callFunction(fn, context, ...curryArgs);
         }
       : function (...args: any[]) {
-          return args.length ? fn.call(context, ...args) : fn.call(context);
+          return args.length
+            ? callFunction(fn, context, ...args)
+            : callFunction(fn, context);
         };
   }
 
@@ -743,7 +789,7 @@ export function bind(context: any, fn: any, ...curryArgs: any[]) {
 /**
  * JSON replacer that strips AngularTS internals and special-cases window/document/scope values.
  */
-function toJsonReplacer(key: string, value: any): any {
+function toJsonReplacer(key: string, value: unknown): unknown {
   let val = value;
 
   if (isString(key) && key.startsWith("$") && key.charAt(1) === "$") {
@@ -961,10 +1007,27 @@ export function shallowCopy<T>(src: T, dst?: any): T {
  *
  * @throws Error when `argument` is false.
  */
-export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
+export function assert(
+  argument: unknown,
+  errorMsg = "Assertion failed",
+): asserts argument {
   if (!argument) {
     throw new Error(errorMsg);
   }
+}
+
+/**
+ * Returns a non-nullish value or throws when the value is absent.
+ *
+ * @throws Error when `value` is null or undefined.
+ */
+export function assertDefined<T>(
+  value: T | null | undefined,
+  errorMsg = "Expected value to be defined",
+): NonNullable<T> {
+  assert(notNullOrUndefined(value), errorMsg);
+
+  return value;
 }
 
 /**
@@ -1098,7 +1161,7 @@ function formatErrorMessage(
  * Converts a value into a simplified debug-friendly string.
  *
  */
-export function toDebugString(obj: any): string {
+export function toDebugString(obj: unknown): string {
   if (isFunction(obj)) {
     return obj.toString().replace(/ \{[\s\S]*$/, "");
   }
@@ -1194,7 +1257,7 @@ export function mergeClasses(
  * Joins an array of strings into a single string, trimming each
  * element and ignoring empty strings, null, and undefined.
  */
-function normalizeStringArray(arr: any[]): string {
+function normalizeStringArray(arr: string[]): string {
   const cleaned: string[] = [];
 
   for (const item of arr) {
@@ -1287,7 +1350,7 @@ export function keys(obj: any): string[] {
 /**
  * Returns the object's own enumerable values.
  */
-export function values(obj: any): any[] {
+export function values<T>(obj: Record<string, T> | ArrayLike<T>): T[] {
   return Object.values(obj);
 }
 
@@ -1301,7 +1364,9 @@ export function arrayFrom<T>(value: ArrayLike<T> | Iterable<T>): T[] {
 /**
  * Returns the object's own enumerable entries.
  */
-export function entries(obj: any): [string, any][] {
+export function entries<T>(obj: Record<string, T>): Array<[string, T]>;
+export function entries(obj: any): Array<[string, any]>;
+export function entries(obj: any): Array<[string, any]> {
   return Object.entries(obj);
 }
 
@@ -1320,10 +1385,10 @@ export const createObject: typeof Object.create = Object.create;
  * Subsequent calls do nothing and return undefined.
  *
  */
-export function callBackOnce<F extends (...args: any[]) => any>(fn: F) {
+export function callBackOnce(fn: RuntimeFunction) {
   let called = false;
 
-  return (...args: Parameters<F>): ReturnType<F> | undefined => {
+  return (...args: any[]): unknown => {
     if (!called) {
       called = true;
 
@@ -1339,10 +1404,10 @@ export function callBackOnce<F extends (...args: any[]) => any>(fn: F) {
  * The first call does nothing and returns undefined.
  *
  */
-export function callBackAfterFirst<F extends (...args: any[]) => any>(fn: F) {
+export function callBackAfterFirst(fn: RuntimeFunction) {
   let calledOnce = false;
 
-  return (...args: Parameters<F>): ReturnType<F> | undefined => {
+  return (...args: any[]): unknown => {
     if (calledOnce) {
       return fn(...args);
     }
@@ -1359,7 +1424,9 @@ export function callBackAfterFirst<F extends (...args: any[]) => any>(fn: F) {
  * @returns A promise that resolves after the delay.
  */
 export function wait(timeout = 0) {
-  return new Promise((resolve) => setTimeout(resolve, timeout));
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
+  });
 }
 
 /**
@@ -1438,5 +1505,5 @@ export function isArrowFunction(fn: any): boolean {
  *
  */
 export function nullObject<T = any>(): Record<string, T> {
-  return createObject(null);
+  return createObject(null) as Record<string, T>;
 }

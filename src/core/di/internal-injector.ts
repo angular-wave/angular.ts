@@ -1,9 +1,11 @@
 import { _injector } from "../../injection-tokens.ts";
 import {
+  callFunction,
   hasOwn,
   isArray,
   isArrowFunction,
   createErrorFactory,
+  deleteProperty,
   isString,
 } from "../../shared/utils.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
@@ -15,7 +17,9 @@ const $injectorError = createErrorFactory(_injector);
 
 export const providerSuffix = "Provider";
 
-type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
+type Callable = (...args: any[]) => any;
+
+type InjectableFn = Function | Callable | AnnotatedFactory<Callable>;
 
 class AbstractInjector {
   /** @internal */
@@ -52,7 +56,7 @@ class AbstractInjector {
         );
       }
 
-      return this._cache[serviceName];
+      return this._cache[serviceName] as unknown;
     }
 
     this._path.unshift(serviceName);
@@ -62,11 +66,11 @@ class AbstractInjector {
       this._cache[serviceName] = this._factory(serviceName);
     } catch (err) {
       // this is for the error handling being thrown by the providerCache multiple times
-      delete this._cache[serviceName];
+      deleteProperty(this._cache, serviceName);
       throw err;
     }
 
-    return this._cache[serviceName];
+    return this._cache[serviceName] as unknown;
   }
 
   /**
@@ -134,11 +138,9 @@ class AbstractInjector {
     }
 
     if (isClass(fn as Function)) {
-      const boundArgs = [null, ...args] as [any, ...any[]];
-
-      return new (Function.prototype.bind.apply(fn as Function, boundArgs))();
+      return Reflect.construct(fn as Callable, args) as unknown;
     } else {
-      return (fn as Function).apply(self, args);
+      return callFunction(fn as Callable, self, ...args);
     }
   }
 
@@ -155,19 +157,16 @@ class AbstractInjector {
   ): any {
     // Check if type is annotated and use just the given function at n-1 as parameter
     // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
-    const ctor = (isArray(type) ? type[type.length - 1] : type) as Function;
+    const ctor = (isArray(type) ? type[type.length - 1] : type) as Callable;
 
     const args = this._injectionArgs(type, locals, serviceName);
 
-    // Empty object at position 0 is ignored for invocation with `new`, but required.
-    const boundArgs = [null, ...args] as [any, ...any[]];
-
     try {
-      return new (Function.prototype.bind.apply(ctor, boundArgs))();
+      return Reflect.construct(ctor, args) as unknown;
     } catch (err) {
       // try arrow function
-      if (isArrowFunction(ctor)) {
-        return (ctor as (...args: any[]) => any)(args);
+      if (isArrowFunction(ctor as Function)) {
+        return callFunction(ctor, undefined, args);
       } else {
         throw err;
       }
@@ -223,7 +222,7 @@ export class ProviderInjector extends AbstractInjector {
  */
 export class InjectorService extends AbstractInjector {
   loadNewModules: (
-    mods: (Function | string | AnnotatedFactory<(...args: any[]) => any>)[],
+    mods: Array<Function | string | AnnotatedFactory<(...args: any[]) => any>>,
   ) => void = () => {
     /* empty */
   };
@@ -248,7 +247,9 @@ export class InjectorService extends AbstractInjector {
    */
   /** @internal */
   _factory(serviceName: string): any {
-    const provider = this._providerInjector.get(serviceName + providerSuffix);
+    const provider = this._providerInjector.get(
+      serviceName + providerSuffix,
+    ) as { $get: InjectableFn };
 
     return this.invoke(provider.$get, provider, undefined, serviceName);
   }

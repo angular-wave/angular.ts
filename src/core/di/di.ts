@@ -54,11 +54,14 @@ export function annotate(
         const argDecl = extractArgs(fn);
 
         argDecl?.[1].split(/,/).forEach((arg) => {
-          arg.replace(FN_ARG, (_all, _underscore, injName) => {
-            inject.push(injName);
+          arg.replace(
+            FN_ARG,
+            (_all: string, _underscore: string, injName: string) => {
+              inject.push(injName);
 
-            return injName;
-          });
+              return injName;
+            },
+          );
         });
       }
 

@@ -8,7 +8,9 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
   const { data } = event;
 
   // simulate some async work
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => {
+    setTimeout(resolve, 1000);
+  });
 
   let result: unknown;
 

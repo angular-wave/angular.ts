@@ -77,9 +77,13 @@ export function ngWebTransportDirective(
       > | null = null;
 
       function attr(name: string): string | undefined {
-        return (
-          attrs[name] || attrs[`data${uppercase(name[0])}${name.slice(1)}`]
-        );
+        const value =
+          (attrs as Record<string, unknown>)[name] ||
+          (attrs as Record<string, unknown>)[
+            `data${uppercase(name[0])}${name.slice(1)}`
+          ];
+
+        return isString(value) ? value : undefined;
       }
 
       function evaluate(expression: string | undefined, locals: object): void {
@@ -107,7 +111,7 @@ export function ngWebTransportDirective(
       }
 
       function resolveUrl(): string | undefined {
-        const value = attrs.ngWebTransport;
+        const value = attrs.ngWebTransport as string | undefined;
 
         if (!value) return undefined;
 

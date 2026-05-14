@@ -31,9 +31,9 @@ export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
  * @internal
  */
 export function silentRejection(error: unknown): Promise<never> {
-  const promise = Promise.resolve().then<never>(() => {
-    throw error instanceof Error ? error : Rejection.errored(error);
-  });
+  const promise = Promise.reject(
+    error instanceof Error ? error : Rejection.errored(error),
+  );
 
   return silenceUncaughtInPromise(promise);
 }

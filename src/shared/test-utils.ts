@@ -47,7 +47,9 @@ export function browserTrigger(
  * @returns A promise that resolves after the delay.
  */
 export function wait(timeout = 0): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, timeout));
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
+  });
 }
 
 export let ELEMENT: HTMLElement | null | undefined;

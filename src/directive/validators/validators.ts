@@ -137,16 +137,14 @@ export const patternDirective: [
 
       if (tAttr.ngPattern) {
         patternExp = tAttr.ngPattern;
+        const ngPattern = tAttr.ngPattern as string;
 
         // ngPattern might be a scope expression, or an inlined regex, which is not parsable.
         // We get value of the attribute here, so we can compare the old and the new value
         // in the observer to avoid unnecessary validations
-        if (
-          tAttr.ngPattern.charAt(0) === "/" &&
-          REGEX_STRING_REGEXP.test(tAttr.ngPattern)
-        ) {
+        if (ngPattern.startsWith("/") && REGEX_STRING_REGEXP.test(ngPattern)) {
           parseFn = function () {
-            return tAttr.ngPattern;
+            return tAttr.ngPattern as unknown;
           };
         } else {
           parseFn = tAttr.ngPattern ? $parse(tAttr.ngPattern) : undefined;
@@ -263,7 +261,7 @@ export const maxlengthDirective: [
           return (
             maxlengthParsed < 0 ||
             ctrl.$isEmpty(viewValue) ||
-            viewValue.length <= maxlengthParsed
+            (isString(viewValue) && viewValue.length <= maxlengthParsed)
           );
         };
       },

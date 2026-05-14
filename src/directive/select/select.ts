@@ -12,11 +12,11 @@ import {
   shallowCopy,
 } from "../../shared/utils.ts";
 import {
-  InterpolateFn,
-  NgModelController,
-  SelectAttributes,
+  type InterpolateFn,
+  type NgModelController,
+  type SelectAttributes,
   SelectController,
-  SelectScope,
+  type SelectScope,
 } from "./select-ctrl.ts";
 
 export function selectDirective(): ng.Directive {
@@ -79,7 +79,7 @@ export function selectDirective(): ng.Directive {
           }
         });
 
-        return array;
+        return array as unknown[];
       };
 
       selectCtrl._writeValue = function (value: any[]) {
@@ -156,6 +156,7 @@ export function optionDirective(
       let interpolateTextFn: InterpolateFn;
 
       if (isDefined(attr.ngValue)) {
+        // ngValue is handled during linking.
       } else if (isDefined(attr.value)) {
         interpolateValueFn = $interpolate(attr.value, true);
       } else {
@@ -182,14 +183,15 @@ export function optionDirective(
           FUTURE_PARENT_ELEMENT_KEY,
         ) as Element | undefined;
 
-        const selectCtrl =
-          (parent ? getCacheData(parent, selectCtrlName) : undefined) ||
+        const selectCtrl = ((parent
+          ? getCacheData(parent, selectCtrlName)
+          : undefined) ||
           (parent?.parentElement
             ? getCacheData(parent.parentElement, selectCtrlName)
             : undefined) ||
           (futureParent
             ? getInheritedData(futureParent, selectCtrlName)
-            : null);
+            : null)) as SelectController | null;
 
         if (selectCtrl) {
           selectCtrl._registerOption(

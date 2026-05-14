@@ -17,6 +17,7 @@ import {
   isObject,
   createErrorFactory,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { PathNode } from "../path/path-node.ts";
 import {
@@ -641,7 +642,7 @@ export class StateProvider {
     if (options?.inherit !== false)
       params = this._routerState._params.$inherit(
         params,
-        this.$current!,
+        assertDefined(this.$current),
         state,
       );
     const nav = state && options?.lossy !== false ? state.navigable : state;

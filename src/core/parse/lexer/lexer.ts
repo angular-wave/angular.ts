@@ -5,7 +5,6 @@ export type { Token } from "./token.ts";
 
 const $parseError = createErrorFactory("$parse");
 
-/* eslint-disable id-length */
 const ESCAPE: Record<string, string> = {
   n: "\n",
   f: "\f",
@@ -15,8 +14,6 @@ const ESCAPE: Record<string, string> = {
   "'": "'",
   '"': '"',
 };
-/* eslint-enable id-length */
-
 const [
   CHAR_0,
   CHAR_9,

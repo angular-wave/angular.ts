@@ -7,6 +7,7 @@ import {
   isNullOrUndefined,
   isString,
   createErrorFactory,
+  stringify,
   trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
@@ -30,7 +31,7 @@ function sanitizeSrcset(
       "srcset",
       'Can\'t pass trusted values to `{0}`: "{1}"',
       invokeType,
-      String(value),
+      stringify(value),
     );
   }
 
@@ -128,8 +129,10 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
       ): void {
         // special case ngPattern when a literal regular expression value
         // is used as the expression (this way we don't have to watch anything).
-        if (ngAttr === "ngPattern" && attr.ngPattern.charAt(0) === "/") {
-          const match = attr.ngPattern.match(REGEX_STRING_REGEXP);
+        const ngPattern = attr.ngPattern as string;
+
+        if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
+          const match = REGEX_STRING_REGEXP.exec(ngPattern);
 
           if (match) {
             attr.$set("ngPattern", new RegExp(match[1], match[2]).toString());
@@ -176,7 +179,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
               return value;
             }
 
-            const stringValue = String(value);
+            const stringValue = stringify(value);
 
             if (stringValue.startsWith("unsafe:")) {
               return stringValue;

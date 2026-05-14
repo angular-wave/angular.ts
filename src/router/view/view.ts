@@ -1,7 +1,7 @@
 import { _router, _templateFactory } from "../../injection-tokens.ts";
 import { removeFrom } from "../../shared/common.ts";
-import { assign, isString } from "../../shared/utils.ts";
-import { ResolveContext } from "../resolve/resolve-context.ts";
+import { assign, assertDefined, isString } from "../../shared/utils.ts";
+import type { ResolveContext } from "../resolve/resolve-context.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
@@ -192,7 +192,7 @@ function viewConfigDepth(
 
   if (cached !== undefined) return cached;
 
-  let context = config._viewDecl._context!;
+  let context = assertDefined(config._viewDecl._context);
 
   let count = 0;
 
@@ -356,7 +356,7 @@ export class ViewService {
 
     if (normalizedTarget !== ngView._fqn) return false;
 
-    const viewContext = viewDecl._context!;
+    const viewContext = assertDefined(viewDecl._context);
 
     if (
       viewContext.name !== ngViewContext.name &&

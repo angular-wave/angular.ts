@@ -204,8 +204,8 @@ function stableSerialize(value: unknown): string {
  * entity entries are invalidated after successful writes.
  */
 export class CachedRestBackend implements RestBackend {
-  private _network: RestBackend;
-  private _cache: RestCacheStore;
+  private readonly _network: RestBackend;
+  private readonly _cache: RestCacheStore;
   private readonly _strategy: RestCacheStrategy;
   private readonly _onRevalidate?: (event: RestRevalidateEvent) => void;
 
@@ -331,9 +331,9 @@ export class RestService<T = any, ID = any> {
   static $nonscope = true;
 
   /** @internal */
-  private _backend: RestBackend;
+  private readonly _backend: RestBackend;
   /** @internal */
-  private _baseUrl: string;
+  private readonly _baseUrl: string;
   /** @internal */
   private readonly _entityClass?: EntityClass<T>;
   /** @internal */

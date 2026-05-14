@@ -1,8 +1,8 @@
-import { StateDeclaration } from "../state/interface.ts";
-import { Transition } from "./transition.ts";
-import { StateObject } from "../state/state-object.ts";
-import { PathNode } from "../path/path-node.ts";
-import { TargetState } from "../state/target-state.ts";
+import type { StateDeclaration } from "../state/interface.ts";
+import type { Transition } from "./transition.ts";
+import type { StateObject } from "../state/state-object.ts";
+import type { PathNode } from "../path/path-node.ts";
+import type { TargetState } from "../state/target-state.ts";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;

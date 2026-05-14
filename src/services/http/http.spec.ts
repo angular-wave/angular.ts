@@ -65,6 +65,10 @@ describe("$http", function () {
       response = r;
     });
     expect(response).toBeDefined();
+    expect(response instanceof Error).toBe(true);
+    expect(response.name).toBe("HttpError");
+    expect(response.response).toBeDefined();
+    expect(response.response.status).toBe(401);
     expect(response.status).toBe(401);
     expect(response.statusText).toBe("Unauthorized");
     expect(response.data).toBe("Unauthorized");

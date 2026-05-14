@@ -11,6 +11,7 @@ import {
 } from "../../shared/url-utils/url-utils.ts";
 import {
   deProxy,
+  deleteProperty,
   encodeUriQuery,
   entries,
   extend,
@@ -36,21 +37,26 @@ import {
   toJson,
   trim,
   uppercase,
+  assertDefined,
 } from "../../shared/utils.ts";
 
 const APPLICATION_JSON = "application/json";
 
 function withResolvers<T>() {
-  let resolve: (value: T | PromiseLike<T>) => void;
+  let resolve: ((value: T | PromiseLike<T>) => void) | undefined;
 
-  let reject: (reason?: any) => void;
+  let reject: ((reason?: any) => void) | undefined;
 
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
   });
 
-  return { promise, resolve: resolve!, reject: reject! };
+  return {
+    promise,
+    resolve: assertDefined(resolve),
+    reject: assertDefined(reject),
+  };
 }
 
 /** Reads response headers returned by {@link HttpResponse.headers}. */
@@ -177,7 +183,7 @@ export type HttpMethod = RequestConfig["method"];
 /** Final transport status reported by transport completion handlers. */
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 
-/** Response object used to resolve or reject {@link HttpPromise}. */
+/** Response object used to resolve {@link HttpPromise}. */
 export interface HttpResponse<T> {
   /** Parsed response body. */
   data: T;
@@ -193,6 +199,39 @@ export interface HttpResponse<T> {
   xhrStatus: HttpResponseStatus;
 }
 
+/** Error used when `$http` receives a non-success response. */
+export class HttpError<T> extends Error implements HttpResponse<T> {
+  data: T;
+
+  status: number;
+
+  headers: HttpHeadersGetter;
+
+  config: RequestConfig;
+
+  statusText: string;
+
+  xhrStatus: HttpResponseStatus;
+
+  response: HttpResponse<T>;
+
+  constructor(response: HttpResponse<T>) {
+    super(
+      `$http request failed with status ${response.status}${
+        response.statusText ? ` ${response.statusText}` : ""
+      }`,
+    );
+    this.name = "HttpError";
+    this.response = response;
+    this.data = response.data;
+    this.status = response.status;
+    this.headers = response.headers;
+    this.config = response.config;
+    this.statusText = response.statusText;
+    this.xhrStatus = response.xhrStatus;
+  }
+}
+
 /** Promise returned by `$http` requests. */
 export type HttpPromise<T> = Promise<HttpResponse<T>>;
 
@@ -202,7 +241,7 @@ export type HttpPromise<T> = Promise<HttpResponse<T>>;
  * Call the service directly with a full {@link RequestConfig}, or use a
  * shorthand method for common HTTP verbs. All methods return an
  * {@link HttpPromise} that resolves with {@link HttpResponse} for successful
- * 2xx responses and rejects with the same response shape for errors.
+ * 2xx responses and rejects with {@link HttpError} for errors.
  */
 export interface HttpService {
   /** Send a request using the full configuration object. */
@@ -267,6 +306,8 @@ export interface HttpInterceptor {
 
 /** Factory registered with `$httpProvider.interceptors`. */
 export type HttpInterceptorFactory = () => HttpInterceptor;
+
+type HttpInterceptorHook = (value: unknown) => unknown;
 
 /**
  * @internal
@@ -370,7 +411,7 @@ export function HttpParamSerializerProvider(this: {
 /** Applies the default response transform, including JSON parsing. */
 export function defaultHttpResponseTransform(
   data: unknown,
-  headers: (arg0: string) => any,
+  headers: (arg0: string) => string | undefined,
 ): unknown {
   if (isString(data)) {
     // Strip json vulnerability protection prefix and trim whitespace
@@ -493,14 +534,14 @@ function transformData(
   data: any,
   headers: HttpHeadersGetter,
   status?: number,
-  fns?: ((...args: any[]) => any) | ((...args: any[]) => any)[],
+  fns?: ((...args: any[]) => any) | Array<(...args: any[]) => any>,
 ): any {
   if (isFunction(fns)) {
     return fns(data, headers, status);
   }
 
   if (isArray(fns)) {
-    (fns as ((...args: any[]) => any)[]).forEach((fn) => {
+    (fns as Array<(...args: any[]) => any>).forEach((fn) => {
       data = fn(data, headers, status);
     });
   }
@@ -563,19 +604,25 @@ function deProxyHttpPayload(
 }
 
 /** Configures the default behavior of the `$http` service. */
-export function HttpProvider(this: any): void {
+export function HttpProvider(this: unknown): void {
+  const provider = this as {
+    defaults: HttpProviderDefaults;
+    interceptors: Array<string | ng.Injectable<HttpInterceptorFactory>>;
+    xsrfTrustedOrigins: string[];
+    $get?: unknown;
+  };
   /**
    * Default values applied to all `$http` requests unless a request overrides them.
    *
    * This includes cache behavior, default headers, request/response transforms, XSRF names,
    * credentials defaults, and parameter serialization.
    */
-  const defaults: HttpProviderDefaults = (this.defaults = {
+  const defaults: HttpProviderDefaults = (provider.defaults = {
     // transform incoming response data
     transformResponse: [defaultHttpResponseTransform],
     // transform outgoing request data
     transformRequest: [
-      function (data: any) {
+      function (data: unknown) {
         return isObject(data) &&
           !isFile(data) &&
           !isBlob(data) &&
@@ -607,7 +654,9 @@ export function HttpProvider(this: any): void {
    *
    * See the `$http` service documentation for detailed interceptor behavior.
    */
-  this.interceptors = [] as (string | ng.Injectable<HttpInterceptorFactory>)[];
+  provider.interceptors = [] as Array<
+    string | ng.Injectable<HttpInterceptorFactory>
+  >;
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
@@ -645,15 +694,15 @@ export function HttpProvider(this: any): void {
    * ```
    *
    */
-  this.xsrfTrustedOrigins = [] as string[];
+  provider.xsrfTrustedOrigins = [] as string[];
 
-  const that = this as {
-    interceptors: (string | ng.Injectable<HttpInterceptorFactory>)[];
+  const that = provider as {
+    interceptors: Array<string | ng.Injectable<HttpInterceptorFactory>>;
     xsrfTrustedOrigins: string[];
     defaults: HttpProviderDefaults;
   };
 
-  this.$get = [
+  provider.$get = [
     _injector,
     _sce,
     _cookie,
@@ -678,15 +727,19 @@ export function HttpProvider(this: any): void {
        * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
        * The reversal lets request interceptors wrap the server request in the expected order.
        */
-      const reversedInterceptors: any[] = [];
+      const reversedInterceptors: HttpInterceptor[] = [];
 
-      that.interceptors.forEach((interceptorFactory: any) => {
-        reversedInterceptors.unshift(
-          isString(interceptorFactory)
+      that.interceptors.forEach(
+        (
+          interceptorFactory: string | ng.Injectable<HttpInterceptorFactory>,
+        ) => {
+          const interceptor = isString(interceptorFactory)
             ? $injector.get(interceptorFactory)
-            : $injector.invoke(interceptorFactory),
-        );
-      });
+            : $injector.invoke(interceptorFactory);
+
+          reversedInterceptors.unshift(interceptor as HttpInterceptor);
+        },
+      );
 
       /**
        * Creates the origin check used for XSRF header inclusion.
@@ -740,40 +793,42 @@ export function HttpProvider(this: any): void {
           ? $injector.get(config.paramSerializer)
           : config.paramSerializer;
 
-        const requestInterceptors: (((value: any) => any) | undefined)[] = [];
+        const requestInterceptors: Array<HttpInterceptorHook | undefined> = [];
 
-        const responseInterceptors: (((value: any) => any) | undefined)[] = [];
+        const responseInterceptors: Array<HttpInterceptorHook | undefined> = [];
 
-        let promise: Promise<any> = Promise.resolve(config);
+        let promise: Promise<unknown> = Promise.resolve(config);
 
         // apply interceptors
         reversedInterceptors.forEach((interceptor) => {
           if (interceptor.request || interceptor.requestError) {
             requestInterceptors.unshift(
-              interceptor.request,
-              interceptor.requestError,
+              interceptor.request as HttpInterceptorHook | undefined,
+              interceptor.requestError as HttpInterceptorHook | undefined,
             );
           }
 
           if (interceptor.response || interceptor.responseError) {
             responseInterceptors.push(
-              interceptor.response,
-              interceptor.responseError,
+              interceptor.response as HttpInterceptorHook | undefined,
+              interceptor.responseError as HttpInterceptorHook | undefined,
             );
           }
         });
 
         promise = chainInterceptors(promise, requestInterceptors);
-        promise = promise.then(serverRequest);
+        promise = promise.then((value) =>
+          serverRequest(value as RequestConfig),
+        );
         promise = chainInterceptors(promise, responseInterceptors);
 
         return promise as HttpPromise<T>;
 
         /** Applies a list of interceptor success/error pairs to a promise chain. */
         function chainInterceptors(
-          promiseParam: Promise<any>,
-          interceptors: (((value: any) => any) | undefined)[],
-        ): Promise<any> {
+          promiseParam: Promise<unknown>,
+          interceptors: Array<HttpInterceptorHook | undefined>,
+        ): Promise<unknown> {
           for (let i = 0, ii = interceptors.length; i < ii; ) {
             const thenFn = interceptors[i++];
 
@@ -856,7 +911,7 @@ export function HttpProvider(this: any): void {
             undefined,
             (configParam.transformRequest as
               | ((...args: any[]) => any)
-              | ((...args: any[]) => any)[]
+              | Array<(...args: any[]) => any>
               | undefined) || [],
           );
 
@@ -864,7 +919,7 @@ export function HttpProvider(this: any): void {
           if (isUndefined(reqData)) {
             keys(headers).forEach((header) => {
               if (lowercase(header) === "content-type") {
-                delete headers[header];
+                deleteProperty(headers, header);
               }
             });
           }
@@ -898,11 +953,13 @@ export function HttpProvider(this: any): void {
             httpResponse.status,
             (config.transformResponse as
               | ((...args: any[]) => any)
-              | ((...args: any[]) => any)[]
+              | Array<(...args: any[]) => any>
               | undefined) || [],
           );
 
-          return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+          return isSuccess(httpResponse.status)
+            ? resp
+            : Promise.reject(new HttpError(resp));
         }
       } as HttpService & {
         pendingRequests: RequestConfig[];
@@ -967,7 +1024,13 @@ export function HttpProvider(this: any): void {
       function sendReq(config: RequestConfig, reqData: any) {
         const { promise, resolve, reject } = withResolvers();
 
-        let cache: any;
+        let cache:
+          | {
+              get(key: string): unknown;
+              set(key: string, value: unknown): void;
+              delete(key: string): void;
+            }
+          | undefined;
 
         let cachedResp: any;
 
@@ -1007,7 +1070,7 @@ export function HttpProvider(this: any): void {
           cachedResp = cache.get(url);
 
           if (isDefined(cachedResp)) {
-            if (isPromiseLike(cachedResp)) {
+            if (isPromiseLike<HttpResponse<any>>(cachedResp)) {
               // cached request has already been sent, but there is no response yet
               cachedResp.then(
                 resolvePromiseWithResult,
@@ -1086,7 +1149,7 @@ export function HttpProvider(this: any): void {
                   typeof eventHandler === "object" &&
                   "handleEvent" in eventHandler
                 ) {
-                  (eventHandler as EventListenerObject).handleEvent(event);
+                  eventHandler.handleEvent(event);
                 }
               };
             });
@@ -1253,7 +1316,7 @@ export function http(
       timeoutRequest("timeout");
     }, timeout);
   } else if (isPromiseLike(timeout)) {
-    void (timeout as Promise<any>).then(() => {
+    void timeout.then(() => {
       timeoutRequest("abort");
     });
   }
@@ -1356,7 +1419,7 @@ function responseBody(
       return response.blob();
     case "json":
       return responseText(response, streamService).then((text) =>
-        text ? fromJson(text) : null,
+        text ? (fromJson(text) as unknown) : null,
       );
     case "stream":
       return Promise.resolve(response.body);

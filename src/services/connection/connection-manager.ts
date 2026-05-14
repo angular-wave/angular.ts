@@ -51,7 +51,7 @@ export interface ConnectionEvent<T = any> {
  */
 export class ConnectionManager {
   /** @internal */
-  private _createFn: () => EventSource | WebSocket;
+  private readonly _createFn: () => EventSource | WebSocket;
   /** @internal */
   _config: {
     onOpen?: (event: Event) => void;
@@ -90,7 +90,7 @@ export class ConnectionManager {
       heartbeatTimeout: 15000,
       transformMessage: (data: string) => {
         try {
-          return JSON.parse(data);
+          return JSON.parse(data) as unknown;
         } catch {
           return data;
         }
