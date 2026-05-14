@@ -7,7 +7,7 @@ import { hasAnimate } from '../shared/utils.js';
  */
 function createLazyAnimate($injector) {
     let $animate;
-    return () => ($animate || ($animate = $injector.get(_animate)));
+    return () => ($animate ?? ($animate = $injector.get(_animate)));
 }
 /**
  * Returns `$animate` only for nodes that opt into animation handling.

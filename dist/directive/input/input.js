@@ -1,7 +1,13 @@
 import { _parse } from '../../injection-tokens.js';
-import { isObject, isString, isDefined, isNumber, isUndefined, equals, trim, nextUid, isProxy, deProxy, isNumberNaN } from '../../shared/utils.js';
-import { ngModelMinErr } from '../model/model.js';
+import { isObject, isString, isDefined, isNumber, isUndefined, isProxy, callFunction, equals, trim, nextUid, deProxy, isNumberNaN } from '../../shared/utils.js';
+import { ngModelError } from '../model/model.js';
 
+function unwrapNgModelController(ctrl) {
+    while (isProxy(ctrl)) {
+        ctrl = ctrl.$target;
+    }
+    return ctrl;
+}
 // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
 const ISO_DATE_REGEXP = /^\d{4,}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+(?:[+-][0-2]\d:[0-5]\d|Z)$/;
 // See valid URLs in RFC3987 (http://tools.ietf.org/html/rfc3987)
@@ -65,7 +71,7 @@ const inputType = {
  * Adds formatter logic for input types backed by string values.
  */
 function stringBasedInputType(ctrl) {
-    ctrl.$formatters.push((value) => ctrl.$isEmpty(value) ? value : value.toString());
+    ctrl.$formatters.push((value) => ctrl.$isEmpty(value) ? value : String(value));
 }
 /**
  * Configures the standard text input pipeline.
@@ -105,7 +111,7 @@ function baseInputType(_scope, element, attr, ctrl) {
         if (composing)
             return;
         let { value } = element;
-        const event = ev && ev.type;
+        const event = ev?.type;
         // By default we will trim the value
         // If the attribute ng-trim exists we will avoid trimming
         // If input type is 'password', the value is never trimmed
@@ -117,12 +123,14 @@ function baseInputType(_scope, element, attr, ctrl) {
         // control's value is the same empty value twice in a row.
         if (ctrl.$viewValue !== value ||
             (value === "" && ctrl._hasNativeValidators)) {
-            ctrl.$target.$setViewValue(value, event);
+            ctrl.$setViewValue(value, event);
         }
     };
     ["input", "change", "paste", "drop", "cut"].forEach((event) => {
         element.addEventListener(event, listener);
-        ctrl._eventRemovers.add(() => element.removeEventListener(event, listener));
+        ctrl._eventRemovers.add(() => {
+            element.removeEventListener(event, listener);
+        });
     });
     // Some native input types (date-family) have the ability to change validity without
     // firing any input/change events.
@@ -146,7 +154,9 @@ function baseInputType(_scope, element, attr, ctrl) {
             }
         };
         element.addEventListener(PARTIAL_VALIDATION_EVENTS, partialValidationListener);
-        ctrl._eventRemovers.add(() => element.removeEventListener(PARTIAL_VALIDATION_EVENTS, partialValidationListener));
+        ctrl._eventRemovers.add(() => {
+            element.removeEventListener(PARTIAL_VALIDATION_EVENTS, partialValidationListener);
+        });
     }
     ctrl.$render = function () {
         // Workaround for Firefox validation #12102.
@@ -174,7 +184,7 @@ function createStringDateInputType(type, regexp) {
             if (ctrl.$isEmpty(value))
                 return "";
             if (!isString(value)) {
-                throw ngModelMinErr("datefmt", "Expected `{0}` to be a string", value);
+                throw ngModelError("datefmt", "Expected `{0}` to be a string", value);
             }
             return value;
         });
@@ -231,7 +241,9 @@ function numberFormatterParser(ctrl) {
     ctrl.$parsers.push((value) => {
         if (ctrl.$isEmpty(value))
             return null;
-        if (NUMBER_REGEXP.test(value))
+        if (isNumber(value))
+            return value;
+        if (isString(value) && NUMBER_REGEXP.test(value))
             return parseFloat(value);
         ctrl._parserName = "number";
         return undefined;
@@ -239,7 +251,7 @@ function numberFormatterParser(ctrl) {
     ctrl.$formatters.push((value) => {
         if (!ctrl.$isEmpty(value)) {
             if (!isNumber(value)) {
-                throw ngModelMinErr("numfmt", "Expected `{0}` to be a number", value);
+                throw ngModelError("numfmt", "Expected `{0}` to be a number", value);
             }
             value = value.toString();
         }
@@ -251,9 +263,9 @@ function numberFormatterParser(ctrl) {
  */
 function parseNumberAttrVal(val) {
     if (isDefined(val) && !isNumber(val)) {
-        val = parseFloat(val);
+        val = parseFloat(String(val));
     }
-    return !isNumberNaN(val) ? val : undefined;
+    return isNumber(val) && !isNumberNaN(val) ? val : undefined;
 }
 /**
  * Checks whether a numeric value is an integer.
@@ -558,11 +570,13 @@ function radioInputType(scope, element, attr, ctrl) {
             if (doTrim) {
                 value = trim(value);
             }
-            ctrl.$setViewValue(value, ev && ev.type);
+            ctrl.$setViewValue(value, ev?.type);
         }
     };
     element.addEventListener("change", listener);
-    ctrl._eventRemovers.add(() => element.removeEventListener("change", listener));
+    callFunction(ctrl._eventRemovers.add, ctrl._eventRemovers, () => {
+        element.removeEventListener("change", listener);
+    });
     // NgModelController call
     ctrl.$render = function () {
         let { value } = attr;
@@ -585,7 +599,7 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
     if (isDefined(expression)) {
         parseFn = $parse(expression);
         if (!parseFn._constant) {
-            throw ngModelMinErr("constexpr", "Expected constant expression for `{0}`, but saw " + "`{1}`.", name, expression);
+            throw ngModelError("constexpr", "Expected constant expression for `{0}`, but saw " + "`{1}`.", name, expression);
         }
         return parseFn(context);
     }
@@ -598,10 +612,12 @@ function checkboxInputType(scope, element, attr, ctrl, $parse) {
     const trueValue = parseConstantExpr($parse, scope, "ngTrueValue", attr.ngTrueValue, true);
     const falseValue = parseConstantExpr($parse, scope, "ngFalseValue", attr.ngFalseValue, false);
     const listener = function (ev) {
-        ctrl.$setViewValue(element.checked, ev && ev.type);
+        callFunction(ctrl.$setViewValue, ctrl, element.checked, ev?.type);
     };
     element.addEventListener("change", listener);
-    ctrl._eventRemovers.add(() => element.removeEventListener("change", listener));
+    callFunction(ctrl._eventRemovers.add, ctrl._eventRemovers, () => {
+        element.removeEventListener("change", listener);
+    });
     ctrl.$render = function () {
         element.checked = ctrl.$viewValue;
     };
@@ -609,10 +625,10 @@ function checkboxInputType(scope, element, attr, ctrl, $parse) {
     // This is because of the parser below, which compares the `$modelValue` with `trueValue` to convert
     // it to a boolean.
     ctrl.$isEmpty = function (value) {
-        return value === false;
+        return !value;
     };
-    ctrl.$formatters.push((value) => equals(value, trueValue));
-    ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
+    callFunction(ctrl.$formatters.push, ctrl.$formatters, (value) => equals(value, trueValue));
+    callFunction(ctrl.$parsers.push, ctrl.$parsers, (value) => value ? trueValue : falseValue);
 }
 inputDirective.$inject = [_parse];
 /**
@@ -625,8 +641,9 @@ function inputDirective($parse) {
         link: {
             pre(scope, element, attr, ctrls) {
                 if (ctrls[0]) {
+                    const ctrl = unwrapNgModelController(ctrls[0]);
                     const typeName = attr.type?.toLowerCase();
-                    (inputType[typeName || "text"] || inputType.text)(scope, element, attr, ctrls[0], $parse);
+                    (inputType[typeName || "text"] || inputType.text)(scope, element, attr, ctrl, $parse);
                 }
             },
         },

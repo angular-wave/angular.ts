@@ -85,7 +85,9 @@ class TransitionHook {
     }
     /** @internal */
     static _rejectError(_hook, error) {
-        const promise = Promise.reject(error);
+        const promise = Promise.resolve().then(() => {
+            throw error;
+        });
         promise.catch(() => 0);
         return promise;
     }
@@ -122,7 +124,8 @@ class TransitionHook {
     /** @internal */
     _invokeCallback(hook) {
         const { _options } = this;
-        return hook._callback.call(_options._bind, this._transition, this._stateContext);
+        const callback = hook._callback;
+        return callback.call(_options._bind, this._transition, this._stateContext);
     }
     /** @internal */
     _handleError(err) {
@@ -202,9 +205,9 @@ class TransitionHook {
     }
     toString() {
         const { _options, _registeredHook } = this;
-        const event = _options._hookType || "internal";
+        const event = _options._hookType ?? "internal";
         const target = _options._target;
-        const context = target?.state?.name || target?.name || "unknown";
+        const context = target?.state?.name ?? target?.name ?? "unknown";
         const name = fnToString(_registeredHook._callback);
         return `${event} context: ${context}, ${maxLength(200, name)}`;
     }

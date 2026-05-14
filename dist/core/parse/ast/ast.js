@@ -1,14 +1,35 @@
 import { isAssignable } from '../interpreter.js';
 import { ASTType } from '../ast-type.js';
-import { hasOwn, isDefined, minErr } from '../../../shared/utils.js';
+import { hasOwn, isDefined, createErrorFactory } from '../../../shared/utils.js';
 
-const $parseMinErr = minErr("$parse");
+const $parseError = createErrorFactory("$parse");
 const literals = {
     true: true,
     false: false,
     null: null,
     undefined,
 };
+const BINARY_BINDING_POWER = {
+    "=": { left: 10, right: 9, type: ASTType._AssignmentExpression },
+    "?": { left: 20, right: 19, type: ASTType._ConditionalExpression },
+    "??": { left: 30, right: 31, type: ASTType._LogicalExpression },
+    "||": { left: 40, right: 41, type: ASTType._LogicalExpression },
+    "&&": { left: 50, right: 51, type: ASTType._LogicalExpression },
+    "==": { left: 60, right: 61, type: ASTType._BinaryExpression },
+    "!=": { left: 60, right: 61, type: ASTType._BinaryExpression },
+    "===": { left: 60, right: 61, type: ASTType._BinaryExpression },
+    "!==": { left: 60, right: 61, type: ASTType._BinaryExpression },
+    "<": { left: 70, right: 71, type: ASTType._BinaryExpression },
+    ">": { left: 70, right: 71, type: ASTType._BinaryExpression },
+    "<=": { left: 70, right: 71, type: ASTType._BinaryExpression },
+    ">=": { left: 70, right: 71, type: ASTType._BinaryExpression },
+    "+": { left: 80, right: 81, type: ASTType._BinaryExpression },
+    "-": { left: 80, right: 81, type: ASTType._BinaryExpression },
+    "*": { left: 90, right: 91, type: ASTType._BinaryExpression },
+    "/": { left: 90, right: 91, type: ASTType._BinaryExpression },
+    "%": { left: 90, right: 91, type: ASTType._BinaryExpression },
+};
+const PREFIX_BINDING_POWER = 100;
 function cloneSelfReferentialNode(node) {
     return { ...node };
 }
@@ -80,175 +101,70 @@ class AST {
      */
     /** @internal */
     _filterChain() {
-        let left = this._assignment();
+        let left = this._expression(0);
         while (this._expect("|")) {
             left = this._filter(left);
         }
         return left;
     }
     /**
-     * Parses an assignment expression.
-     * @returns {ASTNode} The assignment expression node.
+     * Parses an expression using Pratt binding powers.
+     * @returns {ASTNode} The parsed expression node.
      */
     /** @internal */
-    _assignment() {
-        let result = this._ternary();
-        if (this._expect("=")) {
-            if (!isAssignable(result)) {
-                throw $parseMinErr("lval", "Trying to assign a value to a non l-value");
+    _expression(minBindingPower) {
+        let left = this._prefix();
+        while (this._tokens && this._index < this._tokens.length) {
+            const token = this._tokens[this._index];
+            const operator = token._text;
+            const bindingPower = BINARY_BINDING_POWER[operator];
+            if (!bindingPower || bindingPower.left < minBindingPower) {
+                break;
             }
-            result = {
-                _type: ASTType._AssignmentExpression,
-                _left: result,
-                _right: this._assignment(),
-                _operator: "=",
-            };
-        }
-        return result;
-    }
-    /**
-     * Parses a ternary expression.
-     * @returns {ASTNode} The ternary expression node.
-     */
-    /** @internal */
-    _ternary() {
-        const test = this._logicalOR();
-        if (this._expect("?")) {
-            const alternate = this._assignment();
-            if (this._consume(":")) {
-                const consequent = this._assignment();
-                return {
+            this._index++;
+            if (operator === "=") {
+                if (!isAssignable(left)) {
+                    throw $parseError("lval", "Trying to assign a value to a non l-value");
+                }
+                left = {
+                    _type: ASTType._AssignmentExpression,
+                    _left: left,
+                    _right: this._expression(bindingPower.right),
+                    _operator: operator,
+                };
+            }
+            else if (operator === "?") {
+                const alternate = this._expression(0);
+                this._consume(":");
+                left = {
                     _type: ASTType._ConditionalExpression,
-                    _test: test,
+                    _test: left,
                     _alternate: alternate,
-                    _consequent: consequent,
+                    _consequent: this._expression(0),
+                };
+            }
+            else {
+                left = {
+                    _type: bindingPower.type,
+                    _operator: operator,
+                    _left: left,
+                    _right: this._expression(bindingPower.right),
                 };
             }
         }
-        return test;
-    }
-    /**
-     * Parses a logical OR expression.
-     * @returns {ASTNode} The logical OR expression node.
-     */
-    /** @internal */
-    _logicalOR() {
-        let left = this._logicalAND();
-        while (this._expect("||")) {
-            left = {
-                _type: ASTType._LogicalExpression,
-                _operator: "||",
-                _left: left,
-                _right: this._logicalAND(),
-            };
-        }
         return left;
     }
     /**
-     * Parses a logical AND expression.
-     * @returns {ASTNode} The logical AND expression node.
-     */
-    /** @internal */
-    _logicalAND() {
-        let left = this._equality();
-        while (this._expect("&&")) {
-            left = {
-                _type: ASTType._LogicalExpression,
-                _operator: "&&",
-                _left: left,
-                _right: this._equality(),
-            };
-        }
-        return left;
-    }
-    /**
-     * Parses an equality expression.
-     * @returns {ASTNode} The equality expression node.
-     */
-    /** @internal */
-    _equality() {
-        let left = this._relational();
-        let token;
-        while ((token = this._expect("==", "!=", "===", "!=="))) {
-            left = {
-                _type: ASTType._BinaryExpression,
-                _operator: token._text,
-                _left: left,
-                _right: this._relational(),
-            };
-        }
-        return left;
-    }
-    /**
-     * Parses a relational expression.
-     * @returns {ASTNode} The relational expression node.
-     */
-    /** @internal */
-    _relational() {
-        let left = this._additive();
-        let token;
-        while ((token = this._expect("<", ">", "<=", ">="))) {
-            left = {
-                _type: ASTType._BinaryExpression,
-                _operator: token._text,
-                _left: left,
-                _right: this._additive(),
-            };
-        }
-        return left;
-    }
-    /**
-     * Parses an additive expression.
-     * @returns {ASTNode} The additive expression node.
-     */
-    /** @internal */
-    _additive() {
-        let left = this._multiplicative();
-        let token;
-        while ((token = this._expect("+", "-"))) {
-            left = {
-                _type: ASTType._BinaryExpression,
-                _operator: token._text,
-                _left: left,
-                _right: this._multiplicative(),
-            };
-        }
-        return left;
-    }
-    /**
-     * Parses a multiplicative expression.
-     * @returns {ASTNode} The multiplicative expression node.
-     */
-    /** @internal */
-    _multiplicative() {
-        let left = this._unary();
-        let token;
-        while ((token = this._expect("*", "/", "%"))) {
-            left = {
-                _type: ASTType._BinaryExpression,
-                _operator: token._text,
-                _left: left,
-                _right: this._unary(),
-            };
-        }
-        return left;
-    }
-    /**
-     * Parses a unary expression.
-     * @returns {ASTNode} The unary expression node.
-     */
-    /**
-     * Parses a unary / prefix update expression.
+     * Parses a prefix expression and its postfix continuation.
      * @returns {ASTNode}
      */
     /** @internal */
-    _unary() {
+    _prefix() {
         let token;
-        // Prefix update: ++a / --a
         if ((token = this._expect("++", "--"))) {
-            const argument = this._unary();
+            const argument = this._expression(PREFIX_BINDING_POWER);
             if (!isAssignable(argument)) {
-                throw $parseMinErr("lval", "Invalid left-hand side in prefix operation");
+                throw $parseError("lval", "Invalid left-hand side in prefix operation");
             }
             return {
                 _type: ASTType._UpdateExpression,
@@ -257,37 +173,69 @@ class AST {
                 _argument: argument,
             };
         }
-        // Existing unary: + - !
         if ((token = this._expect("+", "-", "!"))) {
             return {
                 _type: ASTType._UnaryExpression,
                 _operator: token._text,
                 _prefix: true,
-                _argument: this._unary(),
+                _argument: this._expression(PREFIX_BINDING_POWER),
             };
         }
-        // Leaf is postfix (primary + possible trailing ++/--)
-        return this._postfix();
+        return this._postfix(this._primary());
     }
     /**
-     * Parses a postfix update expression.
+     * Parses call, member, and postfix update continuations.
      * @returns {ASTNode}
      */
     /** @internal */
-    _postfix() {
-        let expr = this._primary();
-        // Only one postfix update is allowed (JS also disallows chaining like a++++ in most contexts)
-        const token = this._expect("++", "--");
-        if (token) {
-            if (!isAssignable(expr)) {
-                throw $parseMinErr("lval", "Invalid left-hand side in postfix operation");
+    _postfix(primary) {
+        let expr = primary;
+        while (this._tokens && this._index < this._tokens.length) {
+            const next = this._tokens[this._index];
+            if (next._text === "(") {
+                this._index++;
+                expr = {
+                    _type: ASTType._CallExpression,
+                    _callee: expr,
+                    _arguments: this._parseArguments(),
+                };
+                this._consume(")");
             }
-            expr = {
-                _type: ASTType._UpdateExpression,
-                _operator: token._text,
-                _prefix: false,
-                _argument: expr,
-            };
+            else if (next._text === "[") {
+                this._index++;
+                expr = {
+                    _type: ASTType._MemberExpression,
+                    _object: expr,
+                    _property: this._expression(0),
+                    _computed: true,
+                };
+                this._consume("]");
+            }
+            else if (next._text === ".") {
+                this._index++;
+                expr = {
+                    _type: ASTType._MemberExpression,
+                    _object: expr,
+                    _property: this._identifier(),
+                    _computed: false,
+                };
+            }
+            else if (next._text === "++" || next._text === "--") {
+                this._index++;
+                if (!isAssignable(expr)) {
+                    throw $parseError("lval", "Invalid left-hand side in postfix operation");
+                }
+                expr = {
+                    _type: ASTType._UpdateExpression,
+                    _operator: next._text,
+                    _prefix: false,
+                    _argument: expr,
+                };
+                break;
+            }
+            else {
+                break;
+            }
         }
         return expr;
     }
@@ -298,65 +246,41 @@ class AST {
     /** @internal */
     _primary() {
         let primary;
-        const peekToken = this._peek();
-        if (this._expect("(")) {
+        const peekToken = this._peekToken();
+        if (peekToken._text === "(") {
+            this._index++;
             primary = this._filterChain();
             this._consume(")");
         }
-        else if (this._expect("[")) {
+        else if (peekToken._text === "[") {
+            this._index++;
             primary = this._arrayDeclaration();
         }
-        else if (this._expect("{")) {
+        else if (peekToken._text === "{") {
+            this._index++;
             primary = this._object();
         }
         else if (hasOwn(this._selfReferential, peekToken._text)) {
-            primary = cloneSelfReferentialNode(this._selfReferential[this._consume()._text]);
+            this._index++;
+            primary = cloneSelfReferentialNode(this._selfReferential[peekToken._text]);
         }
         else if (hasOwn(literals, peekToken._text)) {
+            this._index++;
             primary = {
                 _type: ASTType._Literal,
-                _value: literals[this._consume()._text],
+                _value: literals[peekToken._text],
             };
         }
         else if (peekToken._identifier) {
-            primary = this._identifier();
+            this._index++;
+            primary = { _type: ASTType._Identifier, _name: peekToken._text };
         }
         else if (peekToken._constant) {
-            primary = this._constant();
+            this._index++;
+            primary = { _type: ASTType._Literal, _value: peekToken._value };
         }
         else {
-            this._throwError("not a primary expression", this._peek());
-        }
-        let next;
-        while ((next = this._expect("(", "[", "."))) {
-            if (next._text === "(") {
-                primary = {
-                    _type: ASTType._CallExpression,
-                    _callee: primary,
-                    _arguments: this._parseArguments(),
-                };
-                this._consume(")");
-            }
-            else if (next._text === "[") {
-                primary = {
-                    _type: ASTType._MemberExpression,
-                    _object: primary,
-                    _property: this._assignment(),
-                    _computed: true,
-                };
-                this._consume("]");
-            }
-            else if (next._text === ".") {
-                primary = {
-                    _type: ASTType._MemberExpression,
-                    _object: primary,
-                    _property: this._identifier(),
-                    _computed: false,
-                };
-            }
-            else {
-                throw new Error("IMPOSSIBLE");
-            }
+            this._throwError("not a primary expression", peekToken);
         }
         return primary;
     }
@@ -375,7 +299,7 @@ class AST {
             _filter: true,
         };
         while (this._expect(":")) {
-            args.push(this._assignment());
+            args.push(this._expression(0));
         }
         return result;
     }
@@ -427,7 +351,7 @@ class AST {
                     // Support trailing commas per ES5.1.
                     break;
                 }
-                elements.push(this._assignment());
+                elements.push(this._expression(0));
             } while (this._expect(","));
         }
         this._consume("]");
@@ -458,14 +382,14 @@ class AST {
                     property._key = this._constant();
                     property._computed = false;
                     this._consume(":");
-                    property._value = this._assignment();
+                    property._value = this._expression(0);
                 }
                 else if (nextToken._identifier) {
                     property._key = this._identifier();
                     property._computed = false;
                     if (this._peek(":")) {
                         this._consume(":");
-                        property._value = this._assignment();
+                        property._value = this._expression(0);
                     }
                     else {
                         property._value = property._key;
@@ -473,11 +397,11 @@ class AST {
                 }
                 else if (this._peek("[")) {
                     this._consume("[");
-                    property._key = this._assignment();
+                    property._key = this._expression(0);
                     this._consume("]");
                     property._computed = true;
                     this._consume(":");
-                    property._value = this._assignment();
+                    property._value = this._expression(0);
                 }
                 else {
                     this._throwError("invalid key", this._peek());
@@ -495,7 +419,7 @@ class AST {
      */
     /** @internal */
     _throwError(msg, token) {
-        throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text?.substring(token._index));
+        throw $parseError("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text?.substring(token._index));
     }
     /**
      * Consumes a token if it matches the expected type.
@@ -504,10 +428,14 @@ class AST {
      */
     /** @internal */
     _consume(e1) {
-        if (this._tokens && this._tokens.length === this._index) {
-            throw $parseMinErr("ueoe", "Unexpected end of expression: {0}", this._text);
+        if (this._tokens?.length === this._index) {
+            throw $parseError("ueoe", "Unexpected end of expression: {0}", this._text);
         }
-        const token = isDefined(e1) ? this._expect(e1) : this._expect();
+        const token = isDefined(e1)
+            ? this._tokens[this._index]?._text === e1
+                ? this._tokens[this._index++]
+                : false
+            : this._tokens[this._index++];
         if (!token) {
             return this._throwError(`is unexpected, expecting [${e1}]`, this._peekToken());
         }
@@ -520,7 +448,7 @@ class AST {
     /** @internal */
     _peekToken() {
         if (!this._tokens || this._tokens.length === this._index) {
-            throw $parseMinErr("ueoe", "Unexpected end of expression: {0}", this._text);
+            throw $parseError("ueoe", "Unexpected end of expression: {0}", this._text);
         }
         else {
             return this._tokens[this._index];
@@ -532,21 +460,14 @@ class AST {
      * @returns {Token|boolean} The next token if it matches, otherwise false.
      */
     /** @internal */
-    _peek(...expected) {
-        const token = this._tokens && this._tokens[this._index];
+    _peek(e1, e2, e3, e4) {
+        const token = this._tokens?.[this._index];
         if (!token)
             return false;
-        const j = expected.length;
-        if (!j)
+        if (!isDefined(e1))
             return token;
         const txt = token._text;
-        if (expected.length === 1)
-            return expected[0] === txt ? token : false;
-        for (let i = 0; i < j; i++) {
-            if (expected[i] === txt || !expected[i])
-                return token;
-        }
-        return false;
+        return e1 === txt || e2 === txt || e3 === txt || e4 === txt ? token : false;
     }
     /**
      * Consumes the next token if it matches any of the expected types.
@@ -554,8 +475,16 @@ class AST {
      * @returns {Token|boolean} The consumed token if it matches, otherwise false.
      */
     /** @internal */
-    _expect(...expected) {
-        const token = this._peek(...expected);
+    _expect(e1, e2, e3, e4) {
+        const token = this._tokens?.[this._index];
+        if (!token)
+            return false;
+        if (isDefined(e1)) {
+            const txt = token._text;
+            if (e1 !== txt && e2 !== txt && e3 !== txt && e4 !== txt) {
+                return false;
+            }
+        }
         if (token) {
             this._index++;
             return token;

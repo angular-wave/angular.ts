@@ -14,6 +14,9 @@ function ngChannelDirective($eventBus) {
         scope: false,
         link: (scope, element, attrs) => {
             const channel = attrs.ngChannel;
+            if (typeof channel !== "string") {
+                return;
+            }
             const hasTemplateContent = element.childNodes.length > 0;
             const unsubscribe = $eventBus.subscribe(channel, (value) => {
                 if (hasTemplateContent) {
@@ -22,7 +25,7 @@ function ngChannelDirective($eventBus) {
                     }
                 }
                 else {
-                    element.innerHTML = isString(value) ? value : String(value);
+                    element.innerHTML = isString(value) ? value : JSON.stringify(value);
                 }
             });
             scope.$on("$destroy", () => unsubscribe());

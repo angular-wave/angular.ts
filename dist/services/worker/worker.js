@@ -27,7 +27,7 @@ function createWorkerConnection(scriptPath, config) {
                 return data;
             }
         },
-        logger: (config?.logger || console),
+        logger: config?.logger || console,
         err: (config?.err || (() => undefined)),
     };
     const cfg = assign({}, defaults, config);

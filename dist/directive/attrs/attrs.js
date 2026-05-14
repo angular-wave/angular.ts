@@ -1,16 +1,16 @@
 import { _sce } from '../../injection-tokens.js';
 import { BOOLEAN_ATTR } from '../../shared/dom.js';
-import { directiveNormalize, entries, getNodeName, isString, trim, isNullOrUndefined, minErr } from '../../shared/utils.js';
+import { directiveNormalize, entries, getNodeName, isString, stringify, trim, isNullOrUndefined, createErrorFactory } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
 const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
-const $compileMinErr = minErr("$compile");
+const $compileError = createErrorFactory("$compile");
 function sanitizeSrcset($sce, value, invokeType) {
     if (!value) {
         return value;
     }
     if (!isString(value)) {
-        throw $compileMinErr("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, String(value));
+        throw $compileError("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify(value));
     }
     let result = "";
     const trimmedSrcset = trim(value);
@@ -71,8 +71,9 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             link(scope, _element, attr) {
                 // special case ngPattern when a literal regular expression value
                 // is used as the expression (this way we don't have to watch anything).
-                if (ngAttr === "ngPattern" && attr.ngPattern.charAt(0) === "/") {
-                    const match = attr.ngPattern.match(REGEX_STRING_REGEXP);
+                const ngPattern = attr.ngPattern;
+                if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
+                    const match = REGEX_STRING_REGEXP.exec(ngPattern);
                     if (match) {
                         attr.$set("ngPattern", new RegExp(match[1], match[2]).toString());
                         return;
@@ -106,13 +107,12 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                         if (isNullOrUndefined(value)) {
                             return value;
                         }
-                        const stringValue = String(value);
+                        const stringValue = stringify(value);
                         if (stringValue.startsWith("unsafe:")) {
                             return stringValue;
                         }
                         if (attrName === "src" &&
-                            ["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
-                                -1) {
+                            !["img", "video", "audio", "source", "track"].includes(nodeName)) {
                             return $sce.getTrustedResourceUrl(stringValue);
                         }
                         if (attrName === "href" && nodeName !== "image") {
@@ -123,7 +123,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                     // We need to sanitize the url at least once, in case it is a constant
                     // non-interpolated attribute.
                     const initialValue = attr[normalized];
-                    if (initialValue && String(initialValue).indexOf("{{") === -1) {
+                    if (initialValue && !String(initialValue).includes("{{")) {
                         attr.$set(normalized, attrName === "srcset"
                             ? sanitizeSrcset($sce, initialValue, "ng-srcset")
                             : sanitize(initialValue));
@@ -137,7 +137,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                         }
                         if (attrName === "href" ||
                             (attrName === "src" &&
-                                ["img", "video", "audio", "source", "track"].indexOf(nodeName) !== -1)) {
+                                ["img", "video", "audio", "source", "track"].includes(nodeName))) {
                             attr.$set(attrName, sanitize(value));
                         }
                         else if (attrName === "srcset") {

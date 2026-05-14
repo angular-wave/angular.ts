@@ -1,4 +1,4 @@
-import { isString, isInstanceOf, isArray, arrayFrom } from './utils.js';
+import { isString, isInstanceOf, isArray, assertDefined, arrayFrom } from './utils.js';
 import { createElementFromHTML, createDocumentFragment } from './dom.js';
 import { NodeType } from './node.js';
 
@@ -7,6 +7,17 @@ import { NodeType } from './node.js';
  * Provides guarantees around presence and access.
  */
 class NodeRef {
+    /** @internal */
+    static _fromNode(node) {
+        const ref = Object.create(NodeRef.prototype);
+        ref._node = node;
+        ref._element =
+            node.nodeType === NodeType._ELEMENT_NODE ? node : undefined;
+        ref._nodes = [];
+        ref._nodeList = undefined;
+        ref._isList = false;
+        return ref;
+    }
     /**
      * @param element - The DOM node(s) or HTML string to wrap.
      * @throws {Error} If the argument is invalid or cannot be wrapped properly.
@@ -62,7 +73,7 @@ class NodeRef {
     }
     /** @returns The wrapped element. */
     get element() {
-        return this._element;
+        return assertDefined(this._element);
     }
     /** @param el The element to wrap. */
     set element(el) {
@@ -140,7 +151,7 @@ class NodeRef {
             return (this._nodeList?.[0] || this._nodes[0]);
         }
         else {
-            return (this._element || this._node);
+            return assertDefined(this._element || this._node);
         }
     }
     /** @returns All wrapped nodes or the single wrapped node. */
@@ -197,7 +208,7 @@ class NodeRef {
     /** @internal */
     _clone() {
         if (!this._isList) {
-            return new NodeRef(this.node.cloneNode(true));
+            return NodeRef._fromNode(this.node.cloneNode(true));
         }
         const collection = this._collection();
         const cloned = new Array(collection.length);

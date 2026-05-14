@@ -18,7 +18,7 @@ class Parser {
 }
 function isLiteral(ast) {
     const { _body: body } = ast;
-    if (!body || body.length !== 1) {
+    if (body.length !== 1) {
         return true;
     }
     switch (body[0]._expression?._type) {

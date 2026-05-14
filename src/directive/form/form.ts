@@ -333,6 +333,21 @@ export class FormController {
     >;
   }
 
+  /** @internal Returns the registered public control reference for a raw/proxied controller. */
+  _resolveRegisteredControl(controller: any): any {
+    const rawController = deProxy(controller);
+
+    for (let i = 0, l = this._controls.length; i < l; i++) {
+      const control = this._controls[i];
+
+      if (control === controller || deProxy(control as any) === rawController) {
+        return control;
+      }
+    }
+
+    return controller;
+  }
+
   // Private API: rename a form control
   /**
    * Renames a registered control on the form controller.
@@ -518,6 +533,7 @@ export class FormController {
   /** @internal */
   _set(object: Record<string, any>, property: string, controller: any): void {
     object = deProxy(object);
+    controller = this._resolveRegisteredControl(controller);
     const list = object[property];
 
     if (!list || !isArray(list)) {

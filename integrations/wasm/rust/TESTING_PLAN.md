@@ -62,8 +62,8 @@ The minimum acceptance test for a bridge feature is:
 Location:
 
 ```text
-integrations/rust/crates/*/src
-integrations/rust/examples/*/src
+integrations/wasm/rust/crates/*/src
+integrations/wasm/rust/examples/*/src
 ```
 
 Coverage:
@@ -87,7 +87,7 @@ Current example:
 Location:
 
 ```text
-integrations/rust/crates/angular-ts-macros/tests/
+integrations/wasm/rust/crates/angular-ts-macros/tests/
   compile_pass/
   compile_fail/
 ```
@@ -119,8 +119,8 @@ Fail cases:
 Location:
 
 ```text
-integrations/rust/crates/angular-ts-build/src
-integrations/rust/crates/angular-ts-build/tests
+integrations/wasm/rust/crates/angular-ts-build/src
+integrations/wasm/rust/crates/angular-ts-build/tests
 ```
 
 Coverage:
@@ -141,7 +141,7 @@ Coverage:
 Location:
 
 ```text
-integrations/rust/examples/*/
+integrations/wasm/rust/examples/*/
 ```
 
 Coverage:
@@ -166,7 +166,7 @@ make example-build
 Location:
 
 ```text
-integrations/rust/tests/
+integrations/wasm/rust/tests/
 ```
 
 Use Playwright from the repository toolchain. This is the authoritative test
@@ -297,9 +297,9 @@ Until browser tests are included in `make check`, Rust bridge changes must run
 
 Phase 1:
 
-- Run `make -C integrations/rust check`.
-- Run `make -C integrations/rust example-build`.
-- Run `make -C integrations/rust browser-test`.
+- Run `make -C integrations/wasm/rust check`.
+- Run `make -C integrations/wasm/rust example-build`.
+- Run `make -C integrations/wasm/rust browser-test`.
 
 Phase 2:
 
@@ -317,7 +317,7 @@ Phase 4:
 
 ## Open Questions
 
-- Should bridge browser tests live under `integrations/rust/tests` or the root
+- Should bridge browser tests live under `integrations/wasm/rust/tests` or the root
   Playwright suite?
 - Should every browser bridge fixture be a separate Rust crate, or should one
   fixture crate expose multiple modules?

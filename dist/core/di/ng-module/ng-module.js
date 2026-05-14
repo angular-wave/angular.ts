@@ -280,10 +280,7 @@ class NgModule {
             "factory",
             [
                 name,
-                [
-                    _rest,
-                    ($rest) => $rest(url, entityClass, options),
-                ],
+                [_rest, ($rest) => $rest(url, entityClass, options)],
             ],
         ]);
         return this;

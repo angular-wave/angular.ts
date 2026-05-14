@@ -1,6 +1,6 @@
 import { _templateFactory, _router } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { assign, isString } from '../../shared/utils.js';
+import { assertDefined, assign, isString } from '../../shared/utils.js';
 
 const FQN_MULTIPLIER = 10000;
 let nextViewId = 0;
@@ -42,7 +42,7 @@ function normalizeNgViewTarget(context, rawViewName = "") {
         ngViewContextAnchor = relativeViewNameSugar[1];
         ngViewName = relativeViewNameSugar[2];
     }
-    if (ngViewName.charAt(0) === "!") {
+    if (ngViewName.startsWith("!")) {
         ngViewName = ngViewName.substring(1);
         ngViewContextAnchor = "";
     }
@@ -56,7 +56,7 @@ function normalizeNgViewTarget(context, rawViewName = "") {
             }
         }
         for (let i = 0; i < hops; i++) {
-            anchorState = anchorState && anchorState.parent;
+            anchorState = anchorState?.parent;
         }
         if (!anchorState) {
             anchorState = context;
@@ -73,7 +73,7 @@ function normalizeNgViewTarget(context, rawViewName = "") {
 function contextDepth(context) {
     let cursor = context;
     let depth = 1;
-    while (cursor && cursor.parent) {
+    while (cursor?.parent) {
         depth += 1;
         cursor = cursor.parent;
     }
@@ -92,7 +92,7 @@ function viewConfigDepth(cache, config) {
     const cached = cache.get(config);
     if (cached !== undefined)
         return cached;
-    let context = config._viewDecl._context;
+    let context = assertDefined(config._viewDecl._context);
     let count = 0;
     while (++count && context.parent) {
         context = context.parent;
@@ -173,7 +173,7 @@ class ViewService {
                     bestDepth = candidateDepth;
                 }
             });
-            if (this._ngViews.indexOf(ngView) !== -1) {
+            if (this._ngViews.includes(ngView)) {
                 ngView._configUpdated(selectedViewConfig);
             }
         });
@@ -197,7 +197,7 @@ class ViewService {
      */
     /** @internal */
     static _matches(ngViewsByFqn, ngView, viewConfig) {
-        if (!viewConfig || !viewConfig._viewDecl)
+        if (!viewConfig?._viewDecl)
             return false;
         const ngViewContext = ngView._creationContext;
         const viewDecl = viewConfig._viewDecl;
@@ -206,7 +206,7 @@ class ViewService {
         const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
         if (normalizedTarget !== ngView._fqn)
             return false;
-        const viewContext = viewDecl._context;
+        const viewContext = assertDefined(viewDecl._context);
         if (viewContext.name !== ngViewContext.name &&
             vcContext !== ngViewContext.name) {
             return false;

@@ -24,7 +24,7 @@ class LogProvider {
         if (isError(arg)) {
             if (arg.stack) {
                 arg =
-                    arg.message && arg.stack.indexOf(arg.message) === -1
+                    arg.message && !arg.stack.includes(arg.message)
                         ? `Error: ${arg.message}\n${arg.stack}`
                         : arg.stack;
             }
@@ -37,16 +37,11 @@ class LogProvider {
      */
     /** @internal */
     _consoleLog(type) {
-        const console = window.console ||
-            {};
-        const logFn = console[type] ||
-            console.log ||
-            (() => {
-                /* empty */
-            });
+        const consoleRef = window.console;
+        const logFn = consoleRef[type]?.bind(consoleRef) ?? consoleRef.log.bind(consoleRef);
         return (...args) => {
             const formattedArgs = args.map((arg) => this._formatError(arg));
-            return logFn.apply(console, formattedArgs);
+            logFn(...formattedArgs);
         };
     }
     /** Creates the runtime `$log` service. */
@@ -63,7 +58,7 @@ class LogProvider {
                 const fn = this._consoleLog("debug");
                 return (...args) => {
                     if (this.debug) {
-                        fn.apply(this, args);
+                        fn(...args);
                     }
                 };
             })(),

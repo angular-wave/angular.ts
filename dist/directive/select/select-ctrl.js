@@ -1,7 +1,7 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement } from '../../shared/dom.js';
-import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, isArray } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, deleteProperty, isArray } from '../../shared/utils.js';
 
 /**
  * The controller for the `select` directive.
@@ -251,7 +251,7 @@ class SelectController {
                 const previouslySelected = optionElement.selected;
                 if (isDefined(hashedVal)) {
                     this._removeOption(oldVal);
-                    delete this._selectValueMap[hashedVal];
+                    deleteProperty(this._selectValueMap, hashedVal);
                     removal = true;
                 }
                 const rawNewVal = deProxy(newVal);
@@ -326,7 +326,7 @@ class SelectController {
             const removeValue = oldVal ?? registeredValue;
             const shouldUpdateViewValue = (this._multiple &&
                 isArray(currentValue) &&
-                currentValue.indexOf(removeValue) !== -1) ||
+                currentValue.includes(removeValue)) ||
                 currentValue === removeValue;
             this._removeOption(removeValue);
             this._scheduleRender();

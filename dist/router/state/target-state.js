@@ -1,6 +1,14 @@
 import { assign, isObject, isString } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
 
+function stateNameString(state) {
+    if (isString(state))
+        return state;
+    if (isObject(state) && isString(state.name)) {
+        return state.name;
+    }
+    return stringify(state);
+}
 /**
  * Encapsulate the target (destination) state/params/options of a [[Transition]].
  *
@@ -54,7 +62,7 @@ class TargetState {
     }
     /** The name of the state this object targets */
     name() {
-        return (this._definition && this._definition.name) || this._identifier;
+        return this._definition?.name || this._identifier;
     }
     /** The identifier used when creating this TargetState */
     identifier() {
@@ -70,7 +78,7 @@ class TargetState {
     }
     /** The internal state declaration (if it was found) */
     state() {
-        return this._definition && this._definition.self;
+        return this._definition?.self;
     }
     /** The target options */
     options() {
@@ -78,7 +86,7 @@ class TargetState {
     }
     /** True if the target state was found */
     exists() {
-        return !!(this._definition && this._definition.self);
+        return !!this._definition?.self;
     }
     /** True if the object is valid */
     valid() {
@@ -91,16 +99,17 @@ class TargetState {
             const stateName = isObject(base) && isString(base.name)
                 ? base.name
                 : base;
-            return `Could not resolve '${this.name()}' from state '${stateName}'`;
+            return `Could not resolve '${stateNameString(this.name())}' from state '${stateNameString(stateName)}'`;
         }
-        if (!this._definition)
-            return `No such state '${this.name()}'`;
+        if (!this._definition) {
+            return `No such state '${stateNameString(this.name())}'`;
+        }
         if (!this._definition.self)
-            return `State '${this.name()}' has an invalid definition`;
+            return `State '${stateNameString(this.name())}' has an invalid definition`;
         return undefined;
     }
     toString() {
-        return `'${this.name()}'${stringify(this.params())}`;
+        return `'${stateNameString(this.name())}'${stringify(this.params())}`;
     }
     /**
      * Returns a copy of this TargetState which targets a different state.

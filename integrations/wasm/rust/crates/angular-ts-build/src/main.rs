@@ -165,41 +165,129 @@ const requireExport = (name) => {{
   return value;
 }};
 
-const createComponent = (controllerName, options) => {{
+  const createComponent = (controllerName, options) => {{
   const controller = requireExport(controllerName);
-  const {{ inject, syncProperties, methods, ...component }} = options;
-  const angularController = createControllerBridge(controller, syncProperties, methods);
+  const {{ inject, syncProperties, methods, controllerAs, ...component }} = options;
+  const angularController = createControllerBridge(
+    controller,
+    syncProperties,
+    methods,
+    {{ inject, controllerAs }},
+  );
   if (inject.length > 0) {{
     angularController.$inject = inject;
   }}
-  return {{ ...component, controller: angularController }};
+  return {{
+    ...component,
+    ...(controllerAs ? {{ controllerAs }} : {{}}),
+    controller: angularController,
+  }};
 }};
 
-const createControllerBridge = (RustController, syncProperties, methods) => {{
+const createControllerBridge = (RustController, syncProperties, methods, bridgeConfig) => {{
+  const {{ inject, controllerAs }} = bridgeConfig;
+  const scopeExpressionPrefix = (controllerAs || "ctrl").replace(/\\.$/, "");
+  const toApplyName = (property) => {{
+    const head = property.charAt(0).toUpperCase();
+    return "apply" + head + property.slice(1) + "FromScope";
+  }};
+
+  const toWasmScope = (scopeValue) => new app.WasmScope(scopeValue);
+
   class AngularTsRustController {{
     constructor(...deps) {{
+      const hasScope = inject.indexOf("$scope") >= 0;
+      const scopeIndex = inject.indexOf("$scope");
+      const angularScope =
+        scopeIndex >= 0 ? deps[scopeIndex] : undefined;
+
+      if (hasScope) {{
+        if (typeof app.WasmScope !== "function") {{
+          throw new Error("Rust AngularTS package does not export WasmScope.");
+        }}
+
+        deps[scopeIndex] = toWasmScope(this);
+      }}
+
       this.__inner = Reflect.construct(RustController, deps);
+      this.__angularScope = angularScope;
       this.__syncRustProperties();
+      this.__flushScope();
+      this.__fromRust = false;
+      this.__scopeWatchDisposers = [];
+
+      if (angularScope && typeof angularScope.$watchCollection === "function") {{
+        for (const property of syncProperties) {{
+          const applyName = toApplyName(property);
+          const applyMethod = this.__inner[applyName];
+          const watchExpression = scopeExpressionPrefix
+            ? `${{scopeExpressionPrefix}}.${{property}}`
+            : property;
+
+          if (typeof applyMethod !== "function") {{
+            continue;
+          }}
+
+          const watcher = angularScope.$watchCollection(
+            watchExpression,
+            (nextValue) => {{
+              if (this.__fromRust) {{
+                return;
+              }}
+
+              this.__fromRust = true;
+              try {{
+                applyMethod.call(this.__inner, nextValue);
+                this.__syncRustProperties();
+                this.__flushScope();
+              }} finally {{
+                this.__fromRust = false;
+              }}
+            }},
+          );
+
+          this.__scopeWatchDisposers.push(watcher);
+        }}
+      }}
+    }}
+
+    $onDestroy() {{
+      for (const dispose of this.__scopeWatchDisposers) {{
+        if (typeof dispose === "function") {{
+          dispose();
+        }}
+      }}
     }}
 
     __syncRustProperties() {{
       for (const property of syncProperties) {{
         const next = this.__inner[property];
-        const current = this[property];
+        const value =
+          Array.isArray(next) ? next.slice() : next;
 
-        if (Array.isArray(current) && Array.isArray(next)) {{
-          current.splice(0, current.length, ...next);
-        }} else {{
-          this[property] = next;
-        }}
+        this[property] = value;
+      }}
+    }}
+
+    __flushScope() {{
+      const angularScope = this.__angularScope;
+
+      if (angularScope && typeof angularScope.$flushQueue === "function") {{
+        angularScope.$flushQueue();
       }}
     }}
   }}
 
   for (const method of methods) {{
     AngularTsRustController.prototype[method] = function (...args) {{
+      this.__fromRust = true;
       const result = this.__inner[method](...args);
-      this.__syncRustProperties();
+      try {{
+        this.__syncRustProperties();
+        this.__flushScope();
+      }} finally {{
+        this.__fromRust = false;
+      }}
       return result;
     }};
   }}
@@ -392,8 +480,8 @@ mod tests {
                     template: None,
                     template_path: None,
                     template_url: Some("templates/todo-list.html".to_string()),
-                    controller_as: Some("$ctrl".to_string()),
-                    inject: vec!["todoStore".to_string()],
+                    controller_as: Some("ctrl".to_string()),
+                    inject: vec!["todoStore".to_string(), "$scope".to_string()],
                     sync_properties: vec!["items".to_string()],
                     methods: vec![
                         "add".to_string(),
@@ -410,8 +498,11 @@ mod tests {
         assert!(source
             .contains("module.factory(\"todoStore\", requireExport(\"__ng_service_TodoStore\"));"));
         assert!(source.contains("angularController.$inject = inject;"));
+        assert!(source.contains("createControllerBridge("));
+        assert!(source.contains(" { inject, controllerAs },"));
         assert!(source.contains("AngularTsRustController.prototype[method]"));
-        assert!(source.contains("module.component(\"todoList\", createComponent(\"__ng_component_TodoList\", {\"templateUrl\":\"templates/todo-list.html\",\"controllerAs\":\"$ctrl\",\"inject\":[\"todoStore\"],\"syncProperties\":[\"items\"],\"methods\":[\"add\",\"setDone\",\"archive\"]}));"));
+        assert!(source.contains("app.WasmScope"));
+        assert!(source.contains("$watchCollection"));
         assert!(source.contains("angular.bootstrap(document.body, [\"rustDemo\"]);"));
     }
 }

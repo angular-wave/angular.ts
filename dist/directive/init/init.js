@@ -6,7 +6,7 @@ function ngInitDirective($parse) {
     return {
         priority: 450,
         compile(_element, attrs) {
-            const initFn = $parse(attrs.ngInit);
+            const initFn = $parse(String(attrs.ngInit));
             return {
                 pre(scope, element) {
                     const controller = getController(element);

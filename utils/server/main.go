@@ -160,24 +160,16 @@ func newHTTPMux(certHash []byte) *http.ServeMux {
 			writeHTML(w, http.StatusOK, fmt.Sprintf("<div class='animate'>Hello %d</div>", time.Now().UnixMilli()))
 		case r.URL.Path == "/divexpr":
 			writeHTML(w, http.StatusOK, "<div>{{expr}}</div>")
-		case r.URL.Path == "/divctrlexpr":
-			writeHTML(w, http.StatusOK, "<div>{{$ctrl.expr}}</div>")
-		case r.URL.Path == "/template.html":
-			writeHTML(w, http.StatusOK, "<p>template.html</p>")
 		case r.URL.Path == "/circle-svg":
 			writeText(w, http.StatusOK, "<circle></circle>")
 		case r.URL.Path == "/hello2":
 			writeText(w, http.StatusOK, "Hello2")
 		case r.URL.Path == "/include":
 			writeHTML(w, http.StatusOK, `<div ng-include="'/mock/hello'"></div>`)
-		case r.URL.Path == "/third":
-			writeHTML(w, http.StatusOK, "<div third>{{1+2}}</div>")
 		case r.URL.Path == "/script":
 			writeHTML(w, http.StatusOK, "<div><script>window.SCRIPT_RAN = true;</script></div>")
 		case r.URL.Path == "/401":
 			writeTextStatus(w, http.StatusUnauthorized, "Unauthorized")
-		case r.URL.Path == "/404":
-			writeTextStatus(w, http.StatusNotFound, "Not Found")
 		case r.URL.Path == "/422":
 			writeTextStatus(w, http.StatusUnprocessableEntity, "Invalid data")
 		case r.URL.Path == "/never":
@@ -210,12 +202,6 @@ func newHTTPMux(certHash []byte) *http.ServeMux {
 			sseCustom(w, r)
 		case r.URL.Path == "/sse-demo":
 			sseDemo(w, r)
-		case r.URL.Path == "/eventsoject":
-			eventsObject(w, r)
-		case r.URL.Path == "/subscribe":
-			subscribe(w, r)
-		case r.URL.Path == "/publish" && r.Method == http.MethodPost:
-			publish(w, r)
 		case r.URL.Path == "/api/tasks/reset" && r.Method == http.MethodPost:
 			writeJSON(w, http.StatusOK, map[string]any{"data": tasks.reset()})
 		case r.URL.Path == "/api/tasks" && r.Method == http.MethodGet:
@@ -636,49 +622,6 @@ func sseDemo(w http.ResponseWriter, r *http.Request) {
 			send()
 		}
 	}
-}
-
-func eventsObject(w http.ResponseWriter, r *http.Request) {
-	sseHeaders(w)
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-r.Context().Done():
-			return
-		case t := <-ticker.C:
-			writeSSEJSON(w, "message", map[string]string{"time": t.Format("15:04:05")})
-		}
-	}
-}
-
-var (
-	subscribeMu sync.Mutex
-	subscriber  http.ResponseWriter
-)
-
-func subscribe(w http.ResponseWriter, r *http.Request) {
-	sseHeaders(w)
-	subscribeMu.Lock()
-	subscriber = w
-	subscribeMu.Unlock()
-	heartbeat(w, r, 2*time.Second)
-}
-
-func publish(w http.ResponseWriter, r *http.Request) {
-	body := readJSONBody(r)
-	text, ok := body["text"].(string)
-	if !ok || text == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing 'text' field"})
-		return
-	}
-	data := map[string]string{"text": text, "time": time.Now().Format(time.RFC3339Nano)}
-	subscribeMu.Lock()
-	if subscriber != nil {
-		writeSSEJSON(subscriber, "message", data)
-	}
-	subscribeMu.Unlock()
-	writeJSON(w, http.StatusOK, map[string]string{"status": "Message sent to SSE client"})
 }
 
 func heartbeat(w http.ResponseWriter, r *http.Request, interval time.Duration) {

@@ -6,7 +6,9 @@ const isProxySymbol = Symbol("isProxy");
  * Returns whether a value is one of this scope proxy objects.
  */
 function isProxy(value) {
-    return !!(value && value[isProxySymbol]);
+    if (!isObject(value))
+        return false;
+    return !!value[isProxySymbol];
 }
 /**
  * Unwraps a proxy if the value is a proxy, otherwise returns the value as-is.
@@ -18,7 +20,7 @@ function isProxy(value) {
 function deProxy(val) {
     return isProxy(val) ? val.$target : val;
 }
-const ngMinErr = minErr("ng");
+const ngError = createErrorFactory("ng");
 let uid = 0;
 const generatedHashKeys = new WeakMap();
 /**
@@ -28,15 +30,9 @@ function nextUid() {
     uid += 1;
     return uid;
 }
-/**
- * Converts the specified string to lowercase.
- */
 function lowercase(string) {
     return isString(string) ? string.toLowerCase() : string;
 }
-/**
- * Converts the specified string to uppercase.
- */
 function uppercase(string) {
     return isString(string) ? string.toUpperCase() : string;
 }
@@ -129,7 +125,7 @@ function isNullOrUndefined(obj) {
  * Determines if a reference is not null or undefined.
  *
  * @param obj Reference to check.
- * @returns True if `value` is null or undefined.
+ * @returns True if `value` is not null or undefined.
  */
 function notNullOrUndefined(obj) {
     return !isNullOrUndefined(obj);
@@ -188,6 +184,9 @@ function isError(value) {
 function isFunction(value) {
     return typeof value === "function";
 }
+function callFunction(fn, thisArg, ...args) {
+    return Reflect.apply(fn, thisArg, args);
+}
 /**
  * Determines if a value is a regular expression object.
  *
@@ -196,6 +195,9 @@ function isFunction(value) {
  */
 function isRegExp(value) {
     return toString.call(value) === "[object RegExp]";
+}
+function isNodeLike(value) {
+    return "nodeName" in value && isFunction(value.cloneNode);
 }
 /**
  * Checks if `obj` is a window object.
@@ -210,7 +212,7 @@ function isWindow(obj) {
  * Returns whether a value looks like an Angular scope object.
  */
 function isScope(obj) {
-    return obj && obj.$watch;
+    return isObject(obj) && isFunction(obj.$watch);
 }
 /**
  * Returns whether a value is a `File`.
@@ -240,11 +242,8 @@ function isBoolean(value) {
  * Returns whether a value looks promise-like.
  */
 function isPromiseLike(obj) {
-    return obj && isFunction(obj.then);
+    return isObject(obj) && isFunction(obj.then);
 }
-/**
- * Trims a string value and leaves non-strings unchanged.
- */
 function trim(value) {
     return isString(value) ? value.trim() : value;
 }
@@ -291,9 +290,12 @@ function setHashKey(obj, hashkey) {
  */
 function getHashKey(obj) {
     const target = deProxy(obj);
-    const key = target && target.$hashKey;
+    const key = isObject(target)
+        ? target.$hashKey
+        : undefined;
     if (key) {
-        return isFunction(key) ? key.call(target) : key;
+        const hashKey = isFunction(key) ? callFunction(key, target) : key;
+        return isString(hashKey) ? hashKey : String(hashKey);
     }
     const hashKeyTarget = getHashKeyTarget(target);
     return hashKeyTarget ? generatedHashKeys.get(hashKeyTarget) : undefined;
@@ -329,7 +331,7 @@ function baseExtend(dst, objs, deep = false) {
                 else if (isRegExp(src)) {
                     dst[key] = new RegExp(src);
                 }
-                else if (src.nodeName) {
+                else if (isNodeLike(src)) {
                     dst[key] = src.cloneNode(true);
                 }
                 else if (key !== "__proto__") {
@@ -479,7 +481,7 @@ function simpleCompare(val1, val2) {
           $scope.user1 = {};
           $scope.user2 = {};
           $scope.compare = function() {
-            $scope.result = angular.equals($scope.user1, $scope.user2);
+            $scope.result = JSON.stringify($scope.user1) === JSON.stringify($scope.user2);
           };
         }]);
     </file>
@@ -531,13 +533,15 @@ function equals(o1, o2) {
         isRegExp(o2))
         return false;
     // Handle general objects
+    const left = o1;
+    const right = o2;
     const keySet = nullObject();
     for (const key in o1) {
         if (!hasOwn(o1, key))
             continue;
-        if (key.charAt(0) === "$" || isFunction(o1[key]))
+        if (key.startsWith("$") || isFunction(left[key]))
             continue;
-        if (!equals(o1[key], o2[key]))
+        if (!equals(left[key], right[key]))
             return false;
         keySet[key] = true;
     }
@@ -545,9 +549,9 @@ function equals(o1, o2) {
         if (!hasOwn(o2, key))
             continue;
         if (!(key in keySet) &&
-            key.charAt(0) !== "$" &&
-            isDefined(o2[key]) &&
-            !isFunction(o2[key])) {
+            !key.startsWith("$") &&
+            isDefined(right[key]) &&
+            !isFunction(right[key])) {
             return false;
         }
     }
@@ -557,11 +561,11 @@ function equals(o1, o2) {
  * throw error if the name given is hasOwnProperty
  * @param name the name to test
  * @param context the context in which the name is used, such as module or directive
- * @throws AngularTS minErr when `name` would shadow `hasOwnProperty`.
+ * @throws AngularTS error when `name` would shadow `hasOwnProperty`.
  */
 function assertNotHasOwnProperty(name, context) {
     if (name === "hasOwnProperty") {
-        throw ngMinErr("badname", "hasOwnProperty is not a valid {0} name", context);
+        throw ngError("badname", "hasOwnProperty is not a valid {0} name", context);
     }
 }
 /**
@@ -571,21 +575,17 @@ function stringify(value) {
     if (isNullOrUndefined(value)) {
         return "";
     }
-    const type = typeof value;
-    if (type === "string") {
+    if (typeof value === "string") {
         return value;
     }
-    if (type === "number") {
+    if (typeof value === "number") {
         return `${value}`;
     }
     const objectValue = value;
     if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-        value = objectValue.toString();
+        return String(callFunction(objectValue.toString, value));
     }
-    else {
-        value = toJson(value);
-    }
-    return value;
+    return assertDefined(toJson(value));
 }
 /**
  * Returns whether an object traversal depth limit is valid.
@@ -612,19 +612,18 @@ function sliceArgs(args, startIndex) {
  * distinguished from [function currying](http://en.wikipedia.org/wiki/Currying#Contrast_with_partial_function_application).
  *
  */
-function bind(context, fn) {
-    const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
+function bind(context, fn, ...curryArgs) {
     if (isFunction(fn) && !isInstanceOf(fn, RegExp)) {
         return curryArgs.length
-            ? function () {
-                return arguments.length
-                    ? fn.apply(context, concat(curryArgs, arguments, 0))
-                    : fn.apply(context, curryArgs);
+            ? function (...args) {
+                return args.length
+                    ? callFunction(fn, context, ...curryArgs, ...args)
+                    : callFunction(fn, context, ...curryArgs);
             }
-            : function () {
-                return arguments.length
-                    ? fn.apply(context, arguments)
-                    : fn.call(context);
+            : function (...args) {
+                return args.length
+                    ? callFunction(fn, context, ...args)
+                    : callFunction(fn, context);
             };
     }
     // In IE, native methods are not functions so they cannot be bound (note: they don't need to be).
@@ -635,7 +634,7 @@ function bind(context, fn) {
  */
 function toJsonReplacer(key, value) {
     let val = value;
-    if (isString(key) && key.charAt(0) === "$" && key.charAt(1) === "$") {
+    if (isString(key) && key.startsWith("$") && key.charAt(1) === "$") {
         val = undefined;
     }
     else if (isWindow(value)) {
@@ -819,20 +818,29 @@ function assert(argument, errorMsg = "Assertion failed") {
     }
 }
 /**
+ * Returns a non-nullish value or throws when the value is absent.
+ *
+ * @throws Error when `value` is null or undefined.
+ */
+function assertDefined(value, errorMsg = "Expected value to be defined") {
+    assert(notNullOrUndefined(value), errorMsg);
+    return value;
+}
+/**
  * Throws a typed AngularTS argument error when the argument is falsy.
  *
- * @throws AngularTS minErr when `arg` is falsy.
+ * @throws AngularTS error when `arg` is falsy.
  */
 function assertArg(arg, name, reason) {
     if (!arg) {
-        throw ngMinErr("areq", "Argument '{0}' is {1}", name || "?", reason || "required");
+        throw ngError("areq", "Argument '{0}' is {1}", name || "?", reason || "required");
     }
     return arg;
 }
 /**
  * Asserts that a value is a function, optionally unwrapping array-annotation first.
  *
- * @throws AngularTS minErr when `arg` is not a function.
+ * @throws AngularTS error when `arg` is not a function.
  */
 function assertArgFn(arg, name, acceptArrayAnnotation) {
     if (acceptArrayAnnotation && isArray(arg)) {
@@ -843,9 +851,8 @@ function assertArgFn(arg, name, acceptArrayAnnotation) {
         : typeof arg}`);
     return arg;
 }
-const minErrConfig = {
+const errorConfig = {
     objectMaxDepth: 5,
-    urlErrorParamsEnabled: true,
 };
 /**
  * Gets or updates the global error-handling configuration.
@@ -855,57 +862,42 @@ const minErrConfig = {
 function errorHandlingConfig(config) {
     if (isObject(config)) {
         if (isDefined(config.objectMaxDepth)) {
-            minErrConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
+            errorConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
                 ? config.objectMaxDepth
                 : NaN;
         }
-        if (isDefined(config.urlErrorParamsEnabled) &&
-            isBoolean(config.urlErrorParamsEnabled)) {
-            minErrConfig.urlErrorParamsEnabled = config.urlErrorParamsEnabled;
-        }
     }
-    return minErrConfig;
+    return errorConfig;
 }
 /**
- * This object provides a utility for producing rich Error messages within
- * AngularTS. It can be called as follows:
- *
- * let exampleMinErr = minErr('example');
- * throw exampleMinErr('one', 'This {0} is {1}', foo, bar);
- *
- * The above creates an instance of minErr in the example namespace. The
- * resulting error will have a namespaced error code of example.one.  The
- * resulting error will replace {0} with the value of foo, and {1} with the
- * value of bar. The object is not restricted in the number of arguments it can
- * take.
- *
- * If fewer arguments are specified than necessary for interpolation, the extra
- * interpolation markers will be preserved in the final string.
- *
- * Since data will be parsed statically during a build step, some restrictions
- * are applied with respect to how minErr instances are created and called.
- * Instances should have names of the form namespaceMinErr for a minErr created
- * using minErr('namespace'). Error codes, namespaces and template strings
- * should all be static strings, not variables or general expressions.
- *
- * @param module The namespace to use for the new minErr instance.
- * @returns minErr instance
+ * Namespaced AngularTS error with structured code metadata.
  */
-function minErr(module) {
-    return function (...args) {
-        const code = args[0];
-        const template = args[1];
-        let message = `[${module ? `${module}:` : ""}${code}] `;
-        const templateArgs = sliceArgs(args, 2).map((arg) => toDebugString(arg));
-        message += template.replace(/\{\d+\}/g, (match) => {
-            const index = +match.slice(1, -1);
-            if (index < templateArgs.length) {
-                return templateArgs[index];
-            }
-            return match;
-        });
-        return new Error(message);
-    };
+class AngularTSError extends Error {
+    constructor(namespace, code, template, params = []) {
+        super(formatErrorMessage(namespace, code, template, params));
+        this.name = "AngularTSError";
+        this.code = code;
+        this.namespace = namespace;
+        this.params = params;
+    }
+}
+/**
+ * Creates a namespaced AngularTS error factory.
+ */
+function createErrorFactory(namespace) {
+    return (code, template, ...params) => new AngularTSError(namespace, code, template, params);
+}
+function formatErrorMessage(namespace, code, template, params) {
+    let message = `[${namespace ? `${namespace}:` : ""}${code}] `;
+    const templateArgs = params.map((arg) => toDebugString(arg));
+    message += template.replace(/\{\d+\}/g, (match) => {
+        const index = +match.slice(1, -1);
+        if (index < templateArgs.length) {
+            return templateArgs[index];
+        }
+        return match;
+    });
+    return message;
 }
 /**
  * Converts a value into a simplified debug-friendly string.
@@ -924,7 +916,7 @@ function toDebugString(obj) {
         return JSON.stringify(copyObj, (key, val) => {
             const replace = toJsonReplacer(key, val);
             if (isObject(replace)) {
-                if (seen.indexOf(replace) >= 0)
+                if (seen.includes(replace))
                     return "...";
                 seen.push(replace);
             }
@@ -1017,7 +1009,8 @@ function hasCustomOrDataAttribute(node, attr) {
     if (node.nodeType !== NodeType._ELEMENT_NODE)
         return false;
     const element = node;
-    return (element.dataset[attr] === "true" || element.getAttribute(attr) === "true");
+    const value = element.dataset[attr] ?? element.getAttribute(attr);
+    return value !== null && value !== undefined && value !== "false";
 }
 /**
  * Returns whether an object has no own enumerable keys.
@@ -1045,6 +1038,12 @@ function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
 }
 /**
+ * Removes a property from an object, equivalent to delete target[propertyKey], except it won't throw if target[propertyKey] is non-configurable.
+ */
+function deleteProperty(obj, key) {
+    return Reflect.deleteProperty(obj, key);
+}
+/**
  * Returns the object's own enumerable keys.
  */
 function keys(obj) {
@@ -1062,9 +1061,6 @@ function values(obj) {
 function arrayFrom(value) {
     return Array.from(value);
 }
-/**
- * Returns the object's own enumerable entries.
- */
 function entries(obj) {
     return Object.entries(obj);
 }
@@ -1113,7 +1109,9 @@ function callBackAfterFirst(fn) {
  * @returns A promise that resolves after the delay.
  */
 function wait(timeout = 0) {
-    return new Promise((resolve) => setTimeout(resolve, timeout));
+    return new Promise((resolve) => {
+        setTimeout(resolve, timeout);
+    });
 }
 /**
  * Checks if a given string starts with a specified substring.
@@ -1142,7 +1140,7 @@ function wait(timeout = 0) {
  * // returns false
  */
 function startsWith(str, search) {
-    return str.slice(0, search.length) === search;
+    return str.startsWith(search);
 }
 /**
  * Loads and instantiates a WebAssembly module.
@@ -1181,4 +1179,4 @@ function nullObject() {
     return createObject(null);
 }
 
-export { arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, concat, createObject, deProxy, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, minErr, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };
+export { AngularTSError, arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertDefined, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, callFunction, concat, createErrorFactory, createObject, deProxy, deleteProperty, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };

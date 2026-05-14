@@ -1,4 +1,5 @@
 import { _log } from '../../injection-tokens.js';
+import { isRealtimeProtocolMessage } from '../../directive/realtime/protocol.js';
 import { isFunction, isString, isNumber } from '../../shared/utils.js';
 
 class ManagedWebTransportConnection {
@@ -65,7 +66,9 @@ class ManagedWebTransportConnection {
         }
         catch (error) {
             this._handleNativeClose(error);
-            this.ready = Promise.reject(error);
+            this.ready = Promise.reject(error instanceof Error
+                ? error
+                : new Error("Failed to open WebTransport", { cause: error }));
             return;
         }
         this.transport = transport;
@@ -166,7 +169,7 @@ class ManagedWebTransportConnection {
         this._reconnectTimer = undefined;
     }
     async _readDatagrams(transport) {
-        if (!this._config.onDatagram)
+        if (!this._config.onDatagram && !this._config.onProtocolMessage)
             return;
         const reader = transport.datagrams.readable.getReader();
         try {
@@ -186,7 +189,11 @@ class ManagedWebTransportConnection {
                     this._log.error("WebTransport datagram transform failed", error);
                     continue;
                 }
-                this._config.onDatagram({ data, message });
+                const event = { data, message };
+                if (isRealtimeProtocolMessage(message)) {
+                    this._config.onProtocolMessage?.(message, event);
+                }
+                this._config.onDatagram?.(event);
             }
         }
         catch (error) {
@@ -234,12 +241,13 @@ class WebTransportProvider {
                         throw new Error("WebTransport API is not available in this browser");
                     }
                     const mergedConfig = { ...this.defaults, ...config };
-                    const { onOpen, onClose, onError, onDatagram, transformDatagram, reconnect, retryDelay, maxRetries, onReconnect, ...transportOptions } = mergedConfig;
+                    const { onOpen, onClose, onError, onDatagram, onProtocolMessage, transformDatagram, reconnect, retryDelay, maxRetries, onReconnect, ...transportOptions } = mergedConfig;
                     return new ManagedWebTransportConnection(url, WebTransportCtor, transportOptions, {
                         onOpen,
                         onClose,
                         onError,
                         onDatagram,
+                        onProtocolMessage,
                         transformDatagram,
                         reconnect,
                         retryDelay,

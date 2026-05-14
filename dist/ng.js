@@ -1,19 +1,20 @@
-import { _router, _provide, _compile, _angular, _window, _document } from './injection-tokens.js';
-import { $$AnimateChildrenDirective } from './animations/animate-children-directive.js';
-import { AnimateCssDriverProvider } from './animations/animate-css-driver.js';
-import { AnimateJsDriverProvider } from './animations/animate-js-driver.js';
-import { AnimateJsProvider } from './animations/animate-js.js';
-import { ngAnimateSwapDirective } from './animations/animate-swap.js';
+import { _router, _provide, _compile, _angular, _window, _document, _filter } from './injection-tokens.js';
 import { AnimateProvider } from './animations/animate.js';
-import { AnimationProvider } from './animations/animation.js';
-import { AnimateCssProvider } from './animations/css/animate-css.js';
-import { AnimateQueueProvider } from './animations/queue/animate-queue.js';
 import { CompileProvider } from './core/compile/compile.js';
 import { ControllerProvider } from './core/controller/controller.js';
 import { FilterProvider } from './core/filter/filter.js';
 import { InterpolateProvider } from './core/interpolate/interpolate.js';
 import { ParseProvider } from './core/parse/parse.js';
 import { RootScopeProvider } from './core/scope/scope.js';
+import { valuesFilter, keysFilter, entriesFilter } from './filters/collection.js';
+import { asyncFilter } from './filters/async.js';
+import { dateFilter } from './filters/date.js';
+import { filterFilter } from './filters/filter.js';
+import { jsonFilter } from './filters/json.js';
+import { limitToFilter } from './filters/limit-to.js';
+import { percentFilter, numberFilter, currencyFilter } from './filters/number.js';
+import { orderByFilter } from './filters/order-by.js';
+import { relativeTimeFilter } from './filters/relative-time.js';
 import { ngValueAriaDirective, ngRequiredAriaDirective, ngReadonlyAriaDirective, ngModelAriaDirective, ngMessagesAriaDirective, ngShowAriaDirective, ngHideAriaDirective, ngDisabledAriaDirective, ngDblclickAriaDirective, ngClickAriaDirective, ngCheckedAriaDirective, AriaProvider } from './directive/aria/aria.js';
 import { ngAttributeAliasDirectives } from './directive/attrs/attrs.js';
 import { ngBindTemplateDirective, ngBindHtmlDirective, ngBindDirective } from './directive/bind/bind.js';
@@ -93,14 +94,40 @@ function registerRuntimeHostValues(angular, $provide) {
     $provide.value(_window, window);
     $provide.value(_document, document);
 }
-/** Providers required by scopes, expressions, filters, controllers, and compile. */
+/** Registers built-in filters against the already-registered `$filter` provider. */
+function registerBuiltInFilters($filterProvider) {
+    const filterEntries = Object.entries(ngBuiltInFilters);
+    filterEntries.forEach(([name, factory]) => {
+        $filterProvider.register(name, factory);
+    });
+}
+/** Providers required by scopes, expressions, controllers, and compile. */
 const ngCoreProviders = {
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
-    $filter: FilterProvider,
     $interpolate: InterpolateProvider,
     $parse: ParseProvider,
     $rootScope: RootScopeProvider,
+};
+/** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */
+const ngFilterProviders = {
+    $filter: FilterProvider,
+};
+/** Built-in filters included by the default full `ng` runtime. */
+const ngBuiltInFilters = {
+    async: asyncFilter,
+    date: dateFilter,
+    entries: entriesFilter,
+    filter: filterFilter,
+    json: jsonFilter,
+    keys: keysFilter,
+    limitTo: limitToFilter,
+    currency: currencyFilter,
+    number: numberFilter,
+    orderBy: orderByFilter,
+    percent: percentFilter,
+    relativeTime: relativeTimeFilter,
+    values: valuesFilter,
 };
 /** Browser services that are useful in normal apps but optional for small runtimes. */
 const ngBrowserProviders = {
@@ -119,15 +146,9 @@ const ngSecurityProviders = {
     $sce: SceProvider,
     $sceDelegate: SceDelegateProvider,
 };
-/** Animation providers. Omit this group for runtimes that use native transitions only. */
+/** Native animation provider. */
 const ngAnimationProviders = {
     $animate: AnimateProvider,
-    $$animation: AnimationProvider,
-    $animateCss: AnimateCssProvider,
-    $$animateCssDriver: AnimateCssDriverProvider,
-    $$animateJs: AnimateJsProvider,
-    $$animateJsDriver: AnimateJsDriverProvider,
-    $$animateQueue: AnimateQueueProvider,
 };
 /** State-router providers. Omit this group for custom-element or widget runtimes without routing. */
 const ngRouterProviders = {
@@ -223,11 +244,6 @@ const ngIntegrationDirectives = {
     ngWebTransport: ngWebTransportDirective,
     ngWorker: ngWorkerDirective,
 };
-/** Animation directives. */
-const ngAnimationDirectives = {
-    ngAnimateSwap: ngAnimateSwapDirective,
-    ngAnimateChildren: $$AnimateChildrenDirective,
-};
 /** Accessibility enhancement directives layered onto normal template directives. */
 const ngAriaDirectives = {
     ngChecked: ngCheckedAriaDirective,
@@ -259,6 +275,7 @@ const ngFillDirectives = {
 /** Provider groups included by the default full `ng` runtime. */
 const ngDefaultProviderGroups = [
     ngCoreProviders,
+    ngFilterProviders,
     ngBrowserProviders,
     ngSecurityProviders,
     ngAnimationProviders,
@@ -272,7 +289,6 @@ const ngDefaultDirectiveGroups = [
     ngTemplateDirectives,
     ngFormDirectives,
     ngIntegrationDirectives,
-    ngAnimationDirectives,
     ngAriaDirectives,
     ngRouterDirectives,
     ngFillDirectives,
@@ -294,9 +310,19 @@ function registerNgModule(angular) {
             ngDefaultDirectiveGroups.forEach((directives) => {
                 $compileProvider.directive(directives);
             });
+            let $filterProvider;
             ngDefaultProviderGroups.forEach((providers) => {
-                $provide.provider(providers);
+                const providerEntries = Object.entries(providers);
+                providerEntries.forEach(([name, provider]) => {
+                    const registeredProvider = $provide.provider(name, provider);
+                    if (name === _filter) {
+                        $filterProvider = registeredProvider;
+                    }
+                });
             });
+            if ($filterProvider) {
+                registerBuiltInFilters($filterProvider);
+            }
         },
     ]);
     registerRouterAliases(ngModule);
@@ -315,4 +341,4 @@ function registerRouterAliases(ngModule) {
     ]);
 }
 
-export { ngAnimationDirectives, ngAnimationProviders, ngAriaDirectives, ngBindingDirectives, ngBrowserProviders, ngCoreProviders, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngElementDirectives, ngFillDirectives, ngFormDirectives, ngIntegrationDirectives, ngIntegrationProviders, ngRouterDirectives, ngRouterProviders, ngSecurityProviders, ngTemplateDirectives, registerNgModule, registerRouterAliases };
+export { ngAnimationProviders, ngAriaDirectives, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngCoreProviders, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngElementDirectives, ngFillDirectives, ngFilterProviders, ngFormDirectives, ngIntegrationDirectives, ngIntegrationProviders, ngRouterDirectives, ngRouterProviders, ngSecurityProviders, ngTemplateDirectives, registerNgModule, registerRouterAliases };

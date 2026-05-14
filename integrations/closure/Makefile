@@ -25,7 +25,7 @@ closure-build: closure-validate
 	@$(MAKE) -C $(CLOSURE_REPO_ROOT) build
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/scripts/build.mjs
 
-closure-test: closure-build clojurescript-build
+closure-test: closure-build clojurescript-build java-check
 	@cd $(CLOSURE_REPO_ROOT) && npx playwright test --config integrations/closure/playwright.config.ts
 
 closure-demo: closure-build

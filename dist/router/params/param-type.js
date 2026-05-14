@@ -1,8 +1,27 @@
-import { assign, isNullOrUndefined, isArray, isDefined } from '../../shared/utils.js';
+import { assign, isNullOrUndefined, hasCustomToString, isArray, isDefined } from '../../shared/utils.js';
 
 const emptyParamTypeDefinition = {};
 function valToString(val) {
-    return !isNullOrUndefined(val) ? val.toString() : undefined;
+    if (isNullOrUndefined(val)) {
+        return undefined;
+    }
+    switch (typeof val) {
+        case "string":
+            return val;
+        case "number":
+        case "boolean":
+        case "bigint":
+        case "symbol":
+            return String(val);
+        case "function":
+            return val.toString();
+        case "object":
+            return hasCustomToString(val)
+                ? val.toString()
+                : undefined;
+        default:
+            return undefined;
+    }
 }
 /**
  * An internal class which implements [[ParamTypeDefinition]].
@@ -42,7 +61,7 @@ class ParamType {
         return a === b;
     }
     toString() {
-        return `{ParamType:${this.name}}`;
+        return `{ParamType:${this.name ?? ""}}`;
     }
     /**
      * Given an encoded string, or a decoded object, returns a decoded object
@@ -51,17 +70,6 @@ class ParamType {
     $normalize(val) {
         return this.is(val) ? val : this.decode(val);
     }
-    /**
-     * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
-     * e.g.:
-     * - urlmatcher pattern "/path?{queryParam[]:int}"
-     * - url: "/path?queryParam=1&queryParam=2
-     * - $stateParams.queryParam will be [1, 2]
-     * if `mode` is "auto", then
-     * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
-     * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
-     * @param {boolean |'auto'} mode
-     */
     $asArray(mode) {
         if (!mode)
             return this;

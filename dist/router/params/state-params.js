@@ -17,14 +17,14 @@ class StateParams {
         const inherited = {};
         const inheritList = new Set();
         for (const parent of parents) {
-            if (!parent || !parent.params)
+            if (!parent.params)
                 continue;
             const parentParams = parent.params;
             const parentParamsKeys = keys(parentParams);
             if (!parentParamsKeys.length)
                 continue;
             for (const key of parentParamsKeys) {
-                if (parentParams[key].inherit === false || inheritList.has(key)) {
+                if (!parentParams[key].inherit || inheritList.has(key)) {
                     continue;
                 }
                 inheritList.add(key);
@@ -43,8 +43,8 @@ class StateParams {
  */
 function ancestors(first, second) {
     const path = [];
-    const firstPath = first.path || [];
-    const secondPath = second.path || [];
+    const firstPath = first.path ?? [];
+    const secondPath = second.path ?? [];
     const len = Math.min(firstPath.length, secondPath.length);
     for (let i = 0; i < len; i++) {
         if (firstPath[i] !== secondPath[i])

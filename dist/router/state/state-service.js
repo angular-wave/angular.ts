@@ -1,36 +1,16 @@
 import { _injector, _stateRegistry, _router, _rootScope, _view, _stateRegistryProvider, _routerProvider, _transitionsProvider, _exceptionHandlerProvider } from '../../injection-tokens.js';
 import { defaults } from '../../shared/common.js';
-import { isString, isDefined, isObject, isInstanceOf, assign, isNullOrUndefined, isArray, minErr } from '../../shared/utils.js';
+import { isString, isDefined, isObject, assertDefined, isNullOrUndefined, isArray, createErrorFactory } from '../../shared/utils.js';
 import { PathNode } from '../path/path-node.js';
 import { defaultTransOpts } from '../transition/transition-service.js';
-import { Rejection, RejectType } from '../transition/reject-factory.js';
+import { Rejection } from '../transition/reject-factory.js';
 import { TargetState } from './target-state.js';
 import { Param } from '../params/param.js';
 import { Glob } from '../glob/glob.js';
+import { transitionToState } from './state-transition.js';
+export { silenceUncaughtInPromise, silentRejection } from './state-transition.js';
 
-const stdErr = minErr("$stateProvider");
-/**
- * Attaches a catch handler to silence unhandled rejection warnings,
- * while preserving the original promise.
- *
- * @template T
- * @param {Promise<T>} promise
- * @returns {Promise<T>}
- */
-function silenceUncaughtInPromise(promise) {
-    promise.catch(() => undefined);
-    return promise;
-}
-/**
- * Creates a rejected promise whose rejection is intentionally silenced.
- *
- * @template [E=unknown]
- * @param {E} error
- * @returns {Promise<never>}
- */
-function silentRejection(error) {
-    return silenceUncaughtInPromise(Promise.reject(error));
-}
+const stateProviderError = createErrorFactory("$stateProvider");
 /**
  * Provides services related to ng-router states.
  *
@@ -80,7 +60,9 @@ class StateProvider {
                 this._stateRegistry = $stateRegistry;
                 this._routerState = routerState;
                 routerState._stateService = this;
-                $rootScope.$on("$locationChangeSuccess", (evt) => routerState._sync(evt));
+                $rootScope.$on("$locationChangeSuccess", (evt) => {
+                    routerState._sync(evt);
+                });
                 this._transitionService._initRuntimeHooks(this, viewService);
                 this._$injector = $injector;
                 this._routerState._injector = $injector;
@@ -97,13 +79,13 @@ class StateProvider {
     state(nameOrDefinition, definition) {
         const stateDefinition = normalizeStateDeclaration(nameOrDefinition, definition);
         if (!stateDefinition.name) {
-            throw stdErr("stateinvalid", `'name' required`);
+            throw stateProviderError("stateinvalid", `'name' required`);
         }
         try {
             this._getRegistry().register(stateDefinition);
         }
         catch (err) {
-            throw stdErr("stateinvalid", err.message);
+            throw stateProviderError("stateinvalid", err.message);
         }
         return this;
     }
@@ -294,7 +276,7 @@ class StateProvider {
             throw new Error(`No such reload state '${isString(options.reload)
                 ? options.reload
                 : isObject(options.reload) && "name" in options.reload
-                    ? String(options.reload.name)
+                    ? options.reload.name
                     : String(options.reload)}'`);
         return new TargetState(this._getRegistry(), identifier, params, options);
     }
@@ -304,48 +286,6 @@ class StateProvider {
         return latestSuccess
             ? latestSuccess._treeChanges.to
             : [new PathNode(this._getRegistry().root())];
-    }
-    /** @internal */
-    _handleTransitionRejection(trans, error) {
-        if (isInstanceOf(error, Rejection)) {
-            const isLatest = this._routerState._lastStartedTransitionId <= trans.$id;
-            if (error.type === RejectType._IGNORED) {
-                isLatest && this._routerState._update();
-                // Consider ignored `Transition.run()` as a successful `transitionTo`.
-                return Promise.resolve(this._routerState._current);
-            }
-            const { detail } = error;
-            if (error.type === RejectType._SUPERSEDED &&
-                error.redirected &&
-                isInstanceOf(detail, TargetState)) {
-                const redirect = trans.redirect(detail);
-                return this._runRedirectTransition(redirect);
-            }
-            if (error.type === RejectType._ABORTED) {
-                isLatest && this._routerState._update();
-                return Promise.reject(error);
-            }
-        }
-        this.defaultErrorHandler()(error);
-        return Promise.reject(error);
-    }
-    /** @internal */
-    async _runRedirectTransition(redirect) {
-        try {
-            return await redirect.run();
-        }
-        catch (reason) {
-            return this._handleTransitionRejection(redirect, reason);
-        }
-    }
-    /** @internal */
-    async _runTransitionTo(trans) {
-        try {
-            return await trans.run();
-        }
-        catch (error) {
-            return this._handleTransitionRejection(trans, error);
-        }
     }
     /**
      * Low-level method for transitioning to a new state.
@@ -371,29 +311,7 @@ class StateProvider {
      * @returns A promise representing the state of the new transition. See [[go]]
      */
     transitionTo(to, toParams = {}, options = {}) {
-        options = defaults(options, defaultTransOpts);
-        const getCurrent = () => this._routerState._transition;
-        options = assign(options, { current: getCurrent });
-        const ref = this.target(to, toParams, options);
-        const currentPath = this.getCurrentPath();
-        if (!ref.exists())
-            return this._loadLazyTargetState(ref);
-        if (!ref.valid())
-            return silentRejection(ref.error());
-        /**
-         * Special handling for Ignored, Aborted, and Redirected transitions
-         *
-         * The semantics for the transition.run() promise and the StateService.transitionTo()
-         * promise differ. For instance, the run() promise may be rejected because it was
-         * IGNORED, but the transitionTo() promise is resolved because from the user perspective
-         * no error occurred.  Likewise, the transition.run() promise may be rejected because of
-         * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
-         */
-        const transition = this._transitionService.create(currentPath, ref);
-        const transitionToPromise = this._runTransitionTo(transition);
-        silenceUncaughtInPromise(transitionToPromise); // issue #2676
-        // Return a promise for the transition, which also has the transition object on it.
-        return assign(transitionToPromise, { transition });
+        return transitionToState(this, to, toParams, options);
     }
     /**
        * Checks if the current state *is* the provided state
@@ -516,12 +434,12 @@ class StateProvider {
         if (!isDefined(state))
             return null;
         if (options?.inherit !== false)
-            params = this._routerState._params.$inherit(params, this.$current, state);
+            params = this._routerState._params.$inherit(params, assertDefined(this.$current), state);
         const nav = state && options?.lossy !== false ? state.navigable : state;
         if (!nav || isNullOrUndefined(nav._url)) {
             return null;
         }
-        return this._routerState._href(nav._url, params, {
+        return this._routerState._urlRuntime._href(nav._url, params, {
             absolute: options?.absolute,
         });
     }
@@ -572,16 +490,16 @@ StateProvider.$inject = [
 function normalizeStateDeclaration(nameOrDefinition, definition) {
     if (isString(nameOrDefinition)) {
         if (!isObject(definition)) {
-            throw stdErr("stateinvalid", `'definition' required`);
+            throw stateProviderError("stateinvalid", `'definition' required`);
         }
         const namedDefinition = definition;
         if (isDefined(namedDefinition.name) &&
             namedDefinition.name !== nameOrDefinition) {
-            throw stdErr("stateinvalid", `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
+            throw stateProviderError("stateinvalid", `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`);
         }
         return { ...namedDefinition, name: nameOrDefinition };
     }
     return nameOrDefinition;
 }
 
-export { StateProvider, silentRejection };
+export { StateProvider };

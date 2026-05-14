@@ -1,7 +1,7 @@
 import { _injector, _rootScope, _compile, _scope } from '../../injection-tokens.js';
-import { getScope, getInheritedData, setScope, dealoc } from '../../shared/dom.js';
+import { getInheritedData, setScope, dealoc } from '../../shared/dom.js';
 import { kebobString } from '../../shared/strings.js';
-import { isFunction, isNumber, isString, uppercase, isObject } from '../../shared/utils.js';
+import { isFunction, isNumber, isString, stringify, uppercase, deleteProperty, isObject } from '../../shared/utils.js';
 
 const pendingValueStore = new WeakMap();
 /** Provider for scoped custom element integration. */
@@ -15,10 +15,10 @@ class WebComponentProvider {
             _compile,
             (injector, rootScope, compile) => {
                 const createElementScope = (host, initialState = {}, options = {}) => {
-                    const parentScope = options.parentScope ||
-                        getScope(host) ||
+                    const parentScope = (options.parentScope ||
+                        getInheritedData(host, _scope) ||
                         getInheritedData(host.parentNode || host, _scope) ||
-                        rootScope;
+                        rootScope);
                     const scope = options.isolate
                         ? parentScope.$newIsolate(initialState)
                         : parentScope.$new(initialState);
@@ -189,16 +189,14 @@ function normalizeInputs(inputs = {}) {
 function resolveInitialState(state) {
     if (!state)
         return {};
-    return (isFunction(state) ? state() : { ...state });
+    return isFunction(state) ? state() : { ...state };
 }
 function resolveRenderRoot(host, shadow) {
     if (!shadow)
         return host;
     if (host.shadowRoot)
         return host.shadowRoot;
-    const init = isObject(shadow)
-        ? shadow
-        : { mode: "open" };
+    const init = isObject(shadow) ? shadow : { mode: "open" };
     return host.attachShadow(init);
 }
 function createContext(host, scope, injector, root) {
@@ -236,7 +234,7 @@ function upgradeOwnProperties(host, inputs) {
             return;
         const hostRecord = host;
         const value = hostRecord[input.property];
-        delete hostRecord[input.property];
+        deleteProperty(hostRecord, input.property);
         hostRecord[input.property] = value;
     });
 }
@@ -289,7 +287,7 @@ function reflectInput(host, input, value, reflectingAttributes) {
             host.removeAttribute(input.attribute);
         }
         else {
-            host.setAttribute(input.attribute, String(value));
+            host.setAttribute(input.attribute, stringify(value));
         }
     }
     finally {
@@ -320,7 +318,7 @@ function coercePropertyValue(input, value) {
             return "";
         if (isString(value))
             return value;
-        return String(value);
+        return stringify(value);
     }
     return input.type(value);
 }

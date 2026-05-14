@@ -141,51 +141,62 @@ function parseCookies() {
  */
 function buildOptions(opts = {}) {
     const parts = [];
+    const rawOptions = opts;
+    const { path, domain, expires, secure, samesite: sameSiteOption, } = rawOptions;
     // Path
-    if (isDefined(opts.path)) {
-        if (!isString(opts.path))
-            throw new TypeError(`${BADARG}:path ${opts.path}`);
-        parts.push(`path=${opts.path}`);
+    if (isDefined(path)) {
+        if (!isString(path))
+            throw new TypeError(`${BADARG}:path ${describeOptionValue(path)}`);
+        parts.push(`path=${path}`);
     }
     // Domain
-    if (isDefined(opts.domain)) {
-        if (!isString(opts.domain))
-            throw new TypeError(`${BADARG}:domain ${opts.domain}`);
-        parts.push(`domain=${opts.domain}`);
+    if (isDefined(domain)) {
+        if (!isString(domain))
+            throw new TypeError(`${BADARG}:domain ${describeOptionValue(domain)}`);
+        parts.push(`domain=${domain}`);
     }
     // Expires
-    if (!isNullOrUndefined(opts.expires)) {
+    if (!isNullOrUndefined(expires)) {
         let expDate;
-        if (isInstanceOf(opts.expires, Date)) {
-            expDate = opts.expires;
+        if (isInstanceOf(expires, Date)) {
+            expDate = expires;
         }
-        else if (isNumber(opts.expires) || isString(opts.expires)) {
-            expDate = new Date(opts.expires);
+        else if (isNumber(expires) || isString(expires)) {
+            expDate = new Date(expires);
         }
         else {
-            throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
+            throw new TypeError(`${BADARG}:expires ${describeOptionValue(expires)}`);
         }
         if (isNaN(expDate.getTime())) {
-            throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
+            throw new TypeError(`${BADARG}:expires ${describeOptionValue(expires)}`);
         }
         parts.push(`expires=${expDate.toUTCString()}`);
     }
     // Secure
-    if (opts.secure) {
+    if (secure) {
         parts.push("secure");
     }
     // SameSite
-    if (isDefined(opts.samesite)) {
-        if (!isString(opts.samesite))
-            throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
-        const samesite = opts.samesite.toLowerCase();
+    if (isDefined(sameSiteOption)) {
+        if (!isString(sameSiteOption))
+            throw new TypeError(`${BADARG}:samesite ${describeOptionValue(sameSiteOption)}`);
+        const samesite = sameSiteOption.toLowerCase();
         if (!["lax", "strict", "none"].includes(samesite)) {
-            throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
+            throw new TypeError(`${BADARG}:samesite ${sameSiteOption}`);
         }
         parts.push(`samesite=${samesite}`);
     }
     // Join all parts with semicolons
     return parts.length ? `;${parts.join(";")}` : "";
+}
+function describeOptionValue(value) {
+    if (isString(value) || isNumber(value) || typeof value === "boolean") {
+        return String(value);
+    }
+    if (isInstanceOf(value, Date)) {
+        return value.toString();
+    }
+    return Object.prototype.toString.call(value);
 }
 
 export { CookieProvider, CookieService };

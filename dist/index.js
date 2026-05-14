@@ -12,7 +12,9 @@ const angular = new Angular();
 /**
  * Auto-bootstrap the document once the browser DOM is ready.
  */
-document.addEventListener("DOMContentLoaded", () => angular.init(document), {
+document.addEventListener("DOMContentLoaded", () => {
+    angular.init(document);
+}, {
     once: true,
 });
 

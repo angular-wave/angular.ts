@@ -51,9 +51,24 @@ class SseProvider {
         if (!params)
             return url;
         const query = entries(params)
-            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(serializeQueryValue(v))}`)
             .join("&");
         return url + (url.includes("?") ? "&" : "?") + query;
+    }
+}
+function serializeQueryValue(value) {
+    switch (typeof value) {
+        case "string":
+            return value;
+        case "number":
+        case "boolean":
+        case "bigint":
+        case "symbol":
+            return String(value);
+        case "undefined":
+            return "";
+        default:
+            return value === null ? "" : JSON.stringify(value);
     }
 }
 

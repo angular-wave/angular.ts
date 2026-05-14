@@ -10,7 +10,7 @@ class StateMatcher {
      */
     isRelative(stateName) {
         stateName = stateName || "";
-        return stateName.indexOf(".") === 0 || stateName.indexOf("^") === 0;
+        return stateName.startsWith(".") || stateName.startsWith("^");
     }
     /**
      * @param {StateOrName} stateOrName
@@ -26,8 +26,7 @@ class StateMatcher {
             name = this.resolvePath(name, base);
         const state = this._states[name];
         if (state &&
-            (isStr ||
-                (!isStr && (state === stateOrName || state.self === stateOrName)))) {
+            (isStr || state === stateOrName || state.self === stateOrName)) {
             return state;
         }
         else if (isStr && matchGlob) {
@@ -36,9 +35,9 @@ class StateMatcher {
             let duplicateNames;
             stateNames.forEach((stateName) => {
                 const stateObj = this._states[stateName];
-                if (stateObj._stateObjectCache?.nameGlob?.matches(name)) {
+                if (stateObj._stateObjectCache.nameGlob?.matches(name)) {
                     if (match) {
-                        duplicateNames = duplicateNames || [match.name];
+                        duplicateNames = duplicateNames ?? [match.name];
                         duplicateNames.push(stateObj.name);
                     }
                     else {
@@ -47,7 +46,7 @@ class StateMatcher {
                 }
             });
             if (duplicateNames) {
-                throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames}`);
+                throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames.join(", ")}`);
             }
             return match;
         }
@@ -73,14 +72,14 @@ class StateMatcher {
             }
             if (splitName[i] === "^") {
                 if (!current?.parent)
-                    throw new Error(`Path '${name}' not valid for state '${baseState?.name}'`);
+                    throw new Error(`Path '${name}' not valid for state '${baseState?.name ?? "unknown"}'`);
                 current = current.parent;
                 continue;
             }
             break;
         }
         const relName = splitName.slice(i).join(".");
-        return ((current?.name || "") + (current?.name && relName ? "." : "") + relName);
+        return ((current?.name ?? "") + (current?.name && relName ? "." : "") + relName);
     }
 }
 

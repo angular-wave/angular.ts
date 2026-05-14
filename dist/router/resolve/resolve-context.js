@@ -58,7 +58,7 @@ class ResolveContext {
                 break;
             }
         }
-        return new ResolveContext((contextPath || this._path), this._injector);
+        return new ResolveContext(contextPath ?? this._path, this._injector);
     }
     /**
      * Adds or replaces resolvables for a specific state in this path.

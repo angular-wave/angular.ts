@@ -129,7 +129,12 @@ const angularTsRuntimeCompatibilityRules = {
 
 export default defineConfig([
   {
-    ignores: ["**/*.{js,mjs,cjs}", "**/*.spec.ts", "**/*.test.ts"],
+    ignores: [
+      "integrations/**",
+      "**/*.{js,mjs,cjs}",
+      "**/*.spec.ts",
+      "**/*.test.ts",
+    ],
   },
   {
     linterOptions: {

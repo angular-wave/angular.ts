@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isProxy, isFunction, deProxy, isDefined, isObject } from '../../shared/utils.js';
+import { assertDefined, isNullOrUndefined, isFunction, callFunction, deProxy, isProxy, isDefined, isObject } from '../../shared/utils.js';
 import { ASTType } from './ast-type.js';
 
 const PURITY_ABSOLUTE = 1;
@@ -9,6 +9,31 @@ function appendWatchNodes(target, watchList) {
     for (let i = 0, l = watchList.length; i < l; i++) {
         target.push(watchList[i]);
     }
+}
+function asPropertyBag(value) {
+    if (isNullOrUndefined(value)) {
+        return undefined;
+    }
+    if (isObject(value) || isFunction(value)) {
+        return value;
+    }
+    return Object(value);
+}
+function readProperty(value, key) {
+    return asPropertyBag(value)?.[key];
+}
+function writeProperty(value, key, propertyValue) {
+    const bag = asPropertyBag(value);
+    if (bag) {
+        bag[key] = propertyValue;
+    }
+}
+function getProxyTarget(value) {
+    const bag = asPropertyBag(value);
+    return bag && "$proxy" in bag ? (bag.$proxy ?? value) : value;
+}
+function getExpressionReference(value) {
+    return isObject(value) ? value : {};
 }
 class ASTInterpreter {
     /**
@@ -46,7 +71,7 @@ class ASTInterpreter {
         const expressions = [];
         for (let i = 0, l = body.length; i < l; i++) {
             const expression = body[i];
-            expressions.push(this._recurse(expression._expression));
+            expressions.push(this._recurse(assertDefined(expression._expression)));
         }
         const fnRaw = body.length === 0
             ? () => {
@@ -86,211 +111,390 @@ class ASTInterpreter {
                 return this._path(path);
             }
         }
-        let left;
-        let right;
         const self = this;
-        let args;
         switch (ast._type) {
             case ASTType._Literal:
                 return this._value(ast._value, context);
-            case ASTType._UnaryExpression:
-                right = this._recurse(ast._argument);
-                return self[`unary${ast._operator}`](right, context);
-            case ASTType._BinaryExpression:
+            case ASTType._UnaryExpression: {
+                const unaryRight = this._recurse(assertDefined(ast._argument));
+                return self[`unary${ast._operator}`](unaryRight, context);
+            }
+            case ASTType._BinaryExpression: {
                 if (!context) {
                     const binaryPath = getPathBinary(ast);
                     if (binaryPath) {
                         return binaryPath;
                     }
                 }
-                left = this._recurse(ast._left);
-                right = this._recurse(ast._right);
-                return self[`binary${ast._operator}`](left, right, context);
-            case ASTType._LogicalExpression:
-                left = this._recurse(ast._left);
-                right = this._recurse(ast._right);
-                return self[`binary${ast._operator}`](left, right, context);
+                const binaryLeft = this._recurse(assertDefined(ast._left));
+                const binaryRight = this._recurse(assertDefined(ast._right));
+                return self[`binary${ast._operator}`](binaryLeft, binaryRight, context);
+            }
+            case ASTType._LogicalExpression: {
+                if (!context) {
+                    const logicalPath = getPathLogical(ast);
+                    if (logicalPath) {
+                        return logicalPath;
+                    }
+                }
+                const logicalLeft = this._recurse(assertDefined(ast._left));
+                const logicalRight = this._recurse(assertDefined(ast._right));
+                return self[`binary${ast._operator}`](logicalLeft, logicalRight, context);
+            }
             case ASTType._ConditionalExpression:
-                return this["ternary?:"](this._recurse(ast._test), this._recurse(ast._alternate), this._recurse(ast._consequent), context);
+                return this["ternary?:"](this._recurse(assertDefined(ast._test)), this._recurse(assertDefined(ast._alternate)), this._recurse(assertDefined(ast._consequent)), context);
             case ASTType._Identifier:
-                return self._identifier(ast._name, context, create);
+                return this._identifier(assertDefined(ast._name), context, create);
             case ASTType._MemberExpression:
-                left = this._recurse(ast._object, false, !!create);
-                if (!ast._computed) {
-                    right = ast._property._name;
-                }
-                if (ast._computed) {
-                    right = this._recurse(ast._property);
-                }
-                return ast._computed
-                    ? this._computedMember(left, right, context, create)
-                    : this._nonComputedMember(left, right, context, create);
+                return this._compileMemberExpression(ast, context, create);
             case ASTType._CallExpression:
-                args = [];
-                const callArguments = ast._arguments;
-                for (let i = 0, l = callArguments.length; i < l; i++) {
-                    const expr = callArguments[i];
-                    args.push(self._recurse(expr));
-                }
-                if (ast._filter)
-                    right = this._$filter(ast._callee._name);
-                if (!ast._filter) {
-                    right = this._recurse(ast._callee, true);
-                }
-                if (!ast._filter && args.length <= 1) {
-                    const arg = args[0];
-                    return args.length
-                        ? (scope, locals, assign) => {
-                            const rhs = right(scope, locals, assign);
-                            let value;
-                            if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-                                const res = arg(scope, locals, assign);
-                                value = rhs.value.call(rhs.context, isFunction(res) ? res() : res);
-                            }
-                            return context ? { value } : value;
-                        }
-                        : (scope, locals, assign) => {
-                            const rhs = right(scope, locals, assign);
-                            const value = !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
-                                ? rhs.value.call(rhs.context)
-                                : undefined;
-                            return context ? { value } : value;
-                        };
-                }
-                return ast._filter
-                    ? (scope, locals, assign) => {
-                        const values = [];
-                        for (let i = 0; i < args.length; ++i) {
-                            const res = args[i](scope && deProxy(scope), locals, assign);
-                            values.push(res);
-                        }
-                        const value = () => {
-                            return right.apply(undefined, values);
-                        };
-                        return context
-                            ? { context: undefined, name: undefined, value }
-                            : value();
-                    }
-                    : (scope, locals, assign) => {
-                        const rhs = right(scope, locals, assign);
-                        let value;
-                        if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-                            const values = [];
-                            for (let i = 0; i < args.length; ++i) {
-                                const res = args[i](scope, locals, assign);
-                                values.push(isFunction(res) ? res() : res);
-                            }
-                            value = rhs.value.apply(rhs.context, values);
-                        }
-                        return context ? { value } : value;
-                    };
+                return this._compileCallExpression(ast, context);
             case ASTType._AssignmentExpression:
-                left = this._recurse(ast._left, true, 1);
-                right = this._recurse(ast._right);
-                return (scope, locals, assign) => {
-                    const lhs = left(scope, locals, assign);
-                    const rhs = right(scope, locals, assign);
-                    // lhs.context[lhs.name] = rhs;
-                    const ctx = isProxy(lhs.context)
-                        ? lhs.context
-                        : (lhs.context.$proxy ?? lhs.context);
-                    ctx[lhs.name] = rhs;
-                    return context ? { value: rhs } : rhs;
-                };
+                return this._compileAssignmentExpression(ast, context);
             case ASTType._ArrayExpression:
-                args = [];
-                const elements = ast._elements || [];
-                for (let i = 0, l = elements.length; i < l; i++) {
-                    const expr = elements[i];
-                    args.push(self._recurse(expr));
-                }
-                return (scope, locals, assign) => {
-                    const value = [];
-                    for (let i = 0; i < args.length; ++i) {
-                        value.push(args[i](scope, locals, assign));
-                    }
-                    return context ? { value } : value;
-                };
+                return this._compileArrayExpression(ast, context);
             case ASTType._ObjectExpression:
-                args = [];
-                const properties = (ast._properties ||
-                    []);
-                if (!context && properties.length === 1 && !properties[0]._computed) {
-                    const property = properties[0];
-                    const key = property._key._type === ASTType._Identifier
-                        ? property._key._name
-                        : `${property._key._value}`;
-                    const value = self._recurse(property._value);
-                    return (scope, locals, assign) => {
-                        const object = {};
-                        object[key] = value(scope, locals, assign);
-                        return object;
-                    };
-                }
-                for (let i = 0, l = properties.length; i < l; i++) {
-                    const property = properties[i];
-                    if (property._computed) {
-                        args.push({
-                            key: self._recurse(property._key),
-                            computed: true,
-                            value: self._recurse(property._value),
-                        });
-                    }
-                    else {
-                        args.push({
-                            key: property._key._type === ASTType._Identifier
-                                ? property._key._name
-                                : `${property._key._value}`,
-                            computed: false,
-                            value: self._recurse(property._value),
-                        });
-                    }
-                }
-                return (scope, locals, assign) => {
-                    const value = {};
-                    for (let i = 0; i < args.length; ++i) {
-                        const property = args[i];
-                        if (property.computed) {
-                            value[property.key(scope, locals, assign)] = property.value(scope, locals, assign);
-                        }
-                        else {
-                            value[property.key] = property.value(scope, locals, assign);
-                        }
-                    }
-                    return context ? { value } : value;
-                };
+                return this._compileObjectExpression(ast, context);
             case ASTType._ThisExpression:
-                return (scope) => (context ? { value: scope } : scope?.$proxy);
+                return (scope) => (context ? { value: scope } : getProxyTarget(scope));
             case ASTType._LocalsExpression:
                 return (scope, locals) => (context ? { value: locals } : locals);
             case ASTType._NGValueParameter:
                 return (scope, locals, assign) => context ? { value: assign } : assign;
             case ASTType._UpdateExpression: {
-                // Must be assignable: Identifier or MemberExpression
-                // Reuse the "context mode" lvalue resolver that returns { context, name, value }
-                const ref = this._recurse(ast._argument, true, 1);
-                const op = ast._operator;
-                const prefix = !!ast._prefix;
-                return (scope, locals, assign) => {
-                    const lhs = ref(scope, locals, assign);
-                    // No place to assign -> behave like JS (throw) rather than silently no-op
-                    if (!lhs || isNullOrUndefined(lhs.context)) {
-                        throw new Error(`${op} operand is not assignable (context is ${lhs?.context})`);
-                    }
-                    // JS-style numeric coercion
-                    const oldNum = Number(lhs.value);
-                    const newNum = op === "++" ? oldNum + 1 : oldNum - 1;
-                    // Write back (same proxy handling as AssignmentExpression)
-                    const ctx = isProxy(lhs.context)
-                        ? lhs.context
-                        : (lhs.context.$proxy ?? lhs.context);
-                    ctx[lhs.name] = newNum;
-                    const out = prefix ? newNum : oldNum;
-                    return context ? { value: out } : out;
-                };
+                return this._compileUpdateExpression(ast, context);
             }
         }
         throw new Error(`Unknown AST type ${ast._type}`);
+    }
+    /** @internal */
+    _compileCallExpression(ast, context) {
+        const callArguments = ast._arguments || [];
+        const args = [];
+        for (let i = 0, l = callArguments.length; i < l; i++) {
+            args.push(this._recurse(callArguments[i]));
+        }
+        if (ast._filter) {
+            return this._compileFilterCall(ast, callArguments, args, context);
+        }
+        const callee = assertDefined(ast._callee);
+        const right = this._recurse(callee, true);
+        if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
+            return this._compileIdentifierTwoArgCall(assertDefined(callee._name), callArguments, args);
+        }
+        if (args.length <= 1) {
+            return this._compileSmallCall(right, args[0], args.length, context);
+        }
+        if (args.length === 2) {
+            return this._compileTwoArgCall(right, args[0], args[1], context);
+        }
+        return this._compileVariadicCall(right, args, context);
+    }
+    /** @internal */
+    _compileIdentifierTwoArgCall(calleeName, callArguments, args) {
+        const argPath0 = getNonComputedPath(callArguments[0]);
+        const argPath1 = getNonComputedPath(callArguments[1]);
+        if (argPath0?.length === 1 && argPath1?.length === 1) {
+            const argName0 = argPath0[0];
+            const argName1 = argPath1[0];
+            return (scope, locals) => {
+                const base = getProxyTarget(scope);
+                if (!locals) {
+                    if (isNullOrUndefined(base)) {
+                        return undefined;
+                    }
+                    const calleeValue = readProperty(base, calleeName);
+                    if (!isFunction(calleeValue)) {
+                        return undefined;
+                    }
+                    const value0 = readProperty(base, argName0);
+                    const value1 = readProperty(base, argName1);
+                    return callFunction(calleeValue, base, isFunction(value0) ? value0() : value0, isFunction(value1) ? value1() : value1);
+                }
+                const calleeBase = calleeName in locals ? locals : base;
+                if (isNullOrUndefined(calleeBase)) {
+                    return undefined;
+                }
+                const calleeValue = readProperty(calleeBase, calleeName);
+                if (!isFunction(calleeValue)) {
+                    return undefined;
+                }
+                const argBase0 = argName0 in locals ? locals : base;
+                const argBase1 = argName1 in locals ? locals : base;
+                const value0 = readProperty(argBase0, argName0);
+                const value1 = readProperty(argBase1, argName1);
+                return callFunction(calleeValue, calleeBase, isFunction(value0) ? value0() : value0, isFunction(value1) ? value1() : value1);
+            };
+        }
+        const arg0 = args[0];
+        const arg1 = args[1];
+        return (scope, locals, assign) => {
+            const base = locals && calleeName in locals
+                ? locals
+                : getProxyTarget(scope);
+            if (isNullOrUndefined(base)) {
+                return undefined;
+            }
+            const calleeValue = readProperty(base, calleeName);
+            if (!isFunction(calleeValue)) {
+                return undefined;
+            }
+            const res0 = arg0(scope, locals, assign);
+            const res1 = arg1(scope, locals, assign);
+            return callFunction(calleeValue, base, isFunction(res0) ? res0() : res0, isFunction(res1) ? res1() : res1);
+        };
+    }
+    /** @internal */
+    _compileSmallCall(callee, arg, argCount, context) {
+        return argCount
+            ? (scope, locals, assign) => {
+                const rhs = getExpressionReference(callee(scope, locals, assign));
+                let value;
+                if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                    const res = assertDefined(arg)(scope, locals, assign);
+                    value = callFunction(rhs.value, rhs.context, isFunction(res) ? res() : res);
+                }
+                return context ? { value } : value;
+            }
+            : (scope, locals, assign) => {
+                const rhs = getExpressionReference(callee(scope, locals, assign));
+                const value = !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
+                    ? callFunction(rhs.value, rhs.context)
+                    : undefined;
+                return context ? { value } : value;
+            };
+    }
+    /** @internal */
+    _compileTwoArgCall(callee, arg0, arg1, context) {
+        if (!context) {
+            return (scope, locals, assign) => {
+                const rhs = getExpressionReference(callee(scope, locals, assign));
+                if (isNullOrUndefined(rhs.value) || !isFunction(rhs.value)) {
+                    return undefined;
+                }
+                const res0 = arg0(scope, locals, assign);
+                const res1 = arg1(scope, locals, assign);
+                return callFunction(rhs.value, rhs.context, isFunction(res0) ? res0() : res0, isFunction(res1) ? res1() : res1);
+            };
+        }
+        return (scope, locals, assign) => {
+            const rhs = getExpressionReference(callee(scope, locals, assign));
+            let value;
+            if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                const res0 = arg0(scope, locals, assign);
+                const res1 = arg1(scope, locals, assign);
+                value = callFunction(rhs.value, rhs.context, isFunction(res0) ? res0() : res0, isFunction(res1) ? res1() : res1);
+            }
+            return { value };
+        };
+    }
+    /** @internal */
+    _compileVariadicCall(callee, args, context) {
+        return (scope, locals, assign) => {
+            const rhs = getExpressionReference(callee(scope, locals, assign));
+            let value;
+            if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                const values = [];
+                for (let i = 0; i < args.length; ++i) {
+                    const res = args[i](scope, locals, assign);
+                    values.push(isFunction(res) ? res() : res);
+                }
+                value = callFunction(rhs.value, rhs.context, ...values);
+            }
+            return context ? { value } : value;
+        };
+    }
+    /** @internal */
+    _compileFilterCall(ast, callArguments, args, context) {
+        const filter = this._$filter(assertDefined(ast._callee._name));
+        if (args.length === 1) {
+            const arg0 = args[0];
+            if (!context) {
+                const argPath = getNonComputedPath(callArguments[0]);
+                if (argPath?.length === 1) {
+                    const argName = argPath[0];
+                    return (scope, locals) => {
+                        const evalScope = scope && deProxy(scope);
+                        const base = locals && argName in locals
+                            ? locals
+                            : getProxyTarget(evalScope);
+                        return callFunction(filter, undefined, readProperty(base, argName));
+                    };
+                }
+            }
+            return context
+                ? (scope, locals, assign) => {
+                    const evalScope = scope && deProxy(scope);
+                    const value = () => callFunction(filter, undefined, arg0(evalScope, locals, assign));
+                    return { context: undefined, name: undefined, value };
+                }
+                : (scope, locals, assign) => callFunction(filter, undefined, arg0(scope && deProxy(scope), locals, assign));
+        }
+        if (args.length === 2) {
+            const arg0 = args[0];
+            const arg1 = args[1];
+            return context
+                ? (scope, locals, assign) => {
+                    const evalScope = scope && deProxy(scope);
+                    const value = () => callFunction(filter, undefined, arg0(evalScope, locals, assign), arg1(evalScope, locals, assign));
+                    return { context: undefined, name: undefined, value };
+                }
+                : (scope, locals, assign) => {
+                    const evalScope = scope && deProxy(scope);
+                    return callFunction(filter, undefined, arg0(evalScope, locals, assign), arg1(evalScope, locals, assign));
+                };
+        }
+        return (scope, locals, assign) => {
+            const values = [];
+            const evalScope = scope && deProxy(scope);
+            for (let i = 0; i < args.length; ++i) {
+                const res = args[i](evalScope, locals, assign);
+                values.push(res);
+            }
+            const value = () => callFunction(filter, undefined, ...values);
+            return context ? { context: undefined, name: undefined, value } : value();
+        };
+    }
+    /** @internal */
+    _compileMemberExpression(ast, context, create) {
+        const left = this._recurse(assertDefined(ast._object), false, !!create);
+        if (ast._computed) {
+            return this._computedMember(left, this._recurse(assertDefined(ast._property)), context, create);
+        }
+        return this._nonComputedMember(left, assertDefined(ast._property._name), context, create);
+    }
+    /** @internal */
+    _compileAssignmentExpression(ast, context) {
+        const left = this._recurse(assertDefined(ast._left), true, 1);
+        const right = this._recurse(assertDefined(ast._right));
+        return (scope, locals, assign) => {
+            const lhs = getExpressionReference(left(scope, locals, assign));
+            const rhs = right(scope, locals, assign);
+            const ctx = isProxy(lhs.context)
+                ? lhs.context
+                : getProxyTarget(lhs.context);
+            if (!isNullOrUndefined(lhs.name)) {
+                if (isNullOrUndefined(ctx)) {
+                    throw new TypeError("Cannot assign property on null or undefined");
+                }
+                writeProperty(ctx, lhs.name, rhs);
+            }
+            return context ? { value: rhs } : rhs;
+        };
+    }
+    /** @internal */
+    _compileArrayExpression(ast, context) {
+        const args = [];
+        const elements = ast._elements || [];
+        for (let i = 0, l = elements.length; i < l; i++) {
+            args.push(this._recurse(elements[i]));
+        }
+        return (scope, locals, assign) => {
+            const value = [];
+            for (let i = 0; i < args.length; ++i) {
+                value.push(args[i](scope, locals, assign));
+            }
+            return context ? { value } : value;
+        };
+    }
+    /** @internal */
+    _compileUpdateExpression(ast, context) {
+        const ref = this._recurse(assertDefined(ast._argument), true, 1);
+        const op = ast._operator;
+        const prefix = !!ast._prefix;
+        return (scope, locals, assign) => {
+            const lhs = getExpressionReference(ref(scope, locals, assign));
+            if (!lhs || isNullOrUndefined(lhs.context)) {
+                throw new Error(`${op} operand is not assignable (context is ${lhs?.context})`);
+            }
+            const oldNum = Number(lhs.value);
+            const newNum = op === "++" ? oldNum + 1 : oldNum - 1;
+            const ctx = isProxy(lhs.context)
+                ? lhs.context
+                : getProxyTarget(lhs.context);
+            if (lhs.name) {
+                writeProperty(ctx, lhs.name, newNum);
+            }
+            const out = prefix ? newNum : oldNum;
+            return context ? { value: out } : out;
+        };
+    }
+    /** @internal */
+    _compileObjectExpression(ast, context) {
+        const properties = (ast._properties || []);
+        if (!context && properties.length === 1 && !properties[0]._computed) {
+            return this._compileSinglePropertyObject(properties[0]);
+        }
+        if (!context && isSmallStaticObject(properties)) {
+            const optimized = this._compileSmallStaticObject(properties);
+            if (optimized) {
+                return optimized;
+            }
+        }
+        const args = compileObjectProperties(this, properties);
+        return (scope, locals, assign) => {
+            const value = {};
+            for (let i = 0; i < args.length; ++i) {
+                const property = args[i];
+                if (property.computed) {
+                    value[getStringValue(property.key(scope, locals, assign))] =
+                        property.value(scope, locals, assign);
+                }
+                else {
+                    value[property.key] = property.value(scope, locals, assign);
+                }
+            }
+            return context ? { value } : value;
+        };
+    }
+    /** @internal */
+    _compileSinglePropertyObject(property) {
+        const key = getObjectPropertyKey(property);
+        const value = this._recurse(property._value);
+        return (scope, locals, assign) => {
+            const object = {};
+            object[key] = value(scope, locals, assign);
+            return object;
+        };
+    }
+    /** @internal */
+    _compileSmallStaticObject(properties) {
+        const property0 = properties[0];
+        const property1 = properties[1];
+        const key0 = getObjectPropertyKey(property0);
+        const key1 = getObjectPropertyKey(property1);
+        if (properties.length === 2) {
+            const value0 = this._recurse(property0._value);
+            const value1 = this._recurse(property1._value);
+            return (scope, locals, assign) => {
+                const object = {};
+                object[key0] = value0(scope, locals, assign);
+                object[key1] = value1(scope, locals, assign);
+                return object;
+            };
+        }
+        const property2 = properties[2];
+        const key2 = getObjectPropertyKey(property2);
+        const valuePath0 = getNonComputedPath(property0._value);
+        const valuePath1 = getNonComputedPath(property1._value);
+        const valuePath2 = getNonComputedPath(property2._value);
+        if (valuePath0?.length === 2 &&
+            valuePath1?.length === 2 &&
+            valuePath2?.length === 2 &&
+            valuePath0[0] === valuePath1[0] &&
+            valuePath0[0] === valuePath2[0]) {
+            return compileObjectPathProjection(key0, key1, key2, valuePath0, valuePath1, valuePath2);
+        }
+        const value0 = this._recurse(property0._value);
+        const value1 = this._recurse(property1._value);
+        const value2 = this._recurse(property2._value);
+        return (scope, locals, assign) => {
+            const object = {};
+            object[key0] = value0(scope, locals, assign);
+            object[key1] = value1(scope, locals, assign);
+            object[key2] = value2(scope, locals, assign);
+            return object;
+        };
     }
     /**
      * Unary plus operation.
@@ -302,7 +506,7 @@ class ASTInterpreter {
         return (scope, locals, assign) => {
             let arg = argument(scope, locals, assign);
             if (isDefined(arg)) {
-                arg = +arg;
+                arg = Number(arg);
             }
             else {
                 arg = 0;
@@ -320,7 +524,7 @@ class ASTInterpreter {
         return (scope, locals, assign) => {
             let arg = argument(scope, locals, assign);
             if (isDefined(arg)) {
-                arg = -arg;
+                arg = -Number(arg);
             }
             else {
                 arg = -0;
@@ -366,7 +570,7 @@ class ASTInterpreter {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
             const rhs = right(scope, locals, assign);
-            const arg = (isDefined(lhs) ? lhs : 0) - (isDefined(rhs) ? rhs : 0);
+            const arg = Number(isDefined(lhs) ? lhs : 0) - Number(isDefined(rhs) ? rhs : 0);
             return context ? { value: arg } : arg;
         };
     }
@@ -379,7 +583,8 @@ class ASTInterpreter {
      */
     "binary*"(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) * right(scope, locals, assign);
+            const arg = Number(left(scope, locals, assign)) *
+                Number(right(scope, locals, assign));
             return context ? { value: arg } : arg;
         };
     }
@@ -392,7 +597,8 @@ class ASTInterpreter {
      */
     "binary/"(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) / right(scope, locals, assign);
+            const arg = Number(left(scope, locals, assign)) /
+                Number(right(scope, locals, assign));
             return context ? { value: arg } : arg;
         };
     }
@@ -405,7 +611,8 @@ class ASTInterpreter {
      */
     "binary%"(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) % right(scope, locals, assign);
+            const arg = Number(left(scope, locals, assign)) %
+                Number(right(scope, locals, assign));
             return context ? { value: arg } : arg;
         };
     }
@@ -444,8 +651,6 @@ class ASTInterpreter {
      */
     "binary=="(left, right, context) {
         return (scope, locals, assign) => {
-            // Expression parser must preserve JavaScript loose equality semantics.
-            // eslint-disable-next-line eqeqeq
             const arg = left(scope, locals, assign) == right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
@@ -459,8 +664,6 @@ class ASTInterpreter {
      */
     "binary!="(left, right, context) {
         return (scope, locals, assign) => {
-            // Expression parser must preserve JavaScript loose inequality semantics.
-            // eslint-disable-next-line eqeqeq
             const arg = left(scope, locals, assign) != right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
@@ -474,7 +677,8 @@ class ASTInterpreter {
      */
     "binary<"(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) < right(scope, locals, assign);
+            const arg = left(scope, locals, assign) <
+                right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
     }
@@ -487,7 +691,8 @@ class ASTInterpreter {
      */
     "binary>"(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) > right(scope, locals, assign);
+            const arg = left(scope, locals, assign) >
+                right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
     }
@@ -500,7 +705,8 @@ class ASTInterpreter {
      */
     "binary<="(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) <= right(scope, locals, assign);
+            const arg = left(scope, locals, assign) <=
+                right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
     }
@@ -513,7 +719,8 @@ class ASTInterpreter {
      */
     "binary>="(left, right, context) {
         return (scope, locals, assign) => {
-            const arg = left(scope, locals, assign) >= right(scope, locals, assign);
+            const arg = left(scope, locals, assign) >=
+                right(scope, locals, assign);
             return context ? { value: arg } : arg;
         };
     }
@@ -525,6 +732,9 @@ class ASTInterpreter {
      * @returns {CompiledExpressionFunction} The binary logical AND function.
      */
     "binary&&"(left, right, context) {
+        if (!context) {
+            return (scope, locals, assign) => left(scope, locals, assign) && right(scope, locals, assign);
+        }
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) && right(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -538,8 +748,31 @@ class ASTInterpreter {
      * @returns {CompiledExpressionFunction} The binary logical OR function.
      */
     "binary||"(left, right, context) {
+        if (!context) {
+            return (scope, locals, assign) => left(scope, locals, assign) || right(scope, locals, assign);
+        }
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) || right(scope, locals, assign);
+            return context ? { value: arg } : arg;
+        };
+    }
+    /**
+     * Binary nullish coalescing operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {CompiledExpressionFunction} The binary nullish coalescing function.
+     */
+    "binary??"(left, right, context) {
+        if (!context) {
+            return (scope, locals, assign) => {
+                const lhs = left(scope, locals, assign);
+                return isNullOrUndefined(lhs) ? right(scope, locals, assign) : lhs;
+            };
+        }
+        return (scope, locals, assign) => {
+            const lhs = left(scope, locals, assign);
+            const arg = isNullOrUndefined(lhs) ? right(scope, locals, assign) : lhs;
             return context ? { value: arg } : arg;
         };
     }
@@ -579,17 +812,13 @@ class ASTInterpreter {
     /** @internal */
     _identifier(name, context, create) {
         return (scope, locals) => {
-            const runtimeScope = scope;
-            const base = locals && name in locals
-                ? locals
-                : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-            if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
-                base[name] = {};
+            const base = locals && name in locals ? locals : getProxyTarget(scope);
+            if (create &&
+                create !== 1 &&
+                isNullOrUndefined(readProperty(base, name))) {
+                writeProperty(base, name, {});
             }
-            let value = undefined;
-            if (base) {
-                value = base[name];
-            }
+            const value = readProperty(base, name);
             if (context) {
                 return { context: base, name, value };
             }
@@ -615,14 +844,13 @@ class ASTInterpreter {
             let rhs;
             let value;
             if (!isNullOrUndefined(lhs)) {
-                rhs = right(scope, locals, assign);
-                rhs = getStringValue(rhs);
+                rhs = getStringValue(right(scope, locals, assign));
                 if (create && create !== 1) {
-                    if (lhs && !lhs[rhs]) {
-                        lhs[rhs] = {};
+                    if (lhs && !readProperty(lhs, rhs)) {
+                        writeProperty(lhs, rhs, {});
                     }
                 }
-                value = lhs[rhs];
+                value = readProperty(lhs, rhs);
             }
             if (context) {
                 return { context: lhs, name: rhs, value };
@@ -640,14 +868,20 @@ class ASTInterpreter {
      */
     /** @internal */
     _nonComputedMember(left, right, context, create) {
+        if (!context && !create) {
+            return (scope, locals, assign) => {
+                const lhs = left(scope, locals, assign);
+                return readProperty(lhs, right);
+            };
+        }
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
             if (create && create !== 1) {
-                if (lhs && isNullOrUndefined(lhs[right])) {
-                    lhs[right] = {};
+                if (lhs && isNullOrUndefined(readProperty(lhs, right))) {
+                    writeProperty(lhs, right, {});
                 }
             }
-            const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
+            const value = readProperty(lhs, right);
             if (context) {
                 return { context: lhs, name: right, value };
             }
@@ -657,57 +891,154 @@ class ASTInterpreter {
 }
 function getNonComputedPath(ast) {
     if (ast._type === ASTType._Identifier) {
-        return [ast._name];
+        return [assertDefined(ast._name)];
     }
     if (ast._type !== ASTType._MemberExpression || ast._computed) {
         return undefined;
     }
-    const parentPath = getNonComputedPath(ast._object);
-    if (!parentPath) {
+    const member = ast;
+    const memberObject = assertDefined(member._object);
+    const memberProperty = assertDefined(member._property._name);
+    if (memberObject._type === ASTType._Identifier) {
+        return [assertDefined(memberObject._name), memberProperty];
+    }
+    const path = [];
+    let node = ast;
+    while (node?._type === ASTType._MemberExpression && !node._computed) {
+        path.push(assertDefined(node._property._name));
+        node = assertDefined(node._object);
+    }
+    if (node?._type !== ASTType._Identifier) {
         return undefined;
     }
-    parentPath.push(ast._property._name);
-    return parentPath;
+    path.push(assertDefined(node._name));
+    path.reverse();
+    return path;
 }
-function getPathBase(head, scope, locals) {
-    const runtimeScope = scope;
-    const base = locals && head in locals
-        ? locals
-        : ((runtimeScope && runtimeScope.$proxy) ?? scope);
-    return base;
+function getObjectPropertyKey(property) {
+    return property._key._type === ASTType._Identifier
+        ? assertDefined(property._key._name)
+        : `${property._key._value}`;
+}
+function isSmallStaticObject(properties) {
+    if (properties.length !== 2 && properties.length !== 3) {
+        return false;
+    }
+    for (let i = 0; i < properties.length; i++) {
+        if (properties[i]._computed) {
+            return false;
+        }
+    }
+    return true;
+}
+function compileObjectPathProjection(key0, key1, key2, valuePath0, valuePath1, valuePath2) {
+    const sourceKey = valuePath0[0];
+    const valueKey0 = valuePath0[1];
+    const valueKey1 = valuePath1[1];
+    const valueKey2 = valuePath2[1];
+    return (scope, locals) => {
+        const base = locals && sourceKey in locals
+            ? locals
+            : getProxyTarget(scope);
+        const source = readProperty(base, sourceKey);
+        const object = {};
+        if (isNullOrUndefined(source)) {
+            object[key0] = undefined;
+            object[key1] = undefined;
+            object[key2] = undefined;
+            return object;
+        }
+        object[key0] = readProperty(source, valueKey0);
+        object[key1] = readProperty(source, valueKey1);
+        object[key2] = readProperty(source, valueKey2);
+        return object;
+    };
+}
+function compileObjectProperties(interpreter, properties) {
+    const compiled = [];
+    for (let i = 0, l = properties.length; i < l; i++) {
+        const property = properties[i];
+        if (property._computed) {
+            compiled.push({
+                key: interpreter._recurse(property._key),
+                computed: true,
+                value: interpreter._recurse(property._value),
+            });
+        }
+        else {
+            compiled.push({
+                key: getObjectPropertyKey(property),
+                computed: false,
+                value: interpreter._recurse(property._value),
+            });
+        }
+    }
+    return compiled;
 }
 function createPathGetter(path) {
     const p0 = path[0];
     switch (path.length) {
         case 1:
-            return (scope, locals) => getPathBase(p0, scope, locals)?.[p0];
+            return (scope, locals) => {
+                if (!locals) {
+                    const base = getProxyTarget(scope);
+                    return readProperty(base, p0);
+                }
+                const base = locals && p0 in locals
+                    ? locals
+                    : getProxyTarget(scope);
+                return readProperty(base, p0);
+            };
         case 2: {
             const p1 = path[1];
             return (scope, locals) => {
-                const value = getPathBase(p0, scope, locals)?.[p0];
-                return isNullOrUndefined(value) ? undefined : value[p1];
+                if (!locals) {
+                    const base = getProxyTarget(scope);
+                    const value = readProperty(base, p0);
+                    return readProperty(value, p1);
+                }
+                const base = locals && p0 in locals
+                    ? locals
+                    : getProxyTarget(scope);
+                const value = readProperty(base, p0);
+                return readProperty(value, p1);
             };
         }
         case 3: {
             const p1 = path[1];
             const p2 = path[2];
             return (scope, locals) => {
-                const value = getPathBase(p0, scope, locals)?.[p0];
+                if (!locals) {
+                    const base = getProxyTarget(scope);
+                    const value = readProperty(base, p0);
+                    if (isNullOrUndefined(value)) {
+                        return undefined;
+                    }
+                    const next = readProperty(value, p1);
+                    return readProperty(next, p2);
+                }
+                const base = locals && p0 in locals
+                    ? locals
+                    : getProxyTarget(scope);
+                const value = readProperty(base, p0);
                 if (isNullOrUndefined(value)) {
                     return undefined;
                 }
-                const next = value[p1];
-                return isNullOrUndefined(next) ? undefined : next[p2];
+                const next = readProperty(value, p1);
+                return readProperty(next, p2);
             };
         }
     }
     return (scope, locals) => {
-        let value = getPathBase(p0, scope, locals)?.[p0];
+        const base = locals && p0 in locals
+            ? locals
+            : getProxyTarget(scope);
+        let value = readProperty(base, p0);
         for (let i = 1, l = path.length; i < l; i++) {
             if (isNullOrUndefined(value)) {
                 return undefined;
             }
-            value = value[path[i]];
+            value = readProperty(value, path[i]);
         }
         return value;
     };
@@ -717,11 +1048,11 @@ function getPathBinary(ast) {
     if (operator !== "===" && operator !== "!==") {
         return undefined;
     }
-    const leftPath = getNonComputedPath(ast._left);
+    const leftPath = getNonComputedPath(assertDefined(ast._left));
     if (!leftPath) {
         return undefined;
     }
-    const rightPath = getNonComputedPath(ast._right);
+    const rightPath = getNonComputedPath(assertDefined(ast._right));
     if (!rightPath) {
         return undefined;
     }
@@ -730,6 +1061,32 @@ function getPathBinary(ast) {
     return operator === "==="
         ? (scope, locals) => left(scope, locals) === right(scope, locals)
         : (scope, locals) => left(scope, locals) !== right(scope, locals);
+}
+function getPathLogical(ast) {
+    const operator = ast._operator;
+    if (operator !== "&&" && operator !== "||" && operator !== "??") {
+        return undefined;
+    }
+    const leftPath = getNonComputedPath(assertDefined(ast._left));
+    if (!leftPath) {
+        return undefined;
+    }
+    const rightPath = getNonComputedPath(assertDefined(ast._right));
+    if (!rightPath) {
+        return undefined;
+    }
+    const left = createPathGetter(leftPath);
+    const right = createPathGetter(rightPath);
+    if (operator === "&&") {
+        return (scope, locals) => left(scope, locals) && right(scope, locals);
+    }
+    if (operator === "||") {
+        return (scope, locals) => left(scope, locals) || right(scope, locals);
+    }
+    return (scope, locals) => {
+        const lhs = left(scope, locals);
+        return isNullOrUndefined(lhs) ? right(scope, locals) : lhs;
+    };
 }
 /**
  * Decorates an AST node with constant, toWatch, and isPure metadata.
@@ -760,29 +1117,30 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     let decoratedKey;
     const astIsPure = (decoratedNode._isPure = !!isPure(ast, parentIsPure));
     switch (ast._type) {
-        case ASTType._Program:
+        case ASTType._Program: {
             allConstants = true;
             const body = decoratedNode._body;
             for (let i = 0, l = body.length; i < l; i++) {
                 const expr = body[i];
-                const decorated = findConstantAndWatchExpressions(expr._expression, $filter, astIsPure);
+                const decorated = findConstantAndWatchExpressions(assertDefined(expr._expression), $filter, astIsPure);
                 allConstants = allConstants && decorated._constant;
             }
             decoratedNode._constant = allConstants;
             return decoratedNode;
+        }
         case ASTType._Literal:
             decoratedNode._constant = true;
             decoratedNode._toWatch = [];
             return decoratedNode;
         case ASTType._UnaryExpression: {
-            const decorated = findConstantAndWatchExpressions(decoratedNode._argument, $filter, astIsPure);
+            const decorated = findConstantAndWatchExpressions(assertDefined(decoratedNode._argument), $filter, astIsPure);
             decoratedNode._constant = decorated._constant;
             decoratedNode._toWatch = decorated._toWatch || [];
             return decoratedNode;
         }
         case ASTType._BinaryExpression:
-            decoratedLeft = findConstantAndWatchExpressions(decoratedNode._left, $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(decoratedNode._right, $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertDefined(decoratedNode._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertDefined(decoratedNode._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             argsToWatch = [];
@@ -791,16 +1149,16 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = argsToWatch;
             return decoratedNode;
         case ASTType._LogicalExpression:
-            decoratedLeft = findConstantAndWatchExpressions(decoratedNode._left, $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(decoratedNode._right, $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertDefined(decoratedNode._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertDefined(decoratedNode._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
             return decoratedNode;
         case ASTType._ConditionalExpression:
-            decoratedTest = findConstantAndWatchExpressions(ast._test, $filter, astIsPure);
-            decoratedAlternate = findConstantAndWatchExpressions(ast._alternate, $filter, astIsPure);
-            decoratedConsequent = findConstantAndWatchExpressions(ast._consequent, $filter, astIsPure);
+            decoratedTest = findConstantAndWatchExpressions(assertDefined(ast._test), $filter, astIsPure);
+            decoratedAlternate = findConstantAndWatchExpressions(assertDefined(ast._alternate), $filter, astIsPure);
+            decoratedConsequent = findConstantAndWatchExpressions(assertDefined(ast._consequent), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedTest._constant &&
                     decoratedAlternate._constant &&
@@ -812,16 +1170,16 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = [ast];
             return decoratedNode;
         case ASTType._MemberExpression:
-            decoratedObject = findConstantAndWatchExpressions(ast._object, $filter, astIsPure);
+            decoratedObject = findConstantAndWatchExpressions(assertDefined(ast._object), $filter, astIsPure);
             if (ast._computed) {
-                decoratedProperty = findConstantAndWatchExpressions(ast._property, $filter, astIsPure);
+                decoratedProperty = findConstantAndWatchExpressions(assertDefined(ast._property), $filter, astIsPure);
             }
             decoratedNode._constant =
                 decoratedObject._constant &&
                     (!decoratedNode._computed || decoratedProperty?._constant);
             decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
             return decoratedNode;
-        case ASTType._CallExpression:
+        case ASTType._CallExpression: {
             isFilter = ast._filter;
             allConstants = isFilter;
             argsToWatch = [];
@@ -835,14 +1193,15 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._constant = allConstants;
             decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
             return decoratedNode;
+        }
         case ASTType._AssignmentExpression:
-            decoratedLeft = findConstantAndWatchExpressions(ast._left, $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(ast._right, $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertDefined(ast._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertDefined(ast._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             decoratedNode._toWatch = [decoratedNode];
             return decoratedNode;
-        case ASTType._ArrayExpression:
+        case ASTType._ArrayExpression: {
             allConstants = true;
             argsToWatch = [];
             const elements = ast._elements || [];
@@ -855,7 +1214,8 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._constant = allConstants;
             decoratedNode._toWatch = argsToWatch;
             return decoratedNode;
-        case ASTType._ObjectExpression:
+        }
+        case ASTType._ObjectExpression: {
             allConstants = true;
             argsToWatch = [];
             const properties = ast._properties;
@@ -874,6 +1234,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._constant = allConstants;
             decoratedNode._toWatch = argsToWatch;
             return decoratedNode;
+        }
         case ASTType._ThisExpression:
             decoratedNode._constant = false;
             decoratedNode._toWatch = [];
@@ -884,7 +1245,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             return decoratedNode;
         case ASTType._UpdateExpression: {
             // side-effectful, not constant
-            findConstantAndWatchExpressions(ast._argument, $filter, false);
+            findConstantAndWatchExpressions(assertDefined(ast._argument), $filter, false);
             decoratedNode._constant = false;
             decoratedNode._toWatch = [decoratedNode]; // treat like assignment: watch the expression
             return decoratedNode;
@@ -922,7 +1283,12 @@ function plusFn(left, right) {
         return right;
     if (typeof right === "undefined" || isObject(right))
         return left;
-    return left + right;
+    if (typeof left === "number" && typeof right === "number") {
+        return left + right;
+    }
+    const leftText = String(left);
+    const rightText = String(right);
+    return `${leftText}${rightText}`;
 }
 /**
  *

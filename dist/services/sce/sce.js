@@ -1,10 +1,10 @@
 import { _injector, _window, _exceptionHandler, _parse, _sceDelegate } from '../../injection-tokens.js';
 import { urlResolve, urlIsSameOrigin, urlIsSameOriginAsBaseUrl } from '../../shared/url-utils/url-utils.js';
-import { isDefined, entries, isString, isRegExp, hasOwn, isUndefined, isInstanceOf, isFunction, minErr } from '../../shared/utils.js';
+import { isDefined, entries, isString, isRegExp, hasOwn, isUndefined, isInstanceOf, isFunction, createErrorFactory } from '../../shared/utils.js';
 import { snakeToCamel } from '../../shared/dom.js';
 import { SCE_CONTEXTS } from './context.js';
 
-const $sceMinErr = minErr("$sce");
+const $sceError = createErrorFactory("$sce");
 const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST = /^\s*(https?|s?ftp|mailto|tel|file):/;
 const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST = /^\s*((https?|ftp|file|blob):|data:image\/)/;
 const trustedTypesPolicyByWindow = new WeakMap();
@@ -29,8 +29,8 @@ function adjustMatcher(matcher) {
         // '*' matches any character except those from the set ':/.?&'.
         // '**' matches any character (like .* in a RegExp).
         // More than 2 *'s raises an error as it's ill defined.
-        if (matcher.indexOf("***") > -1) {
-            throw $sceMinErr("iwcard", "Illegal sequence *** in string matcher.  String: {0}", matcher);
+        if (matcher.includes("***")) {
+            throw $sceError("iwcard", "Illegal sequence *** in string matcher.  String: {0}", matcher);
         }
         matcher = escapeForRegexp(matcher)
             .replace(/\\\*\\\*/g, ".*")
@@ -43,7 +43,7 @@ function adjustMatcher(matcher) {
         // Flags are reset (i.e. no global, ignoreCase or multiline)
         return new RegExp(`^${matcher.source}$`);
     }
-    throw $sceMinErr("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
+    throw $sceError("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
 }
 function getTrustedTypesPolicy($window) {
     if (trustedTypesPolicyByWindow.has($window)) {
@@ -286,7 +286,7 @@ class SceDelegateProvider {
             function ($injector, $window, $exceptionHandler) {
                 const trustedTypesPolicy = getTrustedTypesPolicy($window);
                 let htmlSanitizer = function () {
-                    $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
+                    $exceptionHandler($sceError("unsafe", "Attempting to use an unsafe value in a safe context."));
                 };
                 if ($injector.has("$sanitize")) {
                     htmlSanitizer = $injector.get("$sanitize");
@@ -305,7 +305,7 @@ class SceDelegateProvider {
                  * Returns whether a resource URL is permitted by the current policy lists.
                  */
                 function isResourceUrlAllowedByPolicy(url) {
-                    const parsedUrl = urlResolve(url.toString());
+                    const parsedUrl = urlResolve(url);
                     let i;
                     let j;
                     let allowed = false;
@@ -362,7 +362,7 @@ class SceDelegateProvider {
                         };
                     holderType.prototype.toString =
                         function sceToString() {
-                            return this._unwrapTrustedValue().toString();
+                            return this._unwrapTrustedValue();
                         };
                     return holderType;
                 }
@@ -395,7 +395,7 @@ class SceDelegateProvider {
                 function trustAs(type, trustedValue) {
                     const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
                     if (!Constructor) {
-                        $exceptionHandler($sceMinErr("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
+                        $exceptionHandler($sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
                         return undefined;
                     }
                     if (trustedValue === null ||
@@ -406,7 +406,7 @@ class SceDelegateProvider {
                     // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
                     // mutable objects, we ensure here that the value passed in is actually a string.
                     if (!isString(trustedValue)) {
-                        $exceptionHandler($sceMinErr("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
+                        $exceptionHandler($sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
                         return undefined;
                     }
                     const tst = new Constructor(trustedValue, createTrustedType(trustedTypesPolicy, type, trustedValue));
@@ -482,13 +482,13 @@ class SceDelegateProvider {
                     // If we get here, then we will either sanitize the value or throw an exception.
                     if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
                         // we attempt to sanitize non-resource URLs
-                        return sanitizeUri(maybeTrusted.toString(), type === SCE_CONTEXTS._MEDIA_URL);
+                        return sanitizeUri(String(maybeTrusted), type === SCE_CONTEXTS._MEDIA_URL);
                     }
                     if (type === SCE_CONTEXTS._RESOURCE_URL) {
                         if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
                             return maybeTrusted;
                         }
-                        $exceptionHandler($sceMinErr("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", maybeTrusted.toString()));
+                        $exceptionHandler($sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted)));
                         return undefined;
                     }
                     else if (type === SCE_CONTEXTS._HTML) {
@@ -496,7 +496,7 @@ class SceDelegateProvider {
                         return htmlSanitizer();
                     }
                     // Default error when the $sce service has no way to make the input safe.
-                    return $exceptionHandler($sceMinErr("unsafe", "Attempting to use an unsafe value in a safe context."));
+                    return $exceptionHandler($sceError("unsafe", "Attempting to use an unsafe value in a safe context."));
                 }
                 return { trustAs, getTrusted, valueOf };
             },
@@ -504,6 +504,7 @@ class SceDelegateProvider {
     }
 }
 function SceProvider() {
+    const provider = this;
     let enabled = true;
     /**
      * @param value If provided, then enables/disables SCE application-wide.
@@ -512,13 +513,13 @@ function SceProvider() {
      *
      * Enables/disables SCE and returns the current value.
      */
-    this.enabled = function (value) {
+    provider.enabled = function (value) {
         if (arguments.length) {
             enabled = !!value;
         }
         return enabled;
     };
-    this.$get = [
+    provider.$get = [
         _parse,
         _sceDelegate,
         /**

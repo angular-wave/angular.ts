@@ -1,4 +1,4 @@
-import { assign } from '../../shared/utils.js';
+import { assign, deleteProperty } from '../../shared/utils.js';
 
 /**
  * Creates a proxy that automatically persists an object's state
@@ -8,8 +8,8 @@ import { assign } from '../../shared/utils.js';
  * persists deletions in addition to property assignments.
  */
 function createPersistentProxy(target, key, storage, options = {}) {
-    const serialize = options.serialize || JSON.stringify;
-    const deserialize = options.deserialize || JSON.parse;
+    const serialize = options.serialize ?? JSON.stringify;
+    const deserialize = options.deserialize ?? JSON.parse;
     // Restore saved state
     const saved = storage.getItem(key);
     if (saved) {
@@ -22,7 +22,7 @@ function createPersistentProxy(target, key, storage, options = {}) {
             return true;
         },
         deleteProperty(obj, prop) {
-            const deleted = delete obj[prop];
+            const deleted = deleteProperty(obj, prop);
             storage.setItem(key, serialize(obj));
             return deleted;
         },

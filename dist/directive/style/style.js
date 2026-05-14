@@ -7,27 +7,29 @@ function ngStyleDirective() {
     return {
         restrict: "A",
         link(scope, element, attr) {
-            const attrMap = attr;
+            const expression = attr.ngStyle;
+            if (typeof expression !== "string") {
+                return;
+            }
             let oldStyles = null;
-            scope.$watch(attrMap.ngStyle, (newStyles) => {
-                const target = newStyles?.$target || newStyles;
+            scope.$watch(expression, (newStyles) => {
+                const target = newStyles?.$target ?? newStyles;
                 if (oldStyles) {
                     keys(oldStyles).forEach((key) => {
                         element.style.removeProperty(key);
                     });
                 }
-                if (target) {
-                    const nextStyles = {};
-                    keys(target).forEach((key) => {
-                        const value = target[key];
-                        element.style.setProperty(key, value);
-                        nextStyles[key] = value;
-                    });
-                    oldStyles = nextStyles;
-                }
-                else {
+                if (!target) {
                     oldStyles = null;
+                    return;
                 }
+                const nextStyles = {};
+                keys(target).forEach((key) => {
+                    const value = target[key];
+                    element.style.setProperty(key, value);
+                    nextStyles[key] = value;
+                });
+                oldStyles = nextStyles;
             });
         },
     };

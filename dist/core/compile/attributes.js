@@ -1,7 +1,8 @@
 import { getBooleanAttrName } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { directiveNormalize, snakeCase, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
+import { directiveNormalize, assertDefined, snakeCase, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
+import { NodeRef } from '../../shared/noderef.js';
 
 const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
@@ -15,7 +16,7 @@ function getLazyAnimate($injector) {
     return getAnimate;
 }
 class Attributes {
-    constructor($injector, $exceptionHandler, nodeRef, attributesToCopy) {
+    constructor($injector, $exceptionHandler, node, attributesToCopy) {
         /**
          * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
          * `data-`) to its normalized, camelCase form.
@@ -40,12 +41,32 @@ class Attributes {
                 this[key] = attributesToCopy[key];
             }
         }
-        this._nodeRef = nodeRef;
+        if (node instanceof NodeRef) {
+            this._node = node._getAny();
+            this._nodeRefCache = node;
+        }
+        else {
+            this._node = node;
+            this._nodeRefCache = undefined;
+        }
+    }
+    /** @internal */
+    get _nodeRef() {
+        const node = this._node;
+        if (!node) {
+            return undefined;
+        }
+        return (this._nodeRefCache || (this._nodeRefCache = NodeRef._fromNode(node)));
+    }
+    /** @internal */
+    set _nodeRef(nodeRef) {
+        this._nodeRefCache = nodeRef;
+        this._node = nodeRef?._getAny();
     }
     /** @ignore Internal element accessor used by legacy attribute helpers. */
     /** @internal */
     _element() {
-        return this._nodeRef?._getAny();
+        return assertDefined(this._node);
     }
     $addClass(classVal) {
         if (classVal && classVal.length > 0) {
@@ -55,7 +76,7 @@ class Attributes {
                 animate.addClass(element, classVal);
             }
             else {
-                this._nodeRef?.element.classList.add(classVal);
+                element.classList.add(classVal);
             }
         }
     }
@@ -67,7 +88,7 @@ class Attributes {
                 animate.removeClass(element, classVal);
             }
             else {
-                this._nodeRef?.element.classList.remove(classVal);
+                element.classList.remove(classVal);
             }
         }
     }
@@ -83,7 +104,7 @@ class Attributes {
                 animate.addClass(element, toAdd.join(" "));
             }
             else {
-                this._nodeRef?.element.classList.add(...toAdd);
+                element.classList.add(...toAdd);
             }
         }
         const toRemove = tokenDifference(oldClasses, newClasses);
@@ -92,7 +113,7 @@ class Attributes {
                 animate.removeClass(element, toRemove.join(" "));
             }
             else {
-                this._nodeRef?.element.classList.remove(...toRemove);
+                element.classList.remove(...toRemove);
             }
         }
     }
@@ -142,7 +163,7 @@ class Attributes {
             }
         }
         const { _observers } = this;
-        if (_observers && _observers[observer]) {
+        if (_observers?.[observer]) {
             const observerListeners = _observers[observer];
             for (let i = 0, l = observerListeners.length; i < l; i++) {
                 try {

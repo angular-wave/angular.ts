@@ -1,8 +1,8 @@
 import { _injector } from '../../injection-tokens.js';
-import { hasOwn, isString, isArray, isArrowFunction, minErr } from '../../shared/utils.js';
+import { hasOwn, deleteProperty, isString, isArray, callFunction, isArrowFunction, createErrorFactory } from '../../shared/utils.js';
 import { annotate, isClass } from './di.js';
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 const providerSuffix = "Provider";
 class AbstractInjector {
     /**
@@ -23,7 +23,7 @@ class AbstractInjector {
     get(serviceName) {
         if (hasOwn(this._cache, serviceName)) {
             if (this._cache[serviceName] === true) {
-                throw $injectorMinErr("cdep", "Circular dependency found: {0}", `${serviceName} <- ${this._path.join(" <- ")}`);
+                throw $injectorError("cdep", "Circular dependency found: {0}", `${serviceName} <- ${this._path.join(" <- ")}`);
             }
             return this._cache[serviceName];
         }
@@ -34,7 +34,7 @@ class AbstractInjector {
         }
         catch (err) {
             // this is for the error handling being thrown by the providerCache multiple times
-            delete this._cache[serviceName];
+            deleteProperty(this._cache, serviceName);
             throw err;
         }
         return this._cache[serviceName];
@@ -53,7 +53,7 @@ class AbstractInjector {
         const $inject = annotate(fn, this.strictDi, serviceName);
         $inject.forEach((key) => {
             if (!isString(key)) {
-                throw $injectorMinErr("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
+                throw $injectorError("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
             }
             args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
         });
@@ -79,11 +79,10 @@ class AbstractInjector {
             fn = fn[fn.length - 1];
         }
         if (isClass(fn)) {
-            const boundArgs = [null, ...args];
-            return new (Function.prototype.bind.apply(fn, boundArgs))();
+            return Reflect.construct(fn, args);
         }
         else {
-            return fn.apply(self, args);
+            return callFunction(fn, self, ...args);
         }
     }
     /**
@@ -97,15 +96,13 @@ class AbstractInjector {
         // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
         const ctor = (isArray(type) ? type[type.length - 1] : type);
         const args = this._injectionArgs(type, locals, serviceName);
-        // Empty object at position 0 is ignored for invocation with `new`, but required.
-        const boundArgs = [null, ...args];
         try {
-            return new (Function.prototype.bind.apply(ctor, boundArgs))();
+            return Reflect.construct(ctor, args);
         }
         catch (err) {
             // try arrow function
             if (isArrowFunction(ctor)) {
-                return ctor(args);
+                return callFunction(ctor, undefined, args);
             }
             else {
                 throw err;
@@ -143,7 +140,7 @@ class ProviderInjector extends AbstractInjector {
     _factory(caller) {
         this._path.push(caller);
         // prevents lookups to providers through get
-        throw $injectorMinErr("unpr", "Unknown provider: {0}", this._path.join(" <- "));
+        throw $injectorError("unpr", "Unknown provider: {0}", this._path.join(" <- "));
     }
 }
 /**

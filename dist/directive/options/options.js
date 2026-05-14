@@ -1,9 +1,9 @@
 import { _compile, _parse } from '../../injection-tokens.js';
 import { emptyElement, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
-import { isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, minErr } from '../../shared/utils.js';
+import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
-const ngOptionsMinErr = minErr("ngOptions");
+const ngOptionsError = createErrorFactory("ngOptions");
 const optionTemplate = document.createElement("option");
 const optGroupTemplate = document.createElement("optgroup");
 const NG_OPTIONS_REGEXP = /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)$/;
@@ -21,15 +21,15 @@ class OptionItem {
 ngOptionsDirective.$inject = [_compile, _parse];
 function ngOptionsDirective($compile, $parse) {
     function parseOptionsExpression(optionsExp, selectElement, scope) {
-        const match = optionsExp.match(NG_OPTIONS_REGEXP);
+        const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
-            throw ngOptionsMinErr("iexp", "Expected expression in form of " +
+            throw ngOptionsError("iexp", "Expected expression in form of " +
                 "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +
                 " but got '{0}'. Element: {1}", optionsExp, startingTag(selectElement));
         }
         const valueName = match[5] || match[7];
         const keyName = match[6];
-        const selectAs = / as /.test(match[0]) && match[1];
+        const selectAs = match[0].includes(" as ") && match[1];
         const valueFn = $parse(match[2] ? match[1] : valueName);
         const selectAsFn = selectAs && $parse(selectAs);
         const viewValueFn = selectAsFn || valueFn;
@@ -67,14 +67,16 @@ function ngOptionsDirective($compile, $parse) {
                     selectValueMap[selectValue] = optionItem;
                 };
                 if (!keyName && isArrayLike(optionValues)) {
-                    for (let index = 0, l = optionValues.length; index < l; index++) {
-                        addOption(optionValues[index], index);
+                    const arrayLikeOptions = optionValues;
+                    for (let index = 0, l = arrayLikeOptions.length; index < l; index++) {
+                        addOption(arrayLikeOptions[index], index);
                     }
                 }
                 else {
-                    for (const itemKey in optionValues) {
-                        if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
-                            addOption(optionValues[itemKey], itemKey);
+                    const optionRecord = optionValues;
+                    for (const itemKey in optionRecord) {
+                        if (hasOwn(optionRecord, itemKey) && !itemKey.startsWith("$")) {
+                            addOption(optionRecord[itemKey], itemKey);
                         }
                     }
                 }
@@ -123,9 +125,9 @@ function ngOptionsDirective($compile, $parse) {
                     if (selectNode.value !== option._selectValue) {
                         selectCtrl._removeUnknownOption();
                         selectNode.value = option._selectValue;
-                        option._element.selected = true;
+                        assertDefined(option._element).selected = true;
                     }
-                    option._element.setAttribute("selected", "selected");
+                    assertDefined(option._element).setAttribute("selected", "selected");
                 }
                 else {
                     selectCtrl._selectUnknownOrEmptyOption(value);
@@ -147,7 +149,7 @@ function ngOptionsDirective($compile, $parse) {
             selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
                 if (!options)
                     return;
-                const selectedOptions = (values && values.map(getAndUpdateSelectedOption)) || [];
+                const selectedOptions = values?.map(getAndUpdateSelectedOption) || [];
                 options._items.forEach((option) => {
                     if (option._element?.selected && !includes(selectedOptions, option)) {
                         option._element.selected = false;
@@ -172,10 +174,10 @@ function ngOptionsDirective($compile, $parse) {
             };
         }
         if (providedEmptyOption) {
-            const linkFn = $compile(selectCtrl._emptyOption);
-            selectNode.prepend(selectCtrl._emptyOption);
+            const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
+            selectNode.prepend(assertDefined(selectCtrl._emptyOption));
             linkFn(scope);
-            if (selectCtrl._emptyOption.nodeType ===
+            if (assertDefined(selectCtrl._emptyOption).nodeType ===
                 NodeType._COMMENT_NODE) {
                 selectCtrl._hasEmptyOption = false;
                 selectCtrl._registerOption = function (_optionScope, optionEl) {
@@ -202,7 +204,7 @@ function ngOptionsDirective($compile, $parse) {
         }
         function getAndUpdateSelectedOption(viewValue) {
             const option = options?._getOptionFromViewValue(viewValue);
-            const element = option && option._element;
+            const element = option?._element;
             if (element && !element.selected)
                 element.selected = true;
             return option;

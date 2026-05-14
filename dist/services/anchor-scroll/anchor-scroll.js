@@ -96,15 +96,21 @@ class AnchorScrollProvider {
                         const ordUrl = urlResolve(oldVal);
                         if (newUrl.hash === ordUrl.hash && newUrl.hash === "")
                             return;
-                        const action = () => scroll(newUrl.hash);
+                        const action = () => {
+                            scroll(newUrl.hash);
+                        };
                         if (document.readyState === "complete") {
                             // Force the action to be run async for consistent behavior
                             // from the action's point of view
                             // i.e. it will definitely run after the current event stack.
-                            queueMicrotask(() => action());
+                            queueMicrotask(() => {
+                                action();
+                            });
                         }
                         else {
-                            window.addEventListener("load", () => action());
+                            window.addEventListener("load", () => {
+                                action();
+                            });
                         }
                     });
                 }

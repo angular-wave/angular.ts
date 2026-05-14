@@ -18,7 +18,11 @@ function ngIfDirective($injector) {
             let block;
             let childScope;
             let previousElements;
-            $scope.$watch($attr.ngIf, (value) => {
+            const expression = $attr.ngIf;
+            if (typeof expression !== "string") {
+                return;
+            }
+            $scope.$watch(expression, (value) => {
                 if (value) {
                     if (!childScope) {
                         $transclude((clone, newScope) => {
@@ -51,7 +55,7 @@ function ngIfDirective($injector) {
                         const animate = getAnimateForNode(getAnimate, previousElements);
                         if (animate) {
                             animate.leave(previousElements).done((response) => {
-                                if (response !== false)
+                                if (response)
                                     previousElements = null;
                             });
                         }

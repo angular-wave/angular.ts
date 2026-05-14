@@ -51,7 +51,7 @@ class ConnectionManager {
     close() {
         this._closed = true;
         clearTimeout(this._heartbeatTimer);
-        if (this._connection && this._connection.close) {
+        if (this._connection?.close) {
             this._connection.close();
         }
     }
@@ -59,8 +59,12 @@ class ConnectionManager {
     _bindEvents() {
         const conn = this._connection;
         if (isInstanceOf(conn, EventSource)) {
-            conn.addEventListener("open", (err) => this._handleOpen(err));
-            conn.addEventListener("message", (err) => this._handleMessage(err.data, err));
+            conn.addEventListener("open", (err) => {
+                this._handleOpen(err);
+            });
+            conn.addEventListener("message", (err) => {
+                this._handleMessage(err.data, err);
+            });
             this._config.eventTypes?.forEach((eventType) => {
                 if (eventType === "message")
                     return;
@@ -69,13 +73,23 @@ class ConnectionManager {
                     this._handleMessage(messageEvent.data, messageEvent);
                 });
             });
-            conn.addEventListener("error", (err) => this._handleError(err));
+            conn.addEventListener("error", (err) => {
+                this._handleError(err);
+            });
         }
         else if (isInstanceOf(conn, WebSocket)) {
-            conn.onopen = (err) => this._handleOpen(err);
-            conn.onmessage = (err) => this._handleMessage(err.data, err);
-            conn.onerror = (err) => this._handleError(err);
-            conn.onclose = (event) => this._handleClose(event);
+            conn.onopen = (err) => {
+                this._handleOpen(err);
+            };
+            conn.onmessage = (err) => {
+                this._handleMessage(err.data, err);
+            };
+            conn.onerror = (err) => {
+                this._handleError(err);
+            };
+            conn.onclose = (event) => {
+                this._handleClose(event);
+            };
         }
     }
     /** @internal */
@@ -119,7 +133,9 @@ class ConnectionManager {
         if (this._retryCount < this._config.maxRetries) {
             this._retryCount++;
             this._config.onReconnect?.(this._retryCount);
-            setTimeout(() => this.connect(), this._config.retryDelay);
+            setTimeout(() => {
+                this.connect();
+            }, this._config.retryDelay);
         }
         else {
             this._log.warn("ConnectionManager: Max retries reached");

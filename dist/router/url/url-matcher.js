@@ -1,4 +1,4 @@
-import { inherit, isArray, isString, isNullOrUndefined } from '../../shared/utils.js';
+import { assertDefined, stringify, inherit, isArray, isString, isNullOrUndefined } from '../../shared/utils.js';
 import { DefType } from '../params/param.js';
 
 const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
@@ -74,7 +74,7 @@ function appendPathParam(path, param, values) {
         return path.endsWith("/") ? path.slice(0, -1) : path;
     if (isString(squash))
         return path + squash;
-    if (squash !== false || isNullOrUndefined(encoded))
+    if (squash || isNullOrUndefined(encoded))
         return path;
     if (isArray(encoded))
         return null;
@@ -143,7 +143,9 @@ function formatUrl(matchers, values) {
             return null;
     }
     const query = queryParts.join("&");
-    return (path + (query ? `?${query}` : "") + (values["#"] ? `#${values["#"]}` : ""));
+    return (path +
+        (query ? `?${query}` : "") +
+        (values["#"] ? `#${stringify(values["#"])}` : ""));
 }
 function getPatternRegExp(matcher, pathMatchers) {
     if (matcher._cache._pattern)
@@ -283,10 +285,10 @@ class UrlMatcher {
             const id = matchArray[2] || matchArray[3];
             const paramType = getParamType(pattern, matchArray, false, paramTypes, config);
             const pathSegment = pattern.substring(last, matchArray.index);
-            if (pathSegment.indexOf("?") >= 0)
+            if (pathSegment.includes("?"))
                 break; // we're into the search part
             checkParamErrors(id, pattern, this._params);
-            this._params.push(paramFactory.fromPath(id, paramType, config.state));
+            this._params.push(paramFactory.fromPath(id, paramType, assertDefined(config.state)));
             this._segments.push(pathSegment);
             this._compiled += quoteRegExp(pathSegment, this._params[this._params.length - 1]);
             last = PLACEHOLDER_REGEXP.lastIndex;
@@ -303,7 +305,7 @@ class UrlMatcher {
                     const id = matchArray[2] || matchArray[3];
                     const paramType = getParamType(pattern, matchArray, true, paramTypes, config);
                     checkParamErrors(id, pattern, this._params);
-                    this._params.push(paramFactory.fromSearch(id, paramType, config.state));
+                    this._params.push(paramFactory.fromSearch(id, paramType, assertDefined(config.state)));
                     last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
                     // check if ?&
                 }
@@ -401,14 +403,19 @@ class UrlMatcher {
      * @returns {Param | null}
      */
     _parameter(id, opts) {
-        let matcher = this;
+        for (let i = 0; i < this._params.length; i++) {
+            const param = this._params[i];
+            if (param.id === id)
+                return param;
+        }
+        let matcher = opts?.inherit !== false ? this._cache._parent : undefined;
         while (matcher) {
             for (let i = 0; i < matcher._params.length; i++) {
                 const param = matcher._params[i];
                 if (param.id === id)
                     return param;
             }
-            matcher = opts?.inherit !== false ? matcher._cache._parent : undefined;
+            matcher = matcher._cache._parent;
         }
         return null;
     }

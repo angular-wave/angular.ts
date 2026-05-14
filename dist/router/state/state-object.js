@@ -1,5 +1,5 @@
 import { Glob } from '../glob/glob.js';
-import { isFunction, isObject, assign, isInstanceOf, keys, hasOwn } from '../../shared/utils.js';
+import { isFunction, isObject, assign, keys, hasOwn } from '../../shared/utils.js';
 
 /**
  * Internal representation of a ng-router state.
@@ -48,17 +48,20 @@ class StateObject {
      * @returns Returns `true` if `ref` matches the current `State` instance.
      */
     is(ref) {
-        return this === ref || this.self === ref || this.fqn() === ref;
+        return this === ref || this.self === ref || this.pathName() === ref;
     }
     /**
      * @deprecated this does not properly handle dot notation
      * @returns {string} Returns a dot-separated name of the state.
      */
     fqn() {
-        if (!this.parent || !isInstanceOf(this.parent, this.constructor))
-            return this.name;
-        const name = this.parent.fqn();
-        return name ? `${name}.${this.name}` : this.name;
+        return this.pathName();
+    }
+    pathName() {
+        return (this.path ?? [])
+            .map((state) => state.name)
+            .filter(Boolean)
+            .join(".");
     }
     /**
      * Returns the root node of this state's tree.
@@ -66,7 +69,7 @@ class StateObject {
      * @returns {StateObject} The root of this state's tree.
      */
     root() {
-        return (this.parent && this.parent.root()) || this;
+        return this.parent?.root() ?? this;
     }
     /**
      * Gets the state's `Param` objects
@@ -81,8 +84,9 @@ class StateObject {
     parameters(opts) {
         const inherit = opts?.inherit !== false;
         const matchingKeys = opts?.matchingKeys;
-        const inherited = (inherit && this.parent && this.parent.parameters({ matchingKeys })) ||
-            [];
+        const inherited = inherit
+            ? (this.parent?.parameters({ matchingKeys }) ?? [])
+            : [];
         const result = inherited.slice();
         const { params } = this;
         if (!params)
@@ -104,7 +108,7 @@ class StateObject {
      * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
      */
     parameter(id, opts) {
-        const urlParam = this._url && this._url._parameter(id, opts);
+        const urlParam = this._url?._parameter(id, opts);
         if (urlParam)
             return urlParam;
         const { params } = this;
@@ -117,7 +121,7 @@ class StateObject {
             : undefined;
     }
     toString() {
-        return this.fqn();
+        return this.pathName();
     }
 }
 

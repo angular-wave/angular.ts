@@ -1,7 +1,8 @@
 import { stringify } from '../../shared/strings.js';
-import { assign, isUndefined, isObject, keys } from '../../shared/utils.js';
+import { assign, assertDefined, isUndefined, isObject, keys } from '../../shared/utils.js';
 import { TransitionHookPhase, TransitionHook } from './transition-hook.js';
 import { buildHooksForPhase } from './hook-builder.js';
+import { TransitionRunner } from './transition-runner.js';
 import { buildToPath, treeChanges, applyViewConfigs, matching, nonDynamicParams } from '../path/path-utils.js';
 import { Rejection } from './reject-factory.js';
 
@@ -9,14 +10,15 @@ const REDIRECT_MAX = 20;
 function createDeferredPromise() {
     let resolve;
     let reject;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
+    const promise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
     });
-    return { promise, resolve, reject };
-}
-function resolvedPromise() {
-    return Promise.resolve();
+    return {
+        promise,
+        resolve: assertDefined(resolve),
+        reject: assertDefined(reject),
+    };
 }
 function nodeIsReloading(node, reloadState) {
     return !!reloadState && node.state.includes[reloadState.name];
@@ -99,7 +101,7 @@ class Transition {
         const toPath = buildToPath(fromPath, targetState);
         this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
         const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
-        TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
+        void TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
         this.applyViewConfigs();
     }
     applyViewConfigs() {
@@ -118,17 +120,15 @@ class Transition {
         const fromNode = fromPath.length
             ? fromPath[fromPath.length - 1]
             : undefined;
-        return fromNode?.state;
+        return assertDefined(fromNode).state;
     }
     /**
      * @returns {StateObject} the internal to [State] object
      */
     $to() {
         const toPath = this._treeChanges.to;
-        const toNode = toPath.length
-            ? toPath[toPath.length - 1]
-            : undefined;
-        return toNode?.state;
+        const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
+        return assertDefined(toNode).state;
     }
     /**
      * Returns the "from state"
@@ -155,7 +155,7 @@ class Transition {
      * @returns {RawParams}
      */
     params(pathname = "to") {
-        const path = (this._treeChanges[pathname] || []);
+        const path = this._treeChanges[pathname] || [];
         return Object.freeze(collectPathParams(path));
     }
     /**
@@ -191,11 +191,12 @@ class Transition {
      */
     redirect(targetState) {
         let redirects = 1;
-        let trans = this;
-        while ((trans = trans._options.redirectedFrom || null)) {
+        let trans = this._options.redirectedFrom || null;
+        while (trans) {
             if (++redirects > REDIRECT_MAX) {
                 throw new Error(`Too many consecutive Transition redirects (20+)`);
             }
+            trans = trans._options.redirectedFrom || null;
         }
         const redirectOpts = {
             redirectedFrom: this,
@@ -296,7 +297,7 @@ class Transition {
         const pending = this._routerState._transition;
         const { reloadState } = this._options;
         const newTC = this._treeChanges;
-        const pendTC = pending && pending._treeChanges;
+        const pendTC = pending?._treeChanges;
         if (pendTC &&
             sameReloadAwarePath(pendTC.to, newTC.to, reloadState) &&
             sameReloadAwarePath(pendTC.exiting, newTC.exiting, reloadState))
@@ -319,44 +320,6 @@ class Transition {
         _routerState._lastStartedTransition = this;
         return Promise.resolve();
     }
-    /** @internal */
-    _runTransitionHooks() {
-        // Wait to build the RUN hook chain until BEFORE hooks have completed.
-        // This allows a BEFORE hook to add more RUN hooks dynamically.
-        const allRunHooks = this._getHooksFor(TransitionHookPhase._RUN);
-        return TransitionHook._invokeHooks(allRunHooks, resolvedPromise);
-    }
-    /** @internal */
-    _resolveTransition() {
-        this._deferred.resolve(this.to());
-    }
-    /** @internal */
-    _transitionSuccess() {
-        this.success = true;
-        const hooks = this._getHooksFor(TransitionHookPhase._SUCCESS);
-        void this._runSuccessHooks(hooks);
-    }
-    /** @internal */
-    async _runSuccessHooks(hooks) {
-        try {
-            await TransitionHook._invokeHooks(hooks, resolvedPromise);
-            this._resolveTransition();
-        }
-        catch (reason) {
-            this._transitionError(reason);
-        }
-    }
-    /** @internal */
-    _transitionError(reason) {
-        const rejection = Rejection.normalize(reason);
-        this.success = false;
-        this._deferred.reject(rejection);
-        this._error = rejection;
-        const hooks = this._getHooksFor(TransitionHookPhase._ERROR);
-        hooks.forEach((hook) => {
-            hook._invokeHook();
-        });
-    }
     /**
      * Runs the transition
      *
@@ -367,20 +330,8 @@ class Transition {
      * @returns {Promise<StateDeclaration>} a promise for a successful transition.
      */
     run() {
-        void this._run();
+        TransitionRunner._run(this);
         return this.promise;
-    }
-    /** @internal */
-    async _run() {
-        try {
-            const allBeforeHooks = this._getHooksFor(TransitionHookPhase._BEFORE);
-            await TransitionHook._invokeHooks(allBeforeHooks, this);
-            await this._runTransitionHooks();
-            this._transitionSuccess();
-        }
-        catch (reason) {
-            this._transitionError(reason);
-        }
     }
     /** Checks if this transition is currently active/running. */
     isActive() {

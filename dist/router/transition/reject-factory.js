@@ -13,18 +13,25 @@ const RejectType = {
 };
 let id = 0;
 function detailToString(data) {
-    return data &&
-        typeof data === "object" &&
-        "toString" in data &&
-        data.toString !== Object.prototype.toString
-        ? String(data.toString())
-        : stringify(data);
+    if (typeof data === "string") {
+        return data;
+    }
+    if (data && typeof data === "object" && "toString" in data) {
+        const { toString } = data;
+        if (typeof toString === "function" &&
+            toString !== Object.prototype.toString) {
+            return String(Reflect.apply(toString, data, []));
+        }
+    }
+    return stringify(data);
 }
 /**
  * Normalized representation of a transition failure, abort, ignore, or redirect.
  */
-class Rejection {
+class Rejection extends Error {
     constructor(type, message, detail) {
+        super(message);
+        this.name = "Rejection";
         this.$id = id++;
         this.type = type;
         this.message = message;
@@ -57,14 +64,16 @@ class Rejection {
         return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
     }
     toString() {
-        return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
+        return `Transition Rejection($id: ${String(this.$id)} type: ${String(this.type)}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
     }
     /**
      * Returns a rejected promise tagged with this rejection instance.
      */
     /** @internal */
     _toPromise() {
-        const promise = Promise.reject(this);
+        const promise = Promise.resolve().then(() => {
+            throw this;
+        });
         promise.catch(() => 0);
         return assign(promise, {
             _transitionRejection: this,

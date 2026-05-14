@@ -1,5 +1,5 @@
 import { _templateRequest, _injector } from '../injection-tokens.js';
-import { isFunction, isNullOrUndefined, isDefined, isArray, isObject, keys } from '../shared/utils.js';
+import { isDefined, isFunction, isNullOrUndefined, isArray, isObject, keys } from '../shared/utils.js';
 import { annotate } from '../core/di/di.js';
 import { DirectiveSuffix } from '../core/compile/compile.js';
 import { kebobString } from '../shared/strings.js';
@@ -17,15 +17,6 @@ function toTemplateResult(str) {
 }
 function toComponentResult(str) {
     return { _component: str };
-}
-function getConfigType(config) {
-    if (isDefined(config.template))
-        return "template";
-    if (isDefined(config.templateUrl))
-        return "templateUrl";
-    if (isDefined(config.component))
-        return "component";
-    return "default";
 }
 function componentElementName(camelCase) {
     return kebobString(camelCase);
@@ -55,16 +46,17 @@ class TemplateFactoryProvider {
      */
     /** @internal */
     _fromConfig(config, params) {
-        switch (getConfigType(config)) {
-            case "template":
-                return asTemplate(this._fromString(config.template, params));
-            case "templateUrl":
-                return asTemplate(this._fromUrl(config.templateUrl, params));
-            case "component":
-                return asComponent(config.component);
-            default:
-                return asTemplate(DEFAULT_TEMPLATE);
+        const { template, templateUrl, component } = config;
+        if (isDefined(template)) {
+            return asTemplate(this._fromString(template, params));
         }
+        if (isDefined(templateUrl)) {
+            return asTemplate(this._fromUrl(templateUrl, params));
+        }
+        if (isDefined(component)) {
+            return asComponent(component);
+        }
+        return asTemplate(DEFAULT_TEMPLATE);
     }
     /**
      * Resolves a literal template string or template factory function.
@@ -81,14 +73,14 @@ class TemplateFactoryProvider {
         const templateUrl = isFunction(url) ? url(params) : url;
         if (isNullOrUndefined(templateUrl))
             return null;
-        return this._templateRequest(templateUrl);
+        return this._getTemplateRequest()(templateUrl);
     }
     /**
      * Builds the HTML for a routed component and binds resolve data to its inputs.
      */
     /** @internal */
     _makeComponentTemplate(ngView, context, component, bindings) {
-        bindings = bindings || {};
+        bindings = bindings ?? {};
         const componentBindings = getComponentBindings(this._injector, component);
         const attrs = [];
         componentBindings.forEach((binding) => {
@@ -96,6 +88,13 @@ class TemplateFactoryProvider {
         });
         const kebobName = componentElementName(component);
         return `<${kebobName} ${attrs.join(" ")}></${kebobName}>`;
+    }
+    /** @internal */
+    _getTemplateRequest() {
+        if (!this._templateRequest) {
+            throw new Error("$templateRequest is not available");
+        }
+        return this._templateRequest;
     }
 }
 function componentAttributeTemplate(ngView, context, bindings, input) {
@@ -105,16 +104,17 @@ function componentAttributeTemplate(ngView, context, bindings, input) {
     if (existingAttr && !bindings[name]) {
         return `${attrName}='${existingAttr}'`;
     }
-    const resolveName = bindings[name] || name;
+    const boundName = bindings[name];
+    const resolveName = boundName ? boundName : name;
     if (type === "@")
         return `${attrName}='{{$resolve.${resolveName}}}'`;
     if (type === "&") {
         const res = context.getResolvable(resolveName);
-        const fn = res && res.data;
+        const fn = res?.data;
         const args = fn && (isFunction(fn) || isArray(fn))
             ? annotate(fn)
             : [];
-        const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
+        const arrayIdxStr = isArray(fn) ? `[${String(fn.length - 1)}]` : "";
         return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
     }
     return `${attrName}='$resolve.${resolveName}'`;
@@ -124,7 +124,7 @@ function componentAttributeTemplate(ngView, context, bindings, input) {
  */
 function getComponentBindings($injector, name) {
     const cmpDefs = $injector?.get(name + DirectiveSuffix);
-    if (!cmpDefs || !cmpDefs.length) {
+    if (!cmpDefs?.length) {
         throw new Error(`Unable to find component named '${name}'`);
     }
     const bindings = [];
@@ -146,12 +146,12 @@ function getBindings(def) {
     return [];
 }
 function scopeBindings(bindingsObj) {
-    const bindingKeys = keys(bindingsObj || {});
+    const bindingKeys = keys(bindingsObj);
     const bindings = [];
     bindingKeys.forEach((key) => {
         const match = BINDING_MATCH.exec(bindingsObj[key] || "");
         if (match) {
-            bindings.push({ name: match[2] || key, type: match[1] });
+            bindings.push({ name: match[2] ? match[2] : key, type: match[1] });
         }
     });
     return bindings;

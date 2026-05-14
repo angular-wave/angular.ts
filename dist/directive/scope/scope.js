@@ -2,8 +2,11 @@
 function ngScopeDirective() {
     return {
         scope: false,
-        async link($scope, _, $attrs) {
-            $scope.$scopename = $attrs.ngScope;
+        link($scope, _, $attrs) {
+            const scopeName = $attrs.ngScope;
+            if (typeof scopeName === "string") {
+                $scope.$scopename = scopeName;
+            }
         },
     };
 }

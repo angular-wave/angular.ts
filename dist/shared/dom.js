@@ -1,5 +1,5 @@
 import { _scope, _injector } from '../injection-tokens.js';
-import { isInstanceOf, isArray, arrayFrom, isDefined, hasOwn, uppercase, assign, isString, isObject } from './utils.js';
+import { isInstanceOf, isArray, arrayFrom, hasOwn, deleteProperty, uppercase, assertDefined, isDefined, assign, isString, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -9,8 +9,10 @@ const ISOLATE_SCOPE_KEY = "$isolateScope";
 const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
 const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
+const HTML_PARSE_CACHE_MAX_SIZE = 256;
 let expandoCache = new WeakMap();
 let cacheSize = 0;
+const htmlParseCache = new Map();
 const Cache = {
     get size() {
         return cacheSize;
@@ -86,12 +88,12 @@ function removeElementData(element, name) {
     const expandoStore = expandoCache.get(element);
     if (expandoStore) {
         if (name) {
-            delete expandoStore[name];
+            deleteProperty(expandoStore, name);
         }
         else {
             for (const key in expandoStore) {
                 if (hasOwn(expandoStore, key)) {
-                    delete expandoStore[key];
+                    deleteProperty(expandoStore, key);
                 }
             }
         }
@@ -240,7 +242,7 @@ function getOrSetCacheData(element, key, value) {
 function setCacheData(element, key, value) {
     if (elementAcceptsData(element)) {
         const expandoStore = getExpando(element, true);
-        expandoStore[kebabToCamel(key)] = value;
+        assertDefined(expandoStore)[kebabToCamel(key)] = value;
     }
     else {
         if (element.parentElement) {
@@ -262,7 +264,7 @@ function getCacheData(element, key) {
         if (!key) {
             return undefined;
         }
-        return expandoStore && expandoStore[kebabToCamel(key)];
+        return expandoStore?.[kebabToCamel(key)];
     }
     return undefined;
 }
@@ -278,7 +280,7 @@ function deleteCacheData(element, key) {
     if (elementAcceptsData(element)) {
         const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
         if (expandoStore && hasOwn(expandoStore, kebabToCamel(key))) {
-            delete expandoStore[kebabToCamel(key)];
+            deleteProperty(expandoStore, kebabToCamel(key));
             removeIfEmptyData(element);
         }
     }
@@ -299,7 +301,7 @@ function getScope(element) {
  * @param scope - The scope to attach to this element.
  */
 function setScope(element, scope) {
-    return setCacheData(element, SCOPE_KEY, scope);
+    setCacheData(element, SCOPE_KEY, scope);
 }
 /**
  * Sets the isolate scope attached to a given element.
@@ -308,7 +310,7 @@ function setScope(element, scope) {
  * @param scope - The isolate scope to attach to this element.
  */
 function setIsolateScope(element, scope) {
-    return setCacheData(element, ISOLATE_SCOPE_KEY, scope);
+    setCacheData(element, ISOLATE_SCOPE_KEY, scope);
 }
 /**
  * Gets the controller instance for a given element.
@@ -396,7 +398,7 @@ function startingTag(elementOrStr) {
             return `<!--${clone.data.trim()}-->`;
         }
         else {
-            const match = elemHtml.match(/^(<[^>]+>)/);
+            const match = /^(<[^>]+>)/.exec(elemHtml);
             if (match) {
                 return match[1].replace(/^<([\w-]+)/, (_match, nodeName) => {
                     return `<${nodeName.toLowerCase()}`;
@@ -449,7 +451,7 @@ function getBooleanAttrName(element, name) {
 }
 function cleanSingleElementData(node) {
     if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
-        isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))) {
+        getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined) {
         node.dispatchEvent(new Event("$destroy"));
     }
     removeElementData(node);
@@ -462,7 +464,7 @@ function cleanElementData(nodes) {
 }
 /** Returns the nearest injector service found while walking up the element tree. */
 function getInjector(element) {
-    return getInheritedData(element, _injector);
+    return assertDefined(getInheritedData(element, _injector));
 }
 /**
  * Parses an HTML string into a detached `DocumentFragment`.
@@ -470,10 +472,28 @@ function getInjector(element) {
  * @param htmlString - Markup to parse.
  * @returns The parsed fragment.
  */
-function parseHTML(htmlString) {
+function parseHTMLPrototype(htmlString) {
     const template = document.createElement("template");
     template.innerHTML = htmlString.trim();
     return template.content;
+}
+function cacheParsedHTML(htmlString) {
+    let parsed = htmlParseCache.get(htmlString);
+    if (parsed) {
+        return parsed;
+    }
+    parsed = parseHTMLPrototype(htmlString);
+    htmlParseCache.set(htmlString, parsed);
+    if (htmlParseCache.size > HTML_PARSE_CACHE_MAX_SIZE) {
+        const oldestKey = htmlParseCache.keys().next().value;
+        if (oldestKey !== undefined) {
+            htmlParseCache.delete(oldestKey);
+        }
+    }
+    return parsed;
+}
+function parseHTML(htmlString) {
+    return cacheParsedHTML(htmlString).cloneNode(true);
 }
 /**
  * Creates a single DOM element from an HTML string.

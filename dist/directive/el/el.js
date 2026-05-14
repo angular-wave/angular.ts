@@ -1,4 +1,4 @@
-import { arrayFrom } from '../../shared/utils.js';
+import { isString, arrayFrom, deleteProperty } from '../../shared/utils.js';
 
 /**
  * Exposes the current element on `scope.$target` under the provided key.
@@ -7,10 +7,10 @@ function ngElDirective() {
     return {
         restrict: "A",
         link(scope, element, attrs) {
-            const attrMap = attrs;
-            const expr = attrMap.ngEl;
-            const key = !expr ? element.id : expr;
-            scope.$target[key] = element;
+            const target = scope.$target;
+            const expr = attrs.ngEl;
+            const key = isString(expr) && expr ? expr : element.id;
+            target[key] = element;
             const parent = element.parentNode;
             if (!parent)
                 return;
@@ -18,7 +18,7 @@ function ngElDirective() {
                 for (const mutation of mutations) {
                     arrayFrom(mutation.removedNodes).forEach((removedNode) => {
                         if (removedNode === element) {
-                            delete scope.$target[key];
+                            deleteProperty(target, key);
                             observer.disconnect();
                         }
                     });

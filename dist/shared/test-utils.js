@@ -31,7 +31,9 @@ function browserTrigger(element, options) {
  * @returns A promise that resolves after the delay.
  */
 function wait(timeout = 0) {
-    return new Promise((resolve) => setTimeout(resolve, timeout));
+    return new Promise((resolve) => {
+        setTimeout(resolve, timeout);
+    });
 }
 let ELEMENT;
 /**
@@ -39,12 +41,14 @@ let ELEMENT;
  *
  */
 function bootstrap(htmlContent, moduleName) {
-    if (!ELEMENT) {
-        ELEMENT = document.getElementById("app");
+    const element = ELEMENT ?? document.getElementById("app");
+    if (!element) {
+        throw new Error("Missing #app test element");
     }
-    dealoc(ELEMENT);
-    ELEMENT.innerHTML = htmlContent;
-    return window.angular.bootstrap(ELEMENT, [moduleName || "myModule"]);
+    ELEMENT = element;
+    dealoc(element);
+    element.innerHTML = htmlContent;
+    return window.angular.bootstrap(element, [moduleName ?? "myModule"]);
 }
 
 export { ELEMENT, bootstrap, browserTrigger, wait };

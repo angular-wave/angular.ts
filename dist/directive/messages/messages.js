@@ -1,7 +1,7 @@
 import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { removeElement } from '../../shared/dom.js';
-import { isString, isInstanceOf, values, entries, isArray, hasOwn } from '../../shared/utils.js';
+import { createNodelistFromHTML, removeElement } from '../../shared/dom.js';
+import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
 
 const ACTIVE_CLASS = "ng-active";
 const INACTIVE_CLASS = "ng-inactive";
@@ -31,6 +31,7 @@ class NgMessageCtrl {
     }
     /** @internal */
     _render(collection = {}) {
+        collection = collection || {};
         this._renderLater = false;
         this._cachedCollection = collection;
         const multiple = evalAttrTruthy(this._scope, this._ngMessagesMultipleExpression) ||
@@ -75,7 +76,7 @@ class NgMessageCtrl {
         const messageMatched = unmatchedMessages.length !== totalMessages;
         const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
         if (attachDefault) {
-            this._default.attach();
+            assertDefined(this._default).attach();
         }
         else if (this._default) {
             this._default.detach();
@@ -102,7 +103,7 @@ class NgMessageCtrl {
     reRender() {
         if (!this._renderLater) {
             this._renderLater = true;
-            Promise.resolve().then(() => {
+            void Promise.resolve().then(() => {
                 if (this._renderLater) {
                     this._render(this._cachedCollection ?? {});
                 }
@@ -138,7 +139,7 @@ class NgMessageCtrl {
             const key = comment._ngMessageNode;
             delete comment._ngMessageNode;
             if (key) {
-                delete this._messages[key];
+                deleteProperty(this._messages, key);
             }
         }
         this.reRender();
@@ -165,7 +166,7 @@ function parseAttrTruthy($parse, attr) {
     return attr.length === 0 ? true : $parse(attr);
 }
 function evalAttrTruthy(scope, expr) {
-    return expr === true || truthy(expr && expr(scope));
+    return expr === true || truthy(expr?.(scope));
 }
 /**
  * Normalizes message values into a simple truthy check.
@@ -183,19 +184,32 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
         require: "^^ngMessages", // we only require this for validation sake
         link($scope, element, attrs, ngMessagesCtrl) {
             const src = attrs.ngMessagesInclude || attrs.src;
-            $templateRequest(src).then((html) => {
+            void $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
                     return;
                 if (isString(html) && !html.trim()) ;
                 else {
                     // Non-empty template - compile and link
-                    $compile(html)($scope, ((contents) => {
-                        isInstanceOf(contents, Node) && element.after(contents);
-                    }));
+                    $compile(createNodelistFromHTML(html))($scope, insertCompiledMessageTemplate(element));
                     ngMessagesCtrl.reRender();
                 }
             });
         },
+    };
+}
+function insertCompiledMessageTemplate(anchor) {
+    return (contents) => {
+        if (!contents) {
+            return;
+        }
+        const nodes = isInstanceOf(contents, Node)
+            ? [contents]
+            : isArray(contents)
+                ? contents
+                : Array.from(contents);
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            anchor.after(nodes[i]);
+        }
     };
 }
 const ngMessageDirective = ngMessageDirectiveFactory(false);
@@ -272,8 +286,7 @@ function ngMessageDirectiveFactory(isDefault) {
                                 currentElement.addEventListener("$destroy", () => {
                                     // If the message element was removed via a call to `detach` then `currentElement` will be null
                                     // So this handler only handles cases where something else removed the message element.
-                                    if (currentElement &&
-                                        currentElement._attachId === attachId) {
+                                    if (currentElement?._attachId === attachId) {
                                         ngMessagesCtrl.deregister(commentNode, isDefault);
                                         messageCtrl.detach();
                                     }
@@ -314,7 +327,7 @@ function ngMessageDirectiveFactory(isDefault) {
 function contains(collection, key) {
     if (collection) {
         return isArray(collection)
-            ? collection.indexOf(String(key)) >= 0
+            ? collection.includes(String(key))
             : hasOwn(collection, key);
     }
     return undefined;

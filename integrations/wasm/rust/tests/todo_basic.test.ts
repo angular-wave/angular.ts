@@ -18,40 +18,52 @@ test("Rust todo demo runs through the AngularTS bridge", async ({ page }) => {
     const url = request.url();
     if (
       url.includes(
-        "/integrations/rust/examples/basic_app/.angular-ts/bootstrap.js",
+        "/integrations/wasm/rust/examples/basic_app/.angular-ts/bootstrap.js",
       )
     ) {
       bootstrapRequests.push(url);
     }
     if (
       url.includes(
-        "/integrations/rust/examples/basic_app/pkg/angular_ts_rust_basic_app_bg.wasm",
+        "/integrations/wasm/rust/examples/basic_app/pkg/angular_ts_rust_basic_app_bg.wasm",
       )
     ) {
       wasmRequests.push(url);
     }
   });
 
-  await page.goto("/integrations/rust/examples/basic_app/");
+  await page.goto("/integrations/wasm/rust/examples/basic_app/");
 
   expect(bootstrapRequests.length).toBeGreaterThan(0);
   expect(wasmRequests.length).toBeGreaterThan(0);
 
   const rows = page.locator("todo-list .todo-row");
+  const remaining = page.locator("#rust-remaining");
+  const input = page.getByLabel("Todo title");
+
   await expect(rows).toHaveCount(2);
+  await expect(remaining).toContainText("2 of 2");
   await expect(rows.first()).toContainText("Learn AngularTS");
   await expect(rows.nth(1)).toContainText("Build an AngularTS app");
 
-  await page.getByLabel("Todo title").fill("Review Rust bridge");
+  await input.fill("Review Rust bridge");
   await page.getByRole("button", { name: "Add" }).click();
   await expect(rows).toHaveCount(3);
+  await expect(remaining).toContainText("3 of 3");
   await expect(rows.nth(2)).toContainText("Review Rust bridge");
+  await expect(input).toHaveValue("");
+
+  await input.fill("   ");
+  await page.getByRole("button", { name: "Add" }).click();
+  await expect(rows).toHaveCount(3);
+  await expect(remaining).toContainText("3 of 3");
 
   await rows.nth(1).getByRole("checkbox").check();
   await expect(rows.nth(1).getByRole("checkbox")).toBeChecked();
   await expect(rows.nth(1)).toHaveClass(/done/);
+  await expect(remaining).toContainText("2 of 3");
 
-  await page.getByRole("button", { name: "Archive" }).click();
+  await page.getByRole("button", { name: "Archive completed" }).click();
   await expect(rows).toHaveCount(2);
   await expect(page.locator("todo-list")).not.toContainText(
     "Build an AngularTS app",

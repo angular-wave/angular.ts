@@ -1,13 +1,15 @@
 import { _parse } from '../../injection-tokens.js';
-import { stringify, deProxy, isNullOrUndefined, isDefined, isUndefined, isNull } from '../../shared/utils.js';
+import { isString, stringify, deProxy, isDefined, isUndefined, isNull, isNullOrUndefined } from '../../shared/utils.js';
 
 /** Binds the watched expression as plain text content. */
 function ngBindDirective() {
     return {
         link(scope, element, attr) {
+            if (!isString(attr.ngBind))
+                return;
             scope.$watch(attr.ngBind, (value) => {
                 const text = stringify(deProxy(value));
-                element.textContent = isNullOrUndefined(text) ? "" : String(text);
+                element.textContent = isString(text) ? text : "";
             }, isDefined(attr.lazy));
         },
     };
@@ -28,15 +30,16 @@ function ngBindHtmlDirective($parse) {
     return {
         restrict: "A",
         compile(_tElement, tAttrs) {
-            $parse(tAttrs.ngBindHtml); // checks for interpolation errors
+            const expression = tAttrs.ngBindHtml;
+            if (!isString(expression))
+                return () => undefined;
+            $parse(expression); // checks for interpolation errors
             return (
             /** Watches the expression and writes the resulting HTML into the element. */
             (scope, element) => {
-                scope.$watch(tAttrs.ngBindHtml, (val) => {
-                    if (isUndefined(val) || isNull(val)) {
-                        val = "";
-                    }
-                    element.innerHTML = val;
+                scope.$watch(expression, (val) => {
+                    const html = isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
+                    element.innerHTML = isString(html) ? html : "";
                 });
             });
         },

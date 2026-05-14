@@ -3,6 +3,7 @@ function ngCloakDirective() {
     return {
         compile(_, attr) {
             attr.$set("ngCloak", null);
+            return undefined;
         },
     };
 }

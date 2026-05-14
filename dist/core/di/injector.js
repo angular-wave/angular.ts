@@ -1,10 +1,10 @@
 import { _injector, _cookie } from '../../injection-tokens.js';
-import { assert, isArray, isString, isFunction, assertArgFn, isInstanceOf, assertNotHasOwnProperty, minErr, isObject, entries, isUndefined, isNullOrUndefined } from '../../shared/utils.js';
+import { assert, isArray, isString, callFunction, isFunction, assertArgFn, isInstanceOf, assertNotHasOwnProperty, createErrorFactory, isObject, entries, isUndefined, assertDefined, isNullOrUndefined } from '../../shared/utils.js';
 import { ProviderInjector, InjectorService, providerSuffix } from './internal-injector.js';
 import { createPersistentProxy } from '../../services/storage/storage.js';
 import { validateArray } from '../../shared/validate.js';
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 /**
  *
  * @param {Array<String|Function>} modulesToLoad
@@ -34,8 +34,18 @@ function createInjector(modulesToLoad, strictDi = false) {
     let instanceInjector = protoInstanceInjector;
     const runBlocks = loadModules(modulesToLoad);
     instanceInjector = protoInstanceInjector.get(_injector);
-    runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
-    instanceInjector.loadNewModules = (mods) => loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+    runBlocks.forEach((fn) => {
+        if (fn) {
+            instanceInjector.invoke(fn);
+        }
+    });
+    instanceInjector.loadNewModules = (mods) => {
+        loadModules(mods).forEach((fn) => {
+            if (fn) {
+                instanceInjector.invoke(fn);
+            }
+        });
+    };
     return instanceInjector;
     ////////////////////////////////////
     // $provide methods
@@ -53,7 +63,7 @@ function createInjector(modulesToLoad, strictDi = false) {
             newProvider = providerDefinition;
         }
         if (!newProvider.$get) {
-            throw $injectorMinErr("pget", "Provider '{0}' must define $get factory method.", name);
+            throw $injectorError("pget", "Provider '{0}' must define $get factory method.", name);
         }
         providerCache[name + providerSuffix] = newProvider;
         return newProvider;
@@ -66,7 +76,7 @@ function createInjector(modulesToLoad, strictDi = false) {
             $get() {
                 const result = instanceInjector.invoke(factoryFn, this);
                 if (isUndefined(result)) {
-                    throw $injectorMinErr("undef", "Provider '{0}' must return a value from $get factory method.", name);
+                    throw $injectorError("undef", "Provider '{0}' must return a value from $get factory method.", name);
                 }
                 return result;
             },
@@ -91,7 +101,9 @@ function createInjector(modulesToLoad, strictDi = false) {
      * @returns {ng.ServiceProvider}
      */
     function value(name, val) {
-        return (providerCache[name + providerSuffix] = { $get: () => val });
+        return (providerCache[name + providerSuffix] = {
+            $get: () => val,
+        });
     }
     /**
      * Register a constant value (available during config).
@@ -169,7 +181,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                             }
                             else if (isObject(backendOrConfig)) {
                                 backend =
-                                    backendOrConfig.backend || localStorage;
+                                    assertDefined(backendOrConfig.backend) || localStorage;
                                 const { serialize: configSerialize, deserialize: configDeserialize, } = backendOrConfig;
                                 if (configSerialize)
                                     serialize = configSerialize;
@@ -216,8 +228,9 @@ function createInjector(modulesToLoad, strictDi = false) {
                         .concat(moduleFn._runBlocks);
                     const invokeQueue = moduleFn._invokeQueue.concat(moduleFn._configBlocks);
                     invokeQueue.forEach((invokeArgs) => {
+                        const invokeName = invokeArgs[1];
                         const providerInstance = providerInjector.get(invokeArgs[0]);
-                        providerInstance[invokeArgs[1]].apply(providerInstance, invokeArgs[2]);
+                        callFunction(providerInstance[invokeName], providerInstance, ...invokeArgs[2]);
                     });
                 }
                 else if (isFunction(module)) {
@@ -233,7 +246,7 @@ function createInjector(modulesToLoad, strictDi = false) {
             catch (err) {
                 // If module is array, fallback to last element for error message
                 const moduleName = isArray(module) ? module[module.length - 1] : module;
-                throw $injectorMinErr("modulerr", "Failed to instantiate module {0} due to:\n{1}", moduleName, isInstanceOf(err, Error) ? err.stack || err.message : String(err));
+                throw $injectorError("modulerr", "Failed to instantiate module {0} due to:\n{1}", moduleName, isInstanceOf(err, Error) ? err.stack || err.message : String(err));
             }
         });
         return moduleRunBlocks;

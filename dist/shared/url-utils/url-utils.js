@@ -19,7 +19,7 @@ function urlResolve(url) {
         hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
         hostname,
         port: urlParsingNode.port,
-        pathname: urlParsingNode.pathname.charAt(0) === "/"
+        pathname: urlParsingNode.pathname.startsWith("/")
             ? urlParsingNode.pathname
             : `/${urlParsingNode.pathname}`,
     };

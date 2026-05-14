@@ -15,11 +15,11 @@ function removeFrom(array, obj) {
  */
 function defaults(opts, ...defaultsList) {
     const defaultVals = assign({}, ...defaultsList.reverse());
-    opts = opts || {};
+    const optionVals = (opts || {});
     const defaultKeys = keys(defaultVals);
     defaultKeys.forEach((key) => {
-        if (key in opts)
-            defaultVals[key] = opts[key];
+        if (key in optionVals)
+            defaultVals[key] = optionVals[key];
     });
     return defaultVals;
 }

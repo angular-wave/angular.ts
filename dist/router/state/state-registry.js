@@ -3,8 +3,11 @@ import { StateMatcher } from './state-matcher.js';
 import { StateBuilder } from './state-builder.js';
 import { StateObject } from './state-object.js';
 import { annotate } from '../../core/di/di.js';
-import { isString, hasOwn, keys } from '../../shared/utils.js';
+import { isString, hasOwn, deleteProperty, keys } from '../../shared/utils.js';
 
+function stateOrNameToString(stateOrName) {
+    return isString(stateOrName) ? stateOrName : stateOrName.name;
+}
 /**
  * A registry for all of the application's [[StateDeclaration]]s
  *
@@ -41,7 +44,7 @@ class StateRegistryProvider {
     _annotateDeferredResolvables(strictDi) {
         const states = this.getAll();
         states.forEach((state) => {
-            const resolvables = state._state().resolvables || [];
+            const { resolvables } = state._state();
             resolvables.forEach((resolvable) => {
                 if (resolvable.deps === "deferred") {
                     resolvable.deps = annotate(resolvable.resolveFn, strictDi);
@@ -202,12 +205,14 @@ class StateRegistryProvider {
     }
     /** @internal */
     _notifyListeners(event, states) {
-        this._listeners.forEach((listener) => listener(event, states));
+        this._listeners.forEach((listener) => {
+            listener(event, states);
+        });
     }
     /** @internal */
     _attachRoute(state) {
         if (!state.self.abstract && state._url) {
-            this._routerState._registerStateRoute(state);
+            this._routerState._routeTable._add(state);
         }
     }
     /**
@@ -237,9 +242,9 @@ class StateRegistryProvider {
         const deregistered = children.slice().reverse();
         deregistered.push(state);
         deregistered.forEach((_state) => {
-            this._routerState._removeStateRoute(_state);
+            this._routerState._routeTable._remove(_state);
             // Remove state from registry
-            delete this._states[_state.name];
+            deleteProperty(this._states, _state.name);
         });
         return deregistered;
     }
@@ -254,8 +259,9 @@ class StateRegistryProvider {
      */
     deregister(stateOrName) {
         const state = this.get(stateOrName);
-        if (!state)
-            throw new Error(`Can't deregister state; not found: ${stateOrName}`);
+        if (!state) {
+            throw new Error(`Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`);
+        }
         const deregisteredStates = this._deregisterTree(state._state());
         const deregisteredDeclarations = [];
         deregisteredStates.forEach((stateDeclaration) => {
@@ -290,8 +296,10 @@ class StateRegistryProvider {
             });
             return states;
         }
-        const found = this._matcher.find(stateOrName, base);
-        return (found && found.self) || null;
+        const found = stateOrName === undefined
+            ? undefined
+            : this._matcher.find(stateOrName, base);
+        return found?.self ?? null;
     }
 }
 /* @ignore */ StateRegistryProvider.$inject = [_routerProvider];

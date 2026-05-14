@@ -32,7 +32,7 @@ class TemplateRequestProvider {
                  */
                 const fetchTemplate = (templateUrl) => {
                     // Filter out default transformResponse for template requests
-                    let transformResponse = $http.defaults?.transformResponse ?? null;
+                    let transformResponse = $http.defaults.transformResponse ?? null;
                     if (isArray(transformResponse)) {
                         transformResponse = transformResponse.filter((x) => x !== defaultHttpResponseTransform);
                     }
@@ -42,12 +42,10 @@ class TemplateRequestProvider {
                     const config = extend({
                         cache: $templateCache,
                         transformResponse,
-                    }, this.httpOptions || {});
+                    }, this.httpOptions);
                     return $http.get(templateUrl, config).then((response) => {
                         $templateCache.set(templateUrl, response.data);
                         return response.data;
-                    }, (resp) => {
-                        return Promise.reject(resp);
                     });
                 };
                 return fetchTemplate;

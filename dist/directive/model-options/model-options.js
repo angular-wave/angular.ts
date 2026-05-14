@@ -1,5 +1,5 @@
 import { _attrs, _scope, _parse } from '../../injection-tokens.js';
-import { assign, entries, isString, trim, keys, isDefined } from '../../shared/utils.js';
+import { assign, isString, deleteProperty, keys, isDefined } from '../../shared/utils.js';
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 class NgModelOptionsController {
@@ -33,7 +33,7 @@ class ModelOptions {
     createChild(options = {}) {
         let inheritAll = false;
         const mergedOptions = assign({}, options);
-        entries(mergedOptions).forEach(([key, option]) => {
+        for (const [key, option] of Object.entries(mergedOptions)) {
             if (option === "$inherit") {
                 if (key === "*") {
                     inheritAll = true;
@@ -47,14 +47,16 @@ class ModelOptions {
             }
             else if (key === "updateOn" && isString(option)) {
                 mergedOptions.updateOnDefault = false;
-                mergedOptions[key] = trim(option.replace(DEFAULT_REGEXP, () => {
+                mergedOptions[key] = option
+                    .replace(DEFAULT_REGEXP, () => {
                     mergedOptions.updateOnDefault = true;
                     return " ";
-                }));
+                })
+                    .trim();
             }
-        });
+        }
         if (inheritAll) {
-            delete mergedOptions["*"];
+            deleteProperty(mergedOptions, "*");
             defaults(mergedOptions, this._options);
         }
         defaults(mergedOptions, defaultModelOptions._options);

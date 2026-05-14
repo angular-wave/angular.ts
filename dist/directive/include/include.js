@@ -21,6 +21,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
         transclude: "element",
         controller: () => {
             /* empty */
+            return undefined;
         },
         compile(_element, attr) {
             const srcExp = attr.ngInclude || attr.src;
@@ -55,7 +56,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         const animate = getAnimateForNode(getAnimate, currentElement);
                         if (animate) {
                             animate.leave(currentElement).done((response) => {
-                                if (response !== false)
+                                if (response)
                                     previousElement = null;
                             });
                         }
@@ -66,9 +67,11 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         currentElement = null;
                     }
                 };
-                scope.$watch(srcExp, async (src) => {
+                scope.$watch(srcExp, (src) => {
                     const afterAnimation = function (response) {
-                        response !== false && maybeScroll();
+                        if (response) {
+                            maybeScroll();
+                        }
                     };
                     const thisChangeId = ++changeCounter;
                     if (src) {

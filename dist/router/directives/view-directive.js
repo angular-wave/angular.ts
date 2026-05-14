@@ -1,9 +1,10 @@
 import { _view, _state, _anchorScroll, _interpolate, _parse, _compile, _controller, _transitions, _injector } from '../../injection-tokens.js';
-import { assign, isString, isDefined, isFunction, isInstanceOf, isArray, arrayFrom, uppercase } from '../../shared/utils.js';
+import { assertDefined, assign, isString, isDefined, isInstanceOf, isArray, arrayFrom } from '../../shared/utils.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { dealoc, getCacheData, setCacheData, getInheritedData, removeElement } from '../../shared/dom.js';
 import { getLocals } from '../state/state-registry.js';
 import { getViewTemplate } from '../view/view.js';
+import { registerViewControllerCallbacks, getComponentController } from './view-controller-hooks.js';
 
 function getFirstElementFromClone(clone) {
     if (!clone)
@@ -40,49 +41,15 @@ function getRootNodesFromClone(clone) {
 function withResolvers() {
     let resolve;
     let reject;
-    const promise = new Promise((resolveParam, rejectParam) => {
-        resolve = resolveParam;
-        reject = rejectParam;
+    const promise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
     });
-    return { promise, resolve, reject: reject };
-}
-const controllerRegisteredScopes = new WeakMap();
-const controllerLastParamsChangedTransition = new WeakMap();
-function appendParamSchema(nodes, schema) {
-    for (let i = 0; i < nodes.length; i++) {
-        const nodeSchema = nodes[i].paramSchema;
-        for (let j = 0; j < nodeSchema.length; j++) {
-            schema.push(nodeSchema[j]);
-        }
-    }
-}
-function controllerKeyData(element, key) {
-    return (getCacheData(element, key) ||
-        getInheritedData(element, key));
-}
-function getComponentController(element, componentName, tagRegexp) {
-    const candidates = element.querySelectorAll("*");
-    let directiveEl;
-    for (let i = 0; i < candidates.length; i++) {
-        const candidate = candidates[i];
-        if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
-            directiveEl = candidate;
-            break;
-        }
-    }
-    if (!directiveEl)
-        return undefined;
-    const camelNameFromTag = directiveEl.tagName
-        .toLowerCase()
-        .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
-    const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
-        getInheritedData(directiveEl, "$isolateScope") ||
-        getCacheData(directiveEl, "$scope") ||
-        getInheritedData(directiveEl, "$scope");
-    return (controllerKeyData(directiveEl, `$${componentName}Controller`) ||
-        controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ||
-        controllerKeyData(directiveEl, "$ngControllerController") ||
-        scopeWithCtrl?.$ctrl);
+    return {
+        promise,
+        resolve: assertDefined(resolve),
+        reject: assertDefined(reject),
+    };
 }
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
@@ -159,9 +126,9 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
         priority: 400,
         transclude: "element",
         compile(_tElement, _tAttrs, $transclude) {
-            const transclude = $transclude;
+            const transclude = assertDefined($transclude);
             return function (scope, $element, attrs) {
-                const onloadExp = attrs.onload || "", autoScrollExp = attrs.autoscroll, inherited = getInheritedData($element, "$ngView") || rootData, name = $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
+                const onloadExp = attrs.onload || "", autoScrollExp = attrs.autoscroll, inherited = getInheritedData($element, "$ngView") || rootData, rawName = assertDefined($interpolate(attrs.ngView || attrs.name || ""))(scope), name = isString(rawName) && rawName ? rawName : "$default";
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 let currentEl = null;
@@ -221,7 +188,7 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
                     if (currentEl) {
                         const _viewData = getCacheData(currentEl, "$ngViewAnim");
                         removeElement(currentEl);
-                        _viewData?.$$animLeave.resolve();
+                        _viewData?.$$animLeave.resolve(undefined);
                         currentEl = null;
                     }
                 }
@@ -305,7 +272,8 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                 });
                 const resolveCtx = cfg._path && new ResolveContext(cfg._path, $injector);
                 $element.innerHTML = data.$cfg
-                    ? getViewTemplate(data.$cfg, $element, resolveCtx) || initial
+                    ? getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ||
+                        initial
                     : initial;
                 const link = $compile($element.contentDocument ||
                     $element.childNodes);
@@ -324,7 +292,7 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                     for (let i = 0; i < children.length; i++) {
                         setCacheData(children[i], "$ngControllerController", controllerInstance);
                     }
-                    registerControllerCallbacks($transitions, controllerInstance, scope, cfg);
+                    registerViewControllerCallbacks($transitions, controllerInstance, scope, cfg);
                 }
                 link(scope);
                 const componentName = cfg
@@ -342,142 +310,21 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                         }
                         const componentCtrl = getComponentController($element, componentName, tagRegexp);
                         if (componentCtrl) {
-                            registerControllerCallbacks($transitions, componentCtrl, scope, callbackConfig);
+                            registerViewControllerCallbacks($transitions, componentCtrl, scope, callbackConfig);
                             return;
                         }
                         if (attempt >= 10) {
                             return;
                         }
-                        queueMicrotask(() => registerComponentCallbacks(attempt + 1));
+                        queueMicrotask(() => {
+                            registerComponentCallbacks(attempt + 1);
+                        });
                     };
                     registerComponentCallbacks();
                 }
             };
         },
     };
-}
-/** @ignore */
-/** @ignore incrementing id */
-let _ngCanExitId = 0;
-/**
- * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
- */
-function registerControllerCallbacks($transitions, controllerInstance, $scope, cfg) {
-    let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
-    if (!registeredScopes) {
-        registeredScopes = new WeakSet();
-        controllerRegisteredScopes.set(controllerInstance, registeredScopes);
-    }
-    if (registeredScopes.has($scope)) {
-        return;
-    }
-    registeredScopes.add($scope);
-    // Call $onInit() ASAP
-    const onInit = controllerInstance.$onInit;
-    if (isFunction(onInit) && !cfg._viewDecl.component) {
-        onInit();
-    }
-    const viewState = cfg._path[cfg._path.length - 1].state.self;
-    const hookOptions = { bind: controllerInstance };
-    // Add component-level hook for ngOnParamsChanged
-    if (isFunction(controllerInstance.ngOnParamsChanged)) {
-        const onParamsChanged = controllerInstance.ngOnParamsChanged;
-        const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-        const viewCreationTrans = resolveContext.getResolvable("$transition$")
-            .data;
-        // Fire callback on any successful transition
-        const paramsUpdated = ($transition$) => {
-            if (!$transition$)
-                return;
-            if (controllerLastParamsChangedTransition.get(controllerInstance) ===
-                $transition$) {
-                return;
-            }
-            controllerLastParamsChangedTransition.set(controllerInstance, $transition$);
-            // Exit early if the $transition$ is the same as the view was created within.
-            // Exit early if the $transition$ will exit the state the view is for.
-            if ($transition$ === viewCreationTrans ||
-                $transition$.exiting().indexOf(viewState) !== -1) {
-                return;
-            }
-            const toParams = $transition$.params("to");
-            const fromParams = $transition$.params("from");
-            const toNodes = ($transition$._treeChanges.to || []);
-            const fromNodes = ($transition$._treeChanges.from || []);
-            const toSchema = [];
-            appendParamSchema(toNodes, toSchema);
-            const fromSchema = [];
-            appendParamSchema(fromNodes, fromSchema);
-            // Find the to params that have different values than the from params
-            const changedToParams = [];
-            for (let i = 0; i < toSchema.length; i++) {
-                const param = toSchema[i];
-                const idx = fromSchema.indexOf(param);
-                if (idx === -1 ||
-                    !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
-                    changedToParams.push(param);
-                }
-            }
-            // Only trigger callback if a to param has changed or is new
-            if (changedToParams.length) {
-                // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
-                const newValues = {};
-                for (let i = 0; i < changedToParams.length; i++) {
-                    const param = changedToParams[i];
-                    const key = param.id;
-                    if (key in toParams)
-                        newValues[key] = toParams[key];
-                }
-                onParamsChanged.call(controllerInstance, newValues, $transition$);
-            }
-        };
-        const hookRegistryKey = [
-            viewState?.name || "",
-            cfg._viewDecl._ngViewName || "$default",
-            cfg._viewDecl._ngViewContextAnchor || "^",
-        ].join("::");
-        const rootScope = $scope.$root;
-        const registryProp = "__ngRouterParamsChangedHooks__";
-        const hookRegistry = rootScope[registryProp] ||
-            (rootScope[registryProp] = new Map());
-        hookRegistry.get(hookRegistryKey)?.();
-        const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
-        hookRegistry.set(hookRegistryKey, deregisterParamsHook);
-        $scope.$on("$destroy", () => {
-            if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
-                hookRegistry.delete(hookRegistryKey);
-            }
-            deregisterParamsHook();
-        });
-    }
-    // Add component-level hook for ngCanExit
-    if (isFunction(controllerInstance.ngCanExit)) {
-        const ngCanExit = controllerInstance.ngCanExit;
-        const id = _ngCanExitId++;
-        /**
-         * Returns true if any transition in the redirect chain already answered truthy.
-         */
-        const prevTruthyAnswer = (trans) => {
-            if (!trans)
-                return false;
-            const cache = trans._ngCanExitIds;
-            return (cache?.[id] === true ||
-                prevTruthyAnswer(trans._options.redirectedFrom || null));
-        };
-        // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-        const wrappedHook = (trans) => {
-            let promise;
-            const cacheTrans = trans;
-            const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds || {});
-            if (!prevTruthyAnswer(trans)) {
-                promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
-                promise.then((val) => (ids[id] = val !== false));
-            }
-            return promise;
-        };
-        const criteria = { exiting: viewState.name };
-        $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
-    }
 }
 
 export { ViewDirective, ViewDirectiveFill };

@@ -1,4 +1,4 @@
-import { assign, equals, isInstanceOf, isNullOrUndefined, isString } from '../../shared/utils.js';
+import { assign, equals, isInstanceOf, isNullOrUndefined, stringify, isString } from '../../shared/utils.js';
 import { ParamType } from './param-type.js';
 
 function encodePathPart(match) {
@@ -9,12 +9,12 @@ function decodePathPart(match) {
 }
 function encodePath(value) {
     return !isNullOrUndefined(value)
-        ? value.toString().replace(/([~/])/g, encodePathPart)
+        ? stringify(value).replace(/([~/])/g, encodePathPart)
         : value;
 }
 function decodePath(value) {
     return !isNullOrUndefined(value)
-        ? value.toString().replace(/(~~|~2F)/g, decodePathPart)
+        ? stringify(value).replace(/(~~|~2F)/g, decodePathPart)
         : value;
 }
 function makeDefaultType(def) {
@@ -45,12 +45,13 @@ function createDefaultParamTypes() {
              */
             is(val) {
                 return (!isNullOrUndefined(val) &&
-                    this.decode?.(val.toString()) === val);
+                    this.decode?.(stringify(val)) ===
+                        val);
             },
             pattern: /-?\d+/,
         }),
         bool: makeDefaultType({
-            encode: (val) => ((val && 1) || 0).toString(),
+            encode: (val) => (val ? "1" : "0"),
             decode: (val) => parseInt(val, 10) !== 0,
             is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
             pattern: /[01]/,

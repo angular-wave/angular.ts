@@ -1,5 +1,5 @@
 import { _aria, _parse } from '../../injection-tokens.js';
-import { extend, hasOwn } from '../../shared/utils.js';
+import { extend, hasOwn, stringify } from '../../shared/utils.js';
 
 const ARIA_DISABLE_ATTR = "ngAriaDisable";
 /**
@@ -15,7 +15,7 @@ const nativeAriaNodeNames = [
     "SUMMARY",
 ];
 const isNodeOneOf = function (elem, nodeTypeArray) {
-    return nodeTypeArray.indexOf(elem.nodeName) !== -1;
+    return nodeTypeArray.includes(elem.nodeName);
 };
 /**
  * Used for configuring the ARIA attributes injected and managed by ngAria.
@@ -131,10 +131,9 @@ function ngClickAriaDirective($aria, $parse) {
                         /** Handles keyboard activation for synthetic button semantics. */
                         (event) => {
                             const keyCode = parseInt(event.key, 10);
-                            // eslint-disable-next-line no-magic-numbers
                             if (keyCode === 13 || keyCode === 32) {
                                 // If the event is triggered on a non-interactive element ...
-                                if (nativeAriaNodeNames.indexOf(event.target.nodeName) === -1 &&
+                                if (!nativeAriaNodeNames.includes(event.target.nodeName) &&
                                     !event.target.isContentEditable) {
                                     // ... prevent the default browser behavior (e.g. scrolling when pressing spacebar)
                                     // See https://github.com/angular/angular.ts/issues/16664
@@ -197,7 +196,8 @@ function ngModelAriaDirective($aria) {
         return ($aria.config(normalizedAttr) &&
             !elem.getAttribute(attr) &&
             (allowNonAriaNodes || !isNodeOneOf(elem, nativeAriaNodeNames)) &&
-            (elem.getAttribute("type") !== "hidden" || elem.nodeName !== "INPUT"));
+            (elem.getAttribute("type") !== "hidden" ||
+                elem.nodeName !== "INPUT"));
     }
     /** Determines whether a synthetic ARIA role should be attached to an element. */
     function shouldAttachRole(role, elem) {
@@ -233,10 +233,7 @@ function ngModelAriaDirective($aria) {
                     const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                     function getRadioReaction() {
                         // Strict comparison would cause a BC
-                        elem.setAttribute("aria-checked", 
-                        // Strict comparison would cause a BC.
-                        // eslint-disable-next-line eqeqeq
-                        (attrPost.value == ngModel.$viewValue).toString());
+                        elem.setAttribute("aria-checked", (attrPost.value == ngModel.$viewValue).toString());
                     }
                     function getCheckboxReaction() {
                         elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());
@@ -266,12 +263,12 @@ function ngModelAriaDirective($aria) {
                                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
                                 if (needsAriaValuemin) {
                                     attrPost.$observe("min", (newVal) => {
-                                        elem.setAttribute("aria-valuemin", String(newVal ?? ""));
+                                        elem.setAttribute("aria-valuemin", stringify(newVal));
                                     });
                                 }
                                 if (needsAriaValuemax) {
                                     attrPost.$observe("max", (newVal) => {
-                                        elem.setAttribute("aria-valuemax", String(newVal ?? ""));
+                                        elem.setAttribute("aria-valuemax", stringify(newVal));
                                     });
                                 }
                                 if (needsAriaValuenow) {

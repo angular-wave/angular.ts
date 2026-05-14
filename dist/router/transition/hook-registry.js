@@ -10,7 +10,7 @@ function matchState(state, criterion, transition) {
         return criterion === state.name;
     }
     if (isFunction(criterion)) {
-        return !!criterion(state, transition);
+        return criterion(state, transition);
     }
     return false;
 }
@@ -28,8 +28,8 @@ class RegisteredHook {
         this._hooks = hooks;
         this._invokeCount = 0;
         this._deregistered = false;
-        this._priority = options.priority || 0;
-        this._bind = options.bind || null;
+        this._priority = options.priority ?? 0;
+        this._bind = options.bind ?? null;
         this._invokeLimit = options.invokeLimit;
     }
     /** @internal */
@@ -50,11 +50,12 @@ class RegisteredHook {
         const matchingNodes = {};
         for (const name in PATH_TYPES) {
             const pathType = PATH_TYPES[name];
-            const path = (treeChanges[pathType._name] || []);
+            const path = treeChanges[pathType._name] ?? [];
             const transitionNode = path.length ? path[path.length - 1] : undefined;
-            const criterion = hasOwn(this._matchCriteria, pathType._name)
+            const configuredCriterion = hasOwn(this._matchCriteria, pathType._name)
                 ? this._matchCriteria[pathType._name]
-                : true;
+                : undefined;
+            const criterion = configuredCriterion ?? true;
             if (criterion === true) {
                 matchingNodes[pathType._name] = pathType._stateHook
                     ? path
@@ -93,9 +94,9 @@ class RegisteredHook {
  */
 function registerHook(hookSource, transitionService, eventType, matchCriteria, callback, options = {}) {
     const _registeredHooks = (hookSource._registeredHooks =
-        hookSource._registeredHooks || {});
+        hookSource._registeredHooks ?? {});
     const hooks = (_registeredHooks[eventType._name] =
-        _registeredHooks[eventType._name] || []);
+        _registeredHooks[eventType._name] ?? []);
     const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchCriteria, hooks, options);
     hooks.push(registeredHook);
     return registeredHook._deregister.bind(registeredHook);
@@ -107,7 +108,7 @@ function registerHook(hookSource, transitionService, eventType, matchCriteria, c
  */
 function makeEvent(hookSource, transitionService, eventType) {
     const _registeredHooks = (hookSource._registeredHooks =
-        hookSource._registeredHooks || {});
+        hookSource._registeredHooks ?? {});
     const hooks = (_registeredHooks[eventType._name] = []);
     function hookRegistrationFn(matchObject, callback, options = {}) {
         const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchObject, hooks, options);

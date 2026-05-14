@@ -1,5 +1,6 @@
 import { _log } from '../../injection-tokens.js';
 import { ConnectionManager } from '../connection/connection-manager.js';
+import { isRealtimeProtocolMessage } from '../../directive/realtime/protocol.js';
 
 /**
  * WebSocketProvider
@@ -25,6 +26,9 @@ class WebSocketProvider {
                     return new ConnectionManager(() => new WebSocket(url, mergedConfig.protocols), {
                         ...mergedConfig,
                         onMessage: (data, event) => {
+                            if (isRealtimeProtocolMessage(data)) {
+                                mergedConfig.onProtocolMessage?.(data, event);
+                            }
                             mergedConfig.onMessage?.(data, event);
                         },
                         onOpen: (event) => {

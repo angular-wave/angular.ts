@@ -1,4 +1,4 @@
-import { keys, assign } from '../../shared/utils.js';
+import { keys, assign, deleteProperty } from '../../shared/utils.js';
 import { PathNode } from './path-node.js';
 import { createViewConfig } from '../view/view.js';
 
@@ -8,7 +8,10 @@ import { createViewConfig } from '../view/view.js';
 function buildPath(targetState) {
     const toParams = targetState.params();
     const stateObject = targetState.$state();
-    const states = stateObject.path || [];
+    if (!stateObject) {
+        throw new Error("Target state does not resolve to a state object");
+    }
+    const states = stateObject.path ?? [];
     const path = [];
     states.forEach((state) => path.push(new PathNode(state).applyRawParams(toParams)));
     return path;
@@ -32,7 +35,7 @@ function applyViewConfigs($view, path, states) {
         const node = path[i];
         if (!stateSet.has(node.state))
             continue;
-        const viewDecls = node.state._views || {};
+        const viewDecls = node.state._views ?? {};
         const viewSubPath = path.slice(0, i + 1);
         const viewConfigs = [];
         keys(viewDecls).forEach((name) => {
@@ -69,7 +72,9 @@ function inheritParams(fromPath, toPath, toKeys = []) {
                 break;
             }
         }
-        noInherit.forEach((key) => delete fromParamVals[key]);
+        noInherit.forEach((key) => {
+            deleteProperty(fromParamVals, key);
+        });
         const toParamVals = {};
         const incomingParamVals = {};
         const toNodeParamValues = toNode.paramValues;

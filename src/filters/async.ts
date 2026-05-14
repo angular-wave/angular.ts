@@ -44,7 +44,7 @@ export function asyncFilter($rootScope: ng.RootScopeService) {
         (value) => {
           settleAsyncValue($rootScope, promise, value);
         },
-        (reason) => {
+        (reason: unknown) => {
           settleAsyncValue($rootScope, promise, reason);
         },
       );
@@ -64,5 +64,9 @@ function settleAsyncValue(
     _value: value,
   });
 
-  ($rootScope.$handler as any)._scheduleWatchKeys(["async"]);
+  const handler = $rootScope.$handler as {
+    _scheduleWatchKeys: (watchKeys: string[]) => void;
+  };
+
+  handler._scheduleWatchKeys(["async"]);
 }

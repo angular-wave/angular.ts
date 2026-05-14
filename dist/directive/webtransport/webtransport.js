@@ -1,18 +1,24 @@
-import { _webTransport, _parse, _log, _exceptionHandler } from '../../injection-tokens.js';
-import { isString, isObject, uppercase, isFunction, isUndefined } from '../../shared/utils.js';
+import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector } from '../../injection-tokens.js';
+import { createLazyAnimate } from '../../animations/lazy-animate.js';
+import { isString, isObject, uppercase, isFunction, isUndefined, isDefined } from '../../shared/utils.js';
+import { isRealtimeProtocolMessage, getRealtimeProtocolContent, SwapMode } from '../realtime/protocol.js';
+import { createRealtimeSwapHandler } from '../realtime/swap.js';
 
 ngWebTransportDirective.$inject = [
     _webTransport,
     _parse,
+    _compile,
     _log,
     _exceptionHandler,
+    _injector,
 ];
 /**
  * Connects an element to a WebTransport endpoint and evaluates template
  * expressions for incoming datagrams or unidirectional streams.
  */
-function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler) {
+function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector) {
     const decoder = new TextDecoder();
+    const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element, attrs) {
@@ -22,7 +28,9 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
             let connection;
             let streamReader = null;
             function attr(name) {
-                return (attrs[name] || attrs[`data${uppercase(name[0])}${name.slice(1)}`]);
+                const value = attrs[name] ||
+                    attrs[`data${uppercase(name[0])}${name.slice(1)}`];
+                return isString(value) ? value : undefined;
             }
             function evaluate(expression, locals) {
                 if (!expression)
@@ -103,7 +111,9 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
                 }
                 catch {
                     current.ready
-                        .then(() => current.close(reason ? { reason } : undefined))
+                        .then(() => {
+                        current.close(reason ? { reason } : undefined);
+                    })
                         .catch(() => {
                         // The browser may reject a connection that is destroyed while opening.
                     });
@@ -129,6 +139,44 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
                 }
                 return { $message: JSON.parse(text), $text: text };
             }
+            function parseSwapMode(value) {
+                if (isString(value) && value in SwapMode) {
+                    return value;
+                }
+                return undefined;
+            }
+            const handleSwapResponse = createRealtimeSwapHandler({
+                $compile,
+                $log,
+                getAnimate,
+                scope,
+                attrs,
+                element,
+                logPrefix: "ngWebTransport",
+            });
+            function handleProtocolMessage(message, event) {
+                const swap = message.swap || parseSwapMode(attr("swap")) || "innerHTML";
+                const content = getRealtimeProtocolContent(message);
+                if (!isDefined(content) && swap !== "delete" && swap !== "none") {
+                    return false;
+                }
+                const target = message.target
+                    ? document.querySelector(message.target)
+                    : element;
+                if (!target) {
+                    $log.warn(`ngWebTransport: target "${message.target}" not found`);
+                    return false;
+                }
+                const swapped = handleSwapResponse(isString(content) || isObject(content) ? content : String(content), swap, { targetSelector: message.target });
+                if (!swapped)
+                    return false;
+                dispatch("swapped", {
+                    connection,
+                    data: message,
+                    event,
+                });
+                return true;
+            }
             function handleMessage(data, event = null) {
                 if (!connection)
                     return;
@@ -151,6 +199,10 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
                     return;
                 }
                 evaluate(attr("onMessage"), locals);
+                if (isRealtimeProtocolMessage(locals.$message)) {
+                    handleProtocolMessage(locals.$message, event);
+                    return;
+                }
                 if (isUndefined(attr("onMessage"))) {
                     element.textContent = isString(locals.$message)
                         ? locals.$message
@@ -183,7 +235,7 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
                     return;
                 }
                 closeConnection("reconnect");
-                streamReader?.cancel("reconnect");
+                void streamReader?.cancel("reconnect");
                 const userConfig = resolveConfig();
                 const userOnOpen = userConfig.onOpen;
                 const userOnClose = userConfig.onClose;
@@ -245,10 +297,12 @@ function ngWebTransportDirective($webTransport, $parse, $log, $exceptionHandler)
                 await connection.ready;
             }
             element.addEventListener(eventName, () => {
-                connect().catch((error) => handleError(error));
+                connect().catch((error) => {
+                    handleError(error);
+                });
             });
             scope.$on("$destroy", () => {
-                streamReader?.cancel("scope destroyed");
+                void streamReader?.cancel("scope destroyed");
                 closeConnection("scope destroyed");
             });
             if (eventName === "load") {

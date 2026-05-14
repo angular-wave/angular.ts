@@ -1,6 +1,6 @@
 import { _state, _rootScope, _stateRegistry, _transitions, _parse, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { isObject, keys, isString, isArray, assign, isNullOrUndefined, arrayFrom } from '../../shared/utils.js';
+import { assertDefined, isObject, keys, isString, isArray, assign, isNullOrUndefined, arrayFrom } from '../../shared/utils.js';
 import { getInheritedData } from '../../shared/dom.js';
 
 const noopDeregister = () => undefined;
@@ -14,7 +14,9 @@ function appendSplitClasses(classes, value) {
 }
 function getClasses(stateList) {
     const classes = [];
-    stateList.forEach((state) => appendSplitClasses(classes, state._activeClass));
+    stateList.forEach((state) => {
+        appendSplitClasses(classes, state._activeClass);
+    });
     return classes;
 }
 function appendUniqueClasses(target, source) {
@@ -27,13 +29,11 @@ function appendUniqueClasses(target, source) {
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
 function parseStateRef(ref) {
-    const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
+    const paramsOnly = /^\s*({[^}]*})\s*$/.exec(ref);
     if (paramsOnly)
         ref = `(${paramsOnly[1]})`;
-    const parsed = ref
-        .replace(/\n/g, " ")
-        .match(/^\s*([^(]*?)\s*(\((.*)\))?\s*$/);
-    if (!parsed || parsed.length !== 4)
+    const parsed = /^\s*([^(]*?)\s*(\((.*)\))?\s*$/.exec(ref.replace(/\n/g, " "));
+    if (parsed?.length !== 4)
         throw new Error(`Invalid state ref '${ref}'`);
     return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
 }
@@ -50,7 +50,7 @@ function stateContext(el) {
  * Computes the current state-ref definition, href, and navigation options.
  */
 function processedDef($state, $element, def) {
-    const ngState = (def._ngState || $state.current?.name);
+    const ngState = def._ngState || $state.current?.name;
     const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts || {});
     const href = ngState
         ? $state.href(ngState, def._ngStateParams, ngStateOpts)
@@ -105,7 +105,7 @@ function clickHook(el, $state, type, rawDef, scope) {
                     return;
                 }
                 if (!el.getAttribute("disabled") && target._ngState) {
-                    $state
+                    void $state
                         .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                         .then(() => {
                         scope.$emit("$updateBrowser");
@@ -177,9 +177,11 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
                 : undefined;
             const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
             rawDef._ngState = ref._state;
-            rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
+            rawDef._ngStateOpts = ngStateOptsFn
+                ? ngStateOptsFn(scope)
+                : {};
             function update() {
-                rawDef._ngStateParams = assign({}, paramFn && paramFn(scope));
+                rawDef._ngStateParams = assign({}, paramFn?.(scope));
                 const def = processedDef($state, element, rawDef);
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
@@ -254,7 +256,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             inputAttrs.forEach((field) => {
                 rawDef[rawDefKeyByAttr[field]] = attrs[field]
                     ? $parse(attrs[field])(scope)
-                    : null;
+                    : undefined;
                 attrs.$observe(field, (expr) => {
                     watchDeregFns[field]();
                     if (!expr)
@@ -296,7 +298,7 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
             // There probably isn't much point in $observing this
             // ngSrefActive and ngSrefActiveEq share the same directive object with some
             // slight difference in logic routing
-            const activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope) || "";
+            const activeEqClass = assertDefined($interpolate($attrs.ngSrefActiveEq || "", false))($scope) || "";
             try {
                 ngSrefActive = $attrs.ngSrefActive
                     ? $parse($attrs.ngSrefActive)($scope)
@@ -308,7 +310,7 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
             }
             ngSrefActive =
                 ngSrefActive ||
-                    $interpolate($attrs.ngSrefActive || "", false)($scope) ||
+                    assertDefined($interpolate($attrs.ngSrefActive || "", false))($scope) ||
                     "";
             setStatesFromDefinitionObject(ngSrefActive);
             // Allow ngSref to communicate with ngSrefActive[Equals]
@@ -425,6 +427,7 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
                 });
             }
             update();
+            return undefined;
         },
     };
 }

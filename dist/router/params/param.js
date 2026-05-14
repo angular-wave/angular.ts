@@ -1,5 +1,5 @@
 import { isInjectable } from '../../shared/predicates.js';
-import { isDefined, isUndefined, isString, hasOwn, isInstanceOf, isNullOrUndefined, isArray } from '../../shared/utils.js';
+import { isDefined, isUndefined, isString, hasOwn, assertDefined, isInstanceOf, isNullOrUndefined, isArray } from '../../shared/utils.js';
 import { ParamType } from './param-type.js';
 
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
@@ -62,11 +62,10 @@ function getType(cfg, urlType, location, id, paramTypes) {
     if (cfg.type && urlType && urlType.name !== "string")
         throw new Error(`Param '${id}' has two type configurations.`);
     if (cfg.type &&
-        urlType &&
-        urlType.name === "string" &&
+        urlType?.name === "string" &&
         isString(cfg.type) &&
         paramTypes[cfg.type])
-        return paramTypes[cfg.type];
+        return assertDefined(paramTypes[cfg.type]);
     if (urlType)
         return urlType;
     if (!cfg.type) {
@@ -81,7 +80,7 @@ function getType(cfg, urlType, location, id, paramTypes) {
     }
     return isInstanceOf(cfg.type, ParamType)
         ? cfg.type
-        : paramTypes[cfg.type];
+        : assertDefined(paramTypes[cfg.type]);
 }
 /**
  * returns false, true, or the squash value to indicate the "default parameter url squash policy".
@@ -154,15 +153,13 @@ class Param {
         const config = getParamDeclaration(id, location, state);
         type = getType(config, type, location, id, urlConfig._paramTypes);
         const arrayMode = getArrayMode(id, location, config);
-        type = arrayMode ? type && type.$asArray(arrayMode) : type;
+        type = arrayMode ? type?.$asArray(arrayMode) : type;
         const isOptional = config.value !== undefined || location === DefType._SEARCH;
         const dynamic = !!config.dynamic;
         const raw = !!config.raw;
         const squash = getSquashPolicy(config, isOptional, urlConfig._getDefaultSquashPolicy());
         const replace = getReplace(config, arrayMode, isOptional, squash);
-        const inherit = isDefined(config.inherit)
-            ? !!config.inherit
-            : !!type.inherit;
+        const inherit = isDefined(config.inherit) ? config.inherit : type.inherit;
         this.isOptional = isOptional;
         this.type = type;
         this.location = location;

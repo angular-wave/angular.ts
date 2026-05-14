@@ -107,13 +107,15 @@ function optionDirective($interpolate) {
                 const selectCtrlName = "$selectController";
                 const parent = optionElementParam.parentElement;
                 const futureParent = getInheritedData(optionElementParam, FUTURE_PARENT_ELEMENT_KEY);
-                const selectCtrl = (parent ? getCacheData(parent, selectCtrlName) : undefined) ||
+                const selectCtrl = ((parent
+                    ? getCacheData(parent, selectCtrlName)
+                    : undefined) ||
                     (parent?.parentElement
                         ? getCacheData(parent.parentElement, selectCtrlName)
                         : undefined) ||
                     (futureParent
                         ? getInheritedData(futureParent, selectCtrlName)
-                        : null);
+                        : null));
                 if (selectCtrl) {
                     selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn);
                 }

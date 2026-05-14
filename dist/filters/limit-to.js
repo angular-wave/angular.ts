@@ -12,9 +12,8 @@ function limitToFilter() {
      * `begin` defaults to `0` and negative values are treated as offsets from the end.
      */
     return function (input, limit, begin) {
-        if (isFunction(input)) {
+        if (isFunction(input))
             input = input();
-        }
         let numericLimit;
         if (Math.abs(Number(limit)) === Infinity) {
             numericLimit = Number(limit);

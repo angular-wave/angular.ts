@@ -59,7 +59,7 @@ The repository should include a Rust parity checklist equivalent to the Dart
 integration's namespace parity file:
 
 ```text
-integrations/rust/NG_NAMESPACE_PARITY.md
+integrations/wasm/rust/NG_NAMESPACE_PARITY.md
 ```
 
 New public `ng` namespace types must require a Rust parity decision in the same

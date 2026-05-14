@@ -7,11 +7,10 @@ function ngViewportDirective($parse) {
     return {
         restrict: "A",
         link(scope, element, attrs) {
-            const attrMap = attrs;
-            const enterExpr = attrMap.onEnter;
-            const leaveExpr = attrMap.onLeave;
-            const enterFn = enterExpr ? $parse(enterExpr) : undefined;
-            const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
+            const enterExpr = attrs.onEnter;
+            const leaveExpr = attrs.onLeave;
+            const enterFn = typeof enterExpr === "string" ? $parse(enterExpr) : undefined;
+            const leaveFn = typeof leaveExpr === "string" ? $parse(leaveExpr) : undefined;
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {

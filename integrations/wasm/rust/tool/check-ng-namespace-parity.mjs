@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 
 const root = resolve(new URL("../../../", import.meta.url).pathname);
 const namespacePath = resolve(root, "@types/namespace.d.ts");
-const parityPath = resolve(root, "integrations/rust/NG_NAMESPACE_PARITY.md");
+const parityPath = resolve(
+  root,
+  "integrations/wasm/rust/NG_NAMESPACE_PARITY.md",
+);
 
 const allowedStatuses = new Set([
   "covered",

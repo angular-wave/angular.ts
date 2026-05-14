@@ -1,6 +1,7 @@
 import { _parse } from '../injection-tokens.js';
-import { isNullOrUndefined, isFunction, isArrayLike, minErr, isString, isObject, hasCustomToString, isArray } from '../shared/utils.js';
+import { isNullOrUndefined, isFunction, isArrayLike, isString, isObject, createErrorFactory, callFunction, hasCustomToString, isArray } from '../shared/utils.js';
 
+const orderByError = createErrorFactory("orderBy");
 orderByFilter.$inject = [_parse];
 /** Registers the built-in stable ordering filter. */
 function orderByFilter($parse) {
@@ -25,7 +26,7 @@ function orderByFilter($parse) {
         if (isFunction(array))
             return array();
         if (!isArrayLike(array)) {
-            throw minErr("orderBy")("notarray", "Expected array but received: {0}", array);
+            throw orderByError("notarray", "Expected array but received: {0}", array);
         }
         if (!isArray(sortPredicate)) {
             sortPredicate = [sortPredicate ?? "+"]; // if undefined, default to "+"
@@ -109,18 +110,20 @@ function orderByFilter($parse) {
                 get = predicate;
             }
             else if (isString(predicate)) {
-                if (predicate.charAt(0) === "+" || predicate.charAt(0) === "-") {
-                    descending = predicate.charAt(0) === "-" ? -1 : 1;
+                if (predicate.startsWith("+") || predicate.startsWith("-")) {
+                    descending = predicate.startsWith("-") ? -1 : 1;
                     predicate = predicate.substring(1);
                 }
                 if (predicate !== "") {
                     const parsed = $parse(predicate);
                     if (parsed._constant) {
                         const key = parsed();
-                        get = (value) => value[key];
+                        get = (value) => isObject(value)
+                            ? value[String(key)]
+                            : undefined;
                     }
                     else {
-                        get = parsed;
+                        get = (value) => parsed(value);
                     }
                 }
             }
@@ -150,14 +153,17 @@ function orderByFilter($parse) {
      */
     function objectValue(value) {
         // If `valueOf` is a valid function use that
-        if (isFunction(value.valueOf)) {
-            value = value.valueOf();
+        let valueRecord = value;
+        if (isFunction(valueRecord.valueOf)) {
+            value = callFunction(valueRecord.valueOf, value);
             if (isPrimitive(value))
                 return value;
+            valueRecord = value;
         }
         // If `toString` is a valid function and not the one from `Object.prototype` use that
-        if (hasCustomToString(value)) {
-            value = value.toString();
+        if (isFunction(valueRecord.toString) &&
+            hasCustomToString(value)) {
+            value = callFunction(valueRecord.toString, value);
             if (isPrimitive(value))
                 return value;
         }
@@ -181,6 +187,7 @@ function orderByFilter($parse) {
         }
         else if (type === "object") {
             value = objectValue(value);
+            type = value === null ? "null" : typeof value;
         }
         return { value, type, index };
     }
@@ -216,7 +223,11 @@ function orderByFilter($parse) {
                     value2 = v2.index;
             }
             if (value1 !== value2) {
-                result = value1 < value2 ? -1 : 1;
+                result =
+                    value1 <
+                        value2
+                        ? -1
+                        : 1;
             }
         }
         else {

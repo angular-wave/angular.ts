@@ -45,7 +45,7 @@ export interface NonScopeMarked {
 
 interface Listener {
   /** @internal */
-  _originalTarget: any;
+  _originalTarget: ScopeTarget;
   /** @internal */
   _listenerFn: ListenerFn;
   /** @internal */
@@ -157,7 +157,7 @@ type ArrayMutationWrapper = (...args: any[]) => unknown;
 
 type ArrayMutationWrapperCache = Partial<Record<string, ArrayMutationWrapper>>;
 
-type CollectionMethodWrapper = (...args: any[]) => any;
+type CollectionMethodWrapper = (...args: unknown[]) => unknown;
 
 let uid = 0;
 
@@ -771,6 +771,34 @@ function collectExpressionListenerKeys(
   }
 }
 
+function getFilterInputWatchKeys(
+  expr: ASTNode,
+): Array<string | undefined> | undefined {
+  if (!(expr as ExpressionNode)._filter) {
+    return undefined;
+  }
+
+  const toWatch = expr._toWatch;
+
+  if (!toWatch?.length) {
+    return undefined;
+  }
+
+  const watchKeys = new Array<string | undefined>(toWatch.length);
+
+  for (let i = 0, l = toWatch.length; i < l; i++) {
+    const watchKey = resolveWatchKey(toWatch[i]);
+
+    if (!watchKey) {
+      return undefined;
+    }
+
+    watchKeys[i] = watchKey;
+  }
+
+  return watchKeys;
+}
+
 /**
  * @private
  * Creates a scope proxy for the target object, intercepting property changes.
@@ -989,6 +1017,14 @@ function isNativeScopedTarget(
   return isMapTarget(target) || isSetTarget(target) || isDateTarget(target);
 }
 
+function isNativeIteratorTarget(target: object): boolean {
+  try {
+    return Object.prototype.toString.call(target).endsWith(" Iterator]");
+  } catch {
+    return false;
+  }
+}
+
 function unwrapCollectionArgs(args: any[]): any[] {
   let rawArgs: any[] | undefined;
 
@@ -1114,6 +1150,12 @@ export function isNonScope(target: unknown): boolean {
     identityTarget === global.self ||
     identityTarget === global.frames
   ) {
+    nonScopeCache.add(objectTarget);
+
+    return true;
+  }
+
+  if (isNativeIteratorTarget(objectTarget)) {
     nonScopeCache.add(objectTarget);
 
     return true;
@@ -2250,7 +2292,7 @@ export class Scope {
   _getNativeCollectionMethodWrapper(
     target: Map<any, any> | Set<any> | Date,
     property: PropertyKey,
-    method: (...args: any[]) => any,
+    method: (...args: unknown[]) => unknown,
   ): CollectionMethodWrapper {
     let wrappers = this._collectionMethodWrappers.get(target);
 
@@ -2265,7 +2307,7 @@ export class Scope {
       return cachedWrapper;
     }
 
-    const wrapper = (...args: any[]) => {
+    const wrapper = (...args: unknown[]) => {
       const rawArgs = unwrapCollectionArgs(args);
 
       if (isMapTarget(target) && isString(property)) {
@@ -2292,9 +2334,9 @@ export class Scope {
   _applyMapMethod(
     target: Map<any, any>,
     property: string,
-    method: (...args: any[]) => any,
-    args: any[],
-  ): any {
+    method: (...args: unknown[]) => unknown,
+    args: unknown[],
+  ): unknown {
     if (!mapMutationMethods.has(property)) {
       return Reflect.apply(method, target, args);
     }
@@ -2360,9 +2402,9 @@ export class Scope {
   _applySetMethod(
     target: Set<any>,
     property: string,
-    method: (...args: any[]) => any,
-    args: any[],
-  ): any {
+    method: (...args: unknown[]) => unknown,
+    args: unknown[],
+  ): unknown {
     if (!setMutationMethods.has(property)) {
       return Reflect.apply(method, target, args);
     }
@@ -2418,9 +2460,9 @@ export class Scope {
   _applyDateMethod(
     target: Date,
     property: string,
-    method: (...args: any[]) => any,
-    args: any[],
-  ): any {
+    method: (...args: unknown[]) => unknown,
+    args: unknown[],
+  ): unknown {
     if (!isDateMutationMethod(property)) {
       return Reflect.apply(method, target, args);
     }
@@ -2536,7 +2578,7 @@ export class Scope {
       (value) => {
         this._applyPromiseSettlement(target, property, promise, value, proxy);
       },
-      (reason) => {
+      (reason: unknown) => {
         this._applyPromiseSettlement(target, property, promise, reason, proxy);
       },
     );
@@ -2547,7 +2589,7 @@ export class Scope {
     target: ScopeTarget,
     property: string,
     promise: PromiseLike<any>,
-    value: any,
+    value: unknown,
     proxy: ScopeProxy,
   ): void {
     if (this._destroyed || unwrapScopeValue(target[property]) !== promise) {
@@ -2978,6 +3020,8 @@ export class Scope {
       case ASTType._CallExpression: {
         const toWatch = assertDefined(expr._toWatch);
 
+        const filterInputWatchKeys = getFilterInputWatchKeys(expr);
+
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
 
@@ -2999,7 +3043,14 @@ export class Scope {
         }
 
         registerListenerKeys(this, listener, keySet);
-        this._scheduleListener([listener]);
+
+        if (filterInputWatchKeys) {
+          for (let i = 0, l = filterInputWatchKeys.length; i < l; i++) {
+            this._scheduleListener([listener]);
+          }
+        } else {
+          this._scheduleListener([listener]);
+        }
 
         return () => {
           deregisterListenerKeys(this, listener._id, keySet);
@@ -3346,7 +3397,7 @@ export class Scope {
   }
 
   /** @internal Registers owner-key mutation delivery for a watched object value. */
-  _registerObjectMutationTarget(key: string, target: any): void {
+  _registerObjectMutationTarget(key: string, target: ScopeTarget): void {
     const ownerTarget = getObjectListenerTarget(target?.[key]);
 
     if (ownerTarget) {

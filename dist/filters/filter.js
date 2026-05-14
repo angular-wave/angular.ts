@@ -1,5 +1,6 @@
-import { isArrayLike, isNullOrUndefined, minErr, arrayFrom, isNull, isObject, isArray, hasOwn, isFunction, isUndefined, equals, hasCustomToString } from '../shared/utils.js';
+import { isArrayLike, isNullOrUndefined, arrayFrom, createErrorFactory, isNull, isObject, isArray, hasOwn, isFunction, isUndefined, equals, hasCustomToString } from '../shared/utils.js';
 
+const filterError = createErrorFactory("filter");
 /** Registers the built-in collection filtering function. */
 function filterFilter() {
     /**
@@ -15,7 +16,7 @@ function filterFilter() {
             if (isNullOrUndefined(array)) {
                 return array;
             }
-            throw minErr("filter")("notarray", "Expected array but received: {0}", array);
+            throw filterError("notarray", "Expected array but received: {0}", array);
         }
         anyPropertyKey = anyPropertyKey || "$";
         let predicateFn;
@@ -81,24 +82,40 @@ function createPredicateFn(expression, comparator, anyPropertyKey = "$", matchAg
                 // Should not compare primitives against objects, unless they have custom `toString` method
                 return false;
             }
-            actual = `${actual}`.toLowerCase();
-            expected = `${expected}`.toLowerCase();
-            return actual.indexOf(expected) !== -1;
+            actual = String(actual).toLowerCase();
+            const expectedString = stringifyComparable(expected).toLowerCase();
+            return actual.includes(expectedString);
         };
     }
     const predicateFn = function (item) {
         if (shouldMatchPrimitives && !isObject(item)) {
             return deepCompare(item, expression[anyPropertyKey], comparator, anyPropertyKey, false);
         }
-        return deepCompare(item, expression, comparator, anyPropertyKey, !!matchAgainstAnyProp);
+        return deepCompare(item, expression, comparator, anyPropertyKey, matchAgainstAnyProp);
     };
     return predicateFn;
+}
+function stringifyComparable(value) {
+    switch (typeof value) {
+        case "string":
+            return value;
+        case "number":
+        case "boolean":
+        case "bigint":
+        case "symbol":
+        case "undefined":
+            return String(value);
+        case "function":
+            return value.toString();
+        default:
+            return "";
+    }
 }
 /** Recursively compares actual and expected values for the filter predicate. */
 function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstAnyProp, dontMatchWholeObject = false) {
     const actualType = getTypeForFilter(actual);
     const expectedType = getTypeForFilter(expected);
-    if (expectedType === "string" && expected.charAt(0) === "!") {
+    if (expectedType === "string" && expected.startsWith("!")) {
         return !deepCompare(actual, expected.substring(1), comparator, anyPropertyKey, matchAgainstAnyProp);
     }
     if (isArray(actual)) {
@@ -113,10 +130,7 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
                 for (const key in actualObj) {
                     if (!hasOwn(actualObj, key))
                         continue;
-                    // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
-                    // See: https://github.com/angular/angular.ts/issues/15644
-                    if (key.charAt &&
-                        key.charAt(0) !== "$" &&
+                    if (!key.startsWith("$") &&
                         deepCompare(actualObj[key], expected, comparator, anyPropertyKey, true)) {
                         return true;
                     }
@@ -143,11 +157,11 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
                 }
                 return true;
             }
-            return comparator(actual, expected);
+            return Boolean(comparator(actual, expected));
         case "function":
             return false;
         default:
-            return comparator(actual, expected);
+            return Boolean(comparator(actual, expected));
     }
 }
 // Used for easily differentiating between `null` and actual `object`

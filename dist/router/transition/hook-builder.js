@@ -14,7 +14,7 @@ function buildHooks(transition, hookType, hooks) {
     const treeChanges = transition._treeChanges;
     const baseHookOptions = {
         transition,
-        current: () => transition._options.current?.() || undefined,
+        current: () => transition._options.current?.() ?? undefined,
     };
     const hookTuples = [];
     const registeredHooks = transition._transitionService._getHooks(hookType._name);
@@ -53,8 +53,8 @@ function buildHooks(transition, hookType, hooks) {
  * Sorts hooks first by state depth, then by explicit hook priority.
  */
 function compareHookTupleDepth(left, right, factor) {
-    const depthDelta = ((left.node.state.path || []).length -
-        (right.node.state.path || []).length) *
+    const depthDelta = ((left.node.state.path ?? []).length -
+        (right.node.state.path ?? []).length) *
         factor;
     return depthDelta !== 0
         ? depthDelta

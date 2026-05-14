@@ -24,7 +24,7 @@ function expandUriTemplate(template, vars = {}) {
  */
 function pctEncode(str, allowReserved) {
     // encodeURIComponent, then restore reserved if allowed
-    const encoded = encodeURIComponent(String(str));
+    const encoded = encodeURIComponent(str);
     if (allowReserved) {
         // Reserved characters per RFC 3986
         return encoded.replace(/(%3A|%2F|%3F|%23|%5B|%5D|%40|%21|%24|%26|%27|%28|%29|%2A|%2B|%2C|%3B|%3D)/gi, (char) => decodeURIComponent(char));

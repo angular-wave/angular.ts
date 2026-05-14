@@ -5,8 +5,17 @@ import { instantiateWasm } from '../../shared/utils.js';
  */
 function ngWasmDirective() {
     return {
-        async link($scope, _, $attrs) {
-            $scope.$target[$attrs.as || "wasm"] = (await instantiateWasm($attrs.src)).exports;
+        link($scope, _, $attrs) {
+            const attrValues = $attrs;
+            const { src } = attrValues;
+            const exportName = attrValues.as;
+            if (typeof src !== "string") {
+                return;
+            }
+            void (async () => {
+                const target = $scope.$target;
+                target[typeof exportName === "string" ? exportName : "wasm"] = (await instantiateWasm(src)).exports;
+            })();
         },
     };
 }

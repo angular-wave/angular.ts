@@ -31,10 +31,10 @@ function createTopicService(eventBus, topic) {
         publish(event, ...args) {
             return eventBus.publish(eventName(event), ...args);
         },
-        subscribe(event, fn, context = undefined) {
+        subscribe(event, fn, context) {
             return eventBus.subscribe(eventName(event), fn, context);
         },
-        subscribeOnce(event, fn, context = undefined) {
+        subscribeOnce(event, fn, context) {
             return eventBus.subscribeOnce(eventName(event), fn, context);
         },
         getCount(event) {
@@ -91,7 +91,7 @@ class PubSub {
      * @param [context] - Optional `this` context for the callback.
      * @returns A function that unsubscribes this listener.
      */
-    subscribe(topic, fn, context = undefined) {
+    subscribe(topic, fn, context) {
         if (this._disposed)
             return () => false;
         let listeners = this._topics[topic];
@@ -111,7 +111,7 @@ class PubSub {
      * @param [context] - Optional `this` context for the callback.
      * @returns A function that unsubscribes this listener.
      */
-    subscribeOnce(topic, fn, context = undefined) {
+    subscribeOnce(topic, fn, context) {
         if (this._disposed)
             return () => false;
         let called = false;
@@ -120,7 +120,7 @@ class PubSub {
                 return;
             called = true;
             unsub(); // unsubscribe before running
-            fn.apply(context, args);
+            Reflect.apply(fn, context, args);
         };
         const unsub = this.subscribe(topic, wrapper);
         return unsub;
@@ -133,7 +133,7 @@ class PubSub {
      * @param [context] - Optional `this` context.
      * @returns True if the listener was found and removed.
      */
-    unsubscribe(topic, fn, context = undefined) {
+    unsubscribe(topic, fn, context) {
         if (this._disposed)
             return false;
         const listeners = this._topics[topic];

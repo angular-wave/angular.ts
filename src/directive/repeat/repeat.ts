@@ -256,8 +256,17 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     }
   }
 
-  function isIterableCollection(value: any): value is Iterable<any> {
-    return isDefined(value) && isFunction(value[Symbol.iterator]);
+  function isIterableCollection(value: unknown): value is Iterable<unknown> {
+    if (
+      !isDefined(value) ||
+      (typeof value !== "object" && typeof value !== "function")
+    ) {
+      return false;
+    }
+
+    return isFunction(
+      (value as { [Symbol.iterator]?: unknown })[Symbol.iterator],
+    );
   }
 
   function removeBlockNodes(nodes: Node[]): void {
@@ -791,7 +800,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               $scope[aliasAs] = collection;
             }
 
-            const isIndexKeyedCollection = isArrayLike(collection);
+            let isIndexKeyedCollection = isArrayLike(collection);
 
             if (isIndexKeyedCollection) {
               collectionKeys = arrayFrom(collection as ArrayLike<unknown>);
@@ -799,6 +808,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             } else if (isIterableCollection(collection)) {
               collectionKeys = arrayFrom(collection);
               collection = collectionKeys;
+              isIndexKeyedCollection = true;
               trackByIdFn = createTrackByIdArrayFn(indexProperty);
             } else {
               trackByIdFn = trackByIdObjFn;

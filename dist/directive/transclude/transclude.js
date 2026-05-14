@@ -1,9 +1,9 @@
 import { _compile } from '../../injection-tokens.js';
-import { isFunction, isInstanceOf, arrayFrom, isArray, minErr } from '../../shared/utils.js';
+import { isFunction, isInstanceOf, arrayFrom, isArray, createErrorFactory } from '../../shared/utils.js';
 import { emptyElement, startingTag } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 
-const ngTranscludeMinErr = minErr("ngTransclude");
+const ngTranscludeError = createErrorFactory("ngTransclude");
 ngTranscludeDirective.$inject = [_compile];
 function ngTranscludeDirective($compile) {
     return {
@@ -12,16 +12,21 @@ function ngTranscludeDirective($compile) {
             emptyElement(tElement);
             function ngTranscludePostLink($scope, $element, $attrs, _controller, $transclude) {
                 if (!$transclude) {
-                    throw ngTranscludeMinErr("orphan", "Illegal use of ngTransclude directive in the template! " +
+                    throw ngTranscludeError("orphan", "Illegal use of ngTransclude directive in the template! " +
                         "No parent directive that requires a transclusion found. " +
                         "Element: {0}", startingTag($element));
                 }
                 if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
                     $attrs.ngTransclude = "";
                 }
-                const slotName = $attrs.ngTransclude || $attrs.ngTranscludeSlot;
+                const transcludeName = $attrs.ngTransclude;
+                const transcludeSlot = $attrs.ngTranscludeSlot;
+                const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0
+                    ? transcludeName
+                    : transcludeSlot;
+                const slotName = typeof slotNameValue === "string" ? slotNameValue : undefined;
                 $transclude(ngTranscludeCloneAttachFn, null, slotName);
-                if (slotName && !$transclude.isSlotFilled?.(slotName)) {
+                if (slotName && $transclude.isSlotFilled?.(slotName) === false) {
                     useFallbackContent();
                 }
                 function ngTranscludeCloneAttachFn(clone, transcludedScope) {
@@ -32,9 +37,8 @@ function ngTranscludeDirective($compile) {
                         };
                         const lastNode = nodes[nodes.length - 1];
                         if (transcludedScope &&
-                            lastNode &&
                             "addEventListener" in lastNode &&
-                            isFunction(lastNode.addEventListener)) {
+                            isFunction(lastNode.addEventListener.bind(lastNode))) {
                             lastNode.addEventListener("$destroy", destroyScope, {
                                 once: true,
                             });
@@ -50,7 +54,9 @@ function ngTranscludeDirective($compile) {
                 }
                 function useFallbackContent() {
                     fallbackLinkFn($scope, ((clone) => {
-                        normalizeNodes(clone).forEach((node) => $element.append(node));
+                        normalizeNodes(clone).forEach((node) => {
+                            $element.append(node);
+                        });
                     }));
                 }
                 function normalizeNodes(node) {

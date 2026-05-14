@@ -1,10 +1,1 @@
-.github
-.husky
-.idea
-dist
-node_modules
-playwright-report
-docs/public
-docs/resources
-typedoc
-*.md
+integrations/**

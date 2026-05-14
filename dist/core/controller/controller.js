@@ -1,7 +1,7 @@
 import { _injector } from '../../injection-tokens.js';
-import { isString, assertArgFn, isObject, isFunction, assertNotHasOwnProperty, minErr, createObject, keys, isArray } from '../../shared/utils.js';
+import { isString, assertArgFn, isObject, isFunction, assertNotHasOwnProperty, createObject, keys, createErrorFactory, isArray } from '../../shared/utils.js';
 
-const $controllerMinErr = minErr("$controller");
+const $controllerError = createErrorFactory("$controller");
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 function identifierForController(controller, ident) {
     if (ident && isString(ident)) {
@@ -17,7 +17,7 @@ function normalizeControllerDef(def, name) {
     if (isArray(def) || isFunction(def)) {
         return def;
     }
-    throw $controllerMinErr("ctrlreg", "Controller '{0}' must be a function or an array-annotated injectable.", name);
+    throw $controllerError("ctrlreg", "Controller '{0}' must be a function or an array-annotated injectable.", name);
 }
 function unwrapController(injectable, argNameForErrors) {
     const candidate = isArray(injectable)
@@ -25,10 +25,11 @@ function unwrapController(injectable, argNameForErrors) {
         : injectable;
     assertArgFn(candidate, argNameForErrors || "controller", true);
     const func = candidate;
+    const funcMetadata = func;
     return {
         func,
-        name: func.name || "",
-        prototype: func.prototype || null,
+        name: funcMetadata.name || "",
+        prototype: funcMetadata.prototype || null,
     };
 }
 class ControllerProvider {
@@ -43,15 +44,15 @@ class ControllerProvider {
                     let identifier = ident && isString(ident) ? ident : null;
                     later = later === true;
                     if (isString(expression)) {
-                        const match = expression.match(CNTRL_REG);
+                        const match = CNTRL_REG.exec(expression);
                         if (!match) {
-                            throw $controllerMinErr("ctrlfmt", "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.", expression);
+                            throw $controllerError("ctrlfmt", "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.", expression);
                         }
                         constructorName = match[1];
                         identifier = identifier || match[3] || null;
                         const lookedUp = this._controllers.get(constructorName);
                         if (!lookedUp) {
-                            throw $controllerMinErr("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
+                            throw $controllerError("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
                         }
                         expression = lookedUp;
                         assertArgFn(expression, constructorName, true);
@@ -65,7 +66,7 @@ class ControllerProvider {
                             instance.$controllerIdentifier = identifier;
                             this._addIdentifier(locals, identifier, instance, exportName);
                         }
-                        if (instance?.constructor?.$scopename && locals?.$scope) {
+                        if (instance.constructor?.$scopename && locals?.$scope) {
                             locals.$scope.$scopename =
                                 instance.constructor.$scopename;
                         }
@@ -111,10 +112,11 @@ class ControllerProvider {
     /** @internal */
     _addIdentifier(locals, identifier, instance, name) {
         if (!(locals && isObject(locals.$scope))) {
-            throw minErr("$controller")("noscp", "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.", name, identifier);
+            throw $controllerError("noscp", "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.", name, identifier);
         }
-        locals.$scope[identifier] = instance;
-        locals.$scope.$controllerIdentifier = identifier;
+        const scope = locals.$scope;
+        scope[identifier] = instance;
+        scope.$controllerIdentifier = identifier;
     }
 }
 

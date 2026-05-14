@@ -24,9 +24,9 @@ class HttpRestBackend {
             method: request.method,
             url: request.url,
             data: request.data ?? null,
-            params: request.params || {},
+            params: request.params ?? {},
             ...this._options,
-            ...(request.options || {}),
+            ...(request.options ?? {}),
         });
     }
 }

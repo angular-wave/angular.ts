@@ -1,5 +1,5 @@
 import { _parse, _element, _attrs, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, assertNotHasOwnProperty, shallowCopy, keys, arrayRemove, deProxy, isArray, isUndefined, isBoolean, isObjectEmpty, snakeCase, extend } from '../../shared/utils.js';
+import { hasAnimate, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, keys, arrayRemove, isFunction, isArray, isUndefined, isBoolean, isObjectEmpty, snakeCase, extend } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, PRISTINE_CLASS, DIRTY_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 
@@ -106,7 +106,7 @@ class FormController {
         this._classCache[VALID_CLASS] = isValid;
         this._classCache[INVALID_CLASS] = !isValid;
         this._validityPropagationId = nextValidityPropagationId++;
-        this.$target = {};
+        this.$target = { _parentForm: nullFormCtrl };
     }
     /**
      * Rollback all form controls pending updates to the `$modelValue`.
@@ -117,7 +117,8 @@ class FormController {
      */
     $rollbackViewValue() {
         this._controls.forEach((control) => {
-            control.$rollbackViewValue();
+            callFunction(control
+                .$rollbackViewValue, control);
         });
     }
     /**
@@ -129,7 +130,8 @@ class FormController {
      */
     $commitViewValue() {
         this._controls.forEach((control) => {
-            control.$commitViewValue();
+            callFunction(control
+                .$commitViewValue, control);
         });
     }
     /**
@@ -154,7 +156,7 @@ class FormController {
         this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.$name) {
-            this[control.$name] = control;
+            this[String(control.$name)] = control;
         }
         control.$target._parentForm = this;
     }
@@ -176,6 +178,17 @@ class FormController {
     $getControls() {
         return shallowCopy(this._controls);
     }
+    /** @internal Returns the registered public control reference for a raw/proxied controller. */
+    _resolveRegisteredControl(controller) {
+        const rawController = deProxy(controller);
+        for (let i = 0, l = this._controls.length; i < l; i++) {
+            const control = this._controls[i];
+            if (control === controller || deProxy(control) === rawController) {
+                return control;
+            }
+        }
+        return controller;
+    }
     // Private API: rename a form control
     /**
      * Renames a registered control on the form controller.
@@ -184,10 +197,12 @@ class FormController {
     _renameControl(control, newName) {
         const oldName = control.$name;
         this._validityPropagationId = nextValidityPropagationId++;
-        if (this[oldName] === control) {
-            delete this[oldName];
+        const formRecord = this;
+        const oldKey = String(oldName);
+        if (formRecord[oldKey] === control) {
+            deleteProperty(formRecord, oldKey);
         }
-        this[newName] = control;
+        formRecord[String(newName)] = control;
         control.$name = newName;
     }
     /**
@@ -203,21 +218,24 @@ class FormController {
     $removeControl(control) {
         this._validityPropagationId = nextValidityPropagationId++;
         if (control.$name &&
-            this[control.$name] === control) {
-            delete this[control.$name];
+            this[String(control.$name)] === control) {
+            deleteProperty(this, String(control.$name));
         }
-        this.$pending &&
+        if (this.$pending) {
             keys(this.$pending).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
-        this.$error &&
+        }
+        if (this.$error) {
             keys(this.$error).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
-        this._success &&
+        }
+        if (this._success) {
             keys(this._success).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
+        }
         arrayRemove(this._controls, control);
         control.$target._parentForm = nullFormCtrl;
     }
@@ -267,7 +285,8 @@ class FormController {
         this.$pristine = true;
         this.$submitted = false;
         this._controls.forEach((control) => {
-            control.$setPristine();
+            callFunction(control
+                .$setPristine, control);
         });
     }
     /**
@@ -281,7 +300,8 @@ class FormController {
      */
     $setUntouched() {
         this._controls.forEach((control) => {
-            control.$setUntouched();
+            callFunction(control
+                .$setUntouched, control);
         });
     }
     /**
@@ -289,7 +309,11 @@ class FormController {
      * parent forms of the form.
      */
     $setSubmitted() {
-        let rootForm = this;
+        if (!this._parentForm || this._parentForm === nullFormCtrl) {
+            this._setSubmitted();
+            return;
+        }
+        let rootForm = this._parentForm;
         while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
             rootForm = rootForm._parentForm;
         }
@@ -305,8 +329,10 @@ class FormController {
         }
         this.$submitted = true;
         this._controls.forEach((control) => {
-            if (control._setSubmitted) {
-                control._setSubmitted();
+            const maybeSetSubmitted = control
+                ._setSubmitted;
+            if (isFunction(maybeSetSubmitted)) {
+                callFunction(maybeSetSubmitted, control);
             }
         });
     }
@@ -316,6 +342,7 @@ class FormController {
     /** @internal */
     _set(object, property, controller) {
         object = deProxy(object);
+        controller = this._resolveRegisteredControl(controller);
         const list = object[property];
         if (!list || !isArray(list)) {
             object[property] = [controller];
@@ -340,7 +367,7 @@ class FormController {
         }
         if (!isArray(list)) {
             if (list === controller || deProxy(list) === deProxy(controller)) {
-                delete object[property];
+                deleteProperty(object, property);
             }
             return;
         }
@@ -350,7 +377,7 @@ class FormController {
             rawList.splice(index, 1);
         }
         if (rawList.length === 0) {
-            delete object[property];
+            deleteProperty(object, property);
         }
     }
     /**
@@ -374,7 +401,26 @@ class FormController {
      *        triggering the change.
      */
     $setValidity(validationErrorKey, state, controller) {
-        const that = this;
+        /**
+         * Creates a controller bucket if needed and records a controller under the given key.
+         */
+        const createAndSet = (ctrl, name, value, controllerParam) => {
+            if (!ctrl[name]) {
+                ctrl[name] = {};
+            }
+            this._set(ctrl[name], value, controllerParam);
+        };
+        /**
+         * Removes a controller from a bucket and cleans up empty containers.
+         */
+        const unsetAndCleanup = (ctrl, name, value, controllerParam) => {
+            if (ctrl[name]) {
+                this._unset(ctrl[name], value, controllerParam);
+            }
+            if (isObjectEmpty(ctrl[name])) {
+                ctrl[name] = undefined;
+            }
+        };
         if (isUndefined(state)) {
             createAndSet(this, "$pending", validationErrorKey, controller);
         }
@@ -409,7 +455,7 @@ class FormController {
         // where setting/unsetting only increments/decrements the value,
         // and does not replace it.
         let combinedState;
-        if (this.$pending && this.$pending[validationErrorKey]) {
+        if (this.$pending?.[validationErrorKey]) {
             combinedState = undefined;
         }
         else if (this.$error[validationErrorKey]) {
@@ -423,26 +469,6 @@ class FormController {
         }
         toggleValidationCss(this, validationErrorKey, combinedState);
         this._parentForm.$setValidity(validationErrorKey, combinedState, this);
-        /**
-         * Creates a controller bucket if needed and records a controller under the given key.
-         */
-        function createAndSet(ctrl, name, value, controllerParam) {
-            if (!ctrl[name]) {
-                ctrl[name] = {};
-            }
-            that._set(ctrl[name], value, controllerParam);
-        }
-        /**
-         * Removes a controller from a bucket and cleans up empty containers.
-         */
-        function unsetAndCleanup(ctrl, name, value, controllerParam) {
-            if (ctrl[name]) {
-                that._unset(ctrl[name], value, controllerParam);
-            }
-            if (isObjectEmpty(ctrl[name])) {
-                ctrl[name] = undefined;
-            }
-        }
         /**
          * Updates the CSS validity classes for the controller and validation key.
          */
@@ -565,9 +591,9 @@ const formDirectiveFactory = function (isNgForm) {
                 compile: function ngFormCompile(formElement, attr) {
                     // Setup initial state of the control
                     formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
-                    const nameAttr = attr.name
+                    const nameAttr = !isUndefined(attr.name)
                         ? "name"
-                        : isNgForm && attr.ngForm
+                        : isNgForm && !isUndefined(attr.ngForm)
                             ? "ngForm"
                             : false;
                     return {
@@ -600,12 +626,12 @@ const formDirectiveFactory = function (isNgForm) {
                                 attrParam.$observe(nameAttr, (newValue) => {
                                     if (controller.$name === newValue)
                                         return;
-                                    scope.$target[controller.$name] = undefined;
+                                    scope.$target[String(controller.$name)] = undefined;
                                     controller._parentForm._renameControl(controller, newValue);
                                     if (scope.$target !== controller._parentForm &&
                                         controller._parentForm !== nullFormCtrl) ;
                                     else {
-                                        scope.$target[newValue] = controller;
+                                        scope.$target[String(newValue)] = controller;
                                     }
                                 });
                             }

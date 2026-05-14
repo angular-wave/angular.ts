@@ -1,6 +1,6 @@
 import { tail, pushR } from './common.js';
 import { isPromise, isInjectable } from './predicates.js';
-import { isArray, isString, isUndefined, isObject, isNull, isFunction } from './utils.js';
+import { isArray, isString, isUndefined, isObject, isNull, callFunction, isFunction } from './utils.js';
 
 /**
  * Functions that manipulate strings
@@ -29,10 +29,10 @@ const FN_LENGTH = 9;
 /** Returns a stable string representation for a function. */
 function functionToString(fn) {
     const fnStr = fnToString(fn);
-    const namedFunctionMatch = fnStr.match(/^(function [^ ]+\([^)]*\))/);
+    const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
     const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
     const fnName = fn.name || "";
-    if (fnName && toStr.match(/function \(/)) {
+    if (fnName && /function \(/.exec(toStr)) {
         return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
     }
     return toStr;
@@ -40,13 +40,16 @@ function functionToString(fn) {
 /** Returns the raw `toString()` value for a function or injectable array. */
 function fnToString(fn) {
     const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
-    return (_fn && _fn.toString()) || "undefined";
+    return _fn?.toString() || "undefined";
 }
 /** Converts arbitrary values into short readable debug strings. */
 function stringify(value) {
     const seen = [];
     const isRejection = (obj) => {
-        return obj && isFunction(obj.then) && obj.constructor.name === "Rejection";
+        return (isObject(obj) &&
+            "then" in obj &&
+            isFunction(obj.then) &&
+            obj.constructor.name === "Rejection");
     };
     const hasToString = (obj) => isObject(obj) &&
         !isArray(obj) &&
@@ -55,7 +58,7 @@ function stringify(value) {
     /** Formats a single item while tracking circular references. */
     function format(item) {
         if (isObject(item)) {
-            if (seen.indexOf(item) !== -1)
+            if (seen.includes(item))
                 return "[circular ref]";
             seen.push(item);
         }
@@ -66,9 +69,9 @@ function stringify(value) {
         if (isPromise(item))
             return "[Promise]";
         if (isRejection(item))
-            return item._transitionRejection.toString();
+            return String(item._transitionRejection);
         if (hasToString(item))
-            return item.toString();
+            return String(callFunction(item.toString, item));
         if (isInjectable(item))
             return functionToString(item);
         return item;
@@ -77,9 +80,10 @@ function stringify(value) {
         // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
         // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
         // manually stringifying it.
-        return format(value);
+        return String(format(value));
     }
-    return JSON.stringify(value, (_key, item) => format(item)).replace(/\\"/g, '"');
+    const json = JSON.stringify(value, (_key, item) => format(item));
+    return isString(json) ? json.replace(/\\"/g, '"') : String(json);
 }
 function stripLastPathElement(str) {
     return str.replace(/\/[^/]*$/, "");

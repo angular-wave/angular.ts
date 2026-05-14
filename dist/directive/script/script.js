@@ -10,9 +10,12 @@ function scriptDirective($templateCache) {
         terminal: true,
         compile(element, attr) {
             const attrMap = attr;
-            if (attrMap.type === "text/ng-template") {
-                $templateCache.set(attrMap.id, element.innerText);
+            const templateId = attr.id;
+            if (attrMap.type === "text/ng-template" &&
+                typeof templateId === "string") {
+                $templateCache.set(templateId, element.innerText);
             }
+            return undefined;
         },
     };
 }

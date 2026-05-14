@@ -48,34 +48,38 @@ function ngWorkerDirective($parse, $log, $exceptionHandler) {
                     }
                 },
             });
-            element.addEventListener(eventName, async () => {
-                if (element.hasAttribute("disabled"))
-                    return;
-                if (isDefined(attrs.delay)) {
-                    await wait(parseInt(attrs.delay || "", 10) || 0);
-                }
-                if (throttled)
-                    return;
-                if (isDefined(attrs.throttle)) {
-                    throttled = true;
-                    attrs.$set("throttled", true);
-                    setTimeout(() => {
-                        attrs.$set("throttled", false);
-                        throttled = false;
-                    }, parseInt(attrs.throttle || "", 10));
-                }
-                let params;
-                try {
-                    params = paramsFn?.(scope);
-                }
-                catch (err) {
-                    $log.error("ngWorker: failed to evaluate data-params", err);
-                    params = undefined;
-                }
-                worker.post(params);
+            element.addEventListener(eventName, () => {
+                void (async () => {
+                    if (element.hasAttribute("disabled"))
+                        return;
+                    if (isDefined(attrs.delay)) {
+                        await wait(parseInt(attrs.delay || "", 10) || 0);
+                    }
+                    if (throttled)
+                        return;
+                    if (isDefined(attrs.throttle)) {
+                        throttled = true;
+                        attrs.$set("throttled", true);
+                        setTimeout(() => {
+                            attrs.$set("throttled", false);
+                            throttled = false;
+                        }, parseInt(attrs.throttle || "", 10));
+                    }
+                    let params;
+                    try {
+                        params = paramsFn?.(scope);
+                    }
+                    catch (err) {
+                        $log.error("ngWorker: failed to evaluate data-params", err);
+                        params = undefined;
+                    }
+                    worker.post(params);
+                })();
             });
             if (intervalId) {
-                scope.$on("$destroy", () => clearInterval(intervalId));
+                scope.$on("$destroy", () => {
+                    clearInterval(intervalId);
+                });
             }
             if (eventName === "load") {
                 element.dispatchEvent(new Event("load"));

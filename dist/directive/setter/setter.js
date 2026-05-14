@@ -8,9 +8,8 @@ function ngSetterDirective($parse, $log) {
     return {
         restrict: "A",
         link(scope, element, attrs) {
-            const attrMap = attrs;
-            const modelExpression = attrMap.ngSetter;
-            if (!modelExpression) {
+            const modelExpression = attrs.ngSetter;
+            if (typeof modelExpression !== "string" || modelExpression === "") {
                 $log.warn("ng-setter: expression null");
                 return;
             }
@@ -40,7 +39,9 @@ function ngSetterDirective($parse, $log) {
                 subtree: true,
                 characterData: true,
             });
-            scope.$on("$destroy", () => observer.disconnect());
+            scope.$on("$destroy", () => {
+                observer.disconnect();
+            });
             updateModel(element.innerHTML);
         },
     };

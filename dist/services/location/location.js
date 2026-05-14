@@ -1,11 +1,11 @@
 import { _rootScope, _rootElement, _exceptionHandler } from '../../injection-tokens.js';
 import { trimEmptyHash, urlResolve } from '../../shared/url-utils/url-utils.js';
-import { isUndefined, isString, isNumber, parseKeyValue, isObject, entries, isNull, isDefined, startsWith, isFunction, equals, encodeUriSegment, toKeyValue, minErr } from '../../shared/utils.js';
+import { assertDefined, isString, isNumber, isUndefined, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, startsWith, isFunction, equals, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
 import { getBaseHref } from '../../shared/dom.js';
 import { validateRequired } from '../../shared/validate.js';
 
 const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
-const $locationMinErr = minErr("$location");
+const $locationError = createErrorFactory("$location");
 let urlUpdatedByLocation = false;
 const locationCleanupByRootElement = new WeakMap();
 /**
@@ -58,7 +58,7 @@ class Location {
         validateRequired(url, "url");
         const match = PATH_MATCH.exec(url);
         if (!match) {
-            throw $locationMinErr("badurl", 'Invalid url "{0}".', url);
+            throw $locationError("badurl", 'Invalid url "{0}".', url);
         }
         if (match[1] || url === "") {
             this.setPath(match[1] || "");
@@ -78,7 +78,7 @@ class Location {
         return this._url;
     }
     url(url) {
-        return arguments.length ? this.setUrl(url) : this.getUrl();
+        return arguments.length ? this.setUrl(assertDefined(url)) : this.getUrl();
     }
     /**
      * Changes the path parameter and returns `$location`.
@@ -91,7 +91,7 @@ class Location {
         if (this.html5) {
             newPath = decodePath(newPath, this.html5);
         }
-        _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
+        _path = newPath.startsWith("/") ? newPath : `/${newPath}`;
         this._compose();
         return this;
     }
@@ -145,18 +145,21 @@ class Location {
                     // remove object undefined or null properties
                     entries(clonedSearch).forEach(([key, value]) => {
                         if (isNull(value))
-                            delete clonedSearch[key];
+                            deleteProperty(clonedSearch, key);
                     });
                     _search = clonedSearch;
                 }
                 else {
-                    throw $locationMinErr("isrcharg", "The first argument of the `$location#search()` call must be a string or an object.");
+                    throw $locationError("isrcharg", "The first argument of the `$location#search()` call must be a string or an object.");
                 }
                 break;
             default: {
-                const searchKey = String(search);
+                if (!isString(search) && !isNumber(search)) {
+                    throw $locationError("isrcharg", "The first argument of the `$location#search()` call must be a string or number when setting a single parameter.");
+                }
+                const searchKey = isString(search) ? search : `${search}`;
                 if (isUndefined(paramValue) || paramValue === null) {
-                    delete _search[searchKey];
+                    deleteProperty(_search, searchKey);
                 }
                 else {
                     _search[searchKey] = paramValue;
@@ -177,7 +180,7 @@ class Location {
     }
     search(search, paramValue) {
         return arguments.length
-            ? this.setSearch(search, paramValue)
+            ? this.setSearch(assertDefined(search), paramValue)
             : this.getSearch();
     }
     /**
@@ -190,7 +193,7 @@ class Location {
             ? this.appBaseNoFile + this._url.substring(1)
             : this.appBase + (this._url ? this.hashPrefix + this._url : "");
         urlUpdatedByLocation = true;
-        setTimeout(() => this._updateBrowser && this._updateBrowser());
+        setTimeout(() => this._updateBrowser?.());
     }
     /**
      * Change the history state object when called with one parameter and return `$location`.
@@ -205,7 +208,7 @@ class Location {
      */
     setState(state) {
         if (!this.html5) {
-            throw $locationMinErr("nostate", "History API state support is available only in HTML5 mode");
+            throw $locationError("nostate", "History API state support is available only in HTML5 mode");
         }
         // The user might modify `stateObject` after invoking `$location.setState(stateObject)`
         // but we're changing the _statereference to $browser.state() during the $digest
@@ -226,7 +229,7 @@ class Location {
     /** Attempts to parse a clicked link into an app-relative URL update. */
     parseLinkUrl(url, relHref) {
         if (this.html5) {
-            if (relHref && relHref[0] === "#") {
+            if (relHref?.[0] === "#") {
                 // special case for links to hash fragments:
                 // keep the old url and only replace the hash fragment
                 this.setHash(relHref.slice(1));
@@ -273,7 +276,7 @@ class Location {
         if (this.html5) {
             const pathUrl = stripBaseUrl(this.appBaseNoFile, url);
             if (!isString(pathUrl)) {
-                throw $locationMinErr("ipthprfx", 'Invalid url "{0}", missing path prefix "{1}".', url, this.appBaseNoFile);
+                throw $locationError("ipthprfx", 'Invalid url "{0}", missing path prefix "{1}".', url, this.appBaseNoFile);
             }
             parseAppUrl(pathUrl, true);
             if (!_path) {
@@ -285,7 +288,7 @@ class Location {
             const withoutBaseUrl = stripBaseUrl(this.appBase, url) ||
                 stripBaseUrl(this.appBaseNoFile, url);
             let withoutHashUrl = "";
-            if (withoutBaseUrl !== undefined && withoutBaseUrl.charAt(0) === "#") {
+            if (withoutBaseUrl?.charAt(0) === "#") {
                 // The rest of the URL starts with a hash so we have
                 // got either a hashbang path or a plain hash fragment
                 withoutHashUrl =
@@ -322,7 +325,7 @@ class LocationProvider {
                 let appBase;
                 if (this.html5ModeConf.enabled) {
                     if (!baseHref && this.html5ModeConf.requireBase) {
-                        throw $locationMinErr("nobase", "$location in HTML5 mode requires a <base> tag to be present!");
+                        throw $locationError("nobase", "$location in HTML5 mode requires a <base> tag to be present!");
                     }
                     appBase = serverBase(initialUrl) + (baseHref || "/");
                 }
@@ -379,13 +382,9 @@ class LocationProvider {
                     }
                     let absHref = elm.href;
                     const relHref = elm.getAttribute("href");
-                    if (isObject(absHref) &&
-                        absHref.toString() === "[object SVGAnimatedString]") {
+                    if (!isString(absHref) && "animVal" in absHref) {
                         // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
                         // an animation.
-                        absHref = new URL(absHref.animVal).href;
-                    }
-                    if (!isString(absHref) && "animVal" in absHref) {
                         absHref = new URL(absHref.animVal).href;
                     }
                     // Ignore when url is started with javascript: or mailto:
@@ -720,21 +719,21 @@ function normalizePath(pathValue, searchValue, hashValue) {
  */
 function parseAppUrl(url, html5Mode) {
     if (/^\s*[\\/]{2,}/.test(url)) {
-        throw $locationMinErr("badpath", 'Invalid url "{0}".', url);
+        throw $locationError("badpath", 'Invalid url "{0}".', url);
     }
-    const prefixed = url.charAt(0) !== "/";
+    const prefixed = !url.startsWith("/");
     if (prefixed) {
         url = `/${url}`;
     }
     const match = urlResolve(url);
-    const path = prefixed && match.pathname.charAt(0) === "/"
+    const path = prefixed && match.pathname.startsWith("/")
         ? match.pathname.substring(1)
         : match.pathname;
     _path = decodePath(path, html5Mode);
     _search = parseKeyValue(match.search);
     _hash = decodeURIComponent(match.hash);
     // make sure path starts with '/';
-    if (_path && _path.charAt(0) !== "/") {
+    if (_path && !_path.startsWith("/")) {
         _path = `/${_path}`;
     }
 }

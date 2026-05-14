@@ -15,9 +15,9 @@
       "export": "__ng_component_TodoList",
       "templatePath": "templates/todo-list.html",
       "controllerAs": "ctrl",
-      "inject": ["todoStore"],
+      "inject": ["todoStore", "$scope"],
       "syncProperties": ["items"],
-      "methods": ["add", "setDone", "archive"]
+      "methods": ["add", "setDone", "toggle", "archive", "remainingCount"]
     }
   ]
 }

@@ -39,11 +39,14 @@ function defineAngularElement(name, options) {
             window.angular = previousAngular;
         }
     }
-    angular.$rootScope =
-        injector.get(_rootScope);
+    angular.$rootScope = injector.get(_rootScope);
+    const element = customElements.get(name);
+    if (!element) {
+        throw new Error(`Custom element ${name} was not registered`);
+    }
     return {
         angular,
-        element: customElements.get(name),
+        element,
         elementModule: appModule,
         injector,
         name,

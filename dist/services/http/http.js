@@ -1,16 +1,34 @@
 import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, minErr, hasOwn, lowercase, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, assertDefined, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
     let resolve;
     let reject;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
+    const promise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
     });
-    return { promise, resolve: resolve, reject: reject };
+    return {
+        promise,
+        resolve: assertDefined(resolve),
+        reject: assertDefined(reject),
+    };
+}
+/** Error used when `$http` receives a non-success response. */
+class HttpError extends Error {
+    constructor(response) {
+        super(`$http request failed with status ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`);
+        this.name = "HttpError";
+        this.response = response;
+        this.data = response.data;
+        this.status = response.status;
+        this.headers = response.headers;
+        this.config = response.config;
+        this.statusText = response.statusText;
+        this.xhrStatus = response.xhrStatus;
+    }
 }
 /**
  * @internal
@@ -31,7 +49,7 @@ const JSON_ENDS = {
     "{": /}$/,
 };
 const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
-const $httpMinErr = minErr("$http");
+const $httpError = createErrorFactory("$http");
 /** Serializes a request param value into a transport-safe primitive. */
 function serializeValue(v) {
     if (isObject(v)) {
@@ -90,7 +108,7 @@ function defaultHttpResponseTransform(data, headers) {
         const tempData = data.replace(JSON_PROTECTION_PREFIX, "").trim();
         if (tempData) {
             const contentType = headers("Content-Type");
-            const hasJsonContentType = contentType && contentType.indexOf(APPLICATION_JSON) === 0;
+            const hasJsonContentType = contentType?.indexOf(APPLICATION_JSON) === 0;
             if (hasJsonContentType || isJsonLike(tempData)) {
                 try {
                     data = fromJson(tempData);
@@ -99,7 +117,7 @@ function defaultHttpResponseTransform(data, headers) {
                     if (!hasJsonContentType) {
                         return data;
                     }
-                    throw $httpMinErr("baddata", 'Data must be a valid JSON object. Received: "{0}". ' +
+                    throw $httpError("baddata", 'Data must be a valid JSON object. Received: "{0}". ' +
                         'Parse error: "{1}"', data, err);
                 }
             }
@@ -109,7 +127,7 @@ function defaultHttpResponseTransform(data, headers) {
 }
 /** Returns `true` when a string looks like a JSON payload. */
 function isJsonLike(str) {
-    const jsonStart = str.match(JSON_START);
+    const jsonStart = JSON_START.exec(str);
     return !!jsonStart && JSON_ENDS[jsonStart[0]].test(str);
 }
 /**
@@ -222,13 +240,14 @@ function deProxyHttpPayload(value, seen = new WeakMap()) {
 }
 /** Configures the default behavior of the `$http` service. */
 function HttpProvider() {
+    const provider = this;
     /**
      * Default values applied to all `$http` requests unless a request overrides them.
      *
      * This includes cache behavior, default headers, request/response transforms, XSRF names,
      * credentials defaults, and parameter serialization.
      */
-    const defaults = (this.defaults = {
+    const defaults = (provider.defaults = {
         // transform incoming response data
         transformResponse: [defaultHttpResponseTransform],
         // transform outgoing request data
@@ -264,7 +283,7 @@ function HttpProvider() {
      *
      * See the `$http` service documentation for detailed interceptor behavior.
      */
-    this.interceptors = [];
+    provider.interceptors = [];
     /**
      * Array containing URLs whose origins are trusted to receive the XSRF token. See the
      * See the `$http` service documentation for XSRF security considerations.
@@ -301,9 +320,9 @@ function HttpProvider() {
      * ```
      *
      */
-    this.xsrfTrustedOrigins = [];
-    const that = this;
-    this.$get = [
+    provider.xsrfTrustedOrigins = [];
+    const that = provider;
+    provider.$get = [
         _injector,
         _sce,
         _cookie,
@@ -323,9 +342,10 @@ function HttpProvider() {
              */
             const reversedInterceptors = [];
             that.interceptors.forEach((interceptorFactory) => {
-                reversedInterceptors.unshift(isString(interceptorFactory)
+                const interceptor = isString(interceptorFactory)
                     ? $injector.get(interceptorFactory)
-                    : $injector.invoke(interceptorFactory));
+                    : $injector.invoke(interceptorFactory);
+                reversedInterceptors.unshift(interceptor);
             });
             /**
              * Creates the origin check used for XSRF header inclusion.
@@ -336,10 +356,10 @@ function HttpProvider() {
              */
             const $http = function (requestConfig) {
                 if (!isObject(requestConfig)) {
-                    throw minErr("$http")("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
+                    throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
                 }
                 if (!isString($sce.valueOf(requestConfig.url))) {
-                    throw minErr("$http")("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
+                    throw $httpError("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
                 }
                 const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
                 const config = extend({
@@ -369,7 +389,7 @@ function HttpProvider() {
                     }
                 });
                 promise = chainInterceptors(promise, requestInterceptors);
-                promise = promise.then(serverRequest);
+                promise = promise.then((value) => serverRequest(value));
                 promise = chainInterceptors(promise, responseInterceptors);
                 return promise;
                 /** Applies a list of interceptor success/error pairs to a promise chain. */
@@ -401,7 +421,7 @@ function HttpProvider() {
                 }
                 /** Merges provider defaults with request-specific headers for a single request. */
                 function mergeHeaders(configParam) {
-                    let defHeaders = (defaults.headers || {});
+                    let defHeaders = defaults.headers || {};
                     const reqHeaders = extend({}, configParam.headers || {});
                     defHeaders = extend({}, defHeaders.common || {}, defHeaders[lowercase(configParam.method)] || {});
                     keys(defHeaders).forEach((defHeaderName) => {
@@ -425,7 +445,7 @@ function HttpProvider() {
                     if (isUndefined(reqData)) {
                         keys(headers).forEach((header) => {
                             if (lowercase(header) === "content-type") {
-                                delete headers[header];
+                                deleteProperty(headers, header);
                             }
                         });
                     }
@@ -443,7 +463,9 @@ function HttpProvider() {
                     // make a copy since the response must be cacheable
                     const resp = extend({}, httpResponse);
                     resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse || []);
-                    return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+                    return isSuccess(httpResponse.status)
+                        ? resp
+                        : Promise.reject(new HttpError(resp));
                 }
             };
             $http.pendingRequests = [];
@@ -612,7 +634,7 @@ function HttpProvider() {
             /** Appends a serialized query string to a URL when request parameters are present. */
             function buildUrl(url, serializedParams) {
                 if (serializedParams.length > 0) {
-                    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+                    url += (!url.includes("?") ? "?" : "&") + serializedParams;
                 }
                 return url;
             }
@@ -658,10 +680,12 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
         init.body = normalizeFetchBody(post);
     }
     if (typeof timeout === "number" && timeout > 0) {
-        timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
+        timeoutId = setTimeout(() => {
+            timeoutRequest("timeout");
+        }, timeout);
     }
     else if (isPromiseLike(timeout)) {
-        timeout.then(() => {
+        void timeout.then(() => {
             timeoutRequest("abort");
         });
     }
@@ -675,7 +699,7 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
             completeRequest(-1, null, null, "", "error");
         });
     }, (error) => {
-        if (error?.name === "AbortError") {
+        if (isObject(error) && "name" in error && error.name === "AbortError") {
             notifyEvent(abortReason, eventHandlers);
             completeRequest(-1, null, null, "", abortReason);
             return;
@@ -775,4 +799,4 @@ function notifyEvent(eventName, eventHandlers) {
     }
 }
 
-export { Http, HttpParamSerializerProvider, HttpProvider, defaultHttpResponseTransform, http };
+export { Http, HttpError, HttpParamSerializerProvider, HttpProvider, defaultHttpResponseTransform, http };

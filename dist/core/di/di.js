@@ -1,7 +1,7 @@
 import { _injector } from '../../injection-tokens.js';
-import { isFunction, isArray, assertArgFn, minErr } from '../../shared/utils.js';
+import { isFunction, isArray, assertArgFn, createErrorFactory } from '../../shared/utils.js';
 
-const $injectorMinErr = minErr(_injector);
+const $injectorError = createErrorFactory(_injector);
 const ARROW_ARG = /^([^(]+?)=>/;
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
 const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
@@ -11,7 +11,7 @@ function stringifyFn(fn) {
 }
 function extractArgs(fn) {
     const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
-    return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
+    return ARROW_ARG.exec(fnText) || FN_ARGS.exec(fnText);
 }
 function isClass(func) {
     return /^class\b/.test(stringifyFn(func));
@@ -23,7 +23,7 @@ function annotate(fn, strictDi = false, name) {
         if (!fn.$inject) {
             if (fn.length > 0) {
                 if (strictDi) {
-                    throw $injectorMinErr("strictdi", "{0} is not using explicit annotation and cannot be invoked in strict mode", name);
+                    throw $injectorError("strictdi", "{0} is not using explicit annotation and cannot be invoked in strict mode", name);
                 }
                 const argDecl = extractArgs(fn);
                 argDecl?.[1].split(/,/).forEach((arg) => {

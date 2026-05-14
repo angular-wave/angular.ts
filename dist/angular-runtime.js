@@ -1,12 +1,12 @@
-import { _parse, _rootElement, _rootScope, _compile, _injector } from './injection-tokens.js';
-import { errorHandlingConfig, values, assertNotHasOwnProperty, hasOwn, isString, isInstanceOf, isArray, ngAttrPrefixes, minErr, isObject } from './shared/utils.js';
-import { getController, getInjector, getScope, setCacheData } from './shared/dom.js';
+import { _parse, _rootElement, _rootScope, _compile, _injector, _scope } from './injection-tokens.js';
+import { errorHandlingConfig, values, assertNotHasOwnProperty, hasOwn, isString, isInstanceOf, isArray, ngAttrPrefixes, createErrorFactory, isObject } from './shared/utils.js';
+import { getController, getInjector, getScope, getInheritedData, setCacheData } from './shared/dom.js';
 import { createInjector } from './core/di/injector.js';
 import { NgModule } from './core/di/ng-module/ng-module.js';
 import { validateIsString } from './shared/validate.js';
 
-const ngMinErr = minErr("ng");
-const $injectorMinErr = minErr("$injector");
+const ngError = createErrorFactory("ng");
+const $injectorError = createErrorFactory("$injector");
 const rootScopeCleanupByElement = new WeakMap();
 const moduleRegistry = {};
 let builtinNgModuleRegistrar;
@@ -72,7 +72,7 @@ class AngularRuntime extends EventTarget {
      */
     registerNgModule() {
         if (!builtinNgModuleRegistrar) {
-            throw ngMinErr("nobuiltins", "Built-in AngularTS modules are not configured for this runtime. Import the full runtime entrypoint or construct with registerBuiltins: false.");
+            throw ngError("nobuiltins", "Built-in AngularTS modules are not configured for this runtime. Import the full runtime entrypoint or construct with registerBuiltins: false.");
         }
         return builtinNgModuleRegistrar(this);
     }
@@ -127,7 +127,7 @@ class AngularRuntime extends EventTarget {
         }
         return ensure(moduleRegistry, name, () => {
             if (!requires) {
-                throw $injectorMinErr("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
+                throw $injectorError("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
             }
             return new NgModule(name, requires, configFn);
         });
@@ -238,8 +238,8 @@ class AngularRuntime extends EventTarget {
             rootScopeCleanupByElement.get(element)?.();
         }
         if ((isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
-            getInjector(element)) {
-            throw ngMinErr("btstrpd", "App already bootstrapped");
+            getInheritedData(element, _injector)) {
+            throw ngError("btstrpd", "App already bootstrapped");
         }
         if (isArray(modules)) {
             this._bootsrappedModules = modules;
@@ -262,7 +262,7 @@ class AngularRuntime extends EventTarget {
                 this.$injector = $injector;
                 const rootElement = el;
                 rootScopeCleanupByElement.set(rootElement, () => {
-                    const existingScope = getScope(rootElement);
+                    const existingScope = getInheritedData(rootElement, _scope);
                     if (existingScope?.$handler && !existingScope.$handler._destroyed) {
                         existingScope.$destroy();
                     }

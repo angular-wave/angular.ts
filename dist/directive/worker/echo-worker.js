@@ -6,7 +6,9 @@
 self.onmessage = async (event) => {
     const { data } = event;
     // simulate some async work
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+    });
     let result;
     /**
      * Computes a Fibonacci number recursively for demo purposes.
@@ -14,7 +16,12 @@ self.onmessage = async (event) => {
     function fib(x) {
         return x <= 1 ? x : fib(x - 1) + fib(x - 2);
     }
-    if (data?.action === "fib") {
+    if (typeof data === "object" &&
+        data !== null &&
+        "action" in data &&
+        data.action === "fib" &&
+        "n" in data &&
+        typeof data.n === "number") {
         result = fib(data.n);
     }
     else {

@@ -15,7 +15,11 @@ function classDirective() {
             const counts = classCounts;
             // Cache once; `hasAnimate(element)` should be stable for this directive instance.
             const animate = hasAnimate(element);
-            scope.$watch(attr.ngClass, (val) => {
+            const expression = attr.ngClass;
+            if (typeof expression !== "string") {
+                return;
+            }
+            scope.$watch(expression, (val) => {
                 ngClassWatchAction(toClassString(val));
             });
             /** Applies the net class change between two class strings. */
@@ -79,9 +83,9 @@ function classDirective() {
  * Returns all items from `tokens1` that are not present in `tokens2`.
  */
 function arrayDifference(tokens1, tokens2) {
-    if (!tokens1 || !tokens1.length)
+    if (!tokens1?.length)
         return [];
-    if (!tokens2 || !tokens2.length)
+    if (!tokens2?.length)
         return tokens1;
     if (tokens2.length === 1) {
         const token = tokens2[0];
@@ -157,7 +161,22 @@ function toClassString(classValue) {
     if (isString(classValue)) {
         return classValue;
     }
-    return String(classValue);
+    return stringifyClassPrimitive(classValue);
+}
+function stringifyClassPrimitive(value) {
+    switch (typeof value) {
+        case "string":
+            return value;
+        case "number":
+        case "boolean":
+        case "bigint":
+        case "symbol":
+            return String(value);
+        case "function":
+            return value.toString();
+        default:
+            return "";
+    }
 }
 
 export { arrayDifference, classDirective, split, toClassString };

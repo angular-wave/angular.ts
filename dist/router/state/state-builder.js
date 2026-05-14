@@ -1,4 +1,4 @@
-import { assign, createObject, isString, isInstanceOf, isArray, hasOwn, isDefined, keys, isFunction } from '../../shared/utils.js';
+import { assign, createObject, isString, isInstanceOf, assertDefined, isArray, hasOwn, isDefined, keys, isFunction } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { Resolvable } from '../resolve/resolvable.js';
@@ -19,7 +19,7 @@ const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
 function parseUrl(url) {
     if (!isString(url))
         return false;
-    const root = url.charAt(0) === "^";
+    const root = url.startsWith("^");
     return { val: root ? url.substring(1) : url, root };
 }
 function buildUrl(stateObject, routerState, root) {
@@ -33,8 +33,8 @@ function buildUrl(stateObject, routerState, root) {
         return null;
     if (!isInstanceOf(url, UrlMatcher))
         throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
-    const base = ((parent && parent.navigable) || root);
-    return parsed && parsed.root ? url : base._url._append(url);
+    const base = (parent?.navigable || root);
+    return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
 }
 /**
  * @param {ParamFactory} paramFactory
@@ -212,8 +212,8 @@ function invokeStateLifecycleHook(trans, state, hookName, pathname) {
     if (!hook)
         return undefined;
     const hookContext = stateObject._hookContext;
-    const $injector = hookContext._$injector;
-    const resolveContext = new ResolveContext((trans._treeChanges[pathname] || []), $injector);
+    const $injector = assertDefined(hookContext._$injector);
+    const resolveContext = new ResolveContext(trans._treeChanges[pathname] || [], $injector);
     const subContext = resolveContext.subContext(stateObject);
     const locals = assign(getResolveLocals(subContext), {
         $state$: state,
@@ -279,7 +279,7 @@ class StateBuilder {
             : matcher.find(parent) || matcher.find("");
         state._url =
             buildUrl(state, routerState, matcher.find("")) || undefined;
-        state.resolvables = resolvablesBuilder(state, this._$injector && this._$injector.strictDi);
+        state.resolvables = resolvablesBuilder(state, this._$injector?.strictDi);
         this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
         this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
         this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
@@ -290,7 +290,7 @@ class StateBuilder {
                     ? state.parent.navigable
                     : null;
         state.params = buildParams(state, this._paramFactory);
-        if (state.parent && state.parent.data) {
+        if (state.parent?.data) {
             state.data = state.self.data = assign(createObject(state.parent.data), state.data);
         }
         state.path = state.parent
@@ -308,7 +308,7 @@ class StateBuilder {
      */
     /** @internal */
     _parentName(state) {
-        const rawName = (state.self && state.self.name) || state.name || "";
+        const rawName = state.self?.name || state.name || "";
         const name = rawName;
         const segments = name.split(".");
         segments.pop();
@@ -325,8 +325,8 @@ class StateBuilder {
     }
     /** @internal */
     _name(state) {
-        const name = (state.self && state.self.name) || state.name;
-        if (name.indexOf(".") !== -1 || !state.parent)
+        const name = state.self?.name || state.name;
+        if (name.includes(".") || !state.parent)
             return name;
         const parentName = isString(state.parent)
             ? state.parent

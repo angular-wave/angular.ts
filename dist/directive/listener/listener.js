@@ -5,9 +5,11 @@ function ngListenerDirective() {
     return {
         scope: false,
         link: (scope, element, attrs) => {
-            const attrMap = attrs;
-            const channel = attrMap.ngListener || element.id;
-            const hasTemplateContent = element.childNodes.length;
+            const configuredChannel = attrs.ngListener;
+            const channel = typeof configuredChannel === "string" && configuredChannel !== ""
+                ? configuredChannel
+                : element.id;
+            const hasTemplateContent = element.childNodes.length > 0;
             const fn = (event) => {
                 const value = event.detail;
                 if (hasTemplateContent) {
@@ -20,7 +22,9 @@ function ngListenerDirective() {
                 }
             };
             element.addEventListener(channel, fn);
-            scope.$on("$destroy", () => element.removeEventListener(channel, fn));
+            scope.$on("$destroy", () => {
+                element.removeEventListener(channel, fn);
+            });
         },
     };
 }

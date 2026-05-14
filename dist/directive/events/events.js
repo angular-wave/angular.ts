@@ -1,5 +1,5 @@
 import { _parse, _exceptionHandler } from '../../injection-tokens.js';
-import { directiveNormalize } from '../../shared/utils.js';
+import { directiveNormalize, isString } from '../../shared/utils.js';
 
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
@@ -59,7 +59,10 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
     return {
         restrict: "A",
         compile(_element, attr) {
-            const fn = $parse(attr[directiveName]);
+            const expression = attr[directiveName];
+            if (!isString(expression))
+                return () => undefined;
+            const fn = $parse(expression);
             return (scope, element) => {
                 const handler = (event) => {
                     try {
@@ -71,7 +74,9 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
                     }
                 };
                 element.addEventListener(eventName, handler);
-                scope.$on("$destroy", () => element.removeEventListener(eventName, handler));
+                scope.$on("$destroy", () => {
+                    element.removeEventListener(eventName, handler);
+                });
             };
         },
     };
@@ -83,7 +88,10 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
     return {
         restrict: "A",
         compile(_element, attr) {
-            const fn = $parse(attr[directiveName]);
+            const expression = attr[directiveName];
+            if (!isString(expression))
+                return () => undefined;
+            const fn = $parse(expression);
             return (scope) => {
                 const handler = (event) => {
                     try {
@@ -95,13 +103,15 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
                     }
                 };
                 $window.addEventListener(eventName, handler);
-                scope.$on("$destroy", () => $window.removeEventListener(eventName, handler));
+                scope.$on("$destroy", () => {
+                    $window.removeEventListener(eventName, handler);
+                });
             };
         },
     };
 }
 function flushScopeQueue(scope) {
-    const rootScope = scope.$root || scope;
+    const rootScope = scope.$root ?? scope;
     if (typeof rootScope.$flushQueue === "function") {
         rootScope.$flushQueue();
     }

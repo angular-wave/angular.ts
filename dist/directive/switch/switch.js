@@ -20,32 +20,36 @@ function ngSwitchDirective($injector) {
             const watchExpr = attr.ngSwitch || attr.on;
             let selectedTranscludes = [];
             const selectedElements = [];
-            const previousLeaveAnimations = [];
+            const previousLeaveAnimations = new Set();
             const selectedScopes = [];
-            const spliceFactory = function (array, index) {
-                return function (response) {
-                    if (response !== false)
-                        array.splice(index, 1);
-                };
-            };
             scope.$watch(watchExpr, (value) => {
                 let i;
                 let ii;
-                let runner;
+                let hasLeaveAnimation = false;
                 // Start with the last, in case the array is modified during the loop
-                const animate = previousLeaveAnimations.length
-                    ? getAnimate()
-                    : undefined;
-                while (previousLeaveAnimations.length) {
-                    animate?.cancel(previousLeaveAnimations.pop());
+                const animate = previousLeaveAnimations.size ? getAnimate() : undefined;
+                for (const previous of Array.from(previousLeaveAnimations)) {
+                    previousLeaveAnimations.delete(previous);
+                    animate?.cancel(previous.handle);
+                    removeElement(previous.element);
                 }
                 for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
                     const selected = selectedElements[i]._clone;
                     selectedScopes[i].$destroy();
                     const leaveAnimate = getAnimateForNode(getAnimate, selected);
                     if (leaveAnimate) {
-                        runner = previousLeaveAnimations[i] = leaveAnimate.leave(selected);
-                        runner.done(spliceFactory(previousLeaveAnimations, i));
+                        const handle = leaveAnimate.leave(selected);
+                        const leaveAnimation = {
+                            element: selected,
+                            handle,
+                        };
+                        hasLeaveAnimation = true;
+                        previousLeaveAnimations.add(leaveAnimation);
+                        handle.done((response) => {
+                            if (response) {
+                                previousLeaveAnimations.delete(leaveAnimation);
+                            }
+                        });
                     }
                     else {
                         removeElement(selected);
@@ -73,7 +77,7 @@ function ngSwitchDirective($injector) {
                                 if (!parentElement) {
                                     return;
                                 }
-                                if (runner) {
+                                if (hasLeaveAnimation) {
                                     requestAnimationFrame(() => {
                                         enterAnimate.enter(caseElement, parentElement, anchor);
                                     });

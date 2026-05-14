@@ -1,454 +1,459 @@
-import { _animateQueue, _provide } from '../injection-tokens.js';
-import { nullObject, extend, mergeClasses, isInstanceOf, hasAnimate, minErr, isObject, isFunction } from '../shared/utils.js';
-import { removeElement, animatedomInsert, domInsert } from '../shared/dom.js';
-import { NG_ANIMATE_CLASSNAME } from './shared.js';
+import { _injector } from '../injection-tokens.js';
+import { isString, assign, assertDefined, createErrorFactory, isFunction } from '../shared/utils.js';
+import { domInsert, removeElement } from '../shared/dom.js';
 
-const $animateMinErr = minErr("$animate");
-// if any other type of options value besides an Object value is
-// passed into the $animate.method() animation then this helper code
-// will be run which will ignore it. While this patch is not the
-// greatest solution to this, a lot of existing plugins depend on
-// $animate to either call the callback (< 1.2) or return a promise
-// that can be changed. This helper function ensures that the options
-// are wiped clean incase a callback function is provided.
-/**
- * Normalizes animation options so non-object inputs become an empty options bag.
- */
-function prepareAnimateOptions(options) {
-    return isObject(options) ? options : {};
+const $animateError = createErrorFactory("$animate");
+class AnimationHandle {
+    constructor(result, controller = new AbortController(), cleanup) {
+        this.doneCallbacks = [];
+        this.settled = false;
+        this.status = true;
+        this.controller = controller;
+        this.cleanup = cleanup;
+        const results = Array.isArray(result) ? result : [result];
+        this.animations = results.filter((item) => !!item && "finished" in item);
+        const promises = results.map((item) => {
+            if (!item)
+                return Promise.resolve();
+            if ("finished" in item)
+                return item.finished.then(() => undefined);
+            return item;
+        });
+        this.finished = Promise.allSettled(promises).then((settled) => {
+            const rejected = settled.some((item) => item.status === "rejected");
+            this.complete(!rejected);
+            return undefined;
+        });
+        controller.signal.addEventListener("abort", () => {
+            this.cancel();
+        }, { once: true });
+    }
+    then(onfulfilled, onrejected) {
+        return this.finished.then(onfulfilled, onrejected);
+    }
+    catch(onrejected) {
+        return this.finished.catch(onrejected);
+    }
+    finally(onfinally) {
+        return this.finished.finally(onfinally);
+    }
+    done(callback) {
+        if (this.settled) {
+            callback(this.status);
+            return;
+        }
+        this.doneCallbacks.push(callback);
+    }
+    cancel() {
+        this.status = false;
+        this.animations.forEach((animation) => {
+            animation.cancel();
+        });
+        this.controller.abort();
+        this.complete(false);
+    }
+    finish() {
+        this.animations.forEach((animation) => {
+            animation.finish();
+        });
+        this.complete(true);
+    }
+    pause() {
+        this.animations.forEach((animation) => {
+            animation.pause();
+        });
+    }
+    play() {
+        this.animations.forEach((animation) => {
+            animation.play();
+        });
+    }
+    complete(status = true) {
+        if (this.settled)
+            return;
+        this.settled = true;
+        this.status = status;
+        this.cleanup?.(status);
+        const callbacks = this.doneCallbacks;
+        this.doneCallbacks = [];
+        callbacks.forEach((callback) => {
+            callback(status);
+        });
+    }
 }
-AnimateProvider.$inject = [_provide];
-/** @param $provide */
-function AnimateProvider($provide) {
-    const provider = this;
-    let classNameFilter = null;
-    let customFilter = null;
-    this._registeredAnimations = nullObject();
-    /**
-     * Registers a new injectable animation factory function. The factory function produces the
-     * animation object which contains callback functions for each event that is expected to be
-     * animated.
-     *
-     *   * `eventFn`: `function(element, ... , doneFunction, options)`
-     *   The element to animate, the `doneFunction` and the options fed into the animation. Depending
-     *   on the type of animation additional arguments will be injected into the animation function. The
-     *   list below explains the function signatures for the different animation methods:
-     *
-     *   - setClass: function(element, addedClasses, removedClasses, doneFunction, options)
-     *   - addClass: function(element, addedClasses, doneFunction, options)
-     *   - removeClass: function(element, removedClasses, doneFunction, options)
-     *   - enter, leave, move: function(element, doneFunction, options)
-     *   - animate: function(element, fromStyles, toStyles, doneFunction, options)
-     *
-     *   Make sure to trigger the `doneFunction` once the animation is fully complete.
-     *
-     * ```js
-     *   return {
-     *     //enter, leave, move signature
-     *     eventFn : function(element, done, options) {
-     *       //code to run the animation
-     *       //once complete, then run done()
-     *       return function endFunction(wasCancelled) {
-     *         //code to cancel the animation
-     *       }
-     *     }
-     *   }
-     * ```
-     *
-     * @param name The name of the animation (this is what the class-based CSS value will be compared to).
-     * @param factory The factory function that will be executed to return the animation
-     *                           object.
-     */
-    this.register = function (name, factory) {
-        if (name && name.charAt(0) !== ".") {
-            throw $animateMinErr("notcsel", "Expecting class selector starting with '.' got '{0}'.", name);
+const DEFAULT_DURATION = 150;
+const DEFAULT_EASING = "cubic-bezier(0.2, 0, 0, 1)";
+const CSS_ANIMATION_PROPERTIES = {
+    enter: "--ng-enter-animation",
+    leave: "--ng-leave-animation",
+    move: "--ng-move-animation",
+    addClass: "--ng-add-class-animation",
+    removeClass: "--ng-remove-class-animation",
+    setClass: "--ng-set-class-animation",
+    animate: "--ng-style-animation",
+};
+const CSS_BUILT_IN_PRESETS = new Set([
+    "fade",
+    "fade-slide",
+    "scale",
+    "slide-start",
+    "slide-end",
+]);
+const BUILT_IN_PRESETS = {
+    // CSS-defined presets live in css/angular.css. Height presets stay here
+    // because they need runtime measurements before each animation.
+    collapse: {
+        enter: expandHeight,
+        leave: collapseHeight,
+        options: { duration: 200, easing: DEFAULT_EASING, fill: "both" },
+    },
+    expand: {
+        enter: expandHeight,
+        leave: collapseHeight,
+        options: { duration: 200, easing: DEFAULT_EASING, fill: "both" },
+    },
+};
+AnimateProvider.$inject = [];
+function AnimateProvider() {
+    this._registeredAnimations = { ...BUILT_IN_PRESETS };
+    this._customAnimationNames = new Set();
+    this.register = (name, preset) => {
+        if (!name || !isString(name)) {
+            throw $animateError("noname", "Animation name must be a string.");
         }
-        const key = `${name}-animation`;
-        provider._registeredAnimations[name.substring(1)] = key;
-        $provide.factory(key, factory);
-    };
-    /**
-     * Sets and/or returns the custom filter function that is used to "filter" animations, i.e.
-     * determine if an animation is allowed or not. When no filter is specified (the default), no
-     * animation will be blocked. Setting the `customFilter` value will only allow animations for
-     * which the filter function's return value is truthy.
-     *
-     * This allows to easily create arbitrarily complex rules for filtering animations, such as
-     * allowing specific events only, or enabling animations on specific subtrees of the DOM, etc.
-     * Filtering animations can also boost performance for low-powered devices, as well as
-     * applications containing a lot of structural operations.
-     *
-     * <div class="alert alert-success">
-     *   **Best Practice:**
-     *   Keep the filtering function as lean as possible, because it will be called for each DOM
-     *   action (e.g. insertion, removal, class change) performed by "animation-aware" directives.
-     *   See {@link guide/animations#which-directives-support-animations- here} for a list of built-in
-     *   directives that support animations.
-     *   Performing computationally expensive or time-consuming operations on each call of the
-     *   filtering function can make your animations sluggish.
-     * </div>
-     *
-     * **Note:** If present, `customFilter` will be checked before
-     * {@link $animateProvider#classNameFilter classNameFilter}.
-     *
-     * @param filterFn - The filter function which will be used to filter all animations.
-     *   If a falsy value is returned, no animation will be performed. The function will be called
-     *   with the following arguments:
-     *   - **node** `{Element}` - The DOM element to be animated.
-     *   - **event** `{String}` - The name of the animation event (e.g. `enter`, `leave`, `addClass`
-     *     etc).
-     *   - **options** `{Object}` - A collection of options/styles used for the animation.
-     * @returns The current filter function or `null` if there is none set.
-     */
-    this.customFilter = function (filterFn) {
-        if (arguments.length === 1) {
-            customFilter = isFunction(filterFn) ? filterFn : null;
-        }
-        return customFilter;
-    };
-    /**
-     * Sets and/or returns the CSS class regular expression that is checked when performing
-     * an animation. Upon bootstrap the classNameFilter value is not set at all and will
-     * therefore enable $animate to attempt to perform an animation on any element that is triggered.
-     * When setting the `classNameFilter` value, animations will only be performed on elements
-     * that successfully match the filter expression. This in turn can boost performance
-     * for low-powered devices as well as applications containing a lot of structural operations.
-     *
-     * **Note:** If present, `classNameFilter` will be checked after
-     * {@link $animateProvider#customFilter customFilter}. If `customFilter` is present and returns
-     * false, `classNameFilter` will not be checked.
-     *
-     * @param expression The className expression which will be checked against all animations
-     * @returns The current CSS className expression value. If null then there is no expression value
-     */
-    this.classNameFilter = function (expression) {
-        if (arguments.length === 1) {
-            classNameFilter = isInstanceOf(expression, RegExp) ? expression : null;
-            if (classNameFilter) {
-                const reservedRegex = new RegExp(`[(\\s|\\/)]${NG_ANIMATE_CLASSNAME}[(\\s|\\/)]`);
-                if (reservedRegex.test(classNameFilter.toString())) {
-                    classNameFilter = null;
-                    throw $animateMinErr("nongcls", '$animateProvider.classNameFilter(regex) prohibits accepting a regex value which matches/contains the "{0}" CSS class.', NG_ANIMATE_CLASSNAME);
-                }
-            }
-        }
-        return classNameFilter;
+        const normalizedName = normalizeAnimationName(name);
+        this._registeredAnimations[normalizedName] = preset;
+        this._customAnimationNames.add(normalizedName);
     };
     this.$get = [
-        _animateQueue,
-        /**
-         * Creates the runtime `$animate` service facade.
-         */
-        function ($$animateQueue) {
-            /**
-             * The $animate service exposes a series of DOM utility methods that provide support
-             * for animation hooks. The default behavior is the application of DOM operations, however,
-             * when an animation is detected (and animations are enabled), $animate will do the heavy lifting
-             * to ensure that animation runs with the triggered DOM operation.
-             *
-             * By default $animate doesn't trigger any animations. This is because the `ngAnimate` module isn't
-             * included and only when it is active then the animation hooks that `$animate` triggers will be
-             * functional. Once active then all structural `ng-` directives will trigger animations as they perform
-             * their DOM-related operations (enter, leave and move). Other directives such as `ngClass`,
-             * `ngShow`, `ngHide` and `ngMessages` also provide support for animations.
-             *
-             * It is recommended that the`$animate` service is always used when executing DOM-related procedures within directives.
-             */
+        _injector,
+        ($injector) => {
+            const resolvedPresets = new Map();
+            const activeHandles = new WeakMap();
+            const resolvePreset = (element, options) => {
+                const name = animationNameFor(element, options);
+                if (!name)
+                    return undefined;
+                if (resolvedPresets.has(name)) {
+                    return {
+                        preset: assertDefined(resolvedPresets.get(name)),
+                        custom: this._customAnimationNames.has(name),
+                    };
+                }
+                const registration = this._registeredAnimations[name];
+                if (!registration)
+                    return undefined;
+                const preset = (isFunction(registration) || Array.isArray(registration)
+                    ? $injector.invoke(registration)
+                    : registration);
+                resolvedPresets.set(name, preset);
+                return {
+                    preset,
+                    custom: this._customAnimationNames.has(name),
+                };
+            };
+            const run = (phase, element, options = {}, contextOverrides = {}, cleanup) => {
+                const controller = new AbortController();
+                activeHandles.get(element)?.cancel();
+                activeHandles.delete(element);
+                const context = {
+                    phase,
+                    signal: controller.signal,
+                    ...contextOverrides,
+                };
+                const tempClasses = splitOptionClasses(options.tempClasses);
+                const elementClassList = element.classList;
+                if (tempClasses.length) {
+                    elementClassList.add(...tempClasses);
+                }
+                const animationName = animationNameFor(element, options);
+                const cssPresetClass = animationName && !this._registeredAnimations[animationName]
+                    ? cssPresetClassFor(animationName)
+                    : undefined;
+                const finishCleanup = (ok) => {
+                    if (tempClasses.length) {
+                        elementClassList.remove(...tempClasses);
+                    }
+                    if (cssPresetClass) {
+                        elementClassList.remove(cssPresetClass);
+                    }
+                    if (ok) {
+                        options.onDone?.(element, context);
+                    }
+                    else {
+                        options.onCancel?.(element, context);
+                    }
+                    cleanup?.(ok);
+                };
+                if (shouldSkipAnimation(element, options)) {
+                    finishCleanup(true);
+                    return new AnimationHandle(undefined, controller);
+                }
+                options.onStart?.(element, context);
+                if (cssPresetClass) {
+                    elementClassList.add(cssPresetClass);
+                }
+                const resolvedPreset = resolvePreset(element, options);
+                const preset = resolvedPreset?.preset;
+                const handler = preset?.[phase];
+                let result;
+                let animationCleanup;
+                if (isFunction(handler)) {
+                    result = handler(element, context, options);
+                }
+                else {
+                    const optionKeyframes = keyframesForPhase(phase, options);
+                    const customKeyframes = resolvedPreset?.custom && handler ? handler : undefined;
+                    const keyframes = optionKeyframes || customKeyframes;
+                    const cssAnimation = keyframes
+                        ? undefined
+                        : cssAnimationForPhase(element, phase);
+                    const presetKeyframes = !cssAnimation && !resolvedPreset?.custom ? handler : undefined;
+                    if (keyframes) {
+                        result = element.animate(keyframes, animationOptionsFor(preset, options));
+                    }
+                    else if (cssAnimation) {
+                        const cssResult = runCssAnimation(element, cssAnimation);
+                        result = cssResult.animations;
+                        animationCleanup = cssResult.cleanup;
+                    }
+                    else if (presetKeyframes) {
+                        result = element.animate(presetKeyframes, animationOptionsFor(preset, options));
+                    }
+                    else {
+                        const styleKeyframes = keyframesFromStyles(context.from, context.to);
+                        result = styleKeyframes
+                            ? element.animate(styleKeyframes, animationOptionsFor(preset, options))
+                            : undefined;
+                    }
+                }
+                const handle = new AnimationHandle(result, controller, (ok) => {
+                    animationCleanup?.();
+                    finishCleanup(ok);
+                });
+                activeHandles.set(element, handle);
+                handle.done(() => {
+                    if (activeHandles.get(element) === handle) {
+                        activeHandles.delete(element);
+                    }
+                });
+                return handle;
+            };
             return {
-                /**
-                 *
-                 * Sets up an event listener to fire whenever the animation event (enter, leave, move, etc...)
-                 *    has fired on the given element or among any of its children. Once the listener is fired, the provided callback
-                 *    is fired with the following params:
-                 *
-                 * ```js
-                 * $animate.on('enter', container,
-                 *    function callback(element, phase) {
-                 *      // cool we detected an enter animation within the container
-                 *    }
-                 * );
-                 * ```
-                 *
-                 * <div class="alert alert-warning">
-                 * **Note**: Generally, the events that are fired correspond 1:1 to `$animate` method names,
-                 * e.g. {@link ng.$animate#addClass addClass()} will fire `addClass`, and {@link ng.ngClass}
-                 * will fire `addClass` if classes are added, and `removeClass` if classes are removed.
-                 * However, there are two exceptions:
-                 *
-                 * <ul>
-                 *   <li>if both an {@link ng.$animate#addClass addClass()} and a
-                 *   {@link ng.$animate#removeClass removeClass()} action are performed during the same
-                 *   animation, the event fired will be `setClass`. This is true even for `ngClass`.</li>
-                 *   <li>an {@link ng.$animate#animate animate()} call that adds and removes classes will fire
-                 *   the `setClass` event, but if it either removes or adds classes,
-                 *   it will fire `animate` instead.</li>
-                 * </ul>
-                 *
-                 * </div>
-                 *
-                 * @param event the animation event that will be captured (e.g. enter, leave, move, addClass, removeClass, etc...)
-                 * @param container the container element that will capture each of the animation events that are fired on itself
-                 *     as well as among its children
-                 * @param callback the callback function that will be fired when the listener is triggered.
-                 *
-                 * The arguments present in the callback function are:
-                 * * `element` - The captured DOM element that the animation was fired on.
-                 * * `phase` - The phase of the animation. The two possible phases are **start** (when the animation starts) and **close** (when it ends).
-                 * * `data` - an object with these properties:
-                 *     * addClass - `{string|null}` - space-separated CSS classes to add to the element
-                 *     * removeClass - `{string|null}` - space-separated CSS classes to remove from the element
-                 *     * from - `{Object|null}` - CSS properties & values at the beginning of the animation
-                 *     * to - `{Object|null}` - CSS properties & values at the end of the animation
-                 *
-                 * Scope assignments made from this callback are reactive; use `$postUpdate` when
-                 * follow-up work must run after listeners flush.
-                 */
-                on: $$animateQueue.on,
-                /**
-                 * Deregisters an event listener based on the event which has been associated with the provided element. This method
-                 * can be used in three different ways depending on the arguments:
-                 *
-                 * ```js
-                 * // remove all the animation event listeners listening for `enter`
-                 * $animate.off('enter');
-                 *
-                 * // remove listeners for all animation events from the container element
-                 * $animate.off(container);
-                 *
-                 * // remove all the animation event listeners listening for `enter` on the given element and its children
-                 * $animate.off('enter', container);
-                 *
-                 * // remove the event listener function provided by `callback` that is set
-                 * // to listen for `enter` on the given `container` as well as its children
-                 * $animate.off('enter', container, callback);
-                 * ```
-                 *
-                 * @param event|container the animation event (e.g. enter, leave, move,
-                 * addClass, removeClass, etc...), or the container element. If it is the element, all other
-                 * arguments are ignored.
-                 * @param container the container element the event listener was placed on
-                 * @param callback the callback function that was registered as the listener
-                 */
-                off: $$animateQueue.off,
-                /**
-                 *  Associates the provided element with a host parent element to allow the element to be animated even if it exists
-                 *  outside of the DOM structure of the AngularTS application. By doing so, any animation triggered via `$animate` can be issued on the
-                 *  element despite being outside the realm of the application or within another application. Say for example if the application
-                 *  was bootstrapped on an element that is somewhere inside of the `<body>` tag, but we wanted to allow for an element to be situated
-                 *  as a direct child of `document.body`, then this can be achieved by pinning the element via `$animate.pin(element)`. Keep in mind
-                 *  that calling `$animate.pin(element, parentElement)` will not actually insert into the DOM anywhere; it will just create the association.
-                 *
-                 *  Note that this feature is only active when the `ngAnimate` module is used.
-                 *
-                 * @param element the external element that will be pinned
-                 * @param parentElement the host parent element that will be associated with the external element
-                 */
-                pin: $$animateQueue.pin,
-                /**
-                 * Used to get and set whether animations are enabled or not on the entire application or on an element and its children. This
-                 * function can be called in four ways:
-                 *
-                 * ```js
-                 * // returns true or false
-                 * $animate.enabled();
-                 *
-                 * // changes the enabled state for all animations
-                 * $animate.enabled(false);
-                 * $animate.enabled(true);
-                 *
-                 * // returns true or false if animations are enabled for an element
-                 * $animate.enabled(element);
-                 *
-                 * // changes the enabled state for an element and its children
-                 * $animate.enabled(element, true);
-                 * $animate.enabled(element, false);
-                 * ```
-                 *
-                 * @param element the element that will be considered for checking/setting the enabled state
-                 * @param enabled whether or not the animations will be enabled for the element
-                 *
-                 * @returns whether or not animations are enabled
-                 */
-                enabled: (element, enabled) => {
-                    if (enabled !== undefined) {
-                        return hasAnimate(element);
-                    }
-                    else {
-                        element.setAttribute("animate", `${enabled}`);
-                    }
-                    return true;
+                cancel(handle) {
+                    handle?.cancel?.();
                 },
-                /**
-                 * Cancels the provided animation and applies the end state of the animation.
-                 * Note that this does not cancel the underlying operation, e.g. the setting of classes or
-                 * adding the element to the DOM.
-                 *
-                 * @param runner An animation runner returned by an $animate function.
-                 */
-                cancel(runner) {
-                    if (runner.cancel) {
-                        runner.cancel();
-                    }
+                define: (name, preset) => {
+                    this.register(name, preset);
+                    resolvedPresets.delete(normalizeAnimationName(name));
                 },
-                /**
-                 * Inserts the element into the DOM either after the `after` element (if provided) or
-                 * as the first child within the `parent` element and then triggers an animation.
-                 * A promise is returned that will be resolved during the next digest once the animation
-                 * has completed.
-                 *
-                 * @param element - the element which will be inserted into the DOM
-                 * @param parent - the parent element which will append the element as a child (so long as the after element is not present)
-                 * @param [after] - after the sibling element after which the element will be appended
-                 * @param [options] - an optional collection of options/styles that will be applied to the element.
-                 * @returns the animation runner
-                 */
-                enter(element, parent, after, options) {
-                    parent = parent || (after && after.parentElement);
-                    if (isInstanceOf(element, HTMLElement) &&
-                        isInstanceOf(parent, HTMLElement)) {
-                        animatedomInsert(element, parent, after);
-                    }
-                    else {
-                        domInsert(element, parent, after);
-                    }
-                    return $$animateQueue.push(element, "enter", prepareAnimateOptions(options));
+                enter: (element, parent, after, options) => {
+                    domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+                    return run("enter", element, options);
                 },
-                /**
-                 * Inserts (moves) the element into its new position in the DOM either after
-                 * the `after` element (if provided) or as the first child within the `parent` element
-                 * and then triggers an animation. A promise is returned that will be resolved
-                 * during the next digest once the animation has completed.
-                 *
-                 * @param element - the element which will be inserted into the DOM
-                 * @param parent - the parent element which will append the element as a child (so long as the after element is not present)
-                 * @param after - after the sibling element after which the element will be appended
-                 * @param [options] - an optional collection of options/styles that will be applied to the element.
-                 * @returns the animation runner
-                 */
-                move(element, parent, after, options) {
-                    parent = parent || after.parentElement;
-                    if (isInstanceOf(element, HTMLElement) &&
-                        isInstanceOf(parent, HTMLElement)) {
-                        animatedomInsert(element, parent, after);
-                    }
-                    else {
-                        domInsert(element, parent, after);
-                    }
-                    return $$animateQueue.push(element, "move", prepareAnimateOptions(options));
+                move: (element, parent, after, options) => {
+                    domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+                    return run("move", element, options);
                 },
-                /**
-                 * Triggers an animation and then removes the element from the DOM.
-                 * When the function is called a promise is returned that will be resolved during the next
-                 * digest once the animation has completed.
-                 *
-                 * @param element the element which will be removed from the DOM
-                 * @param [options] an optional collection of options/styles that will be applied to the element.
-                 * @returns the animation runner
-                 */
-                leave(element, options) {
-                    return $$animateQueue.push(element, "leave", prepareAnimateOptions(options), () => {
+                leave: (element, options) => run("leave", element, options, {}, (ok) => {
+                    if (ok)
                         removeElement(element);
+                }),
+                addClass: (element, className, options) => {
+                    const nextOptions = { ...options, addClass: className };
+                    element.classList.add(...splitClasses(className));
+                    return run("addClass", element, nextOptions, {
+                        className,
+                        addClass: className,
                     });
                 },
-                /**
-                 * Triggers an addClass animation surrounding the addition of the provided CSS class(es). Upon
-                 * execution, the addClass operation will only be handled after the next digest and it will not trigger an
-                 * animation if element already contains the CSS class or if the class is removed at a later step.
-                 * Note that class-based animations are treated differently compared to structural animations
-                 * (like enter, move and leave) since the CSS classes may be added/removed at different points
-                 * depending if CSS or JavaScript animations are used.
-                 *
-                 * @param element the element which the CSS classes will be applied to
-                 * @param className the CSS class(es) that will be added (multiple classes are separated via spaces)
-                 * @param [options] an optional collection of options/styles that will be applied to the element.
-                 * @returns The animation runner.
-                 */
-                addClass(element, className, options) {
-                    options = prepareAnimateOptions(options);
-                    options.addClass = mergeClasses(options.addClass, className);
-                    return $$animateQueue.push(element, "addClass", options);
+                removeClass: (element, className, options) => {
+                    const nextOptions = { ...options, removeClass: className };
+                    element.classList.remove(...splitClasses(className));
+                    return run("removeClass", element, nextOptions, {
+                        className,
+                        removeClass: className,
+                    });
                 },
-                /**
-                 * Triggers a removeClass animation surrounding the removal of the provided CSS class(es). Upon
-                 * execution, the removeClass operation will only be handled after the next digest and it will not trigger an
-                 * animation if element does not contain the CSS class or if the class is added at a later step.
-                 * Note that class-based animations are treated differently compared to structural animations
-                 * (like enter, move and leave) since the CSS classes may be added/removed at different points
-                 * depending if CSS or JavaScript animations are used.
-                 *
-                 * @param element the element which the CSS classes will be applied to
-                 * @param className the CSS class(es) that will be removed (multiple classes are separated via spaces)
-                 * @param [options] an optional collection of options/styles that will be applied to the element.
-                 * @returns The animation runner.
-                 */
-                removeClass(element, className, options) {
-                    options = prepareAnimateOptions(options);
-                    options.removeClass = mergeClasses(options.removeClass, className);
-                    return $$animateQueue.push(element, "removeClass", options);
+                setClass: (element, add, remove, options) => {
+                    const nextOptions = {
+                        ...options,
+                        addClass: add,
+                        removeClass: remove,
+                    };
+                    element.classList.add(...splitClasses(add));
+                    element.classList.remove(...splitClasses(remove));
+                    return run("setClass", element, nextOptions, {
+                        addClass: add,
+                        removeClass: remove,
+                    });
                 },
-                /**
-                 * Performs both the addition and removal of a CSS classes on an element and (during the process)
-                 * triggers an animation surrounding the class addition/removal. Much like `$animate.addClass` and
-                 * `$animate.removeClass`, `setClass` will only evaluate the classes being added/removed once a digest has
-                 * passed. Note that class-based animations are treated differently compared to structural animations
-                 * (like enter, move and leave) since the CSS classes may be added/removed at different points
-                 * depending if CSS or JavaScript animations are used.
-                 *
-                 * @param element the element which the CSS classes will be applied to
-                 * @param add the CSS class(es) that will be added (multiple classes are separated via spaces)
-                 * @param remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
-                 * @param [options] an optional collection of options/styles that will be applied to the element.
-                 *
-                 * @returns the animation runner
-                 */
-                setClass(element, add, remove, options) {
-                    options = prepareAnimateOptions(options);
-                    options.addClass = mergeClasses(options.addClass, add);
-                    options.removeClass = mergeClasses(options.removeClass, remove);
-                    return $$animateQueue.push(element, "setClass", options);
+                animate: (element, from, to = {}, className, options) => {
+                    if (className)
+                        element.classList.add(...splitClasses(className));
+                    assign(element.style, from);
+                    return run("animate", element, { ...options, from, to }, { from, to, className }, () => {
+                        assign(element.style, to);
+                    });
                 },
-                /**
-                 * Performs an inline animation on the element which applies the provided to and from CSS styles to the element.
-                 * If any detected CSS transition, keyframe or JavaScript matches the provided className value, then the animation will take
-                 * on the provided styles. For example, if a transition animation is set for the given className, then the provided `from` and
-                 * `to` styles will be applied alongside the given transition. If the CSS style provided in `from` does not have a corresponding
-                 * style in `to`, the style in `from` is applied immediately, and no animation is run.
-                 * If a JavaScript animation is detected then the provided styles will be given in as function parameters into the `animate`
-                 * method (or as part of the `options` parameter):
-                 *
-                 * ```js
-                 * ngModule.animation('.my-inline-animation', function() {
-                 *   return {
-                 *     animate : function(element, from, to, done, options) {
-                 *       //animation
-                 *       done();
-                 *     }
-                 *   }
-                 * });
-                 * ```
-                 *
-                 * @param element the element which will be animated
-                 * @param from the initial CSS styles for the animation
-                 * @param to the final CSS styles for the animation
-                 * @param className an optional CSS class name to apply for the animation
-                 * @param options an optional collection of options/styles that will be applied to the element.
-                 * @returns the animation runner
-                 */
-                animate(element, from, to, className, options) {
-                    options = prepareAnimateOptions(options);
-                    options.from = options.from
-                        ? extend(options.from, from)
-                        : from;
-                    options.to = options.to
-                        ? extend(options.to, to)
-                        : to;
-                    className = className || "ng-inline-animate";
-                    options.tempClasses = mergeClasses(options.tempClasses, className);
-                    return $$animateQueue.push(element, "animate", options);
+                async transition(update) {
+                    const documentWithTransitions = document;
+                    if (!documentWithTransitions.startViewTransition) {
+                        await update();
+                        return;
+                    }
+                    await documentWithTransitions.startViewTransition(update).finished;
                 },
             };
         },
     ];
 }
+function splitClasses(className) {
+    return className.trim().split(/\s+/).filter(Boolean);
+}
+function splitOptionClasses(className) {
+    if (!className)
+        return [];
+    return Array.isArray(className)
+        ? className.flatMap(splitClasses)
+        : splitClasses(className);
+}
+function normalizeAnimationName(name) {
+    return name.startsWith(".") ? name.slice(1) : name;
+}
+function cssPresetClassFor(name) {
+    return CSS_BUILT_IN_PRESETS.has(name)
+        ? `ng-animate-preset-${name}`
+        : undefined;
+}
+function animationNameFor(element, options) {
+    const explicit = options?.animation;
+    if (explicit)
+        return normalizeAnimationName(explicit);
+    const value = element.dataset.animate || element.getAttribute("animate");
+    if (!value || value === "true" || value === "")
+        return "fade";
+    if (value === "false")
+        return undefined;
+    return normalizeAnimationName(value);
+}
+function keyframesForPhase(phase, options) {
+    if (options.keyframes)
+        return options.keyframes;
+    if (phase === "enter")
+        return options.enter;
+    if (phase === "leave")
+        return options.leave;
+    if (phase === "move")
+        return options.move;
+    return undefined;
+}
+function keyframesFromStyles(from, to) {
+    if (!from && !to)
+        return undefined;
+    return [from || {}, to || {}];
+}
+function animationOptionsFor(preset, options) {
+    const defaults = preset?.options || {};
+    const { keyframes: _keyframes, enter, leave, move, animation, tempClasses, onStart, onDone, onCancel, ...rest } = options;
+    return {
+        duration: DEFAULT_DURATION,
+        fill: "both",
+        ...defaults,
+        ...rest,
+    };
+}
+function cssAnimationForPhase(element, phase) {
+    const styles = getComputedStyle(element);
+    const value = readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ||
+        readCssAnimationProperty(styles, "--ng-animation");
+    if (!value || value === "none")
+        return undefined;
+    return value;
+}
+function readCssAnimationProperty(styles, property) {
+    const value = styles.getPropertyValue(property).trim();
+    return value || undefined;
+}
+function runCssAnimation(element, animation) {
+    const animatedElement = element;
+    const { style } = animatedElement;
+    const previousAnimation = style.animation;
+    const previousAnimations = new Set(element.getAnimations());
+    style.animation = "none";
+    if ("offsetWidth" in animatedElement) {
+        void animatedElement.offsetWidth;
+    }
+    style.animation = animation;
+    const animations = element
+        .getAnimations()
+        .filter((currentAnimation) => !previousAnimations.has(currentAnimation) &&
+        currentAnimation.playState !== "finished");
+    return {
+        animations,
+        cleanup: () => {
+            style.animation = previousAnimation;
+        },
+    };
+}
+function shouldSkipAnimation(element, options) {
+    if (!("animate" in element))
+        return true;
+    if (document.hidden)
+        return true;
+    if (options.duration === 0)
+        return true;
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+function expandHeight(element, context, options) {
+    const target = element;
+    const previousOverflow = target.style.overflow;
+    const previousHeight = target.style.height;
+    const previousOpacity = target.style.opacity;
+    const height = `${target.scrollHeight}px`;
+    target.style.overflow = "hidden";
+    const animation = target.animate([
+        { height: "0px", opacity: 0 },
+        { height, opacity: 1 },
+    ], animationOptionsFor(BUILT_IN_PRESETS.expand, options));
+    cleanupHeightAnimation(target, context, animation, {
+        height: previousHeight,
+        opacity: previousOpacity,
+        overflow: previousOverflow,
+    });
+    return animation;
+}
+function collapseHeight(element, context, options) {
+    const target = element;
+    const previousOverflow = target.style.overflow;
+    const previousHeight = target.style.height;
+    const previousOpacity = target.style.opacity;
+    const height = `${target.offsetHeight || target.scrollHeight}px`;
+    target.style.height = height;
+    target.style.overflow = "hidden";
+    const animation = target.animate([
+        { height, opacity: 1 },
+        { height: "0px", opacity: 0 },
+    ], animationOptionsFor(BUILT_IN_PRESETS.collapse, options));
+    cleanupHeightAnimation(target, context, animation, {
+        height: previousHeight,
+        opacity: previousOpacity,
+        overflow: previousOverflow,
+    });
+    return animation;
+}
+function cleanupHeightAnimation(element, context, animation, previous) {
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned)
+            return;
+        cleaned = true;
+        element.style.height = previous.height;
+        element.style.opacity = previous.opacity;
+        element.style.overflow = previous.overflow;
+    };
+    context.signal.addEventListener("abort", cleanup, { once: true });
+    animation.finished.then(cleanup, cleanup);
+}
 
-export { AnimateProvider };
+export { AnimateProvider, AnimationHandle };

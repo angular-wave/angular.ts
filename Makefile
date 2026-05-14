@@ -53,7 +53,7 @@ version:
 	@node utils/version.cjs	
 
 format:
-	@npx prettier ./ --write --cache --log-level=silent
+	@npx prettier ./src --write --cache --log-level=silent
 	
 lint:
 	@$(MAKE) lint-check

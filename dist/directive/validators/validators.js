@@ -1,8 +1,9 @@
 import { _parse } from '../../injection-tokens.js';
-import { isUndefined, hasOwn, isString, isFunction, minErr, isNumberNaN } from '../../shared/utils.js';
+import { isString, isUndefined, hasOwn, isFunction, isNumberNaN, createErrorFactory } from '../../shared/utils.js';
 import { REGEX_STRING_REGEXP } from '../attrs/attrs.js';
 import { startingTag } from '../../shared/dom.js';
 
+const ngPatternError = createErrorFactory("ngPattern");
 /**
  *
  * @param ngRequired AngularTS expression. If it evaluates to `true`, it sets the
@@ -107,11 +108,11 @@ const patternDirective = [
             let parseFn;
             if (tAttr.ngPattern) {
                 patternExp = tAttr.ngPattern;
+                const ngPattern = tAttr.ngPattern;
                 // ngPattern might be a scope expression, or an inlined regex, which is not parsable.
                 // We get value of the attribute here, so we can compare the old and the new value
                 // in the observer to avoid unnecessary validations
-                if (tAttr.ngPattern.charAt(0) === "/" &&
-                    REGEX_STRING_REGEXP.test(tAttr.ngPattern)) {
+                if (ngPattern.startsWith("/") && REGEX_STRING_REGEXP.test(ngPattern)) {
                     parseFn = function () {
                         return tAttr.ngPattern;
                     };
@@ -136,8 +137,7 @@ const patternDirective = [
                 attr.$observe("pattern", (newVal) => {
                     const oldRegexp = regexp;
                     regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
-                    if ((oldRegexp && oldRegexp.toString()) !==
-                        (regexp && regexp.toString())) {
+                    if (oldRegexp?.toString() !== regexp?.toString()) {
                         ctrl.$validate();
                     }
                 });
@@ -205,7 +205,7 @@ const maxlengthDirective = [
             ctrl.$validators.maxlength = function (_modelValue, viewValue) {
                 return (maxlengthParsed < 0 ||
                     ctrl.$isEmpty(viewValue) ||
-                    viewValue.length <= maxlengthParsed);
+                    (isString(viewValue) && viewValue.length <= maxlengthParsed));
             };
         },
     }),
@@ -268,11 +268,11 @@ const minlengthDirective = [
 function parsePatternAttr(input, patternExp, elm) {
     let regex = input;
     if (isString(regex)) {
-        const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
+        const match = /^\/(.*)\/([gimsuy]*)$/.exec(regex);
         regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
     }
     if (!isFunction(regex.test)) {
-        throw minErr("ngPattern")("noregexp", "Expected {0} to be a RegExp but was {1}. Element: {2}", patternExp, regex, startingTag(elm));
+        throw ngPatternError("noregexp", "Expected {0} to be a RegExp but was {1}. Element: {2}", patternExp, regex, startingTag(elm));
     }
     return regex;
 }

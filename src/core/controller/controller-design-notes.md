@@ -25,11 +25,13 @@ Injectable<ControllerConstructor>
 ```
 
 Supported forms:
+
 - constructor function
 - ES class
 - DI-annotated array (`['dep1', ..., ControllerFn]`)
 
 Unsupported:
+
 - plain objects
 - non-callables
 
@@ -53,10 +55,12 @@ This invariant is enforced by `normalizeControllerDef()` and relied on everywher
 ### `register(name, constructor)`
 
 Supports:
+
 - single controller registration
 - bulk registration
 
 Behavior:
+
 - controller names are validated
 - definitions are normalized eagerly
 - invalid definitions throw `ctrlreg`
@@ -75,12 +79,14 @@ $controller(expression, locals?, later?, ident?)
 ### Expression Resolution
 
 If `expression` is a **string**:
+
 - must match `CNTRL_REG`
 - extracts controller name and optional `as` identifier
 - resolves only from the internal registry
 - throws `ctrlfmt` or `ctrlreg` on failure
 
 If `expression` is **not a string**:
+
 - treated as a controller injectable directly
 
 ---
@@ -90,6 +96,7 @@ If `expression` is **not a string**:
 ### `unwrapController(injectable)`
 
 Central helper that:
+
 - extracts the underlying constructor function
 - asserts callability
 - exposes:
@@ -122,10 +129,12 @@ This removes duplicated logic and provides a single point of truth.
 ## Identifier (`ctrl as`) Handling
 
 Sources of identifier (priority order):
+
 1. explicit `ident` argument
 2. `as` syntax in controller string
 
 Rules:
+
 - identifier requires `locals.$scope`
 - exports instance to scope and sets `$controllerIdentifier`
 - missing `$scope` throws `noscp`
@@ -150,12 +159,12 @@ in both normal and deferred modes when a scope is present.
 
 ## Error Semantics
 
-| Code     | Condition |
-|----------|-----------|
-| ctrlfmt  | malformed controller string |
-| ctrlreg  | unknown controller or invalid definition |
-| noscp    | identifier export without `$scope` |
-| badname  | illegal controller registration name |
+| Code    | Condition                                |
+| ------- | ---------------------------------------- |
+| ctrlfmt | malformed controller string              |
+| ctrlreg | unknown controller or invalid definition |
+| noscp   | identifier export without `$scope`       |
+| badname | illegal controller registration name     |
 
 ---
 
@@ -180,6 +189,7 @@ in both normal and deferred modes when a scope is present.
 ## Summary
 
 `ControllerProvider` favors explicitness and predictability:
+
 - strict registration
 - centralized normalization
 - well-defined error cases
