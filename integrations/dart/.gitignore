@@ -1,0 +1,8 @@
+.dart_tool/
+pubspec.lock
+
+example/**/.dart_tool/
+example/**/pubspec.lock
+example/**/web/main.dart.js
+example/**/web/main.dart.js.deps
+example/**/web/main.dart.js.map

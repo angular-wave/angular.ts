@@ -1,0 +1,10 @@
+name: angular_ts_basic_app
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  angular_ts:
+    path: ../..
+  web: ^1.1.0

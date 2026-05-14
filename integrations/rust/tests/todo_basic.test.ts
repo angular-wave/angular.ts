@@ -16,10 +16,18 @@ test("Rust todo demo runs through the AngularTS bridge", async ({ page }) => {
   });
   page.on("request", (request) => {
     const url = request.url();
-    if (url.includes("/integrations/rust/examples/basic_app/.angular-ts/bootstrap.js")) {
+    if (
+      url.includes(
+        "/integrations/rust/examples/basic_app/.angular-ts/bootstrap.js",
+      )
+    ) {
       bootstrapRequests.push(url);
     }
-    if (url.includes("/integrations/rust/examples/basic_app/pkg/angular_ts_rust_basic_app_bg.wasm")) {
+    if (
+      url.includes(
+        "/integrations/rust/examples/basic_app/pkg/angular_ts_rust_basic_app_bg.wasm",
+      )
+    ) {
       wasmRequests.push(url);
     }
   });
