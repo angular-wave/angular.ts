@@ -44,6 +44,31 @@ describe("Scope", () => {
     scope = $rootScope;
   });
 
+  function prototypeMethodKeys(prototype) {
+    return [
+      ...Object.getOwnPropertyNames(prototype),
+      ...Object.getOwnPropertySymbols(prototype),
+    ].filter((key) => {
+      if (key === "constructor") return false;
+
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+
+      return typeof descriptor?.value === "function";
+    });
+  }
+
+  function nativeMethodResultSnapshot(value) {
+    if (
+      value &&
+      typeof value !== "string" &&
+      typeof value[Symbol.iterator] === "function"
+    ) {
+      return Array.from(value);
+    }
+
+    return value;
+  }
+
   it("can be instantiated without parameters", () => {
     scope = createScope();
     expect(scope).toBeDefined();
@@ -270,6 +295,562 @@ describe("Scope", () => {
       expect(res.b.$id).toBeUndefined();
       expect(isProxy(res.a)).toBeFalse();
       expect(isProxy(res.b)).toBeFalse();
+    });
+  });
+
+  describe("native collection change detection", () => {
+    function mapMethodArgs(method) {
+      switch (method) {
+        case "set":
+        case "getOrInsert":
+          return ["c", 3];
+        case "getOrInsertComputed":
+          return ["c", () => 3];
+        case "delete":
+        case "get":
+        case "has":
+          return ["a"];
+        case "forEach":
+          return [
+            () => {
+              /* exercised by dedicated watcher test */
+            },
+          ];
+        default:
+          return [];
+      }
+    }
+
+    function setMethodArgs(method) {
+      switch (method) {
+        case "add":
+        case "delete":
+        case "has":
+          return ["a"];
+        case "difference":
+        case "intersection":
+        case "isDisjointFrom":
+        case "isSubsetOf":
+        case "isSupersetOf":
+        case "symmetricDifference":
+        case "union":
+          return [new Set(["b", "c"])];
+        case "forEach":
+          return [
+            () => {
+              /* exercised by dedicated watcher test */
+            },
+          ];
+        default:
+          return [];
+      }
+    }
+
+    it("should proxy Map and Set values without breaking native methods", () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+        set: new Set(["a"]),
+      });
+
+      expect(isProxy(scope.map)).toBeTrue();
+      expect(isProxy(scope.set)).toBeTrue();
+      expect(scope.map.get("a")).toBe(1);
+      expect(scope.set.has("a")).toBeTrue();
+      expect(Array.from(scope.map.entries())).toEqual([["a", 1]]);
+      expect(Array.from(scope.set.values())).toEqual(["a"]);
+    });
+
+    it("should support every Map prototype method and property through proxies", () => {
+      scope = createScope({
+        map: new Map([
+          ["a", 1],
+          ["b", 2],
+        ]),
+      });
+
+      expect(scope.map.size).toBe(2);
+
+      for (const method of prototypeMethodKeys(Map.prototype)) {
+        const rawMap = new Map([
+          ["a", 1],
+          ["b", 2],
+        ]);
+        const target = createScope({
+          map: new Map([
+            ["a", 1],
+            ["b", 2],
+          ]),
+        }).map;
+        const args = mapMethodArgs(method);
+
+        expect(nativeMethodResultSnapshot(target[method](...args))).toEqual(
+          nativeMethodResultSnapshot(rawMap[method](...args)),
+        );
+      }
+
+      scope.map.set("c", 3);
+      expect(scope.map.size).toBe(3);
+    });
+
+    it("should support every Set prototype method and property through proxies", () => {
+      scope = createScope({
+        set: new Set(["a", "b"]),
+      });
+
+      expect(scope.set.size).toBe(2);
+
+      for (const method of prototypeMethodKeys(Set.prototype)) {
+        const rawSet = new Set(["a", "b"]);
+        const target = createScope({
+          set: new Set(["a", "b"]),
+        }).set;
+        const args = setMethodArgs(method);
+
+        expect(nativeMethodResultSnapshot(target[method](...args))).toEqual(
+          nativeMethodResultSnapshot(rawSet[method](...args)),
+        );
+      }
+
+      scope.set.add("c");
+      expect(scope.set.size).toBe(3);
+    });
+
+    it("should notify Map size and get watchers after mutations", async () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const sizes = [];
+
+      const values = [];
+
+      scope.$watch("map.size", (value) => sizes.push(value));
+      scope.$watch("map.get('a')", (value) => values.push(value));
+      await wait();
+
+      expect(sizes).toEqual([1]);
+      expect(values).toEqual([1]);
+
+      scope.map.set("a", 2);
+      await wait();
+
+      expect(sizes).toEqual([1]);
+      expect(values).toEqual([1, 2]);
+
+      scope.map.set("b", 3);
+      await wait();
+
+      expect(sizes).toEqual([1, 2]);
+
+      scope.map.delete("a");
+      await wait();
+
+      expect(sizes).toEqual([1, 2, 1]);
+      expect(values).toEqual([1, 2, 2, undefined]);
+    });
+
+    it("should notify Map watchers after native upsert methods insert", async () => {
+      const upsertMethods = ["getOrInsert", "getOrInsertComputed"].filter(
+        (method) => typeof Map.prototype[method] === "function",
+      );
+
+      for (const method of upsertMethods) {
+        const scoped = createScope({
+          map: new Map([["a", 1]]),
+        });
+        const sizes = [];
+        const values = [];
+
+        scoped.$watch("map.size", (value) => sizes.push(value));
+        scoped.$watch("map.get('b')", (value) => values.push(value));
+        await wait();
+
+        scoped.map[method](
+          ...(method === "getOrInsertComputed" ? ["b", () => 3] : ["b", 3]),
+        );
+        await wait();
+
+        expect(sizes).toEqual([1, 2]);
+        expect(values).toEqual([undefined, 3]);
+      }
+    });
+
+    it("should notify Set size and has watchers after mutations", async () => {
+      scope = createScope({
+        set: new Set(["a"]),
+      });
+
+      const sizes = [];
+
+      const hasValues = [];
+
+      scope.$watch("set.size", (value) => sizes.push(value));
+      scope.$watch("set.has('b')", (value) => hasValues.push(value));
+      await wait();
+
+      expect(sizes).toEqual([1]);
+      expect(hasValues).toEqual([false]);
+
+      scope.set.add("b");
+      await wait();
+
+      expect(sizes).toEqual([1, 2]);
+      expect(hasValues).toEqual([false, true]);
+
+      scope.set.delete("b");
+      await wait();
+
+      expect(sizes).toEqual([1, 2, 1]);
+      expect(hasValues).toEqual([false, true, false]);
+    });
+
+    it("should notify owner-key watchers for native collection mutations", async () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const values = [];
+
+      scope.$watch("map | values", (value) => values.push(value));
+      await wait();
+
+      expect(values).toEqual([[1]]);
+
+      scope.map.set("b", 2);
+      await wait();
+
+      expect(values).toEqual([[1], [1, 2]]);
+    });
+
+    it("should notify watchers for all observable Map prototype methods", async () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const values = {};
+
+      scope.$watch("map.get('a')", (value) => (values.get = value));
+      scope.$watch("map.has('a')", (value) => (values.has = value));
+      scope.$watch("map.keys()", (value) => (values.keys = Array.from(value)));
+      scope.$watch("map.values()", (value) => {
+        values.values = Array.from(value);
+      });
+      scope.$watch("map.entries()", (value) => {
+        values.entries = Array.from(value);
+      });
+      await wait();
+
+      expect(values).toEqual({
+        get: 1,
+        has: true,
+        keys: ["a"],
+        values: [1],
+        entries: [["a", 1]],
+      });
+
+      scope.map.set("b", 2);
+      await wait();
+
+      expect(values).toEqual({
+        get: 1,
+        has: true,
+        keys: ["a", "b"],
+        values: [1, 2],
+        entries: [
+          ["a", 1],
+          ["b", 2],
+        ],
+      });
+    });
+
+    it("should notify watchers for all observable Set prototype methods", async () => {
+      scope = createScope({
+        set: new Set(["a"]),
+      });
+
+      const values = {};
+
+      scope.$watch("set.has('a')", (value) => (values.has = value));
+      scope.$watch("set.keys()", (value) => (values.keys = Array.from(value)));
+      scope.$watch("set.values()", (value) => {
+        values.values = Array.from(value);
+      });
+      scope.$watch("set.entries()", (value) => {
+        values.entries = Array.from(value);
+      });
+      await wait();
+
+      expect(values).toEqual({
+        has: true,
+        keys: ["a"],
+        values: ["a"],
+        entries: [["a", "a"]],
+      });
+
+      scope.set.add("b");
+      await wait();
+
+      expect(values).toEqual({
+        has: true,
+        keys: ["a", "b"],
+        values: ["a", "b"],
+        entries: [
+          ["a", "a"],
+          ["b", "b"],
+        ],
+      });
+    });
+  });
+
+  describe("promise change detection", () => {
+    it("should update a watched property when an assigned promise resolves", async () => {
+      scope = createScope();
+
+      const values = [];
+
+      scope.$watch("value", (value) => values.push(value));
+      await wait();
+
+      scope.value = Promise.resolve("resolved");
+      await wait();
+      await wait();
+
+      expect(scope.value).toBe("resolved");
+      expect(values).toEqual([undefined, jasmine.any(Promise), "resolved"]);
+    });
+
+    it("should proxy a resolved object and notify nested watchers", async () => {
+      scope = createScope();
+
+      const values = [];
+
+      scope.$watch("value.name", (value) => values.push(value));
+
+      scope.value = Promise.resolve({ name: "Ada" });
+      await wait();
+      await wait();
+
+      expect(isProxy(scope.value)).toBeTrue();
+      expect(scope.value.name).toBe("Ada");
+      expect(values).toEqual([undefined, "Ada"]);
+    });
+
+    it("should update a watched property when an assigned promise rejects", async () => {
+      scope = createScope();
+
+      const error = new Error("failed");
+
+      const values = [];
+
+      scope.$watch("value", (value) => values.push(value));
+      await wait();
+
+      scope.value = Promise.reject(error);
+      await wait();
+      await wait();
+
+      expect(scope.value).toBe(error);
+      expect(values).toEqual([undefined, jasmine.any(Promise), error]);
+    });
+
+    it("should not replace a property that changed before promise settlement", async () => {
+      scope = createScope();
+
+      let resolve;
+
+      const promise = new Promise((done) => {
+        resolve = done;
+      });
+
+      scope.value = promise;
+      scope.value = "newer";
+      resolve("older");
+      await wait();
+      await wait();
+
+      expect(scope.value).toBe("newer");
+    });
+  });
+
+  describe("Date change detection", () => {
+    function dateMethodArgs(method) {
+      switch (method) {
+        case "setDate":
+        case "setUTCDate":
+          return [3];
+        case "setFullYear":
+        case "setUTCFullYear":
+        case "setYear":
+          return [2021];
+        case "setHours":
+        case "setUTCHours":
+          return [1, 2, 3, 4];
+        case "setMilliseconds":
+        case "setUTCMilliseconds":
+          return [4];
+        case "setMinutes":
+        case "setUTCMinutes":
+          return [2, 3, 4];
+        case "setMonth":
+        case "setUTCMonth":
+          return [1, 3];
+        case "setSeconds":
+        case "setUTCSeconds":
+          return [3, 4];
+        case "setTime":
+          return [Date.UTC(2021, 1, 3, 4, 5, 6, 7)];
+        case Symbol.toPrimitive:
+          return ["default"];
+        default:
+          return [];
+      }
+    }
+
+    function dateGetterExpression(method) {
+      return `createdAt.${method}()`;
+    }
+
+    it("should proxy Date values without breaking native methods", () => {
+      scope = createScope({
+        createdAt: new Date(Date.UTC(2020, 0, 2)),
+      });
+
+      expect(isProxy(scope.createdAt)).toBeTrue();
+      expect(scope.createdAt.getUTCFullYear()).toBe(2020);
+      expect(scope.createdAt.toISOString()).toBe("2020-01-02T00:00:00.000Z");
+    });
+
+    it("should support every Date prototype method through proxies", () => {
+      const methodKeys = prototypeMethodKeys(Date.prototype);
+
+      for (const method of methodKeys) {
+        const rawDate = new Date(Date.UTC(2020, 0, 2, 3, 4, 5, 6));
+
+        const scoped = createScope({
+          createdAt: new Date(Date.UTC(2020, 0, 2, 3, 4, 5, 6)),
+        });
+
+        const args = dateMethodArgs(method);
+
+        const expected = rawDate[method](...args);
+
+        const actual = scoped.createdAt[method](...args);
+
+        expect(actual).toEqual(expected);
+      }
+    });
+
+    it("should notify Date method watchers after mutating setters", async () => {
+      scope = createScope({
+        createdAt: new Date(Date.UTC(2020, 0, 2)),
+      });
+
+      const times = [];
+
+      const years = [];
+
+      scope.$watch("createdAt.getTime()", (value) => times.push(value));
+      scope.$watch("createdAt.getUTCFullYear()", (value) => years.push(value));
+      await wait();
+
+      expect(times).toEqual([Date.UTC(2020, 0, 2)]);
+      expect(years).toEqual([2020]);
+
+      scope.createdAt.setUTCFullYear(2021);
+      await wait();
+
+      expect(times).toEqual([Date.UTC(2020, 0, 2), Date.UTC(2021, 0, 2)]);
+      expect(years).toEqual([2020, 2021]);
+    });
+
+    it("should notify owner-key watchers after Date mutation", async () => {
+      scope = createScope({
+        createdAt: new Date(Date.UTC(2020, 0, 2)),
+      });
+
+      const dates = [];
+
+      scope.$watch("createdAt", (value) => dates.push(value.getUTCFullYear()));
+      await wait();
+
+      expect(dates).toEqual([2020]);
+
+      scope.createdAt.setUTCFullYear(2021);
+      await wait();
+
+      expect(dates).toEqual([2020, 2021]);
+    });
+
+    it("should notify watchers for every Date getter after mutation", async () => {
+      scope = createScope({
+        createdAt: new Date(Date.UTC(2020, 0, 2, 3, 4, 5, 6)),
+      });
+
+      const getterMethods = Object.getOwnPropertyNames(Date.prototype).filter(
+        (method) => {
+          const descriptor = Object.getOwnPropertyDescriptor(
+            Date.prototype,
+            method,
+          );
+
+          return (
+            method !== "constructor" &&
+            !method.startsWith("set") &&
+            typeof descriptor?.value === "function"
+          );
+        },
+      );
+
+      const calls = {};
+
+      for (const method of getterMethods) {
+        calls[method] = 0;
+        scope.$watch(dateGetterExpression(method), () => {
+          calls[method]++;
+        });
+      }
+
+      await wait();
+
+      scope.createdAt.setUTCFullYear(2021);
+      await wait();
+
+      for (const method of getterMethods) {
+        expect(calls[method]).toBe(2);
+      }
+    });
+
+    it("should notify Date watchers for every mutating setter", async () => {
+      const setterMethods = Object.getOwnPropertyNames(Date.prototype).filter(
+        (method) => {
+          const descriptor = Object.getOwnPropertyDescriptor(
+            Date.prototype,
+            method,
+          );
+
+          return (
+            method.startsWith("set") && typeof descriptor?.value === "function"
+          );
+        },
+      );
+
+      for (const method of setterMethods) {
+        const scoped = createScope({
+          createdAt: new Date(Date.UTC(2020, 0, 2, 3, 4, 5, 6)),
+        });
+
+        let calls = 0;
+
+        scoped.$watch("createdAt.getTime()", () => {
+          calls++;
+        });
+        await wait();
+
+        scoped.createdAt[method](...dateMethodArgs(method));
+        await wait();
+
+        expect(calls).toBe(2);
+      }
     });
   });
 
@@ -4058,11 +4639,11 @@ describe("Scope optimizations", () => {
     });
 
     it("should cache non-scope results for known non-scope types", () => {
-      const date = new Date();
+      const regexp = /test/;
 
-      expect(isNonScope(date)).toBe(true);
+      expect(isNonScope(regexp)).toBe(true);
       // Second call should hit the cache and still return true
-      expect(isNonScope(date)).toBe(true);
+      expect(isNonScope(regexp)).toBe(true);
     });
 
     it("should cache scope-eligible results for plain objects", () => {

@@ -12,6 +12,7 @@ import {
   isInstanceOf,
   isNull,
   isObject,
+  isPromiseLike,
   isProxy,
   isProxySymbol,
   isUndefined,
@@ -155,6 +156,8 @@ type ScopeEventListener = (...args: any[]) => unknown;
 type ArrayMutationWrapper = (...args: any[]) => unknown;
 
 type ArrayMutationWrapperCache = Partial<Record<string, ArrayMutationWrapper>>;
+
+type CollectionMethodWrapper = (...args: any[]) => any;
 
 let uid = 0;
 
@@ -797,6 +800,63 @@ const arrayMutationMethods = new Set([
 
 const arrayIdentityMethods = new Set(["includes", "indexOf", "lastIndexOf"]);
 
+function getPrototypeMethodNames(
+  prototype: Record<string, unknown>,
+  include: (key: string) => boolean,
+): string[] {
+  return Object.getOwnPropertyNames(prototype).filter((key) => {
+    if (key === "constructor" || !include(key)) {
+      return false;
+    }
+
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+
+    return isFunction(descriptor?.value);
+  });
+}
+
+const mapPrototype = Map.prototype as Map<any, any> & Record<string, unknown>;
+
+const setPrototype = Set.prototype as Set<any> & Record<string, unknown>;
+
+const mapMutationMethods = new Set(
+  ["set", "delete", "clear", "getOrInsert", "getOrInsertComputed"].filter(
+    (key) => isFunction(mapPrototype[key]),
+  ),
+);
+
+const setMutationMethods = new Set(
+  ["add", "delete", "clear"].filter((key) => isFunction(setPrototype[key])),
+);
+
+const mapValueMutationWatchKeys = getPrototypeMethodNames(
+  mapPrototype,
+  (key) => !mapMutationMethods.has(key) && key !== "has" && key !== "keys",
+);
+
+const mapMembershipMutationWatchKeys = getPrototypeMethodNames(
+  mapPrototype,
+  (key) => !mapMutationMethods.has(key),
+);
+
+const setMutationWatchKeys = getPrototypeMethodNames(
+  setPrototype,
+  (key) => !setMutationMethods.has(key),
+);
+
+const datePrototype = Date.prototype as Date & Record<string, unknown>;
+
+const dateValueWatchKeys = Object.getOwnPropertyNames(datePrototype).filter(
+  (key) =>
+    key !== "constructor" &&
+    !key.startsWith("set") &&
+    isFunction(datePrototype[key]),
+);
+
+function isDateMutationMethod(property: string): boolean {
+  return property.startsWith("set") && isFunction(datePrototype[property]);
+}
+
 const wStr = "[object Window]";
 
 type NonScopeConstructor = abstract new (...args: any[]) => unknown;
@@ -811,10 +871,7 @@ const nonScopeConstructors: NonScopeConstructor[] = [
   HTMLCollection,
   NodeList,
   Event,
-  Date,
   RegExp,
-  Map,
-  Set,
   WeakMap,
   WeakSet,
   ArrayBuffer,
@@ -900,6 +957,54 @@ function getObjectListenerTarget(value: any): object | undefined {
   }
 
   return target as object;
+}
+
+function isMapTarget(target: unknown): target is Map<any, any> {
+  try {
+    return isInstanceOf(target, Map);
+  } catch {
+    return false;
+  }
+}
+
+function isSetTarget(target: unknown): target is Set<any> {
+  try {
+    return isInstanceOf(target, Set);
+  } catch {
+    return false;
+  }
+}
+
+function isDateTarget(target: unknown): target is Date {
+  try {
+    return isInstanceOf(target, Date);
+  } catch {
+    return false;
+  }
+}
+
+function isNativeScopedTarget(
+  target: unknown,
+): target is Map<any, any> | Set<any> | Date {
+  return isMapTarget(target) || isSetTarget(target) || isDateTarget(target);
+}
+
+function unwrapCollectionArgs(args: any[]): any[] {
+  let rawArgs: any[] | undefined;
+
+  for (let i = 0, l = args.length; i < l; i++) {
+    const rawArg = unwrapScopeValue(args[i]);
+
+    if (rawArg !== args[i] && !rawArgs) {
+      rawArgs = args.slice(0, i);
+    }
+
+    if (rawArgs) {
+      rawArgs[i] = rawArg;
+    }
+  }
+
+  return rawArgs || args;
 }
 
 function addObjectListenerKey(
@@ -1131,6 +1236,12 @@ export class Scope {
   /** @internal */
   _arrayMutationWrappers: WeakMap<object, ArrayMutationWrapperCache>;
 
+  /** @internal */
+  _collectionMethodWrappers: WeakMap<
+    object,
+    Map<PropertyKey, CollectionMethodWrapper>
+  >;
+
   /**
    * Initializes the handler with the target object and a context.
    *
@@ -1204,6 +1315,9 @@ export class Scope {
 
     this._arrayMutationWrappers =
       context?._arrayMutationWrappers ?? new WeakMap();
+
+    this._collectionMethodWrappers =
+      context?._collectionMethodWrappers ?? new WeakMap();
 
     this._propertyMap = {
       $broadcast: this.$broadcast.bind(this),
@@ -1380,6 +1494,50 @@ export class Scope {
       Number.isNaN(oldValue) &&
       Number.isNaN(rawValue)
     ) {
+      return true;
+    }
+
+    if (isPromiseLike(rawValue)) {
+      if (valueChanged && !valueIsProxy) {
+        this._destroyDisplacedValue(oldValue);
+      }
+
+      target[property] = storedValue;
+
+      if (valueChanged) {
+        const listeners = this._watchers.get(property);
+
+        if (listeners) {
+          this._scheduleListener(listeners);
+        }
+
+        const foreignListeners = this._foreignListeners.get(property);
+
+        if (foreignListeners) {
+          this._scheduleListener(foreignListeners);
+        }
+
+        if (isArray(target)) {
+          this._scheduleArrayOwnerListeners(target, proxy, property);
+
+          if (property !== "length") {
+            trackArraySwapMutation(
+              proxy,
+              property,
+              oldValue,
+              value,
+              target.length,
+            );
+          }
+        }
+
+        if (this._objectListeners.has(target) && property !== "length") {
+          this._scheduleObjectOwnerListeners(target);
+        }
+      }
+
+      this._schedulePromiseSettlement(target, property, rawValue, proxy);
+
       return true;
     }
 
@@ -1909,7 +2067,11 @@ export class Scope {
       return this._propertyMap[property];
     }
 
-    const targetProp = isString(property) ? target[property] : target[property];
+    const targetProp = isNativeScopedTarget(target)
+      ? Reflect.get(target, property, target)
+      : isString(property)
+        ? target[property]
+        : target[property];
 
     const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
 
@@ -1932,6 +2094,24 @@ export class Scope {
 
     if (this._propertyMap.$proxy !== proxy) {
       this._propertyMap.$proxy = proxy;
+    }
+
+    if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
+      this.$target = target;
+
+      return this._propertyMap[property];
+    }
+
+    if (isNativeScopedTarget(target)) {
+      if (isFunction(targetProp)) {
+        return this._getNativeCollectionMethodWrapper(
+          target,
+          property,
+          targetProp,
+        );
+      }
+
+      return targetProp;
     }
 
     if (
@@ -2064,6 +2244,317 @@ export class Scope {
       // we are a simple getter
       return scopedTargetProp;
     }
+  }
+
+  /** @internal Returns a native collection method wrapper bound to the raw collection target. */
+  _getNativeCollectionMethodWrapper(
+    target: Map<any, any> | Set<any> | Date,
+    property: PropertyKey,
+    method: (...args: any[]) => any,
+  ): CollectionMethodWrapper {
+    let wrappers = this._collectionMethodWrappers.get(target);
+
+    if (!wrappers) {
+      wrappers = new Map();
+      this._collectionMethodWrappers.set(target, wrappers);
+    }
+
+    const cachedWrapper = wrappers.get(property);
+
+    if (cachedWrapper) {
+      return cachedWrapper;
+    }
+
+    const wrapper = (...args: any[]) => {
+      const rawArgs = unwrapCollectionArgs(args);
+
+      if (isMapTarget(target) && isString(property)) {
+        return this._applyMapMethod(target, property, method, rawArgs);
+      }
+
+      if (isSetTarget(target) && isString(property)) {
+        return this._applySetMethod(target, property, method, rawArgs);
+      }
+
+      if (isDateTarget(target) && isString(property)) {
+        return this._applyDateMethod(target, property, method, rawArgs);
+      }
+
+      return Reflect.apply(method, target, rawArgs);
+    };
+
+    wrappers.set(property, wrapper);
+
+    return wrapper;
+  }
+
+  /** @internal Applies a Map method and schedules affected watchers for mutating calls. */
+  _applyMapMethod(
+    target: Map<any, any>,
+    property: string,
+    method: (...args: any[]) => any,
+    args: any[],
+  ): any {
+    if (!mapMutationMethods.has(property)) {
+      return Reflect.apply(method, target, args);
+    }
+
+    if (property === "set") {
+      const key = args[0];
+
+      const hadKey = target.has(key);
+
+      const previousValue = hadKey ? target.get(key) : undefined;
+
+      const result = Reflect.apply(method, target, args);
+
+      const valueChanged = !hadKey || !Object.is(previousValue, args[1]);
+
+      if (valueChanged) {
+        this._scheduleNativeCollectionMutation(
+          target,
+          hadKey ? mapValueMutationWatchKeys : undefined,
+          !hadKey,
+        );
+      }
+
+      return result;
+    }
+
+    if (property === "delete") {
+      const hadKey = target.has(args[0]);
+
+      const result = Reflect.apply(method, target, args);
+
+      if (hadKey) {
+        this._scheduleNativeCollectionMutation(target, undefined, true);
+      }
+
+      return result;
+    }
+
+    if (property === "getOrInsert" || property === "getOrInsertComputed") {
+      const hadKey = target.has(args[0]);
+
+      const result = Reflect.apply(method, target, args);
+
+      if (!hadKey) {
+        this._scheduleNativeCollectionMutation(target, undefined, true);
+      }
+
+      return result;
+    }
+
+    const hadValues = target.size > 0;
+
+    const result = Reflect.apply(method, target, args);
+
+    if (hadValues) {
+      this._scheduleNativeCollectionMutation(target, undefined, true);
+    }
+
+    return result;
+  }
+
+  /** @internal Applies a Set method and schedules affected watchers for mutating calls. */
+  _applySetMethod(
+    target: Set<any>,
+    property: string,
+    method: (...args: any[]) => any,
+    args: any[],
+  ): any {
+    if (!setMutationMethods.has(property)) {
+      return Reflect.apply(method, target, args);
+    }
+
+    if (property === "add") {
+      const hadValue = target.has(args[0]);
+
+      const result = Reflect.apply(method, target, args);
+
+      if (!hadValue) {
+        this._scheduleNativeCollectionMutation(
+          target,
+          setMutationWatchKeys,
+          true,
+        );
+      }
+
+      return result;
+    }
+
+    if (property === "delete") {
+      const hadValue = target.has(args[0]);
+
+      const result = Reflect.apply(method, target, args);
+
+      if (hadValue) {
+        this._scheduleNativeCollectionMutation(
+          target,
+          setMutationWatchKeys,
+          true,
+        );
+      }
+
+      return result;
+    }
+
+    const hadValues = target.size > 0;
+
+    const result = Reflect.apply(method, target, args);
+
+    if (hadValues) {
+      this._scheduleNativeCollectionMutation(
+        target,
+        setMutationWatchKeys,
+        true,
+      );
+    }
+
+    return result;
+  }
+
+  /** @internal Applies a Date method and schedules affected watchers for mutating calls. */
+  _applyDateMethod(
+    target: Date,
+    property: string,
+    method: (...args: any[]) => any,
+    args: any[],
+  ): any {
+    if (!isDateMutationMethod(property)) {
+      return Reflect.apply(method, target, args);
+    }
+
+    const previousTime = target.getTime();
+
+    const result = Reflect.apply(method, target, args);
+
+    if (!Object.is(previousTime, target.getTime())) {
+      this._scheduleDateMutation(target);
+    }
+
+    return result;
+  }
+
+  /** @internal Queues watchers that can observe Date mutation. */
+  _scheduleDateMutation(target: Date): void {
+    const seenListenerIds = new Set<number>();
+
+    this._scheduleWatchKeys(dateValueWatchKeys, seenListenerIds);
+    this._scheduleObjectOwnerListeners(target, seenListenerIds);
+  }
+
+  /** @internal Queues watchers that can observe a native collection mutation. */
+  _scheduleNativeCollectionMutation(
+    target: Map<any, any> | Set<any>,
+    watchKeys: string[] | undefined,
+    sizeChanged: boolean,
+  ): void {
+    const seenListenerIds = new Set<number>();
+
+    if (watchKeys) {
+      this._scheduleWatchKeys(watchKeys, seenListenerIds);
+    } else if (isMapTarget(target)) {
+      this._scheduleWatchKeys(mapValueMutationWatchKeys, seenListenerIds);
+      this._scheduleWatchKeys(mapMembershipMutationWatchKeys, seenListenerIds);
+    } else {
+      this._scheduleWatchKeys(setMutationWatchKeys, seenListenerIds);
+    }
+
+    if (sizeChanged) {
+      this._scheduleWatchKeys(["size"], seenListenerIds);
+    }
+
+    this._scheduleObjectOwnerListeners(target, seenListenerIds);
+  }
+
+  /** @internal Queues local and foreign listeners registered for the provided keys. */
+  _scheduleWatchKeys(watchKeys: string[], seenListenerIds?: Set<number>): void {
+    const scheduleUnique = (listeners: Listener[] | undefined): void => {
+      if (!listeners) {
+        return;
+      }
+
+      if (!seenListenerIds) {
+        this._scheduleListener(listeners);
+
+        return;
+      }
+
+      const scheduled: Listener[] = [];
+
+      for (let i = 0, l = listeners.length; i < l; i++) {
+        const listener = listeners[i];
+
+        if (seenListenerIds.has(listener._id)) {
+          continue;
+        }
+
+        seenListenerIds.add(listener._id);
+        scheduled.push(listener);
+      }
+
+      if (scheduled.length > 0) {
+        this._scheduleListener(scheduled);
+      }
+    };
+
+    for (let i = 0, l = watchKeys.length; i < l; i++) {
+      const key = watchKeys[i];
+
+      scheduleUnique(this._watchers.get(key));
+      scheduleUnique(this._foreignListeners.get(key));
+    }
+  }
+
+  /** @internal Queues watchers registered against a raw object/collection owner. */
+  _scheduleObjectOwnerListeners(
+    target: object,
+    seenListenerIds?: Set<number>,
+  ): void {
+    if (!this._objectListeners.has(target)) {
+      return;
+    }
+
+    const keyList = this._objectListeners.get(target);
+
+    if (!keyList) {
+      return;
+    }
+
+    this._scheduleWatchKeys(keyList, seenListenerIds);
+  }
+
+  /** @internal Resolves promise-like assignments back through the same scope property. */
+  _schedulePromiseSettlement(
+    target: ScopeTarget,
+    property: string,
+    promise: PromiseLike<any>,
+    proxy: ScopeProxy,
+  ): void {
+    Promise.resolve(promise).then(
+      (value) => {
+        this._applyPromiseSettlement(target, property, promise, value, proxy);
+      },
+      (reason) => {
+        this._applyPromiseSettlement(target, property, promise, reason, proxy);
+      },
+    );
+  }
+
+  /** @internal Applies a promise settlement only if the property still contains that promise. */
+  _applyPromiseSettlement(
+    target: ScopeTarget,
+    property: string,
+    promise: PromiseLike<any>,
+    value: any,
+    proxy: ScopeProxy,
+  ): void {
+    if (this._destroyed || unwrapScopeValue(target[property]) !== promise) {
+      return;
+    }
+
+    this.set(target, property, value, proxy);
   }
 
   /**
@@ -2487,26 +2978,31 @@ export class Scope {
       case ASTType._CallExpression: {
         const toWatch = assertDefined(expr._toWatch);
 
-        const keyList = new Array<string | undefined>(toWatch.length);
-
-        let hasRegisteredKey = false;
-
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-          keyList[i] = resolveWatchKey(x);
-          hasRegisteredKey = hasRegisteredKey || !!keyList[i];
+
+          const registerKey = resolveWatchKey(x);
+
+          if (registerKey) {
+            pushUniqueListenerKey(keySet, seenKeys, listener, registerKey);
+          }
         }
 
-        registerListenerKeys(this, listener, keyList, true);
+        collectExpressionListenerKeys(expr._callee, keySet, seenKeys, listener);
 
-        if (!hasRegisteredKey) {
+        if (keySet.length === 0) {
           this._scheduleListener([listener]);
+
+          return () => false;
         }
+
+        registerListenerKeys(this, listener, keySet);
+        this._scheduleListener([listener]);
 
         return () => {
-          deregisterListenerKeys(this, listener._id, keyList);
+          deregisterListenerKeys(this, listener._id, keySet);
         };
       }
 
@@ -2802,6 +3298,7 @@ export class Scope {
     });
 
     this._registerInheritedKey(key);
+    this._registerObjectMutationTarget(key, listener._originalTarget);
     this._trackNestedListenerCandidate(listener);
 
     const listeners = this._watchers.get(key);
@@ -2846,6 +3343,15 @@ export class Scope {
     }
 
     listenersByHash.set(hashKey, [listener]);
+  }
+
+  /** @internal Registers owner-key mutation delivery for a watched object value. */
+  _registerObjectMutationTarget(key: string, target: any): void {
+    const ownerTarget = getObjectListenerTarget(target?.[key]);
+
+    if (ownerTarget) {
+      addObjectListenerKey(this._objectListeners, ownerTarget, key);
+    }
   }
 
   /** @internal Tracks a registered listener that can require nested collection scans. */
@@ -3484,6 +3990,7 @@ export class Scope {
     this._foreignListenerIndexes = new Map();
     this._foreignListenersByHash = new Map();
     this._objectListeners = new WeakMap();
+    this._collectionMethodWrappers = new WeakMap();
 
     if (this._isRoot()) {
       this._listenerStats._nestedCandidateCount = 0;

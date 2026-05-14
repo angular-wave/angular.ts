@@ -19,6 +19,7 @@ import {
   keysFilter,
   valuesFilter,
 } from "./filters/collection.ts";
+import { asyncFilter } from "./filters/async.ts";
 import { dateFilter } from "./filters/date.ts";
 import {
   filterFilter,
@@ -214,6 +215,7 @@ export const ngFilterProviders = {
 
 /** Built-in filters included by the default full `ng` runtime. */
 export const ngBuiltInFilters = {
+  async: asyncFilter,
   date: dateFilter,
   entries: entriesFilter,
   filter: filterFilter,

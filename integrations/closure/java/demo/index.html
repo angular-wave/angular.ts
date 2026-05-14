@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS J2CL Todo Demo</title>
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
+    <style>
+      .todo-row {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+      }
+
+      .todo-row.is-done strong {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+
+      .todo-status {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main
+      class="demo-shell"
+      data-j2cl-app
+      ng-controller="TodoCtrl"
+    >
+      <section class="demo-hero">
+        <h1>{{ greeting }}</h1>
+        <p j2cl-badge></p>
+      </section>
+
+      <section class="demo-content">
+        <form ng-submit="add(newTodo)">
+          <input
+            aria-label="New todo"
+            id="j2cl-new-todo"
+            name="todo"
+            type="text"
+            ng-input="newTodo = $event.target.value"
+            ng-required="true"
+            placeholder="What needs doing?"
+          />
+          <button type="submit">Add</button>
+        </form>
+
+        <p id="j2cl-remaining" class="demo-note">
+          {{ remainingCount }} of {{ tasks.length }} remaining
+        </p>
+
+        <div class="demo-actions">
+          <button type="button" ng-click="archive()">
+            Archive completed
+          </button>
+        </div>
+
+        <div class="demo-stack">
+          <article
+            class="event-card todo-row"
+            ng-class="{ 'is-done': todo.done }"
+            ng-repeat="todo in tasks"
+            data-index="id"
+          >
+            <strong>{{ todo.task }}</strong>
+            <label>
+              <span class="todo-status">
+                {{ todo.done ? "Done" : "Open" }}
+              </span>
+              <input
+                type="checkbox"
+                ng-checked="todo.done"
+                ng-click="toggle(todo)"
+              />
+            </label>
+          </article>
+        </div>
+      </section>
+    </main>
+    <script type="module">
+      import { angular } from "/src/index.ts";
+
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "./target/webapp/j2cl-todo/j2cl-todo.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.append(script);
+      });
+
+      globalThis.j2clTodoMain();
+      angular.bootstrap(document.querySelector("[data-j2cl-app]"), [
+        "j2clTodo",
+      ]);
+    </script>
+  </body>
+</html>
