@@ -9,11 +9,14 @@ import {
 import {
   arrayRemove,
   assertNotHasOwnProperty,
+  callFunction,
   deProxy,
+  deleteProperty,
   extend,
   hasAnimate,
   isArray,
   isBoolean,
+  isFunction,
   isObjectEmpty,
   isUndefined,
   keys,
@@ -59,7 +62,7 @@ export interface ParentFormController {
   /** @internal */
   _validityPropagationId?: number;
   $addControl(control: NamedControl): void;
-  $getControls(): readonly (FormController | NgModelController)[];
+  $getControls(): ReadonlyArray<FormController | NgModelController>;
   /** @internal */
   _renameControl(control: NamedControl, name: string | number): void;
   $removeControl(control: FormController | NgModelController): void;
@@ -168,7 +171,7 @@ export class FormController {
   _isAnimated: boolean;
 
   /** @internal */
-  _controls: any[];
+  _controls: NamedControl[];
 
   $name: any;
 
@@ -204,7 +207,7 @@ export class FormController {
   /** @internal */
   _validityPropagationId: number;
 
-  $target: Record<string, any>;
+  $target: Record<string, any> & FormControlTarget;
 
   /**
    * Creates a form controller for a specific form element and its scope.
@@ -244,7 +247,7 @@ export class FormController {
     this._classCache[INVALID_CLASS] = !isValid;
     this._validityPropagationId = nextValidityPropagationId++;
 
-    this.$target = {};
+    this.$target = { _parentForm: nullFormCtrl };
   }
 
   /**
@@ -255,8 +258,12 @@ export class FormController {
    * a form that uses `ng-model-options` to pend updates.
    */
   $rollbackViewValue(): void {
-    this._controls.forEach((control: any) => {
-      control.$rollbackViewValue();
+    this._controls.forEach((control) => {
+      callFunction(
+        (control as unknown as { $rollbackViewValue: (...args: any[]) => any })
+          .$rollbackViewValue,
+        control,
+      );
     });
   }
 
@@ -268,8 +275,12 @@ export class FormController {
    * usually handles calling this in response to input events.
    */
   $commitViewValue(): void {
-    this._controls.forEach((control: any) => {
-      control.$commitViewValue();
+    this._controls.forEach((control) => {
+      callFunction(
+        (control as unknown as { $commitViewValue: (...args: any[]) => any })
+          .$commitViewValue,
+        control,
+      );
     });
   }
 
@@ -296,7 +307,7 @@ export class FormController {
     this._controls.push(control);
 
     if (control.$name) {
-      (this as Record<string, any>)[control.$name] = control;
+      (this as Record<string, unknown>)[String(control.$name)] = control;
     }
     control.$target._parentForm = this;
   }
@@ -316,11 +327,10 @@ export class FormController {
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
    */
-  $getControls(): readonly (FormController | NgModelController)[] {
-    return shallowCopy(this._controls) as readonly (
-      | FormController
-      | NgModelController
-    )[];
+  $getControls(): ReadonlyArray<FormController | NgModelController> {
+    return shallowCopy(this._controls) as unknown as ReadonlyArray<
+      FormController | NgModelController
+    >;
   }
 
   // Private API: rename a form control
@@ -333,10 +343,14 @@ export class FormController {
 
     this._validityPropagationId = nextValidityPropagationId++;
 
-    if ((this as Record<string, any>)[oldName] === control) {
-      delete (this as Record<string, any>)[oldName];
+    const formRecord = this as Record<string, unknown>;
+
+    const oldKey = String(oldName);
+
+    if (formRecord[oldKey] === control) {
+      deleteProperty(formRecord, oldKey);
     }
-    (this as Record<string, any>)[newName] = control;
+    formRecord[String(newName)] = control;
     control.$name = newName;
   }
 
@@ -355,9 +369,9 @@ export class FormController {
 
     if (
       control.$name &&
-      (this as Record<string, any>)[control.$name] === control
+      (this as Record<string, unknown>)[String(control.$name)] === control
     ) {
-      delete (this as Record<string, any>)[control.$name];
+      deleteProperty(this as Record<string, unknown>, String(control.$name));
     }
 
     if (this.$pending) {
@@ -378,9 +392,9 @@ export class FormController {
       });
     }
 
-    arrayRemove(this._controls, control);
+    arrayRemove(this._controls, control as unknown as NamedControl);
 
-    control.$target._parentForm = nullFormCtrl;
+    (control as unknown as NamedControl).$target._parentForm = nullFormCtrl;
   }
 
   /**
@@ -433,8 +447,12 @@ export class FormController {
     this.$dirty = false;
     this.$pristine = true;
     this.$submitted = false;
-    this._controls.forEach((control: any) => {
-      control.$setPristine();
+    this._controls.forEach((control) => {
+      callFunction(
+        (control as unknown as { $setPristine: (...args: any[]) => any })
+          .$setPristine,
+        control,
+      );
     });
   }
 
@@ -448,8 +466,12 @@ export class FormController {
    * back to its pristine state.
    */
   $setUntouched(): void {
-    this._controls.forEach((control: any) => {
-      control.$setUntouched();
+    this._controls.forEach((control) => {
+      callFunction(
+        (control as unknown as { $setUntouched: (...args: any[]) => any })
+          .$setUntouched,
+        control,
+      );
     });
   }
 
@@ -480,9 +502,12 @@ export class FormController {
       this._element.classList.add(SUBMITTED_CLASS);
     }
     this.$submitted = true;
-    this._controls.forEach((control: any) => {
-      if (control._setSubmitted) {
-        control._setSubmitted();
+    this._controls.forEach((control) => {
+      const maybeSetSubmitted = (control as { _setSubmitted?: unknown })
+        ._setSubmitted;
+
+      if (isFunction(maybeSetSubmitted)) {
+        callFunction(maybeSetSubmitted, control);
       }
     });
   }
@@ -525,7 +550,7 @@ export class FormController {
 
     if (!isArray(list)) {
       if (list === controller || deProxy(list) === deProxy(controller)) {
-        delete object[property];
+        deleteProperty(object, property);
       }
 
       return;
@@ -543,7 +568,7 @@ export class FormController {
     }
 
     if (rawList.length === 0) {
-      delete object[property];
+      deleteProperty(object, property);
     }
   }
 
@@ -791,9 +816,9 @@ const formDirectiveFactory = function (
           // Setup initial state of the control
           formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
 
-          const nameAttr = attr.name
+          const nameAttr = !isUndefined(attr.name)
             ? "name"
-            : isNgForm && attr.ngForm
+            : isNgForm && !isUndefined(attr.ngForm)
               ? "ngForm"
               : false;
 
@@ -802,7 +827,7 @@ const formDirectiveFactory = function (
               scope: ng.Scope,
               formElementParam: HTMLFormElement,
               attrParam: ng.Attributes,
-              ctrls: any[],
+              ctrls: [FormController, ParentFormController | undefined],
             ) {
               const controller = ctrls[0];
 
@@ -843,7 +868,9 @@ const formDirectiveFactory = function (
                 setter(scope, controller);
                 attrParam.$observe(nameAttr, (newValue: any) => {
                   if (controller.$name === newValue) return;
-                  scope.$target[controller.$name] = undefined;
+                  (scope.$target as Record<string, unknown>)[
+                    String(controller.$name)
+                  ] = undefined;
                   controller._parentForm._renameControl(controller, newValue);
 
                   if (
@@ -852,12 +879,14 @@ const formDirectiveFactory = function (
                   ) {
                     // form moved
                   } else {
-                    scope.$target[newValue] = controller;
+                    (scope.$target as Record<string, unknown>)[
+                      String(newValue)
+                    ] = controller;
                   }
                 });
               }
               formElementParam.addEventListener("$destroy", () => {
-                const parentForm =
+                const parentForm: ParentFormController =
                   controller.$target._parentForm ||
                   controller._parentForm ||
                   nullFormCtrl;

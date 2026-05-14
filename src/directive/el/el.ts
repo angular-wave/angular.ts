@@ -1,4 +1,4 @@
-import { Attributes } from "../../core/compile/attributes.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 import { arrayFrom, deleteProperty, isString } from "../../shared/utils.ts";
 
 /**

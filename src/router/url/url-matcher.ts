@@ -3,8 +3,10 @@ import {
   isArray,
   isNullOrUndefined,
   isString,
+  stringify,
+  assertDefined,
 } from "../../shared/utils.ts";
-import { DefType, Param } from "../params/param.ts";
+import { DefType, type Param } from "../params/param.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { ParamType } from "../params/param-type.ts";
 import type { ParamTypeMap } from "../params/param-types.ts";
@@ -144,7 +146,7 @@ function appendPathParam(
 }
 
 function appendQueryParam(
-  queryParts: (string | undefined)[],
+  queryParts: Array<string | undefined>,
   param: Param,
   values: RawParams,
 ): boolean {
@@ -210,7 +212,7 @@ function appendMatcherPath(
 }
 
 function appendMatcherQueryParams(
-  queryParts: (string | undefined)[],
+  queryParts: Array<string | undefined>,
   matcher: UrlMatcher,
   values: RawParams,
 ): boolean {
@@ -228,7 +230,7 @@ function appendMatcherQueryParams(
 function formatUrl(matchers: UrlMatcher[], values: RawParams): string | null {
   let path: string | null = "";
 
-  const queryParts: (string | undefined)[] = [];
+  const queryParts: Array<string | undefined> = [];
 
   for (let i = 0; i < matchers.length; i++) {
     path = appendMatcherPath(path, matchers[i], values);
@@ -241,7 +243,9 @@ function formatUrl(matchers: UrlMatcher[], values: RawParams): string | null {
   const query = queryParts.join("&");
 
   return (
-    path + (query ? `?${query}` : "") + (values["#"] ? `#${values["#"]}` : "")
+    path +
+    (query ? `?${query}` : "") +
+    (values["#"] ? `#${stringify(values["#"])}` : "")
   );
 }
 
@@ -451,7 +455,9 @@ export class UrlMatcher {
 
       if (pathSegment.includes("?")) break; // we're into the search part
       checkParamErrors(id, pattern, this._params);
-      this._params.push(paramFactory.fromPath(id, paramType, config.state!));
+      this._params.push(
+        paramFactory.fromPath(id, paramType, assertDefined(config.state)),
+      );
       this._segments.push(pathSegment);
       this._compiled += quoteRegExp(
         pathSegment,
@@ -484,7 +490,7 @@ export class UrlMatcher {
 
           checkParamErrors(id, pattern, this._params);
           this._params.push(
-            paramFactory.fromSearch(id, paramType, config.state!),
+            paramFactory.fromSearch(id, paramType, assertDefined(config.state)),
           );
           last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
           // check if ?&

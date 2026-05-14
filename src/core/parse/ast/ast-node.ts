@@ -1,4 +1,4 @@
-import { ASTType } from "../ast-type.ts";
+import type { ASTType } from "../ast-type.ts";
 
 /** Base properties for all AST nodes */
 interface BaseNode {

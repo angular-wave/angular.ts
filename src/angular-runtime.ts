@@ -4,6 +4,7 @@ import {
   _parse,
   _rootElement,
   _rootScope,
+  _scope,
 } from "./injection-tokens.ts";
 import {
   assertNotHasOwnProperty,
@@ -19,6 +20,7 @@ import {
 } from "./shared/utils.ts";
 import {
   getController,
+  getInheritedData,
   getInjector,
   getScope,
   setCacheData,
@@ -27,6 +29,7 @@ import type { AngularBootstrapConfig, InvocationDetail } from "./interface.ts";
 import { createInjector } from "./core/di/injector.ts";
 import { NgModule } from "./core/di/ng-module/ng-module.ts";
 import { validateIsString } from "./shared/validate.ts";
+import type { ParseService } from "./core/parse/parse.ts";
 
 const ngError = createErrorFactory("ng");
 
@@ -43,6 +46,8 @@ interface AppElement {
 }
 
 const moduleRegistry: ModuleRegistry = {};
+
+type AngularWindow = Window & { angular?: AngularRuntime };
 
 export interface AngularRuntimeOptions {
   /**
@@ -141,7 +146,7 @@ export class AngularRuntime extends EventTarget {
     }
 
     if (runtimeOptions.attachToWindow) {
-      (window as any).angular = this;
+      (window as AngularWindow).angular = this;
     }
 
     if (runtimeOptions.registerBuiltins) {
@@ -240,7 +245,7 @@ export class AngularRuntime extends EventTarget {
   dispatchEvent(event: Event): boolean {
     const customEvent = event as CustomEvent<string | InvocationDetail>;
 
-    const $parse = this.$injector.get(_parse);
+    const $parse = this.$injector.get(_parse) as ParseService;
 
     const injectable = customEvent.type;
 
@@ -364,7 +369,7 @@ export class AngularRuntime extends EventTarget {
 
     if (
       (isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
-      getInjector(element as unknown as Element)
+      getInheritedData(element as unknown as Element, _injector)
     ) {
       throw ngError("btstrpd", "App already bootstrapped");
     }
@@ -401,7 +406,9 @@ export class AngularRuntime extends EventTarget {
         const rootElement = el as Element;
 
         rootScopeCleanupByElement.set(rootElement, () => {
-          const existingScope = getScope(rootElement);
+          const existingScope = getInheritedData(rootElement, _scope) as
+            | ng.Scope
+            | undefined;
 
           if (existingScope?.$handler && !existingScope.$handler._destroyed) {
             existingScope.$destroy();

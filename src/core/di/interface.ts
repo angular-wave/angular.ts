@@ -1,4 +1,4 @@
-import { InjectorService, ProviderInjector } from "./internal-injector.ts";
+import type { InjectorService, ProviderInjector } from "./internal-injector.ts";
 
 type ProviderMethod = (...args: never[]) => unknown;
 

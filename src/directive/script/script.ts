@@ -12,7 +12,7 @@ export function scriptDirective(
   return {
     restrict: "E",
     terminal: true,
-    compile(element: HTMLElement, attr: Attributes): void {
+    compile(element: HTMLElement, attr: Attributes): undefined {
       const attrMap = attr as Attributes & Record<string, string>;
 
       const templateId: unknown = attr.id;
@@ -23,6 +23,8 @@ export function scriptDirective(
       ) {
         $templateCache.set(templateId, element.innerText);
       }
+
+      return undefined;
     },
   };
 }

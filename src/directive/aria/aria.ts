@@ -1,5 +1,5 @@
 import { _aria, _parse } from "../../injection-tokens.ts";
-import { extend, hasOwn } from "../../shared/utils.ts";
+import { extend, hasOwn, stringify } from "../../shared/utils.ts";
 
 export interface AriaService {
   config(key: string | number): any;
@@ -203,7 +203,6 @@ export function ngClickAriaDirective(
               (event) => {
                 const keyCode = parseInt(event.key, 10);
 
-                // eslint-disable-next-line no-magic-numbers
                 if (keyCode === 13 || keyCode === 32) {
                   // If the event is triggered on a non-interactive element ...
                   if (
@@ -302,12 +301,11 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
     elem: HTMLElement,
     allowNonAriaNodes: boolean,
   ): boolean {
-    return (
-      $aria.config(normalizedAttr) &&
+    return ($aria.config(normalizedAttr) &&
       !elem.getAttribute(attr) &&
       (allowNonAriaNodes || !isNodeOneOf(elem, nativeAriaNodeNames)) &&
-      (elem.getAttribute("type") !== "hidden" || elem.nodeName !== "INPUT")
-    );
+      (elem.getAttribute("type") !== "hidden" ||
+        elem.nodeName !== "INPUT")) as boolean;
   }
 
   /** Determines whether a synthetic ARIA role should be attached to an element. */
@@ -367,8 +365,6 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
             elem.setAttribute(
               "aria-checked",
 
-              // Strict comparison would cause a BC.
-              // eslint-disable-next-line eqeqeq
               (attrPost.value == ngModel.$viewValue).toString(),
             );
           }
@@ -418,13 +414,13 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
 
                 if (needsAriaValuemin) {
                   attrPost.$observe("min", (newVal?: unknown) => {
-                    elem.setAttribute("aria-valuemin", String(newVal ?? ""));
+                    elem.setAttribute("aria-valuemin", stringify(newVal));
                   });
                 }
 
                 if (needsAriaValuemax) {
                   attrPost.$observe("max", (newVal?: unknown) => {
-                    elem.setAttribute("aria-valuemax", String(newVal ?? ""));
+                    elem.setAttribute("aria-valuemax", stringify(newVal));
                   });
                 }
 

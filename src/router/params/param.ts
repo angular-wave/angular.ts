@@ -7,6 +7,7 @@ import {
   isNullOrUndefined,
   isUndefined,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type {
@@ -118,7 +119,7 @@ function getType(
     isString(cfg.type) &&
     paramTypes[cfg.type]
   )
-    return paramTypes[cfg.type]!;
+    return assertDefined(paramTypes[cfg.type]);
 
   if (urlType) return urlType;
 
@@ -135,7 +136,9 @@ function getType(
     return paramTypes[type];
   }
 
-  return isInstanceOf(cfg.type, ParamType) ? cfg.type : paramTypes[cfg.type]!;
+  return isInstanceOf(cfg.type, ParamType)
+    ? cfg.type
+    : assertDefined(paramTypes[cfg.type]);
 }
 
 /**

@@ -4,18 +4,15 @@ import {
   _rootScope,
   _scope,
 } from "../../injection-tokens.ts";
-import {
-  dealoc,
-  getInheritedData,
-  getScope,
-  setScope,
-} from "../../shared/dom.ts";
+import { dealoc, getInheritedData, setScope } from "../../shared/dom.ts";
 import { kebobString } from "../../shared/strings.ts";
 import {
+  deleteProperty,
   isFunction,
   isNumber,
   isObject,
   isString,
+  stringify,
   uppercase,
 } from "../../shared/utils.ts";
 
@@ -67,7 +64,7 @@ export interface WebComponentOptions<T extends object = Record<string, any>> {
   /** Use an isolate child scope instead of inheriting parent properties. */
   isolate?: boolean;
   /** Called after the scope exists and the template has been linked. */
-  connected?: (context: WebComponentContext<T>) => void | (() => void);
+  connected?: (context: WebComponentContext<T>) => undefined | (() => void);
   /** Called before the scope is destroyed. */
   disconnected?: (context: WebComponentContext<T>) => void;
   /** Called after an observed input attribute changes. */
@@ -131,11 +128,10 @@ export class WebComponentProvider {
         initialState: T = {} as T,
         options: ElementScopeOptions = {},
       ): ng.Scope & T => {
-        const parentScope =
-          options.parentScope ||
-          getScope(host) ||
+        const parentScope = (options.parentScope ||
+          getInheritedData(host, _scope) ||
           getInheritedData(host.parentNode || host, _scope) ||
-          rootScope;
+          rootScope) as ng.Scope;
 
         const scope = options.isolate
           ? parentScope.$newIsolate(initialState as ng.Scope)
@@ -280,7 +276,7 @@ function createWebComponentClass<T extends object>(
       get(this: HTMLElement) {
         const scope = scopes.get(this);
 
-        if (scope) return scope[input.property];
+        if (scope) return (scope as Record<string, unknown>)[input.property];
 
         return getPendingValues(this)[input.property];
       },
@@ -461,7 +457,7 @@ function upgradeOwnProperties(
 
     const value = hostRecord[input.property];
 
-    delete hostRecord[input.property];
+    deleteProperty(hostRecord, input.property);
     hostRecord[input.property] = value;
   });
 }
@@ -549,7 +545,7 @@ function reflectInput(
     } else if (value === null || value === undefined) {
       host.removeAttribute(input.attribute);
     } else {
-      host.setAttribute(input.attribute, String(value));
+      host.setAttribute(input.attribute, stringify(value));
     }
   } finally {
     reflected.delete(input.attribute);
@@ -585,7 +581,7 @@ function coercePropertyValue(input: InputDefinition, value: unknown): unknown {
 
     if (isString(value)) return value;
 
-    return String(value);
+    return stringify(value);
   }
 
   return input.type(value);

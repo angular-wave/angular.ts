@@ -16,7 +16,10 @@ interface NgSwitchBlock {
 
 class NgSwitchController {
   /** @internal */
-  _cases: Record<string, { transclude: ng.TranscludeFn; element: Element }[]>;
+  _cases: Record<
+    string,
+    Array<{ transclude: ng.TranscludeFn; element: Element }>
+  >;
 
   constructor() {
     this._cases = {};
@@ -45,7 +48,7 @@ export function ngSwitchDirective(
       const watchExpr = attr.ngSwitch || attr.on;
 
       let selectedTranscludes:
-        | { transclude: ng.TranscludeFn; element: Element }[]
+        | Array<{ transclude: ng.TranscludeFn; element: Element }>
         | undefined = [];
 
       const selectedElements: NgSwitchBlock[] = [];
@@ -187,8 +190,8 @@ export function ngSwitchWhenDirective(): ng.Directive {
         return;
       }
 
-      attrs.ngSwitchWhen
-        .split(attrs.ngSwitchWhenSeparator)
+      (attrs.ngSwitchWhen as string)
+        .split(attrs.ngSwitchWhenSeparator as string)
         .sort()
         .filter(
           // Filter duplicate cases

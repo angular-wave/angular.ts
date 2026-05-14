@@ -1,5 +1,6 @@
 import { _parse } from "../injection-tokens.ts";
 import {
+  callFunction,
   hasCustomToString,
   isArray,
   isArrayLike,
@@ -13,23 +14,25 @@ import {
 const orderByError = createErrorFactory("orderBy");
 
 interface PredicateValue {
-  value: any;
+  value: unknown;
   type: string;
   index: number;
 }
 
 interface ComparisonObject {
-  value: any;
+  value: unknown;
   tieBreaker: PredicateValue;
   predicateValues: PredicateValue[];
 }
 
-type SortPredicate = string | ((value: any) => any);
+type SortPredicate = string | ((value: unknown) => unknown);
 
 interface PredicateDescriptor {
-  get: (value: any) => any;
+  get: (value: unknown) => unknown;
   descending: number;
 }
+
+type ComparablePredicateValue = string | number | boolean;
 
 orderByFilter.$inject = [_parse];
 
@@ -90,7 +93,7 @@ export function orderByFilter($parse: ng.ParseService) {
     compareValues.sort(doComparison);
     array = compareValues.map((item) => item.value);
 
-    return array;
+    return array as unknown[];
 
     /**
      * Creates a comparison object for a given value in the array.
@@ -103,7 +106,10 @@ export function orderByFilter($parse: ng.ParseService) {
      *     - `tieBreaker`: a stable sort fallback using the original index,
      *     - `predicateValues`: an array of values derived from each sort predicate.
      */
-    function getComparisonObject(value: any, index: number): ComparisonObject {
+    function getComparisonObject(
+      value: unknown,
+      index: number,
+    ): ComparisonObject {
       // NOTE: We are adding an extra `tieBreaker` value based on the element's index.
       // This will be used to keep the sort stable when none of the input predicates can
       // distinguish between two elements.
@@ -163,7 +169,7 @@ export function orderByFilter($parse: ng.ParseService) {
     return sortPredicates.map((predicate) => {
       let descending = 1;
 
-      let get = (x: any) => x;
+      let get = (x: unknown): unknown => x;
 
       if (isFunction(predicate)) {
         get = predicate;
@@ -179,9 +185,12 @@ export function orderByFilter($parse: ng.ParseService) {
           if (parsed._constant) {
             const key = parsed();
 
-            get = (value: Record<string, any>) => value[key];
+            get = (value: unknown) =>
+              isObject(value)
+                ? (value as Record<string, unknown>)[String(key)]
+                : undefined;
           } else {
-            get = parsed;
+            get = (value: unknown) => parsed(value as ng.Scope);
           }
         }
       }
@@ -191,7 +200,7 @@ export function orderByFilter($parse: ng.ParseService) {
   }
 
   /** Returns whether the provided value is a primitive sortable type. */
-  function isPrimitive(value: any): boolean {
+  function isPrimitive(value: unknown): boolean {
     switch (typeof value) {
       case "number": /* falls through */
       case "boolean": /* falls through */
@@ -212,17 +221,30 @@ export function orderByFilter($parse: ng.ParseService) {
    * @param value - The object to convert.
    * @returns The primitive representation of the object if possible; otherwise, the original object.
    */
-  function objectValue(value: any): any {
+  function objectValue(value: unknown): unknown {
     // If `valueOf` is a valid function use that
-    if (isFunction(value.valueOf)) {
-      value = value.valueOf();
+    let valueRecord = value as Partial<{
+      valueOf: () => unknown;
+      toString: () => unknown;
+    }>;
+
+    if (isFunction(valueRecord.valueOf)) {
+      value = callFunction(valueRecord.valueOf, value);
 
       if (isPrimitive(value)) return value;
+
+      valueRecord = value as Partial<{
+        valueOf: () => unknown;
+        toString: () => unknown;
+      }>;
     }
 
     // If `toString` is a valid function and not the one from `Object.prototype` use that
-    if (hasCustomToString(value)) {
-      value = value.toString();
+    if (
+      isFunction(valueRecord.toString) &&
+      hasCustomToString(value as { toString: () => string })
+    ) {
+      value = callFunction(valueRecord.toString, value);
 
       if (isPrimitive(value)) return value;
     }
@@ -241,13 +263,14 @@ export function orderByFilter($parse: ng.ParseService) {
    *     - `type`: a string representing the type of the value (`number`, `string`, `boolean`, `null`, etc.),
    *     - `index`: the original index to maintain stable sorting.
    */
-  function getPredicateValue(value: any, index: number): PredicateValue {
+  function getPredicateValue(value: unknown, index: number): PredicateValue {
     let type: string = typeof value;
 
     if (value === null) {
       type = "null";
     } else if (type === "object") {
       value = objectValue(value);
+      type = value === null ? "null" : typeof value;
     }
 
     return { value, type, index };
@@ -278,8 +301,8 @@ export function orderByFilter($parse: ng.ParseService) {
 
       if (type1 === "string") {
         // Compare strings case-insensitively
-        value1 = value1.toLowerCase();
-        value2 = value2.toLowerCase();
+        value1 = (value1 as string).toLowerCase();
+        value2 = (value2 as string).toLowerCase();
       } else if (type1 === "object") {
         // For basic objects, use the position of the object
         // in the collection instead of the value
@@ -289,7 +312,11 @@ export function orderByFilter($parse: ng.ParseService) {
       }
 
       if (value1 !== value2) {
-        result = value1 < value2 ? -1 : 1;
+        result =
+          (value1 as ComparablePredicateValue) <
+          (value2 as ComparablePredicateValue)
+            ? -1
+            : 1;
       }
     } else {
       result =

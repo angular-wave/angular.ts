@@ -100,7 +100,7 @@ export class ResolveContext {
    * Adds or replaces resolvables for a specific state in this path.
    */
   addResolvables(
-    newResolvables: (Resolvable | ResolvableLiteral)[],
+    newResolvables: Array<Resolvable | ResolvableLiteral>,
     state: StateObject,
   ): void {
     let node: PathNode | undefined;
@@ -148,7 +148,7 @@ export class ResolveContext {
    * Resolves the path's resolvables.
    */
   resolvePath(eagerOnly = false, trans: Transition): Promise<ResolvedToken[]> {
-    const promises: Promise<ResolvedToken>[] = [];
+    const promises: Array<Promise<ResolvedToken>> = [];
 
     this._path.forEach((node, index) => {
       const subContext = new ResolveContext(

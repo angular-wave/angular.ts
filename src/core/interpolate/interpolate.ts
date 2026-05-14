@@ -1,5 +1,6 @@
 import { _injector, _parse } from "../../injection-tokens.ts";
 import {
+  callFunction,
   deProxy,
   isDefined,
   isFunction,
@@ -23,6 +24,16 @@ export interface InterpolationFunction {
    */
   (context: any, cb?: (val: any) => void): any;
   exp: string;
+}
+
+type WatchableContext = {
+  $watch: (expression: string, listener: () => void) => any;
+};
+
+function getWatchableContext(context: unknown): WatchableContext | undefined {
+  return isFunction((context as Partial<WatchableContext> | undefined)?.$watch)
+    ? (context as WatchableContext)
+    : undefined;
 }
 
 export interface InterpolateService {
@@ -204,21 +215,30 @@ export class InterpolateProvider {
               const watchProp = expression.trim();
 
               const compute = interceptor
-                ? (context: any) => {
+                ? (context: unknown) => {
                     const value = parseFn(context);
 
                     return parseStringifyInterceptor(
                       deProxy(isFunction(value) ? value() : value),
                     );
                   }
-                : (context: any) => parseFn(context);
+                : (context: unknown) => parseFn(context);
 
-              const fn = ((context: any, cb?: (val: any) => void) => {
+              const fn = ((context: unknown, cb?: (val: unknown) => void) => {
                 try {
                   if (cb) {
-                    context.$watch(watchProp, () => {
-                      cb(compute(context));
-                    });
+                    const watchable = getWatchableContext(context);
+
+                    if (watchable) {
+                      callFunction(
+                        watchable.$watch,
+                        watchable,
+                        watchProp,
+                        () => {
+                          cb(compute(context));
+                        },
+                      );
+                    }
                   }
 
                   return compute(context);
@@ -237,7 +257,7 @@ export class InterpolateProvider {
               $parse(expression, interceptor),
             );
 
-            const compute = (values: any[]) => {
+            const compute = (values: unknown[]): unknown => {
               for (let i = 0; i < expressions.length; i++) {
                 if (allOrNothing && isUndefined(values[i])) {
                   return undefined;
@@ -249,7 +269,7 @@ export class InterpolateProvider {
                 return security.getTrusted(
                   trustedContext,
                   singleExpression ? concat[0] : concat.join(""),
-                );
+                ) as unknown;
               }
 
               if (trustedContext && concat.length > 1) {
@@ -259,23 +279,34 @@ export class InterpolateProvider {
               return concat.join("");
             };
 
-            const fn = ((context: any, cb?: (val: any) => void) => {
-              const values = new Array(expressions.length);
+            const fn = ((context: unknown, cb?: (val: unknown) => void) => {
+              const values = new Array<unknown>(expressions.length);
 
               try {
                 for (let i = 0; i < expressions.length; i++) {
                   if (cb) {
                     const watchProp = expressions[i].trim();
 
-                    context.$watch(watchProp, () => {
-                      const watchedValues = new Array(expressions.length);
+                    const watchable = getWatchableContext(context);
 
-                      for (let j = 0; j < expressions.length; j++) {
-                        watchedValues[j] = parseFns[j](context);
-                      }
+                    if (watchable) {
+                      callFunction(
+                        watchable.$watch,
+                        watchable,
+                        watchProp,
+                        () => {
+                          const watchedValues = new Array<unknown>(
+                            expressions.length,
+                          );
 
-                      cb(compute(watchedValues));
-                    });
+                          for (let j = 0; j < expressions.length; j++) {
+                            watchedValues[j] = parseFns[j](context);
+                          }
+
+                          cb(compute(watchedValues));
+                        },
+                      );
+                    }
                   }
 
                   values[i] = parseFns[i](context);
@@ -293,7 +324,7 @@ export class InterpolateProvider {
             return fn;
           }
 
-          function parseStringifyInterceptor(value: any): any {
+          function parseStringifyInterceptor(value: unknown): unknown {
             try {
               value =
                 trustedContext && !contextAllowsConcatenation

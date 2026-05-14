@@ -6,6 +6,7 @@ import {
 import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.ts";
 import {
   encodeUriSegment,
+  deleteProperty,
   entries,
   equals,
   isDefined,
@@ -19,6 +20,7 @@ import {
   parseKeyValue,
   startsWith,
   toKeyValue,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { validateRequired } from "../../shared/validate.ts";
@@ -203,7 +205,7 @@ export class Location {
   url(): string;
   url(url: string): this;
   url(url?: string) {
-    return arguments.length ? this.setUrl(url!) : this.getUrl();
+    return arguments.length ? this.setUrl(assertDefined(url)) : this.getUrl();
   }
 
   /**
@@ -286,7 +288,7 @@ export class Location {
 
           // remove object undefined or null properties
           entries(clonedSearch).forEach(([key, value]) => {
-            if (isNull(value)) delete clonedSearch[key];
+            if (isNull(value)) deleteProperty(clonedSearch, key);
           });
 
           _search = clonedSearch;
@@ -298,10 +300,17 @@ export class Location {
         }
         break;
       default: {
-        const searchKey = String(search);
+        if (!isString(search) && !isNumber(search)) {
+          throw $locationError(
+            "isrcharg",
+            "The first argument of the `$location#search()` call must be a string or number when setting a single parameter.",
+          );
+        }
+
+        const searchKey = isString(search) ? search : `${search}`;
 
         if (isUndefined(paramValue) || paramValue === null) {
-          delete _search[searchKey];
+          deleteProperty(_search, searchKey);
         } else {
           _search[searchKey] = paramValue;
         }
@@ -334,7 +343,7 @@ export class Location {
     paramValue?: string | number | string[] | boolean | null,
   ) {
     return arguments.length
-      ? this.setSearch(search!, paramValue)
+      ? this.setSearch(assertDefined(search), paramValue)
       : this.getSearch();
   }
 
@@ -385,9 +394,9 @@ export class Location {
     return this._state;
   }
 
-  state(): History["state"];
-  state(state: any): this;
-  state(state?: any) {
+  state(): unknown;
+  state(state: unknown): this;
+  state(state?: unknown): unknown {
     return arguments.length ? this.setState(state) : this.getState();
   }
 
@@ -753,17 +762,9 @@ export class LocationProvider {
 
         const relHref = elm.getAttribute("href");
 
-        if (
-          isObject(absHref) &&
-          absHref.toString() === "[object SVGAnimatedString]"
-        ) {
+        if (!isString(absHref) && "animVal" in absHref) {
           // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
           // an animation.
-
-          absHref = new URL(absHref.animVal).href;
-        }
-
-        if (!isString(absHref) && "animVal" in absHref) {
           absHref = new URL(absHref.animVal).href;
         }
 

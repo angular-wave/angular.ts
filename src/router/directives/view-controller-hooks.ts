@@ -1,7 +1,7 @@
 import { isFunction, uppercase } from "../../shared/utils.ts";
 import { getCacheData, getInheritedData } from "../../shared/dom.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { TargetState } from "../state/target-state.ts";
+import type { TargetState } from "../state/target-state.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewConfig } from "../view/view.ts";
 
@@ -240,9 +240,11 @@ export function registerViewControllerCallbacks(
 
     const registryProp = "__ngRouterParamsChangedHooks__";
 
-    const hookRegistry =
-      rootScope[registryProp] ||
-      (rootScope[registryProp] = new Map<string, () => void>());
+    const hookRegistry = (rootScope[registryProp] ||
+      (rootScope[registryProp] = new Map<string, () => void>())) as Map<
+      string,
+      () => void
+    >;
 
     hookRegistry.get(hookRegistryKey)?.();
 
@@ -267,7 +269,7 @@ export function registerViewControllerCallbacks(
   if (isFunction(controllerInstance.ngCanExit)) {
     const ngCanExit = controllerInstance.ngCanExit as (
       trans: ng.Transition,
-    ) => boolean | void | TargetState;
+    ) => boolean | undefined | TargetState;
 
     const id = _ngCanExitId++;
 
@@ -287,7 +289,7 @@ export function registerViewControllerCallbacks(
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
     const wrappedHook = (trans: ng.Transition) => {
-      let promise: Promise<boolean | void | TargetState> | undefined;
+      let promise: Promise<boolean | undefined | TargetState> | undefined;
 
       const cacheTrans = trans as NgCanExitTransition;
 

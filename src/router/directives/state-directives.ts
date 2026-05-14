@@ -16,6 +16,7 @@ import {
   isObject,
   isString,
   keys,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import type { RawParams } from "../params/interface.ts";
@@ -116,7 +117,7 @@ function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
 
   const path = ($ngView as { $cfg?: { _path?: unknown } } | undefined)?.$cfg
-    ?._path as { state: { name: string } }[] | undefined;
+    ?._path as Array<{ state: { name: string } }> | undefined;
 
   return path ? path[path.length - 1].state.name : undefined;
 }
@@ -317,7 +318,9 @@ export function StateRefDirective(
       const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
 
       rawDef._ngState = ref._state;
-      rawDef._ngStateOpts = ngStateOptsFn ? ngStateOptsFn(scope) : {};
+      rawDef._ngStateOpts = ngStateOptsFn
+        ? (ngStateOptsFn(scope) as StateRefOptions)
+        : {};
 
       function update() {
         rawDef._ngStateParams = assign({}, paramFn?.(scope));
@@ -439,9 +442,11 @@ export function StateRefDynamicDirective(
       }
 
       inputAttrs.forEach((field) => {
-        rawDef[rawDefKeyByAttr[field]] = attrs[field]
-          ? $parse(attrs[field])(scope)
-          : null;
+        (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] = attrs[
+          field
+        ]
+          ? ($parse(attrs[field])(scope) as TransitionOptions & RawParams)
+          : undefined;
         attrs.$observe(field, (expr) => {
           watchDeregFns[field]();
 
@@ -492,7 +497,7 @@ export function StateRefActiveDirective(
       $scope: ng.Scope,
       $element: HTMLElement,
       $attrs: ng.Attributes,
-    ): void {
+    ): undefined {
       let states: ActiveClassState[] = [];
 
       let ngSrefActive: unknown;
@@ -501,7 +506,9 @@ export function StateRefActiveDirective(
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
       const activeEqClass =
-        $interpolate($attrs.ngSrefActiveEq || "", false)!($scope) || "";
+        assertDefined($interpolate($attrs.ngSrefActiveEq || "", false))(
+          $scope,
+        ) || "";
 
       try {
         ngSrefActive = $attrs.ngSrefActive
@@ -513,7 +520,7 @@ export function StateRefActiveDirective(
       }
       ngSrefActive =
         ngSrefActive ||
-        $interpolate($attrs.ngSrefActive || "", false)!($scope) ||
+        assertDefined($interpolate($attrs.ngSrefActive || "", false))($scope) ||
         "";
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]
@@ -676,6 +683,8 @@ export function StateRefActiveDirective(
         });
       }
       update();
+
+      return undefined;
     },
   };
 }

@@ -1,5 +1,5 @@
 import { assign, deleteProperty, keys } from "../../shared/utils.ts";
-import { TargetState } from "../state/target-state.ts";
+import type { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import {
   createViewConfig,

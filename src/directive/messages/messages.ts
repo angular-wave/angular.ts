@@ -11,12 +11,14 @@ import {
 } from "../../animations/lazy-animate.ts";
 import { createNodelistFromHTML, removeElement } from "../../shared/dom.ts";
 import {
+  deleteProperty,
   entries,
   hasOwn,
   isArray,
   isInstanceOf,
   values,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 
 const ACTIVE_CLASS = "ng-active";
@@ -173,7 +175,7 @@ class NgMessageCtrl {
     const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
 
     if (attachDefault) {
-      this._default!.attach();
+      assertDefined(this._default).attach();
     } else if (this._default) {
       this._default.detach();
     }
@@ -250,7 +252,7 @@ class NgMessageCtrl {
       delete comment._ngMessageNode;
 
       if (key) {
-        delete this._messages[key];
+        deleteProperty(this._messages, key);
       }
     }
     this.reRender();
@@ -420,7 +422,7 @@ function ngMessageDirectiveFactory(
           if (dynamicExp) {
             const dynamicFn = $parse(dynamicExp);
 
-            assignRecords(dynamicFn(scope));
+            assignRecords(dynamicFn(scope) as string | string[] | undefined);
             scope.$watch(dynamicExp, assignRecords);
           } else {
             assignRecords(staticExp);

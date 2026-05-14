@@ -422,7 +422,7 @@ export function createHttpDirective(
                   eventTypes: parseSseEventTypes(),
                   transformMessage: (data: string) => {
                     try {
-                      return JSON.parse(data);
+                      return JSON.parse(data) as unknown;
                     } catch {
                       return data;
                     }

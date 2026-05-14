@@ -11,9 +11,9 @@ export class HttpRestBackend implements RestBackend {
   /** Creates a backend that executes REST requests through `$http`. */
   constructor(
     /** Runtime `$http` service used to execute requests. */
-    private _$http: HttpService,
+    private readonly _$http: HttpService,
     /** Default `$http` options merged into every request. */
-    private _options: Record<string, unknown> = {},
+    private readonly _options: Record<string, unknown> = {},
   ) {}
 
   /**

@@ -1,7 +1,9 @@
 import { _exceptionHandler, _parse } from "../../injection-tokens.ts";
 import {
   assert,
+  callFunction,
   createObject,
+  deleteProperty,
   getHashKey,
   hasOwn,
   isArray,
@@ -17,18 +19,24 @@ import {
   nextUid,
   nullObject,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
+import type {
+  ASTNode,
+  ExpressionNode,
+  LiteralNode,
+} from "../parse/ast/ast-node.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
 
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
-export type NonScope = string[] | boolean;
+export type NonScope = readonly string[] | boolean;
 
 export interface NonScopeMarked {
   $nonscope?: NonScope;
   /** @internal */
-  [key: string]: any;
+  [key: string]: unknown;
   constructor?: {
     $nonscope?: NonScope;
   };
@@ -140,11 +148,11 @@ export type ScopeProxied<T extends object> = T & {
 
 type ScopeProxy = ng.Scope;
 
-type ScopeTarget = NonScopeMarked & Record<PropertyKey, any>;
+type ScopeTarget = NonScopeMarked & Record<PropertyKey, unknown>;
 
-type ScopeEventListener = (...args: any[]) => any;
+type ScopeEventListener = (...args: any[]) => unknown;
 
-type ArrayMutationWrapper = (...args: any[]) => any;
+type ArrayMutationWrapper = (...args: any[]) => unknown;
 
 type ArrayMutationWrapperCache = Partial<Record<string, ArrayMutationWrapper>>;
 
@@ -164,7 +172,7 @@ let $parse: ng.ParseService;
 let $exceptionHandler: ng.ExceptionHandlerService;
 
 /** @internal */
-export const $postUpdateQueue: (() => void)[] = [];
+export const $postUpdateQueue: Array<() => void> = [];
 
 const arrayMutationMeta = new WeakMap<object, ArrayMutationMeta>();
 
@@ -547,19 +555,21 @@ export class RootScopeProvider {
   ];
 }
 
-function getNodeName(node: any): string | undefined {
-  return node?._name;
+function getNodeName(node: ASTNode | undefined): string | undefined {
+  return (node as LiteralNode | undefined)?._name;
 }
 
-function getNodePropertyName(node: any): string | undefined {
-  return node?._property?._name;
+function getNodePropertyName(node: ASTNode | undefined): string | undefined {
+  const property = (node as ExpressionNode | undefined)?._property;
+
+  return getNodeName(property);
 }
 
-function resolveNodeWatchKey(node: any): string | undefined {
+function resolveNodeWatchKey(node: ASTNode | undefined): string | undefined {
   return getNodePropertyName(node) ?? getNodeName(node);
 }
 
-function resolveWatchKey(node: any): string | undefined {
+function resolveWatchKey(node: ASTNode | undefined): string | undefined {
   if (!node) return undefined;
 
   if (node._type === ASTType._Identifier) {
@@ -613,7 +623,7 @@ function pushUniqueListenerKey(
 function registerListenerKeys(
   scope: Scope,
   listener: Listener,
-  watchKeys: (string | undefined)[],
+  watchKeys: Array<string | undefined>,
   schedule = false,
 ): void {
   for (let i = 0, l = watchKeys.length; i < l; i++) {
@@ -629,7 +639,7 @@ function registerListenerKeys(
 function deregisterListenerKeys(
   scope: Scope,
   listenerId: number,
-  watchKeys: (string | undefined)[],
+  watchKeys: Array<string | undefined>,
 ): void {
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
@@ -643,7 +653,10 @@ function deregisterListenerKeys(
  * This keeps interpolation arrays reactive for both direct property changes
  * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
  */
-function collectWatchKeys(node: any, watchKeys: Set<string>): void {
+function collectWatchKeys(
+  node: ASTNode | undefined,
+  watchKeys: Set<string>,
+): void {
   if (!node) return;
 
   if (node._type === ASTType._Identifier) {
@@ -655,7 +668,7 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
   }
 
   if (node._type === ASTType._Literal) {
-    const literal = node;
+    const literal = node as LiteralNode;
 
     if (isString(literal._value)) {
       watchKeys.add(literal._value);
@@ -667,7 +680,7 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
   }
 
   if (node._type === ASTType._MemberExpression) {
-    const member = node;
+    const member = node as ExpressionNode;
 
     const propertyKey = getNodePropertyName(member);
 
@@ -704,7 +717,7 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
 }
 
 function collectListenerKeys(
-  node: any,
+  node: ASTNode | undefined,
   keySet: string[],
   seenKeys: Set<string>,
   listener: Listener,
@@ -721,7 +734,7 @@ function collectListenerKeys(
 }
 
 function collectExpressionListenerKeys(
-  node: any,
+  node: ASTNode | undefined,
   keySet: string[],
   seenKeys: Set<string>,
   listener: Listener,
@@ -967,6 +980,7 @@ export function isNonScope(target: unknown): boolean {
 
   // 2. Fast cache lookups
   const objectTarget = target as NonScopeMarked & object;
+  const identityTarget = target as unknown;
 
   if (nonScopeCache.has(objectTarget)) {
     return true;
@@ -988,10 +1002,10 @@ export function isNonScope(target: unknown): boolean {
 
   // 4. Global objects
   if (
-    objectTarget === global.window ||
-    objectTarget === global.document ||
-    objectTarget === global.self ||
-    objectTarget === global.frames
+    identityTarget === global.window ||
+    identityTarget === global.document ||
+    identityTarget === global.self ||
+    identityTarget === global.frames
   ) {
     nonScopeCache.add(objectTarget);
 
@@ -1253,7 +1267,7 @@ export class Scope {
       }
 
       const targetValue = scopeValue.$target as
-        | Record<PropertyKey, any>
+        | Record<PropertyKey, unknown>
         | undefined;
 
       if (!targetValue) {
@@ -1277,10 +1291,12 @@ export class Scope {
       return;
     }
 
-    const keyList = keys(value);
+    const recordValue = value as Record<string, unknown>;
+
+    const keyList = keys(recordValue);
 
     for (let i = 0, l = keyList.length; i < l; i++) {
-      this._destroyDisplacedValue(value[keyList[i]], visited);
+      this._destroyDisplacedValue(recordValue[keyList[i]], visited);
     }
   }
 
@@ -1365,7 +1381,7 @@ export class Scope {
       return true;
     }
 
-    if (oldValue?.[isProxySymbol]) {
+    if (isProxy(oldValue)) {
       if (isArray(rawValue)) {
         const isProxyRebind = valueIsProxy;
 
@@ -1433,7 +1449,7 @@ export class Scope {
           const keyList = keys(unwrapScopeValue(oldValue));
 
           for (const k of keyList) {
-            if (!hasOwn(rawValue, k)) delete oldValue[k];
+            if (!hasOwn(rawValue, k)) deleteProperty(oldValue, k);
           }
         }
 
@@ -1475,22 +1491,24 @@ export class Scope {
 
         let called = false;
 
-        const keyList = keys(oldValue.$target);
+        const oldTarget = oldValue.$target as Record<string, unknown>;
 
-        const tgt = oldValue.$target;
+        const keyList = keys(oldTarget);
+
+        const tgt = oldTarget;
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const k = keyList[i];
 
           const v = tgt[k];
 
-          if (v?.[isProxySymbol]) {
+          if (isProxy(v)) {
             called = true;
           }
         }
 
         for (let i = 0, l = keyList.length; i < l; i++) {
-          delete oldValue[keyList[i]];
+          deleteProperty(oldValue, keyList[i]);
         }
 
         target[property] = undefined;
@@ -1641,7 +1659,9 @@ export class Scope {
 
           visitedNestedValues.add(nestedObject);
 
-          const keyList = keys(nestedTarget);
+          const nestedRecord = nestedTarget as Record<string, unknown>;
+
+          const keyList = keys(nestedRecord);
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
@@ -1654,8 +1674,8 @@ export class Scope {
               }
             }
 
-            if (isObject(nestedTarget[key])) {
-              collectNestedListeners(nestedTarget[key]);
+            if (isObject(nestedRecord[key])) {
+              collectNestedListeners(nestedRecord[key] as ScopeTarget);
             }
           }
         };
@@ -1969,7 +1989,11 @@ export class Scope {
             target as ScopeTarget[],
           );
 
-          const result = Reflect.apply(targetProp, target, rawArgs);
+          const result = Reflect.apply(
+            targetProp as (...args: any[]) => unknown,
+            target,
+            rawArgs,
+          );
 
           if (removedValues) {
             for (let i = 0, l = removedValues.length; i < l; i++) {
@@ -2005,7 +2029,7 @@ export class Scope {
             this._arrayOwnerListenersScheduled = true;
           }
 
-          return result;
+          return result as unknown;
         } finally {
           this._scheduled = [];
           this._arrayOwnerListenersScheduled = false;
@@ -2023,7 +2047,11 @@ export class Scope {
       arrayIdentityMethods.has(property)
     ) {
       return (...args: any[]) =>
-        Reflect.apply(targetProp, target, unwrapArrayMutationArgs(args));
+        Reflect.apply(
+          targetProp as (...args: any[]) => unknown,
+          target,
+          unwrapArrayMutationArgs(args),
+        ) as unknown;
     }
 
     if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
@@ -2051,7 +2079,7 @@ export class Scope {
     }
 
     // Currently deletes $model
-    if (target[property]?.[isProxySymbol]) {
+    if (isProxy(target[property])) {
       target[property] = undefined;
 
       const listeners = this._watchers.get(String(property));
@@ -2083,7 +2111,7 @@ export class Scope {
       return true;
     }
 
-    delete target[property];
+    deleteProperty(target, property);
 
     if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
       const keyList = this._objectListeners.get(target);
@@ -2101,7 +2129,10 @@ export class Scope {
       const listeners = this._watchers.get(String(property));
 
       if (listeners) {
-        this._scheduleListener(listeners, target[property]);
+        this._scheduleListener(
+          listeners,
+          target[property] as ListenerScheduleFilter,
+        );
       }
     }
 
@@ -2168,7 +2199,9 @@ export class Scope {
 
     visited.add(objectTarget);
 
-    const keyList = keys(target);
+    const targetRecord = target as Record<string, unknown>;
+
+    const keyList = keys(targetRecord);
 
     for (let i = 0, l = keyList.length; i < l; i++) {
       const k = keyList[i];
@@ -2179,8 +2212,11 @@ export class Scope {
         this._scheduleListener(listeners);
       }
 
-      if (isObject(target[k])) {
-        this._checkListenersForAllKeysRecursive(target[k], visited);
+      if (isObject(targetRecord[k])) {
+        this._checkListenersForAllKeysRecursive(
+          targetRecord[k] as ScopeTarget,
+          visited,
+        );
       }
     }
   }
@@ -2338,7 +2374,7 @@ export class Scope {
       };
     }
 
-    const expr = get._decoratedNode._body[0]?._expression as any;
+    const expr = get._decoratedNode._body[0]?._expression;
 
     if (!expr) {
       throw new Error("Unable to determine watched expression");
@@ -2404,7 +2440,7 @@ export class Scope {
       // 6
       case ASTType._BinaryExpression: {
         if (expr._isPure) {
-          const watch = expr._toWatch[0];
+          const watch = assertDefined(expr._toWatch)[0];
 
           key = resolveNodeWatchKey(watch);
 
@@ -2414,7 +2450,7 @@ export class Scope {
           pushUniqueListenerKey(keySet, seenKeys, listener, key);
           break;
         } else {
-          const { _toWatch: toWatch } = expr;
+          const toWatch = assertDefined(expr._toWatch);
 
           const keyList = new Array<string | undefined>(toWatch.length);
 
@@ -2435,7 +2471,7 @@ export class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const x = expr._toWatch[0];
+        const x = assertDefined(expr._toWatch)[0];
 
         key = resolveNodeWatchKey(x);
 
@@ -2447,7 +2483,7 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { _toWatch: toWatch } = expr;
+        const toWatch = assertDefined(expr._toWatch);
 
         const keyList = new Array<string | undefined>(toWatch.length);
 
@@ -2499,13 +2535,18 @@ export class Scope {
 
           let foreignProxy: ScopeProxy | undefined;
 
-          if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
-            foreignProxy = potentialProxy;
+          if (
+            potentialProxy &&
+            this._foreignProxies.has(potentialProxy as ScopeProxy)
+          ) {
+            foreignProxy = potentialProxy as ScopeProxy;
           } else {
             const foreignTarget = getObjectListenerTarget(potentialProxy);
 
             if (foreignTarget) {
-              foreignProxy = this._foreignProxyTargets.get(foreignTarget);
+              foreignProxy = this._foreignProxyTargets.get(
+                foreignTarget as Scope,
+              );
             }
           }
 
@@ -2551,7 +2592,7 @@ export class Scope {
       // 12
       case ASTType._ArrayExpression: {
         listener._watchLiteralInput = true;
-        const { _elements: elements } = expr;
+        const elements = assertDefined(expr._elements);
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const element = elements[i];
@@ -2580,7 +2621,7 @@ export class Scope {
       // 14
       case ASTType._ObjectExpression: {
         listener._watchLiteralInput = true;
-        const { _properties: properties } = expr;
+        const properties = assertDefined(expr._properties);
 
         const collectedKeys = new Set<string>();
 
@@ -2589,17 +2630,17 @@ export class Scope {
 
           let currentKey: string | undefined;
 
-          if (prop._key._isPure === false) {
+          if (assertDefined(prop._key)._isPure === false) {
             listener._watchNestedObject = true;
             currentKey = resolveNodeWatchKey(prop._key);
 
             if (!currentKey) {
               collectWatchKeys(prop._key, collectedKeys);
             }
-          } else if (getNodeName(prop._value)) {
-            currentKey = getNodeName(prop._value);
+          } else if (getNodeName(prop._value as ASTNode | undefined)) {
+            currentKey = getNodeName(prop._value as ASTNode | undefined);
           } else {
-            const target = expr._toWatch[0];
+            const target = assertDefined(expr._toWatch)[0];
 
             currentKey = resolveNodeWatchKey(target);
 
@@ -2828,7 +2869,8 @@ export class Scope {
       return;
     }
 
-    const parent = (this.$parent as any)?.$handler as Scope | undefined;
+    const parent = (this.$parent as ScopeProxied<ng.Scope> | undefined)
+      ?.$handler as Scope | undefined;
 
     let owner = parent;
 
@@ -2839,7 +2881,8 @@ export class Scope {
         return;
       }
 
-      owner = (owner.$parent as any)?.$handler as Scope | undefined;
+      owner = (owner.$parent as ScopeProxied<ng.Scope> | undefined)
+        ?.$handler as Scope | undefined;
     }
 
     if (parent) {
@@ -2849,10 +2892,10 @@ export class Scope {
 
   /** @internal Registers one inherited key against a resolved parent scope owner. */
   _registerForeignKeyOwner(owner: Scope, key: string): void {
-    const ownerValue = owner.$target[key];
+    const ownerValue = (owner.$target as Record<string, unknown>)[key];
 
     if (isObject(ownerValue) && !isNonScope(ownerValue)) {
-      const ownerTarget = ownerValue as object;
+      const ownerTarget = ownerValue;
 
       addObjectListenerKey(owner._objectListeners, ownerTarget, key);
     }
@@ -3246,10 +3289,10 @@ export class Scope {
         currentScope: this.$proxy as unknown as ScopeEvent["currentScope"],
         stopped: false,
         stopPropagation() {
-          event!.stopped = true;
+          assertDefined(event).stopped = true;
         },
         preventDefault() {
-          event!.defaultPrevented = true;
+          assertDefined(event).defaultPrevented = true;
         },
         defaultPrevented: false,
       };
@@ -3517,7 +3560,7 @@ export class Scope {
       } else {
         for (let i = 0, l = newVal.length; i < l; i++) {
           if (isFunction(newVal[i])) {
-            newVal[i] = newVal[i](_originalTarget);
+            newVal[i] = callFunction(newVal[i], undefined, _originalTarget);
           }
         }
       }

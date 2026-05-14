@@ -2,6 +2,7 @@ import { _parse } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { ScopeProxied } from "../../core/scope/scope.ts";
 import {
+  callFunction,
   deProxy,
   equals,
   isDefined,
@@ -115,14 +116,14 @@ const inputType = {
 
 type InputCtrl = NgModelControllerProxied & Record<string, any>;
 
-type ModelCtrl = NgModelController & Record<string, any>;
+type ModelCtrl = NgModelController & Record<string, unknown>;
 
 /**
  * Adds formatter logic for input types backed by string values.
  */
 function stringBasedInputType(ctrl: ModelCtrl): void {
-  ctrl.$formatters.push((value: any) =>
-    ctrl.$isEmpty(value) ? value : value.toString(),
+  ctrl.$formatters.push((value: unknown) =>
+    ctrl.$isEmpty(value) ? value : String(value),
   );
 }
 
@@ -349,7 +350,7 @@ export function badInputChecker(
   ));
 
   if (nativeValidation) {
-    ctrl.$parsers.push((value: any) => {
+    ctrl.$parsers.push((value: unknown) => {
       const validity =
         (element[VALIDITY_STATE_PROPERTY] as Partial<ValidityState>) || {};
 
@@ -368,17 +369,19 @@ export function badInputChecker(
  * Adds parser and formatter logic for numeric model values.
  */
 export function numberFormatterParser(ctrl: ModelCtrl): void {
-  ctrl.$parsers.push((value: any) => {
+  ctrl.$parsers.push((value: unknown) => {
     if (ctrl.$isEmpty(value)) return null;
 
-    if (NUMBER_REGEXP.test(value)) return parseFloat(value);
+    if (isNumber(value)) return value;
+
+    if (isString(value) && NUMBER_REGEXP.test(value)) return parseFloat(value);
 
     ctrl._parserName = "number";
 
     return undefined;
   });
 
-  ctrl.$formatters.push((value: any) => {
+  ctrl.$formatters.push((value: unknown) => {
     if (!ctrl.$isEmpty(value)) {
       if (!isNumber(value)) {
         throw ngModelError("numfmt", "Expected `{0}` to be a number", value);
@@ -393,12 +396,12 @@ export function numberFormatterParser(ctrl: ModelCtrl): void {
 /**
  * Parses numeric attribute values used by min/max/step validators.
  */
-function parseNumberAttrVal(val: any): number | undefined {
+function parseNumberAttrVal(val: unknown): number | undefined {
   if (isDefined(val) && !isNumber(val)) {
-    val = parseFloat(val);
+    val = parseFloat(String(val));
   }
 
-  return !isNumberNaN(val) ? val : undefined;
+  return isNumber(val) && !isNumberNaN(val) ? val : undefined;
 }
 
 /**
@@ -829,7 +832,7 @@ function radioInputType(
   };
 
   element.addEventListener("change", listener);
-  ctrl._eventRemovers.add(() => {
+  callFunction(ctrl._eventRemovers.add, ctrl._eventRemovers, () => {
     element.removeEventListener("change", listener);
   });
   // NgModelController call
@@ -855,11 +858,11 @@ function radioInputType(
  */
 function parseConstantExpr(
   $parse: ng.ParseService,
-  context: any,
-  name: any,
-  expression: any,
-  fallback: any,
-): any {
+  context: ng.Scope,
+  name: string,
+  expression: string | undefined,
+  fallback: unknown,
+): unknown {
   let parseFn;
 
   if (isDefined(expression)) {
@@ -887,7 +890,7 @@ function checkboxInputType(
   scope: ng.Scope,
   element: HTMLInputElement,
   attr: ng.Attributes,
-  ctrl: any,
+  ctrl: ModelCtrl,
   $parse: ng.ParseService,
 ): void {
   const trueValue = parseConstantExpr(
@@ -907,11 +910,11 @@ function checkboxInputType(
   );
 
   const listener = function (ev: Event) {
-    ctrl.$setViewValue(element.checked, ev?.type);
+    callFunction(ctrl.$setViewValue, ctrl, element.checked, ev?.type);
   };
 
   element.addEventListener("change", listener);
-  ctrl._eventRemovers.add(() => {
+  callFunction(ctrl._eventRemovers.add, ctrl._eventRemovers, () => {
     element.removeEventListener("change", listener);
   });
 
@@ -926,9 +929,13 @@ function checkboxInputType(
     return !value;
   };
 
-  ctrl.$formatters.push((value: any) => equals(value, trueValue));
+  callFunction(ctrl.$formatters.push, ctrl.$formatters, (value: unknown) =>
+    equals(value, trueValue),
+  );
 
-  ctrl.$parsers.push((value: any) => (value ? trueValue : falseValue));
+  callFunction(ctrl.$parsers.push, ctrl.$parsers, (value: unknown) =>
+    value ? trueValue : falseValue,
+  );
 }
 
 inputDirective.$inject = [_parse];
@@ -945,12 +952,12 @@ export function inputDirective($parse: ng.ParseService): ng.Directive {
         scope: ng.Scope,
         element: HTMLElement,
         attr: ng.Attributes,
-        ctrls: any[],
+        ctrls: [NgModelControllerProxied | undefined],
       ) {
         if (ctrls[0]) {
           const ctrl = unwrapNgModelController(ctrls[0]);
 
-          const typeName = attr.type?.toLowerCase() as
+          const typeName = (attr.type as string | undefined)?.toLowerCase() as
             | keyof typeof inputType
             | undefined;
 
@@ -974,7 +981,8 @@ export function hiddenInputDirective(): ng.Directive {
   return {
     restrict: "E",
     compile(_: HTMLElement, attr: ng.Attributes) {
-      if (attr.type?.toLowerCase() !== "hidden") return undefined;
+      if ((attr.type as string | undefined)?.toLowerCase() !== "hidden")
+        return undefined;
 
       return {
         pre(_scope: ng.Scope, element: HTMLElement) {

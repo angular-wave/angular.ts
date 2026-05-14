@@ -38,8 +38,9 @@ export function ngIncludeDirective(
     priority: 400,
     terminal: true,
     transclude: "element",
-    controller: () => {
+    controller: (): undefined => {
       /* empty */
+      return undefined;
     },
     compile(_element: Element, attr: Attributes) {
       const srcExp = attr.ngInclude || attr.src;

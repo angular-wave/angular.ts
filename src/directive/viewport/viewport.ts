@@ -1,5 +1,5 @@
 import { _parse } from "../../injection-tokens.ts";
-import { Attributes } from "../../core/compile/attributes.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 import { arrayFrom } from "../../shared/utils.ts";
 
 ngViewportDirective.$inject = [_parse];

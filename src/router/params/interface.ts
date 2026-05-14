@@ -1,4 +1,4 @@
-import { ParamType } from "./param-type.ts";
+import type { ParamType } from "./param-type.ts";
 import type { Injectable } from "../../interface.ts";
 
 export type ParamDefaultValueFactory = (() => unknown) & {

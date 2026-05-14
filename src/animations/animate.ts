@@ -5,6 +5,7 @@ import {
   createErrorFactory,
   isFunction,
   isString,
+  assertDefined,
 } from "../shared/utils.ts";
 import { domInsert, removeElement } from "../shared/dom.ts";
 
@@ -19,7 +20,7 @@ export type AnimationPhase =
   | "setClass"
   | "animate";
 
-export type AnimationResult = Animation | Promise<void> | void;
+export type AnimationResult = Animation | Promise<void> | undefined;
 
 export interface AnimationContext {
   signal: AbortSignal;
@@ -71,12 +72,12 @@ export interface AnimationPreset {
   options?: KeyframeAnimationOptions;
 }
 
-export class AnimationHandle implements PromiseLike<void> {
+export class AnimationHandle implements PromiseLike<undefined> {
   readonly controller: AbortController;
-  readonly finished: Promise<void>;
+  readonly finished: Promise<undefined>;
   private readonly animations: Animation[];
   private readonly cleanup?: (ok: boolean) => void;
-  private doneCallbacks: ((ok: boolean) => void)[] = [];
+  private doneCallbacks: Array<(ok: boolean) => void> = [];
   private settled = false;
   private status = true;
 
@@ -105,6 +106,8 @@ export class AnimationHandle implements PromiseLike<void> {
       const rejected = settled.some((item) => item.status === "rejected");
 
       this.complete(!rejected);
+
+      return undefined;
     });
 
     controller.signal.addEventListener(
@@ -116,8 +119,10 @@ export class AnimationHandle implements PromiseLike<void> {
     );
   }
 
-  then<TResult1 = void, TResult2 = never>(
-    onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null,
+  then<TResult1 = undefined, TResult2 = never>(
+    onfulfilled?:
+      | ((value: undefined) => TResult1 | PromiseLike<TResult1>)
+      | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): PromiseLike<TResult1 | TResult2> {
     return this.finished.then(onfulfilled, onrejected);
@@ -125,11 +130,11 @@ export class AnimationHandle implements PromiseLike<void> {
 
   catch<TResult = never>(
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
-  ): Promise<void | TResult> {
+  ): Promise<undefined | TResult> {
     return this.finished.catch(onrejected);
   }
 
-  finally(onfinally?: (() => void) | null): Promise<void> {
+  finally(onfinally?: (() => void) | null): Promise<undefined> {
     return this.finished.finally(onfinally);
   }
 
@@ -192,13 +197,13 @@ export interface AnimateService {
   define(name: string, preset: AnimationPreset): void;
   enter(
     element: Element,
-    parent?: Element | null,
+    parent?: ParentNode | null,
     after?: ChildNode | null,
     options?: NativeAnimationOptions,
   ): AnimationHandle;
   move(
     element: Element,
-    parent: Element | null,
+    parent: ParentNode | null,
     after?: ChildNode | null,
     options?: NativeAnimationOptions,
   ): AnimationHandle;
@@ -309,7 +314,7 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
 
         if (resolvedPresets.has(name)) {
           return {
-            preset: resolvedPresets.get(name)!,
+            preset: assertDefined(resolvedPresets.get(name)),
             custom: this._customAnimationNames.has(name),
           };
         }
@@ -480,13 +485,13 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
         },
 
         enter: (element, parent, after, options) => {
-          domInsert(element, parent!, after);
+          domInsert(element, assertDefined(parent ?? after?.parentNode), after);
 
           return run("enter", element, options);
         },
 
         move: (element, parent, after, options) => {
-          domInsert(element, parent!, after);
+          domInsert(element, assertDefined(parent ?? after?.parentNode), after);
 
           return run("move", element, options);
         },

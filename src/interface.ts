@@ -1,4 +1,4 @@
-import { Attributes } from "./core/compile/attributes.ts";
+import type { Attributes } from "./core/compile/attributes.ts";
 import type {
   BoundTranscludeFn,
   CloneAttachFn,
@@ -239,7 +239,7 @@ export interface Provider {
  */
 export type ControllerConstructor =
   | (new (...args: any[]) => Controller)
-  | ((...args: any[]) => void | Controller);
+  | ((...args: any[]) => undefined | Controller);
 
 /**
  * Describes the changes in component bindings during `$onChanges`.
@@ -437,7 +437,7 @@ export type DirectiveCompileFn = (
   templateElement: HTMLElement,
   templateAttributes: Attributes & Record<string, any>,
   transclude?: (...args: any[]) => any,
-) => void | DirectiveLinkFn<any> | DirectivePrePost;
+) => undefined | DirectiveLinkFn<any> | DirectivePrePost;
 
 /**
  * Defines the structure of an AngularTS directive.
@@ -486,7 +486,7 @@ export type DirectiveFactoryFn = (
   ...args: any[]
 ) => Directive | DirectiveLinkFn<any>;
 
-export type AnnotatedDirectiveFactory = (string | DirectiveFactoryFn)[];
+export type AnnotatedDirectiveFactory = Array<string | DirectiveFactoryFn>;
 
 export type DirectiveFactory = DirectiveFactoryFn | AnnotatedDirectiveFactory;
 

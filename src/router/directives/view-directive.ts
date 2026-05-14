@@ -16,6 +16,7 @@ import {
   isDefined,
   isInstanceOf,
   isString,
+  assertDefined,
 } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import {
@@ -94,7 +95,7 @@ function getRootNodesFromClone(
 interface NgViewAnimData {
   $animEnter: Promise<void>;
   $animLeave: Promise<void>;
-  $$animLeave: PromiseResolvers<void>;
+  $$animLeave: PromiseResolvers<undefined>;
 }
 
 interface NgViewData {
@@ -108,16 +109,20 @@ interface ActiveNgViewRootData {
 }
 
 function withResolvers<T>(): PromiseResolvers<T> {
-  let resolve!: (value: T | PromiseLike<T>) => void;
+  let resolve: ((value: T | PromiseLike<T>) => void) | undefined;
 
-  let reject: (reason?: unknown) => void;
+  let reject: ((reason?: unknown) => void) | undefined;
 
-  const promise = new Promise<T>((resolveParam, rejectParam) => {
-    resolve = resolveParam;
-    reject = rejectParam;
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
   });
 
-  return { promise, resolve, reject: reject! };
+  return {
+    promise,
+    resolve: assertDefined(resolve),
+    reject: assertDefined(reject),
+  };
 }
 
 /**
@@ -210,7 +215,7 @@ export function ViewDirective(
       _tAttrs: ng.Attributes,
       $transclude?: ng.TranscludeFn,
     ) {
-      const transclude = $transclude!;
+      const transclude = assertDefined($transclude);
 
       return function (
         scope: ng.Scope,
@@ -223,9 +228,10 @@ export function ViewDirective(
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
               | undefined) || rootData,
-          name =
-            $interpolate(attrs.ngView || attrs.name || "")!(scope) ||
-            "$default";
+          rawName = assertDefined(
+            $interpolate(attrs.ngView || attrs.name || ""),
+          )(scope),
+          name = isString(rawName) && rawName ? rawName : "$default";
 
         const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 
@@ -312,7 +318,7 @@ export function ViewDirective(
               | undefined;
 
             removeElement(currentEl);
-            _viewData?.$$animLeave.resolve();
+            _viewData?.$$animLeave.resolve(undefined);
             currentEl = null;
           }
         }
@@ -320,9 +326,9 @@ export function ViewDirective(
         function updateView(config?: ViewConfig): void {
           const newScope = scope.$new();
 
-          const animEnter = withResolvers<void>();
+          const animEnter = withResolvers<undefined>();
 
-          const animLeave = withResolvers<void>();
+          const animLeave = withResolvers<undefined>();
 
           const $ngViewData: NgViewData = {
             $cfg: config,
@@ -435,7 +441,8 @@ export function ViewDirectiveFill(
           cfg._path && new ResolveContext(cfg._path, $injector);
 
         $element.innerHTML = data.$cfg
-          ? getViewTemplate(data.$cfg, $element, resolveCtx!) || initial
+          ? getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ||
+            initial
           : initial;
         const link = $compile(
           ($element as HTMLIFrameElement).contentDocument ||

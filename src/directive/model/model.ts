@@ -18,7 +18,9 @@ import {
   VALID_CLASS,
 } from "../../shared/constants.ts";
 import {
+  callFunction,
   deProxy,
+  deleteProperty,
   entries,
   hasAnimate,
   isBoolean,
@@ -36,17 +38,22 @@ import {
 } from "../../shared/utils.ts";
 import {
   cachedToggleClass,
+  type NamedControl,
   type ParentFormController,
   type ValidityCssHost,
   nullFormCtrl,
   PENDING_CLASS,
 } from "../form/form.ts";
-import { defaultModelOptions } from "../model-options/model-options.ts";
+import {
+  defaultModelOptions,
+  type ModelOptions,
+} from "../model-options/model-options.ts";
 import { startingTag } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
+import type { CompiledExpression } from "../../core/parse/parse.ts";
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 
@@ -54,7 +61,7 @@ export const ngModelError = createErrorFactory("ngModel");
 
 export type ModelValidators = Record<
   string,
-  (modelValue: any, viewValue: any) => boolean
+  (modelValue: any, viewValue: any) => unknown
 >;
 
 export type AsyncModelValidators = Record<
@@ -148,15 +155,15 @@ export class NgModelController {
   /** @internal */
   _rawModelValue: any;
 
-  $validators: Record<string, any>;
+  $validators: ModelValidators;
 
-  $asyncValidators: Record<string, any>;
+  $asyncValidators: AsyncModelValidators;
 
-  $parsers: ((value: any) => any)[];
+  $parsers: Array<(value: any) => any>;
 
-  $formatters: ((value: any) => any)[];
+  $formatters: Array<(value: any) => any>;
 
-  $viewChangeListeners: (() => void)[];
+  $viewChangeListeners: Array<() => void>;
 
   $untouched: boolean;
 
@@ -182,22 +189,22 @@ export class NgModelController {
   /** @internal */
   _parentForm: ParentFormController;
 
-  $options: any;
+  $options: ModelOptions;
 
   /** @internal */
   _updateEvents: string;
 
   /** @internal */
-  _parsedNgModel: any;
+  _parsedNgModel: CompiledExpression;
 
   /** @internal */
-  _parsedNgModelAssign: any;
+  _parsedNgModelAssign: (context: any, value: any) => any;
 
   /** @internal */
-  _ngModelGet: any;
+  _ngModelGet: (context: any) => any;
 
   /** @internal */
-  _ngModelSet: any;
+  _ngModelSet: (context: ng.Scope, value: any) => any;
 
   /** @internal */
   _pendingDebounce: any;
@@ -332,7 +339,7 @@ export class NgModelController {
    */
   /** @internal */
   _unset(object: Record<string, any>, property: string | number): void {
-    delete object[property];
+    deleteProperty(object, property);
   }
 
   /**
@@ -411,14 +418,14 @@ export class NgModelController {
     }
 
     if (!isBoolean(state)) {
-      delete this.$error[validationErrorKey];
-      delete this._success[validationErrorKey];
+      deleteProperty(this.$error, validationErrorKey);
+      deleteProperty(this._success, validationErrorKey);
     } else if (state) {
-      delete this.$error[validationErrorKey];
+      deleteProperty(this.$error, validationErrorKey);
       this._set(this._success, validationErrorKey);
     } else {
       this._set(this.$error, validationErrorKey);
-      delete this._success[validationErrorKey];
+      deleteProperty(this._success, validationErrorKey);
     }
 
     if (this.$pending) {
@@ -505,16 +512,16 @@ export class NgModelController {
         let modelValue = this._parsedNgModel($scope);
 
         if (isFunction(modelValue)) {
-          modelValue = invokeModelGetter($scope);
+          modelValue = callFunction(invokeModelGetter, undefined, $scope);
         }
 
         return modelValue;
       };
       this._ngModelSet = ($scope: ng.Scope, newValue: any) => {
         if (isFunction(this._parsedNgModel($scope))) {
-          invokeModelSetter($scope, { _$p: newValue });
+          callFunction(invokeModelSetter, undefined, $scope, { _$p: newValue });
         } else {
-          this._parsedNgModelAssign($scope, newValue);
+          callFunction(this._parsedNgModelAssign, undefined, $scope, newValue);
         }
       };
     } else if (!this._parsedNgModel._assign) {
@@ -888,7 +895,7 @@ export class NgModelController {
         // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
         setValidity(errorKey, this._parserValid);
 
-        return this._parserValid;
+        return Boolean(this._parserValid);
       }
 
       return true;
@@ -916,7 +923,7 @@ export class NgModelController {
     };
 
     const processAsyncValidators = () => {
-      const validatorPromises: Promise<void>[] = [];
+      const validatorPromises: Array<Promise<void>> = [];
 
       let allValid = true;
 
@@ -935,10 +942,14 @@ export class NgModelController {
           promise.then(
             () => {
               setValidity(name, true);
+
+              return undefined;
             },
             () => {
               allValid = false;
               setValidity(name, false);
+
+              return undefined;
             },
           ),
         );
@@ -1066,8 +1077,6 @@ export class NgModelController {
     this._rawModelValue = modelValue;
 
     const writeToModelIfNeeded = () => {
-      // intentional loose equality
-      // eslint-disable-next-line eqeqeq
       if (this.$modelValue != prevModelValue) {
         if (isNull(this.$modelValue) && prevModelValue === "") return;
 
@@ -1103,7 +1112,7 @@ export class NgModelController {
 
   /** @internal */
   _writeModelToScope() {
-    this._ngModelSet(this._scope, this.$modelValue);
+    callFunction(this._ngModelSet, undefined, this._scope, this.$modelValue);
     values(this.$viewChangeListeners).forEach((listener) => {
       try {
         listener();
@@ -1380,7 +1389,7 @@ export class NgModelController {
       viewValue = formatters[idx](viewValue);
     }
 
-    return viewValue;
+    return viewValue as unknown;
   }
 
   /**
@@ -1468,7 +1477,7 @@ function setupModelWatcher(
   //       ng-change executes in apply phase
   // 4. view should be changed back to 'a'
   return (ctrl._scope.$watch("value", () => {
-    const modelValue = ctrl._ngModelGet(ctrl._scope);
+    const modelValue = callFunction(ctrl._ngModelGet, undefined, ctrl._scope);
 
     if (isUndefined(modelValue) && Number.isNaN(ctrl.$modelValue)) {
       return;
@@ -1514,7 +1523,11 @@ export function ngModelDirective(): ng.Directive {
             scope: ng.Scope,
             _preElement: HTMLElement,
             attr: ng.Attributes,
-            ctrls: any[],
+            ctrls: [
+              NgModelController,
+              ParentFormController | undefined,
+              { $options: ModelOptions } | undefined,
+            ],
           ) => {
             const modelCtrl = ctrls[0];
 
@@ -1528,30 +1541,36 @@ export function ngModelDirective(): ng.Directive {
             modelCtrl._initGetterSetters();
 
             // notify others, especially parent forms
-            formCtrl.$addControl(modelCtrl);
+            formCtrl.$addControl(modelCtrl as unknown as NamedControl);
 
             const deregisterNameObserver = attr.$observe(
               "name",
               (newValue: any) => {
                 if (modelCtrl.$name !== newValue) {
-                  modelCtrl._parentForm._renameControl(modelCtrl, newValue);
+                  modelCtrl._parentForm._renameControl(
+                    modelCtrl as unknown as NamedControl,
+                    newValue,
+                  );
                 }
               },
-            );
+            ) as () => void;
 
-            const deregisterWatch = (scope.$watch(attr.ngModel, (val: any) => {
-              const modelValue = deProxy(val);
+            const deregisterWatch = (scope.$watch(
+              attr.ngModel as string,
+              (val: any) => {
+                const modelValue = deProxy(val);
 
-              if (
-                modelValue === modelCtrl.$modelValue ||
-                (Number.isNaN(modelValue) &&
-                  Number.isNaN(modelCtrl.$modelValue))
-              ) {
-                return;
-              }
+                if (
+                  modelValue === modelCtrl.$modelValue ||
+                  (Number.isNaN(modelValue) &&
+                    Number.isNaN(modelCtrl.$modelValue))
+                ) {
+                  return;
+                }
 
-              modelCtrl._setModelValue(modelValue);
-            }) ||
+                modelCtrl._setModelValue(modelValue);
+              },
+            ) ||
               (() => {
                 /* empty */
               })) as () => void;
@@ -1581,7 +1600,7 @@ export function ngModelDirective(): ng.Directive {
             scope: ng.Scope,
             elementPost: HTMLElement,
             _attr: ng.Attributes,
-            ctrls: any[],
+            ctrls: [NgModelController],
           ) => {
             const modelCtrl = ctrls[0];
 
@@ -1606,7 +1625,9 @@ export function ngModelDirective(): ng.Directive {
             });
 
             modelCtrl.$viewChangeListeners.push(() => {
-              changeFn?.(scope);
+              if (changeFn) {
+                callFunction(changeFn, undefined, scope);
+              }
             });
           },
         };

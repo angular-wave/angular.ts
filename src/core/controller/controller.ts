@@ -28,7 +28,10 @@ export type ControllerService = (
 
 type InjectableController = Injectable<ControllerConstructor>;
 
-type ControllerInstance = Record<string, any>;
+type ControllerInstance = Record<string, unknown> & {
+  $controllerIdentifier?: string;
+  constructor?: Function & { $scopename?: string };
+};
 
 const $controllerError = createErrorFactory("$controller");
 
@@ -96,7 +99,7 @@ export class ControllerProvider {
       _injector,
       ($injector): ControllerService => {
         return (expression, locals, later, ident) => {
-          let instance: any;
+          let instance: ControllerInstance;
 
           let constructorName: string | undefined;
 
@@ -147,8 +150,8 @@ export class ControllerProvider {
               this._addIdentifier(locals, identifier, instance, exportName);
             }
 
-            if (instance?.constructor?.$scopename && locals?.$scope) {
-              (locals.$scope as any).$scopename =
+            if (instance.constructor?.$scopename && locals?.$scope) {
+              (locals.$scope as Record<string, unknown>).$scopename =
                 instance.constructor.$scopename;
             }
 
@@ -158,13 +161,13 @@ export class ControllerProvider {
                 instance,
                 locals,
                 constructorName,
-              );
+              ) as unknown;
 
               if (
                 result !== instance &&
                 (isObject(result) || isFunction(result))
               ) {
-                instance = result;
+                instance = result as ControllerInstance;
 
                 if (identifier) {
                   instance.$controllerIdentifier = identifier;
@@ -180,7 +183,7 @@ export class ControllerProvider {
             injectable as any,
             locals,
             constructorName,
-          );
+          ) as ControllerInstance;
 
           if (identifier) {
             this._addIdentifier(
@@ -239,7 +242,9 @@ export class ControllerProvider {
       );
     }
 
-    (locals.$scope as any)[identifier] = instance;
-    (locals.$scope as any).$controllerIdentifier = identifier;
+    const scope = locals.$scope as Record<string, unknown>;
+
+    scope[identifier] = instance;
+    scope.$controllerIdentifier = identifier;
   }
 }

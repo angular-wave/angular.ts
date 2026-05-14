@@ -78,7 +78,7 @@ export function filterFilter() {
         return array;
     }
 
-    return arrayFrom(array as ArrayLike<any>).filter(predicateFn);
+    return arrayFrom<unknown>(array as ArrayLike<unknown>).filter(predicateFn);
   };
 }
 
@@ -199,10 +199,10 @@ function deepCompare(
 
   const expectedType = getTypeForFilter(expected);
 
-  if (expectedType === "string" && expected.charAt(0) === "!") {
+  if (expectedType === "string" && (expected as string).startsWith("!")) {
     return !deepCompare(
       actual,
-      expected.substring(1),
+      (expected as string).substring(1),
       comparator,
       anyPropertyKey,
       matchAgainstAnyProp,
@@ -284,12 +284,12 @@ function deepCompare(
         return true;
       }
 
-      return comparator(actual, expected);
+      return Boolean(comparator(actual, expected));
 
     case "function":
       return false;
     default:
-      return comparator(actual, expected);
+      return Boolean(comparator(actual, expected));
   }
 }
 

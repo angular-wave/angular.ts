@@ -146,9 +146,9 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   private readonly _url: string;
   private readonly _TransportCtor: NativeWebTransportConstructor;
   private readonly _transportOptions: WebTransportOptions;
-  private _config: WebTransportConfig;
-  private _log: LogService;
-  private _encoder = new TextEncoder();
+  private readonly _config: WebTransportConfig;
+  private readonly _log: LogService;
+  private readonly _encoder = new TextEncoder();
   private _closing = false;
   private _closedSettled = false;
   private _closedResolve!: () => void;

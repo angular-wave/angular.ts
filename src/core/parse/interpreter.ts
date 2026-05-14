@@ -5,6 +5,8 @@ import {
   isNullOrUndefined,
   isObject,
   isProxy,
+  assertDefined,
+  callFunction,
 } from "../../shared/utils.ts";
 import { ASTType } from "./ast-type.ts";
 import type {
@@ -26,6 +28,14 @@ export const PURITY_RELATIVE = 2;
 type LinkContext = object | boolean | undefined;
 
 type CreateFlag = boolean | 1 | undefined;
+
+type PropertyBag = Record<PropertyKey, unknown>;
+
+interface ExpressionReference {
+  context?: unknown;
+  name?: PropertyKey;
+  value?: unknown;
+}
 
 type WatchNode = ASTNode & {
   /** @internal */
@@ -49,6 +59,44 @@ function appendWatchNodes(
   for (let i = 0, l = watchList.length; i < l; i++) {
     target.push(watchList[i]);
   }
+}
+
+function asPropertyBag(value: unknown): PropertyBag | undefined {
+  if (isNullOrUndefined(value)) {
+    return undefined;
+  }
+
+  if (isObject(value) || isFunction(value)) {
+    return value as PropertyBag;
+  }
+
+  return Object(value) as PropertyBag;
+}
+
+function readProperty(value: unknown, key: PropertyKey): unknown {
+  return asPropertyBag(value)?.[key];
+}
+
+function writeProperty(
+  value: unknown,
+  key: PropertyKey,
+  propertyValue: unknown,
+): void {
+  const bag = asPropertyBag(value);
+
+  if (bag) {
+    bag[key] = propertyValue;
+  }
+}
+
+function getProxyTarget(value: unknown): unknown {
+  const bag = asPropertyBag(value);
+
+  return bag && "$proxy" in bag ? (bag.$proxy ?? value) : value;
+}
+
+function getExpressionReference(value: unknown): ExpressionReference {
+  return isObject(value) ? (value as ExpressionReference) : {};
 }
 
 export class ASTInterpreter {
@@ -104,7 +152,9 @@ export class ASTInterpreter {
       const expression = body[i];
 
       expressions.push(
-        this._recurse((expression as ExpressionNode)._expression!),
+        this._recurse(
+          assertDefined((expression as ExpressionNode)._expression),
+        ),
       );
     }
 
@@ -116,7 +166,7 @@ export class ASTInterpreter {
         : body.length === 1
           ? (expressions[0] as CompiledExpression)
           : (function (scope?: ng.Scope, locals?: object) {
-              let lastValue;
+              let lastValue: unknown;
 
               for (let i = 0; i < expressions.length; i++) {
                 lastValue = expressions[i](scope, locals);
@@ -161,25 +211,20 @@ export class ASTInterpreter {
       }
     }
 
-    let left!: CompiledExpressionFunction;
-
-    let right:
-      | string
-      | CompiledExpressionFunction
-      | ((...args: any[]) => any)
-      | undefined;
-
     const self = this as unknown as ASTInterpreter &
       Record<string, (...args: any[]) => CompiledExpressionFunction>;
 
     switch (ast._type) {
       case ASTType._Literal:
         return this._value((ast as LiteralNode)._value, context);
-      case ASTType._UnaryExpression:
-        right = this._recurse((ast as ExpressionNode)._argument!);
+      case ASTType._UnaryExpression: {
+        const unaryRight = this._recurse(
+          assertDefined((ast as ExpressionNode)._argument),
+        );
 
-        return self[`unary${ast._operator}`](right, context);
-      case ASTType._BinaryExpression:
+        return self[`unary${ast._operator}`](unaryRight, context);
+      }
+      case ASTType._BinaryExpression: {
         if (!context) {
           const binaryPath = getPathBinary(ast);
 
@@ -188,11 +233,16 @@ export class ASTInterpreter {
           }
         }
 
-        left = this._recurse((ast as ExpressionNode)._left!);
-        right = this._recurse((ast as ExpressionNode)._right!);
+        const binaryLeft = this._recurse(
+          assertDefined((ast as ExpressionNode)._left),
+        );
+        const binaryRight = this._recurse(
+          assertDefined((ast as ExpressionNode)._right),
+        );
 
-        return self[`binary${ast._operator}`](left, right, context);
-      case ASTType._LogicalExpression:
+        return self[`binary${ast._operator}`](binaryLeft, binaryRight, context);
+      }
+      case ASTType._LogicalExpression: {
         if (!context) {
           const logicalPath = getPathLogical(ast);
 
@@ -201,19 +251,32 @@ export class ASTInterpreter {
           }
         }
 
-        left = this._recurse((ast as ExpressionNode)._left!);
-        right = this._recurse((ast as ExpressionNode)._right!);
+        const logicalLeft = this._recurse(
+          assertDefined((ast as ExpressionNode)._left),
+        );
+        const logicalRight = this._recurse(
+          assertDefined((ast as ExpressionNode)._right),
+        );
 
-        return self[`binary${ast._operator}`](left, right, context);
+        return self[`binary${ast._operator}`](
+          logicalLeft,
+          logicalRight,
+          context,
+        );
+      }
       case ASTType._ConditionalExpression:
         return this["ternary?:"](
-          this._recurse((ast as ExpressionNode)._test!),
-          this._recurse((ast as ExpressionNode)._alternate!),
-          this._recurse((ast as ExpressionNode)._consequent!),
+          this._recurse(assertDefined((ast as ExpressionNode)._test)),
+          this._recurse(assertDefined((ast as ExpressionNode)._alternate)),
+          this._recurse(assertDefined((ast as ExpressionNode)._consequent)),
           context,
         );
       case ASTType._Identifier:
-        return this._identifier((ast as LiteralNode)._name!, context, create);
+        return this._identifier(
+          assertDefined((ast as LiteralNode)._name),
+          context,
+          create,
+        );
       case ASTType._MemberExpression:
         return this._compileMemberExpression(
           ast as ExpressionNode,
@@ -232,7 +295,7 @@ export class ASTInterpreter {
       case ASTType._ObjectExpression:
         return this._compileObjectExpression(ast as ObjectNode, context);
       case ASTType._ThisExpression:
-        return (scope) => (context ? { value: scope } : (scope as any)?.$proxy);
+        return (scope) => (context ? { value: scope } : getProxyTarget(scope));
       case ASTType._LocalsExpression:
         return (scope, locals) => (context ? { value: locals } : locals);
       case ASTType._NGValueParameter:
@@ -264,13 +327,13 @@ export class ASTInterpreter {
       return this._compileFilterCall(ast, callArguments, args, context);
     }
 
-    const callee = ast._callee!;
+    const callee = assertDefined(ast._callee);
 
     const right = this._recurse(callee, true);
 
     if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
       return this._compileIdentifierTwoArgCall(
-        (callee as LiteralNode)._name!,
+        assertDefined((callee as LiteralNode)._name),
         callArguments,
         args,
       );
@@ -303,29 +366,28 @@ export class ASTInterpreter {
       const argName1 = argPath1[0];
 
       return (scope, locals) => {
-        const runtimeScope = scope as any;
-
-        const base = runtimeScope?.$proxy ?? scope;
+        const base = getProxyTarget(scope);
 
         if (!locals) {
           if (isNullOrUndefined(base)) {
             return undefined;
           }
 
-          const calleeValue = (base as Record<string, any>)[calleeName];
+          const calleeValue = readProperty(base, calleeName);
 
-          if (typeof calleeValue !== "function") {
+          if (!isFunction(calleeValue)) {
             return undefined;
           }
 
-          const value0 = (base as Record<string, any>)[argName0];
+          const value0 = readProperty(base, argName0);
 
-          const value1 = (base as Record<string, any>)[argName1];
+          const value1 = readProperty(base, argName1);
 
-          return calleeValue.call(
+          return callFunction(
+            calleeValue,
             base,
-            typeof value0 === "function" ? value0() : value0,
-            typeof value1 === "function" ? value1() : value1,
+            isFunction(value0) ? value0() : value0,
+            isFunction(value1) ? value1() : value1,
           );
         }
 
@@ -336,9 +398,9 @@ export class ASTInterpreter {
           return undefined;
         }
 
-        const calleeValue = (calleeBase as Record<string, any>)[calleeName];
+        const calleeValue = readProperty(calleeBase, calleeName);
 
-        if (typeof calleeValue !== "function") {
+        if (!isFunction(calleeValue)) {
           return undefined;
         }
 
@@ -348,14 +410,15 @@ export class ASTInterpreter {
         const argBase1 =
           argName1 in locals ? (locals as Record<string, any>) : base;
 
-        const value0 = argBase0?.[argName0];
+        const value0 = readProperty(argBase0, argName0);
 
-        const value1 = argBase1?.[argName1];
+        const value1 = readProperty(argBase1, argName1);
 
-        return calleeValue.call(
+        return callFunction(
+          calleeValue,
           calleeBase,
-          typeof value0 === "function" ? value0() : value0,
-          typeof value1 === "function" ? value1() : value1,
+          isFunction(value0) ? value0() : value0,
+          isFunction(value1) ? value1() : value1,
         );
       };
     }
@@ -365,20 +428,18 @@ export class ASTInterpreter {
     const arg1 = args[1];
 
     return (scope, locals, assign) => {
-      const runtimeScope = scope as any;
-
       const base =
         locals && calleeName in locals
           ? (locals as Record<string, any>)
-          : (runtimeScope?.$proxy ?? scope);
+          : getProxyTarget(scope);
 
       if (isNullOrUndefined(base)) {
         return undefined;
       }
 
-      const calleeValue = (base as Record<string, any>)[calleeName];
+      const calleeValue = readProperty(base, calleeName);
 
-      if (typeof calleeValue !== "function") {
+      if (!isFunction(calleeValue)) {
         return undefined;
       }
 
@@ -386,10 +447,11 @@ export class ASTInterpreter {
 
       const res1 = arg1(scope, locals, assign);
 
-      return calleeValue.call(
+      return callFunction(
+        calleeValue,
         base,
-        typeof res0 === "function" ? res0() : res0,
-        typeof res1 === "function" ? res1() : res1,
+        isFunction(res0) ? res0() : res0,
+        isFunction(res1) ? res1() : res1,
       );
     };
   }
@@ -403,24 +465,28 @@ export class ASTInterpreter {
   ): CompiledExpressionFunction {
     return argCount
       ? (scope, locals, assign) => {
-          const rhs = callee(scope, locals, assign);
+          const rhs = getExpressionReference(callee(scope, locals, assign));
 
-          let value: any;
+          let value: unknown;
 
           if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-            const res = arg!(scope, locals, assign);
+            const res = assertDefined(arg)(scope, locals, assign);
 
-            value = rhs.value.call(rhs.context, isFunction(res) ? res() : res);
+            value = callFunction(
+              rhs.value,
+              rhs.context,
+              isFunction(res) ? res() : res,
+            );
           }
 
           return context ? { value } : value;
         }
       : (scope, locals, assign) => {
-          const rhs = callee(scope, locals, assign);
+          const rhs = getExpressionReference(callee(scope, locals, assign));
 
           const value =
             !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
-              ? rhs.value.call(rhs.context)
+              ? callFunction(rhs.value, rhs.context)
               : undefined;
 
           return context ? { value } : value;
@@ -436,7 +502,7 @@ export class ASTInterpreter {
   ): CompiledExpressionFunction {
     if (!context) {
       return (scope, locals, assign) => {
-        const rhs = callee(scope, locals, assign);
+        const rhs = getExpressionReference(callee(scope, locals, assign));
 
         if (isNullOrUndefined(rhs.value) || !isFunction(rhs.value)) {
           return undefined;
@@ -446,7 +512,8 @@ export class ASTInterpreter {
 
         const res1 = arg1(scope, locals, assign);
 
-        return rhs.value.call(
+        return callFunction(
+          rhs.value,
           rhs.context,
           isFunction(res0) ? res0() : res0,
           isFunction(res1) ? res1() : res1,
@@ -455,16 +522,17 @@ export class ASTInterpreter {
     }
 
     return (scope, locals, assign) => {
-      const rhs = callee(scope, locals, assign);
+      const rhs = getExpressionReference(callee(scope, locals, assign));
 
-      let value: any;
+      let value: unknown;
 
       if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
         const res0 = arg0(scope, locals, assign);
 
         const res1 = arg1(scope, locals, assign);
 
-        value = rhs.value.call(
+        value = callFunction(
+          rhs.value,
           rhs.context,
           isFunction(res0) ? res0() : res0,
           isFunction(res1) ? res1() : res1,
@@ -482,9 +550,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const rhs = callee(scope, locals, assign);
+      const rhs = getExpressionReference(callee(scope, locals, assign));
 
-      let value: any;
+      let value: unknown;
 
       if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
         const values: any[] = [];
@@ -494,7 +562,7 @@ export class ASTInterpreter {
 
           values.push(isFunction(res) ? res() : res);
         }
-        value = rhs.value.apply(rhs.context, values);
+        value = callFunction(rhs.value, rhs.context, ...values);
       }
 
       return context ? { value } : value;
@@ -508,7 +576,9 @@ export class ASTInterpreter {
     args: CompiledExpressionFunction[],
     context?: LinkContext,
   ): CompiledExpressionFunction {
-    const filter = this._$filter((ast._callee as LiteralNode)._name!);
+    const filter = this._$filter(
+      assertDefined((ast._callee as LiteralNode)._name),
+    );
 
     if (args.length === 1) {
       const arg0 = args[0];
@@ -522,14 +592,16 @@ export class ASTInterpreter {
           return (scope, locals) => {
             const evalScope = scope && deProxy(scope);
 
-            const runtimeScope = evalScope;
-
             const base =
               locals && argName in locals
                 ? (locals as Record<string, any>)
-                : (runtimeScope?.$proxy ?? evalScope);
+                : getProxyTarget(evalScope);
 
-            return filter(base?.[argName]);
+            return callFunction(
+              filter as (...args: any[]) => unknown,
+              undefined,
+              readProperty(base, argName),
+            );
           };
         }
       }
@@ -538,12 +610,21 @@ export class ASTInterpreter {
         ? (scope, locals, assign) => {
             const evalScope = scope && deProxy(scope);
 
-            const value = () => filter(arg0(evalScope, locals, assign));
+            const value = () =>
+              callFunction(
+                filter as (...args: any[]) => unknown,
+                undefined,
+                arg0(evalScope, locals, assign),
+              );
 
             return { context: undefined, name: undefined, value };
           }
         : (scope, locals, assign) =>
-            filter(arg0(scope && deProxy(scope), locals, assign));
+            callFunction(
+              filter as (...args: any[]) => unknown,
+              undefined,
+              arg0(scope && deProxy(scope), locals, assign),
+            );
     }
 
     if (args.length === 2) {
@@ -556,7 +637,9 @@ export class ASTInterpreter {
             const evalScope = scope && deProxy(scope);
 
             const value = () =>
-              filter(
+              callFunction(
+                filter as (...args: any[]) => unknown,
+                undefined,
                 arg0(evalScope, locals, assign),
                 arg1(evalScope, locals, assign),
               );
@@ -566,7 +649,9 @@ export class ASTInterpreter {
         : (scope, locals, assign) => {
             const evalScope = scope && deProxy(scope);
 
-            return filter(
+            return callFunction(
+              filter as (...args: any[]) => unknown,
+              undefined,
               arg0(evalScope, locals, assign),
               arg1(evalScope, locals, assign),
             );
@@ -583,9 +668,12 @@ export class ASTInterpreter {
 
         values.push(res);
       }
-      const value = () => {
-        return (filter as (...args: any[]) => any)(...values);
-      };
+      const value = () =>
+        callFunction(
+          filter as (...args: any[]) => unknown,
+          undefined,
+          ...values,
+        );
 
       return context ? { context: undefined, name: undefined, value } : value();
     };
@@ -597,12 +685,12 @@ export class ASTInterpreter {
     context?: LinkContext,
     create?: CreateFlag,
   ): CompiledExpressionFunction {
-    const left = this._recurse(ast._object!, false, !!create);
+    const left = this._recurse(assertDefined(ast._object), false, !!create);
 
     if (ast._computed) {
       return this._computedMember(
         left,
-        this._recurse(ast._property!),
+        this._recurse(assertDefined(ast._property)),
         context,
         create,
       );
@@ -610,7 +698,7 @@ export class ASTInterpreter {
 
     return this._nonComputedMember(
       left,
-      (ast._property as LiteralNode)._name!,
+      assertDefined((ast._property as LiteralNode)._name),
       context,
       create,
     );
@@ -621,20 +709,26 @@ export class ASTInterpreter {
     ast: ExpressionNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
-    const left = this._recurse(ast._left!, true, 1);
+    const left = this._recurse(assertDefined(ast._left), true, 1);
 
-    const right = this._recurse(ast._right!);
+    const right = this._recurse(assertDefined(ast._right));
 
     return (scope, locals, assign) => {
-      const lhs = left(scope, locals, assign);
+      const lhs = getExpressionReference(left(scope, locals, assign));
 
       const rhs = right(scope, locals, assign);
 
       const ctx = isProxy(lhs.context)
         ? lhs.context
-        : (lhs.context.$proxy ?? lhs.context);
+        : getProxyTarget(lhs.context);
 
-      ctx[lhs.name] = rhs;
+      if (!isNullOrUndefined(lhs.name)) {
+        if (isNullOrUndefined(ctx)) {
+          throw new TypeError("Cannot assign property on null or undefined");
+        }
+
+        writeProperty(ctx, lhs.name, rhs);
+      }
 
       return context ? { value: rhs } : rhs;
     };
@@ -654,7 +748,7 @@ export class ASTInterpreter {
     }
 
     return (scope, locals, assign) => {
-      const value: any[] = [];
+      const value: unknown[] = [];
 
       for (let i = 0; i < args.length; ++i) {
         value.push(args[i](scope, locals, assign));
@@ -669,14 +763,14 @@ export class ASTInterpreter {
     ast: ExpressionNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
-    const ref = this._recurse(ast._argument!, true, 1);
+    const ref = this._recurse(assertDefined(ast._argument), true, 1);
 
     const op = ast._operator as "++" | "--";
 
     const prefix = !!ast._prefix;
 
     return (scope, locals, assign) => {
-      const lhs = ref(scope, locals, assign);
+      const lhs = getExpressionReference(ref(scope, locals, assign));
 
       if (!lhs || isNullOrUndefined(lhs.context)) {
         throw new Error(
@@ -690,9 +784,11 @@ export class ASTInterpreter {
 
       const ctx = isProxy(lhs.context)
         ? lhs.context
-        : (lhs.context.$proxy ?? lhs.context);
+        : getProxyTarget(lhs.context);
 
-      ctx[lhs.name] = newNum;
+      if (lhs.name) {
+        writeProperty(ctx, lhs.name, newNum);
+      }
 
       const out = prefix ? newNum : oldNum;
 
@@ -722,17 +818,14 @@ export class ASTInterpreter {
     const args = compileObjectProperties(this, properties);
 
     return (scope, locals, assign) => {
-      const value: Record<string, any> = {};
+      const value: Record<string, unknown> = {};
 
       for (let i = 0; i < args.length; ++i) {
         const property = args[i];
 
         if (property.computed) {
-          value[property.key(scope, locals, assign)] = property.value(
-            scope,
-            locals,
-            assign,
-          );
+          value[getStringValue(property.key(scope, locals, assign))] =
+            property.value(scope, locals, assign);
         } else {
           value[property.key] = property.value(scope, locals, assign);
         }
@@ -751,7 +844,7 @@ export class ASTInterpreter {
     const value = this._recurse(property._value);
 
     return (scope, locals, assign) => {
-      const object: Record<string, any> = {};
+      const object: Record<string, unknown> = {};
 
       object[key] = value(scope, locals, assign);
 
@@ -777,7 +870,7 @@ export class ASTInterpreter {
       const value1 = this._recurse(property1._value);
 
       return (scope, locals, assign) => {
-        const object: Record<string, any> = {};
+        const object: Record<string, unknown> = {};
 
         object[key0] = value0(scope, locals, assign);
         object[key1] = value1(scope, locals, assign);
@@ -820,7 +913,7 @@ export class ASTInterpreter {
     const value2 = this._recurse(property2._value);
 
     return (scope, locals, assign) => {
-      const object: Record<string, any> = {};
+      const object: Record<string, unknown> = {};
 
       object[key0] = value0(scope, locals, assign);
       object[key1] = value1(scope, locals, assign);
@@ -844,7 +937,7 @@ export class ASTInterpreter {
       let arg = argument(scope, locals, assign);
 
       if (isDefined(arg)) {
-        arg = +arg;
+        arg = Number(arg);
       } else {
         arg = 0;
       }
@@ -867,7 +960,7 @@ export class ASTInterpreter {
       let arg = argument(scope, locals, assign);
 
       if (isDefined(arg)) {
-        arg = -arg;
+        arg = -Number(arg);
       } else {
         arg = -0;
       }
@@ -933,7 +1026,8 @@ export class ASTInterpreter {
 
       const rhs = right(scope, locals, assign);
 
-      const arg = (isDefined(lhs) ? lhs : 0) - (isDefined(rhs) ? rhs : 0);
+      const arg =
+        Number(isDefined(lhs) ? lhs : 0) - Number(isDefined(rhs) ? rhs : 0);
 
       return context ? { value: arg } : arg;
     };
@@ -952,7 +1046,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) * right(scope, locals, assign);
+      const arg =
+        Number(left(scope, locals, assign)) *
+        Number(right(scope, locals, assign));
 
       return context ? { value: arg } : arg;
     };
@@ -971,7 +1067,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) / right(scope, locals, assign);
+      const arg =
+        Number(left(scope, locals, assign)) /
+        Number(right(scope, locals, assign));
 
       return context ? { value: arg } : arg;
     };
@@ -990,7 +1088,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) % right(scope, locals, assign);
+      const arg =
+        Number(left(scope, locals, assign)) %
+        Number(right(scope, locals, assign));
 
       return context ? { value: arg } : arg;
     };
@@ -1047,8 +1147,6 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      // Expression parser must preserve JavaScript loose equality semantics.
-      // eslint-disable-next-line eqeqeq
       const arg = left(scope, locals, assign) == right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
@@ -1068,8 +1166,6 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      // Expression parser must preserve JavaScript loose inequality semantics.
-      // eslint-disable-next-line eqeqeq
       const arg = left(scope, locals, assign) != right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
@@ -1089,7 +1185,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) < right(scope, locals, assign);
+      const arg =
+        (left(scope, locals, assign) as string | number) <
+        (right(scope, locals, assign) as string | number);
 
       return context ? { value: arg } : arg;
     };
@@ -1108,7 +1206,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) > right(scope, locals, assign);
+      const arg =
+        (left(scope, locals, assign) as string | number) >
+        (right(scope, locals, assign) as string | number);
 
       return context ? { value: arg } : arg;
     };
@@ -1127,7 +1227,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) <= right(scope, locals, assign);
+      const arg =
+        (left(scope, locals, assign) as string | number) <=
+        (right(scope, locals, assign) as string | number);
 
       return context ? { value: arg } : arg;
     };
@@ -1146,7 +1248,9 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) >= right(scope, locals, assign);
+      const arg =
+        (left(scope, locals, assign) as string | number) >=
+        (right(scope, locals, assign) as string | number);
 
       return context ? { value: arg } : arg;
     };
@@ -1259,7 +1363,7 @@ export class ASTInterpreter {
    * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
   /** @internal */
-  _value(value: any, context?: LinkContext): CompiledExpressionFunction {
+  _value(value: unknown, context?: LinkContext): CompiledExpressionFunction {
     return () =>
       context ? { context: undefined, name: undefined, value } : value;
   }
@@ -1278,19 +1382,16 @@ export class ASTInterpreter {
     create?: CreateFlag,
   ): CompiledExpressionFunction {
     return (scope, locals) => {
-      const runtimeScope = scope as any;
+      const base = locals && name in locals ? locals : getProxyTarget(scope);
 
-      const base =
-        locals && name in locals ? locals : (runtimeScope?.$proxy ?? scope);
-
-      if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
-        base[name] = {};
+      if (
+        create &&
+        create !== 1 &&
+        isNullOrUndefined(readProperty(base, name))
+      ) {
+        writeProperty(base, name, {});
       }
-      let value = undefined;
-
-      if (base) {
-        value = (base as Record<string, any>)[name];
-      }
+      const value = readProperty(base, name);
 
       if (context) {
         return { context: base, name, value };
@@ -1325,18 +1426,17 @@ export class ASTInterpreter {
 
       let rhs: string | undefined;
 
-      let value: any;
+      let value: unknown;
 
       if (!isNullOrUndefined(lhs)) {
-        rhs = right(scope, locals, assign);
-        rhs = getStringValue(rhs);
+        rhs = getStringValue(right(scope, locals, assign));
 
         if (create && create !== 1) {
-          if (lhs && !lhs[rhs]) {
-            lhs[rhs] = {};
+          if (lhs && !readProperty(lhs, rhs)) {
+            writeProperty(lhs, rhs, {});
           }
         }
-        value = lhs[rhs];
+        value = readProperty(lhs, rhs);
       }
 
       if (context) {
@@ -1366,7 +1466,7 @@ export class ASTInterpreter {
       return (scope, locals, assign) => {
         const lhs = left(scope, locals, assign);
 
-        return isNullOrUndefined(lhs) ? undefined : lhs[right];
+        return readProperty(lhs, right);
       };
     }
 
@@ -1374,11 +1474,11 @@ export class ASTInterpreter {
       const lhs = left(scope, locals, assign);
 
       if (create && create !== 1) {
-        if (lhs && isNullOrUndefined(lhs[right])) {
-          lhs[right] = {};
+        if (lhs && isNullOrUndefined(readProperty(lhs, right))) {
+          writeProperty(lhs, right, {});
         }
       }
-      const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
+      const value = readProperty(lhs, right);
 
       if (context) {
         return { context: lhs, name: right, value };
@@ -1391,7 +1491,7 @@ export class ASTInterpreter {
 
 function getNonComputedPath(ast: ASTNode): string[] | undefined {
   if (ast._type === ASTType._Identifier) {
-    return [(ast as LiteralNode)._name!];
+    return [assertDefined((ast as LiteralNode)._name)];
   }
 
   if (ast._type !== ASTType._MemberExpression || ast._computed) {
@@ -1400,12 +1500,12 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
 
   const member = ast as ExpressionNode;
 
-  const memberObject = member._object!;
+  const memberObject = assertDefined(member._object);
 
-  const memberProperty = (member._property as LiteralNode)._name!;
+  const memberProperty = assertDefined((member._property as LiteralNode)._name);
 
   if (memberObject._type === ASTType._Identifier) {
-    return [(memberObject as LiteralNode)._name!, memberProperty];
+    return [assertDefined((memberObject as LiteralNode)._name), memberProperty];
   }
 
   const path: string[] = [];
@@ -1413,15 +1513,17 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
   let node: ASTNode | undefined = ast;
 
   while (node?._type === ASTType._MemberExpression && !node._computed) {
-    path.push(((node as ExpressionNode)._property as LiteralNode)._name!);
-    node = (node as ExpressionNode)._object!;
+    path.push(
+      assertDefined(((node as ExpressionNode)._property as LiteralNode)._name),
+    );
+    node = assertDefined((node as ExpressionNode)._object);
   }
 
   if (node?._type !== ASTType._Identifier) {
     return undefined;
   }
 
-  path.push((node as LiteralNode)._name!);
+  path.push(assertDefined((node as LiteralNode)._name));
 
   path.reverse();
 
@@ -1430,7 +1532,7 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
 
 function getObjectPropertyKey(property: ObjectPropertyNode): string {
   return property._key._type === ASTType._Identifier
-    ? (property._key as LiteralNode)._name!
+    ? assertDefined((property._key as LiteralNode)._name)
     : `${(property._key as LiteralNode)._value}`;
 }
 
@@ -1465,16 +1567,14 @@ function compileObjectPathProjection(
   const valueKey2 = valuePath2[1];
 
   return (scope, locals) => {
-    const runtimeScope = scope as any;
-
     const base =
       locals && sourceKey in locals
         ? (locals as Record<string, any>)
-        : (runtimeScope?.$proxy ?? scope);
+        : getProxyTarget(scope);
 
-    const source = base?.[sourceKey];
+    const source = readProperty(base, sourceKey);
 
-    const object: Record<string, any> = {};
+    const object: Record<string, unknown> = {};
 
     if (isNullOrUndefined(source)) {
       object[key0] = undefined;
@@ -1484,9 +1584,9 @@ function compileObjectPathProjection(
       return object;
     }
 
-    object[key0] = source[valueKey0];
-    object[key1] = source[valueKey1];
-    object[key2] = source[valueKey2];
+    object[key0] = readProperty(source, valueKey0);
+    object[key1] = readProperty(source, valueKey1);
+    object[key2] = readProperty(source, valueKey2);
 
     return object;
   };
@@ -1537,43 +1637,39 @@ function createPathGetter(path: string[]): CompiledExpressionFunction {
   switch (path.length) {
     case 1:
       return (scope, locals) => {
-        const runtimeScope = scope as any;
-
         if (!locals) {
-          const base = runtimeScope?.$proxy ?? scope;
+          const base = getProxyTarget(scope);
 
-          return base?.[p0];
+          return readProperty(base, p0);
         }
 
         const base =
           locals && p0 in locals
             ? (locals as Record<string, any>)
-            : (runtimeScope?.$proxy ?? scope);
+            : getProxyTarget(scope);
 
-        return base?.[p0];
+        return readProperty(base, p0);
       };
     case 2: {
       const p1 = path[1];
 
       return (scope, locals) => {
-        const runtimeScope = scope as any;
-
         if (!locals) {
-          const base = runtimeScope?.$proxy ?? scope;
+          const base = getProxyTarget(scope);
 
-          const value = base?.[p0];
+          const value = readProperty(base, p0);
 
-          return isNullOrUndefined(value) ? undefined : value[p1];
+          return readProperty(value, p1);
         }
 
         const base =
           locals && p0 in locals
             ? (locals as Record<string, any>)
-            : (runtimeScope?.$proxy ?? scope);
+            : getProxyTarget(scope);
 
-        const value = base?.[p0];
+        const value = readProperty(base, p0);
 
-        return isNullOrUndefined(value) ? undefined : value[p1];
+        return readProperty(value, p1);
       };
     }
     case 3: {
@@ -1582,56 +1678,52 @@ function createPathGetter(path: string[]): CompiledExpressionFunction {
       const p2 = path[2];
 
       return (scope, locals) => {
-        const runtimeScope = scope as any;
-
         if (!locals) {
-          const base = runtimeScope?.$proxy ?? scope;
+          const base = getProxyTarget(scope);
 
-          const value = base?.[p0];
+          const value = readProperty(base, p0);
 
           if (isNullOrUndefined(value)) {
             return undefined;
           }
 
-          const next = value[p1];
+          const next = readProperty(value, p1);
 
-          return isNullOrUndefined(next) ? undefined : next[p2];
+          return readProperty(next, p2);
         }
 
         const base =
           locals && p0 in locals
             ? (locals as Record<string, any>)
-            : (runtimeScope?.$proxy ?? scope);
+            : getProxyTarget(scope);
 
-        const value = base?.[p0];
+        const value = readProperty(base, p0);
 
         if (isNullOrUndefined(value)) {
           return undefined;
         }
 
-        const next = value[p1];
+        const next = readProperty(value, p1);
 
-        return isNullOrUndefined(next) ? undefined : next[p2];
+        return readProperty(next, p2);
       };
     }
   }
 
   return (scope, locals) => {
-    const runtimeScope = scope as any;
-
     const base =
       locals && p0 in locals
         ? (locals as Record<string, any>)
-        : (runtimeScope?.$proxy ?? scope);
+        : getProxyTarget(scope);
 
-    let value = base?.[p0];
+    let value = readProperty(base, p0);
 
     for (let i = 1, l = path.length; i < l; i++) {
       if (isNullOrUndefined(value)) {
         return undefined;
       }
 
-      value = value[path[i]];
+      value = readProperty(value, path[i]);
     }
 
     return value;
@@ -1645,13 +1737,17 @@ function getPathBinary(ast: ASTNode): CompiledExpressionFunction | undefined {
     return undefined;
   }
 
-  const leftPath = getNonComputedPath((ast as ExpressionNode)._left!);
+  const leftPath = getNonComputedPath(
+    assertDefined((ast as ExpressionNode)._left),
+  );
 
   if (!leftPath) {
     return undefined;
   }
 
-  const rightPath = getNonComputedPath((ast as ExpressionNode)._right!);
+  const rightPath = getNonComputedPath(
+    assertDefined((ast as ExpressionNode)._right),
+  );
 
   if (!rightPath) {
     return undefined;
@@ -1673,13 +1769,17 @@ function getPathLogical(ast: ASTNode): CompiledExpressionFunction | undefined {
     return undefined;
   }
 
-  const leftPath = getNonComputedPath((ast as ExpressionNode)._left!);
+  const leftPath = getNonComputedPath(
+    assertDefined((ast as ExpressionNode)._left),
+  );
 
   if (!leftPath) {
     return undefined;
   }
 
-  const rightPath = getNonComputedPath((ast as ExpressionNode)._right!);
+  const rightPath = getNonComputedPath(
+    assertDefined((ast as ExpressionNode)._right),
+  );
 
   if (!rightPath) {
     return undefined;
@@ -1750,7 +1850,7 @@ function findConstantAndWatchExpressions(
   const astIsPure = (decoratedNode._isPure = !!isPure(ast, parentIsPure));
 
   switch (ast._type) {
-    case ASTType._Program:
+    case ASTType._Program: {
       allConstants = true;
       const body = (decoratedNode as BodyNode)._body;
 
@@ -1758,7 +1858,7 @@ function findConstantAndWatchExpressions(
         const expr = body[i];
 
         const decorated = findConstantAndWatchExpressions(
-          (expr as ExpressionNode)._expression!,
+          assertDefined((expr as ExpressionNode)._expression),
           $filter,
           astIsPure,
         );
@@ -1768,6 +1868,7 @@ function findConstantAndWatchExpressions(
       decoratedNode._constant = allConstants;
 
       return decoratedNode;
+    }
     case ASTType._Literal:
       decoratedNode._constant = true;
       decoratedNode._toWatch = [];
@@ -1775,7 +1876,7 @@ function findConstantAndWatchExpressions(
       return decoratedNode;
     case ASTType._UnaryExpression: {
       const decorated = findConstantAndWatchExpressions(
-        (decoratedNode as ExpressionNode)._argument!,
+        assertDefined((decoratedNode as ExpressionNode)._argument),
         $filter,
         astIsPure,
       );
@@ -1787,12 +1888,12 @@ function findConstantAndWatchExpressions(
     }
     case ASTType._BinaryExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        decoratedNode._left!,
+        assertDefined(decoratedNode._left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        (decoratedNode as ExpressionNode)._right!,
+        assertDefined((decoratedNode as ExpressionNode)._right),
         $filter,
         astIsPure,
       );
@@ -1806,12 +1907,12 @@ function findConstantAndWatchExpressions(
       return decoratedNode;
     case ASTType._LogicalExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        decoratedNode._left!,
+        assertDefined(decoratedNode._left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        (decoratedNode as ExpressionNode)._right!,
+        assertDefined((decoratedNode as ExpressionNode)._right),
         $filter,
         astIsPure,
       );
@@ -1822,17 +1923,17 @@ function findConstantAndWatchExpressions(
       return decoratedNode;
     case ASTType._ConditionalExpression:
       decoratedTest = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._test!,
+        assertDefined((ast as ExpressionNode)._test),
         $filter,
         astIsPure,
       );
       decoratedAlternate = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._alternate!,
+        assertDefined((ast as ExpressionNode)._alternate),
         $filter,
         astIsPure,
       );
       decoratedConsequent = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._consequent!,
+        assertDefined((ast as ExpressionNode)._consequent),
         $filter,
         astIsPure,
       );
@@ -1850,14 +1951,14 @@ function findConstantAndWatchExpressions(
       return decoratedNode;
     case ASTType._MemberExpression:
       decoratedObject = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._object!,
+        assertDefined((ast as ExpressionNode)._object),
         $filter,
         astIsPure,
       );
 
       if ((ast as ExpressionNode)._computed) {
         decoratedProperty = findConstantAndWatchExpressions(
-          (ast as ExpressionNode)._property!,
+          assertDefined((ast as ExpressionNode)._property),
           $filter,
           astIsPure,
         );
@@ -1868,7 +1969,7 @@ function findConstantAndWatchExpressions(
       decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
 
       return decoratedNode;
-    case ASTType._CallExpression:
+    case ASTType._CallExpression: {
       isFilter = (ast as ExpressionNode)._filter;
       allConstants = isFilter;
       argsToWatch = [];
@@ -1890,14 +1991,15 @@ function findConstantAndWatchExpressions(
       decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
 
       return decoratedNode;
+    }
     case ASTType._AssignmentExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._left!,
+        assertDefined((ast as ExpressionNode)._left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._right!,
+        assertDefined((ast as ExpressionNode)._right),
         $filter,
         astIsPure,
       );
@@ -1906,7 +2008,7 @@ function findConstantAndWatchExpressions(
       decoratedNode._toWatch = [decoratedNode];
 
       return decoratedNode;
-    case ASTType._ArrayExpression:
+    case ASTType._ArrayExpression: {
       allConstants = true;
       argsToWatch = [];
       const elements = (ast as ExpressionNode)._elements || [];
@@ -1927,7 +2029,8 @@ function findConstantAndWatchExpressions(
       decoratedNode._toWatch = argsToWatch;
 
       return decoratedNode;
-    case ASTType._ObjectExpression:
+    }
+    case ASTType._ObjectExpression: {
       allConstants = true;
       argsToWatch = [];
       const properties = (ast as ObjectNode)._properties;
@@ -1959,6 +2062,7 @@ function findConstantAndWatchExpressions(
       decoratedNode._toWatch = argsToWatch;
 
       return decoratedNode;
+    }
     case ASTType._ThisExpression:
       decoratedNode._constant = false;
       decoratedNode._toWatch = [];
@@ -1972,7 +2076,7 @@ function findConstantAndWatchExpressions(
     case ASTType._UpdateExpression: {
       // side-effectful, not constant
       findConstantAndWatchExpressions(
-        (ast as ExpressionNode)._argument!,
+        assertDefined((ast as ExpressionNode)._argument),
         $filter,
         false, // force impurity downwards
       );
@@ -2016,15 +2120,24 @@ function assignableAST(ast: BodyNode): ExpressionNode | undefined {
  * @param {string | number} left
  * @param {string | number} right
  */
-function plusFn(
-  left: string | number,
-  right: string | number,
-): string | number {
+function plusFn(left: unknown, right: unknown): unknown {
   if (typeof left === "undefined" || isObject(left)) return right;
 
   if (typeof right === "undefined" || isObject(right)) return left;
 
-  return (left as any) + (right as any);
+  if (typeof left === "number" && typeof right === "number") {
+    return left + right;
+  }
+
+  const leftText = String(
+    left as string | number | boolean | bigint | symbol | null,
+  );
+
+  const rightText = String(
+    right as string | number | boolean | bigint | symbol | null,
+  );
+
+  return `${leftText}${rightText}`;
 }
 
 /**
