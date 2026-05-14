@@ -6,6 +6,10 @@ import {
   createErrorFactory,
 } from "../../shared/utils.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
+import type {
+  RuntimeConstructor,
+  RuntimeFunction,
+} from "../../shared/utils.ts";
 
 const $injectorError = createErrorFactory(_injector);
 
@@ -17,17 +21,19 @@ const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 
-function stringifyFn(fn: Function): string {
+function stringifyFn(fn: RuntimeFunction | RuntimeConstructor): string {
   return Function.prototype.toString.call(fn);
 }
 
-function extractArgs(fn: Function): RegExpMatchArray | null {
+function extractArgs(
+  fn: RuntimeFunction | RuntimeConstructor,
+): RegExpMatchArray | null {
   const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
 
   return ARROW_ARG.exec(fnText) || FN_ARGS.exec(fnText);
 }
 
-export function isClass(func: Function): boolean {
+export function isClass(func: RuntimeFunction | RuntimeConstructor): boolean {
   return /^class\b/.test(stringifyFn(func));
 }
 
@@ -67,7 +73,7 @@ export function annotate(
 
       fn.$inject = inject;
     }
-  } else if (isArray<string | Function>(fn)) {
+  } else if (isArray<string | RuntimeFunction>(fn)) {
     const last = fn.length - 1;
 
     assertArgFn(fn[last], "fn");

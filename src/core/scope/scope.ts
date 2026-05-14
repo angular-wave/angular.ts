@@ -799,7 +799,9 @@ const arrayIdentityMethods = new Set(["includes", "indexOf", "lastIndexOf"]);
 
 const wStr = "[object Window]";
 
-const nonScopeConstructors: Function[] = [
+type NonScopeConstructor = abstract new (...args: any[]) => unknown;
+
+const nonScopeConstructors: NonScopeConstructor[] = [
   Window,
   Document,
   Element,

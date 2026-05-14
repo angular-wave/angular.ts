@@ -20,7 +20,7 @@ export interface CompiledExpressionProps {
   /** @internal AST node decorated with metadata. */
   _decoratedNode: BodyNode;
   /** @internal Expression inputs; may be an array or a function. */
-  _inputs?: any[] | Function;
+  _inputs?: any[] | ((...args: any[]) => unknown);
   /** @internal Optional interceptor applied to the evaluated result. */
   _interceptor?: (value: any) => any;
   /**

@@ -1,0 +1,30 @@
+<section class="todo-app">
+  <button type="button" ng-click="ctrl.archive()">Archive</button>
+
+  <ul class="todo-items">
+    <li
+      class="todo-row"
+      ng-repeat="todo in ctrl.items"
+      ng-class="{done: todo.done}"
+    >
+      <span>{{ todo.task }} {{ todo.done }}</span>
+      <label>
+        <input
+          type="checkbox"
+          ng-model="todo.done"
+          ng-change="ctrl.setDone($index, todo.done)"
+        />
+      </label>
+    </li>
+  </ul>
+
+  <form class="todo-entry" ng-submit="ctrl.add(newTodo)">
+    <input
+      aria-label="Todo title"
+      type="text"
+      ng-model="newTodo"
+      ng-required="true"
+    />
+    <button type="submit">Add</button>
+  </form>
+</section>

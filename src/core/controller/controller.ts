@@ -30,7 +30,7 @@ type InjectableController = Injectable<ControllerConstructor>;
 
 type ControllerInstance = Record<string, unknown> & {
   $controllerIdentifier?: string;
-  constructor?: Function & { $scopename?: string };
+  constructor?: { $scopename?: string };
 };
 
 const $controllerError = createErrorFactory("$controller");
@@ -72,19 +72,24 @@ function normalizeControllerDef(
 function unwrapController(
   injectable: InjectableController,
   argNameForErrors?: string,
-): { func: Function; name: string; prototype: object | null } {
+): { func: ControllerConstructor; name: string; prototype: object | null } {
   const candidate = isArray(injectable)
     ? injectable[injectable.length - 1]
     : injectable;
 
   assertArgFn(candidate, argNameForErrors || "controller", true);
 
-  const func = candidate as Function;
+  const func = candidate as ControllerConstructor;
+
+  const funcMetadata = func as unknown as {
+    name?: string;
+    prototype?: object | null;
+  };
 
   return {
     func,
-    name: func.name || "",
-    prototype: (func.prototype as object | null) || null,
+    name: funcMetadata.name || "",
+    prototype: funcMetadata.prototype || null,
   };
 }
 

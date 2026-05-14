@@ -54,7 +54,12 @@ export function orderByFilter($parse: ng.ParseService) {
    * @throws {Error} Throws if `array` is not array-like.
    */
   return function (
-    array: any[] | ArrayLike<any> | Function | null | undefined,
+    array:
+      | any[]
+      | ArrayLike<any>
+      | (() => any[] | ArrayLike<any>)
+      | null
+      | undefined,
     sortPredicate?: SortPredicate | SortPredicate[],
     reverseOrder?: boolean,
     compareFn?: (left: PredicateValue, right: PredicateValue) => number,

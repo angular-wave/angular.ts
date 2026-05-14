@@ -4,8 +4,10 @@ import {
 } from "../../injection-tokens.ts";
 import { nullObject } from "../../shared/utils.ts";
 
+type PubSubListener = (...args: any[]) => unknown;
+
 interface ListenerEntry {
-  _fn: Function;
+  _fn: PubSubListener;
   _context: any;
 }
 let eventBusInstance: PubSub | undefined;
@@ -41,9 +43,13 @@ export interface TopicService {
   /** Publish an event under `${topic}:${event}`. */
   publish(event: string, ...args: any[]): boolean;
   /** Subscribe to an event under `${topic}:${event}`. */
-  subscribe(event: string, fn: Function, context?: any): () => boolean;
+  subscribe(event: string, fn: PubSubListener, context?: any): () => boolean;
   /** Subscribe once to an event under `${topic}:${event}`. */
-  subscribeOnce(event: string, fn: Function, context?: any): () => boolean;
+  subscribeOnce(
+    event: string,
+    fn: PubSubListener,
+    context?: any,
+  ): () => boolean;
   /** Return subscriber count for an event under `${topic}:${event}`. */
   getCount(event: string): number;
 }
@@ -65,10 +71,14 @@ export function createTopicService(
     publish(event: string, ...args: any[]): boolean {
       return eventBus.publish(eventName(event), ...args);
     },
-    subscribe(event: string, fn: Function, context?: any): () => boolean {
+    subscribe(event: string, fn: PubSubListener, context?: any): () => boolean {
       return eventBus.subscribe(eventName(event), fn, context);
     },
-    subscribeOnce(event: string, fn: Function, context?: any): () => boolean {
+    subscribeOnce(
+      event: string,
+      fn: PubSubListener,
+      context?: any,
+    ): () => boolean {
       return eventBus.subscribeOnce(eventName(event), fn, context);
     },
     getCount(event: string): number {
@@ -136,7 +146,7 @@ export class PubSub {
    * @param [context] - Optional `this` context for the callback.
    * @returns A function that unsubscribes this listener.
    */
-  subscribe(topic: string, fn: Function, context?: any): () => boolean {
+  subscribe(topic: string, fn: PubSubListener, context?: any): () => boolean {
     if (this._disposed) return () => false;
     let listeners = this._topics[topic];
 
@@ -159,7 +169,11 @@ export class PubSub {
    * @param [context] - Optional `this` context for the callback.
    * @returns A function that unsubscribes this listener.
    */
-  subscribeOnce(topic: string, fn: Function, context?: any): () => boolean {
+  subscribeOnce(
+    topic: string,
+    fn: PubSubListener,
+    context?: any,
+  ): () => boolean {
     if (this._disposed) return () => false;
 
     let called = false;
@@ -169,7 +183,7 @@ export class PubSub {
       called = true;
 
       unsub(); // unsubscribe before running
-      fn.apply(context, args);
+      Reflect.apply(fn, context, args);
     };
 
     const unsub = this.subscribe(topic, wrapper);
@@ -185,7 +199,7 @@ export class PubSub {
    * @param [context] - Optional `this` context.
    * @returns True if the listener was found and removed.
    */
-  unsubscribe(topic: string, fn: Function, context?: any): boolean {
+  unsubscribe(topic: string, fn: PubSubListener, context?: any): boolean {
     if (this._disposed) return false;
 
     const listeners = this._topics[topic];

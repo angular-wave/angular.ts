@@ -9,6 +9,7 @@ import {
   isString,
   callFunction,
 } from "./utils.ts";
+import type { RuntimeFunction } from "./utils.ts";
 
 /**
  * Functions that manipulate strings
@@ -39,7 +40,7 @@ export function kebobString(camelCase: string): string {
 const FN_LENGTH = 9;
 
 /** Returns a stable string representation for a function. */
-function functionToString(fn: Function): string {
+function functionToString(fn: RuntimeFunction): string {
   const fnStr = fnToString(fn);
 
   const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
@@ -56,7 +57,7 @@ function functionToString(fn: Function): string {
 }
 
 /** Returns the raw `toString()` value for a function or injectable array. */
-export function fnToString(fn: [] | Function): string {
+export function fnToString(fn: [] | RuntimeFunction): string {
   const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
 
   return _fn?.toString() || "undefined";
