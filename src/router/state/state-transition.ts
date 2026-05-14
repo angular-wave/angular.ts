@@ -30,9 +30,9 @@ export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
  *
  * @internal
  */
-export function silentRejection(error: unknown): Promise<never> {
+export function silentRejection(reason: unknown): Promise<never> {
   const promise = Promise.reject(
-    error instanceof Error ? error : Rejection.errored(error),
+    reason instanceof Error ? reason : Rejection.errored(reason),
   );
 
   return silenceUncaughtInPromise(promise);

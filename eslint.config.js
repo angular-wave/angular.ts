@@ -125,7 +125,6 @@ const angularTsRuntimeCompatibilityRules = {
   "promise/catch-or-return": ["error", { allowThen: true }],
   "promise/no-callback-in-promise": "error",
   "promise/no-nesting": "error",
-  "promise/no-promise-in-callback": "off",
   "promise/valid-params": "error",
 };
 
