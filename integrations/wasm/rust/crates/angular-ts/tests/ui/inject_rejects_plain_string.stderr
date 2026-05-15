@@ -1,0 +1,5 @@
+error: `#[inject]` fields must be `Option<T>` service/value slots or `WasmScope` for `$scope`
+ --> tests/ui/inject_rejects_plain_string.rs:6:12
+  |
+6 |     title: String,
+  |            ^^^^^^

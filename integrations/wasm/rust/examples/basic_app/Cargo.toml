@@ -15,4 +15,6 @@ angular-ts = { path = "../../crates/angular-ts" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.77"
+serde = { version = "1", features = ["derive"] }
 wasm-bindgen = "=0.2.100"
+wasm-bindgen-futures = "=0.4.50"

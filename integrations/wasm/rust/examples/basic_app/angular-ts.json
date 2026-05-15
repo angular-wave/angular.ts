@@ -1,23 +1,16 @@
 {
   "module": "rustDemo",
   "package": "../pkg/angular_ts_rust_basic_app.js",
-  "requires": [],
-  "bootstrap": true,
+  "appTemplatePath": "index.html",
   "registrations": [
     {
       "kind": "factory",
-      "name": "todoStore",
-      "export": "__ng_service_TodoStore"
+      "name": "todoStore"
     },
     {
       "kind": "component",
       "name": "todoList",
-      "export": "__ng_component_TodoList",
-      "templatePath": "templates/todo-list.html",
-      "controllerAs": "ctrl",
-      "inject": ["todoStore", "$scope"],
-      "syncProperties": ["items"],
-      "methods": ["add", "setDone", "toggle", "archive", "remainingCount"]
+      "templatePath": "templates/todo-list.html"
     }
   ]
 }

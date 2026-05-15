@@ -40,7 +40,7 @@
     <maven.compiler.release>11</maven.compiler.release>
 
     <angular.ts.root>${project.basedir}/../../..</angular.ts.root>
-    <angular.ts.externs>${project.basedir}/../externs/angular-ts.externs.js</angular.ts.externs>
+    <angular.ts.externs>${project.basedir}/../externs/angular.js</angular.ts.externs>
     <angular.ts.browser.externs>${project.basedir}/externs/browser.externs.js</angular.ts.browser.externs>
 
     <jsinterop.generator.version>v20250910</jsinterop.generator.version>

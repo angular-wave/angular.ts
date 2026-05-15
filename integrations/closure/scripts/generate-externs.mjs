@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const integrationRoot = resolve(dirname(__filename), "..");
 const repoRoot = resolve(integrationRoot, "../..");
 const namespacePath = resolve(repoRoot, "src/namespace.ts");
-const externsPath = resolve(integrationRoot, "externs/angular-ts.externs.js");
+const externsPath = resolve(integrationRoot, "externs/angular.js");
 
 const nativeAliases = new Map([
   ["DocumentService", "!Document"],
@@ -705,7 +705,7 @@ function generateExterns() {
   );
   const typeBlocks = aliases.map((alias) => typeExtern(checker, alias));
 
-  return `/**\n * @externs\n * Public externs for AngularTS applications compiled with Google Closure.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Retrieve or create an AngularTS module.\n * @param {string} name\n * @param {!Array<string>=} requires\n * @return {!ng.NgModule}\n */\nangular.module = function(name, requires) {};\n\n${typeBlocks.join("\n\n")}\n`;
+  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Retrieve or create an AngularTS module.\n * @param {string} name\n * @param {!Array<string>=} requires\n * @return {!ng.NgModule}\n */\nangular.module = function(name, requires) {};\n\n${typeBlocks.join("\n\n")}\n`;
 }
 
 const output = generateExterns();

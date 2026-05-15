@@ -1,0 +1,7 @@
+error: `component` requires `template` or `template_url`
+ --> tests/ui/component_requires_template.rs:3:1
+  |
+3 | #[component(selector = "bad-component")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,0 +1,12 @@
+name = "angular_ts_gleam_basic_app"
+version = "0.0.1"
+target = "javascript"
+description = "AngularTS Gleam basic app example."
+licences = ["MIT"]
+
+[dependencies]
+angular_ts = { path = "../.." }
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+
+[javascript]
+typescript_declarations = false

@@ -239,7 +239,7 @@ Later browser tests:
 | Component bindings | planned | Macro + browser |
 | Directives | deferred | Macro + browser |
 | Router | deferred | Browser only for bridge contract |
-| HTTP facade | deferred | Rust facade + browser |
+| HTTP facade | started | Rust facade + browser |
 | Error handling | planned | Browser |
 | Teardown/free | planned | Browser |
 

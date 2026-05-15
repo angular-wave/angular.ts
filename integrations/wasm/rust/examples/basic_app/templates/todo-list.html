@@ -2,7 +2,7 @@
   <h1>Rust Todo App</h1>
 
   <p id="rust-remaining" class="todo-count">
-    {{ ctrl.remainingCount() }} of {{ ctrl.items.length }} remaining
+    {{ ctrl.remainingCount }} of {{ ctrl.items.length }} remaining
   </p>
 
   <form class="todo-entry" ng-submit="ctrl.add(newTodo); newTodo = ''">
@@ -20,6 +20,23 @@
     <button type="button" ng-click="ctrl.archive()">Archive completed</button>
   </div>
 
+  <section class="server-tasks">
+    <h2>Server tasks</h2>
+    <p id="server-status">{{ ctrl.serverStatus }}</p>
+    <p id="server-task-count">Server task count: {{ ctrl.serverTaskCount }}</p>
+    <p id="server-task-empty" ng-if="ctrl.serverTaskCount == 0">
+      No server tasks loaded
+    </p>
+    <ul id="server-task-list">
+      <li class="server-task-row" ng-repeat="task in ctrl.serverTasks">
+        #{{ task.id }} {{ task.title }} by {{ task.owner }} ({{ task.status }})
+      </li>
+    </ul>
+    <button type="button" id="load-server-tasks" ng-click="ctrl.loadServerTasks()">
+      Load server tasks
+    </button>
+  </section>
+
   <ul class="todo-items">
     <li
       class="todo-row"
@@ -30,8 +47,8 @@
       <label>
         <input
           type="checkbox"
-          ng-model="todo.done"
-          ng-change="ctrl.setDone($index, todo.done)"
+          ng-prop-checked="todo.done"
+          ng-click="ctrl.toggle($index)"
         />
       </label>
     </li>

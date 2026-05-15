@@ -4,10 +4,14 @@ This integration treats AngularTS as an external browser runtime and compiles
 application code with Google Closure Compiler in `ADVANCED` mode with verbose
 warnings promoted to errors.
 
-The integration is intentionally isolated from the core build:
+The Closure demo/compiler integration stays isolated from the core build. The
+generated externs are also shipped with the core package:
 
-- `externs/angular-ts.externs.js` describes the public AngularTS API and mirrors
+- `externs/angular.js` describes the public AngularTS API and mirrors
   the public `ng` namespace with documented structural Closure externs.
+- The root `make build` target validates that file and copies it to
+  `dist/externs/angular.js`, which is exported from npm as
+  `@angular-wave/angular.ts/externs/angular.js`.
 - `demo/app.js` registers the Closure-compiled todo app with AngularTS.
 - `demo/todo.js` and `demo/todo-controller.js` are separate `goog.module`
   files for the todo model and controller.

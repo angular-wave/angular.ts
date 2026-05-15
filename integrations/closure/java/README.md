@@ -40,7 +40,7 @@ mvn -f integrations/closure/java/pom.xml package
 
 By default the build:
 
-1. Validates that `../externs/angular-ts.externs.js` is current.
+1. Validates that `../externs/angular.js` is current.
 2. Builds or copies `ClosureJsinteropGenerator_deploy.jar`.
 3. Generates a Java/J2CL-compatible extern from the strict Closure extern.
 4. Runs `jsinterop-generator` against the Java/J2CL extern.
@@ -80,7 +80,7 @@ downloads that upstream source archive and builds the deploy jar with `bazel`,
 AngularTS keeps two extern shapes:
 
 ```text
-../externs/angular-ts.externs.js
+../externs/angular.js
 ```
 
 This is the strict Closure Compiler extern and should stay as precise as the

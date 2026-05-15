@@ -57,9 +57,9 @@ function simplifyJsDocTypeExpression(typeExpression) {
     next = replaceTemplatizedType(next, nativeType, "?");
   }
 
-  next = next.replace(/!?Object\b/g, "?");
-  next = next.replace(/!?Array\b/g, "?");
-  next = next.replace(/!?Map\b/g, "?");
+  next = next.replace(/(^|[^\w$])!?Object\b/g, "$1?");
+  next = next.replace(/(^|[^\w$])!?Array\b/g, "$1?");
+  next = next.replace(/(^|[^\w$])!?Map\b/g, "$1?");
 
   if (next.includes("function(")) {
     return "?";

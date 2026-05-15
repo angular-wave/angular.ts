@@ -1,0 +1,16 @@
+<section class="scope-demo">
+  <h1>Rust Scope Bridge</h1>
+
+  <p id="scope-count">Count: {{ ctrl.count }}</p>
+  <p id="scope-seen">Seen by Rust: {{ ctrl.seenCount }}</p>
+  <p id="scope-source">Source: {{ ctrl.source }}</p>
+
+  <button type="button" id="wasm-increment" ng-click="ctrl.increment()">
+    Increment from Rust
+  </button>
+
+  <label>
+    Browser count
+    <input id="browser-count" type="number" ng-model="ctrl.count" />
+  </label>
+</section>

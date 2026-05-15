@@ -9,3 +9,13 @@ description = "Strict Rust/Wasm facade for authoring AngularTS applications."
 
 [dependencies]
 angular-ts-macros = { path = "../angular-ts-macros" }
+
+[dev-dependencies]
+trybuild = "=1.0.85"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "=0.3.77"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "=0.6.5"
+wasm-bindgen = "=0.2.100"
+wasm-bindgen-futures = "=0.4.50"

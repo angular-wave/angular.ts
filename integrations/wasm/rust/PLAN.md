@@ -66,6 +66,67 @@ New public `ng` namespace types must require a Rust parity decision in the same
 change. The long-term check should compare the published TypeScript
 declarations against the Rust parity file so drift cannot happen silently.
 
+## Required Namespace Porting Surface
+
+Parity decisions alone are not enough for Rust feature completeness. Before
+any additional Wasm language target becomes active implementation work, the Rust
+integration must cover the public namespace types that make Wasm-authored
+AngularTS applications practical. The Rust todo app remains the reference app,
+but the plan must not let the todo app become the only definition of parity.
+
+Required before the Rust feature-complete gate:
+
+- `WasmScope`, `WasmScopeAbiImports`, `WasmAbiExports`,
+  `WasmScopeUpdate`, `WasmScopeWatchOptions`, `WasmScopeBindingOptions`, and
+  `WasmScopeReference`;
+- a restricted `Scope` facade for app state and watched paths, with direct
+  mutation through `WasmScope` rather than event bus or scope sync;
+- `RootScopeService` as a lifecycle and flush facade;
+- Rust authoring metadata for `Component`, `Controller`,
+  `ControllerConstructor`, `NgModule`, `Injectable`, and `InjectionTokens`;
+- `$http` coverage for `HttpService`, `RequestConfig`,
+  `RequestShortcutConfig`, `HttpMethod`, `HttpResponse<T>`, and
+  `HttpResponseStatus`;
+- diagnostics and event support for `LogService`, `ExceptionHandlerService`,
+  `PubSubService`, `TopicService`, `ListenerFn`, `ScopeEvent`, and
+  `InvocationDetail`;
+- template loading support for `TemplateRequestService` and
+  `TemplateCacheService` when Rust-authored components use template files;
+- persistence facades for `StorageBackend`, `StorageType`, `CookieService`,
+  `CookieOptions`, and `CookieStoreOptions`.
+
+Next after the required Rust surface, still before switching implementation
+focus to another language unless explicitly reprioritized:
+
+- realtime facades for `ConnectionConfig`, `ConnectionEvent`,
+  `WebSocketService`, `WebSocketConfig`, `WebSocketConnection`, `SseService`,
+  `SseConfig`, `SseConnection`, `RealtimeProtocolMessage`,
+  `RealtimeProtocolEventDetail`, and `SwapModeType`;
+- form and validation facades for `NgModelController` and `Validator`;
+- router/state facades for `StateService`, `StateRegistryService`,
+  `StateDeclaration`, `Transition`, `StateResolveArray`, and
+  `StateResolveObject`;
+- REST facades for `RestService`, `RestRequest`, `RestResponse`,
+  `RestDefinition`, `RestOptions`, `RestBackend`, and cache/revalidation
+  types, if Rust apps need a higher-level data API beyond `$http`.
+
+Deferred from the Rust feature-complete gate:
+
+- provider and config-time APIs such as `*Provider`, `ProvideService`, and
+  `AngularServiceProvider`;
+- compile/link/transclusion directive internals such as `CompileService`,
+  `Directive`, `DirectiveFactory`, `AnnotatedDirectiveFactory`,
+  `PublicLinkFn`, `BoundTranscludeFn`, `TranscludeFn`, and `Attributes`;
+- browser object aliases such as `DocumentService`, `WindowService`, and
+  `RootElementService`, except as explicit unsafe host handles;
+- animation, worker, web component, parse/interpolate/filter/SCE/location
+  surfaces unless a Rust reference example needs them.
+
+This is the current stop line: do not switch active implementation to
+Go, AssemblyScript, C#, Zig, C++, or C until the required Rust namespace
+surface above is implemented, tested, and reflected in
+`NG_NAMESPACE_PARITY.md`.
+
 ## Non-Goals
 
 - Reimplementing the AngularTS runtime in Rust.
@@ -364,6 +425,134 @@ The first usable version should support:
 - browser smoke test proving the Rust-authored component renders and responds
   to user input.
 
+## Feature Complete Gate
+
+Rust is the reference target for every later Wasm language integration. Go,
+AssemblyScript, C#, Zig, C++, and C implementation work should not begin until
+this gate is complete.
+
+The primary Rust target is ergonomic authoring: application authors should write
+one Rust method or field declaration, and the integration must generate the
+AngularTS-visible wasm export, controller wrapper, metadata registration,
+scope refresh, and scope watch plumbing. The todo example is not feature
+complete while actions such as `toggle` must be represented separately as
+domain methods, wasm service wrappers, controller exports, and manifest strings.
+
+Rust feature completeness requires:
+
+- no handwritten JavaScript in the Rust todo application source;
+- no manual `wasm-bindgen` exports or getter glue in the Rust todo application
+  source for AngularTS-visible controllers, services, methods, or state;
+- generated bootstrap owns Wasm loading, AngularTS module registration, and
+  `WasmScopeAbi` attachment;
+- Rust-authored modules, services, factories, values, components, controllers,
+  typed DI, template files, and lifecycle hooks are generated and tested;
+- template-visible methods, template-visible properties, and watched scope
+  properties are derived from Rust macro metadata, not manifest string lists;
+- scope update lifecycle bindings are generated from Rust metadata, not
+  conventional method names such as `bindScopeUpdates` and
+  `unbindScopeUpdates`;
+- Rust facade APIs cover the MVP AngularTS services: `$http`, `$log`,
+  `$exceptionHandler`, `$rootScope`, `$scope`, and `$eventBus`;
+- Rust facade APIs cover the required namespace porting surface listed above,
+  including Wasm scope references and updates, HTTP request shortcuts,
+  diagnostics/events, template loading, and persistence;
+- `WasmScope` supports Rust-to-AngularTS writes and AngularTS-to-Rust watched
+  updates through the shared ABI;
+- unsupported Rust boundary types and invalid injection shapes produce
+  compile-time diagnostics where macro input makes that possible;
+- compile-fail macro tests cover invalid component metadata, invalid
+  injections, and unsupported boundary types;
+- generated glue snapshot tests cover the bootstrap and component bridge;
+- browser Playwright tests cover the todo workflow and UI-to-Wasm propagation;
+- the todo example demonstrates ergonomic Rust authoring, not only successful
+  runtime bridge behavior;
+- namespace parity has an explicit decision for every published AngularTS `ng`
+  namespace type;
+- every required namespace porting type is either `covered` with tests or
+  explicitly removed from the required surface with a documented plan change;
+- all MVP open questions in this plan are either resolved or moved to deferred
+  scope with a documented reason.
+
+## Current Todo Example Weak Points
+
+The todo proof of concept now represents the current MVP Rust authoring model:
+Rust owns application state and behavior, while generated glue owns AngularTS
+registration, bridge exports, scope refresh, and UI-to-Rust update routing.
+
+- The example no longer uses manual `wasm-bindgen` export attributes,
+  `wasm_bridge(export = ...)`, manifest `syncProperties` / `methods`, or
+  hand-written getter methods for template-visible state.
+- Generated bridge refresh now syncs exported Rust fields through the AngularTS
+  controller proxy after construction, template methods, watched UI updates,
+  lifecycle hooks, async `WasmScope::flush()` calls, and promise-returning Rust
+  template methods. Remaining todo boilerplate is the small handwritten
+  `refresh()` recomputation for derived fields.
+- Scope update examples no longer rely on conventional `bindScopeUpdates` and
+  `unbindScopeUpdates` method names, and the exported `ng_scope_on_update`
+  dispatcher now lives in the shared Rust facade. Individual watched path routes
+  are declared with Rust macro metadata instead of manual `WasmScope::watch_with`
+  calls.
+- Rust facade service types now expose selected MVP method surfaces for
+  `$http`, `$log`, `$exceptionHandler`, `$rootScope`, `$scope`, and
+  `$eventBus`, but full namespace parity remains open.
+- The acceptance coverage now guards against raw bridge export glue,
+  hand-written template-state getters, manual `scope.set(...)`, manual
+  `scope.flush(...)`, raw controller pointer capture, and manual `spawn_local`
+  async wiring.
+
+## Minimal Boilerplate Plan
+
+The Rust implementation should minimize author code before expanding additional
+AngularTS APIs. The immediate target is that the todo app reads like normal Rust
+application code plus a small set of AngularTS annotations.
+
+Concrete steps:
+
+1. Field-first template state:
+   - public controller fields are exported to AngularTS automatically;
+   - Rust field names stay idiomatic snake_case;
+   - generated JS properties use lower camel case for templates;
+   - public field metadata is merged with method metadata during bootstrap;
+   - getter methods such as `items()`, `remaining_count()`, and
+     `server_status()` are removed from examples.
+
+2. Generated scope refresh:
+   - exported fields are written to `WasmScope` by generated bridge code after
+     construction, template method calls, lifecycle hooks, and async completions;
+   - Rust controllers stop hand-writing `scope.set(...)` for each exported
+     property;
+   - examples keep explicit domain state changes, but not repetitive scope
+     synchronization code.
+
+3. Generated UI-to-Rust update routing:
+   - watched template paths are inferred from exported fields and explicit
+     `#[scope_update(path = "...")]` methods;
+   - generated glue handles watch registration and disposal;
+   - Rust authors write only the update handler when custom parsing or
+     validation is required.
+
+4. Constructor and DI cleanup:
+   - component/controller constructors remain the primary injection surface;
+   - `#[inject]` fields stay available only for registration metadata and simple
+     service slots;
+   - generated metadata remains the source of truth for `$http`, `$scope`, and
+     app services.
+
+5. Acceptance tests for minimal glue:
+   - the todo source must not contain raw `wasm_bindgen`, manifest
+     `syncProperties`, manifest `methods`, or hand-written property getter
+     methods for template state;
+   - Playwright must prove field-originated Rust state updates the DOM and UI
+     changes propagate back to Rust through `WasmScope`;
+   - compile-fail tests must reject unsupported public field and method types.
+
+Only after these steps are complete should Rust API coverage expand beyond the
+current MVP services.
+
+The next implementation steps are the required namespace porting surface above,
+not another Wasm language target.
+
 ## Deferred Scope
 
 Defer these until the MVP is stable:
@@ -401,6 +590,8 @@ The example app test should verify:
 - the component renders;
 - template events call Rust methods;
 - Rust state updates are visible through AngularTS change detection.
+- AngularTS scope updates propagate back into Rust through the shared Wasm ABI
+  watch callback.
 
 ## Documentation
 
@@ -421,64 +612,171 @@ Initial docs should explain:
 
 ### Phase 1: Plan and Scaffolding
 
-- Add this plan.
-- Add `README.md`.
-- Add `NG_NAMESPACE_PARITY.md`.
-- Add workspace `Cargo.toml` files.
-- Add empty facade, macro, and build crates.
-- Add a placeholder `basic_app` example.
+- [x] Add this plan.
+- [x] Add `README.md`.
+- [x] Add `NG_NAMESPACE_PARITY.md`.
+- [x] Add workspace `Cargo.toml` files.
+- [x] Add empty facade, macro, and build crates.
+- [x] Add a placeholder `basic_app` example.
 
 ### Phase 2: Generated Bootstrap
 
-- Build a minimal `angular-ts-build` command.
-- Generate a JS entrypoint that imports AngularTS and wasm-bindgen output.
-- Initialize Wasm before AngularTS bootstrap.
-- Register a hardcoded sample module from generated metadata.
+- [x] Build a minimal `angular-ts-build` command.
+- [x] Generate a JS entrypoint that imports AngularTS and wasm-bindgen output.
+- [x] Initialize Wasm before AngularTS bootstrap.
+- [x] Register sample modules from generated metadata.
+- [x] Generate and attach `WasmScopeAbi`.
+- [x] Generate an ABI adapter for wasm-bindgen `angular_ts` imports.
 
 ### Phase 3: Services and DI
 
-- Add `#[service]`.
-- Add `Token<T>`.
-- Add deterministic token names.
-- Add compile-time diagnostics for unsupported injection shapes.
-- Generate AngularTS service registration glue.
-- Add typed service injection into component controllers.
+- [x] Add `#[service]`.
+- [x] Add `Token<T>`.
+- [x] Add deterministic token names.
+- [x] Add compile-time diagnostics for unsupported injection shapes.
+- [x] Generate AngularTS service registration glue.
+- [x] Add typed service injection into component controllers.
+- [x] Add generated factories and values.
+- [x] Add method-level facades for MVP AngularTS services.
 
 ### Phase 4: Components
 
-- Add `#[component]`.
-- Generate AngularTS component config.
-- Generate JS-visible controller wrappers.
-- Support template-callable methods.
-- Support public field getters and setters.
-- Add `$onInit` and `$onDestroy`.
+- [x] Add `#[component]`.
+- [x] Generate AngularTS component config.
+- [x] Generate JS-visible controller wrappers.
+- [x] Support template-callable methods.
+- [x] Support public field getters and setters without manual wasm-bindgen
+      authoring.
+- [x] Add generated `$onInit` and `$onDestroy`.
+- [x] Bind component scopes through the shared `WasmScope` ABI.
+- [x] Propagate UI-originated scope updates to Rust through
+      `scope_watch` / `ng_scope_on_update`.
 
 ### Phase 5: Example and Browser Test
 
-- Implement `examples/basic_app`.
-- Add a browser smoke test.
-- Add repository make targets for Rust integration checks.
-- Document the local demo flow.
+- [x] Implement `examples/basic_app`.
+- [x] Add a browser smoke test.
+- [x] Add repository make targets for Rust integration checks.
+- [x] Document the local demo flow.
+- [x] Cover Rust-to-AngularTS and AngularTS-to-Rust scope propagation in
+      Playwright.
 
-### Phase 6: API Coverage Expansion
+### Phase 6: Rust Feature Completion
 
-- Add selected AngularTS service facades.
-- Add template file loading.
-- Add better diagnostics for unsupported Rust types.
-- Add generated API coverage checks against the published AngularTS `ng`
-  namespace declarations.
-- Require every public `ng` namespace type to have a Rust parity status.
+- [x] Make ergonomic Rust authoring the first completion target: one Rust
+      method or field declaration must generate the AngularTS-visible export,
+      wrapper, metadata, refresh, and watch plumbing.
+- [x] Export public controller fields as lower-camel AngularTS properties and
+      merge them into generated bridge metadata.
+- [x] Replace todo and scope-bridge getter methods with public fields.
+- [x] Generate scope refresh for exported fields so examples stop calling
+      `scope.set(...)` manually for each property.
+- [x] Add minimal-glue acceptance checks that reject hand-written template-state
+      getter methods in examples.
+- [x] Collapse the todo example's duplicated bridge layers so actions such as
+      `toggle` are authored once in Rust application code.
+- [x] Add `#[wasm_bridge]` generation for wasm-bindgen struct and method
+      exports so constructors, getters, setters, and methods are inferred from
+      Rust signatures.
+- [x] Extend `#[wasm_bridge]` to service/value export functions so exported
+      function names no longer need direct wasm-bindgen attributes.
+- [x] Generate `#[wasm_bridge]` export names from typed targets such as
+      `component = "TodoList"` and `service = "TodoStore"` instead of raw
+      `__ng_*` strings in application bridge annotations.
+- [x] Infer manifest registration export names from registration kind and name
+      so examples no longer carry raw `__ng_*` export strings in
+      `angular-ts.json`.
+- [x] Add shared `WasmScope` facade helpers over the language-neutral ABI.
+- [x] Add selected AngularTS service facades.
+- [x] Replace manual `wasm-bindgen` exports and getter glue in the todo example
+      with generated AngularTS-visible bindings.
+- [x] Infer component `syncProperties` and `methods` from templates when the
+      manifest omits explicit bridge lists.
+- [x] Infer standalone controller `syncProperties` and `methods` from an app
+      template when the manifest omits explicit bridge lists.
+- [x] Infer component `controllerAs` from template references when the manifest
+      omits an explicit alias.
+- [x] Remove default-only `requires` and `bootstrap` fields from Rust example
+      manifests.
+- [x] Export Rust registration metadata through generated `__ng_manifest` and
+      merge it into build manifest registrations at bootstrap time.
+- [x] Remove DI `inject` lists from Rust example manifests by sourcing them
+      from Rust component/controller metadata.
+- [x] Use Rust runtime registrations as the primary registration list, with
+      build manifest entries acting only as overrides for template inlining or
+      registration kind overrides.
+- [x] Generate `syncProperties` and `methods` metadata from Rust macros instead
+      of manifest strings.
+- [x] Generate scope update bind and unbind lifecycle metadata instead of
+      relying on `bindScopeUpdates` / `unbindScopeUpdates` method names.
+- [x] Move `ng_scope_on_update` dispatch into the shared Rust `WasmScope`
+      facade so examples do not own ABI callback exports or controller maps.
+- [x] Generate watched path routing metadata so examples do not need to call
+      `WasmScope::watch_with` manually for each UI-originated update.
+- [x] Add an authoring ergonomics acceptance test or snapshot proving the Rust
+      todo source has no bridge glue.
+- [x] Add template file loading.
+- [x] Add ergonomic async `$http` helpers for injected Rust/Wasm service values.
+- [x] Support async Rust template methods in generated bridge wrappers so
+      promise completion refreshes AngularTS state without manual
+      `spawn_local`, raw controller pointers, or explicit scope flushing.
+- [x] Decode AngularTS `HttpResponse<T>` into typed Rust data with
+      `serde-wasm-bindgen`.
+- [x] Add a Rust `RequestConfig` builder for method, URL, headers, params, and
+      timeout.
+- [x] Cover a real Rust/Wasm `$http` call through the Go test server in
+      Playwright.
+- [x] Add better diagnostics for unsupported Rust types.
+- [x] Add generated API coverage checks against the published AngularTS `ng`
+      namespace declarations.
+- [x] Require every public `ng` namespace type to have a final Rust MVP parity
+      decision.
+- [x] Promote required namespace porting entries from deferred parity decisions
+      to tested Rust APIs.
+- [x] Add Rust `WasmScopeUpdate`, `WasmScopeWatchOptions`,
+      `WasmScopeBindingOptions`, and `WasmScopeReference` facade coverage.
+- [x] Add `RequestShortcutConfig` coverage and tests for `$http` shortcut
+      calls.
+- [x] Add typed diagnostics and event facade coverage for `TopicService`,
+      `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
+- [x] Add template request/cache facades used by Rust-authored template-file
+      components.
+- [x] Add storage and cookie facades for persisted Rust app state.
+- [x] Add compile-fail macro tests.
+- [x] Add generated glue snapshot tests.
+- [x] Resolve or explicitly defer all MVP open questions.
 
-## Open Questions
+### Phase 7: Post-Rust Language Targets
 
-- Should the first macro model injection through fields, constructors, or both?
-- Should component fields be exposed by default, or require `#[template]`?
-- Should generated service tokens use Rust type names or explicit token names by
-  default?
-- Should the build helper own Vite configuration or emit files consumed by a
-  user-owned bundler?
-- How much of `serde_wasm_bindgen` should be part of the public contract?
-- Should async Rust methods exposed to templates automatically trigger AngularTS
-  digest after completion?
-- Should parity be checked against the local repository declarations, the
-  published npm package declarations, or both?
+Do not start or expand this phase until the Rust feature complete gate is
+satisfied, including the required namespace porting surface above. Existing
+non-Rust files are planning/reference material until then.
+
+- [x] Resume Go Wasm binding implementation after Rust feature completion.
+- [ ] Start AssemblyScript binding implementation.
+- [ ] Start C# binding implementation.
+- [ ] Start Zig binding implementation.
+- [ ] Start C++ binding implementation.
+- [ ] Start C binding implementation.
+
+## MVP Decisions
+
+- Injection supports constructor injection for runtime controllers and
+  components, with `#[inject]` fields retained for registration metadata and
+  simple service slots. Constructor injection remains the preferred authoring
+  style for behavior-bearing Rust controllers.
+- Public controller fields are template-visible by default. Private fields stay
+  internal. A future `#[template]` marker can be added only if the default proves
+  too broad in real applications.
+- Generated service tokens use explicit AngularTS token names when supplied, and
+  deterministic Rust type-derived names otherwise.
+- The build helper emits generated files consumed by the existing app/server
+  setup. It does not own Vite configuration as part of the MVP.
+- `serde_wasm_bindgen` is part of the MVP Rust facade contract for typed
+  HTTP/request-response decoding, but raw `JsValue` remains the explicit escape
+  hatch for dynamic interop.
+- Async Rust methods exposed to templates trigger generated AngularTS state
+  refresh after promise completion.
+- Parity is checked against the repository-generated `@types/namespace.d.ts`.
+  Release automation can add a published npm-package comparison later, but the
+  local generated declaration file is the MVP source of truth.

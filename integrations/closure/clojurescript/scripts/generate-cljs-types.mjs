@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const integrationRoot = resolve(dirname(__filename), "..", "..");
 const cljsRoot = resolve(integrationRoot, "clojurescript");
-const externsPath = resolve(integrationRoot, "externs/angular-ts.externs.js");
+const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 146;
+const expectedTypeTagCount = 159;
 const expectedStrictWrapperNames = [
   "angular-call",
   "angular-dispatch-event",
@@ -413,7 +413,7 @@ if (missingExpectedWrappers.length > 0 || unexpectedWrappers.length > 0) {
   );
   process.exit(1);
 }
-const output = `;; Generated from ../externs/angular-ts.externs.js by scripts/generate-cljs-types.mjs.
+const output = `;; Generated from ../externs/angular.js by scripts/generate-cljs-types.mjs.
 ;; Do not edit directly.
 (ns angular-ts.generated)
 

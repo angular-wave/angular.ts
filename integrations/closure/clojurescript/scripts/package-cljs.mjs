@@ -31,7 +31,7 @@ function assertFile(path, description) {
 }
 
 assertFile(resolve(cljsRoot, "src/angular_ts/generated.cljs"), "generated ClojureScript facade");
-assertFile(resolve(integrationRoot, "externs/angular-ts.externs.js"), "AngularTS Closure externs");
+assertFile(resolve(integrationRoot, "externs/angular.js"), "AngularTS Closure externs");
 assertFile(resolve(repoRoot, "LICENSE"), "repository license");
 
 rmSync(resolve(targetDir, "package"), { force: true, recursive: true });
@@ -40,8 +40,8 @@ mkdirSync(resolve(classesDir, "META-INF"), { recursive: true });
 
 cpSync(resolve(cljsRoot, "src"), resolve(classesDir), { recursive: true });
 copyFileSync(
-  resolve(integrationRoot, "externs/angular-ts.externs.js"),
-  resolve(classesDir, "angular_ts/externs/angular-ts.externs.js"),
+  resolve(integrationRoot, "externs/angular.js"),
+  resolve(classesDir, "angular_ts/externs/angular.js"),
 );
 copyFileSync(resolve(repoRoot, "LICENSE"), resolve(classesDir, "META-INF/LICENSE"));
 copyFileSync(resolve(cljsRoot, "README.md"), resolve(classesDir, "META-INF/README.md"));

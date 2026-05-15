@@ -9,7 +9,7 @@
    :compiler-options {:optimizations :advanced
                       :language-in :ecmascript-2020
                       :language-out :ecmascript-2020
-                      :externs ["../externs/angular-ts.externs.js"]
+                      :externs ["../externs/angular.js"]
                       :infer-externs true
                       :warnings-as-errors true
                       :warnings {:infer-warning true}}}}}

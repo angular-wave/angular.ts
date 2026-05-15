@@ -1,0 +1,5 @@
+error: `#[wasm_bridge]` public signatures do not support generic Rust type `Vec<String>`; use a concrete bridge type, `String`, `JsValue`, or `js_sys::Array`
+ --> tests/ui/wasm_bridge_rejects_generic_return.rs:8:28
+  |
+8 |     pub fn tasks(&self) -> Vec<String> {
+  |                            ^^^^^^^^^^^

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const integrationRoot = resolve(dirname(__filename), "..");
 const repoRoot = resolve(integrationRoot, "../..");
 const namespacePath = resolve(repoRoot, "src/namespace.ts");
-const externsPath = resolve(integrationRoot, "externs/angular-ts.externs.js");
+const externsPath = resolve(integrationRoot, "externs/angular.js");
 const generatorPath = resolve(integrationRoot, "scripts/generate-externs.mjs");
 
 const generatedExterns = spawnSync("node", [generatorPath, "--check"], {

@@ -1,0 +1,5 @@
+error: `#[inject]` requires a named component field
+ --> tests/ui/inject_requires_named_field.rs:6:25
+  |
+6 | pub struct BadComponent(#[inject] Option<Store>);
+  |                         ^^^^^^^^^^^^^^^^^^^^^^^

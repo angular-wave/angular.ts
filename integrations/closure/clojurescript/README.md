@@ -6,7 +6,7 @@ integration plus a Shadow CLJS todo demo. The demo compiles with Closure
 runtime.
 
 The generated facade in `src/angular_ts/generated.cljs` is produced from
-`../externs/angular-ts.externs.js`. It gives ClojureScript code concrete
+`../externs/angular.js`. It gives ClojureScript code concrete
 AngularTS type hints such as `^js/ng.NgModule` and `^js/ng.Scope`, and
 fails generation if the required AngularTS extern contracts disappear. Extern
 JSDoc is preserved where ClojureScript can use it: public type descriptions are
@@ -47,7 +47,7 @@ integrations/closure/clojurescript/target/angular-ts-cljs-<version>.pom
 ```
 
 The jar contains `angular-ts.generated` plus
-`angular_ts/externs/angular-ts.externs.js`; it does not include the todo demo.
+`angular_ts/externs/angular.js`; it does not include the todo demo.
 The version defaults to the root `package.json` version. Override it with
 `CLOJURESCRIPT_PACKAGE_VERSION=...` when needed.
 
@@ -69,7 +69,7 @@ And pass the packaged extern resource to Shadow CLJS:
 
 ```clojure
 {:compiler-options
- {:externs ["angular_ts/externs/angular-ts.externs.js"]}}
+ {:externs ["angular_ts/externs/angular.js"]}}
 ```
 
 Shadow CLJS 3.x uses a Closure Compiler build that requires Java 21. The

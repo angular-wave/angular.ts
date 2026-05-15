@@ -4,6 +4,7 @@ members = [
   "crates/angular-ts-build",
   "crates/angular-ts-macros",
   "examples/basic_app",
+  "examples/scope_bridge",
 ]
 resolver = "2"
 

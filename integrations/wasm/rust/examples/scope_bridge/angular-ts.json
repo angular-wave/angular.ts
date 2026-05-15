@@ -1,0 +1,11 @@
+{
+  "module": "rustScopeBridge",
+  "package": "../pkg/angular_ts_rust_scope_bridge.js",
+  "registrations": [
+    {
+      "kind": "component",
+      "name": "scopeProbe",
+      "templatePath": "templates/scope-probe.html"
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 /**
  * @externs
- * Public externs for AngularTS applications compiled with Google Closure.
+ * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.
+ *
+ * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate
+ * this file when updating the public ng namespace.
  *
  * This file is generated from src/namespace.ts by
  * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases
@@ -556,7 +559,7 @@ ng.NgModule.prototype.state = function(definition) {};
  * @param {string} name
  * @param {string} src
  * @param {(!Object<string, !Object<string, (!Object|number)>>|undefined)} imports
- * @param {(!Object<string, ?>|undefined)} opts
+ * @param {(!ng.WasmOptions|undefined)} opts
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.wasm = function(name, src, imports, opts) {};
@@ -5950,3 +5953,525 @@ ng.WorkerConnection.prototype.restart = function() {};
  * @type {!ng.WorkerConfig}
  */
 ng.WorkerConnection.prototype.config;
+
+/**
+ * WebAssembly exports required by the language-neutral AngularTS ABI.
+ * @record
+ */
+ng.WasmAbiExports = function() {};
+
+/**
+ * Linear memory used for ABI string and JSON payload exchange.
+ * @type {!Object}
+ */
+ng.WasmAbiExports.prototype.memory;
+
+/**
+ * Allocates `size` bytes in guest memory and returns the pointer.
+ * @param {number} size
+ * @return {number}
+ */
+ng.WasmAbiExports.prototype.ng_abi_alloc = function(size) {};
+
+/**
+ * Releases a pointer previously returned by `ng_abi_alloc`.
+ * @param {number} ptr
+ * @param {number} size
+ * @return {void}
+ */
+ng.WasmAbiExports.prototype.ng_abi_free = function(ptr, size) {};
+
+/**
+ * Optional callback invoked after a scope handle is bound.
+ * @type {(function(number, number, number): void|undefined)}
+ */
+ng.WasmAbiExports.prototype.ng_scope_on_bind;
+
+/**
+ * Optional callback invoked before a scope handle is unbound.
+ * @type {(function(number): void|undefined)}
+ */
+ng.WasmAbiExports.prototype.ng_scope_on_unbind;
+
+/**
+ * Optional callback invoked when a watched scope path changes.
+ * @type {(function(number, number, number, number, number): void|undefined)}
+ */
+ng.WasmAbiExports.prototype.ng_scope_on_update;
+
+/**
+ * Public AngularTS WasmInstantiationResult contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WasmInstantiationResult = function() {};
+
+/**
+ * Public WasmInstantiationResult.instance member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.WasmInstantiationResult.prototype.instance;
+
+/**
+ * Public WasmInstantiationResult.exports member exposed by the AngularTS namespace contract.
+ * @type {!Object<string, !Object>}
+ */
+ng.WasmInstantiationResult.prototype.exports;
+
+/**
+ * Public WasmInstantiationResult.module member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.WasmInstantiationResult.prototype.module;
+
+/**
+ * Options for loading a WebAssembly module through `$wasm`.
+ * @record
+ */
+ng.WasmOptions = function() {};
+
+/**
+ * When `false`, `$wasm` resolves to `instance.exports`. When `true`, `$wasm` resolves to the full instantiation result.
+ * @type {(boolean|undefined)}
+ */
+ng.WasmOptions.prototype.raw;
+
+/**
+ * Host-side wrapper around one AngularTS scope exposed to Wasm clients. The wrapper mutates the real AngularTS scope. It does not use event bus, scope-sync, DOM hydration, or object merging.
+ * @record
+ */
+ng.WasmScope = function() {};
+
+/**
+ * Host ABI that owns this handle.
+ * @type {!ng.WasmScopeAbi}
+ */
+ng.WasmScope.prototype.abi;
+
+/**
+ * Numeric host handle passed to Wasm clients.
+ * @type {number}
+ */
+ng.WasmScope.prototype.handle;
+
+/**
+ * Stable scope name exposed over the ABI.
+ * @type {string}
+ */
+ng.WasmScope.prototype.name;
+
+/**
+ * Wrapped AngularTS scope.
+ * @type {!ng.Scope}
+ */
+ng.WasmScope.prototype.scope;
+
+/**
+ * Returns whether the wrapper has been disposed.
+ * @return {boolean}
+ */
+ng.WasmScope.prototype.isDisposed = function() {};
+
+/**
+ * Reads a dot-separated path from the wrapped AngularTS scope.
+ * @param {string} path
+ * @return {?}
+ */
+ng.WasmScope.prototype.get = function(path) {};
+
+/**
+ * Writes a dot-separated path into the wrapped AngularTS scope.
+ * @param {string} path
+ * @param {?} value
+ * @return {boolean}
+ */
+ng.WasmScope.prototype.set = function(path, value) {};
+
+/**
+ * Deletes a dot-separated path from the wrapped AngularTS scope.
+ * @param {string} path
+ * @return {boolean}
+ */
+ng.WasmScope.prototype.delete = function(path) {};
+
+/**
+ * Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`.
+ * @return {void}
+ */
+ng.WasmScope.prototype.flush = function() {};
+
+/**
+ * Registers a callback that runs before this scope flushes. Generated Wasm bridges use this to sync Rust-owned public fields back onto AngularTS controller wrappers when Rust async code calls `WasmScope::flush`.
+ * @param {function(): void} callback
+ * @return {function(): void}
+ */
+ng.WasmScope.prototype.onFlush = function(callback) {};
+
+/**
+ * Watches one scope path and calls `callback` when AngularTS observes a change. The returned function removes only this watch registration.
+ * @param {string} path
+ * @param {function(!ng.WasmScopeUpdate): void} callback
+ * @param {(!ng.WasmScopeWatchOptions|undefined)} options
+ * @return {function(): void}
+ */
+ng.WasmScope.prototype.watch = function(path, callback, options) {};
+
+/**
+ * Binds this scope to Wasm lifecycle exports and optional watched paths. This is the host-to-guest side of the ABI: AngularTS allocates guest memory for callback payloads, invokes the exported callback, and frees memory after the callback returns.
+ * @param {!ng.WasmAbiExports} exports
+ * @param {(!ng.WasmScopeBindingOptions|undefined)} options
+ * @return {function(): void}
+ */
+ng.WasmScope.prototype.bindExports = function(exports, options) {};
+
+/**
+ * Disposes ABI bindings without destroying the underlying AngularTS scope.
+ * @return {void}
+ */
+ng.WasmScope.prototype.dispose = function() {};
+
+/**
+ * Language-neutral AngularTS scope ABI for raw Wasm clients. The ABI exchanges strings and JSON-compatible values through guest linear memory. Guest modules provide `ng_abi_alloc` and `ng_abi_free`; AngularTS uses those exports whenever it needs to place callback or return payloads in guest memory.
+ * @record
+ */
+ng.WasmScopeAbi = function() {};
+
+/**
+ * Import object passed to `WebAssembly.instantiate`.
+ * @type {!ng.WasmScopeAbiImportObject}
+ */
+ng.WasmScopeAbi.prototype.imports;
+
+/**
+ * Attaches guest exports after instantiation.
+ * @param {!ng.WasmAbiExports} exports
+ * @return {void}
+ */
+ng.WasmScopeAbi.prototype.attach = function(exports) {};
+
+/**
+ * Creates and registers a scope wrapper.
+ * @param {!ng.Scope} scope
+ * @param {(!ng.WasmScopeOptions|undefined)} options
+ * @return {!ng.WasmScope}
+ */
+ng.WasmScopeAbi.prototype.createScope = function(scope, options) {};
+
+/**
+ * Returns a previously registered scope wrapper.
+ * @param {(number|string)} reference
+ * @return {(!ng.WasmScope|undefined)}
+ */
+ng.WasmScopeAbi.prototype.getScope = function(reference) {};
+
+/**
+ * Unregisters a scope wrapper without destroying the AngularTS scope.
+ * @param {number} handle
+ * @return {boolean}
+ */
+ng.WasmScopeAbi.prototype.unregisterScope = function(handle) {};
+
+/**
+ * Invokes the optional guest bind callback for a scope.
+ * @param {!ng.WasmScope} scope
+ * @return {void}
+ */
+ng.WasmScopeAbi.prototype.notifyBind = function(scope) {};
+
+/**
+ * Invokes the optional guest update callback for a watched scope path.
+ * @param {!ng.WasmScopeUpdate} update
+ * @return {void}
+ */
+ng.WasmScopeAbi.prototype.notifyUpdate = function(update) {};
+
+/**
+ * Invokes the optional guest unbind callback for a scope.
+ * @param {!ng.WasmScope} scope
+ * @return {void}
+ */
+ng.WasmScopeAbi.prototype.notifyUnbind = function(scope) {};
+
+/**
+ * Releases one result buffer created by `scope_get`.
+ * @param {number} bufferHandle
+ * @return {void}
+ */
+ng.WasmScopeAbi.prototype.freeBuffer = function(bufferHandle) {};
+
+/**
+ * Full import object returned by `WasmScopeAbi.imports`.
+ * @record
+ */
+ng.WasmScopeAbiImportObject = function() {};
+
+/**
+ * AngularTS scope ABI import namespace.
+ * @type {!ng.WasmScopeAbiImports}
+ */
+ng.WasmScopeAbiImportObject.prototype.angular_ts;
+
+/**
+ * Imports exposed to a language-neutral Wasm client.
+ * @record
+ */
+ng.WasmScopeAbiImports = function() {};
+
+/**
+ * Resolves a scope name to a numeric scope handle.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_resolve = function(namePtr, nameLen) {};
+
+/**
+ * Returns a host-owned result buffer handle containing JSON for a scope path.
+ * @param {number} scopeHandle
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_get = function(scopeHandle, pathPtr, pathLen) {};
+
+/**
+ * Name-based variant of `scope_get`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_get_named = function(namePtr, nameLen, pathPtr, pathLen) {};
+
+/**
+ * Writes a JSON payload into a scope path. Returns `1` on success.
+ * @param {number} scopeHandle
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @param {number} valuePtr
+ * @param {number} valueLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_set = function(scopeHandle, pathPtr, pathLen, valuePtr, valueLen) {};
+
+/**
+ * Name-based variant of `scope_set`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @param {number} valuePtr
+ * @param {number} valueLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_set_named = function(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen) {};
+
+/**
+ * Deletes a scope path. Returns `1` on success.
+ * @param {number} scopeHandle
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_delete = function(scopeHandle, pathPtr, pathLen) {};
+
+/**
+ * Name-based variant of `scope_delete`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_delete_named = function(namePtr, nameLen, pathPtr, pathLen) {};
+
+/**
+ * Flushes queued AngularTS scope callbacks. Returns `1` on success.
+ * @param {number} scopeHandle
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_flush = function(scopeHandle) {};
+
+/**
+ * Name-based variant of `scope_flush`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_flush_named = function(namePtr, nameLen) {};
+
+/**
+ * Watches a scope path and returns a watch handle.
+ * @param {number} scopeHandle
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_watch = function(scopeHandle, pathPtr, pathLen) {};
+
+/**
+ * Name-based variant of `scope_watch`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @param {number} pathPtr
+ * @param {number} pathLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_watch_named = function(namePtr, nameLen, pathPtr, pathLen) {};
+
+/**
+ * Removes a watch handle. Returns `1` on success.
+ * @param {number} watchHandle
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_unwatch = function(watchHandle) {};
+
+/**
+ * Unbinds a scope handle without destroying the AngularTS scope.
+ * @param {number} scopeHandle
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_unbind = function(scopeHandle) {};
+
+/**
+ * Name-based variant of `scope_unbind`.
+ * @param {number} namePtr
+ * @param {number} nameLen
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.scope_unbind_named = function(namePtr, nameLen) {};
+
+/**
+ * Returns the guest pointer for a host-owned result buffer.
+ * @param {number} bufferHandle
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.buffer_ptr = function(bufferHandle) {};
+
+/**
+ * Returns the byte length for a host-owned result buffer.
+ * @param {number} bufferHandle
+ * @return {number}
+ */
+ng.WasmScopeAbiImports.prototype.buffer_len = function(bufferHandle) {};
+
+/**
+ * Releases a host-owned result buffer and its guest-memory allocation.
+ * @param {number} bufferHandle
+ * @return {void}
+ */
+ng.WasmScopeAbiImports.prototype.buffer_free = function(bufferHandle) {};
+
+/**
+ * Options for binding an AngularTS scope to Wasm lifecycle callbacks.
+ * @record
+ */
+ng.WasmScopeBindingOptions = function() {};
+
+/**
+ * Scope paths that should emit `ng_scope_on_update` callbacks.
+ * @type {(!Array<string>|undefined)}
+ */
+ng.WasmScopeBindingOptions.prototype.watch;
+
+/**
+ * Emit the current value immediately when registering each watched path.
+ * @type {(boolean|undefined)}
+ */
+ng.WasmScopeBindingOptions.prototype.initial;
+
+/**
+ * Stable name exposed to Wasm clients. Defaults to `$scopename` or `$id`.
+ * @type {(string|undefined)}
+ */
+ng.WasmScopeBindingOptions.prototype.name;
+
+/**
+ * Options for creating an AngularTS scope wrapper for Wasm clients.
+ * @record
+ */
+ng.WasmScopeOptions = function() {};
+
+/**
+ * Stable name exposed to Wasm clients. Defaults to `$scopename` or `$id`.
+ * @type {(string|undefined)}
+ */
+ng.WasmScopeOptions.prototype.name;
+
+/**
+ * Logical scope reference used by host-side helpers.
+ * @typedef {(number|string)}
+ */
+ng.WasmScopeReference;
+
+/**
+ * Scope update delivered from AngularTS to a Wasm client callback.
+ * @record
+ */
+ng.WasmScopeUpdate = function() {};
+
+/**
+ * Host-side numeric scope handle.
+ * @type {number}
+ */
+ng.WasmScopeUpdate.prototype.scopeHandle;
+
+/**
+ * Stable scope name.
+ * @type {string}
+ */
+ng.WasmScopeUpdate.prototype.scopeName;
+
+/**
+ * Watched path that changed.
+ * @type {string}
+ */
+ng.WasmScopeUpdate.prototype.path;
+
+/**
+ * Current value read from the scope path.
+ * @type {?}
+ */
+ng.WasmScopeUpdate.prototype.value;
+
+/**
+ * Options for registering one scope watch.
+ * @record
+ */
+ng.WasmScopeWatchOptions = function() {};
+
+/**
+ * Emit the current value immediately. Defaults to `false`.
+ * @type {(boolean|undefined)}
+ */
+ng.WasmScopeWatchOptions.prototype.initial;
+
+/**
+ * Callable `$wasm` service plus helpers for the scope ABI.
+ * @record
+ */
+ng.WasmService = function() {};
+
+/**
+ * Wraps an AngularTS scope for direct Wasm client access.
+ * @param {!ng.Scope} scope
+ * @param {(!ng.WasmScopeOptions|undefined)} options
+ * @return {!ng.WasmScope}
+ */
+ng.WasmService.prototype.scope = function(scope, options) {};
+
+/**
+ * Creates a language-neutral host ABI for AngularTS scope handles.
+ * @param {(!ng.WasmAbiExports|undefined)} exports
+ * @return {!ng.WasmScopeAbi}
+ */
+ng.WasmService.prototype.createScopeAbi = function(exports) {};
+
+/**
+ * Invokes the callable WasmService contract.
+ * @param {string} src
+ * @param {(!Object<string, !Object<string, (!Object|number)>>|undefined)} imports
+ * @param {(!ng.WasmOptions|undefined)} opts
+ * @return {!Promise<(!Object<string, !Object>|!ng.WasmInstantiationResult)>}
+ */
+ng.WasmService.prototype.call = function(src, imports, opts) {};

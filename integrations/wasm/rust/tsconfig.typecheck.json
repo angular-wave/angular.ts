@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2023",
+    "sourceMap": false,
+    "declaration": false,
+    "noUnusedLocals": false
+  },
+  "include": ["tool/bootstrap-bridge.typecheck.ts"]
+}

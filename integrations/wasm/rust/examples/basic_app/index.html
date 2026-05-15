@@ -93,6 +93,9 @@
   <body>
     <main>
       <h3>Rust-authored AngularTS Todos</h3>
+      <section class="demo-info" ng-controller="demoInfo as info">
+        <p id="rust-controller-title">{{ info.title }}</p>
+      </section>
       <section class="demo-shell">
         <todo-list></todo-list>
       </section>

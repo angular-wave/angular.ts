@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Go Wasm Todo Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <script type="module" src="./.angular-ts/bootstrap.js"></script>
+    <style>
+      body {
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      button {
+        cursor: pointer;
+        margin: 4px 6px 4px 0;
+      }
+
+      input[type="text"] {
+        min-width: 240px;
+        padding: 6px 8px;
+      }
+
+      .demo-shell {
+        border: 1px solid #d7dbe3;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .todo-entry,
+      .todo-row {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+      }
+
+      .todo-entry {
+        margin-bottom: 12px;
+      }
+
+      .todo-count {
+        color: #4b5563;
+        margin: 12px 0;
+      }
+
+      .todo-items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .todo-row {
+        border-top: 1px solid #eef0f4;
+        justify-content: space-between;
+        padding: 10px 0;
+      }
+
+      .todo-row.done span:first-of-type {
+        color: #6b7280;
+        text-decoration: line-through;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h3>Go Wasm AngularTS Todos</h3>
+      <section class="demo-shell" ng-controller="goTodoController">
+        <p id="go-remaining" class="todo-count">
+          {{ remainingCount }} of {{ items.length }} remaining
+        </p>
+        <p id="go-title-seen">New title seen by Go: {{ titleSeen }}</p>
+
+        <form class="todo-entry" ng-submit="add(newTodo)">
+          <input
+            aria-label="Go todo title"
+            type="text"
+            ng-model="newTodo"
+            ng-required="true"
+            placeholder="What needs doing?"
+          />
+          <button type="submit">Add</button>
+        </form>
+
+        <button type="button" ng-click="archive()">Archive completed</button>
+
+        <ul class="todo-items">
+          <li
+            class="todo-row"
+            ng-repeat="todo in items"
+            ng-class="{done: todo.done}"
+          >
+            <span>{{ todo.task }}</span>
+            <label>
+              <input
+                type="checkbox"
+                ng-prop-checked="todo.done"
+                ng-click="toggle($index)"
+              />
+            </label>
+          </li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

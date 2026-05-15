@@ -1,22 +1,34 @@
-use angular_ts::{angular_module, component, service, NgModule};
+use angular_ts::{
+    angular_module, component, service, Controller, InjectionMetadata, NgModule, Value,
+};
 
 #[cfg(target_arch = "wasm32")]
+use angular_ts::{wasm_bridge, HttpResponse, HttpService};
+#[cfg(target_arch = "wasm32")]
 use js_sys::{Array, JsString, Object, Reflect};
+#[cfg(target_arch = "wasm32")]
+use serde::Deserialize;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Todo {
+    id: usize,
     task: String,
     done: bool,
 }
 
 impl Todo {
-    pub fn new(task: impl Into<String>) -> Self {
+    pub fn new(id: usize, task: impl Into<String>) -> Self {
         Self {
+            id,
             task: task.into(),
             done: false,
         }
+    }
+
+    pub fn id(&self) -> usize {
+        self.id
     }
 
     pub fn task(&self) -> &str {
@@ -36,6 +48,7 @@ impl Todo {
 #[service]
 pub struct TodoStore {
     todos: Vec<Todo>,
+    next_id: usize,
 }
 
 impl Default for TodoStore {
@@ -48,9 +61,10 @@ impl TodoStore {
     pub fn new() -> Self {
         Self {
             todos: vec![
-                Todo::new("Learn AngularTS"),
-                Todo::new("Build an AngularTS app"),
+                Todo::new(1, "Learn AngularTS"),
+                Todo::new(2, "Build an AngularTS app"),
             ],
+            next_id: 3,
         }
     }
 
@@ -61,7 +75,10 @@ impl TodoStore {
             return None;
         }
 
-        self.todos.push(Todo::new(task));
+        let id = self.next_id;
+
+        self.next_id += 1;
+        self.todos.push(Todo::new(id, task));
         self.todos.last()
     }
 
@@ -70,16 +87,6 @@ impl TodoStore {
             return false;
         };
 
-        todo.set_done(done);
-        true
-    }
-
-    pub fn toggle(&mut self, index: usize) -> bool {
-        let Some(todo) = self.todos.get_mut(index) else {
-            return false;
-        };
-
-        let done = !todo.done();
         todo.set_done(done);
         true
     }
@@ -97,84 +104,30 @@ impl TodoStore {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct WasmScope {
-    value: js_sys::Object,
+pub struct AppTitle;
+
+impl Value for AppTitle {
+    const TOKEN_NAME: &'static str = "appTitle";
+    const EXPORT_NAME: &'static str = "__ng_value_AppTitle";
 }
 
-#[cfg(target_arch = "wasm32")]
-impl Default for WasmScope {
-    fn default() -> Self {
-        Self {
-            value: Object::new(),
-        }
-    }
+pub struct DemoInfo;
+
+impl Controller for DemoInfo {
+    const NAME: &'static str = "demoInfo";
+    const EXPORT_NAME: &'static str = "__ng_controller_DemoInfo";
+    const INJECTIONS: &'static [InjectionMetadata] =
+        &[InjectionMetadata::new("title", "appTitle", "String")];
 }
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-impl WasmScope {
-    #[wasm_bindgen(constructor)]
-    pub fn new(value: js_sys::Object) -> Self {
-        Self { value }
-    }
-
-    /// Gets a property by name from the wrapped scope value.
-    pub fn get(&self, path: &str) -> JsValue {
-        if path.is_empty() {
-            return JsValue::UNDEFINED;
-        }
-
-        let mut current = self.value.clone().into();
-        for key in path.split('.').filter(|part| !part.is_empty()) {
-            match Reflect::get(&current, &JsString::from(key).into()) {
-                Ok(value) if !value.is_undefined() => current = value,
-                _ => return JsValue::UNDEFINED,
-            }
-        }
-
-        current
-    }
-
-    /// Sets a property by name on the wrapped scope value.
-    pub fn set(&self, path: &str, value: JsValue) {
-        let mut current = self.value.clone().into();
-        let keys: Vec<&str> = path.split('.').filter(|key| !key.is_empty()).collect();
-
-        if keys.is_empty() {
-            return;
-        }
-
-        for key in &keys[..keys.len() - 1] {
-            let key = JsValue::from_str(*key);
-            let existing = Reflect::get(&current, &key).unwrap_or(JsValue::UNDEFINED);
-
-            let next = if existing.is_object() {
-                existing
-            } else {
-                let created = Object::new();
-                let _ = Reflect::set(&current, &key, &created);
-                created.into()
-            };
-
-            current = next;
-        }
-
-        let final_key = JsValue::from_str(keys[keys.len() - 1]);
-        let _ = Reflect::set(&current, &final_key, &value);
-    }
-}
-
-#[derive(Debug, Default)]
+#[derive(Default)]
 #[component(selector = "todo-list", template_url = "templates/todo-list.html")]
 pub struct TodoList {
     #[inject(token = "todoStore")]
     store: Option<TodoStore>,
     #[cfg(target_arch = "wasm32")]
-    #[inject(token = "$scope")]
-    _scope: WasmScope,
+    #[inject(token = "$http")]
+    _http: Option<HttpService>,
 }
 
 impl TodoList {
@@ -185,30 +138,36 @@ impl TodoList {
 
 #[angular_module(name = "rustDemo")]
 pub fn app(module: &mut NgModule) {
-    module.service::<TodoStore>().component::<TodoList>();
+    module
+        .service::<TodoStore>()
+        .value::<AppTitle>()
+        .controller::<DemoInfo>()
+        .component::<TodoList>();
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
+#[wasm_bridge]
 pub struct TodoItem {
+    id: usize,
     task: String,
     done: bool,
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
+#[wasm_bridge]
 impl TodoItem {
-    #[wasm_bindgen(getter)]
+    pub fn id(&self) -> u32 {
+        self.id as u32
+    }
+
     pub fn task(&self) -> String {
         self.task.clone()
     }
 
-    #[wasm_bindgen(getter)]
     pub fn done(&self) -> bool {
         self.done
     }
 
-    #[wasm_bindgen(setter)]
     pub fn set_done(&mut self, done: bool) {
         self.done = done;
     }
@@ -218,6 +177,7 @@ impl TodoItem {
 impl From<&Todo> for TodoItem {
     fn from(todo: &Todo) -> Self {
         Self {
+            id: todo.id(),
             task: todo.task().to_string(),
             done: todo.done(),
         }
@@ -225,15 +185,14 @@ impl From<&Todo> for TodoItem {
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
+#[wasm_bridge]
 pub struct TodoStoreService {
     inner: TodoStore,
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
+#[wasm_bridge]
 impl TodoStoreService {
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
             inner: TodoStore::new(),
@@ -243,30 +202,6 @@ impl TodoStoreService {
 
 #[cfg(target_arch = "wasm32")]
 impl TodoStoreService {
-    fn parse_todos_from_js(value: &JsValue) -> Vec<Todo> {
-        if !Array::is_array(value) {
-            return Vec::new();
-        }
-
-        Array::from(value)
-            .iter()
-            .map(|item| {
-                let task = Reflect::get(&item, &JsString::from("task").into())
-                    .ok()
-                    .and_then(|task| task.as_string())
-                    .unwrap_or_default();
-                let done = Reflect::get(&item, &JsString::from("done").into())
-                    .ok()
-                    .and_then(|done| done.as_bool())
-                    .unwrap_or(false);
-
-                let mut todo = Todo::new(task);
-                todo.set_done(done);
-                todo
-            })
-            .collect()
-    }
-
     fn add(&mut self, title: String) {
         self.inner.add(title);
     }
@@ -275,8 +210,8 @@ impl TodoStoreService {
         self.inner.set_done(index, done);
     }
 
-    fn toggle(&mut self, index: usize) -> bool {
-        self.inner.toggle(index)
+    fn done_at(&self, index: usize) -> Option<bool> {
+        self.inner.todos.get(index).map(Todo::done)
     }
 
     fn archive_done(&mut self) {
@@ -284,59 +219,105 @@ impl TodoStoreService {
     }
 
     fn items_array(&self) -> Array {
-        self.inner
-            .todos()
-            .iter()
-            .map(TodoItem::from)
-            .map(JsValue::from)
-            .collect()
+        self.inner.todos().iter().map(todo_object).collect()
     }
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(js_name = __ng_service_TodoStore)]
+fn todo_object(todo: &Todo) -> JsValue {
+    let item = Object::new();
+
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("id").into(),
+        &JsValue::from_f64(todo.id() as f64),
+    );
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("task").into(),
+        &JsValue::from_str(todo.task()),
+    );
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("done").into(),
+        &JsValue::from_bool(todo.done()),
+    );
+
+    item.into()
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bridge(service = "TodoStore")]
 pub fn ng_service_todo_store() -> TodoStoreService {
     TodoStoreService::new()
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(js_name = __ng_component_TodoList)]
-pub struct TodoListController {
-    store: TodoStoreService,
-    items: Array,
-    scope: WasmScope,
-    remaining_count: usize,
+#[wasm_bridge(value = "AppTitle")]
+pub fn ng_value_app_title() -> String {
+    "Rust-authored AngularTS Todos".to_string()
 }
 
 #[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(js_class = __ng_component_TodoList)]
+#[wasm_bridge(controller = "DemoInfo")]
+pub struct DemoInfoController {
+    pub title: String,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bridge(controller = "DemoInfo")]
+impl DemoInfoController {
+    pub fn new(title: String) -> Self {
+        Self { title }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bridge(component = "TodoList")]
+pub struct TodoListController {
+    store: TodoStoreService,
+    http: HttpService,
+    pub items: Array,
+    pub remaining_count: usize,
+    pub server_status: String,
+    pub server_task_count: usize,
+    pub server_tasks: Array,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bridge(component = "TodoList")]
 impl TodoListController {
-    #[wasm_bindgen(constructor)]
-    pub fn new(store: TodoStoreService, scope: WasmScope) -> Self {
+    pub fn new(store: TodoStoreService, http: HttpService) -> Self {
         let items = store.items_array();
 
         let mut controller = Self {
             store,
+            http,
             items,
-            scope,
             remaining_count: 0,
+            server_status: "Not loaded".to_string(),
+            server_task_count: 0,
+            server_tasks: Array::new(),
         };
 
         controller.refresh();
         controller
     }
 
-    #[wasm_bindgen(getter)]
-    pub fn items(&self) -> Array {
-        self.items.clone()
+    pub async fn load_server_tasks(&mut self) {
+        self.server_status = "Loading".to_string();
+        self.server_task_count = 0;
+        self.server_tasks = Array::new();
+        self.refresh();
+
+        let result = self.http.get_json::<Vec<ServerTask>>("/api/tasks").await;
+
+        match result {
+            Ok(response) => self.apply_server_tasks(response),
+            Err(error) => self.apply_server_error(error),
+        }
     }
 
-    #[wasm_bindgen(js_name = remainingCount)]
-    pub fn remaining_count(&self) -> u32 {
-        self.remaining_count as u32
-    }
-
-    #[wasm_bindgen(js_name = add)]
     pub fn add(&mut self, title: String) {
         let title = title.trim();
         if title.is_empty() {
@@ -345,20 +326,15 @@ impl TodoListController {
 
         self.store.add(title.to_string());
         self.refresh();
-        self.scope.set("newTodo", "".into());
     }
 
-    #[wasm_bindgen(js_name = setDone)]
-    pub fn set_done(&mut self, index: usize, done: bool) {
-        self.store.set_done(index, done);
-        self.refresh();
-    }
-
-    #[wasm_bindgen(js_name = toggle)]
     pub fn toggle(&mut self, index: usize) {
-        if self.store.toggle(index) {
-            self.refresh();
-        }
+        let Some(done) = self.store.done_at(index) else {
+            return;
+        };
+
+        self.store.set_done(index, !done);
+        self.refresh();
     }
 
     pub fn archive(&mut self) {
@@ -366,17 +342,67 @@ impl TodoListController {
         self.refresh();
     }
 
-    #[wasm_bindgen(js_name = applyItemsFromScope)]
-    pub fn apply_items_from_scope(&mut self, value: JsValue) {
-        self.store.inner.todos = TodoStoreService::parse_todos_from_js(&value);
-        self.refresh();
-    }
-
     fn refresh(&mut self) {
         self.items = self.store.items_array();
         self.remaining_count = self.store.inner.remaining_count();
-        self.scope.set("items", self.items.clone().into());
     }
+
+    fn apply_server_tasks(&mut self, response: HttpResponse<Vec<ServerTask>>) {
+        self.server_task_count = response.data().len();
+        self.server_tasks = response.data().iter().map(server_task_object).collect();
+        self.server_status = format!(
+            "Loaded {} tasks with HTTP {}",
+            self.server_task_count,
+            response.status()
+        );
+        self.refresh();
+    }
+
+    fn apply_server_error(&mut self, error: JsValue) {
+        self.server_status = error
+            .as_string()
+            .unwrap_or_else(|| "HTTP request failed".to_string());
+        self.server_task_count = 0;
+        self.server_tasks = Array::new();
+        self.refresh();
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[derive(Debug, Deserialize)]
+struct ServerTask {
+    id: usize,
+    title: String,
+    owner: String,
+    status: String,
+}
+
+#[cfg(target_arch = "wasm32")]
+fn server_task_object(task: &ServerTask) -> JsValue {
+    let item = Object::new();
+
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("id").into(),
+        &JsValue::from_f64(task.id as f64),
+    );
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("title").into(),
+        &JsValue::from_str(&task.title),
+    );
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("owner").into(),
+        &JsValue::from_str(&task.owner),
+    );
+    let _ = Reflect::set(
+        &item,
+        &JsString::from("status").into(),
+        &JsValue::from_str(&task.status),
+    );
+
+    item.into()
 }
 
 #[cfg(test)]
@@ -392,17 +418,26 @@ mod tests {
         app(&mut module);
 
         assert_eq!(module.name(), "rustDemo");
-        assert_eq!(module.registrations().len(), 2);
+        assert_eq!(module.registrations().len(), 4);
         assert_eq!(module.registrations()[0].kind, RegistrationKind::Service);
         assert_eq!(module.registrations()[0].angular_name, "todoStore");
         assert_eq!(
             module.registrations()[0].export_name,
             "__ng_service_TodoStore"
         );
-        assert_eq!(module.registrations()[1].kind, RegistrationKind::Component);
-        assert_eq!(module.registrations()[1].angular_name, "todoList");
+        assert_eq!(module.registrations()[1].kind, RegistrationKind::Value);
+        assert_eq!(module.registrations()[1].angular_name, "appTitle");
+        assert_eq!(module.registrations()[1].export_name, "__ng_value_AppTitle");
+        assert_eq!(module.registrations()[2].kind, RegistrationKind::Controller);
+        assert_eq!(module.registrations()[2].angular_name, "demoInfo");
         assert_eq!(
-            module.registrations()[1].export_name,
+            module.registrations()[2].export_name,
+            "__ng_controller_DemoInfo"
+        );
+        assert_eq!(module.registrations()[3].kind, RegistrationKind::Component);
+        assert_eq!(module.registrations()[3].angular_name, "todoList");
+        assert_eq!(
+            module.registrations()[3].export_name,
             "__ng_component_TodoList"
         );
     }
@@ -412,7 +447,7 @@ mod tests {
         let module = __ng_collect_app();
 
         assert_eq!(module.name(), "rustDemo");
-        assert_eq!(module.registrations().len(), 2);
+        assert_eq!(module.registrations().len(), 4);
     }
 
     #[test]
@@ -433,9 +468,52 @@ mod tests {
             TodoList::METADATA.injections()[0].rust_type(),
             "Option<TodoStore>"
         );
-        assert_eq!(TodoList::METADATA.injections()[1].field(), "_scope");
-        assert_eq!(TodoList::METADATA.injections()[1].token(), "$scope");
-        assert_eq!(TodoList::METADATA.injections()[1].rust_type(), "WasmScope");
+        assert_eq!(TodoList::METADATA.injections()[1].field(), "_http");
+        assert_eq!(TodoList::METADATA.injections()[1].token(), "$http");
+        assert_eq!(
+            TodoList::METADATA.injections()[1].rust_type(),
+            "Option<HttpService>"
+        );
+    }
+
+    #[test]
+    fn todo_authoring_avoids_manual_bridge_exports() {
+        let source = include_str!("lib.rs");
+        let manifest = include_str!("../angular-ts.json");
+        let raw_wasm_bindgen_attr = concat!("#[", "wasm_bindgen");
+        let raw_export_argument = concat!("wasm_bridge", "(export");
+        let controller_impl_marker = concat!(
+            "#[wasm_bridge(component = \"TodoList\")]",
+            "\nimpl TodoListController"
+        );
+        let controller_impl = source
+            .split(controller_impl_marker)
+            .nth(1)
+            .expect("TodoListController impl should exist");
+        let items_getter = concat!("pub fn ", "items(&self)");
+        let remaining_count_getter = concat!("pub fn ", "remaining_count(&self)");
+        let server_status_getter = concat!("pub fn ", "server_status(&self)");
+        let server_task_count_getter = concat!("pub fn ", "server_task_count(&self)");
+        let server_tasks_getter = concat!("pub fn ", "server_tasks(&self)");
+        let manual_scope_set = concat!("scope", ".set(");
+        let manual_scope_flush = concat!("scope", ".flush(");
+        let manual_spawn = concat!("spawn", "_local");
+        let raw_controller_pointer = concat!(" as *", "mut TodoListController");
+
+        assert!(!source.contains(raw_wasm_bindgen_attr));
+        assert!(!source.contains(raw_export_argument));
+        assert!(!source.contains(manual_scope_set));
+        assert!(!source.contains(manual_scope_flush));
+        assert!(!source.contains(manual_spawn));
+        assert!(!source.contains(raw_controller_pointer));
+        assert!(!controller_impl.contains(items_getter));
+        assert!(!controller_impl.contains(remaining_count_getter));
+        assert!(!controller_impl.contains(server_status_getter));
+        assert!(!controller_impl.contains(server_task_count_getter));
+        assert!(!controller_impl.contains(server_tasks_getter));
+        assert!(!manifest.contains("\"export\""));
+        assert!(!manifest.contains("syncProperties"));
+        assert!(!manifest.contains("\"methods\""));
     }
 
     #[test]

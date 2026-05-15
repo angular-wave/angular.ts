@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const root = resolve(new URL("../../../", import.meta.url).pathname);
+const root = resolve(new URL("../../../../", import.meta.url).pathname);
 const namespacePath = resolve(root, "@types/namespace.d.ts");
 const parityPath = resolve(
   root,
@@ -10,7 +10,6 @@ const parityPath = resolve(
 
 const allowedStatuses = new Set([
   "covered",
-  "started",
   "alias",
   "unsafe",
   "deferred",
