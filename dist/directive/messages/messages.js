@@ -1,6 +1,6 @@
 import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { createNodelistFromHTML, removeElement } from '../../shared/dom.js';
+import { getDirectiveAttr, createNodelistFromHTML, removeElement } from '../../shared/dom.js';
 import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
 
 const ACTIVE_CLASS = "ng-active";
@@ -183,7 +183,9 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
         link($scope, element, attrs, ngMessagesCtrl) {
-            const src = attrs.ngMessagesInclude || attrs.src;
+            const src = getDirectiveAttr(element, attrs, "ngMessagesInclude") ||
+                getDirectiveAttr(element, attrs, "src") ||
+                "";
             void $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
                     return;
@@ -238,8 +240,14 @@ function ngMessageDirectiveFactory(isDefault) {
                 let dynamicExp;
                 if (!isDefault) {
                     commentNode = element;
-                    staticExp = attrs.ngMessage || attrs.when;
-                    dynamicExp = attrs.ngMessageExp || attrs.whenExp;
+                    staticExp =
+                        getDirectiveAttr(element, attrs, "ngMessage") ||
+                            getDirectiveAttr(element, attrs, "when") ||
+                            undefined;
+                    dynamicExp =
+                        getDirectiveAttr(element, attrs, "ngMessageExp") ||
+                            getDirectiveAttr(element, attrs, "whenExp") ||
+                            undefined;
                     const assignRecords = function (items) {
                         records = items
                             ? isArray(items)

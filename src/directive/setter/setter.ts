@@ -1,5 +1,5 @@
 import { _log, _parse } from "../../injection-tokens.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
 ngSetterDirective.$inject = [_parse, _log];
 
@@ -12,10 +12,10 @@ export function ngSetterDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
-      const modelExpression: unknown = attrs.ngSetter;
+    link(scope: ng.Scope, element: HTMLElement): void {
+      const modelExpression = getNormalizedAttr(element, "ngSetter");
 
-      if (typeof modelExpression !== "string" || modelExpression === "") {
+      if (!modelExpression) {
         $log.warn("ng-setter: expression null");
 
         return;

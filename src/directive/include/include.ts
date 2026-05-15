@@ -7,7 +7,7 @@ import {
   _templateRequest,
 } from "../../injection-tokens.ts";
 import { isDefined, isInstanceOf } from "../../shared/utils.ts";
-import { removeElement } from "../../shared/dom.ts";
+import { getDirectiveAttr, removeElement } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -42,12 +42,15 @@ export function ngIncludeDirective(
       /* empty */
       return undefined;
     },
-    compile(_element: Element, attr: Attributes) {
-      const srcExp = attr.ngInclude || attr.src;
+    compile(element: Element, attr: Attributes) {
+      const srcExp =
+        getDirectiveAttr(element, attr, "ngInclude") ||
+        getDirectiveAttr(element, attr, "src") ||
+        "";
 
-      const onloadExp = attr.onload || "";
+      const onloadExp = getDirectiveAttr(element, attr, "onload") || "";
 
-      const autoScrollExp = attr.autoscroll;
+      const autoScrollExp = getDirectiveAttr(element, attr, "autoscroll");
 
       const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 

@@ -1,6 +1,6 @@
 import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { removeElement, domInsert } from '../../shared/dom.js';
+import { getDirectiveAttr, removeElement, domInsert } from '../../shared/dom.js';
 import { values } from '../../shared/utils.js';
 
 class NgSwitchController {
@@ -16,8 +16,10 @@ function ngSwitchDirective($injector) {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
         controller: NgSwitchController,
-        link(scope, _element, attr, ngSwitchController) {
-            const watchExpr = attr.ngSwitch || attr.on;
+        link(scope, element, attr, ngSwitchController) {
+            const watchExpr = getDirectiveAttr(element, attr, "ngSwitch") ||
+                getDirectiveAttr(element, attr, "on") ||
+                "";
             let selectedTranscludes = [];
             const selectedElements = [];
             const previousLeaveAnimations = new Set();
@@ -110,8 +112,9 @@ function ngSwitchWhenDirective() {
             if (!$transclude) {
                 return;
             }
-            attrs.ngSwitchWhen
-                .split(attrs.ngSwitchWhenSeparator)
+            const when = getDirectiveAttr(element, attrs, "ngSwitchWhen") || "";
+            const separator = getDirectiveAttr(element, attrs, "ngSwitchWhenSeparator");
+            (separator !== undefined ? when.split(separator) : [when])
                 .sort()
                 .filter(
             // Filter duplicate cases

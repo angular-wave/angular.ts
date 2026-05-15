@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 15, 2026 00:33:55 */
+/* Version: 0.27.0 - May 15, 2026 19:17:43 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1331,6 +1331,7 @@
     const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
     const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
     const HTML_PARSE_CACHE_MAX_SIZE = 256;
+    const TRANSCLUDED_HOST_ELEMENT_KEY = "$$transcludedHostElement";
     let expandoCache = new WeakMap();
     const htmlParseCache = new Map();
     /**
@@ -1538,6 +1539,34 @@
         }
         return undefined;
     }
+    /** Stores the original element that was replaced by an element-transclusion anchor. */
+    function setTranscludedHostElement(anchor, hostElement) {
+        setCacheData(anchor, TRANSCLUDED_HOST_ELEMENT_KEY, hostElement);
+    }
+    /** Returns the element itself, or the original host for an element-transclusion anchor. */
+    function getDirectiveHostElement(node) {
+        if (!node)
+            return null;
+        if (node instanceof Element)
+            return node;
+        const hostElement = getCacheData(node, TRANSCLUDED_HOST_ELEMENT_KEY);
+        return hostElement instanceof Element ? hostElement : null;
+    }
+    /**
+     * Reads a directive attribute from the directive host element, with an attrs fallback
+     * for compile/link contexts that provide synthetic or already-interpolated attrs.
+     */
+    function getDirectiveAttr(element, attrs, normalizedName) {
+        const hostElement = getDirectiveHostElement(element) || element;
+        const elementValue = getNormalizedAttr(hostElement, normalizedName);
+        return elementValue !== undefined
+            ? elementValue
+            : attrs?.[normalizedName];
+    }
+    /** Returns whether a directive attribute is present on the host element or attrs. */
+    function hasDirectiveAttr(element, attrs, normalizedName) {
+        return (hasNormalizedAttr(getDirectiveHostElement(element) || element, normalizedName) || attrs?.[normalizedName] !== undefined);
+    }
     /**
      * Deletes cache data for a given element for a particular key.
      *
@@ -1716,6 +1745,28 @@
         return isBooleanAttr && BOOLEAN_ELEMENTS_SET.has(element.nodeName)
             ? normalizedName
             : false;
+    }
+    /**
+     * Reads an element attribute by normalized directive-style name.
+     *
+     * This mirrors compile-time attribute normalization, but reads the live element
+     * so callers see attribute aliases such as `data-*` and later DOM updates.
+     */
+    function getNormalizedAttr(element, normalizedName) {
+        if (!(element instanceof Element))
+            return undefined;
+        const expected = directiveNormalize(normalizedName);
+        for (let index = 0; index < element.attributes.length; index += 1) {
+            const attr = element.attributes[index];
+            if (directiveNormalize(attr.name) === expected) {
+                return attr.value;
+            }
+        }
+        return undefined;
+    }
+    /** Returns whether an element has an attribute matching a normalized name. */
+    function hasNormalizedAttr(element, normalizedName) {
+        return getNormalizedAttr(element, normalizedName) !== undefined;
     }
     function cleanSingleElementData(node) {
         if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
@@ -9354,11 +9405,13 @@
                         const compileNodeRef = NodeRef._fromNode(document.createComment(""));
                         templateAttrs._nodeRef = compileNodeRef;
                         const compileNode = compileNodeRef.node;
+                        const transcludedTemplateElement = assertDefined(transcludedTemplateRef._element);
+                        setTranscludedHostElement(compileNode, transcludedTemplateElement);
                         if (contextNodeRef) {
                             setTrackedNodeAt(contextNodeRef, index, compileNode);
                         }
-                        replaceWith(assertDefined(transcludedTemplateRef._element), compileNode, index);
-                        const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, assertDefined(transcludedTemplateRef._element), transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
+                        replaceWith(transcludedTemplateElement, compileNode, index);
+                        const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
                             // Don't pass controller/scope/template directives through element transclusion:
                             // the transcluded template will compile against its own directive context.
                             _nonTlbTranscludeDirective: nonTlbTranscludeDirective,
@@ -13724,13 +13777,13 @@
         /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
         function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
             return function (scope, elem, attr) {
-                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return;
                 const ariaCamelName = attr.$normalize(ariaAttr);
                 if (config[ariaCamelName] &&
                     !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
-                    !attr[ariaCamelName]) {
-                    scope.$watch(attr[attrName], (boolVal) => {
+                    !hasNormalizedAttr(elem, ariaCamelName)) {
+                    scope.$watch(getNormalizedAttr(elem, attrName) || "", (boolVal) => {
                         // ensure boolean value
                         boolVal = negate ? !boolVal : !!boolVal;
                         elem.setAttribute(ariaAttr, boolVal);
@@ -13769,8 +13822,8 @@
         return {
             restrict: "A",
             require: "?ngMessages",
-            link(_scope, elem, attr) {
-                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+            link(_scope, elem) {
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return;
                 if (!elem.hasAttribute("aria-live")) {
                     elem.setAttribute("aria-live", "assertive");
@@ -13783,11 +13836,11 @@
     function ngClickAriaDirective($aria, $parse) {
         return {
             restrict: "A",
-            compile(_elem, attr) {
-                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+            compile(elem) {
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return undefined;
-                const fn = $parse(attr.ngClick);
-                return (scope, elem, attrParam) => {
+                const fn = $parse(getNormalizedAttr(elem, "ngClick") || "");
+                return (scope, elem) => {
                     if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
                         if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
                             elem.setAttribute("role", "button");
@@ -13796,9 +13849,9 @@
                             elem.setAttribute("tabindex", "0");
                         }
                         if ($aria.config("bindKeydown") &&
-                            !attrParam.ngKeydown &&
-                            !attrParam.ngKeypress &&
-                            !attrParam.ngKeyup) {
+                            !hasNormalizedAttr(elem, "ngKeydown") &&
+                            !hasNormalizedAttr(elem, "ngKeypress") &&
+                            !hasNormalizedAttr(elem, "ngKeyup")) {
                             elem.addEventListener("keydown", 
                             /** Handles keyboard activation for synthetic button semantics. */
                             (event) => {
@@ -13881,9 +13934,9 @@
                 !isNodeOneOf(elem, nativeAriaNodeNames));
         }
         /** Infers the control shape used to decide which ARIA attributes to manage. */
-        function getShape(attr) {
-            const { type } = attr;
-            const { role } = attr;
+        function getShape(element) {
+            const type = getNormalizedAttr(element, "type");
+            const role = getNormalizedAttr(element, "role");
             return (type || role) === "checkbox" || role === "menuitemcheckbox"
                 ? "checkbox"
                 : (type || role) === "radio" || role === "menuitemradio"
@@ -13896,10 +13949,10 @@
             restrict: "A",
             require: "ngModel",
             priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
-            compile(compileElement, attr) {
-                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+            compile(compileElement) {
+                if (hasNormalizedAttr(compileElement, ARIA_DISABLE_ATTR))
                     return undefined;
-                const shape = getShape(attr);
+                const shape = getShape(compileElement);
                 return {
                     post(_, elem, attrPost, ngModel) {
                         const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
@@ -13929,9 +13982,11 @@
                                 }
                                 if ($aria.config("ariaValue")) {
                                     const needsAriaValuemin = !elem.hasAttribute("aria-valuemin") &&
-                                        (hasOwn(attrPost, "min") || hasOwn(attrPost, "ngMin"));
+                                        (hasNormalizedAttr(elem, "min") ||
+                                            hasNormalizedAttr(elem, "ngMin"));
                                     const needsAriaValuemax = !elem.hasAttribute("aria-valuemax") &&
-                                        (hasOwn(attrPost, "max") || hasOwn(attrPost, "ngMax"));
+                                        (hasNormalizedAttr(elem, "max") ||
+                                            hasNormalizedAttr(elem, "ngMax"));
                                     const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
                                     if (needsAriaValuemin) {
                                         attrPost.$observe("min", (newVal) => {
@@ -13954,7 +14009,7 @@
                                 }
                                 break;
                         }
-                        if (!hasOwn(attrPost, "ngRequired") &&
+                        if (!hasNormalizedAttr(elem, "ngRequired") &&
                             ngModel.$validators.required &&
                             shouldAttachAttr("aria-required", "ariaRequired", elem, false)) {
                             // ngModel.$error.required is undefined on custom controls
@@ -13977,8 +14032,8 @@
     function ngDblclickAriaDirective($aria) {
         return {
             restrict: "A",
-            link(_scope, elem, attr) {
-                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+            link(_scope, elem) {
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return;
                 if ($aria.config("tabindex") &&
                     !elem.hasAttribute("tabindex") &&
@@ -14142,13 +14197,14 @@
     /** Binds the watched expression as plain text content. */
     function ngBindDirective() {
         return {
-            link(scope, element, attr) {
-                if (!isString(attr.ngBind))
+            link(scope, element) {
+                const expression = getNormalizedAttr(element, "ngBind");
+                if (!isString(expression))
                     return;
-                scope.$watch(attr.ngBind, (value) => {
+                scope.$watch(expression, (value) => {
                     const text = stringify$1(deProxy(value));
                     element.textContent = isString(text) ? text : "";
-                }, isDefined(attr.lazy));
+                }, hasNormalizedAttr(element, "lazy"));
             },
         };
     }
@@ -14195,9 +14251,9 @@
     function ngChannelDirective($eventBus) {
         return {
             scope: false,
-            link: (scope, element, attrs) => {
-                const channel = attrs.ngChannel;
-                if (typeof channel !== "string") {
+            link: (scope, element) => {
+                const channel = getNormalizedAttr(element, "ngChannel");
+                if (!channel) {
                     return;
                 }
                 const hasTemplateContent = element.childNodes.length > 0;
@@ -14230,8 +14286,8 @@
                 const counts = classCounts;
                 // Cache once; `hasAnimate(element)` should be stable for this directive instance.
                 const animate = hasAnimate(element);
-                const expression = attr.ngClass;
-                if (typeof expression !== "string") {
+                const expression = getNormalizedAttr(element, "ngClass");
+                if (expression === undefined) {
                     return;
                 }
                 scope.$watch(expression, (val) => {
@@ -14422,9 +14478,9 @@
     function ngElDirective() {
         return {
             restrict: "A",
-            link(scope, element, attrs) {
+            link(scope, element) {
                 const target = scope.$target;
-                const expr = attrs.ngEl;
+                const expr = getNormalizedAttr(element, "ngEl");
                 const key = isString(expr) && expr ? expr : element.id;
                 target[key] = element;
                 const parent = element.parentNode;
@@ -16639,7 +16695,7 @@
                 let block;
                 let childScope;
                 let previousElements;
-                const expression = $attr.ngIf;
+                const expression = getDirectiveAttr($element, $attr, "ngIf");
                 if (typeof expression !== "string") {
                     return;
                 }
@@ -16714,10 +16770,12 @@
                 /* empty */
                 return undefined;
             },
-            compile(_element, attr) {
-                const srcExp = attr.ngInclude || attr.src;
-                const onloadExp = attr.onload || "";
-                const autoScrollExp = attr.autoscroll;
+            compile(element, attr) {
+                const srcExp = getDirectiveAttr(element, attr, "ngInclude") ||
+                    getDirectiveAttr(element, attr, "src") ||
+                    "";
+                const onloadExp = getDirectiveAttr(element, attr, "onload") || "";
+                const autoScrollExp = getDirectiveAttr(element, attr, "autoscroll");
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 return (scope, $element, _$attr, ctrl, $transclude) => {
@@ -18806,8 +18864,8 @@
     function ngInitDirective($parse) {
         return {
             priority: 450,
-            compile(_element, attrs) {
-                const initFn = $parse(String(attrs.ngInit));
+            compile(element) {
+                const initFn = $parse(getNormalizedAttr(element, "ngInit") || "");
                 return {
                     pre(scope, element) {
                         const controller = getController(element);
@@ -18855,11 +18913,9 @@
     function ngListenerDirective() {
         return {
             scope: false,
-            link: (scope, element, attrs) => {
-                const configuredChannel = attrs.ngListener;
-                const channel = typeof configuredChannel === "string" && configuredChannel !== ""
-                    ? configuredChannel
-                    : element.id;
+            link: (scope, element) => {
+                const configuredChannel = getNormalizedAttr(element, "ngListener");
+                const channel = configuredChannel || element.id;
                 const hasTemplateContent = element.childNodes.length > 0;
                 const fn = (event) => {
                     const value = event.detail;
@@ -19060,7 +19116,9 @@
             restrict: "AE",
             require: "^^ngMessages", // we only require this for validation sake
             link($scope, element, attrs, ngMessagesCtrl) {
-                const src = attrs.ngMessagesInclude || attrs.src;
+                const src = getDirectiveAttr(element, attrs, "ngMessagesInclude") ||
+                    getDirectiveAttr(element, attrs, "src") ||
+                    "";
                 void $templateRequest(src).then((html) => {
                     if ($scope._destroyed)
                         return;
@@ -19115,8 +19173,14 @@
                     let dynamicExp;
                     if (!isDefault) {
                         commentNode = element;
-                        staticExp = attrs.ngMessage || attrs.when;
-                        dynamicExp = attrs.ngMessageExp || attrs.whenExp;
+                        staticExp =
+                            getDirectiveAttr(element, attrs, "ngMessage") ||
+                                getDirectiveAttr(element, attrs, "when") ||
+                                undefined;
+                        dynamicExp =
+                            getDirectiveAttr(element, attrs, "ngMessageExp") ||
+                                getDirectiveAttr(element, attrs, "whenExp") ||
+                                undefined;
                         const assignRecords = function (items) {
                             records = items
                                 ? isArray(items)
@@ -19314,7 +19378,7 @@
             const selectNode = selectElement;
             const selectCtrl = ctrls[0];
             const ngModelCtrl = ctrls[1];
-            const { multiple } = attr;
+            const multiple = hasNormalizedAttr(selectElement, "multiple");
             for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
                 if (children[i].value === "") {
                     selectCtrl._hasEmptyOption = true;
@@ -19325,7 +19389,7 @@
             emptyElement(selectNode);
             const providedEmptyOption = !!selectCtrl._emptyOption;
             let options;
-            const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
+            const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") || "", selectNode, scope);
             const listFragment = createDocumentFragment();
             selectCtrl._generateUnknownOptionValue = () => "?";
             if (!multiple) {
@@ -19976,10 +20040,10 @@
                     function () {
                         throw ngRefError("nonassign", 'Expression in ngRef="{0}" is non-assignable!', expression);
                     };
-                return (scope, element, attrs) => {
+                return (scope, element) => {
                     let refValue;
-                    if (hasOwn(attrs, "ngRefRead")) {
-                        const readTarget = attrs.ngRefRead;
+                    if (hasNormalizedAttr(element, "ngRefRead")) {
+                        const readTarget = getNormalizedAttr(element, "ngRefRead");
                         if (readTarget === "$element") {
                             refValue = element;
                         }
@@ -20319,10 +20383,13 @@
             transclude: "element",
             priority: 1000,
             terminal: true,
-            compile(_$element, $attr) {
-                const expression = $attr.ngRepeat;
-                const hasAnimate = !!$attr.animate;
-                const indexProperty = $attr.index || $attr.dataIndex || undefined;
+            compile($element, $attr) {
+                const expression = getDirectiveAttr($element, $attr, "ngRepeat") || "";
+                const hasAnimate = hasDirectiveAttr($element, $attr, "animate");
+                const indexProperty = getDirectiveAttr($element, $attr, "index") ||
+                    getDirectiveAttr($element, $attr, "dataIndex") ||
+                    undefined;
+                const hasLazy = hasDirectiveAttr($element, $attr, "lazy");
                 let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
                 if (!match) {
                     throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -20342,8 +20409,9 @@
                     throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
                 }
                 const swap = callBackOnce(() => {
-                    if (isDefined($attr.lazy) && isDefined($attr.swap)) {
-                        document.querySelectorAll($attr.swap).forEach((x) => {
+                    const targetSelector = getDirectiveAttr($element, $attr, "swap");
+                    if (hasLazy && targetSelector) {
+                        document.querySelectorAll(targetSelector).forEach((x) => {
                             removeElement(x);
                         });
                     }
@@ -20735,7 +20803,7 @@
                         flushPendingInserts();
                         lastBlockMap = nextBlockMap;
                         lastBlockOrder = nextBlockOrder;
-                    }, isDefined(attr.lazy));
+                    }, hasLazy);
                 }
                 return ngRepeatLink;
             },
@@ -20746,8 +20814,8 @@
     function ngScopeDirective() {
         return {
             scope: false,
-            link($scope, _, $attrs) {
-                const scopeName = $attrs.ngScope;
+            link($scope, element) {
+                const scopeName = getNormalizedAttr(element, "ngScope");
                 if (typeof scopeName === "string") {
                     $scope.$scopename = scopeName;
                 }
@@ -20763,11 +20831,10 @@
         return {
             restrict: "E",
             terminal: true,
-            compile(element, attr) {
-                const attrMap = attr;
-                const templateId = attr.id;
-                if (attrMap.type === "text/ng-template" &&
-                    typeof templateId === "string") {
+            compile(element) {
+                const type = getNormalizedAttr(element, "type");
+                const templateId = getNormalizedAttr(element, "id");
+                if (type === "text/ng-template" && typeof templateId === "string") {
                     $templateCache.set(templateId, element.innerText);
                 }
                 return undefined;
@@ -20782,9 +20849,9 @@
     function ngSetterDirective($parse, $log) {
         return {
             restrict: "A",
-            link(scope, element, attrs) {
-                const modelExpression = attrs.ngSetter;
-                if (typeof modelExpression !== "string" || modelExpression === "") {
+            link(scope, element) {
+                const modelExpression = getNormalizedAttr(element, "ngSetter");
+                if (!modelExpression) {
                     $log.warn("ng-setter: expression null");
                     return;
                 }
@@ -20832,9 +20899,9 @@
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "A",
-            link(scope, element, $attr) {
-                const expression = $attr.ngShow;
-                if (typeof expression !== "string") {
+            link(scope, element) {
+                const expression = getNormalizedAttr(element, "ngShow");
+                if (expression === undefined) {
                     return;
                 }
                 scope.$watch(expression, (value) => {
@@ -20868,9 +20935,9 @@
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "A",
-            link(scope, element, attr) {
-                const expression = attr.ngHide;
-                if (typeof expression !== "string") {
+            link(scope, element) {
+                const expression = getNormalizedAttr(element, "ngHide");
+                if (expression === undefined) {
                     return;
                 }
                 scope.$watch(expression, (value) => {
@@ -20901,9 +20968,9 @@
     function ngStyleDirective() {
         return {
             restrict: "A",
-            link(scope, element, attr) {
-                const expression = attr.ngStyle;
-                if (typeof expression !== "string") {
+            link(scope, element) {
+                const expression = getNormalizedAttr(element, "ngStyle");
+                if (expression === undefined) {
                     return;
                 }
                 let oldStyles = null;
@@ -20943,8 +21010,10 @@
             require: "ngSwitch",
             // asks for $scope to fool the BC controller module
             controller: NgSwitchController,
-            link(scope, _element, attr, ngSwitchController) {
-                const watchExpr = attr.ngSwitch || attr.on;
+            link(scope, element, attr, ngSwitchController) {
+                const watchExpr = getDirectiveAttr(element, attr, "ngSwitch") ||
+                    getDirectiveAttr(element, attr, "on") ||
+                    "";
                 let selectedTranscludes = [];
                 const selectedElements = [];
                 const previousLeaveAnimations = new Set();
@@ -21037,8 +21106,9 @@
                 if (!$transclude) {
                     return;
                 }
-                attrs.ngSwitchWhen
-                    .split(attrs.ngSwitchWhenSeparator)
+                const when = getDirectiveAttr(element, attrs, "ngSwitchWhen") || "";
+                const separator = getDirectiveAttr(element, attrs, "ngSwitchWhenSeparator");
+                (separator !== undefined ? when.split(separator) : [when])
                     .sort()
                     .filter(
                 // Filter duplicate cases
@@ -21085,11 +21155,8 @@
                             "No parent directive that requires a transclusion found. " +
                             "Element: {0}", startingTag($element));
                     }
-                    if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
-                        $attrs.ngTransclude = "";
-                    }
-                    const transcludeName = $attrs.ngTransclude;
-                    const transcludeSlot = $attrs.ngTranscludeSlot;
+                    const transcludeName = getNormalizedAttr($element, "ngTransclude");
+                    const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
                     const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0
                         ? transcludeName
                         : transcludeSlot;
@@ -21438,11 +21505,11 @@
     function ngViewportDirective($parse) {
         return {
             restrict: "A",
-            link(scope, element, attrs) {
-                const enterExpr = attrs.onEnter;
-                const leaveExpr = attrs.onLeave;
-                const enterFn = typeof enterExpr === "string" ? $parse(enterExpr) : undefined;
-                const leaveFn = typeof leaveExpr === "string" ? $parse(leaveExpr) : undefined;
+            link(scope, element) {
+                const enterExpr = getNormalizedAttr(element, "onEnter");
+                const leaveExpr = getNormalizedAttr(element, "onLeave");
+                const enterFn = enterExpr ? $parse(enterExpr) : undefined;
+                const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach((entry) => {
                         if (entry.isIntersecting) {
@@ -21522,16 +21589,12 @@
         return {
             restrict: "A",
             link(scope, element, attrs) {
-                const eventName = attrs.trigger || "load";
-                const mode = parseMode(attrs.mode);
-                const transform = parseTransform(attrs.transform);
+                const attr = (name) => getNormalizedAttr(element, name) ?? undefined;
+                const eventName = attr("trigger") || "load";
+                const mode = parseMode(attr("mode"));
+                const transform = parseTransform(attr("transform"));
                 let connection;
                 let streamReader = null;
-                function attr(name) {
-                    const value = attrs[name] ||
-                        attrs[`data${uppercase(name[0])}${name.slice(1)}`];
-                    return isString(value) ? value : undefined;
-                }
                 function evaluate(expression, locals) {
                     if (!expression)
                         return;
@@ -21553,7 +21616,7 @@
                     }));
                 }
                 function resolveUrl() {
-                    const value = attrs.ngWebTransport;
+                    const value = attr("ngWebTransport");
                     if (!value)
                         return undefined;
                     if (/^https:\/\//i.test(value))
@@ -21589,8 +21652,8 @@
                     }
                 }
                 function reconnectEnabled() {
-                    const value = attrs.reconnect || attrs.dataReconnect;
-                    return value === "" || value === true || value === "true";
+                    const value = attr("reconnect");
+                    return value === "" || value === "true";
                 }
                 function retryDelay() {
                     return parseInt(attr("retryDelay") || "", 10) || 1000;
@@ -21953,37 +22016,41 @@
         return {
             restrict: "A",
             link(scope, element, attrs) {
-                const workerName = attrs.ngWorker;
+                const attr = (name) => getNormalizedAttr(element, name) ?? undefined;
+                const workerName = attr("ngWorker");
                 if (!workerName) {
                     $log.warn("ngWorker: missing worker name");
                     return;
                 }
-                const eventName = attrs.trigger || getEventNameForElement(element);
-                const paramsFn = attrs.params ? $parse(attrs.params) : undefined;
+                const eventName = attr("trigger") || getEventNameForElement(element);
+                const paramsExpr = attr("params");
+                const paramsFn = paramsExpr ? $parse(paramsExpr) : undefined;
                 let throttled = false;
                 let intervalId;
-                if (isDefined(attrs.latch)) {
+                if (hasNormalizedAttr(element, "latch")) {
                     attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
                 }
-                if (isDefined(attrs.interval)) {
+                if (hasNormalizedAttr(element, "interval")) {
                     element.dispatchEvent(new Event(eventName));
-                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval || "", 10) || 1000);
+                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attr("interval") || "", 10) || 1000);
                 }
                 const worker = createWorkerConnection(workerName, {
                     logger: $log,
                     err: $exceptionHandler,
                     onMessage: (result) => {
-                        if (isDefined(attrs.dataOnResult)) {
-                            $parse(attrs.dataOnResult)(scope, { $result: result });
+                        const onResult = attr("onResult");
+                        if (isDefined(onResult)) {
+                            $parse(onResult)(scope, { $result: result });
                         }
                         else {
-                            handleSwap(String(result), attrs.swap || "innerHTML", element);
+                            handleSwap(String(result), attr("swap") || "innerHTML", element);
                         }
                     },
                     onError: (err) => {
                         $log.error(`[ng-worker:${workerName}]`, err);
-                        if (isDefined(attrs.dataOnError)) {
-                            $parse(attrs.dataOnError)(scope, { $error: err });
+                        const onError = attr("onError");
+                        if (isDefined(onError)) {
+                            $parse(onError)(scope, { $error: err });
                         }
                         else {
                             element.textContent = "Error";
@@ -21994,18 +22061,18 @@
                     void (async () => {
                         if (element.hasAttribute("disabled"))
                             return;
-                        if (isDefined(attrs.delay)) {
-                            await wait(parseInt(attrs.delay || "", 10) || 0);
+                        if (hasNormalizedAttr(element, "delay")) {
+                            await wait(parseInt(attr("delay") || "", 10) || 0);
                         }
                         if (throttled)
                             return;
-                        if (isDefined(attrs.throttle)) {
+                        if (hasNormalizedAttr(element, "throttle")) {
                             throttled = true;
                             attrs.$set("throttled", true);
                             setTimeout(() => {
                                 attrs.$set("throttled", false);
                                 throttled = false;
-                            }, parseInt(attrs.throttle || "", 10));
+                            }, parseInt(attr("throttle") || "", 10));
                         }
                         let params;
                         try {
@@ -31961,15 +32028,509 @@
         }
     }
 
+    const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    /**
+     * Host-side wrapper around one AngularTS scope exposed to Wasm clients.
+     *
+     * The wrapper mutates the real AngularTS scope. It does not use event bus,
+     * scope-sync, DOM hydration, or object merging.
+     */
+    class WasmScope {
+        /**
+         * Creates a host-side Wasm wrapper around an AngularTS scope.
+         *
+         * Prefer `WasmScopeAbi.createScope()` so the wrapper is registered with an
+         * ABI handle table immediately.
+         */
+        constructor(abi, scope, handle, options = {}) {
+            this.abi = abi;
+            this.scope = scope;
+            this.handle = handle;
+            this.name = options.name ?? scope.$scopename ?? String(scope.$id ?? handle);
+            this._bindings = [];
+            this._flushCallbacks = [];
+            this._flushScheduled = false;
+            this._destroyed = false;
+            this._bindings.push(scope.$on("$destroy", () => {
+                this.dispose();
+            }));
+        }
+        /** Returns whether the wrapper has been disposed. */
+        isDisposed() {
+            return this._destroyed;
+        }
+        /** Reads a dot-separated path from the wrapped AngularTS scope. */
+        get(path) {
+            return readScopePath(this.scope, path);
+        }
+        /** Writes a dot-separated path into the wrapped AngularTS scope. */
+        set(path, value) {
+            return writeScopePath(this.scope, path, value);
+        }
+        /** Deletes a dot-separated path from the wrapped AngularTS scope. */
+        delete(path) {
+            return deleteScopePath(this.scope, path);
+        }
+        /** Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`. */
+        flush() {
+            this._scheduleFlushCallbacks();
+            this.scope.$flushQueue?.();
+        }
+        /** @internal */
+        _scheduleFlushCallbacks() {
+            if (this._flushScheduled || this._flushCallbacks.length === 0) {
+                return;
+            }
+            this._flushScheduled = true;
+            queueMicrotask(() => {
+                if (this._destroyed) {
+                    return;
+                }
+                this._flushScheduled = false;
+                const callbacks = this._flushCallbacks.slice();
+                for (let i = 0, l = callbacks.length; i < l; i++) {
+                    callbacks[i]();
+                }
+                this.scope.$flushQueue?.();
+            });
+        }
+        /**
+         * Registers a callback that runs before this scope flushes.
+         *
+         * Generated Wasm bridges use this to sync Rust-owned public fields back onto
+         * AngularTS controller wrappers when Rust async code calls `WasmScope::flush`.
+         */
+        onFlush(callback) {
+            if (this._destroyed) {
+                return () => { };
+            }
+            this._flushCallbacks.push(callback);
+            return () => {
+                const index = this._flushCallbacks.indexOf(callback);
+                if (index >= 0) {
+                    this._flushCallbacks.splice(index, 1);
+                }
+            };
+        }
+        /**
+         * Watches one scope path and calls `callback` when AngularTS observes a change.
+         *
+         * The returned function removes only this watch registration.
+         */
+        watch(path, callback, options = {}) {
+            const dispose = this.scope.$watch(path, (value) => {
+                if (this._destroyed) {
+                    return;
+                }
+                callback({
+                    scopeHandle: this.handle,
+                    scopeName: this.name,
+                    path,
+                    value,
+                });
+            }, !options.initial);
+            if (!dispose) {
+                return () => false;
+            }
+            return dispose;
+        }
+        /**
+         * Binds this scope to Wasm lifecycle exports and optional watched paths.
+         *
+         * This is the host-to-guest side of the ABI: AngularTS allocates guest memory
+         * for callback payloads, invokes the exported callback, and frees memory after
+         * the callback returns.
+         */
+        bindExports(exports$1, options = {}) {
+            this.abi.attach(exports$1);
+            this.abi.notifyBind(this);
+            const disposers = (options.watch ?? []).map((path) => this.watch(path, (update) => {
+                this.abi.notifyUpdate(update);
+            }, { initial: options.initial }));
+            let disposed = false;
+            const dispose = () => {
+                if (disposed) {
+                    return;
+                }
+                disposed = true;
+                for (let i = 0, l = disposers.length; i < l; i++) {
+                    disposers[i]();
+                }
+                this.abi.notifyUnbind(this);
+            };
+            this._bindings.push(dispose);
+            return dispose;
+        }
+        /** Disposes ABI bindings without destroying the underlying AngularTS scope. */
+        dispose() {
+            if (this._destroyed) {
+                return;
+            }
+            this._destroyed = true;
+            const bindings = this._bindings.splice(0);
+            for (let i = 0, l = bindings.length; i < l; i++) {
+                bindings[i]();
+            }
+            this._flushCallbacks.length = 0;
+            this._flushScheduled = false;
+            this.abi.unregisterScope(this.handle);
+        }
+    }
+    /**
+     * Language-neutral AngularTS scope ABI for raw Wasm clients.
+     *
+     * The ABI exchanges strings and JSON-compatible values through guest linear
+     * memory. Guest modules provide `ng_abi_alloc` and `ng_abi_free`; AngularTS uses
+     * those exports whenever it needs to place callback or return payloads in guest
+     * memory.
+     */
+    class WasmScopeAbi {
+        /** Creates a scope ABI and optionally attaches guest exports immediately. */
+        constructor(exports$1) {
+            /** @internal */
+            this._nextScopeHandle = 1;
+            /** @internal */
+            this._nextBufferHandle = 1;
+            /** @internal */
+            this._nextWatchHandle = 1;
+            /** @internal */
+            this._scopes = new Map();
+            /** @internal */
+            this._scopesByName = new Map();
+            /** @internal */
+            this._buffers = new Map();
+            /** @internal */
+            this._watches = new Map();
+            this._exports = exports$1;
+            this.imports = {
+                [WASM_SCOPE_IMPORT_NAMESPACE]: {
+                    scope_resolve: (namePtr, nameLen) => this._scopeResolve(namePtr, nameLen),
+                    scope_get: (scopeHandle, pathPtr, pathLen) => this._scopeGet(scopeHandle, pathPtr, pathLen),
+                    scope_get_named: (namePtr, nameLen, pathPtr, pathLen) => this._scopeGetNamed(namePtr, nameLen, pathPtr, pathLen),
+                    scope_set: (scopeHandle, pathPtr, pathLen, valuePtr, valueLen) => this._scopeSet(scopeHandle, pathPtr, pathLen, valuePtr, valueLen),
+                    scope_set_named: (namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen) => this._scopeSetNamed(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen),
+                    scope_delete: (scopeHandle, pathPtr, pathLen) => this._scopeDelete(scopeHandle, pathPtr, pathLen),
+                    scope_delete_named: (namePtr, nameLen, pathPtr, pathLen) => this._scopeDeleteNamed(namePtr, nameLen, pathPtr, pathLen),
+                    scope_flush: (scopeHandle) => this._scopeFlush(scopeHandle),
+                    scope_flush_named: (namePtr, nameLen) => this._scopeFlushNamed(namePtr, nameLen),
+                    scope_watch: (scopeHandle, pathPtr, pathLen) => this._scopeWatch(scopeHandle, pathPtr, pathLen),
+                    scope_watch_named: (namePtr, nameLen, pathPtr, pathLen) => this._scopeWatchNamed(namePtr, nameLen, pathPtr, pathLen),
+                    scope_unwatch: (watchHandle) => this._scopeUnwatch(watchHandle),
+                    scope_unbind: (scopeHandle) => this._scopeUnbind(scopeHandle),
+                    scope_unbind_named: (namePtr, nameLen) => this._scopeUnbindNamed(namePtr, nameLen),
+                    buffer_ptr: (bufferHandle) => this._buffers.get(bufferHandle)?._ptr ?? 0,
+                    buffer_len: (bufferHandle) => this._buffers.get(bufferHandle)?._len ?? 0,
+                    buffer_free: (bufferHandle) => {
+                        this.freeBuffer(bufferHandle);
+                    },
+                },
+            };
+        }
+        /** Attaches guest exports after instantiation. */
+        attach(exports$1) {
+            this._exports = exports$1;
+        }
+        /** Creates and registers a scope wrapper. */
+        createScope(scope, options = {}) {
+            const handle = this._nextScopeHandle++;
+            const wasmScope = new WasmScope(this, scope, handle, options);
+            this._scopes.set(handle, wasmScope);
+            this._scopesByName.set(wasmScope.name, wasmScope);
+            return wasmScope;
+        }
+        /** Returns a previously registered scope wrapper. */
+        getScope(reference) {
+            return this._resolveScope(reference);
+        }
+        /** Unregisters a scope wrapper without destroying the AngularTS scope. */
+        unregisterScope(handle) {
+            const scope = this._scopes.get(handle);
+            if (!scope) {
+                return false;
+            }
+            if (scope && this._scopesByName.get(scope.name) === scope) {
+                this._scopesByName.delete(scope.name);
+            }
+            for (const [watchHandle, watch] of this._watches) {
+                if (watch._scope === scope) {
+                    watch._dispose();
+                    this._watches.delete(watchHandle);
+                }
+            }
+            return this._scopes.delete(handle);
+        }
+        /** Invokes the optional guest bind callback for a scope. */
+        notifyBind(scope) {
+            const exports$1 = this._requireExports();
+            if (!exports$1.ng_scope_on_bind) {
+                return;
+            }
+            this._withGuestString(scope.name, (namePtr, nameLen) => {
+                exports$1.ng_scope_on_bind?.(scope.handle, namePtr, nameLen);
+            });
+        }
+        /** Invokes the optional guest update callback for a watched scope path. */
+        notifyUpdate(update) {
+            const exports$1 = this._requireExports();
+            if (!exports$1.ng_scope_on_update) {
+                return;
+            }
+            this._withGuestString(update.path, (pathPtr, pathLen) => {
+                this._withGuestJson(update.value, (valuePtr, valueLen) => {
+                    exports$1.ng_scope_on_update?.(update.scopeHandle, pathPtr, pathLen, valuePtr, valueLen);
+                });
+            });
+        }
+        /** Invokes the optional guest unbind callback for a scope. */
+        notifyUnbind(scope) {
+            this._exports?.ng_scope_on_unbind?.(scope.handle);
+        }
+        /** Releases one result buffer created by `scope_get`. */
+        freeBuffer(bufferHandle) {
+            const buffer = this._buffers.get(bufferHandle);
+            if (!buffer) {
+                return;
+            }
+            this._buffers.delete(bufferHandle);
+            this._requireExports().ng_abi_free(buffer._ptr, buffer._len);
+        }
+        /** @internal */
+        _scopeResolve(namePtr, nameLen) {
+            return (this._resolveScope(this._readGuestString(namePtr, nameLen))?.handle ?? 0);
+        }
+        /** @internal */
+        _scopeGet(scopeReference, pathPtr, pathLen) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            const path = this._readGuestString(pathPtr, pathLen);
+            return this._createResultBuffer(scope.get(path));
+        }
+        /** @internal */
+        _scopeGetNamed(namePtr, nameLen, pathPtr, pathLen) {
+            return this._scopeGet(this._readGuestString(namePtr, nameLen), pathPtr, pathLen);
+        }
+        /** @internal */
+        _scopeSet(scopeReference, pathPtr, pathLen, valuePtr, valueLen) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            const path = this._readGuestString(pathPtr, pathLen);
+            const value = this._readGuestJson(valuePtr, valueLen);
+            return scope.set(path, value) ? 1 : 0;
+        }
+        /** @internal */
+        _scopeSetNamed(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen) {
+            return this._scopeSet(this._readGuestString(namePtr, nameLen), pathPtr, pathLen, valuePtr, valueLen);
+        }
+        /** @internal */
+        _scopeDelete(scopeReference, pathPtr, pathLen) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            return scope.delete(this._readGuestString(pathPtr, pathLen)) ? 1 : 0;
+        }
+        /** @internal */
+        _scopeDeleteNamed(namePtr, nameLen, pathPtr, pathLen) {
+            return this._scopeDelete(this._readGuestString(namePtr, nameLen), pathPtr, pathLen);
+        }
+        /** @internal */
+        _scopeFlush(scopeReference) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            scope.flush();
+            return 1;
+        }
+        /** @internal */
+        _scopeFlushNamed(namePtr, nameLen) {
+            return this._scopeFlush(this._readGuestString(namePtr, nameLen));
+        }
+        /** @internal */
+        _scopeWatch(scopeReference, pathPtr, pathLen) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            const path = this._readGuestString(pathPtr, pathLen);
+            const watchHandle = this._nextWatchHandle++;
+            const dispose = scope.watch(path, (update) => {
+                this.notifyUpdate(update);
+            });
+            this._watches.set(watchHandle, {
+                _scope: scope,
+                _dispose: dispose,
+            });
+            return watchHandle;
+        }
+        /** @internal */
+        _scopeWatchNamed(namePtr, nameLen, pathPtr, pathLen) {
+            return this._scopeWatch(this._readGuestString(namePtr, nameLen), pathPtr, pathLen);
+        }
+        /** @internal */
+        _scopeUnwatch(watchHandle) {
+            const watch = this._watches.get(watchHandle);
+            if (!watch) {
+                return 0;
+            }
+            this._watches.delete(watchHandle);
+            watch._dispose();
+            return 1;
+        }
+        /** @internal */
+        _scopeUnbind(scopeReference) {
+            const scope = this._resolveScope(scopeReference);
+            if (!scope) {
+                return 0;
+            }
+            scope.dispose();
+            return 1;
+        }
+        /** @internal */
+        _scopeUnbindNamed(namePtr, nameLen) {
+            return this._scopeUnbind(this._readGuestString(namePtr, nameLen));
+        }
+        /** @internal */
+        _createResultBuffer(value) {
+            const bufferHandle = this._nextBufferHandle++;
+            const { ptr, len } = this._writeGuestJson(value);
+            this._buffers.set(bufferHandle, {
+                _ptr: ptr,
+                _len: len,
+            });
+            return bufferHandle;
+        }
+        /** @internal */
+        _readGuestString(ptr, len) {
+            const memory = this._requireExports().memory;
+            const bytes = new Uint8Array(memory.buffer, ptr, len);
+            return textDecoder.decode(bytes);
+        }
+        /** @internal */
+        _readGuestJson(ptr, len) {
+            return JSON.parse(this._readGuestString(ptr, len));
+        }
+        /** @internal */
+        _writeGuestJson(value) {
+            return this._writeGuestString(JSON.stringify(value ?? null));
+        }
+        /** @internal */
+        _writeGuestString(value) {
+            const exports$1 = this._requireExports();
+            const bytes = textEncoder.encode(value);
+            const ptr = exports$1.ng_abi_alloc(bytes.byteLength);
+            new Uint8Array(exports$1.memory.buffer, ptr, bytes.byteLength).set(bytes);
+            return { ptr, len: bytes.byteLength };
+        }
+        /** @internal */
+        _withGuestJson(value, callback) {
+            const { ptr, len } = this._writeGuestJson(value);
+            try {
+                callback(ptr, len);
+            }
+            finally {
+                this._requireExports().ng_abi_free(ptr, len);
+            }
+        }
+        /** @internal */
+        _withGuestString(value, callback) {
+            const { ptr, len } = this._writeGuestString(value);
+            try {
+                callback(ptr, len);
+            }
+            finally {
+                this._requireExports().ng_abi_free(ptr, len);
+            }
+        }
+        /** @internal */
+        _requireExports() {
+            if (!this._exports) {
+                throw new Error("AngularTS Wasm scope ABI exports are not attached");
+            }
+            return this._exports;
+        }
+        /** @internal */
+        _resolveScope(reference) {
+            return typeof reference === "number"
+                ? this._scopes.get(reference)
+                : this._scopesByName.get(reference);
+        }
+    }
     class WasmProvider {
         constructor() {
             this.$get = () => {
-                return async (src, imports = {}, opts = {}) => {
+                const load = async (src, imports = {}, opts = {}) => {
                     const result = await instantiateWasm(src, imports);
                     return opts.raw ? result : result.exports;
                 };
+                return Object.assign(load, {
+                    scope(scope, options) {
+                        return new WasmScopeAbi().createScope(scope, options);
+                    },
+                    createScopeAbi(exports$1) {
+                        return new WasmScopeAbi(exports$1);
+                    },
+                });
             };
         }
+    }
+    function readScopePath(scope, path) {
+        if (!path) {
+            return scope;
+        }
+        const keys = scopePathKeys(path);
+        let current = scope;
+        for (let i = 0, l = keys.length; i < l; i++) {
+            if (current === null || current === undefined) {
+                return undefined;
+            }
+            current = current[keys[i]];
+        }
+        return current;
+    }
+    function writeScopePath(scope, path, value) {
+        const keys = scopePathKeys(path);
+        if (keys.length === 0) {
+            return false;
+        }
+        let current = scope;
+        for (let i = 0, l = keys.length - 1; i < l; i++) {
+            const key = keys[i];
+            const existing = current[key];
+            if (existing && typeof existing === "object") {
+                current = existing;
+                continue;
+            }
+            const next = {};
+            current[key] = next;
+            current = next;
+        }
+        current[keys[keys.length - 1]] = value;
+        return true;
+    }
+    function deleteScopePath(scope, path) {
+        const keys = scopePathKeys(path);
+        if (keys.length === 0) {
+            return false;
+        }
+        let current = scope;
+        for (let i = 0, l = keys.length - 1; i < l; i++) {
+            const next = current[keys[i]];
+            if (!next || typeof next !== "object") {
+                return false;
+            }
+            current = next;
+        }
+        return deleteProperty(current, keys[keys.length - 1]);
+    }
+    function scopePathKeys(path) {
+        return path.split(".").filter(Boolean);
     }
 
     /**
@@ -32260,6 +32821,8 @@
     });
 
     exports.HttpRestBackend = HttpRestBackend;
+    exports.WasmScope = WasmScope;
+    exports.WasmScopeAbi = WasmScopeAbi;
     exports.angular = angular;
 
 }));

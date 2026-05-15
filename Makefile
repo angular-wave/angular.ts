@@ -1,9 +1,11 @@
 .PHONY: build build-ts check test test-integrations test-types types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps lint lint-check lint-fix
 
-BUILD_DIR 	= ./dist	
+BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
 MIN_JS      := dist/angular-ts.umd.min.js
 GZ_JS  		:= $(MIN_JS).gz
+CLOSURE_EXTERNS := integrations/closure/externs/angular.js
+DIST_CLOSURE_EXTERNS := $(BUILD_DIR)/externs/angular.js
 
 
 setup:
@@ -18,12 +20,16 @@ ensure-deps:
 	fi
 
 build: ensure-deps
+	@node integrations/closure/scripts/validate-externs.mjs
 	@if [ -d "$(BUILD_DIR)" ]; then \
 		echo "Removing $(BUILD_DIR)..."; \
 		rm -r "$(BUILD_DIR)"; \
 	fi
 	@./node_modules/.bin/tsc --project tsconfig.build.json
 	@./node_modules/.bin/rollup -c
+	@mkdir -p "$(BUILD_DIR)/externs"
+	@cp "$(CLOSURE_EXTERNS)" "$(DIST_CLOSURE_EXTERNS)"
+	@node -e 'const fs=require("fs"); const pkg=JSON.parse(fs.readFileSync("package.json","utf8")); const file="$(DIST_CLOSURE_EXTERNS)"; fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("[VI]{version}[/VI]", pkg.version));'
 
 build-ts: ensure-deps
 	@./node_modules/.bin/tsc --project tsconfig.build.json

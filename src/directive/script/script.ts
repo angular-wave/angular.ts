@@ -1,5 +1,6 @@
 import { _templateCache } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
+import { getDirectiveAttr } from "../../shared/dom.ts";
 
 scriptDirective.$inject = [_templateCache];
 
@@ -13,14 +14,11 @@ export function scriptDirective(
     restrict: "E",
     terminal: true,
     compile(element: HTMLElement, attr: Attributes): undefined {
-      const attrMap = attr as Attributes & Record<string, string>;
+      const type = getDirectiveAttr(element, attr, "type");
 
-      const templateId: unknown = attr.id;
+      const templateId = getDirectiveAttr(element, attr, "id");
 
-      if (
-        attrMap.type === "text/ng-template" &&
-        typeof templateId === "string"
-      ) {
+      if (type === "text/ng-template" && typeof templateId === "string") {
         $templateCache.set(templateId, element.innerText);
       }
 

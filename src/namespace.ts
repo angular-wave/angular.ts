@@ -110,6 +110,21 @@ import type {
   WorkerConfig as TWorkerConfig,
 } from "./directive/worker/worker.ts";
 import type {
+  WasmAbiExports as TWasmAbiExports,
+  WasmInstantiationResult as TWasmInstantiationResult,
+  WasmOptions as TWasmOptions,
+  WasmScope as TWasmScope,
+  WasmScopeAbi as TWasmScopeAbi,
+  WasmScopeAbiImportObject as TWasmScopeAbiImportObject,
+  WasmScopeAbiImports as TWasmScopeAbiImports,
+  WasmScopeBindingOptions as TWasmScopeBindingOptions,
+  WasmScopeOptions as TWasmScopeOptions,
+  WasmScopeReference as TWasmScopeReference,
+  WasmScopeUpdate as TWasmScopeUpdate,
+  WasmScopeWatchOptions as TWasmScopeWatchOptions,
+  WasmService as TWasmService,
+} from "./services/wasm/wasm.ts";
+import type {
   Location as TLocationService,
   LocationProvider as TLocationProvider,
 } from "./services/location/location.ts";
@@ -515,5 +530,31 @@ declare global {
     export type WorkerConfig = TWorkerConfig;
 
     export type WorkerConnection = TWorkerConnection;
+
+    export type WasmAbiExports = TWasmAbiExports;
+
+    export type WasmInstantiationResult = TWasmInstantiationResult;
+
+    export type WasmOptions = TWasmOptions;
+
+    export type WasmScope = TWasmScope;
+
+    export type WasmScopeAbi = TWasmScopeAbi;
+
+    export type WasmScopeAbiImportObject = TWasmScopeAbiImportObject;
+
+    export type WasmScopeAbiImports = TWasmScopeAbiImports;
+
+    export type WasmScopeBindingOptions = TWasmScopeBindingOptions;
+
+    export type WasmScopeOptions = TWasmScopeOptions;
+
+    export type WasmScopeReference = TWasmScopeReference;
+
+    export type WasmScopeUpdate = TWasmScopeUpdate;
+
+    export type WasmScopeWatchOptions = TWasmScopeWatchOptions;
+
+    export type WasmService = TWasmService;
   }
 }

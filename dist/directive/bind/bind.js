@@ -1,16 +1,18 @@
 import { _parse } from '../../injection-tokens.js';
-import { isString, stringify, deProxy, isDefined, isUndefined, isNull, isNullOrUndefined } from '../../shared/utils.js';
+import { isString, stringify, deProxy, isUndefined, isNull, isNullOrUndefined } from '../../shared/utils.js';
+import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
 
 /** Binds the watched expression as plain text content. */
 function ngBindDirective() {
     return {
-        link(scope, element, attr) {
-            if (!isString(attr.ngBind))
+        link(scope, element) {
+            const expression = getNormalizedAttr(element, "ngBind");
+            if (!isString(expression))
                 return;
-            scope.$watch(attr.ngBind, (value) => {
+            scope.$watch(expression, (value) => {
                 const text = stringify(deProxy(value));
                 element.textContent = isString(text) ? text : "";
-            }, isDefined(attr.lazy));
+            }, hasNormalizedAttr(element, "lazy"));
         },
     };
 }

@@ -1,4 +1,4 @@
-import { getCacheData, setCacheData } from '../../shared/dom.js';
+import { getCacheData, setCacheData, getNormalizedAttr } from '../../shared/dom.js';
 import { nullObject, hasAnimate, isArray, isObject, hasOwn, isString } from '../../shared/utils.js';
 
 /** Creates the `ngClass` directive. */
@@ -15,8 +15,8 @@ function classDirective() {
             const counts = classCounts;
             // Cache once; `hasAnimate(element)` should be stable for this directive instance.
             const animate = hasAnimate(element);
-            const expression = attr.ngClass;
-            if (typeof expression !== "string") {
+            const expression = getNormalizedAttr(element, "ngClass");
+            if (expression === undefined) {
                 return;
             }
             scope.$watch(expression, (val) => {

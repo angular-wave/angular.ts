@@ -3,7 +3,7 @@ import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
 const NG_HIDE_CLASS = "ng-hide";
 
@@ -18,14 +18,10 @@ export function ngShowDirective($injector: ng.InjectorService): ng.Directive {
 
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: Element,
-      $attr: Attributes & Record<string, string>,
-    ): void {
-      const expression: unknown = $attr.ngShow;
+    link(scope: ng.Scope, element: Element): void {
+      const expression = getNormalizedAttr(element, "ngShow");
 
-      if (typeof expression !== "string") {
+      if (expression === undefined) {
         return;
       }
 
@@ -61,14 +57,10 @@ export function ngHideDirective($injector: ng.InjectorService): ng.Directive {
 
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: Element,
-      attr: Attributes & Record<string, string>,
-    ): void {
-      const expression: unknown = attr.ngHide;
+    link(scope: ng.Scope, element: Element): void {
+      const expression = getNormalizedAttr(element, "ngHide");
 
-      if (typeof expression !== "string") {
+      if (expression === undefined) {
         return;
       }
 

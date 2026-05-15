@@ -1,5 +1,6 @@
 import { _aria, _parse } from '../../injection-tokens.js';
-import { extend, hasOwn, stringify } from '../../shared/utils.js';
+import { hasNormalizedAttr, getNormalizedAttr } from '../../shared/dom.js';
+import { extend, stringify } from '../../shared/utils.js';
 
 const ARIA_DISABLE_ATTR = "ngAriaDisable";
 /**
@@ -52,13 +53,13 @@ function AriaProvider() {
     /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
     function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
         return function (scope, elem, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
+            if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                 return;
             const ariaCamelName = attr.$normalize(ariaAttr);
             if (config[ariaCamelName] &&
                 !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
-                !attr[ariaCamelName]) {
-                scope.$watch(attr[attrName], (boolVal) => {
+                !hasNormalizedAttr(elem, ariaCamelName)) {
+                scope.$watch(getNormalizedAttr(elem, attrName) || "", (boolVal) => {
                     // ensure boolean value
                     boolVal = negate ? !boolVal : !!boolVal;
                     elem.setAttribute(ariaAttr, boolVal);
@@ -97,8 +98,8 @@ function ngMessagesAriaDirective() {
     return {
         restrict: "A",
         require: "?ngMessages",
-        link(_scope, elem, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
+        link(_scope, elem) {
+            if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                 return;
             if (!elem.hasAttribute("aria-live")) {
                 elem.setAttribute("aria-live", "assertive");
@@ -111,11 +112,11 @@ ngClickAriaDirective.$inject = [_aria, _parse];
 function ngClickAriaDirective($aria, $parse) {
     return {
         restrict: "A",
-        compile(_elem, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
+        compile(elem) {
+            if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                 return undefined;
-            const fn = $parse(attr.ngClick);
-            return (scope, elem, attrParam) => {
+            const fn = $parse(getNormalizedAttr(elem, "ngClick") || "");
+            return (scope, elem) => {
                 if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
                     if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
                         elem.setAttribute("role", "button");
@@ -124,9 +125,9 @@ function ngClickAriaDirective($aria, $parse) {
                         elem.setAttribute("tabindex", "0");
                     }
                     if ($aria.config("bindKeydown") &&
-                        !attrParam.ngKeydown &&
-                        !attrParam.ngKeypress &&
-                        !attrParam.ngKeyup) {
+                        !hasNormalizedAttr(elem, "ngKeydown") &&
+                        !hasNormalizedAttr(elem, "ngKeypress") &&
+                        !hasNormalizedAttr(elem, "ngKeyup")) {
                         elem.addEventListener("keydown", 
                         /** Handles keyboard activation for synthetic button semantics. */
                         (event) => {
@@ -209,9 +210,9 @@ function ngModelAriaDirective($aria) {
             !isNodeOneOf(elem, nativeAriaNodeNames));
     }
     /** Infers the control shape used to decide which ARIA attributes to manage. */
-    function getShape(attr) {
-        const { type } = attr;
-        const { role } = attr;
+    function getShape(element) {
+        const type = getNormalizedAttr(element, "type");
+        const role = getNormalizedAttr(element, "role");
         return (type || role) === "checkbox" || role === "menuitemcheckbox"
             ? "checkbox"
             : (type || role) === "radio" || role === "menuitemradio"
@@ -224,10 +225,10 @@ function ngModelAriaDirective($aria) {
         restrict: "A",
         require: "ngModel",
         priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
-        compile(compileElement, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
+        compile(compileElement) {
+            if (hasNormalizedAttr(compileElement, ARIA_DISABLE_ATTR))
                 return undefined;
-            const shape = getShape(attr);
+            const shape = getShape(compileElement);
             return {
                 post(_, elem, attrPost, ngModel) {
                     const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
@@ -257,9 +258,11 @@ function ngModelAriaDirective($aria) {
                             }
                             if ($aria.config("ariaValue")) {
                                 const needsAriaValuemin = !elem.hasAttribute("aria-valuemin") &&
-                                    (hasOwn(attrPost, "min") || hasOwn(attrPost, "ngMin"));
+                                    (hasNormalizedAttr(elem, "min") ||
+                                        hasNormalizedAttr(elem, "ngMin"));
                                 const needsAriaValuemax = !elem.hasAttribute("aria-valuemax") &&
-                                    (hasOwn(attrPost, "max") || hasOwn(attrPost, "ngMax"));
+                                    (hasNormalizedAttr(elem, "max") ||
+                                        hasNormalizedAttr(elem, "ngMax"));
                                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
                                 if (needsAriaValuemin) {
                                     attrPost.$observe("min", (newVal) => {
@@ -282,7 +285,7 @@ function ngModelAriaDirective($aria) {
                             }
                             break;
                     }
-                    if (!hasOwn(attrPost, "ngRequired") &&
+                    if (!hasNormalizedAttr(elem, "ngRequired") &&
                         ngModel.$validators.required &&
                         shouldAttachAttr("aria-required", "ariaRequired", elem, false)) {
                         // ngModel.$error.required is undefined on custom controls
@@ -305,8 +308,8 @@ ngDblclickAriaDirective.$inject = [_aria];
 function ngDblclickAriaDirective($aria) {
     return {
         restrict: "A",
-        link(_scope, elem, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
+        link(_scope, elem) {
+            if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                 return;
             if ($aria.config("tabindex") &&
                 !elem.hasAttribute("tabindex") &&

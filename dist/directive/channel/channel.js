@@ -1,4 +1,5 @@
 import { _eventBus } from '../../injection-tokens.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 import { isObject, isString } from '../../shared/utils.js';
 
 ngChannelDirective.$inject = [_eventBus];
@@ -12,9 +13,9 @@ ngChannelDirective.$inject = [_eventBus];
 function ngChannelDirective($eventBus) {
     return {
         scope: false,
-        link: (scope, element, attrs) => {
-            const channel = attrs.ngChannel;
-            if (typeof channel !== "string") {
+        link: (scope, element) => {
+            const channel = getNormalizedAttr(element, "ngChannel");
+            if (!channel) {
                 return;
             }
             const hasTemplateContent = element.childNodes.length > 0;

@@ -9,6 +9,7 @@ import { Angular } from "./angular.ts";
 export const angular = new Angular();
 
 export { HttpRestBackend } from "./services/rest/rest.ts";
+export { WasmScope, WasmScopeAbi } from "./services/wasm/wasm.ts";
 export type {
   CachedRestBackendOptions,
   RestBackend,
@@ -19,6 +20,16 @@ export type {
   RestResponse,
   RestRevalidateEvent,
 } from "./services/rest/rest.ts";
+export type {
+  WasmAbiExports,
+  WasmScopeAbiImportObject,
+  WasmScopeAbiImports,
+  WasmScopeBindingOptions,
+  WasmScopeOptions,
+  WasmScopeReference,
+  WasmScopeUpdate,
+  WasmScopeWatchOptions,
+} from "./services/wasm/wasm.ts";
 
 /**
  * Auto-bootstrap the document once the browser DOM is ready.

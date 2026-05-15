@@ -1,12 +1,12 @@
 import { _parse } from '../../injection-tokens.js';
-import { getController } from '../../shared/dom.js';
+import { getNormalizedAttr, getController } from '../../shared/dom.js';
 
 ngInitDirective.$inject = [_parse];
 function ngInitDirective($parse) {
     return {
         priority: 450,
-        compile(_element, attrs) {
-            const initFn = $parse(String(attrs.ngInit));
+        compile(element) {
+            const initFn = $parse(getNormalizedAttr(element, "ngInit") || "");
             return {
                 pre(scope, element) {
                     const controller = getController(element);

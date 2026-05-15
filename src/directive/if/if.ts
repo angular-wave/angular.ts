@@ -3,7 +3,7 @@ import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import { removeElement } from "../../shared/dom.ts";
+import { getDirectiveAttr, removeElement } from "../../shared/dom.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIfDirective.$inject = [_injector];
@@ -33,7 +33,7 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
 
       let previousElements: Element | null | undefined;
 
-      const expression: unknown = $attr.ngIf;
+      const expression = getDirectiveAttr($element, $attr, "ngIf");
 
       if (typeof expression !== "string") {
         return;

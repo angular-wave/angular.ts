@@ -1,5 +1,5 @@
 import { _parse } from "../../injection-tokens.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import { arrayFrom } from "../../shared/utils.ts";
 
 ngViewportDirective.$inject = [_parse];
@@ -8,16 +8,14 @@ ngViewportDirective.$inject = [_parse];
 export function ngViewportDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
-      const enterExpr: unknown = attrs.onEnter;
+    link(scope: ng.Scope, element: HTMLElement): void {
+      const enterExpr = getNormalizedAttr(element, "onEnter");
 
-      const leaveExpr: unknown = attrs.onLeave;
+      const leaveExpr = getNormalizedAttr(element, "onLeave");
 
-      const enterFn =
-        typeof enterExpr === "string" ? $parse(enterExpr) : undefined;
+      const enterFn = enterExpr ? $parse(enterExpr) : undefined;
 
-      const leaveFn =
-        typeof leaveExpr === "string" ? $parse(leaveExpr) : undefined;
+      const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
 
       const observer = new IntersectionObserver(
         (entries: IntersectionObserverEntry[]) => {

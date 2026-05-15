@@ -14,6 +14,7 @@
       "import": "./dist/angular-ts.esm.js",
       "default": "./dist/angular-ts.esm.js"
     },
+    "./externs/angular.js": "./dist/externs/angular.js",
     "./runtime": {
       "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"

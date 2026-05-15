@@ -1,6 +1,6 @@
 import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
 import { isInstanceOf, isDefined } from '../../shared/utils.js';
-import { removeElement } from '../../shared/dom.js';
+import { getDirectiveAttr, removeElement } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 
 ngIncludeDirective.$inject = [
@@ -23,10 +23,12 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
             /* empty */
             return undefined;
         },
-        compile(_element, attr) {
-            const srcExp = attr.ngInclude || attr.src;
-            const onloadExp = attr.onload || "";
-            const autoScrollExp = attr.autoscroll;
+        compile(element, attr) {
+            const srcExp = getDirectiveAttr(element, attr, "ngInclude") ||
+                getDirectiveAttr(element, attr, "src") ||
+                "";
+            const onloadExp = getDirectiveAttr(element, attr, "onload") || "";
+            const autoScrollExp = getDirectiveAttr(element, attr, "autoscroll");
             const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
             const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
             return (scope, $element, _$attr, ctrl, $transclude) => {

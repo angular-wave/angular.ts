@@ -3,11 +3,14 @@ import {
   deProxy,
   directiveNormalize,
   getNodeName,
-  hasOwn,
   createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
-import { getCacheData } from "../../shared/dom.ts";
+import {
+  getCacheData,
+  getNormalizedAttr,
+  hasNormalizedAttr,
+} from "../../shared/dom.ts";
 
 const ngRefError = createErrorFactory("ngRef");
 
@@ -38,11 +41,11 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
           );
         };
 
-      return (scope: ng.Scope, element: Element, attrs: ng.Attributes) => {
+      return (scope: ng.Scope, element: Element) => {
         let refValue: unknown;
 
-        if (hasOwn(attrs, "ngRefRead")) {
-          const readTarget: unknown = attrs.ngRefRead;
+        if (hasNormalizedAttr(element, "ngRefRead")) {
+          const readTarget = getNormalizedAttr(element, "ngRefRead");
 
           if (readTarget === "$element") {
             refValue = element;

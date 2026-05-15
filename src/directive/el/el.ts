@@ -1,4 +1,4 @@
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import { arrayFrom, deleteProperty, isString } from "../../shared/utils.ts";
 
 /**
@@ -7,10 +7,10 @@ import { arrayFrom, deleteProperty, isString } from "../../shared/utils.ts";
 export function ngElDirective(): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
+    link(scope: ng.Scope, element: HTMLElement): void {
       const target = scope.$target as Record<string, Element | undefined>;
 
-      const expr: unknown = attrs.ngEl;
+      const expr = getNormalizedAttr(element, "ngEl");
 
       const key = isString(expr) && expr ? expr : element.id;
 

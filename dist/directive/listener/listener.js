@@ -1,14 +1,13 @@
 import { isObject, isString } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 function ngListenerDirective() {
     return {
         scope: false,
-        link: (scope, element, attrs) => {
-            const configuredChannel = attrs.ngListener;
-            const channel = typeof configuredChannel === "string" && configuredChannel !== ""
-                ? configuredChannel
-                : element.id;
+        link: (scope, element) => {
+            const configuredChannel = getNormalizedAttr(element, "ngListener");
+            const channel = configuredChannel || element.id;
             const hasTemplateContent = element.childNodes.length > 0;
             const fn = (event) => {
                 const value = event.detail;

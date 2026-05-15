@@ -1,3 +1,4 @@
+import { getNormalizedAttr } from '../../shared/dom.js';
 import { keys } from '../../shared/utils.js';
 
 /**
@@ -6,9 +7,9 @@ import { keys } from '../../shared/utils.js';
 function ngStyleDirective() {
     return {
         restrict: "A",
-        link(scope, element, attr) {
-            const expression = attr.ngStyle;
-            if (typeof expression !== "string") {
+        link(scope, element) {
+            const expression = getNormalizedAttr(element, "ngStyle");
+            if (expression === undefined) {
                 return;
             }
             let oldStyles = null;

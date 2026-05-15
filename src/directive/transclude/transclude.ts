@@ -6,7 +6,11 @@ import {
   isInstanceOf,
   createErrorFactory,
 } from "../../shared/utils.ts";
-import { emptyElement, startingTag } from "../../shared/dom.ts";
+import {
+  emptyElement,
+  getDirectiveAttr,
+  startingTag,
+} from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import type {
   CloneAttachFn,
@@ -44,12 +48,17 @@ export function ngTranscludeDirective(
           );
         }
 
-        if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
-          $attrs.ngTransclude = "";
-        }
-        const transcludeName: unknown = $attrs.ngTransclude;
+        let transcludeName = getDirectiveAttr($element, $attrs, "ngTransclude");
 
-        const transcludeSlot: unknown = $attrs.ngTranscludeSlot;
+        const transcludeSlot = getDirectiveAttr(
+          $element,
+          $attrs,
+          "ngTranscludeSlot",
+        );
+
+        if (transcludeName === $attrs.$attr.ngTransclude) {
+          transcludeName = "";
+        }
 
         const slotNameValue =
           typeof transcludeName === "string" && transcludeName.length > 0

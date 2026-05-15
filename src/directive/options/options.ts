@@ -2,6 +2,8 @@ import { _compile, _parse } from "../../injection-tokens.ts";
 import {
   createDocumentFragment,
   emptyElement,
+  getNormalizedAttr,
+  hasNormalizedAttr,
   removeElement,
   startingTag,
 } from "../../shared/dom.ts";
@@ -213,7 +215,7 @@ export function ngOptionsDirective(
 
     const ngModelCtrl = ctrls[1];
 
-    const { multiple } = attr;
+    const multiple = hasNormalizedAttr(selectElement, "multiple");
 
     for (
       let i = 0, children = selectNode.childNodes, ii = children.length;
@@ -233,7 +235,11 @@ export function ngOptionsDirective(
 
     let options: NgOptionsCollection | undefined;
 
-    const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
+    const ngOptions = parseOptionsExpression(
+      getNormalizedAttr(selectElement, "ngOptions") || "",
+      selectNode,
+      scope,
+    );
 
     const listFragment = createDocumentFragment();
 

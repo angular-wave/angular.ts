@@ -1,5 +1,6 @@
 import { _parse, _log, _exceptionHandler } from '../../injection-tokens.js';
-import { isDefined, callBackAfterFirst, wait } from '../../shared/utils.js';
+import { hasNormalizedAttr, getNormalizedAttr } from '../../shared/dom.js';
+import { callBackAfterFirst, isDefined, wait } from '../../shared/utils.js';
 import { createWorkerConnection } from '../../services/worker/worker.js';
 import { getEventNameForElement } from '../events/event-name.js';
 
@@ -11,37 +12,41 @@ function ngWorkerDirective($parse, $log, $exceptionHandler) {
     return {
         restrict: "A",
         link(scope, element, attrs) {
-            const workerName = attrs.ngWorker;
+            const attr = (name) => getNormalizedAttr(element, name) ?? undefined;
+            const workerName = attr("ngWorker");
             if (!workerName) {
                 $log.warn("ngWorker: missing worker name");
                 return;
             }
-            const eventName = attrs.trigger || getEventNameForElement(element);
-            const paramsFn = attrs.params ? $parse(attrs.params) : undefined;
+            const eventName = attr("trigger") || getEventNameForElement(element);
+            const paramsExpr = attr("params");
+            const paramsFn = paramsExpr ? $parse(paramsExpr) : undefined;
             let throttled = false;
             let intervalId;
-            if (isDefined(attrs.latch)) {
+            if (hasNormalizedAttr(element, "latch")) {
                 attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
             }
-            if (isDefined(attrs.interval)) {
+            if (hasNormalizedAttr(element, "interval")) {
                 element.dispatchEvent(new Event(eventName));
-                intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval || "", 10) || 1000);
+                intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attr("interval") || "", 10) || 1000);
             }
             const worker = createWorkerConnection(workerName, {
                 logger: $log,
                 err: $exceptionHandler,
                 onMessage: (result) => {
-                    if (isDefined(attrs.dataOnResult)) {
-                        $parse(attrs.dataOnResult)(scope, { $result: result });
+                    const onResult = attr("onResult");
+                    if (isDefined(onResult)) {
+                        $parse(onResult)(scope, { $result: result });
                     }
                     else {
-                        handleSwap(String(result), attrs.swap || "innerHTML", element);
+                        handleSwap(String(result), attr("swap") || "innerHTML", element);
                     }
                 },
                 onError: (err) => {
                     $log.error(`[ng-worker:${workerName}]`, err);
-                    if (isDefined(attrs.dataOnError)) {
-                        $parse(attrs.dataOnError)(scope, { $error: err });
+                    const onError = attr("onError");
+                    if (isDefined(onError)) {
+                        $parse(onError)(scope, { $error: err });
                     }
                     else {
                         element.textContent = "Error";
@@ -52,18 +57,18 @@ function ngWorkerDirective($parse, $log, $exceptionHandler) {
                 void (async () => {
                     if (element.hasAttribute("disabled"))
                         return;
-                    if (isDefined(attrs.delay)) {
-                        await wait(parseInt(attrs.delay || "", 10) || 0);
+                    if (hasNormalizedAttr(element, "delay")) {
+                        await wait(parseInt(attr("delay") || "", 10) || 0);
                     }
                     if (throttled)
                         return;
-                    if (isDefined(attrs.throttle)) {
+                    if (hasNormalizedAttr(element, "throttle")) {
                         throttled = true;
                         attrs.$set("throttled", true);
                         setTimeout(() => {
                             attrs.$set("throttled", false);
                             throttled = false;
-                        }, parseInt(attrs.throttle || "", 10));
+                        }, parseInt(attr("throttle") || "", 10));
                     }
                     let params;
                     try {

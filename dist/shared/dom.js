@@ -1,5 +1,5 @@
 import { _scope, _injector } from '../injection-tokens.js';
-import { isInstanceOf, isArray, arrayFrom, hasOwn, deleteProperty, uppercase, assertDefined, isDefined, assign, isString, isObject } from './utils.js';
+import { isInstanceOf, isArray, arrayFrom, hasOwn, deleteProperty, uppercase, assertDefined, isDefined, assign, directiveNormalize, isString, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -10,6 +10,7 @@ const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
 const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const HTML_PARSE_CACHE_MAX_SIZE = 256;
+const TRANSCLUDED_HOST_ELEMENT_KEY = "$$transcludedHostElement";
 let expandoCache = new WeakMap();
 let cacheSize = 0;
 const htmlParseCache = new Map();
@@ -268,6 +269,34 @@ function getCacheData(element, key) {
     }
     return undefined;
 }
+/** Stores the original element that was replaced by an element-transclusion anchor. */
+function setTranscludedHostElement(anchor, hostElement) {
+    setCacheData(anchor, TRANSCLUDED_HOST_ELEMENT_KEY, hostElement);
+}
+/** Returns the element itself, or the original host for an element-transclusion anchor. */
+function getDirectiveHostElement(node) {
+    if (!node)
+        return null;
+    if (node instanceof Element)
+        return node;
+    const hostElement = getCacheData(node, TRANSCLUDED_HOST_ELEMENT_KEY);
+    return hostElement instanceof Element ? hostElement : null;
+}
+/**
+ * Reads a directive attribute from the directive host element, with an attrs fallback
+ * for compile/link contexts that provide synthetic or already-interpolated attrs.
+ */
+function getDirectiveAttr(element, attrs, normalizedName) {
+    const hostElement = getDirectiveHostElement(element) || element;
+    const elementValue = getNormalizedAttr(hostElement, normalizedName);
+    return elementValue !== undefined
+        ? elementValue
+        : attrs?.[normalizedName];
+}
+/** Returns whether a directive attribute is present on the host element or attrs. */
+function hasDirectiveAttr(element, attrs, normalizedName) {
+    return (hasNormalizedAttr(getDirectiveHostElement(element) || element, normalizedName) || attrs?.[normalizedName] !== undefined);
+}
 /**
  * Deletes cache data for a given element for a particular key.
  *
@@ -449,6 +478,28 @@ function getBooleanAttrName(element, name) {
         ? normalizedName
         : false;
 }
+/**
+ * Reads an element attribute by normalized directive-style name.
+ *
+ * This mirrors compile-time attribute normalization, but reads the live element
+ * so callers see attribute aliases such as `data-*` and later DOM updates.
+ */
+function getNormalizedAttr(element, normalizedName) {
+    if (!(element instanceof Element))
+        return undefined;
+    const expected = directiveNormalize(normalizedName);
+    for (let index = 0; index < element.attributes.length; index += 1) {
+        const attr = element.attributes[index];
+        if (directiveNormalize(attr.name) === expected) {
+            return attr.value;
+        }
+    }
+    return undefined;
+}
+/** Returns whether an element has an attribute matching a normalized name. */
+function hasNormalizedAttr(element, normalizedName) {
+    return getNormalizedAttr(element, normalizedName) !== undefined;
+}
 function cleanSingleElementData(node) {
     if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
         getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined) {
@@ -598,4 +649,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getInheritedData, getInjector, getOrSetCacheData, getScope, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveAttr, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getOrSetCacheData, getScope, hasDirectiveAttr, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

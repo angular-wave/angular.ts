@@ -1,6 +1,6 @@
 import { _injector } from '../../injection-tokens.js';
-import { createErrorFactory, isArrayLike, arrayFrom, hasOwn, deleteProperty, nullObject, isArray, assertDefined, callFunction, isDefined, callBackOnce, isFunction, setHashKey, hashKey, isProxy, isInstanceOf } from '../../shared/utils.js';
-import { getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
+import { createErrorFactory, isArrayLike, arrayFrom, hasOwn, deleteProperty, nullObject, isArray, assertDefined, callFunction, callBackOnce, isDefined, isFunction, setHashKey, hashKey, isProxy, isInstanceOf } from '../../shared/utils.js';
+import { getDirectiveAttr, hasDirectiveAttr, getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
 import { getArrayMutationMeta } from '../../core/scope/scope.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { NodeType } from '../../shared/node.js';
@@ -311,10 +311,13 @@ function ngRepeatDirective($injector) {
         transclude: "element",
         priority: 1000,
         terminal: true,
-        compile(_$element, $attr) {
-            const expression = $attr.ngRepeat;
-            const hasAnimate = !!$attr.animate;
-            const indexProperty = $attr.index || $attr.dataIndex || undefined;
+        compile($element, $attr) {
+            const expression = getDirectiveAttr($element, $attr, "ngRepeat") || "";
+            const hasAnimate = hasDirectiveAttr($element, $attr, "animate");
+            const indexProperty = getDirectiveAttr($element, $attr, "index") ||
+                getDirectiveAttr($element, $attr, "dataIndex") ||
+                undefined;
+            const hasLazy = hasDirectiveAttr($element, $attr, "lazy");
             let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
             if (!match) {
                 throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -334,8 +337,9 @@ function ngRepeatDirective($injector) {
                 throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
             }
             const swap = callBackOnce(() => {
-                if (isDefined($attr.lazy) && isDefined($attr.swap)) {
-                    document.querySelectorAll($attr.swap).forEach((x) => {
+                const targetSelector = getDirectiveAttr($element, $attr, "swap");
+                if (hasLazy && targetSelector) {
+                    document.querySelectorAll(targetSelector).forEach((x) => {
                         removeElement(x);
                     });
                 }
@@ -727,7 +731,7 @@ function ngRepeatDirective($injector) {
                     flushPendingInserts();
                     lastBlockMap = nextBlockMap;
                     lastBlockOrder = nextBlockOrder;
-                }, isDefined(attr.lazy));
+                }, hasLazy);
             }
             return ngRepeatLink;
         },

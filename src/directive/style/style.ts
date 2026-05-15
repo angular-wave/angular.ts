@@ -1,4 +1,4 @@
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import { keys } from "../../shared/utils.ts";
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
@@ -6,10 +6,10 @@ import { keys } from "../../shared/utils.ts";
 export function ngStyleDirective(): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attr: Attributes): void {
-      const expression: unknown = attr.ngStyle;
+    link(scope: ng.Scope, element: HTMLElement): void {
+      const expression = getNormalizedAttr(element, "ngStyle");
 
-      if (typeof expression !== "string") {
+      if (expression === undefined) {
         return;
       }
 

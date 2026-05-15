@@ -23,7 +23,7 @@ export { WebComponentProvider } from './services/web-component/web-component.js'
 export { WebSocketProvider } from './services/websocket/websocket.js';
 export { WebTransportProvider } from './services/webtransport/webtransport.js';
 export { WorkerProvider, createWorkerConnection } from './services/worker/worker.js';
-export { WasmProvider } from './services/wasm/wasm.js';
+export { WasmProvider, WasmScope, WasmScopeAbi } from './services/wasm/wasm.js';
 export { SwapMode, getRealtimeProtocolContent, isRealtimeProtocolMessage } from './directive/realtime/protocol.js';
 export { NgModelController } from './directive/model/model.js';
 export { ngWebTransportDirective } from './directive/webtransport/webtransport.js';

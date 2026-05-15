@@ -1,4 +1,8 @@
-import { getCacheData, setCacheData } from "../../shared/dom.ts";
+import {
+  getCacheData,
+  getNormalizedAttr,
+  setCacheData,
+} from "../../shared/dom.ts";
 import {
   hasOwn,
   hasAnimate,
@@ -34,9 +38,9 @@ export function classDirective(): ng.Directive {
       // Cache once; `hasAnimate(element)` should be stable for this directive instance.
       const animate = hasAnimate(element);
 
-      const expression: unknown = attr.ngClass;
+      const expression = getNormalizedAttr(element, "ngClass");
 
-      if (typeof expression !== "string") {
+      if (expression === undefined) {
         return;
       }
 

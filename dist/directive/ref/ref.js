@@ -1,6 +1,6 @@
 import { _parse } from '../../injection-tokens.js';
-import { directiveNormalize, getNodeName, isString, hasOwn, deProxy, createErrorFactory } from '../../shared/utils.js';
-import { getCacheData } from '../../shared/dom.js';
+import { directiveNormalize, getNodeName, isString, deProxy, createErrorFactory } from '../../shared/utils.js';
+import { hasNormalizedAttr, getNormalizedAttr, getCacheData } from '../../shared/dom.js';
 
 const ngRefError = createErrorFactory("ngRef");
 ngRefDirective.$inject = [_parse];
@@ -18,10 +18,10 @@ function ngRefDirective($parse) {
                 function () {
                     throw ngRefError("nonassign", 'Expression in ngRef="{0}" is non-assignable!', expression);
                 };
-            return (scope, element, attrs) => {
+            return (scope, element) => {
                 let refValue;
-                if (hasOwn(attrs, "ngRefRead")) {
-                    const readTarget = attrs.ngRefRead;
+                if (hasNormalizedAttr(element, "ngRefRead")) {
+                    const readTarget = getNormalizedAttr(element, "ngRefRead");
                     if (readTarget === "$element") {
                         refValue = element;
                     }

@@ -1,5 +1,5 @@
 import { _compile, _parse } from '../../injection-tokens.js';
-import { emptyElement, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
+import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
@@ -99,7 +99,7 @@ function ngOptionsDirective($compile, $parse) {
         const selectNode = selectElement;
         const selectCtrl = ctrls[0];
         const ngModelCtrl = ctrls[1];
-        const { multiple } = attr;
+        const multiple = hasNormalizedAttr(selectElement, "multiple");
         for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
             if (children[i].value === "") {
                 selectCtrl._hasEmptyOption = true;
@@ -110,7 +110,7 @@ function ngOptionsDirective($compile, $parse) {
         emptyElement(selectNode);
         const providedEmptyOption = !!selectCtrl._emptyOption;
         let options;
-        const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
+        const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") || "", selectNode, scope);
         const listFragment = createDocumentFragment();
         selectCtrl._generateUnknownOptionValue = () => "?";
         if (!multiple) {

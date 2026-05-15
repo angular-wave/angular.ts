@@ -182,7 +182,7 @@ The scheduler tracks a `_flushing` flag. If a listener notification causes anoth
 
 #### Deep tracking at zero cost
 
-Nested objects are proxied at assignment time, not at watch time. There is no `$watchCollection` or explicit deep-watch flag — all depths are tracked uniformly.
+Nested objects are proxied at assignment time, not at watch time. There is no `` or explicit deep-watch flag — all depths are tracked uniformly.
 
 #### Scope destruction cleans up
 

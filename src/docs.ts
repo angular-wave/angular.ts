@@ -208,10 +208,18 @@ export type {
   WorkerConnection,
   WorkerService,
 } from "./services/worker/worker.ts";
-export { WasmProvider } from "./services/wasm/wasm.ts";
+export { WasmProvider, WasmScope, WasmScopeAbi } from "./services/wasm/wasm.ts";
 export type {
+  WasmAbiExports,
   WasmInstantiationResult,
   WasmOptions,
+  WasmScopeAbiImportObject,
+  WasmScopeAbiImports,
+  WasmScopeBindingOptions,
+  WasmScopeOptions,
+  WasmScopeReference,
+  WasmScopeUpdate,
+  WasmScopeWatchOptions,
   WasmService,
 } from "./services/wasm/wasm.ts";
 export type { AriaService } from "./directive/aria/aria.ts";

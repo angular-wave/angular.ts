@@ -1,5 +1,6 @@
 import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 const NG_HIDE_CLASS = "ng-hide";
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
@@ -11,9 +12,9 @@ function ngShowDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
-        link(scope, element, $attr) {
-            const expression = $attr.ngShow;
-            if (typeof expression !== "string") {
+        link(scope, element) {
+            const expression = getNormalizedAttr(element, "ngShow");
+            if (expression === undefined) {
                 return;
             }
             scope.$watch(expression, (value) => {
@@ -47,9 +48,9 @@ function ngHideDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
-        link(scope, element, attr) {
-            const expression = attr.ngHide;
-            if (typeof expression !== "string") {
+        link(scope, element) {
+            const expression = getNormalizedAttr(element, "ngHide");
+            if (expression === undefined) {
                 return;
             }
             scope.$watch(expression, (value) => {

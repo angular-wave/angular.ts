@@ -3,7 +3,11 @@ import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import { domInsert, removeElement } from "../../shared/dom.ts";
+import {
+  domInsert,
+  getDirectiveAttr,
+  removeElement,
+} from "../../shared/dom.ts";
 import { values } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
@@ -41,11 +45,14 @@ export function ngSwitchDirective(
     controller: NgSwitchController,
     link(
       scope: ng.Scope,
-      _element: Element,
+      element: Element,
       attr: Attributes & Record<string, string>,
       ngSwitchController: NgSwitchController,
     ): void {
-      const watchExpr = attr.ngSwitch || attr.on;
+      const watchExpr =
+        getDirectiveAttr(element, attr, "ngSwitch") ||
+        getDirectiveAttr(element, attr, "on") ||
+        "";
 
       let selectedTranscludes:
         | Array<{ transclude: ng.TranscludeFn; element: Element }>
@@ -190,8 +197,15 @@ export function ngSwitchWhenDirective(): ng.Directive {
         return;
       }
 
-      (attrs.ngSwitchWhen as string)
-        .split(attrs.ngSwitchWhenSeparator as string)
+      const when = getDirectiveAttr(element, attrs, "ngSwitchWhen") || "";
+
+      const separator = getDirectiveAttr(
+        element,
+        attrs,
+        "ngSwitchWhenSeparator",
+      );
+
+      (separator !== undefined ? when.split(separator) : [when])
         .sort()
         .filter(
           // Filter duplicate cases

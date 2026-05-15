@@ -3,6 +3,7 @@ import {
   arrayFrom,
   assign,
   deleteProperty,
+  directiveNormalize,
   hasOwn,
   isArray,
   isDefined,
@@ -31,6 +32,8 @@ const HTML_PARSE_CACHE_MAX_SIZE = 256;
 let expandoCache = new WeakMap<object, ExpandoStore>();
 
 let cacheSize = 0;
+
+const transcludedHostElements = new WeakMap<Node, Element>();
 
 const htmlParseCache = new Map<string, DocumentFragment>();
 
@@ -386,6 +389,59 @@ export function getCacheData(element: Element, key?: string): any {
   return undefined;
 }
 
+/** Stores the original element that was replaced by an element-transclusion anchor. */
+export function setTranscludedHostElement(
+  anchor: Node,
+  hostElement: Element,
+): void {
+  transcludedHostElements.set(anchor, hostElement);
+}
+
+/** Returns the element itself, or the original host for an element-transclusion anchor. */
+export function getDirectiveHostElement(
+  node: Element | Node | null | undefined,
+): Element | null {
+  if (!node) return null;
+
+  if (node instanceof Element) return node;
+
+  const hostElement = transcludedHostElements.get(node);
+
+  return hostElement instanceof Element ? hostElement : null;
+}
+
+/**
+ * Reads a directive attribute from the directive host element, with an attrs fallback
+ * for compile/link contexts that provide synthetic or already-interpolated attrs.
+ */
+export function getDirectiveAttr(
+  element: Element | Node | null | undefined,
+  attrs: Record<string, any> | null | undefined,
+  normalizedName: string,
+): string | undefined {
+  const hostElement = getDirectiveHostElement(element) || element;
+
+  const elementValue = getNormalizedAttr(hostElement, normalizedName);
+
+  return elementValue !== undefined
+    ? elementValue
+    : (attrs?.[normalizedName] as string | undefined);
+}
+
+/** Returns whether a directive attribute is present on the host element or attrs. */
+export function hasDirectiveAttr(
+  element: Element | Node | null | undefined,
+  attrs: Record<string, any> | null | undefined,
+  normalizedName: string,
+): boolean {
+  return (
+    hasNormalizedAttr(
+      getDirectiveHostElement(element) || element,
+      normalizedName,
+    ) || attrs?.[normalizedName] !== undefined
+  );
+}
+
 /**
  * Deletes cache data for a given element for a particular key.
  *
@@ -607,6 +663,39 @@ export function getBooleanAttrName(
   return isBooleanAttr && BOOLEAN_ELEMENTS_SET.has(element.nodeName)
     ? normalizedName
     : false;
+}
+
+/**
+ * Reads an element attribute by normalized directive-style name.
+ *
+ * This mirrors compile-time attribute normalization, but reads the live element
+ * so callers see attribute aliases such as `data-*` and later DOM updates.
+ */
+export function getNormalizedAttr(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): string | undefined {
+  if (!(element instanceof Element)) return undefined;
+
+  const expected = directiveNormalize(normalizedName);
+
+  for (let index = 0; index < element.attributes.length; index += 1) {
+    const attr = element.attributes[index];
+
+    if (directiveNormalize(attr.name) === expected) {
+      return attr.value;
+    }
+  }
+
+  return undefined;
+}
+
+/** Returns whether an element has an attribute matching a normalized name. */
+export function hasNormalizedAttr(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): boolean {
+  return getNormalizedAttr(element, normalizedName) !== undefined;
 }
 
 function cleanSingleElementData(node: Element): void {

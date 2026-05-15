@@ -1,6 +1,7 @@
 import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector } from '../../injection-tokens.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { isString, isObject, uppercase, isFunction, isUndefined, isDefined } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
+import { isString, isObject, isFunction, isUndefined, isDefined } from '../../shared/utils.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent, SwapMode } from '../realtime/protocol.js';
 import { createRealtimeSwapHandler } from '../realtime/swap.js';
 
@@ -22,16 +23,12 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
     return {
         restrict: "A",
         link(scope, element, attrs) {
-            const eventName = attrs.trigger || "load";
-            const mode = parseMode(attrs.mode);
-            const transform = parseTransform(attrs.transform);
+            const attr = (name) => getNormalizedAttr(element, name) ?? undefined;
+            const eventName = attr("trigger") || "load";
+            const mode = parseMode(attr("mode"));
+            const transform = parseTransform(attr("transform"));
             let connection;
             let streamReader = null;
-            function attr(name) {
-                const value = attrs[name] ||
-                    attrs[`data${uppercase(name[0])}${name.slice(1)}`];
-                return isString(value) ? value : undefined;
-            }
             function evaluate(expression, locals) {
                 if (!expression)
                     return;
@@ -53,7 +50,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 }));
             }
             function resolveUrl() {
-                const value = attrs.ngWebTransport;
+                const value = attr("ngWebTransport");
                 if (!value)
                     return undefined;
                 if (/^https:\/\//i.test(value))
@@ -89,8 +86,8 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 }
             }
             function reconnectEnabled() {
-                const value = attrs.reconnect || attrs.dataReconnect;
-                return value === "" || value === true || value === "true";
+                const value = attr("reconnect");
+                return value === "" || value === "true";
             }
             function retryDelay() {
                 return parseInt(attr("retryDelay") || "", 10) || 1000;

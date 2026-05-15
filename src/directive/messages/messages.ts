@@ -9,7 +9,11 @@ import {
   getAnimateForNode,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
-import { createNodelistFromHTML, removeElement } from "../../shared/dom.ts";
+import {
+  createNodelistFromHTML,
+  getDirectiveAttr,
+  removeElement,
+} from "../../shared/dom.ts";
 import {
   deleteProperty,
   entries,
@@ -321,7 +325,10 @@ export function ngMessagesIncludeDirective(
       attrs: ng.Attributes,
       ngMessagesCtrl: NgMessageCtrl,
     ) {
-      const src = attrs.ngMessagesInclude || attrs.src;
+      const src =
+        getDirectiveAttr(element, attrs, "ngMessagesInclude") ||
+        getDirectiveAttr(element, attrs, "src") ||
+        "";
 
       void $templateRequest(src).then((html: string) => {
         if ($scope._destroyed) return;
@@ -405,8 +412,14 @@ function ngMessageDirectiveFactory(
 
         if (!isDefault) {
           commentNode = element as unknown as MessageNodeComment;
-          staticExp = attrs.ngMessage || attrs.when;
-          dynamicExp = attrs.ngMessageExp || attrs.whenExp;
+          staticExp =
+            getDirectiveAttr(element, attrs, "ngMessage") ||
+            getDirectiveAttr(element, attrs, "when") ||
+            undefined;
+          dynamicExp =
+            getDirectiveAttr(element, attrs, "ngMessageExp") ||
+            getDirectiveAttr(element, attrs, "whenExp") ||
+            undefined;
 
           const assignRecords = function (
             items: string | string[] | undefined,

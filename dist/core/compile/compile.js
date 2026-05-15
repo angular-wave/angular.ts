@@ -1,5 +1,5 @@
 import { _injector, _interpolate, _exceptionHandler, _parse, _controller, _templateRequest, _scope, _provide } from '../../injection-tokens.js';
-import { getBooleanAttrName, emptyElement, isTextNode, createNodelistFromHTML, createDocumentFragment, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
+import { getBooleanAttrName, setTranscludedHostElement, emptyElement, isTextNode, createNodelistFromHTML, createDocumentFragment, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { NodeRef } from '../../shared/noderef.js';
 import { identifierForController } from '../controller/controller.js';
@@ -1951,11 +1951,13 @@ class CompileProvider {
                     const compileNodeRef = NodeRef._fromNode(document.createComment(""));
                     templateAttrs._nodeRef = compileNodeRef;
                     const compileNode = compileNodeRef.node;
+                    const transcludedTemplateElement = assertDefined(transcludedTemplateRef._element);
+                    setTranscludedHostElement(compileNode, transcludedTemplateElement);
                     if (contextNodeRef) {
                         setTrackedNodeAt(contextNodeRef, index, compileNode);
                     }
-                    replaceWith(assertDefined(transcludedTemplateRef._element), compileNode, index);
-                    const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, assertDefined(transcludedTemplateRef._element), transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
+                    replaceWith(transcludedTemplateElement, compileNode, index);
+                    const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
                         // Don't pass controller/scope/template directives through element transclusion:
                         // the transcluded template will compile against its own directive context.
                         _nonTlbTranscludeDirective: nonTlbTranscludeDirective,

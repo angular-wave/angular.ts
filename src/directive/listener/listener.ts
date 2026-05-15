@@ -1,17 +1,14 @@
 import { isObject, isString } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,
-    link: (scope: ng.Scope, element: HTMLElement, attrs: Attributes): void => {
-      const configuredChannel: unknown = attrs.ngListener;
+    link: (scope: ng.Scope, element: HTMLElement): void => {
+      const configuredChannel = getNormalizedAttr(element, "ngListener");
 
-      const channel =
-        typeof configuredChannel === "string" && configuredChannel !== ""
-          ? configuredChannel
-          : element.id;
+      const channel = configuredChannel || element.id;
 
       const hasTemplateContent = element.childNodes.length > 0;
 

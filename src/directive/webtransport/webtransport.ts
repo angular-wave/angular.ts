@@ -7,13 +7,13 @@ import {
   _webTransport,
 } from "../../injection-tokens.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import {
   isDefined,
   isFunction,
   isObject,
   isString,
   isUndefined,
-  uppercase,
 } from "../../shared/utils.ts";
 import {
   SwapMode,
@@ -64,27 +64,20 @@ export function ngWebTransportDirective(
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement, attrs: ng.Attributes) {
-      const eventName = attrs.trigger || "load";
+      const attr = (name: string): string | undefined =>
+        getNormalizedAttr(element, name) ?? undefined;
 
-      const mode = parseMode(attrs.mode);
+      const eventName = attr("trigger") || "load";
 
-      const transform = parseTransform(attrs.transform);
+      const mode = parseMode(attr("mode"));
+
+      const transform = parseTransform(attr("transform"));
 
       let connection: ng.WebTransportConnection | undefined;
 
       let streamReader: ReadableStreamDefaultReader<
         ReadableStream<Uint8Array>
       > | null = null;
-
-      function attr(name: string): string | undefined {
-        const value =
-          (attrs as Record<string, unknown>)[name] ||
-          (attrs as Record<string, unknown>)[
-            `data${uppercase(name[0])}${name.slice(1)}`
-          ];
-
-        return isString(value) ? value : undefined;
-      }
 
       function evaluate(expression: string | undefined, locals: object): void {
         if (!expression) return;
@@ -111,7 +104,7 @@ export function ngWebTransportDirective(
       }
 
       function resolveUrl(): string | undefined {
-        const value = attrs.ngWebTransport as string | undefined;
+        const value = attr("ngWebTransport");
 
         if (!value) return undefined;
 
@@ -155,9 +148,9 @@ export function ngWebTransportDirective(
       }
 
       function reconnectEnabled(): boolean {
-        const value = attrs.reconnect || attrs.dataReconnect;
+        const value = attr("reconnect");
 
-        return value === "" || value === true || value === "true";
+        return value === "" || value === "true";
       }
 
       function retryDelay(): number {

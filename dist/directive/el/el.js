@@ -1,3 +1,4 @@
+import { getNormalizedAttr } from '../../shared/dom.js';
 import { isString, arrayFrom, deleteProperty } from '../../shared/utils.js';
 
 /**
@@ -6,9 +7,9 @@ import { isString, arrayFrom, deleteProperty } from '../../shared/utils.js';
 function ngElDirective() {
     return {
         restrict: "A",
-        link(scope, element, attrs) {
+        link(scope, element) {
             const target = scope.$target;
-            const expr = attrs.ngEl;
+            const expr = getNormalizedAttr(element, "ngEl");
             const key = isString(expr) && expr ? expr : element.id;
             target[key] = element;
             const parent = element.parentNode;

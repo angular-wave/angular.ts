@@ -22,6 +22,7 @@ import {
   setCacheData,
   setIsolateScope,
   setScope,
+  setTranscludedHostElement,
   startingTag,
 } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
@@ -4665,19 +4666,21 @@ export class CompileProvider {
 
           const compileNode = compileNodeRef.node;
 
+          const transcludedTemplateElement = assertDefined(
+            transcludedTemplateRef._element,
+          );
+
+          setTranscludedHostElement(compileNode, transcludedTemplateElement);
+
           if (contextNodeRef) {
             setTrackedNodeAt(contextNodeRef, index, compileNode);
           }
 
-          replaceWith(
-            assertDefined(transcludedTemplateRef._element),
-            compileNode,
-            index,
-          );
+          replaceWith(transcludedTemplateElement, compileNode, index);
 
           const childTranscludeFn = compilationGenerator(
             mightHaveMultipleTransclusionError,
-            assertDefined(transcludedTemplateRef._element),
+            transcludedTemplateElement,
             transcludeFn,
             directivePriority,
             replaceDirective ? replaceDirective.name : undefined,

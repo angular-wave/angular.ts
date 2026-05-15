@@ -1,6 +1,6 @@
 import { _eventBus } from "../../injection-tokens.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import { isObject, isString } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngChannelDirective.$inject = [_eventBus];
 /**
@@ -13,14 +13,10 @@ ngChannelDirective.$inject = [_eventBus];
 export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
   return {
     scope: false,
-    link: (
-      scope: ng.Scope,
-      element: HTMLElement,
-      attrs: Attributes & Record<string, string>,
-    ): void => {
-      const channel: unknown = attrs.ngChannel;
+    link: (scope: ng.Scope, element: HTMLElement): void => {
+      const channel = getNormalizedAttr(element, "ngChannel");
 
-      if (typeof channel !== "string") {
+      if (!channel) {
         return;
       }
 
