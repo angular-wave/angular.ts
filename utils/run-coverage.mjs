@@ -23,6 +23,17 @@ const coverageThresholds = {
   statements: 80,
 };
 const coverageTestArgs = ["playwright", "test", "src"];
+const coverageMetrics = ["branches", "functions", "lines", "statements"];
+const nycSourceArgs = [
+  "--include",
+  "src/**/*.js",
+  "--include",
+  "src/**/*.ts",
+  "--extension",
+  ".js",
+  "--extension",
+  ".ts",
+];
 
 console.log("[coverage] preparing output directories");
 await rm(tempDir, { recursive: true, force: true });
@@ -68,6 +79,7 @@ if (coverageFiles.length > 0) {
       tempDir,
       "--report-dir",
       reportDir,
+      ...nycSourceArgs,
       "--reporter=html",
       "--reporter=text-summary",
       "--reporter=lcov",
@@ -76,6 +88,7 @@ if (coverageFiles.length > 0) {
     env,
   );
   console.log(`[coverage] report written to ${reportDir}`);
+  coverageExitCode = Math.max(coverageExitCode, await validateReport());
 
   if (shouldCheckCoverage) {
     console.log("[coverage] checking thresholds");
@@ -88,6 +101,7 @@ if (coverageFiles.length > 0) {
           "check-coverage",
           "--temp-dir",
           tempDir,
+          ...nycSourceArgs,
           "--branches",
           String(coverageThresholds.branches),
           "--functions",
@@ -136,7 +150,7 @@ async function checkBaseline() {
   const baseline = JSON.parse(await readFile(baselinePath, "utf-8"));
   const failures = [];
 
-  for (const metric of ["branches", "functions", "lines", "statements"]) {
+  for (const metric of coverageMetrics) {
     const currentPct = current.total[metric].pct;
     const baselinePct = baseline.total[metric].pct;
 
@@ -157,6 +171,40 @@ async function checkBaseline() {
   console.log("[coverage] coverage did not decrease from baseline");
 
   return 0;
+}
+
+async function validateReport() {
+  const summary = await readSummary();
+  const failures = invalidSummaryMetrics(summary);
+
+  if (failures.length) {
+    console.error("[coverage] generated coverage report has no usable data");
+    failures.forEach((failure) => console.error(`[coverage] ${failure}`));
+
+    return 1;
+  }
+
+  return 0;
+}
+
+function invalidSummaryMetrics(summary) {
+  const failures = [];
+
+  for (const metric of coverageMetrics) {
+    const values = summary?.total?.[metric];
+    const pct = values?.pct;
+
+    if (!values || !Number.isFinite(pct)) {
+      failures.push(`${metric}: percentage is ${String(pct)}`);
+      continue;
+    }
+
+    if (!Number.isFinite(values.total) || values.total <= 0) {
+      failures.push(`${metric}: total is ${String(values.total)}`);
+    }
+  }
+
+  return failures;
 }
 
 async function updateBaseline() {
