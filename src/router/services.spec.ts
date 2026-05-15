@@ -1,7 +1,7 @@
 /// <reference types="jasmine" />
 import { Angular } from "../angular.ts";
 import { dealoc } from "../shared/dom.ts";
-import { wait } from "../shared/utils.ts";
+import { waitUntil } from "../shared/test-utils.ts";
 
 describe("router services", () => {
   let providers: any;
@@ -67,7 +67,7 @@ describe("router services", () => {
 
     $location.url("/startup-home");
     $$r._sync();
-    await wait(50);
+    await waitUntil(() => $state.current.name === "home");
 
     expect($state.current.name).toBe("home");
   });

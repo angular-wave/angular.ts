@@ -52,6 +52,22 @@ export function wait(timeout = 0): Promise<void> {
   });
 }
 
+export async function waitUntil(
+  predicate: () => boolean,
+  timeout = 1000,
+  message = "Timed out waiting for condition",
+): Promise<void> {
+  const startedAt = Date.now();
+
+  while (!predicate()) {
+    if (Date.now() - startedAt > timeout) {
+      throw new Error(message);
+    }
+
+    await wait(10);
+  }
+}
+
 export let ELEMENT: HTMLElement | null | undefined;
 
 /**

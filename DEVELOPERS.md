@@ -1,8 +1,11 @@
 # Developing AngularTS
 
 - Run the Playwright suite: `make test`
+- Run Playwright with local parallelism: `PLAYWRIGHT_WORKERS=6 make test`
 - Generate browser coverage for `src/` tests only: `make coverage`
 - Generate browser coverage with threshold enforcement for `src/` tests only: `make coverage-check`
+- Run coverage with local parallelism: `PLAYWRIGHT_WORKERS=2 make coverage-check`
+- The Husky pre-commit hook defaults `PLAYWRIGHT_WORKERS` to `2`; override it with `PLAYWRIGHT_WORKERS=<n> git commit` if needed.
 - Refresh the committed coverage baseline after an intentional coverage change: `make coverage-update-baseline`
 - Open the HTML report at `coverage/index.html`
 - Open the HTML report automatically: `make coverage-open`

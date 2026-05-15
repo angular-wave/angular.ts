@@ -7,6 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 // require('dotenv').config();
 const port = process.env.PORT || "4000";
 const baseUrl = process.env.PW_BASE_URL || `http://localhost:${port}`;
+const workerCount = Number(process.env.PLAYWRIGHT_WORKERS || "1");
 const isCI =
   "process" in globalThis &&
   !!(
@@ -29,7 +30,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: isCI ? 2 : 0,
   /* Keep the browser/Jasmine suite serialized because test files share page state. */
-  workers: 1,
+  workers: Number.isFinite(workerCount) && workerCount > 0 ? workerCount : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: isCI ? "html" : "line",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

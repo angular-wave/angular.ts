@@ -1,11 +1,27 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 import { dealoc } from "../../shared/dom.ts";
 
 describe("ng-post", () => {
   let $compile, $rootScope, $log, el;
+
+  async function waitForText(text) {
+    await waitUntil(() => el.innerText === text || el.textContent === text);
+  }
+
+  async function waitForNumericResponse(previous?: number) {
+    await waitUntil(() => {
+      const value = parseInt(el.innerText);
+
+      return (
+        Number.isFinite(value) && (previous === undefined || value > previous)
+      );
+    });
+
+    return parseInt(el.innerText);
+  }
 
   beforeEach(() => {
     el = document.getElementById("app");
@@ -45,7 +61,7 @@ describe("ng-post", () => {
     el.innerHTML = '<button ng-post="/mock/hello">Load</button>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(100);
+    await waitForText("Hello");
     expect(el.innerText).toBe("Hello");
   });
 
@@ -56,7 +72,7 @@ describe("ng-post", () => {
     scope.a = "hello";
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(100);
+    await waitUntil(() => el.firstChild.innerHTML === "<div>Hello</div>");
     expect(el.firstChild.innerHTML).toBe("<div>Hello</div>");
   });
 
@@ -67,7 +83,7 @@ describe("ng-post", () => {
       '<form ng-post="/mock/posthtml"><input name="name" value="Bob" /><button type="submit">Load</button></form>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("form"), "submit");
-    await wait(100);
+    await waitForText("Bob");
     expect(el.innerText).toBe("Bob");
   });
 
@@ -78,7 +94,7 @@ describe("ng-post", () => {
       '<form ng-post="/mock/json"> {{ name }} <input name="name" value="Bob" /><button type="submit">Load</button></form>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("form"), "submit");
-    await wait(100);
+    await waitForText("Bob Load");
     expect(el.innerText).toBe("Bob Load");
   });
 
@@ -92,7 +108,7 @@ describe("ng-post", () => {
       </form>`;
     $compile(el)(scope);
     browserTrigger(el.querySelector("form"), "submit");
-    await wait(100);
+    await waitForText("Form data: Bob");
     expect(el.innerText).toBe("Form data: Bob");
   });
 
@@ -105,7 +121,7 @@ describe("ng-post", () => {
       '<button ng-post="/mock/stream-html" response-type="stream" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(200);
+    await waitUntil(() => el.querySelector("#found").textContent === "AB");
     expect(el.querySelector("#found").textContent).toBe("AB");
   });
 
@@ -118,7 +134,7 @@ describe("ng-post", () => {
       '<button ng-post="/mock/stream-html" data-response-stream data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(200);
+    await waitUntil(() => el.querySelector("#found").textContent === "CD");
     expect(el.querySelector("#found").textContent).toBe("CD");
   });
 
@@ -129,7 +145,7 @@ describe("ng-post", () => {
       '<form ng-post="/mock/posterror"><input name="name" value="Bob"><button type="submit">Load</button></form>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("form"), "submit");
-    await wait(100);
+    await waitForText("Error");
 
     expect(el.innerText).toBe("Error");
   });
@@ -140,7 +156,7 @@ describe("ng-post", () => {
     el.innerHTML = '<button ng-post="/mock/422">Load</button>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(100);
+    await waitForText("Invalid data");
 
     expect(el.innerText).toBe("Invalid data");
   });
@@ -151,7 +167,7 @@ describe("ng-post", () => {
     el.innerHTML = '<button ng-post="/mock/hello" disabled>Load</button>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(100);
+    await wait();
 
     expect(el.innerText).toBe("Load");
   });
@@ -162,7 +178,7 @@ describe("ng-post", () => {
     el.innerHTML = '<button ng-post="/mock/401">Load</button>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
-    await wait(100);
+    await waitForText("Unauthorized");
 
     expect(el.innerText).toBe("Unauthorized");
   });
@@ -175,7 +191,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-trigger="mouseover">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await wait();
 
       expect(el.innerText).toBe("Load");
     });
@@ -187,7 +203,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-trigger="mouseover">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "mouseover");
-      await wait(100);
+      await waitForText("Hello");
 
       expect(el.innerText).toBe("Hello");
     });
@@ -200,25 +216,21 @@ describe("ng-post", () => {
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}">Load</button>';
       $compile(el)(scope);
-      await wait(100);
+      await wait();
       expect(el.innerText).toBe("Load");
 
       scope.latch = true;
-      await wait(100);
-      expect(el.innerText).not.toBe("Load");
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
       scope.latch = !scope.latch;
-      await wait(100);
-      const secondRes = parseInt(el.innerText);
+      const secondRes = await waitForNumericResponse(firstRes);
 
       expect(secondRes).toBeGreaterThan(firstRes);
 
       scope.latch = !scope.latch;
-      await wait(100);
-      const thirdRes = parseInt(el.innerText);
+      const thirdRes = await waitForNumericResponse(secondRes);
 
       expect(thirdRes).toBeGreaterThan(secondRes);
     });
@@ -229,19 +241,16 @@ describe("ng-post", () => {
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}">Load</button>';
       $compile(el)(scope);
-      await wait(100);
+      await wait();
       expect(el.innerText).toBe("Load");
 
       scope.latch = true;
-      await wait(100);
-      expect(el.innerText).not.toBe("Load");
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
-      const secondRes = parseInt(el.innerText);
+      const secondRes = await waitForNumericResponse(firstRes);
 
       expect(secondRes).toBeGreaterThan(firstRes);
     });
@@ -252,19 +261,16 @@ describe("ng-post", () => {
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}" data-trigger="mouseover">Load</button>';
       $compile(el)(scope);
-      await wait(100);
+      await wait();
       expect(el.innerText).toBe("Load");
 
       scope.latch = true;
-      await wait(100);
-      expect(el.innerText).not.toBe("Load");
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
       browserTrigger(el.querySelector("button"), "mouseover");
-      await wait(100);
-      const secondRes = parseInt(el.innerText);
+      const secondRes = await waitForNumericResponse(firstRes);
 
       expect(secondRes).toBeGreaterThan(firstRes);
     });
@@ -275,19 +281,16 @@ describe("ng-post", () => {
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}" ng-mouseover="latch = !latch">Load</button>';
       $compile(el)(scope);
-      await wait(100);
+      await wait();
       expect(el.innerText).toBe("Load");
 
       browserTrigger(el.querySelector("button"), "mouseover");
-      await wait(100);
-      expect(el.innerText).not.toBe("Load");
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
       browserTrigger(el.querySelector("button"), "mouseover");
-      await wait(100);
-      const secondRes = parseInt(el.innerText);
+      const secondRes = await waitForNumericResponse(firstRes);
 
       expect(secondRes).toBeGreaterThan(firstRes);
     });
@@ -301,7 +304,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="none" data-target="#found">Load</button><div id="found">Original</div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await wait();
 
       expect(el.querySelector("#found").textContent).toBe("Original");
     });
@@ -313,7 +316,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-swap="outerHTML">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitForText("Hello");
 
       expect(el.innerText).toBe("Hello");
     });
@@ -325,7 +328,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-swap="textContent">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.textContent === "<div>Hello</div>");
 
       expect(el.textContent).toBe("<div>Hello</div>");
     });
@@ -337,7 +340,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="beforebegin">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.firstChild.innerText === "Hello");
 
       expect(el.firstChild.innerText).toBe("Hello");
     });
@@ -349,7 +352,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="beforeend">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.firstChild.lastChild.innerText === "Hello");
 
       expect(el.firstChild.lastChild.innerText).toBe("Hello");
     });
@@ -361,7 +364,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-swap="delete" data-target="#found">Load</button><div id="found"></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.querySelector("#found") === null);
 
       expect(el.querySelector("#found")).toBeNull();
     });
@@ -376,7 +379,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-target="#missing">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => $log.warn.calls.any());
 
       expect(el.firstChild.innerText).toBe("Load");
       expect($log.warn).toHaveBeenCalled();
@@ -389,7 +392,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-target="#found">Load</button><div id="found"></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.lastChild.innerHTML === "<div>Hello</div>");
 
       expect(el.lastChild.innerHTML).toBe("<div>Hello</div>");
     });
@@ -401,7 +404,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-swap="textContent" data-target="#found">Load</button><div id="found"></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.lastChild.textContent === "<div>Hello</div>");
 
       expect(el.lastChild.textContent).toBe("<div>Hello</div>");
     });
@@ -413,7 +416,10 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="beforebegin" data-target="#found">Load</button><div id="found"></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(
+        () =>
+          el.querySelector("#found")?.previousSibling?.textContent === "Hello",
+      );
 
       const found = el.querySelector("#found");
 
@@ -430,7 +436,9 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(
+        () => el.querySelector("#found")?.textContent === "Hello",
+      );
 
       expect(el.querySelector("#found").textContent).toBe("Hello");
     });
@@ -442,7 +450,9 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="afterbegin" data-target="#found">Load</button><div id="found"><div>World</div></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(
+        () => el.querySelector("#found")?.textContent === "HelloWorld",
+      );
 
       expect(el.querySelector("#found").textContent).toBe("HelloWorld");
     });
@@ -454,7 +464,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/div" data-swap="afterend" data-target="#found">Load</button><div id="found"><div>World</div></div>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
+      await waitUntil(() => el.lastChild.textContent === "Hello");
 
       expect(el.lastChild.textContent).toBe("Hello");
     });
@@ -472,6 +482,7 @@ describe("ng-post", () => {
       expect(el.innerText).toBe("Load");
 
       await wait(1000);
+      await waitForText("Hello");
       expect(el.innerText).toBe("Hello");
     });
   });
@@ -484,8 +495,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/now" data-throttle="1000">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
@@ -497,8 +507,7 @@ describe("ng-post", () => {
 
       await wait(900);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(100);
-      const thirdRes = parseInt(el.innerText);
+      const thirdRes = await waitForNumericResponse(firstRes);
 
       expect(thirdRes).toBeGreaterThan(firstRes);
     });
@@ -512,28 +521,21 @@ describe("ng-post", () => {
         '<button ng-post="/mock/now" data-interval="100">Load</button>';
       $compile(el)(scope);
 
-      await wait(200);
-      await wait(200);
-      const firstRes = parseInt(el.innerText);
+      const firstRes = await waitForNumericResponse();
 
       expect(firstRes).toBeLessThan(Date.now());
 
-      await wait(200);
-      await wait(200);
-      const secondRes = parseInt(el.innerText);
+      const secondRes = await waitForNumericResponse(firstRes);
 
       expect(secondRes).toBeGreaterThan(firstRes);
 
-      await wait(200);
-      await wait(200);
-      const thirdRes = parseInt(el.innerText);
+      const thirdRes = await waitForNumericResponse(secondRes);
 
       expect(thirdRes).toBeGreaterThan(secondRes);
 
       scope.$broadcast("$destroy");
 
-      await wait(200);
-      await wait(200);
+      await wait();
       const finalRes = parseInt(el.innerText);
 
       await wait(1000);
@@ -551,7 +553,9 @@ describe("ng-post", () => {
       browserTrigger(el.querySelector("button"), "click");
 
       expect(el.querySelector("button").dataset.loading).toEqual("true");
-      await wait(200);
+      await waitUntil(
+        () => el.querySelector("button").dataset.loading === "false",
+      );
       expect(el.querySelector("button").dataset.loading).toEqual("false");
     });
   });
@@ -566,7 +570,9 @@ describe("ng-post", () => {
       browserTrigger(el.querySelector("button"), "click");
 
       expect(el.querySelector("button").classList.contains("red")).toBeTrue();
-      await wait(200);
+      await waitUntil(
+        () => !el.querySelector("button").classList.contains("red"),
+      );
       expect(el.querySelector("button").classList.contains("red")).toBeFalse();
     });
   });
@@ -579,7 +585,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-success="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(200);
+      await waitUntil(() => scope.res === "<div>Hello</div>");
 
       expect(scope.res).toEqual("<div>Hello</div>");
     });
@@ -593,7 +599,9 @@ describe("ng-post", () => {
         '<button ng-post="/mock/hello" data-state-success="success">Load</button><ng-view id="view"></ng-view>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(200);
+      await waitUntil(
+        () => document.getElementById("view").innerHTML === "success",
+      );
 
       expect(document.getElementById("view").innerHTML).toEqual("success");
     });
@@ -607,7 +615,9 @@ describe("ng-post", () => {
         '<button ng-post="/mock/422" data-state-success="success" data-state-error="error">Load</button><ng-view id="view"></ng-view>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(200);
+      await waitUntil(
+        () => document.getElementById("view").innerHTML === "error",
+      );
 
       expect(document.getElementById("view").innerHTML).toEqual("error");
     });
@@ -621,7 +631,7 @@ describe("ng-post", () => {
         '<button ng-post="/mock/422" data-error="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
-      await wait(200);
+      await waitUntil(() => scope.res === "Invalid data");
 
       expect(scope.res).toEqual("Invalid data");
     });

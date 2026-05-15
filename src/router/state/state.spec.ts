@@ -3,7 +3,7 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { isFunction } from "../../shared/utils.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { waitUntil } from "../../shared/test-utils.ts";
 
 describe("$state", () => {
   let $injector, template, $provide, $compile, module, $stateRegistry;
@@ -359,21 +359,20 @@ describe("$state", () => {
           $transitions.onEnter({ entering: "RS" }, function () {
             entered = true;
           });
-          await wait(200);
         });
 
         // this passes in isolation
         it("updates $stateParams", async () => {
           await initStateTo(RS);
           $location.setSearch({ term: "hello" });
-          await wait(100);
+          await waitUntil(() => $stateParams.term === "hello");
           expect($stateParams.term).toEqual("hello");
           expect(entered).toBeFalsy();
         });
 
         it("doesn't re-enter state (triggered by url change)", async () => {
           $location.setSearch({ term: "hello" });
-          await wait(100);
+          await waitUntil(() => $location.getSearch().term === "hello");
 
           expect($location.getSearch()).toEqual({ term: "hello" });
           expect(entered).toBeFalsy();
@@ -432,7 +431,7 @@ describe("$state", () => {
         res.catch((x) => {
           message = x.message;
         });
-        await wait(200);
+        await waitUntil(() => message !== undefined);
         expect(message).toBeDefined();
       });
 
@@ -543,7 +542,6 @@ describe("$state", () => {
 
         app.innerHTML = "<div>Test: <ng-view></ng-view></div>";
         $compile("<div><ng-view></ng-view></div>")($rootScope.$new());
-        await wait(100);
         await initStateTo(dynamicstate, {
           path: "p1",
           pathDyn: "pd1",
@@ -621,7 +619,7 @@ describe("$state", () => {
             transSuccess = true;
           });
           await promise;
-          await wait(100);
+          await waitUntil(() => transSuccess === true);
           expect(transition.dynamic()).toBeTruthy();
           expect(transSuccess).toBeTruthy();
           expect(dynlog).toBe("success;[searchDyn=sd2];");
@@ -644,7 +642,7 @@ describe("$state", () => {
             destState = result;
           });
           await promise;
-          await wait(100);
+          await waitUntil(() => destState === dynamicstate);
           expect(promise.transition.dynamic()).toBeTruthy();
           expect($state.current).toBe(dynamicstate);
           expect(destState).toBe(dynamicstate);
@@ -657,7 +655,6 @@ describe("$state", () => {
           const promise = $state.go(dynamicstate, { searchDyn: "sd2" });
 
           await promise;
-          await wait(100);
           expect(promise.transition.dynamic()).toBeTruthy();
           expect(promise.transition._treeChanges.entering.length).toBe(0);
           expect(promise.transition._treeChanges.exiting.length).toBe(0);
@@ -708,7 +705,7 @@ describe("$state", () => {
         it("exits and enters a state when a non-dynamic search param changes", async () => {
           const promise = $state.go(dynamicstate, { search: "s2" });
 
-          await wait(100);
+          await promise;
           expect(promise.transition.dynamic()).toBeFalsy();
           expect(dynlog).toBe("exit:dyn;enter:dyn;success;");
           Object.entries({
@@ -739,13 +736,13 @@ describe("$state", () => {
 
         it("does not exit nor enter a state when only dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s1", searchDyn: "sd2" });
-          await wait(100);
+          await waitUntil(() => dynlog === "success;[searchDyn=sd2];");
           expect(dynlog).toBe("success;[searchDyn=sd2];");
         });
 
         it("exits and enters a state when any non-dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s2", searchDyn: "sd2" });
-          await wait(100);
+          await waitUntil(() => dynlog === "exit:dyn;enter:dyn;success;");
           expect(dynlog).toBe("exit:dyn;enter:dyn;success;");
         });
 
@@ -771,7 +768,7 @@ describe("$state", () => {
 
         it("updates $stateParams and $location.setSearch when only dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s1", searchDyn: "sd2" });
-          await wait(100);
+          await waitUntil(() => $stateParams.searchDyn === "sd2");
           expect($stateParams.search).toBe("s1");
           expect($stateParams.searchDyn).toBe("sd2");
           expect($location.getSearch()).toEqual({
@@ -860,7 +857,9 @@ describe("$state", () => {
           expect(dynlog).toBe("success;[pathDyn=pd2];");
 
           await $state.go(dynamicstate, { pathDyn: "pd3", searchDyn: "sd2" });
-          await wait(100);
+          await waitUntil(() =>
+            dynlog.endsWith("success;[pathDyn=pd3,searchDyn=sd2];"),
+          );
           expect(dynlog).toBe(
             "success;[pathDyn=pd2];success;[pathDyn=pd3,searchDyn=sd2];",
           );

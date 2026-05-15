@@ -1,7 +1,7 @@
 /// <reference types="jasmine" />
 import { dealoc } from "../shared/dom.ts";
 import { Angular } from "../angular.ts";
-import { wait } from "../shared/test-utils.ts";
+import { waitUntil } from "../shared/test-utils.ts";
 
 describe("templateFactory", () => {
   let $injector: any,
@@ -43,7 +43,6 @@ describe("templateFactory", () => {
     it("fetches relative URLs correctly", async () => {
       const res = await $templateFactory._fromUrl("/mock/hello");
 
-      await wait(100);
       expect(await res).toEqual("Hello");
     });
 
@@ -111,7 +110,7 @@ describe("templateFactory", () => {
     it("should not prefix the components dom element with anything", async () => {
       $stateRegistry.register({ name: "cmp", component: "myComponent" });
       $stateService.go("cmp");
-      await wait(100);
+      await waitUntil(() => /\<my-component/.test(el.innerHTML));
       expect(el.innerHTML).toMatch(/\<my-component/);
     });
   });

@@ -19,7 +19,7 @@ import {
   extend,
   assert as strictAssert,
 } from "../../shared/utils.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { wait, waitUntil } from "../../shared/test-utils.ts";
 import {
   applyTextInterpolationValue,
   buildInterpolationWatchExpression,
@@ -3254,7 +3254,7 @@ describe("$compile", () => {
       expect(el.innerHTML).toBe("");
     });
 
-    it("populates element with template", (done) => {
+    it("populates element with template", async () => {
       registerDirectives({
         myDirective: () => {
           return { templateUrl: "/public/my_directive.html" };
@@ -3264,13 +3264,11 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
 
       $compile(el);
-      setTimeout(() => {
-        expect(el.children.length).toBe(1);
-        done();
-      }, 100);
+      await waitUntil(() => el.children.length === 1);
+      expect(el.children.length).toBe(1);
     });
 
-    it("resumes current directive compilation after template received", (done) => {
+    it("resumes current directive compilation after template received", async () => {
       const compileSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3286,13 +3284,11 @@ describe("$compile", () => {
 
       $compile(el);
 
-      setTimeout(() => {
-        expect(compileSpy).toHaveBeenCalled();
-        done();
-      }, 100);
+      await waitUntil(() => compileSpy.calls.any());
+      expect(compileSpy).toHaveBeenCalled();
     });
 
-    it("resumes remaining directive compilation after template received", (done) => {
+    it("resumes remaining directive compilation after template received", async () => {
       const otherCompileSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3308,13 +3304,11 @@ describe("$compile", () => {
 
       $compile(el);
 
-      setTimeout(() => {
-        expect(otherCompileSpy).toHaveBeenCalled();
-        done();
-      }, 100);
+      await waitUntil(() => otherCompileSpy.calls.any());
+      expect(otherCompileSpy).toHaveBeenCalled();
     });
 
-    it("resumes child compilation after template received", (done) => {
+    it("resumes child compilation after template received", async () => {
       const otherCompileSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3330,10 +3324,8 @@ describe("$compile", () => {
 
       $compile(el);
 
-      setTimeout(() => {
-        expect(otherCompileSpy).toHaveBeenCalled();
-        done();
-      }, 100);
+      await waitUntil(() => otherCompileSpy.calls.any());
+      expect(otherCompileSpy).toHaveBeenCalled();
     });
 
     it("supports functions as values", async () => {
@@ -3410,7 +3402,7 @@ describe("$compile", () => {
       }).toThrowError();
     });
 
-    it("does not allow template directive after templateUrl directive", (done) => {
+    it("does not allow template directive after templateUrl directive", async () => {
       registerDirectives({
         myDirective: () => {
           return { templateUrl: "/public/my_directive.html" };
@@ -3424,13 +3416,11 @@ describe("$compile", () => {
 
       $compile(el);
 
-      setTimeout(() => {
-        expect(el.childElementCount).toBe(1);
-        done();
-      }, 10);
+      await waitUntil(() => el.childElementCount === 1);
+      expect(el.childElementCount).toBe(1);
     });
 
-    it("links the directive when public link function is invoked", (done) => {
+    it("links the directive when public link function is invoked", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3448,16 +3438,14 @@ describe("$compile", () => {
 
       linkFunction($rootScope);
 
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.first().args[0]).toBe($rootScope);
-        expect(linkSpy.calls.first().args[1]).toBe(el);
-        expect(linkSpy.calls.first().args[2].myDirective).toBeDefined();
-        done();
-      }, 100);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.first().args[0]).toBe($rootScope);
+      expect(linkSpy.calls.first().args[1]).toBe(el);
+      expect(linkSpy.calls.first().args[2].myDirective).toBeDefined();
     });
 
-    it("links child elements when public link function is invoked", (done) => {
+    it("links child elements when public link function is invoked", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3474,16 +3462,14 @@ describe("$compile", () => {
       const linkFunction = $compile(el);
 
       linkFunction($rootScope);
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.first().args[0]).toBe($rootScope);
-        expect(linkSpy.calls.first().args[1]).toBe(el.firstChild);
-        expect(linkSpy.calls.first().args[2].myOtherDirective).toBeDefined();
-        done();
-      }, 100);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.first().args[0]).toBe($rootScope);
+      expect(linkSpy.calls.first().args[1]).toBe(el.firstChild);
+      expect(linkSpy.calls.first().args[2].myOtherDirective).toBeDefined();
     });
 
-    it("links when template received if node link function has been invoked", (done) => {
+    it("links when template received if node link function has been invoked", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3499,16 +3485,14 @@ describe("$compile", () => {
 
       const linkFunction = $compile(el)($rootScope); // link first
 
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.argsFor(0)[0]).toBe($rootScope);
-        expect(linkSpy.calls.argsFor(0)[1][0]).toBe(el[0]);
-        expect(linkSpy.calls.argsFor(0)[2].myDirective).toBeDefined();
-        done();
-      }, 10);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.argsFor(0)[0]).toBe($rootScope);
+      expect(linkSpy.calls.argsFor(0)[1][0]).toBe(el[0]);
+      expect(linkSpy.calls.argsFor(0)[2].myDirective).toBeDefined();
     });
 
-    it("drains queued clone link requests in order after template received", (done) => {
+    it("drains queued clone link requests in order after template received", async () => {
       const linkedOrder = [];
 
       registerDirectives({
@@ -3537,13 +3521,11 @@ describe("$compile", () => {
       linkFunction(firstScope, () => {});
       linkFunction(secondScope, () => {});
 
-      setTimeout(() => {
-        expect(linkedOrder).toEqual(["first", "second"]);
-        done();
-      }, 100);
+      await waitUntil(() => linkedOrder.length === 2);
+      expect(linkedOrder).toEqual(["first", "second"]);
     });
 
-    it("links directives that were compiled earlier", (done) => {
+    it("links directives that were compiled earlier", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3563,16 +3545,14 @@ describe("$compile", () => {
 
       linkFunction($rootScope);
 
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.argsFor(0)[0]).toBe($rootScope);
-        expect(linkSpy.calls.argsFor(0)[1]).toBe(el);
-        expect(linkSpy.calls.argsFor(0)[2].myDirective).toBeDefined();
-        done();
-      }, 100);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.argsFor(0)[0]).toBe($rootScope);
+      expect(linkSpy.calls.argsFor(0)[1]).toBe(el);
+      expect(linkSpy.calls.argsFor(0)[2].myDirective).toBeDefined();
     });
 
-    it("retains isolate scope directives from earlier", (done) => {
+    it("retains isolate scope directives from earlier", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3593,13 +3573,11 @@ describe("$compile", () => {
 
       linkFunction($rootScope);
 
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.first().args[0]).toBeDefined();
-        expect(linkSpy.calls.first().args[0]).not.toBe($rootScope);
-        expect(linkSpy.calls.first().args[0].val).toBe(42);
-        done();
-      }, 100);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.first().args[0]).toBeDefined();
+      expect(linkSpy.calls.first().args[0]).not.toBe($rootScope);
+      expect(linkSpy.calls.first().args[0].val).toBe(42);
     });
 
     it("supports isolate scope directives with templateUrls", async () => {
@@ -3618,13 +3596,13 @@ describe("$compile", () => {
       const el = $('<div my-directive="42"></div>');
 
       $compile(el)($rootScope);
-      await wait(100);
+      await waitUntil(() => linkSpy.calls.any());
       expect(linkSpy).toHaveBeenCalled();
       expect(linkSpy.calls.first().args[0]).not.toBe($rootScope);
       expect(linkSpy.calls.first().args[0].val).toBe(42);
     });
 
-    it("links children of isolate scope directives with templateUrls", (done) => {
+    it("links children of isolate scope directives with templateUrls", async () => {
       const linkSpy = jasmine.createSpy();
 
       registerDirectives({
@@ -3645,15 +3623,13 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
 
-      setTimeout(() => {
-        expect(linkSpy).toHaveBeenCalled();
-        expect(linkSpy.calls.first().args[0]).not.toBe($rootScope);
-        expect(linkSpy.calls.first().args[0].val).toBe(42);
-        done();
-      }, 50);
+      await waitUntil(() => linkSpy.calls.any());
+      expect(linkSpy).toHaveBeenCalled();
+      expect(linkSpy.calls.first().args[0]).not.toBe($rootScope);
+      expect(linkSpy.calls.first().args[0].val).toBe(42);
     });
 
-    it("sets up controllers for all controller directives", (done) => {
+    it("sets up controllers for all controller directives", async () => {
       let myDirectiveControllerInstantiated,
         myOtherDirectiveControllerInstantiated;
 
@@ -3680,16 +3656,18 @@ describe("$compile", () => {
       $compile(el)($rootScope);
 
       //requests[0].respond(200, {}, "<div></div>");
-      setTimeout(() => {
-        expect(myDirectiveControllerInstantiated).toBe(true);
-        expect(myOtherDirectiveControllerInstantiated).toBe(true);
-        done();
-      }, 100);
+      await waitUntil(
+        () =>
+          myDirectiveControllerInstantiated === true &&
+          myOtherDirectiveControllerInstantiated === true,
+      );
+      expect(myDirectiveControllerInstantiated).toBe(true);
+      expect(myOtherDirectiveControllerInstantiated).toBe(true);
     });
   });
 
   describe("with transclusion", () => {
-    it("makes transclusion available to link fn when template arrives", (done) => {
+    it("makes transclusion available to link fn when template arrives", async () => {
       registerDirectives({
         myTranscluder: () => {
           return {
@@ -3707,10 +3685,8 @@ describe("$compile", () => {
       const linkFunction = $compile(el);
 
       linkFunction($rootScope); // then link
-      setTimeout(() => {
-        expect(el.outerHTML.match(/from-template/)).toBeTruthy();
-        done();
-      }, 100);
+      await waitUntil(() => /from-template/.test(el.outerHTML));
+      expect(el.outerHTML.match(/from-template/)).toBeTruthy();
     });
 
     it("is only allowed once", async () => {
@@ -5612,13 +5588,21 @@ describe("$compile", () => {
       $rootScope.list = [1];
       await wait();
       expect(element.querySelectorAll("circle").length).toBe(0);
-      await wait(100);
+      await waitUntil(
+        () => element.querySelectorAll("circle").length === 1,
+        1000,
+        "Timed out waiting for first SVG circle template",
+      );
 
       // template is loaded and replaces the existing nodes
       expect(element.querySelectorAll("circle").length).toBe(1);
 
       $rootScope.list.push(2);
-      await wait(200);
+      await waitUntil(
+        () => element.querySelectorAll("circle").length === 2,
+        1000,
+        "Timed out waiting for repeated SVG circle template",
+      );
 
       expect(element.querySelectorAll("circle").length).toBe(2);
     });
@@ -6451,18 +6435,18 @@ describe("$compile", () => {
         );
       });
 
-      it("should load cross domain templates when trusted", (done) => {
+      it("should load cross domain templates when trusted", async () => {
         element = $compile("<div trusted-template></div>")($rootScope);
         expect(element.outerHTML).toEqual('<div trusted-template=""></div>');
-        setTimeout(() => {
-          expect(element.outerHTML).toEqual(
-            '<div trusted-template="">Hello</div>',
-          );
-          done();
-        }, 100);
+        await waitUntil(
+          () => element.outerHTML === '<div trusted-template="">Hello</div>',
+        );
+        expect(element.outerHTML).toEqual(
+          '<div trusted-template="">Hello</div>',
+        );
       });
 
-      it("should append template via $http and cache it in $templateCache", (done) => {
+      it("should append template via $http and cache it in $templateCache", async () => {
         $templateCache.set("/mock/divexpr", "<span>Cau!</span>");
         element = $compile("<div><b hello>ignore</b><b cau>ignore</b></div>")(
           $rootScope,
@@ -6472,15 +6456,17 @@ describe("$compile", () => {
           '<div><b hello=""></b><b cau=""></b></div>',
         );
 
-        setTimeout(() => {
-          expect(element.outerHTML).toEqual(
-            `<div><b hello="">Hello</b><b cau=""><span>Cau!</span></b></div>`,
-          );
-          done();
-        }, 100);
+        await waitUntil(
+          () =>
+            element.outerHTML ===
+            '<div><b hello="">Hello</b><b cau=""><span>Cau!</span></b></div>',
+        );
+        expect(element.outerHTML).toEqual(
+          '<div><b hello="">Hello</b><b cau=""><span>Cau!</span></b></div>',
+        );
       });
 
-      it("should inline template via $http and cache it in $templateCache", (done) => {
+      it("should inline template via $http and cache it in $templateCache", async () => {
         $templateCache.set("/mock/divexpr", "<span>Cau!</span>");
         element = $compile(
           "<div><b i-hello>ignore</b><b i-cau>ignore</b></div>",
@@ -6489,32 +6475,40 @@ describe("$compile", () => {
           '<div><b i-hello=""></b><b i-cau=""></b></div>',
         );
 
-        setTimeout(() => {
-          expect(element.outerHTML).toBe(
+        await waitUntil(
+          () =>
+            element.outerHTML ===
             '<div><div i-hello="">Hello</div><span i-cau="">Cau!</span></div>',
-          );
-          done();
-        }, 100);
+        );
+        expect(element.outerHTML).toBe(
+          '<div><div i-hello="">Hello</div><span i-cau="">Cau!</span></div>',
+        );
       });
 
-      it("should compile, link and flush the template append", (done) => {
+      it("should compile, link and flush the template append", async () => {
         $templateCache.set("/mock/hello", "<span>Hello, {{name}}!</span>");
         $rootScope.name = "Elvis";
         element = $compile('<div><b hello=""></b></div>')($rootScope);
 
-        setTimeout(() => {
-          expect(element.outerHTML).toEqual(
+        await waitUntil(
+          () =>
+            element.outerHTML ===
             '<div><b hello=""><span>Hello, Elvis!</span></b></div>',
-          );
-          done();
-        }, 100);
+        );
+        expect(element.outerHTML).toEqual(
+          '<div><b hello=""><span>Hello, Elvis!</span></b></div>',
+        );
       });
 
       it("should compile, link and flush the template inline", async () => {
         $templateCache.set("/mock/div", "<span>Hello, {{name}}!</span>");
         $rootScope.name = "Elvis";
         element = $compile("<div><b i-hello></b></div>")($rootScope);
-        await wait();
+        await waitUntil(
+          () =>
+            element.outerHTML ===
+            '<div><span i-hello="">Hello, Elvis!</span></div>',
+        );
         expect(element.outerHTML).toBe(
           '<div><span i-hello="">Hello, Elvis!</span></div>',
         );
@@ -6524,7 +6518,11 @@ describe("$compile", () => {
         $templateCache.set("/mock/hello", "<div replace></div>");
         $rootScope.name = "Elvis";
         element = $compile('<div><b hello=""></b></div>')($rootScope);
-        await wait();
+        await waitUntil(
+          () =>
+            element.outerHTML ===
+            '<div><b hello=""><span replace="">Hello, Elvis!</span></b></div>',
+        );
 
         expect(element.outerHTML).toEqual(
           '<div><b hello=""><span replace="">Hello, Elvis!</span></b></div>',
@@ -6534,7 +6532,9 @@ describe("$compile", () => {
       it("should compile template when replacing root element", async () => {
         $rootScope.name = "Elvis";
         element = $compile("<div replace></div>")($rootScope);
-        await wait;
+        await waitUntil(
+          () => element.outerHTML === '<span replace="">Hello, Elvis!</span>',
+        );
         expect(element.outerHTML).toEqual(
           '<span replace="">Hello, Elvis!</span>',
         );
@@ -6590,7 +6590,9 @@ describe("$compile", () => {
           /* empty */
         }); // clone
 
-        await wait(100);
+        await waitUntil(
+          () => e1.innerText === "Elvis" && e2.innerText === "Elvis",
+        );
         expect(e1.innerText).toEqual("Elvis");
         expect(e2.innerText).toEqual("Elvis");
 
@@ -6649,7 +6651,9 @@ describe("$compile", () => {
           /* empty */
         }); // clone
 
-        await wait(100);
+        await waitUntil(
+          () => e1.innerText === "Elvis" && e2.innerText === "Elvis",
+        );
         expect(e1.innerText).toEqual("Elvis");
         expect(e2.innerText).toEqual("Elvis");
 
@@ -7177,15 +7181,15 @@ describe("$compile", () => {
         );
 
         createInjector(["myModule"]).invoke(
-          async ($templateCache, $rootScope, $compile) => {
+          ($templateCache, $rootScope, $compile) => {
             $templateCache.set("test.html", "<p>{{value}}</p>");
             element = $compile(
               "<template-url-with-prototype><template-url-with-prototype>",
             )($rootScope);
-            await wait();
-            expect(element.querySelector("p").innerHTML).toEqual("Test Value");
           },
         );
+        await waitUntil(() => element.querySelector("p") !== null);
+        expect(element.querySelector("p").innerHTML).toEqual("Test Value");
       });
     });
 
@@ -13906,16 +13910,20 @@ describe("$compile", () => {
             element = $compile("<div toggle>some text</div>")($rootScope);
 
             $rootScope.t = true;
-            await wait();
+            await waitUntil(() => element.textContent.includes("some text"));
+            expect(element.textContent).toContain("some text");
 
             $rootScope.t = false;
-            await wait();
+            await waitUntil(() => !element.textContent.includes("some text"));
+            expect(element.textContent).not.toContain("some text");
 
             $rootScope.t = true;
-            await wait();
+            await waitUntil(() => element.textContent.includes("some text"));
+            expect(element.textContent).toContain("some text");
 
             $rootScope.t = false;
-            await wait();
+            await waitUntil(() => !element.textContent.includes("some text"));
+            expect(element.textContent).not.toContain("some text");
           });
 
           it("should mark as destroyed all sub scopes of the scope being destroyed", async () => {

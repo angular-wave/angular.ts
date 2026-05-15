@@ -2,7 +2,7 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 import { ngRepeatDirective } from "./repeat.ts";
 
 describe("ngRepeat", () => {
@@ -1098,7 +1098,7 @@ describe("ngRepeat", () => {
       scopeLog.length = 0;
     });
 
-    it("should work when placed on a root element of attr directive with ASYNC replaced template", (done) => {
+    it("should work when placed on a root element of attr directive with ASYNC replaced template", async () => {
       $compileProvider.directive("replaceMeWithRepeater", () => ({
         replace: true,
         templateUrl: "replace-me-with-repeater.html",
@@ -1115,15 +1115,12 @@ describe("ngRepeat", () => {
       expect(element.innerText).toBe("--");
 
       scope.items = [1, 2];
-      setTimeout(() => {
-        expect(element.innerText).toBe("-12-");
-        scope.items = [];
-      }, 500);
+      await waitUntil(() => element.innerText === "-12-");
+      expect(element.innerText).toBe("-12-");
 
-      setTimeout(() => {
-        expect(element.innerText).toBe("--");
-        done();
-      }, 1000);
+      scope.items = [];
+      await waitUntil(() => element.innerText === "--");
+      expect(element.innerText).toBe("--");
     });
 
     it("should work when placed on a root element of element directive with SYNC replaced template", async () => {
@@ -1170,7 +1167,7 @@ describe("ngRepeat", () => {
       await wait();
       expect(element.textContent).toBe("");
 
-      await wait(300);
+      await waitUntil(() => element.textContent === "hello\n");
       expect(element.textContent).toBe("hello\n");
 
       scope.items = [];
@@ -1396,7 +1393,7 @@ describe("ngRepeat", () => {
       expect(element.textContent).toBe("[[1]][[2]]");
     });
 
-    it("should allow mixing ngRepeat with ngInclude", (done) => {
+    it("should allow mixing ngRepeat with ngInclude", async () => {
       window.angular = new Angular();
 
       element = createElementFromHTML(
@@ -1407,10 +1404,8 @@ describe("ngRepeat", () => {
       scope = injector.get("$rootScope");
       $templateCache = injector.get("$templateCache");
       $templateCache.set("test.html", "hello");
-      setTimeout(() => {
-        expect(element.textContent).toBe("hello\nhello\n");
-        done();
-      }, 500);
+      await waitUntil(() => element.textContent === "hello\nhello\n");
+      expect(element.textContent).toBe("hello\nhello\n");
     });
 
     it("should allow mixing ngRepeat with ngIf", async () => {

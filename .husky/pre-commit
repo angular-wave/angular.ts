@@ -1,5 +1,8 @@
 #!/bin/sh
 
+: "${PLAYWRIGHT_WORKERS:=2}"
+export PLAYWRIGHT_WORKERS
+
 make format
 make lint
 make check

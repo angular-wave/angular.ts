@@ -2,7 +2,7 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 import { LocationProvider } from "../../services/location/location.ts";
 
 describe("ngStateRef", () => {
@@ -75,6 +75,20 @@ describe("ngStateRef", () => {
   });
 
   afterEach(() => (window.location.hash = ""));
+
+  async function waitForState(name, params = {}) {
+    await waitUntil(
+      () =>
+        $state.current.name === name &&
+        Object.entries(params).every(
+          ([key, value]) => $stateParams[key] === value,
+        ),
+    );
+  }
+
+  async function waitForHref(anchor, href) {
+    await waitUntil(() => anchor.getAttribute("href") === href);
+  }
 
   describe("links with promises", () => {
     it("should update the href when promises on parameters change before scope is applied", async () => {
@@ -152,7 +166,7 @@ describe("ngStateRef", () => {
 
     it("should transition states when left-clicked", async () => {
       browserTrigger(el, "click");
-      await wait(200);
+      await waitForState("contacts.item.detail", { id: 5 });
       expect($state.current.name).toEqual("contacts.item.detail");
       expect($stateParams.id).toEqual(5);
     });
@@ -225,25 +239,27 @@ describe("ngStateRef", () => {
       app.innerHTML = '<a ng-sref="{id: $index}">Details</a>';
       $compile(app)($rootScope);
 
-      await wait(100);
+      await waitForState("other", { id: "abc" });
+      await waitForHref(app.querySelector("a"), "#/other/def");
       expect($state.current.name).toBe("other");
       expect($state.params.id).toEqual("abc");
       expect(app.querySelector("a").getAttribute("href")).toBe("#/other/def");
       el = app.querySelector("a");
       browserTrigger(el, "click");
-      await wait(100);
+      await waitForState("other", { id: "def" });
       expect($state.current.name).toBe("other");
       expect($state.params.id).toEqual("def");
       //
       $rootScope.$index = "ghi";
       $state.go("other.detail");
-      await wait(100);
+      await waitForState("other.detail", { id: "def" });
+      await waitForHref(el, "#/other/ghi/detail");
       expect($state.current.name).toBe("other.detail");
       expect($state.params.id).toEqual("def");
       expect(el.getAttribute("href")).toBe("#/other/ghi/detail");
 
       browserTrigger(el, "click");
-      await wait(100);
+      await waitForState("other.detail", { id: "ghi" });
       expect($state.current.name).toBe("other.detail");
       expect($state.params.id).toEqual("ghi");
     });
@@ -385,27 +401,31 @@ describe("ngStateRef", () => {
       expect(template.className).not.toContain("activeeq");
 
       $state.go("contacts");
-      await wait(100);
+      await waitUntil(() => template.className.includes("active activeeq"));
       expect(template.className).toContain("active activeeq");
 
       scope.state = "contacts.item";
       scope.params = { id: 5 };
-      await wait(100);
+      await waitUntil(() => template.getAttribute("href") === "#/contacts/5");
       expect(template.className).not.toContain("active");
       expect(template.className).not.toContain("activeeq");
 
       $state.go("contacts.item", { id: -5 });
-      await wait(100);
+      await waitForState("contacts.item", { id: -5 });
       expect(template.className).not.toContain("active");
       expect(template.className).not.toContain("activeeq");
 
       $state.go("contacts.item", { id: 5 });
-      await wait(100);
+      await waitUntil(() => template.className.includes("active activeeq"));
       expect(template.className).toContain("active activeeq");
 
       scope.state = "contacts";
       scope.params = {};
-      await wait(100);
+      await waitUntil(
+        () =>
+          template.className.includes("active") &&
+          !template.className.includes("activeeq"),
+      );
       expect(template.className).toContain("active");
       expect(template.className).not.toContain("activeeq");
     });
@@ -414,7 +434,7 @@ describe("ngStateRef", () => {
       expect(template.getAttribute("href")).toBe("#/contacts");
       scope.state = "other";
       scope.params = { id: "123" };
-      await wait(100);
+      await waitForHref(template, "#/other/123");
       expect(template.getAttribute("href")).toBe("#/other/123");
     });
 
@@ -424,13 +444,13 @@ describe("ngStateRef", () => {
       app.innerHTML =
         '<a ng-state="" ng-state-params="{id: $index}">Details</a>';
       $compile(app)($rootScope);
-      await wait(100);
+      await waitForHref(app.querySelector("a"), "#/other/def");
       expect($state.current.name).toBe("other");
       expect($state.params.id).toEqual("abc");
       expect(app.querySelector("a").getAttribute("href")).toBe("#/other/def");
 
       browserTrigger(app.querySelector("a"), "click");
-      await wait(100);
+      await waitForState("other", { id: "def" });
 
       expect($state.current.name).toBe("other");
       expect($state.params.id).toEqual("def");
@@ -445,7 +465,7 @@ describe("ngStateRef", () => {
       );
 
       browserTrigger(app.querySelector("a"), "click");
-      await wait(100);
+      await waitForState("other.detail", { id: "ghi" });
 
       expect($state.current.name).toBe("other.detail");
       expect($state.params.id).toEqual("ghi");
@@ -480,16 +500,16 @@ describe("ngStateRef", () => {
       app.innerHTML =
         '<a ng-state="{{exprvar}}" ng-state-params="params">state</a>';
       template = $compile(app)(scope);
-      await wait(100);
+      await waitUntil(() => app.querySelector("a") !== null);
       scope.exprvar = "state1";
       scope.state1 = "contacts.item";
       scope.state2 = "other";
       scope.params = { id: 10 };
-      await wait(100);
+      await waitForHref(app.querySelector("a"), "#/contacts/10");
       expect(app.querySelector("a").getAttribute("href")).toBe("#/contacts/10");
 
       scope.exprvar = "state2";
-      await wait(100);
+      await waitForHref(app.querySelector("a"), "#/other/10");
       expect(app.querySelector("a").getAttribute("href")).toBe("#/other/10");
     });
 
@@ -501,7 +521,7 @@ describe("ngStateRef", () => {
       spyOn($state, "go").and.callThrough();
 
       browserTrigger(template, "click");
-      await wait(100);
+      await waitUntil(() => $state.go.calls.any());
       const transitionOptions = $state.go.calls.all()[0].args[2];
 
       expect(transitionOptions.reload).toEqual(true);

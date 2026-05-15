@@ -162,6 +162,13 @@ async function collectJasmineDiagnostics(page) {
           (expectation) => expectation.message,
         ),
       }));
+    const noExpectationSpecs = specs
+      .filter(
+        (spec) =>
+          (spec.passedExpectations || []).length === 0 &&
+          (spec.failedExpectations || []).length === 0,
+      )
+      .map((spec) => spec.fullName);
     const globalFailures = (runDetails.failedExpectations || []).map(
       (expectation) => expectation.message,
     );
@@ -169,6 +176,7 @@ async function collectJasmineDiagnostics(page) {
       failedSpecs,
       failedSuites,
       globalFailures,
+      noExpectationSpecs,
       overallText,
       overallStatus:
         typeof runDetails.overallStatus === "string"
@@ -242,10 +250,24 @@ function formatJasmineFailureReport(url, diagnostics) {
       );
     }
   }
+  if (diagnostics.noExpectationSpecs.length > 0) {
+    lines.push("Specs with no expectations:");
+    diagnostics.noExpectationSpecs
+      .slice(0, MAX_FAILURES)
+      .forEach((fullName, index) => {
+        lines.push(`${index + 1}. ${fullName}`);
+      });
+    if (diagnostics.noExpectationSpecs.length > MAX_FAILURES) {
+      lines.push(
+        `... ${diagnostics.noExpectationSpecs.length - MAX_FAILURES} more specs with no expectations`,
+      );
+    }
+  }
   if (
     diagnostics.failedSpecs.length === 0 &&
     diagnostics.failedSuites.length === 0 &&
-    diagnostics.globalFailures.length === 0
+    diagnostics.globalFailures.length === 0 &&
+    diagnostics.noExpectationSpecs.length === 0
   ) {
     lines.push("No failed specs, suites, or global failures were reported.");
   }
@@ -314,6 +336,7 @@ function sanitizeCoverageLabel(label) {
  *     failedExpectations: string[],
  *   }>,
  *   globalFailures: string[],
+ *   noExpectationSpecs: string[],
  *   overallText: string,
  *   overallStatus: string | null,
  *   status: string | null,
