@@ -118,9 +118,9 @@ export interface WasmScopeAbiImports {
     pathLen: number,
   ): number;
   /** Runs queued Wasm scope bridge callbacks. Returns `1` on success. */
-  scope_flush(scopeHandle: number): number;
-  /** Name-based variant of `scope_flush`. */
-  scope_flush_named(namePtr: number, nameLen: number): number;
+  scope_sync(scopeHandle: number): number;
+  /** Name-based variant of `scope_sync`. */
+  scope_sync_named(namePtr: number, nameLen: number): number;
   /** Watches a scope path and returns a watch handle. */
   scope_watch(scopeHandle: number, pathPtr: number, pathLen: number): number;
   /** Name-based variant of `scope_watch`. */
@@ -204,9 +204,9 @@ export class WasmScope {
   /** @internal */
   private _bindings: Array<() => void>;
   /** @internal */
-  private _flushCallbacks: Array<() => void>;
+  private _syncCallbacks: Array<() => void>;
   /** @internal */
-  private _flushScheduled: boolean;
+  private _syncScheduled: boolean;
   /** @internal */
   private _destroyed: boolean;
 
@@ -227,8 +227,8 @@ export class WasmScope {
     this.handle = handle;
     this.name = options.name ?? scope.$scopename ?? String(scope.$id ?? handle);
     this._bindings = [];
-    this._flushCallbacks = [];
-    this._flushScheduled = false;
+    this._syncCallbacks = [];
+    this._syncScheduled = false;
     this._destroyed = false;
     this._bindings.push(
       scope.$on("$destroy", () => {
@@ -258,26 +258,26 @@ export class WasmScope {
   }
 
   /** Runs queued Wasm bridge callbacks for this scope. */
-  flush(): void {
-    this._scheduleFlushCallbacks();
+  sync(): void {
+    this._scheduleSyncCallbacks();
   }
 
   /** @internal */
-  private _scheduleFlushCallbacks(): void {
-    if (this._flushScheduled || this._flushCallbacks.length === 0) {
+  private _scheduleSyncCallbacks(): void {
+    if (this._syncScheduled || this._syncCallbacks.length === 0) {
       return;
     }
 
-    this._flushScheduled = true;
+    this._syncScheduled = true;
 
     queueMicrotask(() => {
       if (this._destroyed) {
         return;
       }
 
-      this._flushScheduled = false;
+      this._syncScheduled = false;
 
-      const callbacks = this._flushCallbacks.slice();
+      const callbacks = this._syncCallbacks.slice();
 
       for (let i = 0, l = callbacks.length; i < l; i++) {
         callbacks[i]();
@@ -286,23 +286,23 @@ export class WasmScope {
   }
 
   /**
-   * Registers a callback that runs before this scope flushes.
+   * Registers a callback that runs before this scope syncs.
    *
    * Generated Wasm bridges use this to sync Rust-owned public fields back onto
-   * AngularTS controller wrappers when Rust async code calls `WasmScope::flush`.
+   * AngularTS controller wrappers when Rust async code calls `WasmScope::sync`.
    */
-  onFlush(callback: () => void): () => void {
+  onSync(callback: () => void): () => void {
     if (this._destroyed) {
       return () => {};
     }
 
-    this._flushCallbacks.push(callback);
+    this._syncCallbacks.push(callback);
 
     return () => {
-      const index = this._flushCallbacks.indexOf(callback);
+      const index = this._syncCallbacks.indexOf(callback);
 
       if (index >= 0) {
-        this._flushCallbacks.splice(index, 1);
+        this._syncCallbacks.splice(index, 1);
       }
     };
   }
@@ -399,8 +399,8 @@ export class WasmScope {
       bindings[i]();
     }
 
-    this._flushCallbacks.length = 0;
-    this._flushScheduled = false;
+    this._syncCallbacks.length = 0;
+    this._syncScheduled = false;
     this.abi.unregisterScope(this.handle);
   }
 }
@@ -466,9 +466,9 @@ export class WasmScopeAbi {
           this._scopeDelete(scopeHandle, pathPtr, pathLen),
         scope_delete_named: (namePtr, nameLen, pathPtr, pathLen) =>
           this._scopeDeleteNamed(namePtr, nameLen, pathPtr, pathLen),
-        scope_flush: (scopeHandle) => this._scopeFlush(scopeHandle),
-        scope_flush_named: (namePtr, nameLen) =>
-          this._scopeFlushNamed(namePtr, nameLen),
+        scope_sync: (scopeHandle) => this._scopeSync(scopeHandle),
+        scope_sync_named: (namePtr, nameLen) =>
+          this._scopeSyncNamed(namePtr, nameLen),
         scope_watch: (scopeHandle, pathPtr, pathLen) =>
           this._scopeWatch(scopeHandle, pathPtr, pathLen),
         scope_watch_named: (namePtr, nameLen, pathPtr, pathLen) =>
@@ -688,21 +688,21 @@ export class WasmScopeAbi {
   }
 
   /** @internal */
-  private _scopeFlush(scopeReference: WasmScopeReference): number {
+  private _scopeSync(scopeReference: WasmScopeReference): number {
     const scope = this._resolveScope(scopeReference);
 
     if (!scope) {
       return 0;
     }
 
-    scope.flush();
+    scope.sync();
 
     return 1;
   }
 
   /** @internal */
-  private _scopeFlushNamed(namePtr: number, nameLen: number): number {
-    return this._scopeFlush(this._readGuestString(namePtr, nameLen));
+  private _scopeSyncNamed(namePtr: number, nameLen: number): number {
+    return this._scopeSync(this._readGuestString(namePtr, nameLen));
   }
 
   /** @internal */

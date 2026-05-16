@@ -496,14 +496,14 @@ mod tests {
         let server_task_count_getter = concat!("pub fn ", "server_task_count(&self)");
         let server_tasks_getter = concat!("pub fn ", "server_tasks(&self)");
         let manual_scope_set = concat!("scope", ".set(");
-        let manual_scope_flush = concat!("scope", ".flush(");
+        let manual_scope_sync = concat!("scope", ".sync(");
         let manual_spawn = concat!("spawn", "_local");
         let raw_controller_pointer = concat!(" as *", "mut TodoListController");
 
         assert!(!source.contains(raw_wasm_bindgen_attr));
         assert!(!source.contains(raw_export_argument));
         assert!(!source.contains(manual_scope_set));
-        assert!(!source.contains(manual_scope_flush));
+        assert!(!source.contains(manual_scope_sync));
         assert!(!source.contains(manual_spawn));
         assert!(!source.contains(raw_controller_pointer));
         assert!(!controller_impl.contains(items_getter));

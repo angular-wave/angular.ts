@@ -23,11 +23,11 @@ func hostScopeDelete(scopeHandle uint32, pathPtr uint32, pathLen uint32) uint32
 //go:wasmimport angular_ts scope_delete_named
 func hostScopeDeleteNamed(namePtr uint32, nameLen uint32, pathPtr uint32, pathLen uint32) uint32
 
-//go:wasmimport angular_ts scope_flush
-func hostScopeFlush(scopeHandle uint32) uint32
+//go:wasmimport angular_ts scope_sync
+func hostScopeSync(scopeHandle uint32) uint32
 
-//go:wasmimport angular_ts scope_flush_named
-func hostScopeFlushNamed(namePtr uint32, nameLen uint32) uint32
+//go:wasmimport angular_ts scope_sync_named
+func hostScopeSyncNamed(namePtr uint32, nameLen uint32) uint32
 
 //go:wasmimport angular_ts scope_watch
 func hostScopeWatch(scopeHandle uint32, pathPtr uint32, pathLen uint32) uint32

@@ -47,17 +47,17 @@ export class GoWasmScopeAbi {
     if (!scope) return false;
 
     scope.set(path, JSON.parse(json));
-    scope.flush();
+    scope.sync();
 
     return true;
   }
 
-  flush(name) {
+  sync(name) {
     const scope = this.scopes.get(name);
 
     if (!scope) return false;
 
-    scope.flush();
+    scope.sync();
 
     return true;
   }

@@ -24,7 +24,7 @@ parity tracking, and browser tests for Go-owned state flowing through
 - `NamedScope` targets a stable AngularTS scope name.
 - `Scope.Get` / `NamedScope.Get` decode JSON-compatible scope values.
 - `Scope.Set` / `NamedScope.Set` encode JSON-compatible scope values.
-- `Delete`, `Flush`, `Unbind`, `Watch`, and `Watch.Unwatch` map to the shared
+- `Delete`, `Sync`, `Unbind`, `Watch`, and `Watch.Unwatch` map to the shared
   host ABI.
 - `Update.Decode` decodes watched scope update payloads.
 - `GoWasmScopeAbi` adapts standard Go browser Wasm to host `WasmScope` objects.
@@ -40,7 +40,7 @@ parity tracking, and browser tests for Go-owned state flowing through
   template-visible field and method names, allowing generated bootstrap to
   carry the scope bridge contract without runtime field or method-list wiring.
 - `SyncScope` and generated app-local sync helpers write Go-owned state to
-  `WasmScope` fields and flush once per refresh.
+  `WasmScope` fields and sync once per refresh.
 - `ScopeWatchRoute`, `TypedWatchRoute`, and `WatchValue` let generated glue
   route UI-originated scope updates into typed Go handlers.
 - Generated controller wrappers own the JavaScript export object and refresh

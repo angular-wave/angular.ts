@@ -145,8 +145,8 @@ AngularTS exposes the ABI imports under the `angular_ts` import namespace.
     scope_delete(scopeHandle, pathPtr, pathLen): 0 | 1;
     scope_delete_named(namePtr, nameLen, pathPtr, pathLen): 0 | 1;
 
-    scope_flush(scopeHandle): 0 | 1;
-    scope_flush_named(namePtr, nameLen): 0 | 1;
+    scope_sync(scopeHandle): 0 | 1;
+    scope_sync_named(namePtr, nameLen): 0 | 1;
 
     scope_watch(scopeHandle, pathPtr, pathLen): watchHandle;
     scope_watch_named(namePtr, nameLen, pathPtr, pathLen): watchHandle;
@@ -209,15 +209,15 @@ Returns `1` on success and `0` when the scope handle or path is invalid.
 
 Name-based variant of `scope_delete`.
 
-### `scope_flush`
+### `scope_sync`
 
 Runs queued Wasm scope bridge callbacks for the bound scope.
 
 Returns `1` on success and `0` when the scope handle is invalid.
 
-### `scope_flush_named`
+### `scope_sync_named`
 
-Name-based variant of `scope_flush`.
+Name-based variant of `scope_sync`.
 
 ### `scope_watch`
 
@@ -334,7 +334,7 @@ use angular_ts::{read_abi_json, read_abi_string, WasmScope};
 
 let scope = WasmScope::new(scope_handle, "ctrl".to_string());
 scope.set("items", items.into());
-scope.flush();
+scope.sync();
 let watch_handle = scope.watch("items");
 scope.unwatch(watch_handle);
 ```
@@ -347,7 +347,7 @@ scope_set
 scope_delete
 scope_watch
 scope_unwatch
-scope_flush
+scope_sync
 buffer_ptr
 buffer_len
 buffer_free
@@ -399,7 +399,7 @@ The C# binding should provide helpers equivalent to:
 Scope.Get<T>(path)
 Scope.Set<T>(path, value)
 Scope.Delete(path)
-Scope.Flush()
+Scope.Sync()
 Scope.Watch(path, callback)
 Scope.Unbind()
 ```

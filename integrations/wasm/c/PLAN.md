@@ -26,8 +26,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -70,7 +70,7 @@ typedef struct {
 ng_buffer_handle_t ng_scope_get_json(ng_scope_ref_t scope, ng_bytes_t path);
 bool ng_scope_set_json(ng_scope_ref_t scope, ng_bytes_t path, ng_bytes_t json);
 bool ng_scope_delete_path(ng_scope_ref_t scope, ng_bytes_t path);
-bool ng_scope_flush_ref(ng_scope_ref_t scope);
+bool ng_scope_sync_ref(ng_scope_ref_t scope);
 ng_watch_handle_t ng_scope_watch_path(ng_scope_ref_t scope, ng_bytes_t path);
 bool ng_scope_unbind_ref(ng_scope_ref_t scope);
 ```

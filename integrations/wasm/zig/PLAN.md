@@ -26,8 +26,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -60,7 +60,7 @@ pub const Scope = struct {
     pub fn get(self: Scope, allocator: std.mem.Allocator, path: []const u8) ![]u8;
     pub fn set(self: Scope, path: []const u8, json: []const u8) bool;
     pub fn delete(self: Scope, path: []const u8) bool;
-    pub fn flush(self: Scope) bool;
+    pub fn sync(self: Scope) bool;
     pub fn watch(self: Scope, path: []const u8, callback: WatchCallback) Watch;
     pub fn unbind(self: Scope) bool;
 };

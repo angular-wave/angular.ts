@@ -1,11 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { wait } from "../../shared/test-utils.ts";
-import {
-  createScope,
-  getArrayMutationMeta,
-  isNonScope,
-} from "./scope.ts";
+import { createScope, getArrayMutationMeta, isNonScope } from "./scope.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { isDefined, isProxy, sliceArgs } from "../../shared/utils.ts";

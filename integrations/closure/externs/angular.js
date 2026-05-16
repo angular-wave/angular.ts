@@ -4075,7 +4075,7 @@ ng.InvocationDetail = function() {};
 ng.InvocationDetail.prototype.expr;
 
 /**
- * Public AngularTS ListenerFn contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public watcher callback shape. The first argument is the resolved watched value. The second argument is the original target object used when the watcher was registered.
  * @typedef {function((?|undefined), (?|undefined)): void}
  */
 ng.ListenerFn;
@@ -4769,7 +4769,7 @@ ng.RestService.prototype.update = function(id, item) {};
 ng.RestService.prototype.delete = function(id) {};
 
 /**
- * Public AngularTS ScopeEvent contract exposed through the global ng namespace for Closure-annotated applications.
+ * Event object passed to `$emit` and `$broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods.
  * @record
  */
 ng.ScopeEvent = function() {};
@@ -6071,14 +6071,14 @@ ng.WasmScope.prototype.delete = function(path) {};
  * Runs queued Wasm bridge callbacks for this scope.
  * @return {void}
  */
-ng.WasmScope.prototype.flush = function() {};
+ng.WasmScope.prototype.sync = function() {};
 
 /**
- * Registers a callback that runs before this scope flushes. Generated Wasm bridges use this to sync Rust-owned public fields back onto AngularTS controller wrappers when Rust async code calls `WasmScope::flush`.
+ * Registers a callback that runs before this scope syncs. Generated Wasm bridges use this to sync Rust-owned public fields back onto AngularTS controller wrappers when Rust async code calls `WasmScope::sync`.
  * @param {function(): void} callback
  * @return {function(): void}
  */
-ng.WasmScope.prototype.onFlush = function(callback) {};
+ng.WasmScope.prototype.onSync = function(callback) {};
 
 /**
  * Watches one scope path and calls `callback` when AngularTS observes a change. The returned function removes only this watch registration.
@@ -6264,15 +6264,15 @@ ng.WasmScopeAbiImports.prototype.scope_delete_named = function(namePtr, nameLen,
  * @param {number} scopeHandle
  * @return {number}
  */
-ng.WasmScopeAbiImports.prototype.scope_flush = function(scopeHandle) {};
+ng.WasmScopeAbiImports.prototype.scope_sync = function(scopeHandle) {};
 
 /**
- * Name-based variant of `scope_flush`.
+ * Name-based variant of `scope_sync`.
  * @param {number} namePtr
  * @param {number} nameLen
  * @return {number}
  */
-ng.WasmScopeAbiImports.prototype.scope_flush_named = function(namePtr, nameLen) {};
+ng.WasmScopeAbiImports.prototype.scope_sync_named = function(namePtr, nameLen) {};
 
 /**
  * Watches a scope path and returns a watch handle.

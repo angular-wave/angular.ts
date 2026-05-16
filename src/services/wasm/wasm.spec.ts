@@ -128,21 +128,21 @@ describe("WasmScopeAbi", () => {
     expect(rootScope.filters.status).toBeUndefined();
   });
 
-  it("runs bridge flush callbacks asynchronously", async () => {
+  it("runs bridge sync callbacks asynchronously", async () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const name = guest.write("todoList:main");
-    let bridgeFlushed = false;
+    let bridgeSynced = false;
 
-    scope.onFlush(() => {
-      bridgeFlushed = true;
+    scope.onSync(() => {
+      bridgeSynced = true;
     });
 
-    expect(imports.scope_flush_named(name.ptr, name.len)).toBe(1);
-    expect(bridgeFlushed).toBeFalse();
+    expect(imports.scope_sync_named(name.ptr, name.len)).toBe(1);
+    expect(bridgeSynced).toBeFalse();
 
     await Promise.resolve();
 
-    expect(bridgeFlushed).toBeTrue();
+    expect(bridgeSynced).toBeTrue();
   });
 
   it("updates the DOM when a Wasm import mutates a bound scope", async () => {
@@ -173,7 +173,7 @@ describe("WasmScopeAbi", () => {
         value.len,
       ),
     ).toBe(1);
-    expect(imports.scope_flush_named(name.ptr, name.len)).toBe(1);
+    expect(imports.scope_sync_named(name.ptr, name.len)).toBe(1);
     await wait();
 
     expect(el.textContent).toBe("Updated by Wasm");
@@ -391,7 +391,7 @@ async function renderWasmDomUpdate(target: HTMLElement): Promise<void> {
       value.ptr,
       value.len,
     );
-    imports.scope_flush_named(name.ptr, name.len);
+    imports.scope_sync_named(name.ptr, name.len);
     await wait();
   }
 }

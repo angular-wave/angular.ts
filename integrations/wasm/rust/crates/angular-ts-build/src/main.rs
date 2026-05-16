@@ -371,7 +371,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       this.__bindScopeUpdates();
       this.__bindScopeUpdateRoutes();
       this.__syncRustProperties();
-      this.__flushScope();
+      this.__syncScope();
     }}
 
     $onInit() {{
@@ -380,7 +380,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       if (inner && typeof inner.onInit === "function") {{
         inner.onInit();
         this.__syncRustProperties();
-        this.__flushScope();
+        this.__syncScope();
       }}
     }}
 
@@ -390,7 +390,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       if (inner && typeof inner.onDestroy === "function") {{
         inner.onDestroy();
         this.__syncRustProperties();
-        this.__flushScope();
+        this.__syncScope();
       }}
 
       if (
@@ -411,12 +411,12 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
     __bindGeneratedRefresh() {{
       const hostScope = this.__wasmScope;
 
-      if (!hostScope || typeof hostScope.onFlush !== "function") {{
+      if (!hostScope || typeof hostScope.onSync !== "function") {{
         return;
       }}
 
       this.__scopeUpdateDisposers.push(
-        hostScope.onFlush(() => {{
+        hostScope.onSync(() => {{
           this.__syncRustProperties();
         }}),
       );
@@ -464,7 +464,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
           inner[route.method](update.value);
           queueMicrotask(() => {{
             this.__syncRustProperties();
-            this.__flushScope();
+            this.__syncScope();
           }});
         }});
 
@@ -484,8 +484,8 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }}
     }}
 
-    __flushScope() {{
-      // Scope flushing is a bridge callback boundary. AngularTS schedules DOM
+    __syncScope() {{
+      // Scope syncing is a bridge callback boundary. AngularTS schedules DOM
       // updates through the normal scope microtask pipeline.
     }}
 
@@ -521,7 +521,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
             this.__fromRust = true;
             try {{
               this.__syncRustProperties();
-              this.__flushScope();
+              this.__syncScope();
               return value;
             }} finally {{
               this.__fromRust = false;
@@ -531,7 +531,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
             this.__fromRust = true;
             try {{
               this.__syncRustProperties();
-              this.__flushScope();
+              this.__syncScope();
             }} finally {{
               this.__fromRust = false;
             }}
@@ -542,7 +542,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
 
       try {{
         this.__syncRustProperties();
-        this.__flushScope();
+        this.__syncScope();
         return result;
       }} finally {{
         this.__fromRust = false;
@@ -633,9 +633,9 @@ export const scope_delete = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_delete(scopeHandle, pathPtr, pathLen);
 export const scope_delete_named = (namePtr, nameLen, pathPtr, pathLen) =>
   imports().scope_delete_named(namePtr, nameLen, pathPtr, pathLen);
-export const scope_flush = (scopeHandle) => imports().scope_flush(scopeHandle);
-export const scope_flush_named = (namePtr, nameLen) =>
-  imports().scope_flush_named(namePtr, nameLen);
+export const scope_sync = (scopeHandle) => imports().scope_sync(scopeHandle);
+export const scope_sync_named = (namePtr, nameLen) =>
+  imports().scope_sync_named(namePtr, nameLen);
 export const scope_watch = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_watch(scopeHandle, pathPtr, pathLen);
 export const scope_watch_named = (namePtr, nameLen, pathPtr, pathLen) =>

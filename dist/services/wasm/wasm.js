@@ -22,8 +22,8 @@ class WasmScope {
         this.handle = handle;
         this.name = options.name ?? scope.$scopename ?? String(scope.$id ?? handle);
         this._bindings = [];
-        this._flushCallbacks = [];
-        this._flushScheduled = false;
+        this._syncCallbacks = [];
+        this._syncScheduled = false;
         this._destroyed = false;
         this._bindings.push(scope.$on("$destroy", () => {
             this.dispose();
@@ -46,41 +46,41 @@ class WasmScope {
         return deleteScopePath(this.scope, path);
     }
     /** Runs queued Wasm bridge callbacks for this scope. */
-    flush() {
-        this._scheduleFlushCallbacks();
+    sync() {
+        this._scheduleSyncCallbacks();
     }
     /** @internal */
-    _scheduleFlushCallbacks() {
-        if (this._flushScheduled || this._flushCallbacks.length === 0) {
+    _scheduleSyncCallbacks() {
+        if (this._syncScheduled || this._syncCallbacks.length === 0) {
             return;
         }
-        this._flushScheduled = true;
+        this._syncScheduled = true;
         queueMicrotask(() => {
             if (this._destroyed) {
                 return;
             }
-            this._flushScheduled = false;
-            const callbacks = this._flushCallbacks.slice();
+            this._syncScheduled = false;
+            const callbacks = this._syncCallbacks.slice();
             for (let i = 0, l = callbacks.length; i < l; i++) {
                 callbacks[i]();
             }
         });
     }
     /**
-     * Registers a callback that runs before this scope flushes.
+     * Registers a callback that runs before this scope syncs.
      *
      * Generated Wasm bridges use this to sync Rust-owned public fields back onto
-     * AngularTS controller wrappers when Rust async code calls `WasmScope::flush`.
+     * AngularTS controller wrappers when Rust async code calls `WasmScope::sync`.
      */
-    onFlush(callback) {
+    onSync(callback) {
         if (this._destroyed) {
             return () => { };
         }
-        this._flushCallbacks.push(callback);
+        this._syncCallbacks.push(callback);
         return () => {
-            const index = this._flushCallbacks.indexOf(callback);
+            const index = this._syncCallbacks.indexOf(callback);
             if (index >= 0) {
-                this._flushCallbacks.splice(index, 1);
+                this._syncCallbacks.splice(index, 1);
             }
         };
     }
@@ -143,8 +143,8 @@ class WasmScope {
         for (let i = 0, l = bindings.length; i < l; i++) {
             bindings[i]();
         }
-        this._flushCallbacks.length = 0;
-        this._flushScheduled = false;
+        this._syncCallbacks.length = 0;
+        this._syncScheduled = false;
         this.abi.unregisterScope(this.handle);
     }
 }
@@ -183,8 +183,8 @@ class WasmScopeAbi {
                 scope_set_named: (namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen) => this._scopeSetNamed(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen),
                 scope_delete: (scopeHandle, pathPtr, pathLen) => this._scopeDelete(scopeHandle, pathPtr, pathLen),
                 scope_delete_named: (namePtr, nameLen, pathPtr, pathLen) => this._scopeDeleteNamed(namePtr, nameLen, pathPtr, pathLen),
-                scope_flush: (scopeHandle) => this._scopeFlush(scopeHandle),
-                scope_flush_named: (namePtr, nameLen) => this._scopeFlushNamed(namePtr, nameLen),
+                scope_sync: (scopeHandle) => this._scopeSync(scopeHandle),
+                scope_sync_named: (namePtr, nameLen) => this._scopeSyncNamed(namePtr, nameLen),
                 scope_watch: (scopeHandle, pathPtr, pathLen) => this._scopeWatch(scopeHandle, pathPtr, pathLen),
                 scope_watch_named: (namePtr, nameLen, pathPtr, pathLen) => this._scopeWatchNamed(namePtr, nameLen, pathPtr, pathLen),
                 scope_unwatch: (watchHandle) => this._scopeUnwatch(watchHandle),
@@ -310,17 +310,17 @@ class WasmScopeAbi {
         return this._scopeDelete(this._readGuestString(namePtr, nameLen), pathPtr, pathLen);
     }
     /** @internal */
-    _scopeFlush(scopeReference) {
+    _scopeSync(scopeReference) {
         const scope = this._resolveScope(scopeReference);
         if (!scope) {
             return 0;
         }
-        scope.flush();
+        scope.sync();
         return 1;
     }
     /** @internal */
-    _scopeFlushNamed(namePtr, nameLen) {
-        return this._scopeFlush(this._readGuestString(namePtr, nameLen));
+    _scopeSyncNamed(namePtr, nameLen) {
+        return this._scopeSync(this._readGuestString(namePtr, nameLen));
     }
     /** @internal */
     _scopeWatch(scopeReference, pathPtr, pathLen) {

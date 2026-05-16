@@ -28,9 +28,9 @@ export const scope_delete = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_delete(scopeHandle, pathPtr, pathLen);
 export const scope_delete_named = (namePtr, nameLen, pathPtr, pathLen) =>
   imports().scope_delete_named(namePtr, nameLen, pathPtr, pathLen);
-export const scope_flush = (scopeHandle) => imports().scope_flush(scopeHandle);
-export const scope_flush_named = (namePtr, nameLen) =>
-  imports().scope_flush_named(namePtr, nameLen);
+export const scope_sync = (scopeHandle) => imports().scope_sync(scopeHandle);
+export const scope_sync_named = (namePtr, nameLen) =>
+  imports().scope_sync_named(namePtr, nameLen);
 export const scope_watch = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_watch(scopeHandle, pathPtr, pathLen);
 export const scope_watch_named = (namePtr, nameLen, pathPtr, pathLen) =>

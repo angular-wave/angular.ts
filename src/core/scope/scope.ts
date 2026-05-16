@@ -30,10 +30,28 @@ import type {
 } from "../parse/ast/ast-node.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
 
+/**
+ * Public watcher callback shape.
+ *
+ * The first argument is the resolved watched value. The second argument is the
+ * original target object used when the watcher was registered.
+ */
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
+/**
+ * Marker value for objects or properties excluded from scope proxying.
+ *
+ * `true` marks the whole object non-scope. A string array marks individual
+ * properties as non-scope.
+ */
 export type NonScope = readonly string[] | boolean;
 
+/**
+ * Structural shape for raw objects/classes that may carry `$nonscope` metadata.
+ *
+ * `isNonScope()` reads this shape before deciding whether a value should be
+ * wrapped in a scope proxy.
+ */
 export interface NonScopeMarked {
   $nonscope?: NonScope;
   /** @internal */
@@ -74,6 +92,10 @@ interface ForeignListenerRef {
   _id: number;
 }
 
+/**
+ * Narrows inherited/foreign listener delivery by watched key and original
+ * target hash.
+ */
 type ForeignListenerHashIndex = Map<string, Map<unknown, Listener[]>>;
 
 type ListenerIndex = Map<string, Map<number, number>>;
@@ -103,6 +125,9 @@ interface ScheduledCallbackTask {
 
 type ScheduledTask = ScheduledListenerTask | ScheduledCallbackTask;
 
+/**
+ * Shared microtask scheduler state for a scope family.
+ */
 interface ListenerSchedulerState {
   _queue: ScheduledTask[];
   _index: number;
@@ -111,6 +136,13 @@ interface ListenerSchedulerState {
   _flushTask: () => void;
 }
 
+/**
+ * Metadata describing the most recent array mutation.
+ *
+ * Records mutation kind, affected range, previous/current lengths, head/tail
+ * deletion flags, and swap indices for directives that need efficient list
+ * updates.
+ */
 export interface ArrayMutationMeta {
   _version: number;
   _kind: "splice" | "reorder" | "swap";
@@ -132,6 +164,12 @@ interface ArraySwapCandidate {
   _length: number;
 }
 
+/**
+ * Event object passed to `$emit` and `$broadcast` listeners.
+ *
+ * Tracks target scope, current scope, name, propagation/default flags, and
+ * control methods.
+ */
 export interface ScopeEvent {
   targetScope: typeof Proxy<ng.Scope>;
   currentScope: typeof Proxy<ng.Scope> | null;
@@ -142,6 +180,11 @@ export interface ScopeEvent {
   defaultPrevented: boolean;
 }
 
+/**
+ * Helper type for values known to be scope proxies.
+ *
+ * Adds the proxy handler and raw target to the target object shape.
+ */
 export type ScopeProxied<T extends object> = T & {
   $handler: ng.Scope;
   $target: T;
@@ -953,6 +996,12 @@ function unwrapScopeValue(value: any): any {
   return isProxy(value) ? value.$target : value;
 }
 
+/**
+ * Normalized assignment payload.
+ *
+ * Contains the raw unwrapped value, the value that should be stored on the
+ * target, and whether the assigned value was a proxy.
+ */
 interface AssignedScopeValue {
   _rawValue: any;
   _storedValue: any;

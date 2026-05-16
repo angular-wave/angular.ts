@@ -66,14 +66,14 @@ func hostScopeDeleteNamed(namePtr uint32, nameLen uint32, pathPtr uint32, pathLe
 	return 1
 }
 
-func hostScopeFlush(scopeHandle uint32) uint32 {
+func hostScopeSync(scopeHandle uint32) uint32 {
 	if scopeHandle == 0 {
 		return 0
 	}
 	return 1
 }
 
-func hostScopeFlushNamed(namePtr uint32, nameLen uint32) uint32 {
+func hostScopeSyncNamed(namePtr uint32, nameLen uint32) uint32 {
 	if nameLen == 0 {
 		return 0
 	}

@@ -33,8 +33,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -73,7 +73,7 @@ type Scope struct {
 func (s Scope) Get(path string, out any) error
 func (s Scope) Set(path string, value any) error
 func (s Scope) Delete(path string) bool
-func (s Scope) Flush() bool
+func (s Scope) Sync() bool
 func (s Scope) Watch(path string, fn func(Update)) Watch
 func (s Scope) Unbind() bool
 ```
@@ -90,7 +90,7 @@ scope.Set("items", items)
 scope.Watch("newTodo", func(update angularwasm.Update) {
     // Decode update.JSON and update Go-owned state.
 })
-scope.Flush()
+scope.Sync()
 ```
 
 ## Rust Feature Parity Target
@@ -235,7 +235,7 @@ metadata, scope refresh, and scope watch routing.
   - [ ] Generate refresh after async completions.
 - [x] Generate a state sync helper for Go-owned scope fields.
 - [x] Generate UI-to-Go watch routing through `GoWasmScopeAbi`.
-- [x] Remove manual scope set/flush calls from the Go todo app.
+- [x] Remove manual scope set/sync calls from the Go todo app.
 - [x] Add acceptance checks proving the Go todo app source has no handwritten
       bridge glue.
 

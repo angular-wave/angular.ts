@@ -5,7 +5,7 @@
 Provide a language-neutral Wasm boundary for AngularTS scopes.
 
 The shared runtime type is `WasmScope`. It wraps a real AngularTS scope and
-allows Wasm clients to read, write, delete, flush, watch, and unbind that scope
+allows Wasm clients to read, write, delete, sync, watch, and unbind that scope
 through a stable ABI.
 
 This direction is separate from scope sync, event bus, server state sync, and
@@ -92,8 +92,8 @@ scope_set(scopeHandle, pathPtr, pathLen, valuePtr, valueLen) -> 0 | 1
 scope_set_named(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen) -> 0 | 1
 scope_delete(scopeHandle, pathPtr, pathLen) -> 0 | 1
 scope_delete_named(namePtr, nameLen, pathPtr, pathLen) -> 0 | 1
-scope_flush(scopeHandle) -> 0 | 1
-scope_flush_named(namePtr, nameLen) -> 0 | 1
+scope_sync(scopeHandle) -> 0 | 1
+scope_sync_named(namePtr, nameLen) -> 0 | 1
 scope_watch(scopeHandle, pathPtr, pathLen) -> watchHandle
 scope_watch_named(namePtr, nameLen, pathPtr, pathLen) -> watchHandle
 scope_unwatch(watchHandle) -> 0 | 1
@@ -128,7 +128,7 @@ buffer_free(bufferHandle)
 
 ### Phase C - Tests
 
-- [x] Add unit tests for `WasmScope` get/set/delete/flush behavior.
+- [x] Add unit tests for `WasmScope` get/set/delete/sync behavior.
 - [x] Add unit tests for result buffer allocation and `buffer_free`.
 - [x] Add unit tests for watch registration and callback payloads.
 - [x] Add browser Playwright coverage for the Rust todo app through the ABI.

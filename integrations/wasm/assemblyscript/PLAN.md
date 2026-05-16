@@ -27,8 +27,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -60,7 +60,7 @@ export class Scope {
   get<T>(path: string): T;
   set<T>(path: string, value: T): bool;
   delete(path: string): bool;
-  flush(): bool;
+  sync(): bool;
   watch(path: string, callback: (update: ScopeUpdate) => void): Watch;
   unbind(): bool;
 }

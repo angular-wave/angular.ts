@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-func TestBasicAppSourceHasNoManualScopeSetOrFlush(t *testing.T) {
+func TestBasicAppSourceHasNoManualScopeSetOrSync(t *testing.T) {
 	source := readTestFile(t, "examples/basic_app/main.go")
 	disallowed := []string{
 		".scope.Set(",
-		".scope.Flush(",
+		".scope.Sync(",
 		".scope.Watch(",
 		"app.scope.Set(",
-		"app.scope.Flush(",
+		"app.scope.Sync(",
 		"app.scope.Watch(",
 		"update.Decode(",
 		"app.sync()",

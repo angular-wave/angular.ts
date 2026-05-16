@@ -179,7 +179,7 @@ impl WasmScope {
     }
 
     /// Runs queued Wasm scope bridge callbacks for the wrapped scope.
-    pub fn flush(&self) {
+    pub fn sync(&self) {
         if !self.reference.is_valid() {
             return;
         }
@@ -188,11 +188,9 @@ impl WasmScope {
             Some(name) if reference.handle().unwrap_or_default() == 0 => {
                 let name_bytes = name.as_bytes();
 
-                unsafe {
-                    abi_scope_flush_named(name_bytes.as_ptr() as u32, name_bytes.len() as u32)
-                }
+                unsafe { abi_scope_sync_named(name_bytes.as_ptr() as u32, name_bytes.len() as u32) }
             }
-            _ => unsafe { abi_scope_flush(reference.handle().unwrap_or_default()) },
+            _ => unsafe { abi_scope_sync(reference.handle().unwrap_or_default()) },
         });
     }
 
@@ -408,10 +406,10 @@ extern "C" {
     fn abi_scope_delete(scope_handle: u32, path_ptr: u32, path_len: u32) -> u32;
     #[link_name = "scope_delete_named"]
     fn abi_scope_delete_named(name_ptr: u32, name_len: u32, path_ptr: u32, path_len: u32) -> u32;
-    #[link_name = "scope_flush"]
-    fn abi_scope_flush(scope_handle: u32) -> u32;
-    #[link_name = "scope_flush_named"]
-    fn abi_scope_flush_named(name_ptr: u32, name_len: u32) -> u32;
+    #[link_name = "scope_sync"]
+    fn abi_scope_sync(scope_handle: u32) -> u32;
+    #[link_name = "scope_sync_named"]
+    fn abi_scope_sync_named(name_ptr: u32, name_len: u32) -> u32;
     #[link_name = "scope_watch"]
     fn abi_scope_watch(scope_handle: u32, path_ptr: u32, path_len: u32) -> u32;
     #[link_name = "scope_watch_named"]

@@ -81,7 +81,7 @@ Required before the Rust feature-complete gate:
   `WasmScopeReference`;
 - a restricted `Scope` facade for app state and watched paths, with direct
   mutation through `WasmScope` rather than event bus or scope sync;
-- `RootScopeService` as a lifecycle and flush facade;
+- `RootScopeService` as a lifecycle and sync facade;
 - Rust authoring metadata for `Component`, `Controller`,
   `ControllerConstructor`, `NgModule`, `Injectable`, and `InjectionTokens`;
 - `$http` coverage for `HttpService`, `RequestConfig`,
@@ -485,7 +485,7 @@ registration, bridge exports, scope refresh, and UI-to-Rust update routing.
   hand-written getter methods for template-visible state.
 - Generated bridge refresh now syncs exported Rust fields through the AngularTS
   controller proxy after construction, template methods, watched UI updates,
-  lifecycle hooks, async `WasmScope::flush()` calls, and promise-returning Rust
+  lifecycle hooks, async `WasmScope::sync()` calls, and promise-returning Rust
   template methods. Remaining todo boilerplate is the small handwritten
   `refresh()` recomputation for derived fields.
 - Scope update examples no longer rely on conventional `bindScopeUpdates` and
@@ -498,7 +498,7 @@ registration, bridge exports, scope refresh, and UI-to-Rust update routing.
   `$eventBus`, but full namespace parity remains open.
 - The acceptance coverage now guards against raw bridge export glue,
   hand-written template-state getters, manual `scope.set(...)`, manual
-  `scope.flush(...)`, raw controller pointer capture, and manual `spawn_local`
+  `scope.sync(...)`, raw controller pointer capture, and manual `spawn_local`
   async wiring.
 
 ## Minimal Boilerplate Plan
@@ -719,7 +719,7 @@ Initial docs should explain:
 - [x] Add ergonomic async `$http` helpers for injected Rust/Wasm service values.
 - [x] Support async Rust template methods in generated bridge wrappers so
       promise completion refreshes AngularTS state without manual
-      `spawn_local`, raw controller pointers, or explicit scope flushing.
+      `spawn_local`, raw controller pointers, or explicit scope syncing.
 - [x] Decode AngularTS `HttpResponse<T>` into typed Rust data with
       `serde-wasm-bindgen`.
 - [x] Add a Rust `RequestConfig` builder for method, URL, headers, params, and

@@ -4,14 +4,14 @@ type RustController = Record<string, unknown>;
 
 interface WasmScopeHost {
   dispose(): void;
-  onFlush?(callback: () => void): () => void;
+  onSync?(callback: () => void): () => void;
 }
 
 interface BridgeController {
   __fromRust: boolean;
   __inner: RustController;
   __syncRustProperties(): void;
-  __flushScope(): void;
+  __syncScope(): void;
 }
 
 interface RustScopeUpdateController extends RustController {
@@ -27,7 +27,7 @@ export function callOnInit(controller: BridgeController): void {
   if (typeof inner.onInit === "function") {
     inner.onInit();
     controller.__syncRustProperties();
-    controller.__flushScope();
+    controller.__syncScope();
   }
 }
 
@@ -37,7 +37,7 @@ export function callOnDestroy(controller: BridgeController): void {
   if (typeof inner.onDestroy === "function") {
     inner.onDestroy();
     controller.__syncRustProperties();
-    controller.__flushScope();
+    controller.__syncScope();
   }
 }
 
@@ -54,12 +54,12 @@ export function bindGeneratedRefresh(
   wasmScope: WasmScopeHost | undefined,
   disposers: Array<() => void>,
 ): void {
-  if (typeof wasmScope?.onFlush !== "function") {
+  if (typeof wasmScope?.onSync !== "function") {
     return;
   }
 
   disposers.push(
-    wasmScope.onFlush(() => {
+    wasmScope.onSync(() => {
       controller.__syncRustProperties();
     }),
   );
@@ -73,7 +73,7 @@ export function unbindScopeUpdates(controller: BridgeController): void {
   }
 }
 
-export function flushScope(angularScope: Scope | undefined): void {
+export function syncScope(angularScope: Scope | undefined): void {
   void angularScope;
 }
 
@@ -106,7 +106,7 @@ export function invokeRustMethod(
         controller.__fromRust = true;
         try {
           controller.__syncRustProperties();
-          controller.__flushScope();
+          controller.__syncScope();
           return value;
         } finally {
           controller.__fromRust = false;
@@ -116,7 +116,7 @@ export function invokeRustMethod(
         controller.__fromRust = true;
         try {
           controller.__syncRustProperties();
-          controller.__flushScope();
+          controller.__syncScope();
         } finally {
           controller.__fromRust = false;
         }
@@ -127,7 +127,7 @@ export function invokeRustMethod(
 
   try {
     controller.__syncRustProperties();
-    controller.__flushScope();
+    controller.__syncScope();
     return result;
   } finally {
     controller.__fromRust = false;

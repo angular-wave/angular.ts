@@ -88,13 +88,13 @@ func (s Scope) Delete(path string) bool {
 	}) == 1
 }
 
-// Flush asks AngularTS to flush queued scope callbacks.
-func (s Scope) Flush() bool {
+// Sync asks AngularTS to sync queued scope callbacks.
+func (s Scope) Sync() bool {
 	if s.Handle == 0 {
 		return false
 	}
 
-	return hostScopeFlush(s.Handle) == 1
+	return hostScopeSync(s.Handle) == 1
 }
 
 // Watch registers a scope path callback.
@@ -197,13 +197,13 @@ func (s NamedScope) Delete(path string) bool {
 	}) == 1
 }
 
-// Flush asks AngularTS to flush queued callbacks for the named scope.
-func (s NamedScope) Flush() bool {
+// Sync asks AngularTS to sync queued callbacks for the named scope.
+func (s NamedScope) Sync() bool {
 	if s.Name == "" {
 		return false
 	}
 
-	return withString(s.Name, hostScopeFlushNamed) == 1
+	return withString(s.Name, hostScopeSyncNamed) == 1
 }
 
 // Watch registers a named-scope path callback.

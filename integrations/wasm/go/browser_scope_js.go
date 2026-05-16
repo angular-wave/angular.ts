@@ -62,13 +62,13 @@ func (s BrowserScope) Set(path string, value any) error {
 	return nil
 }
 
-// Flush asks AngularTS to flush queued scope callbacks.
-func (s BrowserScope) Flush() bool {
+// Sync asks AngularTS to sync queued scope callbacks.
+func (s BrowserScope) Sync() bool {
 	if s.Name == "" {
 		return false
 	}
 
-	return browserBridge().Call("flush", s.Name).Bool()
+	return browserBridge().Call("sync", s.Name).Bool()
 }
 
 // Watch registers a scope path callback.

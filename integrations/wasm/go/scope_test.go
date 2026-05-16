@@ -99,7 +99,7 @@ func TestWatchDispatchesUpdates(t *testing.T) {
 	}
 }
 
-func TestSyncScopeWritesValuesAndFlushesOnce(t *testing.T) {
+func TestSyncScopeWritesValuesAndSyncsOnce(t *testing.T) {
 	resetHostStub()
 
 	scope := &recordingScope{}
@@ -111,8 +111,8 @@ func TestSyncScopeWritesValuesAndFlushesOnce(t *testing.T) {
 		t.Fatalf("SyncScope returned error: %v", err)
 	}
 
-	if scope.flushes != 1 {
-		t.Fatalf("expected one flush, got %d", scope.flushes)
+	if scope.syncs != 1 {
+		t.Fatalf("expected one sync, got %d", scope.syncs)
 	}
 	if len(scope.values) != 2 {
 		t.Fatalf("expected two values, got %#v", scope.values)
@@ -130,14 +130,14 @@ func TestSyncScopeRejectsInvalidPath(t *testing.T) {
 	if err := SyncScope(scope, ValueAt("", 1)); err != ErrInvalidPath {
 		t.Fatalf("expected ErrInvalidPath, got %v", err)
 	}
-	if scope.flushes != 0 {
-		t.Fatalf("expected no flush after invalid path, got %d", scope.flushes)
+	if scope.syncs != 0 {
+		t.Fatalf("expected no sync after invalid path, got %d", scope.syncs)
 	}
 }
 
 type recordingScope struct {
-	values  map[string]any
-	flushes int
+	values map[string]any
+	syncs  int
 }
 
 func (s *recordingScope) Set(path string, value any) error {
@@ -149,7 +149,7 @@ func (s *recordingScope) Set(path string, value any) error {
 	return nil
 }
 
-func (s *recordingScope) Flush() bool {
-	s.flushes++
+func (s *recordingScope) Sync() bool {
+	s.syncs++
 	return true
 }

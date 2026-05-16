@@ -26,8 +26,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -61,7 +61,7 @@ public readonly struct Scope
     public T? Get<T>(string path);
     public bool Set<T>(string path, T value);
     public bool Delete(string path);
-    public bool Flush();
+    public bool Sync();
     public Watch Watch(string path, Action<ScopeUpdate> callback);
     public bool Unbind();
 }

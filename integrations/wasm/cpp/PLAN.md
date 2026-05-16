@@ -25,8 +25,8 @@ scope_set
 scope_set_named
 scope_delete
 scope_delete_named
-scope_flush
-scope_flush_named
+scope_sync
+scope_sync_named
 scope_watch
 scope_watch_named
 scope_unwatch
@@ -62,7 +62,7 @@ class Scope {
   std::string GetJson(std::string_view path) const;
   bool SetJson(std::string_view path, std::string_view json) const;
   bool Delete(std::string_view path) const;
-  bool Flush() const;
+  bool Sync() const;
   Watch WatchPath(std::string_view path, WatchCallback callback) const;
   bool Unbind() const;
 };

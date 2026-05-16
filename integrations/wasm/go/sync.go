@@ -5,8 +5,8 @@ package angularwasm
 type ScopeWriter interface {
 	// Set writes a JSON-compatible value into a scope path.
 	Set(path string, value any) error
-	// Flush asks AngularTS to flush queued scope callbacks.
-	Flush() bool
+	// Sync asks AngularTS to sync queued scope callbacks.
+	Sync() bool
 }
 
 // ScopeValue is one scope path and JSON-compatible value pair emitted by
@@ -21,7 +21,7 @@ func ValueAt(path string, value any) ScopeValue {
 	return ScopeValue{Path: path, Value: value}
 }
 
-// SyncScope writes all values to the provided scope and flushes once after all
+// SyncScope writes all values to the provided scope and syncs once after all
 // values have been accepted.
 func SyncScope(scope ScopeWriter, values ...ScopeValue) error {
 	if scope == nil {
@@ -37,7 +37,7 @@ func SyncScope(scope ScopeWriter, values ...ScopeValue) error {
 		}
 	}
 
-	if !scope.Flush() {
+	if !scope.Sync() {
 		return ErrInvalidScope
 	}
 
