@@ -53,9 +53,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             }
                         }
                         content = insertedNodes;
-                        scope.$flushQueue();
                     });
-                    scope.$flushQueue();
                     break;
                 }
                 case "textContent":
@@ -65,9 +63,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             .done(() => {
                             target.textContent = stringify(html);
                             assertDefined(animate).enter(target, target.parentNode);
-                            scope.$flushQueue();
                         });
-                        scope.$flushQueue();
                     }
                     else {
                         target.textContent = stringify(html);
@@ -85,8 +81,6 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             parent.insertBefore(node, target);
                         }
                     });
-                    if (animationEnabled)
-                        scope.$flushQueue();
                     break;
                 }
                 case "afterbegin": {
@@ -99,8 +93,6 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             target.insertBefore(node, firstChild);
                         }
                     });
-                    if (animationEnabled)
-                        scope.$flushQueue();
                     break;
                 }
                 case "beforeend": {
@@ -112,8 +104,6 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             target.appendChild(node);
                         }
                     });
-                    if (animationEnabled)
-                        scope.$flushQueue();
                     break;
                 }
                 case "afterend": {
@@ -129,8 +119,6 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             parent.insertBefore(node, nextSibling);
                         }
                     });
-                    if (animationEnabled)
-                        scope.$flushQueue();
                     break;
                 }
                 case "delete":
@@ -139,9 +127,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             .leave(target)
                             .done(() => {
                             removeElement(target);
-                            scope.$flushQueue();
                         });
-                        scope.$flushQueue();
                     }
                     else {
                         removeElement(target);
@@ -160,9 +146,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                                 .done(() => {
                                 content = nodes[0];
                                 assertDefined(animate).enter(nodes[0], target);
-                                scope.$flushQueue();
                             });
-                            scope.$flushQueue();
                         }
                         else {
                             content = nodes[0];
@@ -174,7 +158,6 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                             }
                             else {
                                 assertDefined(animate).enter(nodes[0], target);
-                                scope.$flushQueue();
                             }
                         }
                     }

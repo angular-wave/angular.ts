@@ -156,20 +156,6 @@ console.log($scope.$$watchersCount);
 ```
 
 This is computed by walking the `_watchers` Map and counting entries whose `_scopeId` matches any scope in the subtree. It is useful for identifying scopes with unexpectedly high watcher counts during performance profiling.
-## Post-update callbacks
-
-Sometimes you need to run code after all bindings have flushed — for example, to measure DOM dimensions after a render. Use `$scope.$postUpdate`:
-
-```typescript
-
-$scope.$postUpdate(() => {
-  // Runs after the current listener batch completes
-  const height = listElement.scrollHeight;
-  $scope.listHeight = height;
-});
-```
-
-`$postUpdate` callbacks are drained after each listener notification batch, in FIFO order. They are skipped if the owning scope has been destroyed.
 ## Performance characteristics
 
 #### Only affected bindings update

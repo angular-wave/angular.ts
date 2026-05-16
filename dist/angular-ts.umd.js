@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 15, 2026 19:17:43 */
+/* Version: 0.27.0 - May 16, 2026 06:07:42 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1331,8 +1331,8 @@
     const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
     const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
     const HTML_PARSE_CACHE_MAX_SIZE = 256;
-    const TRANSCLUDED_HOST_ELEMENT_KEY = "$$transcludedHostElement";
     let expandoCache = new WeakMap();
+    const transcludedHostElements = new WeakMap();
     const htmlParseCache = new Map();
     /**
      * Key for storing scope data attached to an element.
@@ -1541,7 +1541,7 @@
     }
     /** Stores the original element that was replaced by an element-transclusion anchor. */
     function setTranscludedHostElement(anchor, hostElement) {
-        setCacheData(anchor, TRANSCLUDED_HOST_ELEMENT_KEY, hostElement);
+        transcludedHostElements.set(anchor, hostElement);
     }
     /** Returns the element itself, or the original host for an element-transclusion anchor. */
     function getDirectiveHostElement(node) {
@@ -1549,7 +1549,7 @@
             return null;
         if (node instanceof Element)
             return node;
-        const hostElement = getCacheData(node, TRANSCLUDED_HOST_ELEMENT_KEY);
+        const hostElement = transcludedHostElements.get(node);
         return hostElement instanceof Element ? hostElement : null;
     }
     /**
@@ -3951,236 +3951,6 @@
         animation.finished.then(cleanup, cleanup);
     }
 
-    /**
-     * A type-safe wrapper around a DOM Node, HTMLElement, HTML string, NodeList, or an array of Nodes.
-     * Provides guarantees around presence and access.
-     */
-    class NodeRef {
-        /** @internal */
-        static _fromNode(node) {
-            const ref = Object.create(NodeRef.prototype);
-            ref._node = node;
-            ref._element =
-                node.nodeType === NodeType._ELEMENT_NODE ? node : undefined;
-            ref._nodes = [];
-            ref._nodeList = undefined;
-            ref._isList = false;
-            return ref;
-        }
-        /**
-         * @param element - The DOM node(s) or HTML string to wrap.
-         * @throws {Error} If the argument is invalid or cannot be wrapped properly.
-         */
-        constructor(element) {
-            this._node = undefined;
-            this._element = undefined;
-            this._nodes = [];
-            this._nodeList = undefined;
-            this._isList = false;
-            // Handle HTML string
-            if (isString(element)) {
-                const res = createElementFromHTML(element);
-                switch (true) {
-                    case isInstanceOf(res, Element):
-                        this.element = res;
-                        break;
-                    case isInstanceOf(res, Node):
-                        this.node = res;
-                        break;
-                }
-            }
-            // Handle NodeList
-            else if (isInstanceOf(element, NodeList)) {
-                if (element.length === 1) {
-                    this.node = element[0];
-                }
-                else {
-                    this._nodeList = element;
-                    this._isList = true;
-                }
-            }
-            // Handle single Element
-            else if (isInstanceOf(element, Element)) {
-                this.element = element;
-            }
-            // Handle single Node
-            else if (isInstanceOf(element, Node)) {
-                this._node = element;
-            }
-            // Handle array of elements
-            else if (isArray(element)) {
-                if (element.length === 1) {
-                    this.node = element[0];
-                }
-                else {
-                    this.nodes = element;
-                }
-            }
-            else {
-                throw new Error("Invalid element passed to NodeRef");
-            }
-        }
-        /** @returns The wrapped element. */
-        get element() {
-            return assertDefined(this._element);
-        }
-        /** @param el The element to wrap. */
-        set element(el) {
-            this._element = el;
-            this._node = undefined;
-            this._nodes = [];
-            this._nodeList = undefined;
-            this._isList = false;
-        }
-        /** @returns The wrapped node. */
-        get node() {
-            return (this._node || this._element);
-        }
-        /** @param node The node to wrap. */
-        set node(node) {
-            this._node = node;
-            this._nodeList = undefined;
-            if (node.nodeType === NodeType._ELEMENT_NODE) {
-                this._element = node;
-            }
-            else {
-                this._element = undefined;
-            }
-        }
-        /** @param nodes The node collection to wrap. */
-        set nodes(nodes) {
-            this._nodes = nodes;
-            this._nodeList = undefined;
-            this._isList = true;
-        }
-        /** @returns The wrapped node collection. */
-        get nodes() {
-            if (this._nodeList)
-                return arrayFrom(this._nodeList);
-            return this._nodes;
-        }
-        /** @returns A live node list view of the wrapped nodes. */
-        get nodelist() {
-            if (this._nodeList)
-                return this._nodeList;
-            if (this._nodes.length === 0)
-                return [];
-            if (this._nodes[0].parentElement)
-                return this._nodes[0].parentElement.childNodes;
-            return this._nodes;
-        }
-        /** @returns A detached fragment containing the wrapped node list. */
-        get fragment() {
-            const fragment = createDocumentFragment();
-            const collection = this._collection();
-            for (let i = 0; i < collection.length; i++) {
-                fragment.appendChild(collection[i]);
-            }
-            return fragment;
-        }
-        /** @returns The wrapped DOM value. */
-        get dom() {
-            if (this._isList) {
-                const firstNode = this._getIndex(0);
-                return firstNode && !firstNode.parentElement
-                    ? this.fragment
-                    : this.nodelist;
-            }
-            else
-                return this.node;
-        }
-        /** @returns The number of wrapped nodes. */
-        get size() {
-            return this._isList ? this._nodeList?.length || this._nodes.length : 1;
-        }
-        /** @returns The first wrapped node or element. */
-        /** @internal */
-        _getAny() {
-            if (this._isList) {
-                return (this._nodeList?.[0] || this._nodes[0]);
-            }
-            else {
-                return assertDefined(this._element || this._node);
-            }
-        }
-        /** @returns All wrapped nodes or the single wrapped node. */
-        /** @internal */
-        _getAll() {
-            if (this._isList) {
-                return this.nodes;
-            }
-            else {
-                return (this._element || this._node);
-            }
-        }
-        /** @returns A collection view of the wrapped nodes. */
-        /** @internal */
-        _collection() {
-            if (this._isList) {
-                return this.nodes;
-            }
-            else {
-                return [(this._element || this._node)];
-            }
-        }
-        /**
-         * Returns the node at a specific index from this reference.
-         */
-        /** @internal */
-        _getIndex(index) {
-            if (this._isList) {
-                return (this._nodeList?.[index] || this._nodes[index]);
-            }
-            else {
-                return this.node;
-            }
-        }
-        /**
-         * Replaces the node at a specific index in this reference.
-         */
-        /** @internal */
-        _setIndex(index, node) {
-            if (this._isList) {
-                if (this._nodeList) {
-                    this._nodes = arrayFrom(this._nodeList);
-                    this._nodeList = undefined;
-                }
-                this._nodes[index] = node;
-            }
-            else {
-                this.node = node;
-            }
-        }
-        /**
-         * Clones the referenced node or node list.
-         */
-        /** @internal */
-        _clone() {
-            if (!this._isList) {
-                return NodeRef._fromNode(this.node.cloneNode(true));
-            }
-            const collection = this._collection();
-            const cloned = new Array(collection.length);
-            for (let i = 0; i < collection.length; i++) {
-                cloned[i] = collection[i].cloneNode(true);
-            }
-            return new NodeRef(cloned);
-        }
-        /** @internal */
-        _isElement() {
-            return this._element !== undefined;
-        }
-        /** @internal */
-        _release() {
-            this._node = undefined;
-            this._element = undefined;
-            this._nodes = [];
-            this._nodeList = undefined;
-            this._isList = false;
-        }
-    }
-    NodeRef.$nonscope = true;
-
     const $controllerError = createErrorFactory("$controller");
     const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
     function identifierForController(controller, ident) {
@@ -4328,8 +4098,6 @@
     }
     let $parse;
     let $exceptionHandler;
-    /** @internal */
-    const $postUpdateQueue = [];
     const arrayMutationMeta = new WeakMap();
     const arraySwapCandidates = new WeakMap();
     let arrayMutationVersion = 0;
@@ -5052,7 +4820,6 @@
                 _children: this._children,
                 $destroy: this.$destroy.bind(this),
                 $emit: this.$emit.bind(this),
-                $flushQueue: this.$flushQueue.bind(this),
                 $getById: this.$getById.bind(this),
                 $handler: this,
                 $id: this.$id,
@@ -5062,7 +4829,6 @@
                 $newIsolate: this.$newIsolate.bind(this),
                 $on: this.$on.bind(this),
                 $parent: this.$parent,
-                $postUpdate: this.$postUpdate.bind(this),
                 $proxy: this.$proxy,
                 $root: this.$root,
                 $scopename: this.$scopename,
@@ -5980,7 +5746,6 @@
                     const task = queue[processed++];
                     if (task._kind === "callback") {
                         task._callback();
-                        this._drainPostUpdateQueue();
                         continue;
                     }
                     const filteredListeners = task._filter
@@ -5988,7 +5753,6 @@
                         : task._listeners;
                     for (let i = 0, l = filteredListeners.length; i < l; i++) {
                         this._notifyListener(filteredListeners[i], task._target);
-                        this._drainPostUpdateQueue();
                     }
                 }
             }
@@ -6010,17 +5774,6 @@
                     this._queueScheduledFlush();
                 }
             }
-        }
-        /** @internal Drains post-update callbacks in FIFO order. */
-        _drainPostUpdateQueue() {
-            if ($postUpdateQueue.length === 0) {
-                return;
-            }
-            let index = 0;
-            while (index < $postUpdateQueue.length) {
-                $postUpdateQueue[index++]();
-            }
-            $postUpdateQueue.length = 0;
         }
         /** @internal Schedules a callback to run in the shared listener flush queue. */
         _scheduleCallback(callback) {
@@ -6806,14 +6559,6 @@
         _isRoot() {
             return this.$root === this;
         }
-        /** Queues a callback to run after the current listener batch completes. */
-        $postUpdate(fn) {
-            $postUpdateQueue.push(() => {
-                if (this._destroyed)
-                    return;
-                fn();
-            });
-        }
         $destroy() {
             if (this._destroyed)
                 return;
@@ -6963,10 +6708,6 @@
             catch (err) {
                 $exceptionHandler(err);
             }
-        }
-        /* @ignore */
-        $flushQueue() {
-            this._drainPostUpdateQueue();
         }
         /** Searches this scope tree for a scope with the given id. */
         $getById(id) {
@@ -7138,7 +6879,6 @@
                     const handler = (event) => {
                         try {
                             fn(scope, { $event: event });
-                            flushScopeQueue(scope);
                         }
                         catch (error) {
                             $exceptionHandler(error);
@@ -7167,7 +6907,6 @@
                     const handler = (event) => {
                         try {
                             fn(scope, { $event: event });
-                            flushScopeQueue(scope);
                         }
                         catch (error) {
                             $exceptionHandler(error);
@@ -7180,12 +6919,6 @@
                 };
             },
         };
-    }
-    function flushScopeQueue(scope) {
-        const rootScope = scope.$root ?? scope;
-        if (typeof rootScope.$flushQueue === "function") {
-            rootScope.$flushQueue();
-        }
     }
 
     /**
@@ -7240,27 +6973,7 @@
                     this[key] = attributesToCopy[key];
                 }
             }
-            if (node instanceof NodeRef) {
-                this._node = node._getAny();
-                this._nodeRefCache = node;
-            }
-            else {
-                this._node = node;
-                this._nodeRefCache = undefined;
-            }
-        }
-        /** @internal */
-        get _nodeRef() {
-            const node = this._node;
-            if (!node) {
-                return undefined;
-            }
-            return (this._nodeRefCache || (this._nodeRefCache = NodeRef._fromNode(node)));
-        }
-        /** @internal */
-        set _nodeRef(nodeRef) {
-            this._nodeRefCache = nodeRef;
-            this._node = nodeRef?._getAny();
+            this._node = node;
         }
         /** @ignore Internal element accessor used by legacy attribute helpers. */
         /** @internal */
@@ -7921,9 +7634,10 @@
                     const onChangesQueueState = {
                         _exceptionHandler: $exceptionHandler,
                         _queue: [],
+                        _scheduled: false,
                         _flush: undefined,
                     };
-                    // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
+                    // This function runs queued onChanges hooks after the current listener turn.
                     onChangesQueueState._flush = () => {
                         flushDirectiveBindingOnChangesQueue(onChangesQueueState);
                     };
@@ -7933,13 +7647,18 @@
                         ? (x) => x
                         : (x) => x.replace(/\{\{/g, startSymbol).replace(/}}/g, endSymbol);
                     function triggerDirectiveBindingOnChanges(state) {
+                        if (state._scope._destroyed || state._destAny._destroyed) {
+                            state._changes = undefined;
+                            return;
+                        }
                         if (state._destAny.$onChanges && state._changes) {
                             callFunction(state._destAny.$onChanges, state._destAny, state._changes);
                         }
                         state._changes = undefined;
                     }
-                    /** Flushes queued `$onChanges` hooks in one post-update turn. */
+                    /** Flushes queued `$onChanges` hooks in one deferred turn. */
                     function flushDirectiveBindingOnChangesQueue(queueState) {
+                        queueState._scheduled = false;
                         const queue = queueState._queue;
                         for (let i = 0, ii = queue.length; i < ii; ++i) {
                             try {
@@ -7951,14 +7670,18 @@
                         }
                         queue.length = 0;
                     }
+                    function scheduleDirectiveBindingOnChangesQueue(queueState) {
+                        if (queueState._scheduled) {
+                            return;
+                        }
+                        queueState._scheduled = true;
+                        queueMicrotask(queueState._flush);
+                    }
                     function recordDirectiveBindingChange(state, key, currentValue, initial) {
                         if (!isFunction(state._destAny.$onChanges)) {
                             return;
                         }
-                        if (!state._onChangesQueue._queue.length) {
-                            state._scope.$postUpdate(state._onChangesQueue._flush);
-                            state._onChangesQueue._queue.length = 0;
-                        }
+                        scheduleDirectiveBindingOnChangesQueue(state._onChangesQueue);
                         if (!state._changes) {
                             state._changes = {};
                             state._onChangesQueue._queue.push(state);
@@ -8028,12 +7751,12 @@
                         if (typeof value !== "string" && typeof value !== "boolean") {
                             return;
                         }
-                        recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, value, state._firstChange);
                         state._destAny[state._scopeName] = value;
                         if (state._firstCall) {
                             state._firstCall = false;
                             return;
                         }
+                        recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, value, state._firstChange);
                         triggerDirectiveBindingOnChanges(state._bindingChangeState);
                         state._firstChange = false;
                     }
@@ -8084,7 +7807,15 @@
                         return [element];
                     }
                     function snapshotNodeList(nodes) {
-                        return Array.prototype.slice.call(nodes);
+                        const length = nodes.length;
+                        if (length === 1) {
+                            return [nodes[0]];
+                        }
+                        const snapshot = new Array(length);
+                        for (let i = 0; i < length; i++) {
+                            snapshot[i] = nodes[i];
+                        }
+                        return snapshot;
                     }
                     function cloneTemplateNodes(nodes) {
                         const cloned = new Array(nodes.length);
@@ -8185,8 +7916,8 @@
                         }
                         return getTemplateLinkResult($linkNode);
                     }
-                    function executeTemplateLinkPlan(plan, scope, nodeRef, _parentBoundTranscludeFn) {
-                        const stableNodeList = buildStableNodeList(plan, nodeRef);
+                    function executeTemplateLinkPlan(plan, scope, nodeList, _parentBoundTranscludeFn) {
+                        const stableNodeList = buildStableNodeList(plan, nodeList);
                         executeTemplateLinkMappings(plan, stableNodeList, scope, _parentBoundTranscludeFn || null);
                     }
                     function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
@@ -8203,9 +7934,8 @@
                     function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                         const publicLinkState = createPublicLinkState(element, previousCompileContext);
                         const templatePlan = planTemplate(publicLinkState._nodes, transcludeFn || undefined, maxPriority, ignoreDirective, previousCompileContext);
-                        if (templatePlan?._nodeRefList &&
-                            !(templatePlan._nodeRefList instanceof NodeRef)) {
-                            publicLinkState._nodes = templatePlan._nodeRefList;
+                        if (templatePlan?._trackedNodeList) {
+                            publicLinkState._nodes = templatePlan._trackedNodeList;
                         }
                         publicLinkState._templateLinkExecutor = templatePlan
                             ? createTemplateLinkExecutor(templatePlan)
@@ -8277,34 +8007,28 @@
                     function getTemplateNodeAt(nodes, index) {
                         return nodes[index];
                     }
-                    function getPlanningNodeAt(nodes, nodeRefPlan, index) {
-                        return nodeRefPlan
-                            ? getTrackedNodeAt(nodeRefPlan, index)
+                    function getPlanningNodeAt(nodes, trackedNodeList, index) {
+                        return trackedNodeList
+                            ? getTrackedNodeAt(trackedNodeList, index)
                             : nodes[index];
                     }
                     function ensureTrackedNodeList(nodes) {
                         if (nodes instanceof NodeList) {
-                            return new NodeRef(nodes);
+                            return snapshotNodeList(nodes);
                         }
                         return nodes;
                     }
                     function getTrackedNodeAt(nodes, index) {
-                        return nodes instanceof NodeRef
-                            ? nodes._getIndex(index)
-                            : nodes[index];
+                        return nodes[index];
                     }
                     function setTrackedNodeAt(nodes, index, node) {
-                        if (nodes instanceof NodeRef) {
-                            if (nodes._isList && index !== undefined) {
-                                nodes._setIndex(index, node);
-                            }
-                            else {
-                                nodes.node = node;
-                            }
-                            return;
-                        }
                         if (index !== undefined) {
-                            nodes[index] = node;
+                            if (index < nodes.length) {
+                                nodes[index] = node;
+                            }
+                            else if (nodes.length === 1) {
+                                nodes[0] = node;
+                            }
                         }
                     }
                     function createEmptyAttributes() {
@@ -8313,17 +8037,17 @@
                     /**
                      * Plans a template node list and returns the executor used during linking.
                      */
-                    function compileTemplate(nodeRefList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
-                        const plan = planTemplate(nodeRefList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext);
+                    function compileTemplate(nodeList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
+                        const plan = planTemplate(nodeList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext);
                         return plan ? createTemplateLinkExecutor(plan) : null;
                     }
-                    function planTemplate(nodeRefList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
-                        if (!nodeRefList)
+                    function planTemplate(nodeList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
+                        if (!nodeList)
                             return null;
-                        let nodeRefPlan = null;
+                        let trackedNodeList = null;
                         let templatePlan = null;
-                        for (let i = 0, l = getTemplateNodeCount(nodeRefList); i < l; i++) {
-                            const templateNode = getPlanningNodeAt(nodeRefList, nodeRefPlan, i);
+                        for (let i = 0, l = getTemplateNodeCount(nodeList); i < l; i++) {
+                            const templateNode = getPlanningNodeAt(nodeList, trackedNodeList, i);
                             let attrs;
                             let directives;
                             if (templateNode.nodeType === NodeType._ELEMENT_NODE) {
@@ -8338,42 +8062,43 @@
                             if (directives.length) {
                                 attrs = attrs || createEmptyAttributes();
                                 if (directivesNeedNodeListTracking(directives)) {
-                                    nodeRefPlan = nodeRefPlan || ensureTrackedNodeList(nodeRefList);
+                                    trackedNodeList =
+                                        trackedNodeList || ensureTrackedNodeList(nodeList);
                                 }
-                                nodeLinkPlan = applyDirectivesToNode(directives, templateNode, attrs, transcludeFn, null, undefined, undefined, createNodePreviousCompileContext(previousCompileContext, i, nodeRefPlan));
+                                nodeLinkPlan = applyDirectivesToNode(directives, templateNode, attrs, transcludeFn, null, undefined, undefined, createNodePreviousCompileContext(previousCompileContext, i, trackedNodeList));
                             }
-                            const childLinkExecutor = planChildLinkExecutor(templateNode, nodeRefPlan, i, nodeLinkPlan || undefined, transcludeFn);
+                            const childLinkExecutor = planChildLinkExecutor(templateNode, trackedNodeList, i, nodeLinkPlan || undefined, transcludeFn);
                             if (nodeLinkPlan || childLinkExecutor) {
                                 templatePlan =
                                     templatePlan ||
-                                        createTemplateLinkPlan(nodeRefPlan, transcludeFn);
-                                appendTemplateNodePlan(templatePlan, i, nodeRefPlan, nodeLinkPlan, childLinkExecutor);
+                                        createTemplateLinkPlan(trackedNodeList, transcludeFn);
+                                appendTemplateNodePlan(templatePlan, i, trackedNodeList, nodeLinkPlan, childLinkExecutor);
                             }
                             // use the previous context only for the first element in the virtual group
                             previousCompileContext = null;
                         }
                         return templatePlan;
                     }
-                    function createTemplateLinkPlan(nodeRefList, transcludeFn) {
+                    function createTemplateLinkPlan(nodeList, transcludeFn) {
                         return {
                             _nodeIndices: [],
                             _nodeLinkPlans: [],
                             _childLinkExecutors: [],
-                            _nodeRefList: nodeRefList,
+                            _trackedNodeList: nodeList,
                             _transcludeFn: transcludeFn,
                         };
                     }
-                    function createNodePreviousCompileContext(previousCompileContext, index, templateNodeRef) {
+                    function createNodePreviousCompileContext(previousCompileContext, index, trackedTemplateNodeList) {
                         const context = previousCompileContext
                             ? assign({}, previousCompileContext, { _index: index })
                             : { _index: index };
-                        if (!templateNodeRef) {
-                            context._parentNodeRef = undefined;
-                            context._ctxNodeRef = undefined;
+                        if (!trackedTemplateNodeList) {
+                            context._parentNodeList = undefined;
+                            context._ctxNodeList = undefined;
                             return context;
                         }
-                        context._parentNodeRef = templateNodeRef;
-                        context._ctxNodeRef = templateNodeRef;
+                        context._parentNodeList = trackedTemplateNodeList;
+                        context._ctxNodeList = trackedTemplateNodeList;
                         return context;
                     }
                     function directivesNeedNodeListTracking(directives) {
@@ -8387,18 +8112,18 @@
                         }
                         return false;
                     }
-                    function appendTemplateNodePlan(templatePlan, index, nodeRefPlan, nodeLinkPlan, childLinkExecutor) {
-                        templatePlan._nodeRefList = nodeRefPlan;
+                    function appendTemplateNodePlan(templatePlan, index, trackedNodeList, nodeLinkPlan, childLinkExecutor) {
+                        templatePlan._trackedNodeList = trackedNodeList;
                         templatePlan._nodeIndices.push(index);
                         templatePlan._nodeLinkPlans.push(nodeLinkPlan);
                         templatePlan._childLinkExecutors.push(childLinkExecutor);
                     }
-                    function planChildLinkExecutor(templateNode, templateNodeRef, index, nodeLinkPlan, transcludeFn) {
+                    function planChildLinkExecutor(templateNode, trackedTemplateNodeList, index, nodeLinkPlan, transcludeFn) {
                         if (nodeLinkPlan?._terminal) {
                             return null;
                         }
-                        const childParentNode = templateNodeRef
-                            ? getTrackedNodeAt(templateNodeRef, index)
+                        const childParentNode = trackedTemplateNodeList
+                            ? getTrackedNodeAt(trackedTemplateNodeList, index)
                             : templateNode;
                         const { childNodes } = childParentNode;
                         if (!childNodes?.length) {
@@ -8417,12 +8142,12 @@
                             const index = templatePlan._nodeIndices[0];
                             const nodeLinkPlan = templatePlan._nodeLinkPlans[0];
                             const childLinkExecutor = templatePlan._childLinkExecutors[0];
-                            return function singleTemplateLinkExecutor(scope, nodeRef, _parentBoundTranscludeFn) {
-                                executeTemplateLinkMapping(templatePlan, nodeLinkPlan, childLinkExecutor, getTemplateNodeAt(nodeRef, index), scope, _parentBoundTranscludeFn || null);
+                            return function singleTemplateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
+                                executeTemplateLinkMapping(templatePlan, nodeLinkPlan, childLinkExecutor, getTemplateNodeAt(nodeList, index), scope, _parentBoundTranscludeFn || null);
                             };
                         }
-                        return function templateLinkExecutor(scope, nodeRef, _parentBoundTranscludeFn) {
-                            executeTemplateLinkPlan(templatePlan, scope, nodeRef, _parentBoundTranscludeFn);
+                        return function templateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
+                            executeTemplateLinkPlan(templatePlan, scope, nodeList, _parentBoundTranscludeFn);
                         };
                     }
                     /**
@@ -8788,14 +8513,16 @@
                     function replayResolvedTemplateNodeLink(delayedState, scope, beforeTemplateLinkNode, boundTranscludeFn) {
                         const afterTemplateNodeLinkPlan = delayedState._afterTemplateNodeLinkPlan;
                         const compiledNode = delayedState._compiledNode;
-                        const compileNodeRef = delayedState._compileNodeRef;
-                        if (!afterTemplateNodeLinkPlan || !compiledNode || !compileNodeRef) {
+                        const currentCompileNode = delayedState._compileNode;
+                        if (!afterTemplateNodeLinkPlan ||
+                            !compiledNode ||
+                            !currentCompileNode) {
                             return;
                         }
                         if (scope._destroyed) {
                             return;
                         }
-                        let linkNode = compileNodeRef._getAny();
+                        let linkNode = currentCompileNode;
                         if (beforeTemplateLinkNode !== delayedState._beforeTemplateCompileNode) {
                             const oldClasses = beforeTemplateLinkNode.className;
                             if (!(delayedState._previousCompileContext
@@ -8807,7 +8534,7 @@
                             }
                             try {
                                 if (oldClasses !== "") {
-                                    const { classList } = compileNodeRef.element;
+                                    const { classList } = currentCompileNode;
                                     const targetClassList = beforeTemplateLinkNode
                                         .classList;
                                     for (let i = 0, l = classList.length; i < l; i++) {
@@ -8861,8 +8588,7 @@
                         });
                     }
                     function releaseDelayedTemplateLinkState(delayedState) {
-                        delayedState._compileNodeRef?._release();
-                        delayedState._compileNodeRef = undefined;
+                        delayedState._compileNode = undefined;
                         delayedState._linkQueue = null;
                     }
                     function replayPendingTemplateLinks(delayedState) {
@@ -8882,16 +8608,12 @@
                         let replacementState;
                         content = denormalizeTemplate(content);
                         if (delayedState._origAsyncDirective.replace) {
-                            let templateNodes;
-                            if (isTextNode(content)) {
-                                templateNodes = [];
-                            }
-                            else if (typeof content === "string") {
-                                templateNodes = collectElementTemplateNodes(createNodelistFromHTML(content));
-                            }
-                            else {
-                                templateNodes = collectElementTemplateNodes(wrapTemplate(delayedState._templateNamespace, trim(content)));
-                            }
+                            const wrappedTemplate = wrapTemplate(delayedState._templateNamespace, trim(content));
+                            const templateNodes = isTextNode(content)
+                                ? []
+                                : collectElementTemplateNodes(typeof wrappedTemplate === "string"
+                                    ? createNodelistFromHTML(wrappedTemplate)
+                                    : wrappedTemplate);
                             compileNode = templateNodes[0];
                             if (templateNodes.length !== 1 ||
                                 compileNode.nodeType !== NodeType._ELEMENT_NODE) {
@@ -8901,11 +8623,13 @@
                                 _templateNodes: templateNodes,
                                 _templateAttrs: { $attr: {} },
                             };
-                            const delayedCompileNodeRef = assertDefined(delayedState._compileNodeRef);
-                            replaceWith(delayedCompileNodeRef._getAny(), compileNode, delayedState._previousCompileContext._index);
-                            delayedCompileNodeRef.node = compileNode;
+                            const oldCompileNode = assertDefined(delayedState._compileNode);
+                            replaceWith(oldCompileNode, compileNode, delayedState._previousCompileContext._index);
+                            if (delayedState._previousCompileContext._parentNodeList) {
+                                setTrackedNodeAt(delayedState._previousCompileContext._parentNodeList, delayedState._previousCompileContext._index, compileNode);
+                            }
+                            delayedState._compileNode = compileNode;
                             delayedState._tAttrs._node = compileNode;
-                            delayedState._tAttrs._nodeRefCache = delayedCompileNodeRef;
                             const templateDirectives = collectDirectiveMatches(compileNode, replacementState._templateAttrs);
                             if (delayedState._origAsyncDirective.scope !== null &&
                                 typeof delayedState._origAsyncDirective.scope === "object") {
@@ -8915,25 +8639,20 @@
                             mergeTemplateAttributes(delayedState._tAttrs, replacementState._templateAttrs);
                         }
                         else {
-                            compileNode = delayedState._beforeTemplateCompileNode;
-                            assertDefined(delayedState._compileNodeRef).element.innerHTML =
-                                content;
+                            compileNode = assertDefined(delayedState._compileNode);
+                            compileNode.innerHTML = content;
                         }
                         delayedState._directives.unshift(delayedState._derivedSyncDirective);
+                        const delayedContextNodeList = [compileNode];
                         delayedState._afterTemplateNodeLinkPlan = applyDirectivesToNode(delayedState._directives, compileNode, delayedState._tAttrs, delayedState._childTranscludeFn, delayedState._origAsyncDirective, delayedState._preLinkFns, delayedState._postLinkFns, {
                             ...delayedState._previousCompileContext,
-                            _ctxNodeRef: delayedState._compileNodeRef,
+                            _ctxNodeList: delayedContextNodeList,
                         });
-                        if (delayedState._rootElement) {
-                            for (let i = 0, l = delayedState._rootElement.length; i < l; i++) {
-                                const node = delayedState._rootElement[i];
-                                if (node.element === compileNode) {
-                                    delayedState._rootElement[i] = assertDefined(delayedState._compileNodeRef);
-                                }
-                            }
-                        }
+                        const afterDirectiveCompileNode = getNodeLinkPlanCompileNode(delayedState._afterTemplateNodeLinkPlan, compileNode);
+                        delayedContextNodeList[0] = afterDirectiveCompileNode;
+                        delayedState._compileNode = afterDirectiveCompileNode;
                         delayedState._compiledNode = compileNode;
-                        delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertDefined(delayedState._compileNodeRef)._getAny().childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
+                        delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertDefined(delayedState._compileNode).childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
                         try {
                             replayPendingTemplateLinks(delayedState);
                         }
@@ -9103,8 +8822,9 @@
                                     });
                                 }
                                 controllerScope.$on("$destroy", () => {
-                                    if (!controllerInstance._destroyed &&
-                                        isFunction(controllerInstance.$destroy)) {
+                                    const wasDestroyed = controllerInstance._destroyed;
+                                    controllerInstance._destroyed = true;
+                                    if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
                                         callFunction(controllerInstance.$destroy, controllerInstance);
                                     }
                                 });
@@ -9170,20 +8890,11 @@
                         let terminalPriority = -Number.MAX_VALUE;
                         let terminal = false;
                         let { _templateDirective, _nonTlbTranscludeDirective, _hasElementTranscludeDirective, } = previousCompileContext;
-                        const { _ctxNodeRef, _parentNodeRef } = previousCompileContext;
+                        const { _ctxNodeList, _parentNodeList } = previousCompileContext;
                         let hasTranscludeDirective = false;
                         let hasTemplate = false;
-                        let compileNodeRef;
                         const { _index } = previousCompileContext;
                         templateAttrs._node = compileNode;
-                        templateAttrs._nodeRefCache = undefined;
-                        const ensureCompileNodeRef = () => {
-                            if (!compileNodeRef) {
-                                compileNodeRef = NodeRef._fromNode(compileNode);
-                                templateAttrs._nodeRefCache = compileNodeRef;
-                            }
-                            return compileNodeRef;
-                        };
                         let directive;
                         let directiveName;
                         let replaceDirective = originalReplaceDirective;
@@ -9211,13 +8922,10 @@
                             applyDirectiveControllerEffect(directive, directiveName, compileNode, directiveEffectState);
                             directiveValue = directive.transclude;
                             if (directiveValue) {
-                                const transclusionResult = applyTransclusionDirective(directive, directiveName, directiveValue, directiveValue === "element"
-                                    ? ensureCompileNodeRef()
-                                    : compileNodeRef, compileNode, templateAttrs, _ctxNodeRef, _index, transcludeFn, directivePriority, replaceDirective, _nonTlbTranscludeDirective, !!_hasElementTranscludeDirective, terminalPriority, directiveEffectState._mightHaveMultipleTransclusionError, previousCompileContext);
+                                const transclusionResult = applyTransclusionDirective(directive, directiveName, directiveValue, compileNode, templateAttrs, _ctxNodeList, _index, transcludeFn, directivePriority, replaceDirective, _nonTlbTranscludeDirective, !!_hasElementTranscludeDirective, terminalPriority, directiveEffectState._mightHaveMultipleTransclusionError, previousCompileContext);
                                 ({
                                     _childTranscludeFn: childTranscludeFn,
                                     _compileNode: compileNode,
-                                    _compileNodeRef: compileNodeRef,
                                     _hasElementTranscludeDirective,
                                     _hasTranscludeDirective: hasTranscludeDirective,
                                     _nonTlbTranscludeDirective,
@@ -9226,7 +8934,7 @@
                             }
                             if (directive.template) {
                                 hasTemplate = true;
-                                const inlineTemplate = applyInlineTemplateDirective(directive, directiveName, ensureCompileNodeRef(), compileNode, templateAttrs, directives, i, _parentNodeRef, _index, directiveEffectState._newIsolateScopeDirective, directiveEffectState._newScopeDirective, _templateDirective, replaceDirective);
+                                const inlineTemplate = applyInlineTemplateDirective(directive, directiveName, compileNode, templateAttrs, directives, i, _parentNodeList, _index, directiveEffectState._newIsolateScopeDirective, directiveEffectState._newScopeDirective, _templateDirective, replaceDirective);
                                 ({
                                     _compileNode: compileNode,
                                     _directiveCount: ii,
@@ -9240,7 +8948,7 @@
                                 hasTemplate = true;
                                 preLinkFns = preLinkFns || [];
                                 postLinkFns = postLinkFns || [];
-                                const templateUrlResult = applyTemplateUrlDirective(directives, i, directive, ensureCompileNodeRef(), templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, _index, directiveEffectState._controllerDirectives, directiveEffectState._newScopeDirective, directiveEffectState._newIsolateScopeDirective, _templateDirective, _nonTlbTranscludeDirective, replaceDirective, previousCompileContext);
+                                const templateUrlResult = applyTemplateUrlDirective(directives, i, directive, templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, _index, directiveEffectState._controllerDirectives, directiveEffectState._newScopeDirective, directiveEffectState._newIsolateScopeDirective, _templateDirective, _nonTlbTranscludeDirective, replaceDirective, previousCompileContext);
                                 ({
                                     _directiveCount: ii,
                                     _nodeLinkFn: nodeLinkFn,
@@ -9270,13 +8978,12 @@
                         // might be normal or delayed nodeLinkFn depending on if templateUrl is present
                         return createNodeLinkPlan(nodeLinkFn, nodeLinkFnState, terminal, childTranscludeFn, hasTranscludeDirective, hasTemplate, directiveEffectState._newScopeDirective);
                     }
-                    function applyTransclusionDirective(directive, directiveName, directiveValue, compileNodeRef, compileNode, templateAttrs, contextNodeRef, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, hasElementTranscludeDirective, terminalPriority, mightHaveMultipleTransclusionError, previousCompileContext) {
+                    function applyTransclusionDirective(directive, directiveName, directiveValue, compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, hasElementTranscludeDirective, terminalPriority, mightHaveMultipleTransclusionError, previousCompileContext) {
                         const nextNonTlbTranscludeDirective = applyDirectiveTransclusionOwnershipEffect(directive, directiveName, compileNode, nonTlbTranscludeDirective);
                         if (directiveValue === "element") {
-                            const elementTransclusion = applyElementTransclusionDirective(assertDefined(compileNodeRef), templateAttrs, contextNodeRef, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
+                            const elementTransclusion = applyElementTransclusionDirective(compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
                             return {
                                 _compileNode: elementTransclusion._compileNode,
-                                _compileNodeRef: elementTransclusion._compileNodeRef,
                                 _childTranscludeFn: elementTransclusion._childTranscludeFn,
                                 _hasTranscludeDirective: true,
                                 _hasElementTranscludeDirective: true,
@@ -9287,7 +8994,6 @@
                         const childTranscludeFn = applyContentTransclusionDirective(directive, directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
                         return {
                             _compileNode: compileNode,
-                            _compileNodeRef: compileNodeRef,
                             _childTranscludeFn: childTranscludeFn,
                             _hasTranscludeDirective: true,
                             _hasElementTranscludeDirective: hasElementTranscludeDirective,
@@ -9295,7 +9001,7 @@
                             _terminalPriority: terminalPriority,
                         };
                     }
-                    function applyInlineTemplateDirective(directive, directiveName, compileNodeRef, compileNode, templateAttrs, directives, directiveIndex, parentNodeRef, index, newIsolateScopeDirective, newScopeDirective, templateDirective, replaceDirective) {
+                    function applyInlineTemplateDirective(directive, directiveName, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective, templateDirective, replaceDirective) {
                         assertNoDuplicate("template", templateDirective, directive, compileNode);
                         const directiveValue = resolveDirectiveTemplateValue(directive, compileNode, templateAttrs);
                         if (!directive.replace) {
@@ -9312,7 +9018,7 @@
                         }
                         const templateNodes = createDirectiveTemplateNodes(directive, directiveValue);
                         const replacementNode = getSingleElementTemplateRoot(templateNodes, directiveName);
-                        const templateReplacement = applyTemplateReplacementDirective(compileNodeRef, replacementNode, templateAttrs, directives, directiveIndex, parentNodeRef, index, newIsolateScopeDirective, newScopeDirective);
+                        const templateReplacement = applyTemplateReplacementDirective(compileNode, replacementNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective);
                         return {
                             _compileNode: replacementNode,
                             _directives: templateReplacement._directives,
@@ -9321,13 +9027,11 @@
                             _replaceDirective: directive,
                         };
                     }
-                    function applyTemplateReplacementDirective(compileNodeRef, compileNode, templateAttrs, directives, directiveIndex, parentNodeRef, index, newIsolateScopeDirective, newScopeDirective) {
-                        replaceWith(compileNodeRef._getAny(), compileNode);
-                        compileNodeRef.node = compileNode;
+                    function applyTemplateReplacementDirective(oldCompileNode, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective) {
+                        replaceWith(oldCompileNode, compileNode);
                         templateAttrs._node = compileNode;
-                        templateAttrs._nodeRefCache = compileNodeRef;
-                        if (parentNodeRef) {
-                            setTrackedNodeAt(parentNodeRef, index, compileNode);
+                        if (parentNodeList) {
+                            setTrackedNodeAt(parentNodeList, index, compileNode);
                         }
                         const newTemplateAttrs = { $attr: {} };
                         const templateDirectives = collectDirectiveMatches(compileNode, newTemplateAttrs);
@@ -9352,13 +9056,13 @@
                         }
                         return merged;
                     }
-                    function applyTemplateUrlDirective(directives, directiveIndex, directive, compileNodeRef, templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, index, controllerDirectives, newScopeDirective, newIsolateScopeDirective, templateDirective, nonTlbTranscludeDirective, replaceDirective, previousCompileContext) {
+                    function applyTemplateUrlDirective(directives, directiveIndex, directive, templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, index, controllerDirectives, newScopeDirective, newIsolateScopeDirective, templateDirective, nonTlbTranscludeDirective, replaceDirective, previousCompileContext) {
                         assertNoDuplicate("template", templateDirective, directive, compileNode);
                         const nextTemplateDirective = directive;
                         const nextReplaceDirective = directive.replace
                             ? directive
                             : replaceDirective;
-                        const { _nodeLinkFn, _nodeLinkFnState } = compileTemplateUrl(directives.splice(directiveIndex, directives.length - directiveIndex), compileNodeRef, templateAttrs, compileNode, (hasTranscludeDirective &&
+                        const { _nodeLinkFn, _nodeLinkFnState } = compileTemplateUrl(directives.splice(directiveIndex, directives.length - directiveIndex), compileNode, templateAttrs, (hasTranscludeDirective &&
                             childTranscludeFn), preLinkFns, postLinkFns, {
                             _index: index,
                             _controllerDirectives: controllerDirectives,
@@ -9400,15 +9104,20 @@
                             _newScope: newScopeDirective?.scope === true,
                         };
                     }
-                    function applyElementTransclusionDirective(templateNodeRef, templateAttrs, contextNodeRef, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
-                        const transcludedTemplateRef = templateNodeRef;
-                        const compileNodeRef = NodeRef._fromNode(document.createComment(""));
-                        templateAttrs._nodeRef = compileNodeRef;
-                        const compileNode = compileNodeRef.node;
-                        const transcludedTemplateElement = assertDefined(transcludedTemplateRef._element);
+                    function isNodeLinkState(state) {
+                        return (!!state && typeof state === "object" && "_templateAttrs" in state);
+                    }
+                    function getNodeLinkPlanCompileNode(nodeLinkPlan, fallback) {
+                        const state = nodeLinkPlan?._nodeLinkFnState;
+                        return isNodeLinkState(state) ? state._compileNode : fallback;
+                    }
+                    function applyElementTransclusionDirective(templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
+                        const transcludedTemplateElement = templateNode;
+                        const compileNode = document.createComment("");
+                        templateAttrs._node = compileNode;
                         setTranscludedHostElement(compileNode, transcludedTemplateElement);
-                        if (contextNodeRef) {
-                            setTrackedNodeAt(contextNodeRef, index, compileNode);
+                        if (contextNodeList) {
+                            setTrackedNodeAt(contextNodeList, index, compileNode);
                         }
                         replaceWith(transcludedTemplateElement, compileNode, index);
                         const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
@@ -9418,14 +9127,12 @@
                         });
                         return {
                             _compileNode: compileNode,
-                            _compileNodeRef: compileNodeRef,
                             _childTranscludeFn: childTranscludeFn,
                             _terminalPriority: directivePriority,
                         };
                     }
                     function applyContentTransclusionDirective(directive, directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext) {
                         const transclusionContentPlan = createTransclusionContentPlan(directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
-                        emptyElement(compileNode);
                         const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transclusionContentPlan._nodes, transcludeFn, undefined, undefined, {
                             _needsNewScope: directive._isolateScope || directive._newScope,
                         });
@@ -9469,24 +9176,28 @@
                     function createTransclusionContentPlan(directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext) {
                         if (directiveValue === null || typeof directiveValue !== "object") {
                             return {
-                                _nodes: cloneChildNodesToTemporaryContainer(compileNode).childNodes,
+                                _nodes: moveChildNodesToFragment(compileNode).childNodes,
                                 _slots: nullObject(),
                             };
                         }
                         return createSlotTransclusionContentPlan(directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
                     }
-                    function cloneChildNodesToTemporaryContainer(compileNode) {
-                        const tempContainer = document.createElement("div");
-                        const { childNodes } = compileNode;
-                        // Clone each node individually to prevent browser DOM normalization
-                        // from merging adjacent text nodes.
-                        for (let childIndex = 0, childCount = childNodes.length; childIndex < childCount; childIndex++) {
-                            tempContainer.appendChild(childNodes[childIndex].cloneNode(true));
+                    function moveChildNodesToFragment(compileNode) {
+                        const fragment = createDocumentFragment();
+                        while (compileNode.firstChild) {
+                            fragment.appendChild(compileNode.firstChild);
                         }
-                        return tempContainer;
+                        clearMovedTransclusionFragmentData(fragment);
+                        return fragment;
+                    }
+                    function clearMovedTransclusionFragmentData(fragment) {
+                        const descendants = fragment.querySelectorAll("*");
+                        for (let descendantIndex = 0, descendantCount = descendants.length; descendantIndex < descendantCount; descendantIndex++) {
+                            removeElementData(descendants[descendantIndex]);
+                        }
                     }
                     function createSlotTransclusionContentPlan(directiveValue, compileNode, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext) {
-                        const tempContainer = document.createElement("div");
+                        const defaultSlotContent = createDocumentFragment();
                         const slots = nullObject();
                         const slotMap = nullObject();
                         const filledSlots = nullObject();
@@ -9503,18 +9214,19 @@
                             slots[slotName] = null;
                             filledSlots[slotName] = optional;
                         }
-                        distributeTransclusionSlots(compileNode, tempContainer, slotMap, slots, filledSlots);
+                        distributeTransclusionSlots(compileNode, defaultSlotContent, slotMap, slots, filledSlots);
+                        clearMovedTransclusionFragmentData(defaultSlotContent);
+                        clearMovedTransclusionSlotData(slots);
                         assertRequiredTransclusionSlotsFilled(filledSlots);
                         compileFilledTransclusionSlots(slots, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
                         return {
-                            _nodes: tempContainer.childNodes,
+                            _nodes: defaultSlotContent.childNodes,
                             _slots: slots,
                         };
                     }
-                    function distributeTransclusionSlots(compileNode, tempContainer, slotMap, slots, filledSlots) {
-                        const { childNodes } = compileNode;
-                        for (let childIndex = 0, childCount = childNodes.length; childIndex < childCount; childIndex++) {
-                            const node = childNodes[childIndex].cloneNode(true);
+                    function distributeTransclusionSlots(compileNode, defaultSlotContent, slotMap, slots, filledSlots) {
+                        while (compileNode.firstChild) {
+                            const node = compileNode.firstChild;
                             const slotName = node.nodeType === NodeType._ELEMENT_NODE
                                 ? slotMap[normalizeDirectiveName(getNodeName$1(node))]
                                 : undefined;
@@ -9524,7 +9236,14 @@
                                 slots[slotName].appendChild(node);
                             }
                             else {
-                                tempContainer.appendChild(node);
+                                defaultSlotContent.appendChild(node);
+                            }
+                        }
+                    }
+                    function clearMovedTransclusionSlotData(slots) {
+                        for (const slotName in slots) {
+                            if (hasOwn(slots, slotName) && slots[slotName]) {
+                                clearMovedTransclusionFragmentData(slots[slotName]);
                             }
                         }
                     }
@@ -9913,7 +9632,7 @@
                         }
                     }
                     /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
-                    function compileTemplateUrl(directives, $compileNode, tAttrs, $rootElement, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
+                    function compileTemplateUrl(directives, compileNode, tAttrs, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
                         const origAsyncDirective = assertDefined(directives.shift());
                         const derivedSyncDirective = inherit(origAsyncDirective, {
                             templateUrl: null,
@@ -9923,7 +9642,7 @@
                         });
                         let templateUrl;
                         if (isFunction(origAsyncDirective.templateUrl)) {
-                            templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, $compileNode.element, tAttrs);
+                            templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, compileNode, tAttrs);
                         }
                         else {
                             ({ templateUrl } = origAsyncDirective);
@@ -9943,21 +9662,20 @@
                             _linkQueue: [],
                             _directives: directives,
                             _afterTemplateChildLinkExecutor: null,
-                            _beforeTemplateCompileNode: $compileNode._getAny(),
+                            _beforeTemplateCompileNode: compileNode,
                             _childTranscludeFn: childTranscludeFn,
-                            _compileNodeRef: $compileNode,
+                            _compileNode: compileNode,
                             _derivedSyncDirective: derivedSyncDirective,
                             _origAsyncDirective: origAsyncDirective,
                             _postLinkFns: postLinkFns,
                             _preLinkFns: preLinkFns,
                             _previousCompileContext: previousCompileContext,
-                            _rootElement: $rootElement,
                             _tAttrs: tAttrs,
                             _templateUrl: templateUrl,
                             _templateNamespace: templateNamespace,
                             _asyncTemplatePlan: asyncTemplatePlan,
                         };
-                        emptyElement($compileNode.element);
+                        emptyElement(compileNode);
                         requestTemplate(templateUrl)
                             .then((content) => {
                             handleDelayedTemplateLoaded(delayedState, content);
@@ -10457,15 +10175,12 @@
     /**
      * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
      */
-    function buildStableNodeList(plan, nodeRef) {
-        const nodeRefIsNodeRef = nodeRef instanceof NodeRef;
+    function buildStableNodeList(plan, nodeList) {
         const nodeIndices = plan._nodeIndices;
         const stableNodeList = new Array(nodeIndices.length);
         for (let i = 0, l = nodeIndices.length; i < l; i++) {
             const idx = nodeIndices[i];
-            stableNodeList[i] = nodeRefIsNodeRef
-                ? nodeRef._getIndex(idx)
-                : nodeRef[idx];
+            stableNodeList[i] = nodeList[idx];
         }
         return stableNodeList;
     }
@@ -10524,10 +10239,8 @@
      * Replaces the node currently represented by `elementsToRemove` while preserving the removed nodes
      * in a fragment so traversal and later queries continue to work during compilation.
      */
-    function replaceWith(elementsToRemove, newNode, index) {
-        const elementsToRemoveRef = elementsToRemove instanceof NodeRef ? elementsToRemove : null;
-        const firstElementToRemove = (elementsToRemoveRef ? elementsToRemoveRef._getAny() : elementsToRemove);
-        const parent = firstElementToRemove.parentNode;
+    function replaceWith(oldNode, newNode, index) {
+        const parent = oldNode.parentNode;
         if (parent) {
             if (index !== undefined) {
                 const oldChild = parent.childNodes[index];
@@ -10536,19 +10249,11 @@
                 }
             }
             else {
-                parent.replaceChild(newNode, firstElementToRemove);
+                parent.replaceChild(newNode, oldNode);
             }
         }
         const fragment = createDocumentFragment();
-        const removedElements = elementsToRemoveRef
-            ? elementsToRemoveRef._collection()
-            : [firstElementToRemove];
-        for (let i = 0, l = removedElements.length; i < l; i++) {
-            fragment.appendChild(removedElements[i]);
-        }
-        if (elementsToRemoveRef) {
-            elementsToRemoveRef.node = newNode;
-        }
+        fragment.appendChild(oldNode);
     }
 
     const SUFFIX = "Filter";
@@ -16180,9 +15885,7 @@
                                 }
                             }
                             content = insertedNodes;
-                            scope.$flushQueue();
                         });
-                        scope.$flushQueue();
                         break;
                     }
                     case "textContent":
@@ -16192,9 +15895,7 @@
                                 .done(() => {
                                 target.textContent = stringify$1(html);
                                 assertDefined(animate).enter(target, target.parentNode);
-                                scope.$flushQueue();
                             });
-                            scope.$flushQueue();
                         }
                         else {
                             target.textContent = stringify$1(html);
@@ -16212,8 +15913,6 @@
                                 parent.insertBefore(node, target);
                             }
                         });
-                        if (animationEnabled)
-                            scope.$flushQueue();
                         break;
                     }
                     case "afterbegin": {
@@ -16226,8 +15925,6 @@
                                 target.insertBefore(node, firstChild);
                             }
                         });
-                        if (animationEnabled)
-                            scope.$flushQueue();
                         break;
                     }
                     case "beforeend": {
@@ -16239,8 +15936,6 @@
                                 target.appendChild(node);
                             }
                         });
-                        if (animationEnabled)
-                            scope.$flushQueue();
                         break;
                     }
                     case "afterend": {
@@ -16256,8 +15951,6 @@
                                 parent.insertBefore(node, nextSibling);
                             }
                         });
-                        if (animationEnabled)
-                            scope.$flushQueue();
                         break;
                     }
                     case "delete":
@@ -16266,9 +15959,7 @@
                                 .leave(target)
                                 .done(() => {
                                 removeElement(target);
-                                scope.$flushQueue();
                             });
-                            scope.$flushQueue();
                         }
                         else {
                             removeElement(target);
@@ -16287,9 +15978,7 @@
                                     .done(() => {
                                     content = nodes[0];
                                     assertDefined(animate).enter(nodes[0], target);
-                                    scope.$flushQueue();
                                 });
-                                scope.$flushQueue();
                             }
                             else {
                                 content = nodes[0];
@@ -16301,7 +15990,6 @@
                                 }
                                 else {
                                     assertDefined(animate).enter(nodes[0], target);
-                                    scope.$flushQueue();
                                 }
                             }
                         }
@@ -18864,8 +18552,8 @@
     function ngInitDirective($parse) {
         return {
             priority: 450,
-            compile(element) {
-                const initFn = $parse(getNormalizedAttr(element, "ngInit") || "");
+            compile(element, attrs) {
+                const initFn = $parse(getDirectiveAttr(element, attrs, "ngInit") || "");
                 return {
                     pre(scope, element) {
                         const controller = getController(element);
@@ -19583,6 +19271,9 @@
             this._updateScheduled = false;
             this._renderRescheduleRequested = false;
             this._updateRescheduleRequested = false;
+            this._deferredQueue = [];
+            this._deferredDrainScheduled = false;
+            this._deferredDraining = false;
             $scope.$on("$destroy", () => {
                 this._renderUnknownOption = () => {
                     /* empty */
@@ -19714,11 +19405,46 @@
                 currentModelValue === value ||
                 ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
                     value === "")) {
-                this._scope.$postUpdate(() => {
-                    if (this._scope._destroyed)
-                        return;
+                this._scheduleDeferred(() => {
                     this._ngModelCtrl?.$render?.();
                 });
+            }
+        }
+        /** @ignore */
+        /** @internal */
+        _scheduleDeferred(fn, ownerScope = this._scope) {
+            this._deferredQueue.push(() => {
+                if (ownerScope._destroyed)
+                    return;
+                fn();
+            });
+            if (this._deferredDrainScheduled || this._deferredDraining) {
+                return;
+            }
+            this._deferredDrainScheduled = true;
+            queueMicrotask(() => {
+                queueMicrotask(() => {
+                    this._deferredDrainScheduled = false;
+                    this._drainDeferredQueue();
+                });
+            });
+        }
+        /** @ignore */
+        /** @internal */
+        _drainDeferredQueue() {
+            if (this._deferredQueue.length === 0) {
+                return;
+            }
+            this._deferredDraining = true;
+            let index = 0;
+            try {
+                while (index < this._deferredQueue.length) {
+                    this._deferredQueue[index++]();
+                }
+            }
+            finally {
+                this._deferredQueue.length = 0;
+                this._deferredDraining = false;
             }
         }
         /** @ignore */
@@ -19767,7 +19493,7 @@
                 return;
             }
             this._renderScheduled = true;
-            this._scope.$postUpdate(() => {
+            this._scheduleDeferred(() => {
                 this._renderScheduled = false;
                 this._ngModelCtrl.$render();
                 if (this._renderRescheduleRequested) {
@@ -19784,9 +19510,7 @@
                 return;
             }
             this._updateScheduled = true;
-            this._scope.$postUpdate(() => {
-                if (this._scope._destroyed)
-                    return;
+            this._scheduleDeferred(() => {
                 this._updateScheduled = false;
                 this._ngModelCtrl.$setViewValue(this._readValue());
                 if (renderAfter)
@@ -19890,14 +19614,14 @@
                 this._scheduleRender();
                 if (!shouldUpdateViewValue)
                     return;
-                optionScope.$postUpdate(() => {
+                this._scheduleDeferred(() => {
                     queueMicrotask(() => {
                         if (this._scope._destroyed || this._hasOption(removeValue)) {
                             return;
                         }
                         this._scheduleViewValueUpdate(true);
                     });
-                });
+                }, optionScope);
             });
         }
     }
@@ -20831,9 +20555,9 @@
         return {
             restrict: "E",
             terminal: true,
-            compile(element) {
-                const type = getNormalizedAttr(element, "type");
-                const templateId = getNormalizedAttr(element, "id");
+            compile(element, attr) {
+                const type = getDirectiveAttr(element, attr, "type");
+                const templateId = getDirectiveAttr(element, attr, "id");
                 if (type === "text/ng-template" && typeof templateId === "string") {
                     $templateCache.set(templateId, element.innerText);
                 }
@@ -21155,8 +20879,11 @@
                             "No parent directive that requires a transclusion found. " +
                             "Element: {0}", startingTag($element));
                     }
-                    const transcludeName = getNormalizedAttr($element, "ngTransclude");
-                    const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
+                    let transcludeName = getDirectiveAttr($element, $attrs, "ngTransclude");
+                    const transcludeSlot = getDirectiveAttr($element, $attrs, "ngTranscludeSlot");
+                    if (transcludeName === $attrs.$attr.ngTransclude) {
+                        transcludeName = "";
+                    }
                     const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0
                         ? transcludeName
                         : transcludeSlot;
@@ -21600,9 +21327,6 @@
                         return;
                     try {
                         $parse(expression)(scope, locals);
-                        if (isFunction(scope.$flushQueue)) {
-                            scope.$flushQueue();
-                        }
                     }
                     catch (error) {
                         $exceptionHandler(error);
@@ -21643,9 +21367,6 @@
                     const parsed = $parse(expression);
                     if (isFunction(parsed._assign)) {
                         parsed._assign(scope, nextConnection);
-                        if (isFunction(scope.$flushQueue)) {
-                            scope.$flushQueue();
-                        }
                     }
                     else {
                         $log.warn(`ngWebTransport: "${expression}" is not assignable`);
@@ -31486,9 +31207,6 @@
             if (isFunction(cleanup)) {
                 cleanupFns.set(host, cleanup);
             }
-            if (isFunction(scope.$flushQueue)) {
-                scope.$flushQueue();
-            }
         }
         function disconnectHost(host) {
             const context = contexts.get(host);
@@ -31605,9 +31323,6 @@
     function writeInput(host, input, value, scope) {
         if (scope) {
             scope[input.property] = value;
-            if (isFunction(scope.$flushQueue)) {
-                scope.$flushQueue();
-            }
             return;
         }
         getPendingValues(host)[input.property] = value;
@@ -32073,10 +31788,9 @@
         delete(path) {
             return deleteScopePath(this.scope, path);
         }
-        /** Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`. */
+        /** Runs queued Wasm bridge callbacks for this scope. */
         flush() {
             this._scheduleFlushCallbacks();
-            this.scope.$flushQueue?.();
         }
         /** @internal */
         _scheduleFlushCallbacks() {
@@ -32093,7 +31807,6 @@
                 for (let i = 0, l = callbacks.length; i < l; i++) {
                     callbacks[i]();
                 }
-                this.scope.$flushQueue?.();
             });
         }
         /**

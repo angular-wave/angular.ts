@@ -138,9 +138,6 @@ function createWebComponentClass(name, inputs, options, injector, compile, creat
         if (isFunction(cleanup)) {
             cleanupFns.set(host, cleanup);
         }
-        if (isFunction(scope.$flushQueue)) {
-            scope.$flushQueue();
-        }
     }
     function disconnectHost(host) {
         const context = contexts.get(host);
@@ -257,9 +254,6 @@ function applyPendingValues(host, inputs, scope) {
 function writeInput(host, input, value, scope) {
     if (scope) {
         scope[input.property] = value;
-        if (isFunction(scope.$flushQueue)) {
-            scope.$flushQueue();
-        }
         return;
     }
     getPendingValues(host)[input.property] = value;

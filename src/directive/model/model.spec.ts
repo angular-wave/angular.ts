@@ -691,7 +691,7 @@ describe("ngModel", () => {
           // setModelValue(ctrl, 3);
           // ctrl.$processModelValue();
 
-          // // $animate adds / removes classes in the $postUpdate, which
+          // // $animate adds / removes classes asynchronously, which
           // // we cannot trigger with $digest, because that would set the model from the scope,
           // // so we simply check if the functions have been called
           // expect($animate.removeClass.calls.mostRecent().args[0][0]).toBe(

@@ -1,6 +1,6 @@
 import { _compile } from '../../injection-tokens.js';
 import { isFunction, isInstanceOf, arrayFrom, isArray, createErrorFactory } from '../../shared/utils.js';
-import { emptyElement, startingTag, getNormalizedAttr } from '../../shared/dom.js';
+import { emptyElement, startingTag, getDirectiveAttr } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 
 const ngTranscludeError = createErrorFactory("ngTransclude");
@@ -16,8 +16,11 @@ function ngTranscludeDirective($compile) {
                         "No parent directive that requires a transclusion found. " +
                         "Element: {0}", startingTag($element));
                 }
-                const transcludeName = getNormalizedAttr($element, "ngTransclude");
-                const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
+                let transcludeName = getDirectiveAttr($element, $attrs, "ngTransclude");
+                const transcludeSlot = getDirectiveAttr($element, $attrs, "ngTranscludeSlot");
+                if (transcludeName === $attrs.$attr.ngTransclude) {
+                    transcludeName = "";
+                }
                 const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0
                     ? transcludeName
                     : transcludeSlot;

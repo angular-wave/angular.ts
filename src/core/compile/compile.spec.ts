@@ -5300,7 +5300,9 @@ describe("$compile", () => {
       reloadModules();
 
       $rootScope.value = 1;
-      const el = $('<parent value="value"><child value="value"></child></parent>');
+      const el = $(
+        '<parent value="value"><child value="value"></child></parent>',
+      );
 
       $compile(el)($rootScope);
       await wait();

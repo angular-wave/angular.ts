@@ -198,6 +198,5 @@ Directives with `scope: true` get an inherited child scope; directives with `sco
 | `$scope.$broadcast(name, ...args)` | Fires an event downward to all descendants.                     |
 | `$scope.$merge(obj)`               | Copies enumerable properties from `obj` into the scope.         |
 | `$scope.$destroy()`                | Tears down the scope and all its watchers.                      |
-| `$scope.$postUpdate(fn)`           | Queues a callback to run after the current listener flush.      |
 | `$rootScope.$searchByName(name)`   | Finds a scope by its `$scopename` anywhere in the tree.         |
 | `$scope.$getById(id)`              | Finds a scope by numeric ID within the subtree.                 |

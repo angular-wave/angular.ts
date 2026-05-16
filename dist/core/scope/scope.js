@@ -12,8 +12,6 @@ function nextId() {
 }
 let $parse;
 let $exceptionHandler;
-/** @internal */
-const $postUpdateQueue = [];
 const arrayMutationMeta = new WeakMap();
 const arraySwapCandidates = new WeakMap();
 let arrayMutationVersion = 0;
@@ -736,7 +734,6 @@ class Scope {
             _children: this._children,
             $destroy: this.$destroy.bind(this),
             $emit: this.$emit.bind(this),
-            $flushQueue: this.$flushQueue.bind(this),
             $getById: this.$getById.bind(this),
             $handler: this,
             $id: this.$id,
@@ -746,7 +743,6 @@ class Scope {
             $newIsolate: this.$newIsolate.bind(this),
             $on: this.$on.bind(this),
             $parent: this.$parent,
-            $postUpdate: this.$postUpdate.bind(this),
             $proxy: this.$proxy,
             $root: this.$root,
             $scopename: this.$scopename,
@@ -1664,7 +1660,6 @@ class Scope {
                 const task = queue[processed++];
                 if (task._kind === "callback") {
                     task._callback();
-                    this._drainPostUpdateQueue();
                     continue;
                 }
                 const filteredListeners = task._filter
@@ -1672,7 +1667,6 @@ class Scope {
                     : task._listeners;
                 for (let i = 0, l = filteredListeners.length; i < l; i++) {
                     this._notifyListener(filteredListeners[i], task._target);
-                    this._drainPostUpdateQueue();
                 }
             }
         }
@@ -1694,17 +1688,6 @@ class Scope {
                 this._queueScheduledFlush();
             }
         }
-    }
-    /** @internal Drains post-update callbacks in FIFO order. */
-    _drainPostUpdateQueue() {
-        if ($postUpdateQueue.length === 0) {
-            return;
-        }
-        let index = 0;
-        while (index < $postUpdateQueue.length) {
-            $postUpdateQueue[index++]();
-        }
-        $postUpdateQueue.length = 0;
     }
     /** @internal Schedules a callback to run in the shared listener flush queue. */
     _scheduleCallback(callback) {
@@ -2490,14 +2473,6 @@ class Scope {
     _isRoot() {
         return this.$root === this;
     }
-    /** Queues a callback to run after the current listener batch completes. */
-    $postUpdate(fn) {
-        $postUpdateQueue.push(() => {
-            if (this._destroyed)
-                return;
-            fn();
-        });
-    }
     $destroy() {
         if (this._destroyed)
             return;
@@ -2648,10 +2623,6 @@ class Scope {
             $exceptionHandler(err);
         }
     }
-    /* @ignore */
-    $flushQueue() {
-        this._drainPostUpdateQueue();
-    }
     /** Searches this scope tree for a scope with the given id. */
     $getById(id) {
         if (isString(id)) {
@@ -2727,4 +2698,4 @@ function collectChildIds(child) {
     return ids;
 }
 
-export { $postUpdateQueue, RootScopeProvider, Scope, createScope, getArrayMutationMeta, isNonScope };
+export { RootScopeProvider, Scope, createScope, getArrayMutationMeta, isNonScope };

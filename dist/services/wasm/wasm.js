@@ -45,10 +45,9 @@ class WasmScope {
     delete(path) {
         return deleteScopePath(this.scope, path);
     }
-    /** Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`. */
+    /** Runs queued Wasm bridge callbacks for this scope. */
     flush() {
         this._scheduleFlushCallbacks();
-        this.scope.$flushQueue?.();
     }
     /** @internal */
     _scheduleFlushCallbacks() {
@@ -65,7 +64,6 @@ class WasmScope {
             for (let i = 0, l = callbacks.length; i < l; i++) {
                 callbacks[i]();
             }
-            this.scope.$flushQueue?.();
         });
     }
     /**

@@ -174,47 +174,6 @@ let $parse: ng.ParseService;
 
 let $exceptionHandler: ng.ExceptionHandlerService;
 
-/** @internal */
-export const $postUpdateQueue: Array<() => void> = [];
-
-let postUpdateDrainScheduled = false;
-
-let postUpdateDraining = false;
-
-function schedulePostUpdateQueueDrain(): void {
-  if (postUpdateDrainScheduled || postUpdateDraining) {
-    return;
-  }
-
-  postUpdateDrainScheduled = true;
-
-  queueMicrotask(() => {
-    queueMicrotask(() => {
-      postUpdateDrainScheduled = false;
-      drainPostUpdateQueue();
-    });
-  });
-}
-
-function drainPostUpdateQueue(): void {
-  if ($postUpdateQueue.length === 0) {
-    return;
-  }
-
-  postUpdateDraining = true;
-
-  let index = 0;
-
-  try {
-    while (index < $postUpdateQueue.length) {
-      $postUpdateQueue[index++]();
-    }
-  } finally {
-    $postUpdateQueue.length = 0;
-    postUpdateDraining = false;
-  }
-}
-
 const arrayMutationMeta = new WeakMap<object, ArrayMutationMeta>();
 
 const arraySwapCandidates = new WeakMap<object, ArraySwapCandidate>();
@@ -1413,7 +1372,6 @@ export class Scope {
       $newIsolate: this.$newIsolate.bind(this),
       $on: this.$on.bind(this),
       $parent: this.$parent,
-      $postUpdate: this.$postUpdate.bind(this),
       $proxy: this.$proxy,
       $root: this.$root,
       $scopename: this.$scopename,
@@ -3945,15 +3903,6 @@ export class Scope {
   /** @internal Returns whether this scope instance is the root scope. */
   _isRoot() {
     return this.$root === this;
-  }
-
-  /** Queues a callback to run after the current listener batch completes. */
-  $postUpdate(fn: () => void): void {
-    $postUpdateQueue.push(() => {
-      if (this._destroyed) return;
-      fn();
-    });
-    schedulePostUpdateQueueDrain();
   }
 
   $destroy() {

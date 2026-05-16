@@ -35,6 +35,15 @@ function wait(timeout = 0) {
         setTimeout(resolve, timeout);
     });
 }
+async function waitUntil(predicate, timeout = 1000, message = "Timed out waiting for condition") {
+    const startedAt = Date.now();
+    while (!predicate()) {
+        if (Date.now() - startedAt > timeout) {
+            throw new Error(message);
+        }
+        await wait(10);
+    }
+}
 let ELEMENT;
 /**
  * Helper for bootstraping content onto default element
@@ -51,4 +60,4 @@ function bootstrap(htmlContent, moduleName) {
     return window.angular.bootstrap(element, [moduleName ?? "myModule"]);
 }
 
-export { ELEMENT, bootstrap, browserTrigger, wait };
+export { ELEMENT, bootstrap, browserTrigger, wait, waitUntil };

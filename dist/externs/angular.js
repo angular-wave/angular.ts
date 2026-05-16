@@ -821,23 +821,10 @@ ng.Scope.prototype.$emit = function(name, var_args) {};
 ng.Scope.prototype.$broadcast = function(name, var_args) {};
 
 /**
- * Queues a callback to run after the current listener batch completes.
- * @param {function(): void} fn
- * @return {void}
- */
-ng.Scope.prototype.$postUpdate = function(fn) {};
-
-/**
  * Public Scope.$destroy member exposed by the AngularTS namespace contract.
  * @return {void}
  */
 ng.Scope.prototype.$destroy = function() {};
-
-/**
- * Public Scope.$flushQueue member exposed by the AngularTS namespace contract.
- * @return {void}
- */
-ng.Scope.prototype.$flushQueue = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
@@ -2241,23 +2228,10 @@ ng.RootScopeService.prototype.$emit = function(name, var_args) {};
 ng.RootScopeService.prototype.$broadcast = function(name, var_args) {};
 
 /**
- * Queues a callback to run after the current listener batch completes.
- * @param {function(): void} fn
- * @return {void}
- */
-ng.RootScopeService.prototype.$postUpdate = function(fn) {};
-
-/**
  * Public RootScopeService.$destroy member exposed by the AngularTS namespace contract.
  * @return {void}
  */
 ng.RootScopeService.prototype.$destroy = function() {};
-
-/**
- * Public RootScopeService.$flushQueue member exposed by the AngularTS namespace contract.
- * @return {void}
- */
-ng.RootScopeService.prototype.$flushQueue = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
@@ -6094,7 +6068,7 @@ ng.WasmScope.prototype.set = function(path, value) {};
 ng.WasmScope.prototype.delete = function(path) {};
 
 /**
- * Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`.
+ * Runs queued Wasm bridge callbacks for this scope.
  * @return {void}
  */
 ng.WasmScope.prototype.flush = function() {};
@@ -6286,7 +6260,7 @@ ng.WasmScopeAbiImports.prototype.scope_delete = function(scopeHandle, pathPtr, p
 ng.WasmScopeAbiImports.prototype.scope_delete_named = function(namePtr, nameLen, pathPtr, pathLen) {};
 
 /**
- * Flushes queued AngularTS scope callbacks. Returns `1` on success.
+ * Runs queued Wasm scope bridge callbacks. Returns `1` on success.
  * @param {number} scopeHandle
  * @return {number}
  */

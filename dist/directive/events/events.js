@@ -67,7 +67,6 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
                 const handler = (event) => {
                     try {
                         fn(scope, { $event: event });
-                        flushScopeQueue(scope);
                     }
                     catch (error) {
                         $exceptionHandler(error);
@@ -96,7 +95,6 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
                 const handler = (event) => {
                     try {
                         fn(scope, { $event: event });
-                        flushScopeQueue(scope);
                     }
                     catch (error) {
                         $exceptionHandler(error);
@@ -109,12 +107,6 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
             };
         },
     };
-}
-function flushScopeQueue(scope) {
-    const rootScope = scope.$root ?? scope;
-    if (typeof rootScope.$flushQueue === "function") {
-        rootScope.$flushQueue();
-    }
 }
 
 export { createEventDirective, createWindowEventDirective, ngClickDirective, ngEventDirectives };

@@ -261,7 +261,7 @@ describe("$animate", () => {
     expect(child.getAttribute("data-animated")).toBe("true");
   });
 
-  it("ships built-in presets through angular.css", async () => {
+  it("ships built-in presets through angular-animate.css", async () => {
     const child = createElementFromHTML('<div animate="scale"></div>');
 
     host.append(child);

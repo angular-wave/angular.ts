@@ -2,7 +2,6 @@
 /// <reference types="jasmine" />
 import { wait } from "../../shared/test-utils.ts";
 import {
-  $postUpdateQueue,
   createScope,
   getArrayMutationMeta,
   isNonScope,
@@ -3184,165 +3183,6 @@ describe("Scope", () => {
     });
   });
 
-  describe("$postUpdate", () => {
-    beforeEach(() => (logs = []));
-
-    it("should process callbacks on the microtask queue without a listener flush", async () => {
-      let signature = "";
-
-      scope.$postUpdate(() => {
-        signature += "A";
-        scope.$postUpdate(() => {
-          signature += "C";
-        });
-      });
-
-      scope.$postUpdate(() => {
-        signature += "B";
-      });
-
-      expect(signature).toBe("");
-
-      await wait();
-
-      expect(signature).toBe("ABC");
-    });
-
-    it("should process callbacks as a queue (FIFO) when the scope is digested", async () => {
-      let signature = "";
-
-      scope.$postUpdate(() => {
-        signature += "A";
-        scope.$postUpdate(() => {
-          signature += "D";
-        });
-      });
-
-      scope.$postUpdate(() => {
-        signature += "B";
-      });
-
-      scope.$postUpdate(() => {
-        signature += "C";
-      });
-
-      expect(signature).toBe("");
-      expect($postUpdateQueue.length).toBe(3);
-
-      scope.$watch("a", () => {
-        /* empty */
-      });
-      scope.a = 1;
-
-      await wait();
-
-      expect(signature).toBe("ABCD");
-    });
-
-    it("should support scope updates nested in $postUpdate callbacks", async () => {
-      let signature = "";
-
-      scope.$postUpdate(() => {
-        signature += "A";
-      });
-
-      scope.$postUpdate(() => {
-        signature += "B";
-        scope.$postUpdate(() => {
-          signature += "D";
-        });
-        scope.a = 2;
-      });
-
-      scope.$postUpdate(() => {
-        signature += "C";
-      });
-      expect(signature).toBe("");
-
-      scope.$watch("a", () => {
-        /* empty */
-      });
-      scope.a = 1;
-      await wait();
-
-      expect(signature).toBe("ABCD");
-    });
-
-    it("should run a $postUpdate call on all child scopes when a parent scope is digested", async () => {
-      const parent = scope.$new();
-
-      const child = parent.$new();
-
-      let count = 0;
-
-      scope.$postUpdate(() => {
-        count++;
-      });
-
-      parent.$postUpdate(() => {
-        count++;
-      });
-
-      child.$postUpdate(() => {
-        count++;
-      });
-
-      expect(count).toBe(0);
-
-      scope.$watch("a", () => {
-        /* empty */
-      });
-      scope.a = 1;
-      await wait();
-
-      expect(count).toBe(3);
-    });
-
-    it("should run a $postUpdate call even if the child scope is isolated", async () => {
-      const parent = scope.$new();
-
-      const child = parent.$newIsolate();
-
-      let signature = "";
-
-      parent.$postUpdate(() => {
-        signature += "A";
-      });
-
-      child.$postUpdate(() => {
-        signature += "B";
-      });
-
-      expect(signature).toBe("");
-      scope.$watch("a", () => {
-        /* empty */
-      });
-      scope.a = 1;
-      await wait();
-      expect(signature).toBe("AB");
-    });
-
-    it("should skip $postUpdate callbacks registered on destroyed scopes", async () => {
-      const child = scope.$new();
-
-      let ran = false;
-
-      child.$postUpdate(() => {
-        ran = true;
-      });
-
-      child.$destroy();
-
-      scope.$watch("a", () => {
-        /* empty */
-      });
-      scope.a = 1;
-      await wait();
-
-      expect(ran).toBeFalse();
-    });
-  });
-
   describe("events", () => {
     describe("$on", () => {
       it("should add listener to list of listerner", () => {
@@ -5145,26 +4985,7 @@ describe("Scope optimizations", () => {
     });
   });
 
-  describe("$postUpdate microtask boundary after #notifyListener", () => {
-    it("should run $postUpdate callbacks after watcher notification", async () => {
-      const events: string[] = [];
-
-      scope.$postUpdate(() => {
-        events.push("POST");
-      });
-
-      scope.$watch("val", () => {
-        events.push("WATCH");
-      });
-
-      scope.val = 1;
-      expect(events).toEqual([]);
-      await wait();
-
-      expect(events[0]).toBe("WATCH");
-      expect(events[events.length - 1]).toBe("POST");
-    });
-
+  describe("#notifyListener", () => {
     it("should not re-evaluate a local watcher when the first result is undefined", () => {
       const watchFn = jasmine.createSpy("watchFn").and.returnValue(undefined);
 

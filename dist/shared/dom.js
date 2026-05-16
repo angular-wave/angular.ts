@@ -10,9 +10,9 @@ const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
 const FUTURE_PARENT_ELEMENT_KEY = "$$futureParentElement";
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const HTML_PARSE_CACHE_MAX_SIZE = 256;
-const TRANSCLUDED_HOST_ELEMENT_KEY = "$$transcludedHostElement";
 let expandoCache = new WeakMap();
 let cacheSize = 0;
+const transcludedHostElements = new WeakMap();
 const htmlParseCache = new Map();
 const Cache = {
     get size() {
@@ -271,7 +271,7 @@ function getCacheData(element, key) {
 }
 /** Stores the original element that was replaced by an element-transclusion anchor. */
 function setTranscludedHostElement(anchor, hostElement) {
-    setCacheData(anchor, TRANSCLUDED_HOST_ELEMENT_KEY, hostElement);
+    transcludedHostElements.set(anchor, hostElement);
 }
 /** Returns the element itself, or the original host for an element-transclusion anchor. */
 function getDirectiveHostElement(node) {
@@ -279,7 +279,7 @@ function getDirectiveHostElement(node) {
         return null;
     if (node instanceof Element)
         return node;
-    const hostElement = getCacheData(node, TRANSCLUDED_HOST_ELEMENT_KEY);
+    const hostElement = transcludedHostElements.get(node);
     return hostElement instanceof Element ? hostElement : null;
 }
 /**

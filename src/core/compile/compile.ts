@@ -1588,7 +1588,7 @@ export class CompileProvider {
           state._changes = undefined;
         }
 
-        /** Flushes queued `$onChanges` hooks in one post-update turn. */
+        /** Flushes queued `$onChanges` hooks in one deferred turn. */
         function flushDirectiveBindingOnChangesQueue(
           queueState: OnChangesQueueState,
         ): void {

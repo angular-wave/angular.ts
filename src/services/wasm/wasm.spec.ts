@@ -128,28 +128,21 @@ describe("WasmScopeAbi", () => {
     expect(rootScope.filters.status).toBeUndefined();
   });
 
-  it("runs bridge flush callbacks without synchronously draining scope post-update callbacks", async () => {
+  it("runs bridge flush callbacks asynchronously", async () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const name = guest.write("todoList:main");
     let bridgeFlushed = false;
-    let postUpdateFlushed = false;
 
     scope.onFlush(() => {
       bridgeFlushed = true;
     });
 
-    rootScope.$postUpdate(() => {
-      postUpdateFlushed = true;
-    });
-
     expect(imports.scope_flush_named(name.ptr, name.len)).toBe(1);
+    expect(bridgeFlushed).toBeFalse();
+
     await Promise.resolve();
 
     expect(bridgeFlushed).toBeTrue();
-    expect(postUpdateFlushed).toBeFalse();
-
-    await wait();
-    expect(postUpdateFlushed).toBeTrue();
   });
 
   it("updates the DOM when a Wasm import mutates a bound scope", async () => {

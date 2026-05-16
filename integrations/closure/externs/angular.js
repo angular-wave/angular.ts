@@ -821,13 +821,6 @@ ng.Scope.prototype.$emit = function(name, var_args) {};
 ng.Scope.prototype.$broadcast = function(name, var_args) {};
 
 /**
- * Queues a callback to run after the current listener batch completes.
- * @param {function(): void} fn
- * @return {void}
- */
-ng.Scope.prototype.$postUpdate = function(fn) {};
-
-/**
  * Public Scope.$destroy member exposed by the AngularTS namespace contract.
  * @return {void}
  */
@@ -2233,13 +2226,6 @@ ng.RootScopeService.prototype.$emit = function(name, var_args) {};
  * @return {(!ng.ScopeEvent|undefined)}
  */
 ng.RootScopeService.prototype.$broadcast = function(name, var_args) {};
-
-/**
- * Queues a callback to run after the current listener batch completes.
- * @param {function(): void} fn
- * @return {void}
- */
-ng.RootScopeService.prototype.$postUpdate = function(fn) {};
 
 /**
  * Public RootScopeService.$destroy member exposed by the AngularTS namespace contract.

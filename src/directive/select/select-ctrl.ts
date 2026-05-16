@@ -16,7 +16,6 @@ export type SelectScope = ng.Scope &
   Record<string, any> & {
     /** @internal */
     _destroyed?: boolean;
-    $postUpdate(fn: () => void): void;
   };
 
 export type NgModelController = ng.NgModelController & Record<string, any>;
@@ -60,6 +59,12 @@ export class SelectController {
   _renderRescheduleRequested: boolean;
   /** @internal */
   _updateRescheduleRequested: boolean;
+  /** @internal */
+  _deferredQueue: Array<() => void>;
+  /** @internal */
+  _deferredDrainScheduled: boolean;
+  /** @internal */
+  _deferredDraining: boolean;
 
   /** @ignore */
   constructor($element: HTMLSelectElement, $scope: SelectScope) {
@@ -76,6 +81,9 @@ export class SelectController {
     this._updateScheduled = false;
     this._renderRescheduleRequested = false;
     this._updateRescheduleRequested = false;
+    this._deferredQueue = [];
+    this._deferredDrainScheduled = false;
+    this._deferredDraining = false;
 
     $scope.$on("$destroy", () => {
       this._renderUnknownOption = () => {
@@ -238,10 +246,52 @@ export class SelectController {
       ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
         value === "")
     ) {
-      this._scope.$postUpdate(() => {
-        if (this._scope._destroyed) return;
+      this._scheduleDeferred(() => {
         this._ngModelCtrl?.$render?.();
       });
+    }
+  }
+
+  /** @ignore */
+  /** @internal */
+  _scheduleDeferred(fn: () => void, ownerScope: SelectScope = this._scope) {
+    this._deferredQueue.push(() => {
+      if (ownerScope._destroyed) return;
+      fn();
+    });
+
+    if (this._deferredDrainScheduled || this._deferredDraining) {
+      return;
+    }
+
+    this._deferredDrainScheduled = true;
+
+    queueMicrotask(() => {
+      queueMicrotask(() => {
+        this._deferredDrainScheduled = false;
+        this._drainDeferredQueue();
+      });
+    });
+  }
+
+  /** @ignore */
+  /** @internal */
+  _drainDeferredQueue() {
+    if (this._deferredQueue.length === 0) {
+      return;
+    }
+
+    this._deferredDraining = true;
+
+    let index = 0;
+
+    try {
+      while (index < this._deferredQueue.length) {
+        this._deferredQueue[index++]();
+      }
+    } finally {
+      this._deferredQueue.length = 0;
+      this._deferredDraining = false;
     }
   }
 
@@ -296,7 +346,7 @@ export class SelectController {
     }
 
     this._renderScheduled = true;
-    this._scope.$postUpdate(() => {
+    this._scheduleDeferred(() => {
       this._renderScheduled = false;
       this._ngModelCtrl.$render();
 
@@ -318,9 +368,7 @@ export class SelectController {
 
     this._updateScheduled = true;
 
-    this._scope.$postUpdate(() => {
-      if (this._scope._destroyed) return;
-
+    this._scheduleDeferred(() => {
       this._updateScheduled = false;
       this._ngModelCtrl.$setViewValue(this._readValue());
 
@@ -451,7 +499,7 @@ export class SelectController {
 
       if (!shouldUpdateViewValue) return;
 
-      optionScope.$postUpdate(() => {
+      this._scheduleDeferred(() => {
         queueMicrotask(() => {
           if (this._scope._destroyed || this._hasOption(removeValue)) {
             return;
@@ -459,7 +507,7 @@ export class SelectController {
 
           this._scheduleViewValueUpdate(true);
         });
-      });
+      }, optionScope);
     });
   }
 }

@@ -2,7 +2,6 @@ import { getBooleanAttrName } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { directiveNormalize, assertDefined, snakeCase, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
-import { NodeRef } from '../../shared/noderef.js';
 
 const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
@@ -41,27 +40,7 @@ class Attributes {
                 this[key] = attributesToCopy[key];
             }
         }
-        if (node instanceof NodeRef) {
-            this._node = node._getAny();
-            this._nodeRefCache = node;
-        }
-        else {
-            this._node = node;
-            this._nodeRefCache = undefined;
-        }
-    }
-    /** @internal */
-    get _nodeRef() {
-        const node = this._node;
-        if (!node) {
-            return undefined;
-        }
-        return (this._nodeRefCache || (this._nodeRefCache = NodeRef._fromNode(node)));
-    }
-    /** @internal */
-    set _nodeRef(nodeRef) {
-        this._nodeRefCache = nodeRef;
-        this._node = nodeRef?._getAny();
+        this._node = node;
     }
     /** @ignore Internal element accessor used by legacy attribute helpers. */
     /** @internal */

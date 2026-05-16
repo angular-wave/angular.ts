@@ -3172,7 +3172,6 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($log.info.logs).toEqual([]);
 
-
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",
   //       "http://server/#!/somePath",
@@ -3211,7 +3210,6 @@ describe("$location", () => {
   //     expect($location.getUrl()).toEqual("/somePath");
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($log.info.logs).toEqual([]);
-
 
   //     expect($log.info.logs.shift()).toEqual([
   //       "before",

@@ -62,16 +62,21 @@ function cssMinifyPlugin() {
   return {
     name: "css-minify",
     async writeBundle() {
-      const srcPath = path.resolve(__dirname, "css/angular.css");
       const destDir = path.resolve(__dirname, "dist");
-      const css = readFileSync(srcPath, "utf-8");
+      const cssFiles = ["angular.css", "angular-animate.css"];
 
-      const result = await postcss([cssnano()]).process(css, {
-        from: srcPath,
-        to: path.join(destDir, "angular.css"),
-      });
+      for (const fileName of cssFiles) {
+        const srcPath = path.resolve(__dirname, "css", fileName);
+        const destPath = path.join(destDir, fileName);
+        const css = readFileSync(srcPath, "utf-8");
 
-      writeFileSync(path.join(destDir, "angular.css"), result.css);
+        const result = await postcss([cssnano()]).process(css, {
+          from: srcPath,
+          to: destPath,
+        });
+
+        writeFileSync(destPath, result.css);
+      }
     },
   };
 }
