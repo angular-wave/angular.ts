@@ -17,6 +17,13 @@ export default defineConfig({
   server: {
     port,
     strictPort: true,
+    watch: {
+      ignored: [
+        "**/.coverage/**",
+        "**/coverage/**",
+        "**/integrations/**",
+      ],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:3000/",

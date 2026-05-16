@@ -2,7 +2,6 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
-import { NodeRef } from "../../shared/noderef.ts";
 import { Attributes } from "./attributes.ts";
 import {
   Cache,
@@ -268,18 +267,18 @@ describe("$compile", () => {
 
       const second = document.createElement("span");
 
-      const nodeRef = new NodeRef([first, second]);
+      const nodes = [first, second];
 
       const stableNodes = buildStableNodeList(
         {
           _nodeIndices: [0, 1],
           _nodeLinkPlans: [null, null],
           _childLinkExecutors: [null, null],
-          _nodeRefList: nodeRef,
+          _trackedNodeList: nodes,
           _hasNodeLinkFn: true,
           _transcludeFn: null,
         },
-        nodeRef,
+        nodes,
       );
 
       expect(stableNodes).toEqual([first, second]);
@@ -292,18 +291,18 @@ describe("$compile", () => {
 
       const third = document.createElement("p");
 
-      const nodeRef = new NodeRef([first, second, third]);
+      const nodes = [first, second, third];
 
       const stableNodes = buildStableNodeList(
         {
           _nodeIndices: [2],
           _nodeLinkPlans: [null],
           _childLinkExecutors: [null],
-          _nodeRefList: nodeRef,
+          _trackedNodeList: nodes,
           _hasNodeLinkFn: false,
           _transcludeFn: null,
         },
-        nodeRef,
+        nodes,
       );
 
       expect(stableNodes).toEqual([third]);
@@ -317,7 +316,7 @@ describe("$compile", () => {
       const templateAttrs = new Attributes(
         injector,
         injector.get("$exceptionHandler"),
-        new NodeRef(templateNode),
+        templateNode,
       );
 
       const templateObserver = jasmine.createSpy("templateObserver");
@@ -330,7 +329,7 @@ describe("$compile", () => {
       const cloneAttrs = new Attributes(
         injector,
         injector.get("$exceptionHandler"),
-        new NodeRef(cloneNode),
+        cloneNode,
         templateAttrs,
       );
 
@@ -349,26 +348,21 @@ describe("$compile", () => {
 
       const replacement = document.createElement("strong");
 
-      const nodeRef = new NodeRef(original);
-
       parent.appendChild(original);
-      replaceWith(nodeRef, replacement, 0);
+      replaceWith(original, replacement, 0);
 
       expect(parent.firstChild).toBe(replacement);
-      expect(nodeRef.node).toBe(replacement);
+      expect(original.parentNode?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
     });
 
     it("keeps link attrs on raw nodes without materializing node refs", () => {
       let capturedNode;
 
-      let capturedNodeRefCache;
-
       registerDirectives({
-        captureNodeRef: () => ({
+        captureNodeList: () => ({
           restrict: "A",
           link(_scope, _element, attrs) {
             capturedNode = attrs._node;
-            capturedNodeRefCache = attrs._nodeRefCache;
           },
         }),
       });
@@ -379,7 +373,7 @@ describe("$compile", () => {
 
       const scope = $rootScope.$new();
 
-      const linkFn = $compile("<div capture-node-ref></div>");
+      const linkFn = $compile("<div capture-node-list></div>");
 
       linkFn(scope, () => {
         /* empty */
@@ -387,12 +381,10 @@ describe("$compile", () => {
 
       expect(capturedNode).toBeDefined();
       expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
-      expect(capturedNodeRefCache).toBeUndefined();
 
       scope.$destroy();
 
       expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
-      expect(capturedNodeRefCache).toBeUndefined();
     });
   });
 
@@ -3779,6 +3771,35 @@ describe("$compile", () => {
       expect(el.outerHTML.match(/my-transcluder/)).toBeTruthy();
     });
 
+    it("does not carry existing cache data from moved transclusion content", () => {
+      registerDirectives({
+        myTranscluder: () => {
+          return {
+            transclude: true,
+            link(scope, element, attrs, ctrl, transclude) {
+              element.append(transclude());
+            },
+          };
+        },
+      });
+      reloadModules();
+      const el = $(
+        "<div my-transcluder><span><em in-transcluder></em></span></div>",
+      );
+
+      setCacheData(asElement(el.firstChild), "preexisting", true);
+      setCacheData(asElement(el.firstChild.firstChild), "preexisting", true);
+
+      $compile(el)($rootScope);
+
+      const span = el.firstChild;
+
+      expect(getCacheData(asElement(span), "preexisting")).toBeUndefined();
+      expect(
+        getCacheData(asElement(span.firstChild), "preexisting"),
+      ).toBeUndefined();
+    });
+
     it("is only allowed once per element", () => {
       registerDirectives({
         myTranscluder: () => {
@@ -7126,7 +7147,7 @@ describe("$compile", () => {
 
         expect(getNodeName(asElement(child.firstChild))).toMatch(/a/i);
         expect(isSVGElement(child)).toBe(true);
-        expect(child.firstChild.href).toMatch(/foo\/bar/);
+        expect(child.firstChild.href.baseVal).toBe("/foo/bar");
       });
 
       it("should support MathML templates using directive.templateNamespace=math", async () => {

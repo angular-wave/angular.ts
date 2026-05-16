@@ -4,7 +4,6 @@ import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { ngCloakDirective } from "./cloak.ts";
 import { Attributes } from "../../core/compile/attributes.ts";
-import { NodeRef } from "../../shared/noderef.ts";
 
 describe("ngCloak", () => {
   let element: any;
@@ -30,11 +29,7 @@ describe("ngCloak", () => {
   it("should invoke $set on attribute of directive", () => {
     const ngCloak = ngCloakDirective();
 
-    const attr = new Attributes(
-      injector,
-      (() => {}) as any,
-      new NodeRef(element),
-    );
+    const attr = new Attributes(injector, (() => {}) as any, element);
 
     spyOn(attr, "$set");
     ngCloak.compile!(element, attr);

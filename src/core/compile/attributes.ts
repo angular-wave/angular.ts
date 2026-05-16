@@ -6,6 +6,7 @@ import {
 } from "../../animations/lazy-animate.ts";
 import {
   arrayRemove,
+  assertDefined,
   directiveNormalize,
   hasOwn,
   isNullOrUndefined,
@@ -13,10 +14,8 @@ import {
   keys,
   nullObject,
   snakeCase,
-  assertDefined,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-import { NodeRef } from "../../shared/noderef.ts";
 
 const SIMPLE_ATTR_NAME = /^\w/;
 
@@ -74,15 +73,13 @@ export class Attributes {
   /** @internal */
   _node: Node | Element | undefined;
   /** @internal */
-  _nodeRefCache: NodeRef | undefined;
-  /** @internal */
   _observers: ObserverMap | undefined;
   [key: string]: any;
 
   constructor(
     $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
-    node?: Node | Element | NodeRef,
+    node?: Node | Element,
     attributesToCopy?: Record<string, any>,
   ) {
     this._getAnimate = getLazyAnimate($injector);
@@ -103,30 +100,7 @@ export class Attributes {
       }
     }
 
-    if (node instanceof NodeRef) {
-      this._node = node._getAny();
-      this._nodeRefCache = node;
-    } else {
-      this._node = node;
-      this._nodeRefCache = undefined;
-    }
-  }
-
-  /** @internal */
-  get _nodeRef(): NodeRef | undefined {
-    const node = this._node;
-
-    if (!node) {
-      return undefined;
-    }
-
-    return (this._nodeRefCache ||= NodeRef._fromNode(node));
-  }
-
-  /** @internal */
-  set _nodeRef(nodeRef: NodeRef | undefined) {
-    this._nodeRefCache = nodeRef;
-    this._node = nodeRef?._getAny();
+    this._node = node;
   }
 
   /** @ignore Internal element accessor used by legacy attribute helpers. */
