@@ -1,4 +1,3 @@
-import { isInjectable } from './predicates.js';
 import { notNullOrUndefined, isArray, isDefined, isString, isInstanceOf, isNumber } from './utils.js';
 
 const BADARG = "badarg";
@@ -7,19 +6,18 @@ const BADARGVALUE = "badarg: value";
 const reasons = new Map([
     [notNullOrUndefined, "required"],
     [isArray, "notarray"],
-    [isInjectable, "notinjectable"],
     [isDefined, "required"],
     [isString, "notstring"],
 ]);
-function getReason(val) {
-    return reasons.get(val) ?? "fail";
+function getReason(val, reason) {
+    return reason ?? reasons.get(val) ?? "fail";
 }
 /**
  * Validate a value using a predicate function.
  * Throws if the predicate returns false.
  * IMPORTANT: use this function only for developer errors and not user/data errors.
  */
-function validate(fn, arg, name) {
+function validate(fn, arg, name, reason) {
     if (fn(arg)) {
         return arg;
     }
@@ -30,7 +28,7 @@ function validate(fn, arg, name) {
     catch {
         serialized = String(arg);
     }
-    throw new TypeError(`badarg:${getReason(fn)} ${name}=${serialized}`);
+    throw new TypeError(`badarg:${getReason(fn, reason)} ${name}=${serialized}`);
 }
 function validateRequired(arg, name) {
     return validate(notNullOrUndefined, arg, name);

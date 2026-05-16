@@ -1,6 +1,5 @@
-import { isPromise } from "../../shared/predicates.ts";
 import { fnToString, maxLength } from "../../shared/strings.ts";
-import { assign, isInstanceOf } from "../../shared/utils.ts";
+import { assign, isInstanceOf, isPromiseLike } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
@@ -110,7 +109,7 @@ export class TransitionHook {
     for (let idx = 0; idx < hooks.length; idx++) {
       const hookResult = hooks[idx]._invokeHook();
 
-      if (isPromise(hookResult)) {
+      if (isPromiseLike(hookResult)) {
         return TransitionHook._chainThenDone(
           hooks,
           idx + 1,
@@ -157,7 +156,7 @@ export class TransitionHook {
     hook: TransitionHook,
     result: HookResult,
   ): undefined {
-    if (isPromise(result)) {
+    if (isPromiseLike(result)) {
       Promise.resolve(result as Promise<HookResultValue>).catch(
         (err: unknown) => {
           hook._logError(Rejection.normalize(err));
@@ -281,7 +280,7 @@ export class TransitionHook {
     try {
       const result = this._invokeCallback(hook);
 
-      if (!this._type._synchronous && isPromise(result)) {
+      if (!this._type._synchronous && isPromiseLike(result)) {
         return this._handleAsyncResult(result);
       }
 
@@ -303,7 +302,7 @@ export class TransitionHook {
 
     if (notCurrent) return notCurrent;
 
-    if (isPromise(result)) {
+    if (isPromiseLike(result)) {
       return this._handleAsyncHookResult(
         Promise.resolve(result as Promise<HookResultValue>),
       );

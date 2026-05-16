@@ -1,6 +1,5 @@
 import { tail, pushR } from './common.js';
-import { isPromise, isInjectable } from './predicates.js';
-import { isArray, isString, isUndefined, isObject, isNull, callFunction, isFunction } from './utils.js';
+import { isArray, isString, isUndefined, isObject, isNull, isPromiseLike, callFunction, isFunction } from './utils.js';
 
 /**
  * Functions that manipulate strings
@@ -66,13 +65,13 @@ function stringify(value) {
             return "undefined";
         if (isNull(item))
             return "null";
-        if (isPromise(item))
+        if (isPromiseLike(item))
             return "[Promise]";
         if (isRejection(item))
             return String(item._transitionRejection);
         if (hasToString(item))
             return String(callFunction(item.toString, item));
-        if (isInjectable(item))
+        if (isFunction(item))
             return functionToString(item);
         return item;
     }

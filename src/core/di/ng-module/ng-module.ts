@@ -22,7 +22,7 @@ import {
   _websocket,
   _worker,
 } from "../../../injection-tokens.ts";
-import { isInjectable } from "../../../shared/predicates.ts";
+import { isInjectable } from "../injectable.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
 import type { Injectable } from "../../../interface.ts";
 import type {
@@ -168,7 +168,7 @@ export class NgModule {
    * @returns {NgModule}
    */
   config(configFn: ModuleConfigFn): this {
-    validate(isInjectable, configFn, "configFn");
+    validate(isInjectable, configFn, "configFn", "notinjectable");
 
     this._configBlocks.push([_injector, "invoke", [configFn]]);
 
@@ -180,7 +180,7 @@ export class NgModule {
    * @returns {NgModule}
    */
   run(block: ModuleConfigFn): this {
-    validate(isInjectable, block, "block");
+    validate(isInjectable, block, "block", "notinjectable");
 
     this._runBlocks.push(block);
 

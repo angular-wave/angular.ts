@@ -1,5 +1,4 @@
 import { pushR, tail } from "./common.ts";
-import { isInjectable, isPromise } from "./predicates.ts";
 import {
   isArray,
   isFunction,
@@ -7,6 +6,7 @@ import {
   isObject,
   isUndefined,
   isString,
+  isPromiseLike,
   callFunction,
 } from "./utils.ts";
 import type { RuntimeFunction } from "./utils.ts";
@@ -95,13 +95,13 @@ export function stringify(value: unknown): string {
 
     if (isNull(item)) return "null";
 
-    if (isPromise(item)) return "[Promise]";
+    if (isPromiseLike(item)) return "[Promise]";
 
     if (isRejection(item)) return String(item._transitionRejection);
 
     if (hasToString(item)) return String(callFunction(item.toString, item));
 
-    if (isInjectable(item)) return functionToString(item);
+    if (isFunction(item)) return functionToString(item);
 
     return item;
   }

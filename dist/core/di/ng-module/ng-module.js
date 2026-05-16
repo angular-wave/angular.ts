@@ -1,6 +1,6 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
 import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent, _eventBus } from '../../../injection-tokens.js';
-import { isInjectable } from '../../../shared/predicates.js';
+import { isInjectable } from '../injectable.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
 import { createTopicService } from '../../../services/pubsub/pubsub.js';
 
@@ -56,7 +56,7 @@ class NgModule {
      * @returns {NgModule}
      */
     config(configFn) {
-        validate(isInjectable, configFn, "configFn");
+        validate(isInjectable, configFn, "configFn", "notinjectable");
         this._configBlocks.push([_injector, "invoke", [configFn]]);
         return this;
     }
@@ -65,7 +65,7 @@ class NgModule {
      * @returns {NgModule}
      */
     run(block) {
-        validate(isInjectable, block, "block");
+        validate(isInjectable, block, "block", "notinjectable");
         this._runBlocks.push(block);
         return this;
     }

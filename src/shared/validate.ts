@@ -1,4 +1,3 @@
-import { isInjectable } from "./predicates.ts";
 import type { Validator } from "./interface.ts";
 import {
   type InstanceConstructor,
@@ -17,13 +16,12 @@ export const BADARGVALUE = "badarg: value";
 const reasons = new Map<Validator, string>([
   [notNullOrUndefined, "required"],
   [isArray, "notarray"],
-  [isInjectable, "notinjectable"],
   [isDefined, "required"],
   [isString, "notstring"],
 ]);
 
-function getReason(val: Validator): string {
-  return reasons.get(val) ?? "fail";
+function getReason(val: Validator, reason?: string): string {
+  return reason ?? reasons.get(val) ?? "fail";
 }
 
 /**
@@ -31,7 +29,12 @@ function getReason(val: Validator): string {
  * Throws if the predicate returns false.
  * IMPORTANT: use this function only for developer errors and not user/data errors.
  */
-export function validate<T>(fn: Validator, arg: T, name: string): T {
+export function validate<T>(
+  fn: Validator,
+  arg: T,
+  name: string,
+  reason?: string,
+): T {
   if (fn(arg)) {
     return arg;
   }
@@ -44,7 +47,7 @@ export function validate<T>(fn: Validator, arg: T, name: string): T {
     serialized = String(arg);
   }
 
-  throw new TypeError(`badarg:${getReason(fn)} ${name}=${serialized}`);
+  throw new TypeError(`badarg:${getReason(fn, reason)} ${name}=${serialized}`);
 }
 
 export function validateRequired<T>(arg: T, name: string): NonNullable<T> {

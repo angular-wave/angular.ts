@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 16, 2026 06:37:41 */
+/* Version: 0.27.0 - May 16, 2026 06:50:09 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -2147,48 +2147,22 @@
         });
     }
 
-    /**
-     * A value is "injectable" if it is a function, or if it is an ng1
-     * array-notation-style array where the head is strings and the tail is a
-     * function.
-     */
-    function isInjectable(val) {
-        if (isArray(val) && val.length > 0) {
-            const lastIndex = val.length - 1;
-            for (let i = 0; i < lastIndex; i++) {
-                if (!isString(val[i]))
-                    return false;
-            }
-            return isFunction(val[lastIndex]);
-        }
-        return isFunction(val);
-    }
-    /**
-     * It is probably a Promise if it's an object and it has a function `then`.
-     */
-    function isPromise(obj) {
-        return (obj !== null &&
-            typeof obj === "object" &&
-            isFunction(obj.then));
-    }
-
     const BADARG = "badarg";
     const reasons = new Map([
         [notNullOrUndefined, "required"],
         [isArray, "notarray"],
-        [isInjectable, "notinjectable"],
         [isDefined, "required"],
         [isString, "notstring"],
     ]);
-    function getReason(val) {
-        return reasons.get(val) ?? "fail";
+    function getReason(val, reason) {
+        return reason ?? reasons.get(val) ?? "fail";
     }
     /**
      * Validate a value using a predicate function.
      * Throws if the predicate returns false.
      * IMPORTANT: use this function only for developer errors and not user/data errors.
      */
-    function validate(fn, arg, name) {
+    function validate(fn, arg, name, reason) {
         if (fn(arg)) {
             return arg;
         }
@@ -2199,7 +2173,7 @@
         catch {
             serialized = String(arg);
         }
-        throw new TypeError(`badarg:${getReason(fn)} ${name}=${serialized}`);
+        throw new TypeError(`badarg:${getReason(fn, reason)} ${name}=${serialized}`);
     }
     function validateRequired(arg, name) {
         return validate(notNullOrUndefined, arg, name);
@@ -2480,6 +2454,23 @@
         };
     }
 
+    /**
+     * A value is injectable if it is a function, class constructor, or ng1
+     * array-notation-style value where dependency names are strings and the final
+     * item is callable.
+     */
+    function isInjectable(val) {
+        if (isArray(val) && val.length > 0) {
+            const lastIndex = val.length - 1;
+            for (let i = 0; i < lastIndex; i++) {
+                if (!isString(val[i]))
+                    return false;
+            }
+            return isFunction(val[lastIndex]);
+        }
+        return isFunction(val);
+    }
+
     let eventBusInstance;
     /**
      * Configurable provider for the application-wide {@link PubSub} event bus.
@@ -2721,7 +2712,7 @@
          * @returns {NgModule}
          */
         config(configFn) {
-            validate(isInjectable, configFn, "configFn");
+            validate(isInjectable, configFn, "configFn", "notinjectable");
             this._configBlocks.push([_injector, "invoke", [configFn]]);
             return this;
         }
@@ -2730,7 +2721,7 @@
          * @returns {NgModule}
          */
         run(block) {
-            validate(isInjectable, block, "block");
+            validate(isInjectable, block, "block", "notinjectable");
             this._runBlocks.push(block);
             return this;
         }
@@ -22372,13 +22363,13 @@
                 return "undefined";
             if (isNull(item))
                 return "null";
-            if (isPromise(item))
+            if (isPromiseLike(item))
                 return "[Promise]";
             if (isRejection(item))
                 return String(item._transitionRejection);
             if (hasToString(item))
                 return String(callFunction(item.toString, item));
-            if (isInjectable(item))
+            if (isFunction(item))
                 return functionToString(item);
             return item;
         }
@@ -25990,7 +25981,7 @@
         static _invokeHooks(hooks, doneCallback) {
             for (let idx = 0; idx < hooks.length; idx++) {
                 const hookResult = hooks[idx]._invokeHook();
-                if (isPromise(hookResult)) {
+                if (isPromiseLike(hookResult)) {
                     return TransitionHook._chainThenDone(hooks, idx + 1, Promise.resolve(hookResult), doneCallback);
                 }
             }
@@ -26013,7 +26004,7 @@
         }
         /** @internal */
         static _logRejectedResult(hook, result) {
-            if (isPromise(result)) {
+            if (isPromiseLike(result)) {
                 Promise.resolve(result).catch((err) => {
                     hook._logError(Rejection.normalize(err));
                 });
@@ -26098,7 +26089,7 @@
                 return notCurrent;
             try {
                 const result = this._invokeCallback(hook);
-                if (!this._type._synchronous && isPromise(result)) {
+                if (!this._type._synchronous && isPromiseLike(result)) {
                     return this._handleAsyncResult(result);
                 }
                 return this._handleResult(result);
@@ -26119,7 +26110,7 @@
             const notCurrent = this._getNotCurrentRejection();
             if (notCurrent)
                 return notCurrent;
-            if (isPromise(result)) {
+            if (isPromiseLike(result)) {
                 return this._handleAsyncHookResult(Promise.resolve(result));
             }
             if (result === false) {

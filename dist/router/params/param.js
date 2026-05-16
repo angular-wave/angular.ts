@@ -1,4 +1,4 @@
-import { isInjectable } from '../../shared/predicates.js';
+import { isInjectable } from '../../core/di/injectable.js';
 import { isDefined, isUndefined, isString, hasOwn, assertDefined, isInstanceOf, isNullOrUndefined, isArray } from '../../shared/utils.js';
 import { ParamType } from './param-type.js';
 

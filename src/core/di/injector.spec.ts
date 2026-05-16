@@ -3,7 +3,40 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "./injector.ts";
 import { annotate } from "./di.js";
+import { isInjectable } from "./injectable.ts";
 import { extend } from "../../shared/utils.ts";
+
+describe("isInjectable", function () {
+  it("accepts functions", function () {
+    function fn() {}
+
+    expect(isInjectable(fn)).toBeTrue();
+  });
+
+  it("accepts functions with parameters", function () {
+    function fn(_foo: any, _bar: any) {}
+
+    expect(isInjectable(fn)).toBeTrue();
+  });
+
+  it("accepts ng1 annotated functions", function () {
+    fn.$inject = ["foo", "bar"];
+    function fn(_foo: any, _bar: any) {}
+
+    expect(isInjectable(fn)).toBeTrue();
+  });
+
+  it("accepts ng1 array notation", function () {
+    const fn = ["foo", "bar", function (_foo: any, _bar: any) {}];
+
+    expect(isInjectable(fn)).toBeTrue();
+  });
+
+  it("rejects malformed array notation", function () {
+    expect(isInjectable(["foo", "bar"])).toBeFalse();
+    expect(isInjectable([42, function () {}])).toBeFalse();
+  });
+});
 
 describe("injector.modules", () => {
   beforeEach(() => {

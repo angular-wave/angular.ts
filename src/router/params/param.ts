@@ -1,4 +1,4 @@
-import { isInjectable } from "../../shared/predicates.ts";
+import { isInjectable } from "../../core/di/injectable.ts";
 import {
   hasOwn,
   isArray,

@@ -1,6 +1,5 @@
-import { isPromise } from '../../shared/predicates.js';
 import { fnToString, maxLength } from '../../shared/strings.js';
-import { assign, isInstanceOf } from '../../shared/utils.js';
+import { isPromiseLike, assign, isInstanceOf } from '../../shared/utils.js';
 import { TargetState } from '../state/target-state.js';
 import { Rejection } from './reject-factory.js';
 
@@ -49,7 +48,7 @@ class TransitionHook {
     static _invokeHooks(hooks, doneCallback) {
         for (let idx = 0; idx < hooks.length; idx++) {
             const hookResult = hooks[idx]._invokeHook();
-            if (isPromise(hookResult)) {
+            if (isPromiseLike(hookResult)) {
                 return TransitionHook._chainThenDone(hooks, idx + 1, Promise.resolve(hookResult), doneCallback);
             }
         }
@@ -72,7 +71,7 @@ class TransitionHook {
     }
     /** @internal */
     static _logRejectedResult(hook, result) {
-        if (isPromise(result)) {
+        if (isPromiseLike(result)) {
             Promise.resolve(result).catch((err) => {
                 hook._logError(Rejection.normalize(err));
             });
@@ -157,7 +156,7 @@ class TransitionHook {
             return notCurrent;
         try {
             const result = this._invokeCallback(hook);
-            if (!this._type._synchronous && isPromise(result)) {
+            if (!this._type._synchronous && isPromiseLike(result)) {
                 return this._handleAsyncResult(result);
             }
             return this._handleResult(result);
@@ -178,7 +177,7 @@ class TransitionHook {
         const notCurrent = this._getNotCurrentRejection();
         if (notCurrent)
             return notCurrent;
-        if (isPromise(result)) {
+        if (isPromiseLike(result)) {
             return this._handleAsyncHookResult(Promise.resolve(result));
         }
         if (result === false) {

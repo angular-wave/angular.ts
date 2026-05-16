@@ -1,6 +1,5 @@
 /// <reference types="jasmine" />
 import { defaults, tail } from "./common.js";
-import { isInjectable } from "./predicates.js";
 
 describe("common", function () {
   describe("defaults", function () {
@@ -31,30 +30,6 @@ describe("common", function () {
 
       expect(defaults(null, vals)).toEqual(vals);
       expect(defaults(undefined, vals)).toEqual(vals);
-    });
-  });
-
-  describe("isInjectable", function () {
-    it("should accept functions", function () {
-      function fn() {}
-      expect(isInjectable(fn)).toBeTruthy();
-    });
-
-    it("should accept functions with parameters", function () {
-      function fn(_foo: any, _bar: any) {}
-      expect(isInjectable(fn)).toBeTruthy();
-    });
-
-    it("should accept ng1 annotated functions", function () {
-      fn.$inject = ["foo", "bar"];
-      function fn(_foo: any, _bar: any) {}
-      expect(isInjectable(fn)).toBeTruthy();
-    });
-
-    it("should accept ng1 array notation", function () {
-      const fn = ["foo", "bar", function (_foo: any, _bar: any) {}];
-
-      expect(isInjectable(fn)).toBeTruthy();
     });
   });
 
