@@ -30,8 +30,8 @@ export interface RealtimeSwapContext {
   getAnimate: LazyAnimate;
   /** Scope used when compiling incoming HTML. */
   scope: ng.Scope;
-  /** Directive attributes that provide `target` and `animate` defaults. */
-  attrs: ng.Attributes & Record<string, any>;
+  /** Read-only normalized attribute access for directive defaults. */
+  $attributes: ng.AttributesService;
   /** Directive host element used when no target is configured. */
   element: Element;
   /** Prefix used in log messages. */
@@ -57,7 +57,7 @@ export function createRealtimeSwapHandler({
   $log,
   getAnimate,
   scope,
-  attrs,
+  $attributes,
   element,
   logPrefix,
 }: RealtimeSwapContext): RealtimeSwapHandler {
@@ -68,7 +68,7 @@ export function createRealtimeSwapHandler({
     swap: SwapModeType,
     options: RealtimeSwapOptions = {},
   ): boolean => {
-    const animationEnabled = !!attrs.animate;
+    const animationEnabled = !!$attributes.read(element, "animate");
 
     const animate = animationEnabled ? getAnimate() : undefined;
 
@@ -86,9 +86,8 @@ export function createRealtimeSwapHandler({
         : [compiled];
     }
 
-    const targetSelector = (options.targetSelector || attrs.target) as
-      | string
-      | undefined;
+    const targetSelector =
+      options.targetSelector || $attributes.read(element, "target");
 
     const target: Element | null = targetSelector
       ? document.querySelector(targetSelector)
@@ -279,7 +278,13 @@ export function createRealtimeSwapHandler({
       return true;
     };
 
-    if (shouldUseViewTransition(attrs, target, animationEnabled)) {
+    if (
+      shouldUseViewTransition(
+        $attributes.read(element, "viewTransition"),
+        target,
+        animationEnabled,
+      )
+    ) {
       const documentWithTransitions = document as ViewTransitionDocument;
 
       documentWithTransitions.startViewTransition?.(() => {
@@ -294,7 +299,7 @@ export function createRealtimeSwapHandler({
 }
 
 function shouldUseViewTransition(
-  attrs: ng.Attributes & Record<string, any>,
+  attrValue: string | undefined,
   target: Element,
   animationEnabled: boolean,
 ): boolean {
@@ -305,8 +310,6 @@ function shouldUseViewTransition(
   if (!documentWithTransitions.startViewTransition) return false;
 
   if (!target.isConnected) return false;
-
-  const attrValue = attrs.viewTransition ?? attrs.dataViewTransition;
 
   const targetValue = target.getAttribute("data-view-transition");
 

@@ -1,7 +1,6 @@
 export { angular, HttpRestBackend } from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
-import type { Attributes as TAttributes } from "./core/compile/attributes.ts";
 import type {
   Scope as TScope,
   ListenerFn as TListenerFn,
@@ -14,6 +13,7 @@ import type {
   AnchorScrollProvider as TAnchorScrollProvider,
   AnchorScrollService as TAnchorScrollService,
 } from "./services/anchor-scroll/anchor-scroll.ts";
+import type { AttributesService as TAttributesService } from "./services/attributes/attributes.ts";
 
 import type { ControllerService as TControllerService } from "./core/controller/controller.ts";
 import type {
@@ -71,6 +71,7 @@ import type {
 } from "./services/pubsub/pubsub.ts";
 import type {
   AnnotatedFactory as TAnnotatedFactory,
+  Attributes as TAttributes,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
@@ -226,7 +227,9 @@ declare global {
 
     export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
 
-    export type Attributes = TAttributes & Record<string, string>;
+    export type Attributes = TAttributes;
+
+    export type AttributesService = TAttributesService;
 
     export type BoundTranscludeFn = TBoundTranscludeFn;
 

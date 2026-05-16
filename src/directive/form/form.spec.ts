@@ -100,8 +100,8 @@ describe("form", () => {
 
     const inputController = getController(input, "ngModel");
 
-    input.setAttribute("value", "ab");
-    input.dispatchEvent(new Event("change"));
+    input.value = "ab";
+    browserTrigger(input, "input");
 
     // await wait();
     await wait(10);
@@ -119,8 +119,8 @@ describe("form", () => {
 
     form.$setPristine();
 
-    input.setAttribute("value", "ab");
-    input.dispatchEvent(new Event("change"));
+    input.value = "ab";
+    browserTrigger(input, "input");
 
     await wait();
     expect(form.$error.maxlength).toBeFalsy();
@@ -142,8 +142,8 @@ describe("form", () => {
     form.$removeControl(control);
     expect(form.control).toBeUndefined();
     await wait();
-    input.setAttribute("value", "abc");
-    input.dispatchEvent(new Event("change"));
+    input.value = "abc";
+    browserTrigger(input, "input");
     await wait();
     expect(control.$error.maxlength).toBe(true);
     expect(control.$dirty).toBe(true);
@@ -157,8 +157,8 @@ describe("form", () => {
     expect(form.$dirty).toBe(false);
 
     // Only when the input changes again its validation state is propagated
-    input.setAttribute("value", "abcd");
-    input.dispatchEvent(new Event("change"));
+    input.value = "abcd";
+    browserTrigger(input, "input");
 
     expect(form.$error.maxlength[0]).toEqual(control);
     expect(form.$dirty).toBe(false);
@@ -242,6 +242,18 @@ describe("form", () => {
     expect(scope.myForm.alias).toBeDefined();
   });
 
+  it("should use data-ng-form value as form name", async () => {
+    doc = $compile(
+      '<div data-ng-form="myForm">' +
+        '<input type="text" name="alias" ng-model="value"/>' +
+        "</div>",
+    )(scope);
+    await wait();
+
+    expect(scope.myForm).toBeDefined();
+    expect(scope.myForm.alias).toBeDefined();
+  });
+
   it("should use ngForm value as form name when nested inside form", async () => {
     doc = $compile(
       '<form name="myForm">' +
@@ -261,6 +273,14 @@ describe("form", () => {
 
     expect(scope.myForm).toBeTruthy();
     expect(getCacheData(doc, "$formController")).toBeTruthy();
+    expect(getCacheData(doc, "$formController")).toEqual(scope.myForm);
+  });
+
+  it("should publish form to scope when data-name attr is defined", async () => {
+    doc = $compile('<form data-name="myForm"></form>')(scope);
+    await wait();
+
+    expect(scope.myForm).toBeTruthy();
     expect(getCacheData(doc, "$formController")).toEqual(scope.myForm);
   });
 
@@ -293,11 +313,11 @@ describe("form", () => {
 
     const inputB = doc.querySelectorAll("input")[1];
 
-    inputA.setAttribute("value", "val1");
-    inputA.dispatchEvent(new Event("change"));
+    inputA.value = "val1";
+    browserTrigger(inputA, "input");
     await wait();
-    inputB.setAttribute("value", "val2");
-    inputB.dispatchEvent(new Event("change"));
+    inputB.value = "val2";
+    browserTrigger(inputB, "input");
     await wait();
     expect(scope.firstName).toBe("val1");
     expect(scope.lastName).toBe("val2");
@@ -344,8 +364,8 @@ describe("form", () => {
       await wait();
       const inputElm = form.children[0];
 
-      inputElm.setAttribute("value", "a");
-      inputElm.dispatchEvent(new Event("change"));
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
       expect(scope.name).toEqual(undefined);
 
       form.dispatchEvent(new Event("submit"));
@@ -364,8 +384,8 @@ describe("form", () => {
       await wait();
       const inputElm = form.querySelector("input");
 
-      inputElm.setAttribute("value", "a");
-      inputElm.dispatchEvent(new Event("change"));
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
       await wait();
       expect(scope.name).toEqual(undefined);
       browserTrigger(form.firstChild, "submit");
@@ -384,8 +404,8 @@ describe("form", () => {
       await wait();
       const inputElm = form.children[0];
 
-      inputElm.setAttribute("value", "a");
-      inputElm.dispatchEvent(new Event("change"));
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
       scope.submit = jasmine.createSpy("submit").and.callFake(() => {
         expect(scope.name).toEqual("a");
       });
@@ -406,8 +426,8 @@ describe("form", () => {
 
       const inputElm = form.children[0];
 
-      inputElm.setAttribute("value", "a");
-      inputElm.dispatchEvent(new Event("click"));
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
       expect(inputElm.value).toBe("a");
       form.querySelector("button").click();
       expect(inputElm.value).toBe("");
@@ -425,8 +445,8 @@ describe("form", () => {
 
       const inputElm = form.querySelector("input");
 
-      inputElm.setAttribute("value", "a");
-      inputElm.dispatchEvent(new Event("click"));
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
       expect(inputElm.value).toBe("a");
       form.querySelector("button").click();
       await wait();
@@ -790,10 +810,14 @@ describe("form", () => {
       expect(child).toBeDefined();
 
       expect(parent.$error.required).toEqual([child]);
-      expect(parent._success.maxlength).toEqual([child]);
+      expect(Array.from(parent._validControls.get("maxlength"))).toEqual([
+        child,
+      ]);
 
       expect(child.$error.required).toEqual([input]);
-      expect(child._success.maxlength).toEqual([input]);
+      expect(Array.from(child._validControls.get("maxlength"))).toEqual([
+        input,
+      ]);
 
       expect(doc.classList.contains("ng-invalid")).toBe(true);
       expect(doc.classList.contains("ng-invalid-required")).toBe(true);
@@ -812,10 +836,10 @@ describe("form", () => {
       scope.inputPresent = false;
       await wait();
       expect(parent.$error.required).toBeFalsy();
-      expect(parent._success.maxlength).toBeFalsy();
+      expect(parent._validControls.get("maxlength")).toBeUndefined();
 
       expect(child.$error.required).toBeFalsy();
-      expect(child._success.maxlength).toBeFalsy();
+      expect(child._validControls.get("maxlength")).toBeUndefined();
 
       expect(doc.classList.contains("ng-valid")).toBe(true);
       expect(doc.classList.contains("ng-valid-required")).toBe(false);
@@ -937,8 +961,8 @@ describe("form", () => {
       const inputController = getController(input, "ngModel");
 
       // changeInputValue(input, "ab");
-      input.setAttribute("value", "ab");
-      input.dispatchEvent(new Event("change"));
+      input.value = "ab";
+      browserTrigger(input, "input");
 
       await wait();
 
@@ -959,8 +983,8 @@ describe("form", () => {
       expect(form.$error.maxlength).toBeFalsy();
 
       // changeInputValue(input, "abc");
-      input.setAttribute("value", "abc");
-      input.dispatchEvent(new Event("change"));
+      input.value = "abc";
+      browserTrigger(input, "input");
       await wait();
 
       expect(form.$error.maxlength).toBeFalsy();
@@ -989,8 +1013,8 @@ describe("form", () => {
       // remove child form so we can add it manually
       form.$removeControl(childFormController);
       // changeInputValue(input, "ab");
-      input.setAttribute("value", "ab");
-      input.dispatchEvent(new Event("change"));
+      input.value = "ab";
+      browserTrigger(input, "input");
 
       expect(form.childForm).toBeUndefined();
       expect(form.$dirty).toBe(false);
@@ -1004,8 +1028,8 @@ describe("form", () => {
 
       // Only when the input inside the child form changes, the validation state is propagated
       // changeInputValue(input, "abc");
-      input.setAttribute("value", "abc");
-      input.dispatchEvent(new Event("change"));
+      input.value = "abc";
+      browserTrigger(input, "input");
       expect(form.$error.maxlength[0]).toBe(childFormController);
       expect(form.$dirty).toBe(false);
     });

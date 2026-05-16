@@ -1,4 +1,5 @@
 import { getBooleanAttrName } from "../../shared/dom.ts";
+import { _attributes } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -15,6 +16,7 @@ import {
   nullObject,
   snakeCase,
 } from "../../shared/utils.ts";
+import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 
 const SIMPLE_ATTR_NAME = /^\w/;
@@ -34,12 +36,7 @@ function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   return getAnimate;
 }
 
-type ObserverList = Array<(value?: unknown) => void> & {
-  /** @internal */
-  _inter?: boolean;
-  /** @internal */
-  _scope?: ng.Scope;
-};
+type ObserverList = Array<(value?: unknown) => void>;
 
 type ObserverMap = Record<string, ObserverList>;
 
@@ -69,6 +66,8 @@ export class Attributes {
   _getAnimate: LazyAnimate;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
+  /** @internal */
+  _attributes: ng.AttributesService | undefined;
   $attr: Record<string, string>;
   /** @internal */
   _node: Node | Element | undefined;
@@ -84,6 +83,11 @@ export class Attributes {
   ) {
     this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
+    try {
+      this._attributes = $injector.get(_attributes) as ng.AttributesService;
+    } catch {
+      this._attributes = undefined;
+    }
     this.$attr = {};
 
     if (attributesToCopy) {
@@ -125,6 +129,11 @@ export class Attributes {
     if (classVal && classVal.length > 0) {
       const element = this._element() as Element;
 
+      if (this._attributes) {
+        this._attributes.addClass(element, classVal);
+        return;
+      }
+
       const animate = getAnimateForNode(this._getAnimate, element);
 
       if (animate) {
@@ -138,6 +147,11 @@ export class Attributes {
   $removeClass(classVal: string): void {
     if (classVal && classVal.length > 0) {
       const element = this._element() as Element;
+
+      if (this._attributes) {
+        this._attributes.removeClass(element, classVal);
+        return;
+      }
 
       const animate = getAnimateForNode(this._getAnimate, element);
 
@@ -155,6 +169,11 @@ export class Attributes {
     }
 
     const element = this._element() as Element;
+
+    if (this._attributes) {
+      this._attributes.updateClass(element, newClasses, oldClasses);
+      return;
+    }
 
     const animate = getAnimateForNode(this._getAnimate, element);
 
@@ -179,9 +198,10 @@ export class Attributes {
     }
   }
 
-  $set(
+  /** @internal */
+  _setValue(
     key: string,
-    value: string | boolean | null,
+    value: string | boolean | null | undefined,
     writeAttr?: boolean,
     attrName?: string,
   ): void {
@@ -189,7 +209,9 @@ export class Attributes {
 
     const booleanKey = getBooleanAttrName(node as Element, key);
 
-    const aliasedKey = ALIASED_ATTR[key];
+    const aliasedKey = hasOwn(ALIASED_ATTR, key)
+      ? ALIASED_ATTR[key]
+      : undefined;
 
     let observer = key;
 
@@ -213,7 +235,12 @@ export class Attributes {
       }
     }
 
-    if (writeAttr !== false) {
+    if (this._attributes) {
+      this._attributes.set(node, observer, value, {
+        writeAttr,
+        attrName,
+      });
+    } else if (writeAttr !== false) {
       if (!attrName) return;
       const elem = this._element() as Element;
 
@@ -254,7 +281,11 @@ export class Attributes {
 
     listeners.push(fn as (value?: unknown) => void);
 
-    if (!listeners._inter && hasOwn(this, key) && !isUndefined(this[key])) {
+    const isInterpolated = (
+      this._attributes as InternalAttributesService | undefined
+    )?._isInterpolated(this._element(), key);
+
+    if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
       fn(this[key]);
     }
 

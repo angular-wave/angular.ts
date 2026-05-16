@@ -47,6 +47,16 @@ describe("ngClass", () => {
     expect(element.classList.contains("B")).toBe(false);
   });
 
+  it("should support normalized data-ng-class aliases", async () => {
+    element = $compile('<div class="existing" data-ng-class="dynClass"></div>')(
+      $rootScope,
+    );
+    $rootScope.dynClass = "A";
+    await wait();
+    expect(element.classList.contains("existing")).toBe(true);
+    expect(element.classList.contains("A")).toBe(true);
+  });
+
   it("should update when a controller instance method changes class data", async () => {
     class TestController {
       classes = "before";

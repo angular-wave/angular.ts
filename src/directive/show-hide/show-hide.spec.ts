@@ -36,6 +36,16 @@ describe("ngShow / ngHide", () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
     });
 
+    it("should support normalized data-ng-show aliases", async () => {
+      element = createElementFromHTML('<div data-ng-show="exp"></div>');
+      element = $compile(element)($scope);
+      await wait();
+      expect(element.classList.contains("ng-hide")).toBeTrue();
+      $scope.exp = true;
+      await wait();
+      expect(element.classList.contains("ng-hide")).toBeFalse();
+    });
+
     // https://github.com/angular/angular.js/issues/5414
     it("should hide if the expression is a function with a no arguments", async () => {
       element = createElementFromHTML('<div ng-show="exp"></div>');
@@ -117,6 +127,16 @@ describe("ngShow / ngHide", () => {
   describe("ngHide", () => {
     it("should hide an element", async () => {
       element = createElementFromHTML('<div ng-hide="exp"></div>');
+      element = $compile(element)($scope);
+      await wait();
+      expect(element.classList.contains("ng-hide")).toBeFalse();
+      $scope.exp = true;
+      await wait();
+      expect(element.classList.contains("ng-hide")).toBeTrue();
+    });
+
+    it("should support normalized data-ng-hide aliases", async () => {
+      element = createElementFromHTML('<div data-ng-hide="exp"></div>');
       element = $compile(element)($scope);
       await wait();
       expect(element.classList.contains("ng-hide")).toBeFalse();

@@ -7,7 +7,7 @@ import { bootstrap, ELEMENT, wait } from "../../shared/test-utils.ts";
 
 function changeGivenInputTo(inputElm, val) {
   inputElm.value = val;
-  inputElm.dispatchEvent(new Event("change"));
+  inputElm.dispatchEvent(new Event("input"));
 }
 
 function browserTrigger(inputElm, event) {
@@ -98,6 +98,18 @@ describe("ngModelOptions", () => {
           expect(inputOptions.getOption("updateOnDefault")).not.toEqual(
             defaultModelOptions.getOption("updateOnDefault"),
           );
+        });
+
+        it("supports data-ng-model-options normalized reads", () => {
+          formElm = $compile(
+            '<form name="form"><input type="text" ng-model="name" name="alias" data-ng-model-options="{ updateOn: \'blur\' }"/></form>',
+          )($rootScope);
+          inputElm = formElm.querySelector("input");
+
+          const inputOptions = $rootScope.form.alias.$options;
+
+          expect(inputOptions.getOption("updateOn")).toBe("blur");
+          expect(inputOptions.getOption("updateOnDefault")).toBe(false);
         });
 
         it("if the first `ngModelOptions` ancestor does not specify the option", () => {
@@ -792,7 +804,7 @@ describe("ngModelOptions", () => {
           expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
         });
 
-        it("should not assign not parsable values to the scope if allowInvalid is true", async () => {
+        it("should assign the browser-normalized value if allowInvalid is true", async () => {
           inputElm = $compile(
             '<input type="number" name="input" ng-model="value" ' +
               'ng-model-options="{allowInvalid: true}" />',
@@ -800,8 +812,7 @@ describe("ngModelOptions", () => {
           await wait();
           changeGivenInputTo(inputElm, "abcd");
           await wait();
-          expect($rootScope.value).toBeUndefined();
-          // TODO: -> expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
+          expect($rootScope.value).toBe("");
         });
 
         it("should update the scope before async validators execute if allowInvalid is true", async () => {

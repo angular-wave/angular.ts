@@ -1,16 +1,17 @@
-import { getNormalizedAttr } from "../../shared/dom.ts";
+import { _attributes } from "../../injection-tokens.ts";
 import { arrayFrom, deleteProperty, isString } from "../../shared/utils.ts";
 
+ngElDirective.$inject = [_attributes];
 /**
  * Exposes the current element on `scope.$target` under the provided key.
  */
-export function ngElDirective(): ng.Directive {
+export function ngElDirective($attributes: ng.AttributesService): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement): void {
       const target = scope.$target as Record<string, Element | undefined>;
 
-      const expr = getNormalizedAttr(element, "ngEl");
+      const expr = $attributes.read(element, "ngEl");
 
       const key = isString(expr) && expr ? expr : element.id;
 

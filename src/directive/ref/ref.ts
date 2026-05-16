@@ -1,4 +1,4 @@
-import { _parse } from "../../injection-tokens.ts";
+import { _attributes, _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
   directiveNormalize,
@@ -6,26 +6,26 @@ import {
   createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
-import {
-  getCacheData,
-  getNormalizedAttr,
-  hasNormalizedAttr,
-} from "../../shared/dom.ts";
+import { getCacheData } from "../../shared/dom.ts";
 
 const ngRefError = createErrorFactory("ngRef");
 
 type RefAssignFn = (scope: ng.Scope, value: unknown) => unknown;
 
-ngRefDirective.$inject = [_parse];
+ngRefDirective.$inject = [_parse, _attributes];
 
-export function ngRefDirective($parse: ng.ParseService): ng.Directive {
+export function ngRefDirective(
+  $parse: ng.ParseService,
+  $attributes?: ng.AttributesService,
+): ng.Directive {
   return {
     priority: -1,
     restrict: "A",
     compile(tElement: Element, tAttrs: ng.Attributes) {
       const controllerName = directiveNormalize(getNodeName(tElement));
 
-      const expression: unknown = tAttrs.ngRef;
+      const expression: unknown =
+        $attributes?.read(tElement, "ngRef") ?? tAttrs.ngRef;
 
       if (!isString(expression)) return () => undefined;
 
@@ -44,8 +44,8 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
       return (scope: ng.Scope, element: Element) => {
         let refValue: unknown;
 
-        if (hasNormalizedAttr(element, "ngRefRead")) {
-          const readTarget = getNormalizedAttr(element, "ngRefRead");
+        if ($attributes?.has(element, "ngRefRead")) {
+          const readTarget = $attributes.read(element, "ngRefRead");
 
           if (readTarget === "$element") {
             refValue = element;

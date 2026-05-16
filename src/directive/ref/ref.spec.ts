@@ -197,6 +197,15 @@ describe("ngRef", () => {
         expect($rootScope.myEl.textContent).toBe("foo");
       });
 
+      it("should support normalized data-ng-ref-read aliases", () => {
+        const element = $compile(
+          '<my-component ng-ref="myEl" data-ng-ref-read="$element"></my-component>',
+        )($rootScope);
+
+        expect($rootScope.myEl).toBe(element);
+        expect($rootScope.myEl.textContent).toBe("foo");
+      });
+
       it('should bind the element instead of an element directive controller if ngRefRead="$element" is set', () => {
         const element = $compile(
           '<element-directive ng-ref="myEl" ng-ref-read="$element"></element-directive>',

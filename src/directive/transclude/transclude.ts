@@ -1,4 +1,4 @@
-import { _compile } from "../../injection-tokens.ts";
+import { _attributes, _compile } from "../../injection-tokens.ts";
 import {
   arrayFrom,
   isArray,
@@ -6,11 +6,7 @@ import {
   isInstanceOf,
   createErrorFactory,
 } from "../../shared/utils.ts";
-import {
-  emptyElement,
-  getDirectiveAttr,
-  startingTag,
-} from "../../shared/dom.ts";
+import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import type {
   CloneAttachFn,
@@ -20,10 +16,11 @@ import type {
 
 const ngTranscludeError = createErrorFactory("ngTransclude");
 
-ngTranscludeDirective.$inject = [_compile];
+ngTranscludeDirective.$inject = [_compile, _attributes];
 
 export function ngTranscludeDirective(
   $compile: ng.CompileService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   return {
     compile: function ngTranscludeCompile(tElement: Element) {
@@ -34,7 +31,7 @@ export function ngTranscludeDirective(
       function ngTranscludePostLink(
         $scope: ng.Scope,
         $element: Element,
-        $attrs: ng.Attributes,
+        _attrs: ng.Attributes,
         _controller: unknown,
         $transclude?: TranscludeFn,
       ) {
@@ -48,15 +45,13 @@ export function ngTranscludeDirective(
           );
         }
 
-        let transcludeName = getDirectiveAttr($element, $attrs, "ngTransclude");
+        let transcludeName = $attributes.read($element, "ngTransclude");
 
-        const transcludeSlot = getDirectiveAttr(
-          $element,
-          $attrs,
-          "ngTranscludeSlot",
-        );
+        const transcludeSlot = $attributes.read($element, "ngTranscludeSlot");
 
-        if (transcludeName === $attrs.$attr.ngTransclude) {
+        if (
+          transcludeName === $attributes.originalName($element, "ngTransclude")
+        ) {
           transcludeName = "";
         }
 

@@ -3,7 +3,6 @@ import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { ngCloakDirective } from "./cloak.ts";
-import { Attributes } from "../../core/compile/attributes.ts";
 
 describe("ngCloak", () => {
   let element: any;
@@ -26,14 +25,16 @@ describe("ngCloak", () => {
     dealoc(element);
   });
 
-  it("should invoke $set on attribute of directive", () => {
-    const ngCloak = ngCloakDirective();
+  it("should remove the cloak attribute through $attributes", () => {
+    const $attributes = injector.get("$attributes");
+    const ngCloak = ngCloakDirective($attributes);
 
-    const attr = new Attributes(injector, (() => {}) as any, element);
+    spyOn($attributes, "set").and.callThrough();
 
-    spyOn(attr, "$set");
-    ngCloak.compile!(element, attr);
-    expect(attr.$set).toHaveBeenCalledWith("ngCloak", null);
+    ngCloak.compile!(element, undefined as any);
+
+    expect($attributes.set).toHaveBeenCalledWith(element, "ngCloak", null);
+    expect(element.getAttribute("ng-cloak")).toBeNull();
   });
 
   it("should get removed when an element is compiled", () => {

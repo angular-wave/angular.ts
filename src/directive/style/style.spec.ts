@@ -33,6 +33,14 @@ describe("ng-style", () => {
     expect(element.style.height).toEqual("40px");
   });
 
+  it("should support normalized data-ng-style aliases", async () => {
+    element = $compile("<div data-ng-style=\"{height: '40px'}\"></div>")(
+      $scope,
+    );
+    await wait();
+    expect(element.style.height).toEqual("40px");
+  });
+
   it("should silently ignore undefined style", async () => {
     element = $compile('<div ng-style="myStyle"></div>')($scope);
     await wait();

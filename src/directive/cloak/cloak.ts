@@ -1,9 +1,14 @@
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { _attributes } from "../../injection-tokens.ts";
+
+ngCloakDirective.$inject = [_attributes];
+
 /** Removes the `ng-cloak` attribute during compilation so cloaked content can render. */
-export function ngCloakDirective(): ng.Directive {
+export function ngCloakDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
-    compile(_: Element, attr: Attributes): undefined {
-      attr.$set("ngCloak", null);
+    compile(element: Element): undefined {
+      $attributes.set(element, "ngCloak", null);
 
       return undefined;
     },

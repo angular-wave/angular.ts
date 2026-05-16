@@ -1,4 +1,4 @@
-import { _parse } from "../../injection-tokens.ts";
+import { _attributes, _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
   isNull,
@@ -7,14 +7,16 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
-import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import type { Attributes } from "../../interface.ts";
 
+ngBindDirective.$inject = [_attributes];
 /** Binds the watched expression as plain text content. */
-export function ngBindDirective(): ng.Directive {
+export function ngBindDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
-      const expression = getNormalizedAttr(element, "ngBind");
+      const expression = $attributes.read(element, "ngBind");
 
       if (!isString(expression)) return;
 
@@ -25,30 +27,37 @@ export function ngBindDirective(): ng.Directive {
 
           element.textContent = isString(text) ? text : "";
         },
-        hasNormalizedAttr(element, "lazy"),
+        $attributes.has(element, "lazy"),
       );
     },
   };
 }
 
 /** Binds the interpolated template value as plain text content. */
-export function ngBindTemplateDirective(): ng.Directive {
+ngBindTemplateDirective.$inject = [_attributes];
+export function ngBindTemplateDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
-    link(_scope: ng.Scope, element: HTMLElement, attr: Attributes): void {
-      attr.$observe("ngBindTemplate", (value: string | null | undefined) => {
+    link(scope: ng.Scope, element: HTMLElement): void {
+      $attributes.observe(scope, element, "ngBindTemplate", (value) => {
         element.textContent = isNullOrUndefined(value) ? "" : value;
       });
     },
   };
 }
 
-ngBindHtmlDirective.$inject = [_parse];
+ngBindHtmlDirective.$inject = [_parse, _attributes];
 /** Binds trusted HTML into the element while still validating the expression. */
-export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
+export function ngBindHtmlDirective(
+  $parse: ng.ParseService,
+  $attributes?: ng.AttributesService,
+): ng.Directive {
   return {
     restrict: "A",
-    compile(_tElement: Element, tAttrs: Attributes) {
-      const expression: unknown = tAttrs.ngBindHtml;
+    compile(tElement: Element, tAttrs: Attributes) {
+      const expression: unknown =
+        $attributes?.read(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
 
       if (!isString(expression)) return () => undefined;
 

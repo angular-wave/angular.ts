@@ -1,4 +1,3 @@
-import type { Attributes } from "./core/compile/attributes.ts";
 import type {
   BoundTranscludeFn,
   CloneAttachFn,
@@ -11,6 +10,7 @@ export type Constructor<T = any> = new (...args: any[]) => T;
 export const PublicInjectionTokens = {
   $angular: "$angular",
   $attrs: "$attrs",
+  $attributes: "$attributes",
   $scope: "$scope",
   $element: "$element",
   $anchorScroll: "$anchorScroll",
@@ -80,6 +80,33 @@ export const PublicInjectionTokens = {
   $wasmProvider: "$wasmProvider",
   $controllerProvider: "$controllerProvider",
 } as const;
+
+/**
+ * Public `$attrs` contract passed to directive compile/link/template hooks.
+ *
+ * The runtime object is an internal compile facade. Public code should treat
+ * `$attrs` as a normalized attribute view with observer and class helpers, not
+ * as a constructible class.
+ */
+export interface Attributes extends Record<string, any> {
+  /** Map from normalized attribute names to original DOM attribute names. */
+  $attr: Record<string, string>;
+
+  /** Normalize a DOM attribute name using AngularTS directive matching rules. */
+  $normalize(name: string): string;
+
+  /** Add one or more classes to the directive element. */
+  $addClass(classVal: string): void;
+
+  /** Remove one or more classes from the directive element. */
+  $removeClass(classVal: string): void;
+
+  /** Replace old class tokens with new class tokens on the directive element. */
+  $updateClass(newClasses: string, oldClasses: string): void;
+
+  /** Observe changes to a normalized attribute value. */
+  $observe(key: string, fn: (value?: unknown) => unknown): () => void;
+}
 
 /**
  * Configuration options for the AngularTS bootstrap process.
@@ -374,6 +401,7 @@ export interface Component {
    * If template is a function, then it is injected with the following locals:
    * $element - Current element
    * $attrs - Current attributes object for the element
+   * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
   template?: string | Injectable<(...args: any[]) => string> | undefined;
@@ -382,6 +410,7 @@ export interface Component {
    * If templateUrl is a function, then it is injected with the following locals:
    * $element - Current element
    * $attrs - Current attributes object for the element
+   * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
   templateUrl?: string | Injectable<(...args: any[]) => string> | undefined;
@@ -430,7 +459,7 @@ export interface DirectivePrePost {
 export type DirectiveLinkFn<T> = (
   scope: ng.Scope,
   element: HTMLElement,
-  attrs: ng.Attributes,
+  attrs: Attributes,
   controller: TController<T>,
   transclude?: ng.TranscludeFn,
 ) => void;

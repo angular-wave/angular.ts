@@ -1,0 +1,615 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Form Input State Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+    <script type="module" src="/src/index.ts"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.4;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f7f9;
+        color: #1f2933;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 8px;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      h2 {
+        font-size: 18px;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(680px, 1fr) minmax(320px, 380px);
+        gap: 12px;
+        align-items: start;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #d9dee7;
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      .input-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: minmax(180px, 320px) minmax(280px, 1fr);
+        gap: 4px;
+        align-items: start;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #edf0f4;
+      }
+
+      .field-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .field-row > label {
+        color: #52606d;
+        font-size: 12px;
+        font-weight: 700;
+        grid-column: 1 / -1;
+        line-height: 1.2;
+      }
+
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+          [type="button"]
+        ):not([type="submit"]):not([type="reset"]):not([type="image"]) {
+        width: min(100%, 320px);
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border: 1px solid #b9c3d0;
+        border-radius: 4px;
+      }
+
+      input[type="range"] {
+        width: min(100%, 320px);
+      }
+
+      input[type="button"],
+      input[type="submit"],
+      input[type="reset"],
+      button {
+        padding: 6px 10px;
+        border: 1px solid #9aa8ba;
+        border-radius: 4px;
+        background: #eef2f7;
+        color: #1f2933;
+        cursor: pointer;
+      }
+
+      input.ng-invalid {
+        border-color: #b91c1c;
+      }
+
+      .radio-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .radio-group label {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .muted {
+        color: #52606d;
+        font-size: 13px;
+      }
+
+      .state-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .state-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .state-table th,
+      .state-table td {
+        border-bottom: 1px solid #e3e8ef;
+        padding: 7px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .state-table th {
+        background: #f0f3f7;
+        font-weight: 700;
+      }
+
+      .state-table code,
+      pre {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      pre {
+        margin: 0;
+        overflow: auto;
+        padding: 12px;
+        background: #111827;
+        color: #d1fae5;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      [data-testid="model-values"] {
+        max-height: none;
+        overflow: visible;
+        white-space: pre-wrap;
+      }
+
+      .control-state {
+        max-height: none;
+        overflow: visible;
+        padding: 8px;
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #d9dee7;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 1060px) {
+        main {
+          padding: 18px;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body
+    ng-app
+    ng-init="
+      submitCount = 0;
+      models = {
+        button: 'not clicked',
+        checkbox: true,
+        color: '#3b82f6',
+        date: '2026-05-16',
+        datetimeLocal: '2026-05-16T12:30',
+        email: 'demo@example.com',
+        file: undefined,
+        hidden: 'hidden-token',
+        image: 'image-submit',
+        month: '2026-05',
+        number: 42,
+        password: 'secret',
+        radio: 'alpha',
+        range: 35,
+        reset: 'reset control',
+        search: 'AngularTS',
+        submit: 'submit control',
+        tel: '+1-555-0100',
+        text: 'plain text',
+        time: '12:30',
+        url: 'https://example.com',
+        week: '2026-W20',
+        datetime: '2026-05-16T12:30Z'
+      };
+      fields = [
+        { type: 'button', label: 'button', model: 'button', name: 'buttonInput', value: 'not clicked' },
+        { type: 'checkbox', label: 'checkbox', model: 'checkbox', name: 'checkboxInput', value: true },
+        { type: 'color', label: 'color', model: 'color', name: 'colorInput', value: '#3b82f6' },
+        { type: 'date', label: 'date', model: 'date', name: 'dateInput', value: '2026-05-16' },
+        { type: 'datetime-local', label: 'datetime-local', model: 'datetimeLocal', name: 'datetimeLocalInput', value: '2026-05-16T12:30' },
+        { type: 'email', label: 'email', model: 'email', name: 'emailInput', value: 'demo@example.com' },
+        { type: 'file', label: 'file', model: 'file', name: 'fileInput', value: undefined },
+        { type: 'hidden', label: 'hidden', model: 'hidden', name: 'hiddenInput', value: 'hidden-token' },
+        { type: 'image', label: 'image', model: 'image', name: 'imageInput', value: 'image-submit' },
+        { type: 'month', label: 'month', model: 'month', name: 'monthInput', value: '2026-05' },
+        { type: 'number', label: 'number', model: 'number', name: 'numberInput', value: 42 },
+        { type: 'password', label: 'password', model: 'password', name: 'passwordInput', value: 'secret' },
+        { type: 'radio', label: 'radio', model: 'radio', name: 'radioInput', value: 'alpha' },
+        { type: 'range', label: 'range', model: 'range', name: 'rangeInput', value: 35 },
+        { type: 'reset', label: 'reset', model: 'reset', name: 'resetInput', value: 'reset control' },
+        { type: 'search', label: 'search', model: 'search', name: 'searchInput', value: 'AngularTS' },
+        { type: 'submit', label: 'submit', model: 'submit', name: 'submitInput', value: 'submit control' },
+        { type: 'tel', label: 'tel', model: 'tel', name: 'telInput', value: '+1-555-0100' },
+        { type: 'text', label: 'text', model: 'text', name: 'textInput', value: 'plain text' },
+        { type: 'time', label: 'time', model: 'time', name: 'timeInput', value: '12:30' },
+        { type: 'url', label: 'url', model: 'url', name: 'urlInput', value: 'https://example.com' },
+        { type: 'week', label: 'week', model: 'week', name: 'weekInput', value: '2026-W20' },
+        { type: 'datetime', label: 'datetime obsolete', model: 'datetime', name: 'datetimeInput', value: '2026-05-16T12:30Z' }
+      ]
+    "
+  >
+    <main>
+      <h1>Form input state demo</h1>
+      <p class="muted">
+        Includes every current MDN input type plus the obsolete
+        <code>datetime</code> value. Each row shows its registered
+        <code>ngModel</code> controller's public state fields.
+      </p>
+
+      <div class="layout">
+        <section class="panel">
+          <h2>Inputs</h2>
+          <form
+            ng-scope="form"
+            name="demoForm"
+            novalidate
+            data-testid="demo-form"
+            ng-submit="submitCount = submitCount + 1"
+          >
+            <div class="input-grid">
+              <div class="field-row" ng-repeat="field in fields">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+
+                <div ng-switch="field.type">
+                  <input
+                    ng-switch-when="button"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="button"
+                    value="Mark clicked"
+                    ng-model="field.value"
+                    ng-click="field.value = 'clicked'"
+                  />
+
+                  <input
+                    ng-switch-when="checkbox"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="checkbox"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="color"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="color"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="date"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="date"
+                    ng-model="field.value"
+                    min="2026-01-01"
+                    max="2026-12-31"
+                  />
+
+                  <input
+                    ng-switch-when="datetime-local"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="datetime-local"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="email"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="email"
+                    ng-model="field.value"
+                    required
+                  />
+
+                  <input
+                    ng-switch-when="file"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="file"
+                    ng-model="field.value"
+                  />
+
+                  <div ng-switch-when="hidden">
+                    <input
+                      id="{{ field.name }}"
+                      name="{{ field.name }}"
+                      type="hidden"
+                      value="hidden-token"
+                      ng-model="field.value"
+                    />
+                    <span class="muted"
+                      >Hidden input is present in the form.</span
+                    >
+                  </div>
+
+                  <input
+                    ng-switch-when="image"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="image"
+                    width="96"
+                    height="32"
+                    alt="Submit image input"
+                    src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='32'%3E%3Crect%20width='96'%20height='32'%20rx='4'%20fill='%23eef2f7'/%3E%3Ctext%20x='48'%20y='21'%20font-size='13'%20font-family='Arial'%20text-anchor='middle'%20fill='%231f2933'%3Eimage%3C/text%3E%3C/svg%3E"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="month"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="month"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="number"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="number"
+                    ng-model="field.value"
+                    min="0"
+                    max="100"
+                    step="1"
+                  />
+
+                  <input
+                    ng-switch-when="password"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="password"
+                    ng-model="field.value"
+                    minlength="4"
+                  />
+
+                  <div ng-switch-when="radio" class="radio-group">
+                    <label>
+                      <input
+                        name="{{ field.name }}"
+                        type="radio"
+                        value="alpha"
+                        ng-model="field.value"
+                      />
+                      alpha
+                    </label>
+                    <label>
+                      <input
+                        name="{{ field.name }}"
+                        type="radio"
+                        value="beta"
+                        ng-model="field.value"
+                      />
+                      beta
+                    </label>
+                    <label>
+                      <input
+                        name="{{ field.name }}"
+                        type="radio"
+                        value="gamma"
+                        ng-model="field.value"
+                      />
+                      gamma
+                    </label>
+                  </div>
+
+                  <div ng-switch-when="range">
+                    <input
+                      id="{{ field.name }}"
+                      name="{{ field.name }}"
+                      type="range"
+                      ng-model="field.value"
+                      min="0"
+                      max="100"
+                      step="5"
+                    />
+                    <span>{{ field.value }}</span>
+                  </div>
+
+                  <input
+                    ng-switch-when="reset"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="reset"
+                    value="Native reset"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="search"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="search"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="submit"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="submit"
+                    value="Submit form"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="tel"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="tel"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="text"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="text"
+                    ng-model="field.value"
+                    required
+                  />
+
+                  <input
+                    ng-switch-when="time"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="time"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="url"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="url"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="week"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="week"
+                    ng-model="field.value"
+                  />
+
+                  <input
+                    ng-switch-when="datetime"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    type="datetime"
+                    ng-model="field.value"
+                  />
+                </div>
+
+                <pre
+                  class="control-state"
+                  data-testid="inline-control-state"
+                  data-control-state-for="{{ field.name }}"
+                >
+$name: {{ demoForm[field.name].$name }}
+model: {{ field.value }}
+$viewValue: {{ demoForm[field.name].$viewValue }}
+$modelValue: {{ demoForm[field.name].$modelValue }}
+$valid: {{ demoForm[field.name].$valid }}  $invalid: {{ demoForm[field.name].$invalid }}
+$validity.valid: {{ demoForm[field.name].$validity.valid }}
+$validity.valueMissing: {{ demoForm[field.name].$validity.valueMissing }}
+$validity.typeMismatch: {{ demoForm[field.name].$validity.typeMismatch }}
+$validity.rangeUnderflow: {{ demoForm[field.name].$validity.rangeUnderflow }}
+$validity.rangeOverflow: {{ demoForm[field.name].$validity.rangeOverflow }}
+$validity.stepMismatch: {{ demoForm[field.name].$validity.stepMismatch }}
+$validity.customError: {{ demoForm[field.name].$validity.customError }}
+$validationMessage: {{ demoForm[field.name].$validationMessage }}
+$pending: {{ demoForm[field.name].$pending }}
+$error.required: {{ demoForm[field.name].$error.required }}
+$error.pattern: {{ demoForm[field.name].$error.pattern }}
+$error.minlength: {{ demoForm[field.name].$error.minlength }}
+$error.maxlength: {{ demoForm[field.name].$error.maxlength }}
+$pristine: {{ demoForm[field.name].$pristine }}  $dirty: {{ demoForm[field.name].$dirty }}
+$touched: {{ demoForm[field.name].$touched }}  $untouched: {{ demoForm[field.name].$untouched }}
+$parsers.length: {{ demoForm[field.name].$parsers.length }}
+$formatters.length: {{ demoForm[field.name].$formatters.length }}
+$viewChangeListeners.length: {{ demoForm[field.name].$viewChangeListeners.length }}
+$options.updateOn: {{ demoForm[field.name].$options.getOption('updateOn') }}
+$options.updateOnDefault: {{ demoForm[field.name].$options.getOption('updateOnDefault') }}
+$options.getterSetter: {{ demoForm[field.name].$options.getOption('getterSetter') }}
+$options.allowInvalid: {{ demoForm[field.name].$options.getOption('allowInvalid') }}</pre
+                >
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section class="state-grid">
+          <section class="panel">
+            <h2>Model values</h2>
+            <pre data-testid="model-values">{{ fields | json }}</pre>
+          </section>
+
+          <section class="panel">
+            <h2>Form state</h2>
+            <table class="state-table">
+              <tbody>
+                <tr>
+                  <th>$name</th>
+                  <td>{{ demoForm.$name }}</td>
+                </tr>
+                <tr>
+                  <th>$valid</th>
+                  <td data-testid="form-valid">{{ demoForm.$valid }}</td>
+                </tr>
+                <tr>
+                  <th>$invalid</th>
+                  <td data-testid="form-invalid">{{ demoForm.$invalid }}</td>
+                </tr>
+                <tr>
+                  <th>$pending</th>
+                  <td>{{ demoForm.$pending | json }}</td>
+                </tr>
+                <tr>
+                  <th>$error</th>
+                  <td>{{ demoForm.$error | json }}</td>
+                </tr>
+                <tr>
+                  <th>$pristine</th>
+                  <td>{{ demoForm.$pristine }}</td>
+                </tr>
+                <tr>
+                  <th>$dirty</th>
+                  <td>{{ demoForm.$dirty }}</td>
+                </tr>
+                <tr>
+                  <th>$submitted</th>
+                  <td data-testid="form-submitted">
+                    {{ demoForm.$submitted }}
+                  </td>
+                </tr>
+                <tr>
+                  <th>submit count</th>
+                  <td data-testid="submit-count">{{ submitCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

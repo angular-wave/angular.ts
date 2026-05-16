@@ -237,6 +237,18 @@ describe("ngView", () => {
       );
     });
 
+    it("supports data-name normalized reads for named ng-view", async () => {
+      elem.innerHTML = '<div><ng-view data-name="cview"></ng-view></div>';
+      $compile(elem)(scope);
+
+      $state.transitionTo(cState);
+      await waitForViewText(cState.views.cview.template);
+
+      expect(elem.querySelector("ng-view").textContent).toBe(
+        cState.views.cview.template,
+      );
+    });
+
     it("should handle sibling named ng-views", async () => {
       elem.innerHTML =
         '<div><ng-view name="dview1"></ng-view><ng-view name="dview2"></ng-view></div>';

@@ -24,6 +24,8 @@ describe("ngRepeat", () => {
 
   let logs = [];
 
+  let $attributes;
+
   beforeEach(() => {
     const el = document.getElementById("app");
 
@@ -50,6 +52,7 @@ describe("ngRepeat", () => {
     $exceptionHandler = injector.get("$exceptionHandler");
     scope = injector.get("$rootScope");
     $templateCache = injector.get("$templateCache");
+    $attributes = injector.get("$attributes");
   });
 
   afterEach(() => {
@@ -64,23 +67,39 @@ describe("ngRepeat", () => {
 
   describe("compile", () => {
     it("should create a link function for a valid repeat expression", () => {
-      const directive = ngRepeatDirective(injector);
+      const directive = ngRepeatDirective(injector, $attributes);
 
-      const link = directive.compile(document.createElement("li"), {
-        ngRepeat: "item in items",
-      });
+      const element = document.createElement("li");
+
+      element.setAttribute("ng-repeat", "item in items");
+
+      const link = directive.compile(element, {} as any);
 
       expect(link).toEqual(jasmine.any(Function));
     });
 
     it("should reject invalid repeat expressions during compile", () => {
-      const directive = ngRepeatDirective(injector);
+      const directive = ngRepeatDirective(injector, $attributes);
+
+      const element = document.createElement("li");
+
+      element.setAttribute("ng-repeat", "item of items");
 
       expect(() => {
-        directive.compile(document.createElement("li"), {
-          ngRepeat: "item of items",
-        });
+        directive.compile(element, {} as any);
       }).toThrowError(/Expected expression/);
+    });
+
+    it("should read data-ng-repeat from the host element", () => {
+      const directive = ngRepeatDirective(injector, $attributes);
+
+      const element = document.createElement("li");
+
+      element.setAttribute("data-ng-repeat", "item in items");
+
+      const link = directive.compile(element, {} as any);
+
+      expect(link).toEqual(jasmine.any(Function));
     });
   });
 

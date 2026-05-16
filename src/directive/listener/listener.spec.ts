@@ -44,6 +44,22 @@ describe("ngListener", () => {
     expect(element.innerHTML).toBe("hello");
   });
 
+  it("supports normalized data-ng-listener aliases", async () => {
+    element = $compile(`<div data-ng-listener="update"></div>`)($scope);
+    await wait();
+
+    element.dispatchEvent(
+      new CustomEvent("update", {
+        detail: "hello",
+        bubbles: true,
+      }),
+    );
+
+    await wait();
+
+    expect(element.innerHTML).toBe("hello");
+  });
+
   it("handles CustomEvent dispatched on the element with id", async () => {
     element = $compile(`<div ng-listener id="update"></div>`)($scope);
     await wait();

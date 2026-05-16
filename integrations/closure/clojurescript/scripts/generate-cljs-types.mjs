@@ -8,7 +8,7 @@ const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 159;
+const expectedTypeTagCount = 160;
 const expectedStrictWrapperNames = [
   "angular-call",
   "angular-dispatch-event",

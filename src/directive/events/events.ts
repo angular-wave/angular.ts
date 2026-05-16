@@ -1,6 +1,6 @@
 import { _exceptionHandler, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize, isString } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import type { Attributes } from "../../interface.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.

@@ -1,4 +1,5 @@
 import {
+  _attributes,
   _interpolate,
   _parse,
   _rootScope,
@@ -278,6 +279,7 @@ StateRefDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
+  _attributes,
 ];
 
 /**
@@ -289,6 +291,7 @@ export function StateRefDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   const $state = $stateService;
 
@@ -309,11 +312,11 @@ export function StateRefDirective(
 
       const rawDef: StateRefDefinition = {};
 
-      const ref = parseStateRef(attrs.ngSref);
+      const ref = parseStateRef($attributes.read(element, "ngSref") || "");
 
-      const ngStateOptsFn = attrs.ngSrefOpts
-        ? $parse(attrs.ngSrefOpts)
-        : undefined;
+      const ngSrefOpts = $attributes.read(element, "ngSrefOpts");
+
+      const ngStateOptsFn = ngSrefOpts ? $parse(ngSrefOpts) : undefined;
 
       const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
 
@@ -338,7 +341,7 @@ export function StateRefDirective(
         }
 
         if (!isNullOrUndefined(def._href)) {
-          attrs.$set(type._attr, def._href);
+          $attributes.set(element, type._attr, def._href);
         }
       }
 
@@ -377,6 +380,7 @@ StateRefDynamicDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
+  _attributes,
 ];
 
 /**
@@ -388,6 +392,7 @@ export function StateRefDynamicDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -437,22 +442,34 @@ export function StateRefDynamicDirective(
         }
 
         if (!isNullOrUndefined(def._href)) {
-          attrs.$set(type._attr, def._href);
+          $attributes.set(element, type._attr, def._href);
         }
       }
 
       inputAttrs.forEach((field) => {
-        (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] = attrs[
-          field
-        ]
-          ? ($parse(attrs[field])(scope) as TransitionOptions & RawParams)
-          : undefined;
-        attrs.$observe(field, (expr) => {
+        function readFieldExpression(): string | undefined {
+          const expr = $attributes.read(element, field);
+          const attrExpr = attrs[field] as string | undefined;
+
+          return expr?.includes("{{") ? attrExpr : expr;
+        }
+
+        const initialExpr = readFieldExpression();
+
+        (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
+          initialExpr
+            ? ($parse(initialExpr)(scope) as TransitionOptions & RawParams)
+            : undefined;
+
+        $attributes.observe(scope, element, field, () => {
+          const expr = readFieldExpression();
+
           watchDeregFns[field]();
 
           if (!expr) return;
+
           watchDeregFns[field] =
-            scope.$watch(expr as string, (newval) => {
+            scope.$watch(expr, (newval) => {
               rawDef[rawDefKeyByAttr[field]] = newval;
               update();
             }) || noopDeregister;
@@ -477,6 +494,7 @@ StateRefActiveDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
+  _attributes,
 ];
 
 /**
@@ -489,6 +507,7 @@ export function StateRefActiveDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -505,22 +524,30 @@ export function StateRefActiveDirective(
       // There probably isn't much point in $observing this
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
+      const activeEqRead = $attributes.read($element, "ngSrefActiveEq");
+
+      const activeEqExpr =
+        (activeEqRead?.includes("{{") ? $attrs.ngSrefActiveEq : activeEqRead) ||
+        "";
+
       const activeEqClass =
-        assertDefined($interpolate($attrs.ngSrefActiveEq || "", false))(
-          $scope,
-        ) || "";
+        assertDefined($interpolate(activeEqExpr, false))($scope) || "";
+
+      const activeRead = $attributes.read($element, "ngSrefActive");
+
+      const activeExpr = activeRead?.includes("{{")
+        ? $attrs.ngSrefActive
+        : activeRead;
 
       try {
-        ngSrefActive = $attrs.ngSrefActive
-          ? $parse($attrs.ngSrefActive)($scope)
-          : undefined;
+        ngSrefActive = activeExpr ? $parse(activeExpr)($scope) : undefined;
       } catch {
         // Do nothing. ngSrefActive is not a valid expression.
         // Fall back to using $interpolate below
       }
       ngSrefActive =
         ngSrefActive ||
-        assertDefined($interpolate($attrs.ngSrefActive || "", false))($scope) ||
+        assertDefined($interpolate(activeExpr || "", false))($scope) ||
         "";
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]

@@ -30,6 +30,15 @@ describe("channel", () => {
     );
   });
 
+  it("should support normalized data-ng-channel aliases", () => {
+    element = $compile('<div data-ng-channel="testChannel"></div>')($scope);
+
+    expect(angular.$eventBus.subscribe).toHaveBeenCalledWith(
+      "testChannel",
+      jasmine.any(Function),
+    );
+  });
+
   it("should update innerHtml when angular.$eventBus emits a value", async () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 

@@ -1,5 +1,6 @@
 import {
   _anchorScroll,
+  _attributes,
   _compile,
   _controller,
   _injector,
@@ -186,7 +187,14 @@ function withResolvers<T>(): PromiseResolvers<T> {
  * ```
  */
 
-ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
+ViewDirective.$inject = [
+  _view,
+  _state,
+  _anchorScroll,
+  _interpolate,
+  _parse,
+  _attributes,
+];
 
 /**
  * Renders and updates the currently active view configuration.
@@ -197,6 +205,7 @@ export function ViewDirective(
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   void $state;
 
@@ -217,19 +226,19 @@ export function ViewDirective(
     ) {
       const transclude = assertDefined($transclude);
 
-      return function (
-        scope: ng.Scope,
-        $element: HTMLElement,
-        attrs: ng.Attributes,
-      ) {
-        const onloadExp = attrs.onload || "",
-          autoScrollExp = attrs.autoscroll,
+      return function (scope: ng.Scope, $element: HTMLElement) {
+        const onloadExp = $attributes.read($element, "onload") || "",
+          autoScrollExp = $attributes.read($element, "autoscroll"),
           inherited =
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
               | undefined) || rootData,
           rawName = assertDefined(
-            $interpolate(attrs.ngView || attrs.name || ""),
+            $interpolate(
+              $attributes.read($element, "ngView") ||
+                $attributes.read($element, "name") ||
+                "",
+            ),
           )(scope),
           name = isString(rawName) && rawName ? rawName : "$default";
 

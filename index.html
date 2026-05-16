@@ -20,7 +20,7 @@
         class TodoController {
           static $scopename = "test";
           constructor() {
-            this.greeting = "Todos";
+            this.greeting = Promise.resolve("Todos");
             this.model = {
               name: "John",
               lastName: "Doe",
@@ -152,7 +152,7 @@
   </head>
   <body ng-app="todo">
     <main id="$ctrl" ng-controller="TodoCtrl as $ctrl">
-      <h3>{{ $ctrl.greeting }}</h3>
+      <h3>{{ $ctrl.greeting | async }}</h3>
       <section>
         <button ng-click="$ctrl.archive()">Archive</button>
         <button
@@ -169,7 +169,7 @@
             <input type="checkbox" ng-click="todo.done = !todo.done" />
           </li>
         </ul>
-        <form ng-submit="$ctrl.add(newTodo)">
+        <form ng-submit="$ctrl.add(newTodo)" ng-scope="todoScope">
           <input type="text" ng-model="newTodo" ng-required="true" />
           <button type="submit">Add</button>
         </form>

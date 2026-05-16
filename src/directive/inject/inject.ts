@@ -1,7 +1,6 @@
-import { _injector, _log } from "../../injection-tokens.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import { _attributes, _injector, _log } from "../../injection-tokens.ts";
 
-ngInjectDirective.$inject = [_log, _injector];
+ngInjectDirective.$inject = [_log, _injector, _attributes];
 
 /**
  * Injects named services from `$injector` onto the current scope.
@@ -9,17 +8,12 @@ ngInjectDirective.$inject = [_log, _injector];
 export function ngInjectDirective(
   $log: ng.LogService,
   $injector: ng.InjectorService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope & Record<string, any>,
-      _element: Element,
-      attrs: Attributes,
-    ): void {
-      const attrMap = attrs as Attributes & Record<string, string>;
-
-      const expr = attrMap.ngInject as string | undefined;
+    link(scope: ng.Scope & Record<string, any>, element: Element): void {
+      const expr = $attributes.read(element, "ngInject");
 
       if (!expr) return;
       const tokens = expr

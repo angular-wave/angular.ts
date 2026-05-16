@@ -1,4 +1,5 @@
 import {
+  _attributes,
   _attrs,
   _element,
   _exceptionHandler,
@@ -24,6 +25,7 @@ import {
   entries,
   hasAnimate,
   isBoolean,
+  isDefined,
   isFunction,
   isNull,
   isNumber,
@@ -58,6 +60,35 @@ import type { CompiledExpression } from "../../core/parse/parse.ts";
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 
 export const ngModelError = createErrorFactory("ngModel");
+
+type ModelAttrFallback = Record<string, string | undefined>;
+
+type ValidationState = "valid" | "invalid" | "pending" | "skipped";
+
+function readModelAttr(
+  $attributes: ng.AttributesService | undefined,
+  element: Element | Node,
+  attr: ng.Attributes | undefined,
+  normalizedName: string,
+): string | undefined {
+  const elementValue =
+    element instanceof Element
+      ? $attributes?.read(element, normalizedName)
+      : undefined;
+
+  const attrValue: string | undefined = attr
+    ? (attr as unknown as ModelAttrFallback)[normalizedName]
+    : undefined;
+
+  if (
+    isDefined(attrValue) &&
+    (isUndefined(elementValue) || elementValue.includes("{{"))
+  ) {
+    return attrValue;
+  }
+
+  return elementValue ?? attrValue;
+}
 
 export type ModelValidators = Record<
   string,
@@ -141,6 +172,7 @@ export class NgModelController {
     _parse,
     _injector,
     _interpolate,
+    _attributes,
   ];
 
   [key: string]: any;
@@ -177,10 +209,14 @@ export class NgModelController {
 
   $invalid: boolean | undefined;
 
+  $validity: ValidityState | null;
+
+  $validationMessage: string;
+
   $error: Record<string, boolean>;
 
   /** @internal */
-  _success: Record<string, boolean>;
+  _validationStates: Map<string, ValidationState>;
 
   $pending: Record<string, any> | undefined;
 
@@ -240,6 +276,12 @@ export class NgModelController {
   _hasNativeValidators: boolean;
 
   /** @internal */
+  _nativeValid: boolean | null;
+
+  /** @internal */
+  _setNativeCustomValidity: ((message: string) => void) | null;
+
+  /** @internal */
   _classCache: Record<string, any>;
 
   /** @internal */
@@ -257,6 +299,9 @@ export class NgModelController {
   /** @internal */
   _lastValidityParentVersions: Record<string, number | undefined>;
 
+  /** @internal */
+  _modelExpression: string;
+
   /**
    * Creates a model controller bound to the element, scope, and ngModel expression.
    */
@@ -268,6 +313,7 @@ export class NgModelController {
     $parse: ng.ParseService,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
+    $attributes?: ng.AttributesService,
   ) {
     this._isAnimated = hasAnimate($element);
     this.$viewValue = Number.NaN;
@@ -284,17 +330,25 @@ export class NgModelController {
     this.$dirty = false;
     this.$valid = true;
     this.$invalid = false;
+    this.$validity = null;
+    this.$validationMessage = "";
     this.$error = {}; // keep invalid keys here
-    this._success = {}; // keep valid keys here
+    this._validationStates = new Map();
     this.$pending = undefined; // keep pending keys here
-    this.$name = $interpolate($attr.name || "", false)?.($scope) || "";
+    this.$name =
+      $interpolate(
+        readModelAttr($attributes, $element, $attr, "name") || "",
+        false,
+      )?.($scope) || "";
     this._parentForm = nullFormCtrl;
     this.$options = defaultModelOptions;
     this._updateEvents = "";
     // Attach the correct context to the event handler function for updateOn
     this._updateEventHandler = this._updateEventHandler.bind(this);
 
-    this._parsedNgModel = $parse($attr.ngModel);
+    this._modelExpression =
+      readModelAttr($attributes, $element, $attr, "ngModel") || "";
+    this._parsedNgModel = $parse(this._modelExpression);
     this._parsedNgModelAssign = this._parsedNgModel._assign as (
       context: any,
       value: any,
@@ -315,6 +369,8 @@ export class NgModelController {
     this._lastValidityParentVersions = {};
 
     this._hasNativeValidators = false;
+    this._nativeValid = null;
+    this._setNativeCustomValidity = null;
     this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 
@@ -419,13 +475,16 @@ export class NgModelController {
 
     if (!isBoolean(state)) {
       deleteProperty(this.$error, validationErrorKey);
-      deleteProperty(this._success, validationErrorKey);
+      this._validationStates.set(
+        validationErrorKey,
+        isUndefined(state) ? "pending" : "skipped",
+      );
     } else if (state) {
       deleteProperty(this.$error, validationErrorKey);
-      this._set(this._success, validationErrorKey);
+      this._validationStates.set(validationErrorKey, "valid");
     } else {
       this._set(this.$error, validationErrorKey);
-      deleteProperty(this._success, validationErrorKey);
+      this._validationStates.set(validationErrorKey, "invalid");
     }
 
     if (this.$pending) {
@@ -434,7 +493,7 @@ export class NgModelController {
       toggleValidationCss(this, "", null);
     } else {
       cachedToggleClass(this, PENDING_CLASS, false);
-      this.$valid = isObjectEmpty(this.$error);
+      this.$valid = isObjectEmpty(this.$error) && (this._nativeValid ?? true);
       this.$invalid = !this.$valid;
       toggleValidationCss(this, "", this.$valid);
     }
@@ -462,6 +521,45 @@ export class NgModelController {
     this._lastValidityParentVersions[validationErrorKey] = parentVersion;
   }
 
+  $setNativeValidity(state: boolean | null): void {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
+    const nextState = state === false ? false : true;
+    const previousState = this._nativeValid;
+
+    if (previousState === nextState) {
+      return;
+    }
+
+    this._nativeValid = nextState;
+
+    if (!this.$pending) {
+      this.$valid = isObjectEmpty(this.$error) && nextState;
+      this.$invalid = !this.$valid;
+      cachedToggleClass(this, PENDING_CLASS, false);
+      cachedToggleClass(this, VALID_CLASS, this.$valid);
+      cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+    }
+
+    this._parentForm.$setNativeValidity(nextState, this);
+  }
+
+  /**
+   * Sets the control's single native custom-validity message.
+   *
+   * Native controls expose this through `ValidityState.customError`; an empty
+   * message clears the custom error.
+   */
+  $setCustomValidity(message: string): void {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
+    this._setNativeCustomValidity?.(message);
+  }
+
   /** @internal Returns the aggregate validity state for one validation key. */
   _combinedValidityState(
     validationErrorKey: string,
@@ -474,7 +572,7 @@ export class NgModelController {
       return false;
     }
 
-    if (this._success[validationErrorKey]) {
+    if (this._validationStates.get(validationErrorKey) === "valid") {
       return true;
     }
 
@@ -504,9 +602,9 @@ export class NgModelController {
   /** @internal */
   _initGetterSetters() {
     if (this.$options.getOption("getterSetter")) {
-      const invokeModelGetter = this._parse(`${this._attr.ngModel}()`);
+      const invokeModelGetter = this._parse(`${this._modelExpression}()`);
 
-      const invokeModelSetter = this._parse(`${this._attr.ngModel}(_$p)`);
+      const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
 
       this._ngModelGet = ($scope: ng.Scope | undefined) => {
         let modelValue = this._parsedNgModel($scope);
@@ -528,7 +626,7 @@ export class NgModelController {
       throw ngModelError(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
-        this._attr.ngModel,
+        this._modelExpression,
         startingTag(this._element),
       );
     }
@@ -1503,7 +1601,10 @@ function setupModelWatcher(
 /**
  * Builds the core `ngModel` directive definition.
  */
-export function ngModelDirective(): ng.Directive {
+ngModelDirective.$inject = [_attributes];
+export function ngModelDirective(
+  $attributes?: ng.AttributesService,
+): ng.Directive {
   return {
     restrict: "A",
     require: ["ngModel", "^?form", "^?ngModelOptions"],
@@ -1521,7 +1622,7 @@ export function ngModelDirective(): ng.Directive {
         return {
           pre: (
             scope: ng.Scope,
-            _preElement: HTMLElement,
+            preElement: HTMLElement,
             attr: ng.Attributes,
             ctrls: [
               NgModelController,
@@ -1543,20 +1644,29 @@ export function ngModelDirective(): ng.Directive {
             // notify others, especially parent forms
             formCtrl.$addControl(modelCtrl as unknown as NamedControl);
 
-            const deregisterNameObserver = attr.$observe(
-              "name",
-              (newValue: any) => {
-                if (modelCtrl.$name !== newValue) {
-                  modelCtrl._parentForm._renameControl(
-                    modelCtrl as unknown as NamedControl,
-                    newValue,
+            const handleNameChange = (newValue?: string) => {
+              const nextName = newValue ?? "";
+
+              if (modelCtrl.$name !== nextName) {
+                modelCtrl._parentForm._renameControl(
+                  modelCtrl as unknown as NamedControl,
+                  nextName,
+                );
+              }
+            };
+
+            const deregisterNameObserver = $attributes
+              ? $attributes.observe(scope, preElement, "name", () => {
+                  handleNameChange(
+                    readModelAttr($attributes, preElement, attr, "name"),
                   );
-                }
-              },
-            ) as () => void;
+                })
+              : () => {
+                  /* empty */
+                };
 
             const deregisterWatch = (scope.$watch(
-              attr.ngModel as string,
+              modelCtrl._modelExpression,
               (val: any) => {
                 const modelValue = deProxy(val);
 

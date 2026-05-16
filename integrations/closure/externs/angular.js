@@ -170,40 +170,40 @@ ng.Angular.prototype.getScopeByName = function(name) {};
 ng.AnnotatedDirectiveFactory;
 
 /**
- * Public AngularTS Attributes contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public `$attrs` contract passed to directive compile/link/template hooks. The runtime object is an internal compile facade. Public code should treat `$attrs` as a normalized attribute view with observer and class helpers, not as a constructible class.
  * @record
  */
 ng.Attributes = function() {};
 
 /**
- * Public Attributes.$attr member exposed by the AngularTS namespace contract.
+ * Map from normalized attribute names to original DOM attribute names.
  * @type {!Object<string, string>}
  */
 ng.Attributes.prototype.$attr;
 
 /**
- * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or `data-`) to its normalized, camelCase form. Also there is special case for Moz prefix starting with upper case letter. Normalization follows the directive matching rules used by `$compile`.
+ * Normalize a DOM attribute name using AngularTS directive matching rules.
  * @param {string} name
  * @return {string}
  */
 ng.Attributes.prototype.$normalize = function(name) {};
 
 /**
- * Public Attributes.$addClass member exposed by the AngularTS namespace contract.
+ * Add one or more classes to the directive element.
  * @param {string} classVal
  * @return {void}
  */
 ng.Attributes.prototype.$addClass = function(classVal) {};
 
 /**
- * Public Attributes.$removeClass member exposed by the AngularTS namespace contract.
+ * Remove one or more classes from the directive element.
  * @param {string} classVal
  * @return {void}
  */
 ng.Attributes.prototype.$removeClass = function(classVal) {};
 
 /**
- * Public Attributes.$updateClass member exposed by the AngularTS namespace contract.
+ * Replace old class tokens with new class tokens on the directive element.
  * @param {string} newClasses
  * @param {string} oldClasses
  * @return {void}
@@ -211,22 +211,87 @@ ng.Attributes.prototype.$removeClass = function(classVal) {};
 ng.Attributes.prototype.$updateClass = function(newClasses, oldClasses) {};
 
 /**
- * Public Attributes.$set member exposed by the AngularTS namespace contract.
- * @param {string} key
- * @param {(boolean|null|string)} value
- * @param {(boolean|undefined)} writeAttr
- * @param {(string|undefined)} attrName
- * @return {void}
- */
-ng.Attributes.prototype.$set = function(key, value, writeAttr, attrName) {};
-
-/**
- * Public Attributes.$observe member exposed by the AngularTS namespace contract.
+ * Observe changes to a normalized attribute value.
  * @param {string} key
  * @param {function((?|undefined)): ?} fn
  * @return {function(): void}
  */
 ng.Attributes.prototype.$observe = function(key, fn) {};
+
+/**
+ * Public AngularTS AttributesService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.AttributesService = function() {};
+
+/**
+ * Public AttributesService.read member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AttributesService.prototype.read = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.has member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.AttributesService.prototype.has = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.originalName member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AttributesService.prototype.originalName = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.observe member exposed by the AngularTS namespace contract.
+ * @param {(!ng.Scope|null|undefined)} scope
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @param {function((string|undefined)): void} callback
+ * @return {function(): void}
+ */
+ng.AttributesService.prototype.observe = function(scope, element, normalizedName, callback) {};
+
+/**
+ * Public AttributesService.set member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @param {(boolean|null|string|undefined)} value
+ * @param {(!Object|undefined)} options
+ * @return {void}
+ */
+ng.AttributesService.prototype.set = function(element, normalizedName, value, options) {};
+
+/**
+ * Public AttributesService.addClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} classValue
+ * @return {void}
+ */
+ng.AttributesService.prototype.addClass = function(element, classValue) {};
+
+/**
+ * Public AttributesService.removeClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} classValue
+ * @return {void}
+ */
+ng.AttributesService.prototype.removeClass = function(element, classValue) {};
+
+/**
+ * Public AttributesService.updateClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} newClasses
+ * @param {string} oldClasses
+ * @return {void}
+ */
+ng.AttributesService.prototype.updateClass = function(element, newClasses, oldClasses) {};
 
 /**
  * A specialized version of `TranscludeFn` with the parent scope already bound. Used internally to thread controller context and future parent elements.
@@ -253,13 +318,13 @@ ng.Component.prototype.controller;
 ng.Component.prototype.controllerAs;
 
 /**
- * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.template;
 
 /**
- * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.templateUrl;
@@ -3629,6 +3694,12 @@ ng.InjectionTokens.prototype.$angular;
 ng.InjectionTokens.prototype.$attrs;
 
 /**
+ * Public InjectionTokens.$attributes member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$attributes;
+
+/**
  * Public InjectionTokens.$scope member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -4165,6 +4236,18 @@ ng.NgModelController.prototype.$valid;
 ng.NgModelController.prototype.$invalid;
 
 /**
+ * Public NgModelController.$validity member exposed by the AngularTS namespace contract.
+ * @type {(!Object|null)}
+ */
+ng.NgModelController.prototype.$validity;
+
+/**
+ * Public NgModelController.$validationMessage member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NgModelController.prototype.$validationMessage;
+
+/**
  * Public NgModelController.$error member exposed by the AngularTS namespace contract.
  * @type {!Object<string, boolean>}
  */
@@ -4195,6 +4278,20 @@ ng.NgModelController.prototype.$options;
  * @return {void}
  */
 ng.NgModelController.prototype.$setValidity = function(validationErrorKey, state) {};
+
+/**
+ * Public NgModelController.$setNativeValidity member exposed by the AngularTS namespace contract.
+ * @param {(boolean|null)} state
+ * @return {void}
+ */
+ng.NgModelController.prototype.$setNativeValidity = function(state) {};
+
+/**
+ * Sets the control's single native custom-validity message. Native controls expose this through `ValidityState.customError`; an empty message clears the custom error.
+ * @param {string} message
+ * @return {void}
+ */
+ng.NgModelController.prototype.$setCustomValidity = function(message) {};
 
 /**
  * Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `$render()` method is invoked in the following situations: * `$rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `$render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and the `$viewValue` are different from last time. Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue` or `$viewValue` are objects (rather than a string or number) then `$render()` will not be invoked if you only change a property on the objects.

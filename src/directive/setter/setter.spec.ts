@@ -50,6 +50,17 @@ describe("setter", () => {
     expect($rootScope.testModel).toBe("Initial content");
   });
 
+  it("should support normalized data-ng-setter aliases", async () => {
+    $rootScope.testModel = "";
+    $compile('<div data-ng-setter="testModel">Initial content</div>')(
+      $rootScope,
+    );
+
+    await wait();
+
+    expect($rootScope.testModel).toBe("Initial content");
+  });
+
   it("should handle expression content in the element", async () => {
     $rootScope.testModel = "";
     $compile('<div ng-setter="testModel"> {{ 2 + 2 }} </div>')($rootScope);

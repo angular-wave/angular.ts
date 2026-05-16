@@ -1,4 +1,5 @@
 import {
+  _attributes,
   _controller,
   _exceptionHandler,
   _injector,
@@ -12,6 +13,7 @@ import {
   createDocumentFragment,
   createElementFromHTML,
   createNodelistFromHTML,
+  cloneTranscludedHostElements,
   deleteCacheData,
   emptyElement,
   FUTURE_PARENT_ELEMENT_KEY,
@@ -32,6 +34,7 @@ import { createScope, type Scope } from "../scope/scope.ts";
 import { getSecurityAdapter } from "../security/security-adapter.ts";
 import {
   assign,
+  arrayRemove,
   assertArg,
   assertNotHasOwnProperty,
   callFunction,
@@ -65,6 +68,7 @@ import { ngObserveDirective } from "../../directive/observe/observe.ts";
 import type { Component } from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
+import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
 
 export type TranscludedNodes =
   | Node
@@ -574,6 +578,7 @@ export interface CompileControllerLocals {
   $scope: Scope;
   $element: Node;
   $attrs: Attributes;
+  $attributes: ng.AttributesService;
   $transclude: ng.TranscludeFn;
 }
 
@@ -1243,6 +1248,7 @@ export class CompileProvider {
      *
      *      - `$element` - Current element
      *      - `$attrs` - Current attributes object for the element
+     *      - `$attributes` - Element-based normalized attribute service
      *
      *    - `templateUrl` – `{string=|function()=}` – path or function that returns a path to an html
      *      template that should be used  as the contents of this component.
@@ -1252,6 +1258,7 @@ export class CompileProvider {
      *
      *      - `$element` - Current element
      *      - `$attrs` - Current attributes object for the element
+     *      - `$attributes` - Element-based normalized attribute service
      *
      *    - `bindings` – `{object=}` – defines bindings between DOM attributes and component properties.
      *      Component properties are always bound to the component controller and not to the scope.
@@ -1292,7 +1299,11 @@ export class CompileProvider {
 
       /** Creates the component-backed directive definition factory. */
       function factory($injector: ng.InjectorService) {
-        /** Wraps injectable component options so `$element` and `$attrs` are available. */
+        const $attributes = $injector.get(
+          _attributes,
+        ) as InternalAttributesService;
+
+        /** Wraps injectable component options so compile-local services are available. */
         const makeInjectable = (
           fn:
             | string
@@ -1301,13 +1312,14 @@ export class CompileProvider {
             | undefined,
         ):
           | string
-          | ((element: HTMLElement, attrs: Attributes) => string)
+          | ((element: HTMLElement, attrs: ng.Attributes) => string)
           | undefined => {
           if (isFunction(fn) || Array.isArray(fn)) {
             return (tElement: HTMLElement, tAttrs: ng.Attributes) => {
               return $injector.invoke(fn, null, {
                 $element: tElement,
                 $attrs: tAttrs,
+                $attributes,
               }) as string;
             };
           }
@@ -1510,6 +1522,7 @@ export class CompileProvider {
       _exceptionHandler,
       _parse,
       _controller,
+      _attributes,
       /** Creates the runtime `$compile` service and its shared helper closures. */
       (
         $injector: ng.InjectorService,
@@ -1517,8 +1530,10 @@ export class CompileProvider {
         $exceptionHandler: ng.ExceptionHandlerService,
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
+        $attributes: ng.AttributesService,
       ) => {
         const security = getSecurityAdapter($injector);
+        const internalAttributes = $attributes as InternalAttributesService;
 
         let lazyTemplateRequest: ng.TemplateRequestService | null | undefined;
 
@@ -1868,7 +1883,11 @@ export class CompileProvider {
           const cloned = new Array<Node>(nodes.length);
 
           for (let i = 0, l = nodes.length; i < l; i++) {
-            cloned[i] = nodes[i].cloneNode(true);
+            const source = nodes[i];
+            const clone = source.cloneNode(true);
+
+            cloneTranscludedHostElements(source, clone);
+            cloned[i] = clone;
           }
 
           return cloned;
@@ -2688,9 +2707,11 @@ export class CompileProvider {
           const nodeAttributes = node.attributes;
 
           if (nodeAttributes.length) {
-            attrs = attrs || createEmptyAttributes();
+            if (attrs || directives.length) {
+              attrs = attrs || createEmptyAttributes();
+            }
 
-            collectAttributeDirectiveMatches(
+            attrs = collectAttributeDirectiveMatches(
               node,
               attrs,
               directives,
@@ -2710,43 +2731,47 @@ export class CompileProvider {
 
         function collectAttributeDirectiveMatches(
           node: Element,
-          attrs: Attributes,
+          attrs: Attributes | undefined,
           directives: DirectiveMatchList,
           nodeAttributes: NamedNodeMap,
           maxPriority?: number,
           ignoreDirective?: string,
-        ): void {
+        ): Attributes | undefined {
           for (
             let j = 0, nodeAttributesLength = nodeAttributes.length;
             j < nodeAttributesLength;
             j++
           ) {
-            collectAttributeDirectiveMatch(
+            attrs = collectAttributeDirectiveMatch(
               node,
               attrs,
               directives,
               nodeAttributes[j],
+              nodeAttributes,
+              j,
               maxPriority,
               ignoreDirective,
             );
           }
+
+          return attrs;
         }
 
         function collectAttributeDirectiveMatch(
           node: Element,
-          attrs: Attributes,
+          attrs: Attributes | undefined,
           directives: DirectiveMatchList,
           attr: Attr,
+          nodeAttributes: NamedNodeMap,
+          attrIndex: number,
           maxPriority?: number,
           ignoreDirective?: string,
-        ): void {
+        ): Attributes | undefined {
           let { name } = attr;
 
           const { value } = attr;
 
           let nName = normalizeDirectiveName(name.toLowerCase());
-
-          const attrsMap = attrs.$attr;
 
           const ngPrefixMatch =
             nName.charCodeAt(0) === LOWERCASE_N_CHAR_CODE &&
@@ -2770,6 +2795,15 @@ export class CompileProvider {
               );
 
             if (prefix === "Prop" || prefix === "On" || prefix === "Window") {
+              attrs =
+                attrs ||
+                createAttributesWithPrecedingAttributeValues(
+                  node,
+                  nodeAttributes,
+                  attrIndex,
+                );
+              const attrsMap = attrs.$attr;
+
               attrs[nName] = value;
               attrsMap[nName] = attr.name;
 
@@ -2781,7 +2815,7 @@ export class CompileProvider {
                 prefix,
               );
 
-              return;
+              return attrs;
             }
 
             if (prefix === "Observe") {
@@ -2789,27 +2823,138 @@ export class CompileProvider {
                 createSyntheticDirective(ngObserveDirective(name, value)),
               );
 
-              return;
+              return attrs;
             }
 
             // Update nName for cases where a prefix was removed.
             nName = normalizeDirectiveName(name.toLowerCase());
           }
 
-          attrsMap[nName] = name;
-
-          if (isNgAttr || !hasOwn(attrs, nName)) {
-            attrs[nName] = value;
-
-            if (getBooleanAttrName(node, nName)) {
-              attrs[nName] = true;
-            }
+          if (attrs) {
+            recordNormalizedAttributeValue(
+              node,
+              attrs,
+              nName,
+              name,
+              value,
+              isNgAttr,
+            );
           }
 
-          addAttrInterpolateDirective(node, directives, value, nName, isNgAttr);
+          const addedInterpolationDirective = addAttrInterpolateDirective(
+            node,
+            directives,
+            value,
+            nName,
+            isNgAttr,
+          );
 
-          if (nName !== ignoreDirective) {
-            appendDirectivesForName(directives, nName, "A", maxPriority);
+          const addedAttributeDirective =
+            nName !== ignoreDirective &&
+            !!appendDirectivesForName(directives, nName, "A", maxPriority);
+
+          if (
+            !attrs &&
+            (addedInterpolationDirective || addedAttributeDirective)
+          ) {
+            attrs = createAttributesWithPrecedingAttributeValues(
+              node,
+              nodeAttributes,
+              attrIndex,
+            );
+            recordNormalizedAttributeValue(
+              node,
+              attrs,
+              nName,
+              name,
+              value,
+              isNgAttr,
+            );
+          }
+
+          return attrs;
+        }
+
+        function createAttributesWithPrecedingAttributeValues(
+          node: Element,
+          nodeAttributes: NamedNodeMap,
+          attrIndex: number,
+        ): Attributes {
+          const attrs = createEmptyAttributes();
+
+          for (let i = 0; i < attrIndex; i++) {
+            recordExistingAttributeValue(node, attrs, nodeAttributes[i]);
+          }
+
+          return attrs;
+        }
+
+        function recordExistingAttributeValue(
+          node: Element,
+          attrs: Attributes,
+          attr: Attr,
+        ): void {
+          let { name } = attr;
+
+          let normalizedName = normalizeDirectiveName(name.toLowerCase());
+
+          const ngPrefixMatch =
+            normalizedName.charCodeAt(0) === LOWERCASE_N_CHAR_CODE &&
+            normalizedName.charCodeAt(1) === LOWERCASE_G_CHAR_CODE
+              ? NG_PREFIX_BINDING.exec(normalizedName)
+              : null;
+
+          let isNgAttr = false;
+
+          if (ngPrefixMatch) {
+            const prefix = ngPrefixMatch[1] as NgPrefixBinding;
+
+            isNgAttr = prefix === "Attr";
+
+            name = name
+              .replace(PREFIX_REGEXP, "")
+              .toLowerCase()
+              .substring(4 + prefix.length)
+              .replace(/_(.)/g, (_match: string, letter: string) =>
+                uppercase(letter),
+              );
+
+            if (
+              prefix === "Prop" ||
+              prefix === "On" ||
+              prefix === "Observe" ||
+              prefix === "Window"
+            ) {
+              return;
+            }
+
+            normalizedName = normalizeDirectiveName(name.toLowerCase());
+          }
+
+          recordNormalizedAttributeValue(
+            node,
+            attrs,
+            normalizedName,
+            name,
+            attr.value,
+            isNgAttr,
+          );
+        }
+
+        function recordNormalizedAttributeValue(
+          node: Element,
+          attrs: Attributes,
+          normalizedName: string,
+          name: string,
+          value: string,
+          isNgAttr: boolean,
+        ): void {
+          attrs.$attr[normalizedName] = name;
+
+          if (isNgAttr || !hasOwn(attrs, normalizedName)) {
+            attrs[normalizedName] = getBooleanAttrName(node, normalizedName)
+              ? true
+              : value;
           }
         }
 
@@ -3059,13 +3204,13 @@ export class CompileProvider {
           if (linkState._name === "class") {
             const element = attr._element() as Element;
 
-            attr.$updateClass(value, element.classList.value);
+            $attributes.updateClass(element, value, element.classList.value);
 
             return;
           }
 
           if (linkState._name === "srcset") {
-            attr.$set(
+            attr._setValue(
               linkState._name,
               linkState._isNgAttr
                 ? value
@@ -3083,7 +3228,7 @@ export class CompileProvider {
             value = security.getTrusted(linkState._trustedContext, value);
           }
 
-          attr.$set(linkState._name, value);
+          attr._setValue(linkState._name, value);
         }
 
         /** Re-applies the current interpolated attribute value from explicit per-link state. */
@@ -3150,12 +3295,8 @@ export class CompileProvider {
 
           const { expressions } = interpolateFn;
 
-          const observers = attr._observers || (attr._observers = nullObject());
-
-          const observer = observers[name] || (observers[name] = []);
-
           attrsAny[name] = interpolateFn(scope);
-          observer._inter = true;
+          internalAttributes._markInterpolated(attr._element(), name);
 
           const bindingState = {
             _linkState: linkState,
@@ -3164,7 +3305,9 @@ export class CompileProvider {
           } as AttrInterpolationBindingState;
 
           if (expressions.length > 0) {
-            const targetScope = observer._scope || scope;
+            const targetScope =
+              internalAttributes._getObserverScope(attr._element(), name) ||
+              scope;
 
             const watchExpression =
               buildInterpolationWatchExpression(expressions);
@@ -3333,6 +3476,7 @@ export class CompileProvider {
             ) {
               // The linked node was cloned before the template arrived; clone the resolved template too.
               linkNode = compiledNode.cloneNode(true);
+              cloneTranscludedHostElements(compiledNode, linkNode);
               beforeTemplateLinkNode.appendChild(linkNode);
             }
 
@@ -3857,6 +4001,7 @@ export class CompileProvider {
               (isolateScope.$target as UnknownRecord)
                 ._isolateBindings as IsolateBindingMap,
               nodeLinkState._newIsolateScopeDirective,
+              elementNode,
             );
 
             if (scopeBindingInfo._removeWatches) {
@@ -3889,6 +4034,7 @@ export class CompileProvider {
               controller._instance as any,
               bindings,
               controllerDirective,
+              elementNode,
             );
           }
 
@@ -5377,6 +5523,7 @@ export class CompileProvider {
                   : scope,
               $element: node,
               $attrs: attrs,
+              $attributes,
               $transclude: transcludeFn,
             };
 
@@ -5620,7 +5767,7 @@ export class CompileProvider {
                   value = srcAny[key];
                 }
               }
-              dst.$set(key, value as string, true, srcAttr[key]);
+              dst._setValue(key, value as string, true, srcAttr[key]);
             }
           }
 
@@ -5670,10 +5817,10 @@ export class CompileProvider {
           if (isFunction(origAsyncDirective.templateUrl)) {
             templateUrl = (
               origAsyncDirective.templateUrl as (
-                element: Element,
-                tAttrs: Attributes,
+                element: HTMLElement,
+                tAttrs: ng.Attributes,
               ) => string
-            ).call(origAsyncDirective, compileNode, tAttrs);
+            ).call(origAsyncDirective, compileNode as HTMLElement, tAttrs);
           } else {
             ({ templateUrl } = origAsyncDirective);
           }
@@ -6008,9 +6155,9 @@ export class CompileProvider {
           value: string,
           name: string,
           isNgAttr: boolean,
-        ) {
+        ): boolean {
           if (!isNgAttr && !value.includes(startSymbol)) {
-            return;
+            return false;
           }
 
           const nodeName = getNodeName(node);
@@ -6030,7 +6177,7 @@ export class CompileProvider {
 
           // no interpolation found -> ignore
           if (!interpolateFn) {
-            return;
+            return false;
           }
 
           if (name === "multiple" && nodeName === "select") {
@@ -6062,6 +6209,8 @@ export class CompileProvider {
           } as unknown as InternalDirective;
 
           directives.push(directive);
+
+          return true;
         }
 
         /** Shared compile function for synthetic interpolated-attribute directives. */
@@ -6098,6 +6247,7 @@ export class CompileProvider {
           destination: Scope,
           bindings: IsolateBindingMap | null | undefined,
           directive: InternalDirective,
+          element: Element | Node,
         ): DirectiveBindingInfo {
           const removeWatchCollection: Array<(() => void) | undefined> = [];
 
@@ -6162,10 +6312,76 @@ export class CompileProvider {
                     _scopeName: scopeName,
                   };
 
-                  removeWatch = attrs.$observe(attrName, (value) => {
+                  const observer =
+                    attrsObservers[attrName] || (attrsObservers[attrName] = []);
+                  let skipNextElementObserve = false;
+                  const handleObservedStringBinding = (value?: unknown) => {
+                    lastValue = value;
+                    skipNextElementObserve = true;
                     handleStringBindingObserve(stringBindingState, value);
-                  });
-                  assertDefined(attrsObservers[attrName])._scope = scope;
+                  };
+                  let skipInitialElementObserve = $attributes.has(
+                    element,
+                    attrName,
+                  );
+
+                  internalAttributes._setObserverScope(
+                    element,
+                    attrName,
+                    scope,
+                  );
+                  observer.push(handleObservedStringBinding);
+
+                  const removeElementObserve = $attributes.observe(
+                    scope,
+                    element,
+                    attrName,
+                    (value) => {
+                      if (skipInitialElementObserve) {
+                        skipInitialElementObserve = false;
+                        return;
+                      }
+
+                      const sameObservedValue =
+                        Object.is(value, lastValue) ||
+                        (typeof lastValue === "boolean" &&
+                          value === String(lastValue));
+                      const attrsValue = attrsAny[attrName];
+                      const sameAttrsValue =
+                        Object.is(value, attrsValue) ||
+                        (typeof attrsValue === "boolean" &&
+                          value === String(attrsValue));
+
+                      if (sameAttrsValue) {
+                        return;
+                      }
+
+                      if (skipNextElementObserve && sameObservedValue) {
+                        skipNextElementObserve = false;
+                        return;
+                      }
+
+                      skipNextElementObserve = false;
+
+                      if (sameObservedValue) return;
+
+                      handleObservedStringBinding(value);
+                    },
+                  );
+
+                  removeWatch = () => {
+                    arrayRemove(observer, handleObservedStringBinding);
+                    removeElementObserve();
+                  };
+
+                  if (
+                    !internalAttributes._isInterpolated(element, attrName) &&
+                    hasOwn(attrs, attrName) &&
+                    attrsAny[attrName] !== undefined
+                  ) {
+                    handleObservedStringBinding(attrsAny[attrName]);
+                  }
+
                   lastValue = attrsAny[attrName];
 
                   if (typeof lastValue === "string") {

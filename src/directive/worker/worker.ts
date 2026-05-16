@@ -1,5 +1,9 @@
-import { _exceptionHandler, _log, _parse } from "../../injection-tokens.ts";
-import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import {
+  _attributes,
+  _exceptionHandler,
+  _log,
+  _parse,
+} from "../../injection-tokens.ts";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
 import {
   createWorkerConnection,
@@ -8,7 +12,7 @@ import {
 } from "../../services/worker/worker.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
 
-ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
+ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler, _attributes];
 
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
@@ -17,12 +21,13 @@ export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attrs: ng.Attributes) {
+    link(scope: ng.Scope, element: HTMLElement) {
       const attr = (name: string): string | undefined =>
-        getNormalizedAttr(element, name) ?? undefined;
+        $attributes.read(element, name);
 
       const workerName = attr("ngWorker");
 
@@ -42,14 +47,16 @@ export function ngWorkerDirective(
 
       let intervalId: ReturnType<typeof setInterval> | undefined;
 
-      if (hasNormalizedAttr(element, "latch")) {
-        attrs.$observe(
+      if ($attributes.has(element, "latch")) {
+        $attributes.observe(
+          scope,
+          element,
           "latch",
           callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))),
         );
       }
 
-      if (hasNormalizedAttr(element, "interval")) {
+      if ($attributes.has(element, "interval")) {
         element.dispatchEvent(new Event(eventName));
         intervalId = setInterval(
           () => element.dispatchEvent(new Event(eventName)),
@@ -86,18 +93,18 @@ export function ngWorkerDirective(
         void (async () => {
           if (element.hasAttribute("disabled")) return;
 
-          if (hasNormalizedAttr(element, "delay")) {
+          if ($attributes.has(element, "delay")) {
             await wait(parseInt(attr("delay") || "", 10) || 0);
           }
 
           if (throttled) return;
 
-          if (hasNormalizedAttr(element, "throttle")) {
+          if ($attributes.has(element, "throttle")) {
             throttled = true;
-            attrs.$set("throttled", true);
+            $attributes.set(element, "throttled", true);
             setTimeout(
               () => {
-                attrs.$set("throttled", false);
+                $attributes.set(element, "throttled", false);
                 throttled = false;
               },
               parseInt(attr("throttle") || "", 10),

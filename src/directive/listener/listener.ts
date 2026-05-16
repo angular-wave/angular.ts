@@ -1,12 +1,15 @@
+import { _attributes } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
-import { getNormalizedAttr } from "../../shared/dom.ts";
 
+ngListenerDirective.$inject = [_attributes];
 /** Listens for DOM custom events and projects their payload into the element or scope. */
-export function ngListenerDirective(): ng.Directive {
+export function ngListenerDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     scope: false,
     link: (scope: ng.Scope, element: HTMLElement): void => {
-      const configuredChannel = getNormalizedAttr(element, "ngListener");
+      const configuredChannel = $attributes.read(element, "ngListener");
 
       const channel = configuredChannel || element.id;
 

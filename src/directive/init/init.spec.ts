@@ -15,6 +15,8 @@ describe("ngInit", () => {
 
   let $templateCache: any;
 
+  let $attributes: any;
+
   let injector;
 
   beforeEach(() => {
@@ -23,6 +25,7 @@ describe("ngInit", () => {
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
     $templateCache = injector.get("$templateCache");
+    $attributes = injector.get("$attributes");
   });
 
   afterEach(() => {
@@ -34,11 +37,13 @@ describe("ngInit", () => {
       .createSpy("$parse")
       .and.returnValue(jasmine.createSpy("initFn"));
 
-    const directive = ngInitDirective(parse);
+    const directive = ngInitDirective(parse, $attributes);
 
-    const link = directive.compile!(document.createElement("div"), {
-      ngInit: "value = 123",
-    } as any) as DirectivePrePost;
+    const element = document.createElement("div");
+
+    element.setAttribute("ng-init", "value = 123");
+
+    const link = directive.compile!(element, {} as any) as DirectivePrePost;
 
     const scope = {
       value: undefined,
@@ -55,6 +60,34 @@ describe("ngInit", () => {
 
     expect(parse).toHaveBeenCalledWith("value = 123");
     expect(parse.calls.mostRecent().returnValue).toHaveBeenCalledWith(scope);
+  });
+
+  it("should read data-ng-init from the host element", () => {
+    const parse = jasmine
+      .createSpy("$parse")
+      .and.returnValue(jasmine.createSpy("initFn"));
+
+    const directive = ngInitDirective(parse, $attributes);
+
+    const element = document.createElement("div");
+
+    element.setAttribute("data-ng-init", "value = 456");
+
+    directive.compile!(element, {} as any);
+
+    expect(parse).toHaveBeenCalledWith("value = 456");
+  });
+
+  it("should compile a no-op expression when ng-init is missing", () => {
+    const parse = jasmine
+      .createSpy("$parse")
+      .and.returnValue(jasmine.createSpy("initFn"));
+
+    const directive = ngInitDirective(parse, $attributes);
+
+    directive.compile!(document.createElement("div"), {} as any);
+
+    expect(parse).toHaveBeenCalledWith("");
   });
 
   it("should init model", async () => {

@@ -1,5 +1,6 @@
 import {
   _anchorScroll,
+  _attributes,
   _compile,
   _exceptionHandler,
   _injector,
@@ -7,12 +8,12 @@ import {
   _templateRequest,
 } from "../../injection-tokens.ts";
 import { isDefined, isInstanceOf } from "../../shared/utils.ts";
-import { getDirectiveAttr, removeElement } from "../../shared/dom.ts";
+import { removeElement } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
+import type { Attributes } from "../../interface.ts";
 
 ngIncludeDirective.$inject = [
   _templateRequest,
@@ -20,6 +21,7 @@ ngIncludeDirective.$inject = [
   _injector,
   _exceptionHandler,
   _parse,
+  _attributes,
 ];
 
 /**
@@ -31,6 +33,7 @@ export function ngIncludeDirective(
   $injector: ng.InjectorService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -42,15 +45,15 @@ export function ngIncludeDirective(
       /* empty */
       return undefined;
     },
-    compile(element: Element, attr: Attributes) {
+    compile(element: Element) {
       const srcExp =
-        getDirectiveAttr(element, attr, "ngInclude") ||
-        getDirectiveAttr(element, attr, "src") ||
+        $attributes.read(element, "ngInclude") ||
+        $attributes.read(element, "src") ||
         "";
 
-      const onloadExp = getDirectiveAttr(element, attr, "onload") || "";
+      const onloadExp = $attributes.read(element, "onload") || "";
 
-      const autoScrollExp = getDirectiveAttr(element, attr, "autoscroll");
+      const autoScrollExp = $attributes.read(element, "autoscroll");
 
       const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 

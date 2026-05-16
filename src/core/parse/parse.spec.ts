@@ -1112,6 +1112,29 @@ describe("parser", () => {
       expect(scope.a.b.c).toEqual(123);
     });
 
+    it("should expose working assignment function for computed member expressions", () => {
+      const fn = $parse("models[field.model]");
+
+      expect(fn._assign).toBeTruthy();
+      const scope = { models: {}, field: { model: "email" } };
+
+      fn._assign(scope, "demo@example.com");
+      expect(scope.models.email).toEqual("demo@example.com");
+    });
+
+    it("should expose working assignment function for nested computed member expressions", () => {
+      const fn = $parse("models[field.group][field.model]");
+
+      expect(fn._assign).toBeTruthy();
+      const scope = {
+        models: { contact: {} },
+        field: { group: "contact", model: "email" },
+      };
+
+      fn._assign(scope, "demo@example.com");
+      expect(scope.models.contact.email).toEqual("demo@example.com");
+    });
+
     it("should create objects when finding a null", () => {
       const fn = $parse("foo.bar");
 

@@ -1,5 +1,6 @@
 import {
   _angular,
+  _attributes,
   _compile,
   _document,
   _filter,
@@ -74,11 +75,7 @@ import {
   ngIncludeDirective,
   ngIncludeFillContentDirective,
 } from "./directive/include/include.ts";
-import {
-  hiddenInputDirective,
-  inputDirective,
-  ngValueDirective,
-} from "./directive/input/input.ts";
+import { inputDirective } from "./directive/input/input.ts";
 import { ngInitDirective } from "./directive/init/init.ts";
 import { ngInjectDirective } from "./directive/inject/inject.ts";
 import { ngListenerDirective } from "./directive/listener/listener.ts";
@@ -136,6 +133,7 @@ import { TemplateFactoryProvider } from "./router/template-factory.ts";
 import { TransitionProvider } from "./router/transition/transition-service.ts";
 import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
+import { AttributesProvider } from "./services/attributes/attributes.ts";
 import { CookieProvider } from "./services/cookie/cookie.ts";
 import { ExceptionHandlerProvider } from "./services/exception/exception.ts";
 import {
@@ -201,6 +199,7 @@ function registerBuiltInFilters($filterProvider: FilterProvider): void {
 
 /** Providers required by scopes, expressions, controllers, and compile. */
 export const ngCoreProviders = {
+  [_attributes]: AttributesProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
@@ -300,7 +299,6 @@ export const ngBindingDirectives = {
   ngRef: ngRefDirective,
   ngShow: ngShowDirective,
   ngStyle: ngStyleDirective,
-  ngValue: ngValueDirective,
 } satisfies DirectiveGroup;
 
 /** Control-flow and composition directives. */
@@ -381,7 +379,6 @@ export const ngRouterDirectives = {
 
 /** Fill/transclusion directives that intentionally register after their base directive. */
 export const ngFillDirectives = {
-  input: hiddenInputDirective,
   ngInclude: ngIncludeFillContentDirective,
   ngView: ViewDirectiveFill,
 } satisfies DirectiveGroup;

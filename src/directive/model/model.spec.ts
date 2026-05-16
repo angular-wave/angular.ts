@@ -1,6 +1,10 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
+import {
+  createElementFromHTML,
+  dealoc,
+  getController,
+} from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { ngModelDirective, NgModelController } from "./model.ts";
 import { isDefined, isObject } from "../../shared/utils.ts";
@@ -84,6 +88,44 @@ describe("ngModel", () => {
     expect(link.pre).toEqual(jasmine.any(Function));
   });
 
+  it("supports data-ng-model normalized reads", async () => {
+    const input = $compile('<input data-ng-model="value" />')($rootScope);
+
+    $rootScope.value = "initial";
+    await wait();
+    expect(input.value).toBe("initial");
+
+    input.value = "updated";
+    input.dispatchEvent(new Event("input"));
+    await wait();
+    expect($rootScope.value).toBe("updated");
+  });
+
+  it("supports computed member assignment expressions", async () => {
+    const input = $compile('<input ng-model="models[field.model]" />')(
+      $rootScope,
+    );
+
+    $rootScope.models = {};
+    $rootScope.field = { model: "email" };
+    await wait();
+
+    input.value = "demo@example.com";
+    input.dispatchEvent(new Event("input"));
+    await wait();
+
+    expect($rootScope.models.email).toBe("demo@example.com");
+  });
+
+  it("supports data-name normalized reads", () => {
+    const form = $compile(
+      '<form name="form"><input data-name="alias" data-ng-model="value" /></form>',
+    )($rootScope);
+
+    expect($rootScope.form.alias).toBeDefined();
+    dealoc(form);
+  });
+
   describe("NgModelController", () => {
     it("should init the properties", () => {
       expect(ctrl.$untouched).toBe(true);
@@ -105,25 +147,26 @@ describe("ngModel", () => {
     describe("setValidity", () => {
       function expectOneError() {
         expect(ctrl.$error).toEqual({ someError: true });
-        expect(ctrl._success).toEqual({});
+        expect(ctrl._validationStates.get("someError")).toBe("invalid");
         expect(ctrl.$pending).toBeUndefined();
       }
 
       function expectOneSuccess() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl._success).toEqual({ someError: true });
+        expect(ctrl._validationStates.get("someError")).toBe("valid");
         expect(ctrl.$pending).toBeUndefined();
       }
 
       function expectOnePending() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl._success).toEqual({});
+        expect(ctrl._validationStates.get("someError")).toBe("pending");
         expect(ctrl.$pending).toEqual({ someError: true });
       }
 
       function expectCleared() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl._success).toEqual({});
+        expect(ctrl._validationStates.get("someError")).not.toBe("invalid");
+        expect(ctrl._validationStates.get("someError")).not.toBe("pending");
         expect(ctrl.$pending).toBeUndefined();
       }
 
@@ -551,14 +594,14 @@ describe("ngModel", () => {
         expect(ctrl.$render).toHaveBeenCalled();
       });
 
-      it("should always format the viewValue as a string for a blank input type when the value is present", async () => {
+      it("should keep the model value as the viewValue for a blank input type", async () => {
         const form = $compile(
           '<form name="form"><input name="field" ng-model="val" /></form>',
         )($rootScope);
 
         $rootScope.val = 123;
         await wait();
-        expect($rootScope.form.field.$viewValue).toBe("123");
+        expect($rootScope.form.field.$viewValue).toBe(123);
 
         $rootScope.val = null;
         await wait();
@@ -567,7 +610,7 @@ describe("ngModel", () => {
         dealoc(form);
       });
 
-      it("should always format the viewValue as a string for a `text` input type when the value is present", async () => {
+      it("should keep the model value as the viewValue for a `text` input type", async () => {
         const form = $compile(
           '<form name="form"><input type="text" name="field" ng-model="val" /></form>',
         )($rootScope);
@@ -575,7 +618,7 @@ describe("ngModel", () => {
         $rootScope.val = 123;
         await wait();
 
-        expect($rootScope.form.field.$viewValue).toBe("123");
+        expect($rootScope.form.field.$viewValue).toBe(123);
 
         $rootScope.val = null;
         await wait();
@@ -585,7 +628,7 @@ describe("ngModel", () => {
         dealoc(form);
       });
 
-      it("should always format the viewValue as a string for an `email` input type when the value is present", async () => {
+      it("should keep the model value as the viewValue for an `email` input type", async () => {
         const form = $compile(
           '<form name="form"><input type="email" name="field" ng-model="val" /></form>',
         )($rootScope);
@@ -593,7 +636,7 @@ describe("ngModel", () => {
         $rootScope.val = 123;
         await wait();
 
-        expect($rootScope.form.field.$viewValue).toBe("123");
+        expect($rootScope.form.field.$viewValue).toBe(123);
 
         $rootScope.val = null;
         await wait();
@@ -602,7 +645,7 @@ describe("ngModel", () => {
         dealoc(form);
       });
 
-      it("should always format the viewValue as a string for a `url` input type when the value is present", async () => {
+      it("should keep the model value as the viewValue for a `url` input type", async () => {
         const form = $compile(
           '<form name="form"><input type="url" name="field" ng-model="val" /></form>',
         )($rootScope);
@@ -610,7 +653,7 @@ describe("ngModel", () => {
         $rootScope.val = 123;
         await wait();
 
-        expect($rootScope.form.field.$viewValue).toBe("123");
+        expect($rootScope.form.field.$viewValue).toBe(123);
 
         $rootScope.val = null;
         await wait();
@@ -1273,7 +1316,8 @@ describe("ngModel", () => {
         expect(usernameCtrl.$invalid).toBe(true);
         expect(formCtrl.$invalid).toBe(true);
 
-        usernameCtrl.$setViewValue("valid-username");
+        inputElm.value = "valid-username";
+        browserTrigger(inputElm, "input");
         await wait();
         expect(usernameCtrl.$invalid).toBe(false);
         expect(formCtrl.$invalid).toBe(false);
@@ -1307,7 +1351,8 @@ describe("ngModel", () => {
 
         expect(usernameCtrl.$invalid).toBe(true);
         expect(formCtrl.$invalid).toBe(true);
-        usernameCtrl.$setViewValue("valid-username");
+        inputElm.value = "valid-username";
+        browserTrigger(inputElm, "input");
         expect(formCtrl.$pending.usernameAvailability).toBeTruthy();
         expect(usernameCtrl.$invalid).toBeUndefined();
         expect(formCtrl.$invalid).toBeUndefined();
@@ -1318,14 +1363,19 @@ describe("ngModel", () => {
         expect(ageCtrl.$invalid).toBe(true);
         expect(formCtrl.$invalid).toBe(true);
 
-        ageCtrl.$setViewValue(22);
+        const ageInputElm = element.querySelector(
+          'input[type="number"]',
+        ) as HTMLInputElement;
+        ageInputElm.value = "22";
+        browserTrigger(ageInputElm, "input");
         await wait();
 
         expect(usernameCtrl.$invalid).toBe(false);
         expect(ageCtrl.$invalid).toBe(false);
         ///expect(formCtrl.$invalid).toBe(false);
 
-        usernameCtrl.$setViewValue("valid");
+        inputElm.value = "valid";
+        browserTrigger(inputElm, "input");
         expect(usernameCtrl.$invalid).toBe(true);
         expect(ageCtrl.$invalid).toBe(false);
         expect(formCtrl.$invalid).toBe(true);
@@ -1579,12 +1629,12 @@ describe("ngModel", () => {
       expect(element.value).toBe("XXX");
 
       element.value = "";
-      browserTrigger(element, "change");
+      browserTrigger(element, "input");
       await wait();
       expect(element.value).toBe("");
 
       element.value = "YYY";
-      browserTrigger(element, "change");
+      browserTrigger(element, "input");
       await wait();
       expect(element.value).toBe("YYY");
     });
@@ -1595,31 +1645,29 @@ describe("ngModel", () => {
       const element = app.querySelector("input");
 
       await wait();
-      expect(element.classList.contains("ng-invalid-email")).toBe(false);
+      const ctrl = getController(element, "ngModel");
+      expect(ctrl.$validity.valid).toBeTrue();
 
       $rootScope.value = "invalid-email";
       await wait();
 
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       expect(element.classList.contains("ng-pristine")).toBeTrue();
-      expect(element.classList.contains("ng-valid-email")).toBe(false);
-      expect(element.classList.contains("ng-invalid-email")).toBe(true);
+      expect(ctrl.$validity.typeMismatch).toBeTrue();
 
       element.value = "invalid-again";
-      browserTrigger(element, "change");
+      browserTrigger(element, "input");
 
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       expect(element.classList.contains("ng-dirty")).toBeTrue();
-      expect(element.classList.contains("ng-valid-email")).toBe(false);
-      expect(element.classList.contains("ng-invalid-email")).toBe(true);
+      expect(ctrl.$validity.typeMismatch).toBeTrue();
 
       element.value = "vojta@google.com";
-      browserTrigger(element, "change");
+      browserTrigger(element, "input");
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(element.classList.contains("ng-dirty")).toBeTrue();
-      expect(element.classList.contains("ng-valid-email")).toBe(true);
-      expect(element.classList.contains("ng-invalid-email")).toBe(false);
+      expect(ctrl.$validity.valid).toBeTrue();
 
       browserTrigger(element, "blur");
       await wait();
@@ -1680,19 +1728,19 @@ describe("ngModel", () => {
       expect(inputElm.value).toBe("a");
 
       inputElm.value = "b";
-      browserTrigger(inputElm, "change");
+      browserTrigger(inputElm, "input");
       expect(scope.val).toEqual({ part: "b" });
     });
 
-    it("should use them after the builtin ones for number inputs", async () => {
+    it("should use them with native string values for number inputs", async () => {
       createInput("number");
       scope.val = { part: 1 };
       await wait();
       expect(inputElm.value).toBe("1");
 
       inputElm.value = "2";
-      browserTrigger(inputElm, "change");
-      expect(scope.val).toEqual({ part: 2 });
+      browserTrigger(inputElm, "input");
+      expect(scope.val).toEqual({ part: "2" });
     });
 
     it("should use them after the builtin ones for date inputs", async () => {
@@ -1702,7 +1750,7 @@ describe("ngModel", () => {
       expect(inputElm.value).toBe("2000-11-08");
 
       inputElm.value = "2001-12-09";
-      browserTrigger(inputElm, "change");
+      browserTrigger(inputElm, "input");
       expect(scope.val).toEqual({ part: "2001-12-09" });
     });
   });
@@ -2022,8 +2070,8 @@ describe("data-change", () => {
       expect($rootScope.value).toBe("new value");
     });
 
-    el.querySelector("input").setAttribute("value", "new value");
-    el.querySelector("input").dispatchEvent(new Event("change"));
+    el.querySelector("input").value = "new value";
+    el.querySelector("input").dispatchEvent(new Event("input"));
     await wait();
     expect($rootScope.change).toHaveBeenCalled();
   });
@@ -2069,8 +2117,8 @@ describe("data-change", () => {
       $compile = _$compile_;
     });
 
-    el.querySelector("input").setAttribute("value", "a");
-    el.querySelector("input").dispatchEvent(new Event("change"));
+    el.querySelector("input").value = "a";
+    el.querySelector("input").dispatchEvent(new Event("input"));
     await wait();
     expect(el.querySelector("input").value).toBe("b");
   });

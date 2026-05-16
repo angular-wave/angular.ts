@@ -486,20 +486,18 @@ describe("$aria", () => {
       expect(element.children[1].getAttribute("aria-checked")).toBe("true");
     });
 
-    it("should handle radios with boolean model values using ngValue", async () => {
+    it("should handle radios with boolean-like string values", async () => {
       const element = $compile(
-        '<div><div role="radio" ng-model="val" ng-value="valExp"></div>' +
-          '<div role="radio" ng-model="val" ng-value="valExp2"></div></div>',
+        '<div><div role="radio" ng-model="val" value="true"></div>' +
+          '<div role="radio" ng-model="val" value="false"></div></div>',
       )(scope);
 
-      scope.valExp = true;
-      scope.valExp2 = false;
-      scope.val = true;
+      scope.val = "true";
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("true");
       expect(element.children[1].getAttribute("aria-checked")).toBe("false");
 
-      scope.val = false;
+      scope.val = "false";
       await wait();
       expect(element.children[0].getAttribute("aria-checked")).toBe("false");
       expect(element.children[1].getAttribute("aria-checked")).toBe("true");

@@ -1,5 +1,6 @@
 import {
   _angular,
+  _attributes,
   _compile,
   _document,
   _filter,
@@ -13,6 +14,7 @@ import { ParseProvider } from "../core/parse/parse.ts";
 import { RootScopeProvider } from "../core/scope/scope.ts";
 import { ControllerProvider } from "../core/controller/controller.ts";
 import { ExceptionHandlerProvider } from "../services/exception/exception.ts";
+import { AttributesProvider } from "../services/attributes/attributes.ts";
 import type { Injectable } from "../interface.ts";
 import { keys } from "../shared/utils.ts";
 
@@ -60,6 +62,7 @@ export interface CustomNgModuleOptions {
  * custom builds do not pull them in unless explicitly requested.
  */
 export const coreProviders = {
+  [_attributes]: AttributesProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,

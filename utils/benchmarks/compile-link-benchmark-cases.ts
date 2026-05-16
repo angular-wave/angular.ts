@@ -12,6 +12,11 @@ export const compileLinkBenchmarkCases: CompileLinkBenchmarkCase[] = [
       "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
   },
   {
+    name: "static attributed tree",
+    template:
+      '<section data-id="guide" aria-label="Guide"><header class="mast"><h1 title="Title">Title</h1></header><p data-copy="intro">Copy</p><footer role="contentinfo">End</footer></section>',
+  },
+  {
     name: "text interpolation",
     template:
       "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",

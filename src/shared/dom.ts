@@ -397,6 +397,27 @@ export function setTranscludedHostElement(
   transcludedHostElements.set(anchor, hostElement);
 }
 
+/** Copies element-transclusion host metadata from an original node tree to its clone. */
+export function cloneTranscludedHostElements(source: Node, clone: Node): void {
+  const hostElement = transcludedHostElements.get(source);
+
+  if (hostElement instanceof Element) {
+    transcludedHostElements.set(clone, hostElement);
+  }
+
+  const sourceChildren = source.childNodes;
+  const cloneChildren = clone.childNodes;
+
+  for (let i = 0; i < sourceChildren.length; i++) {
+    const sourceChild = sourceChildren[i];
+    const cloneChild = cloneChildren[i];
+
+    if (cloneChild) {
+      cloneTranscludedHostElements(sourceChild, cloneChild);
+    }
+  }
+}
+
 /** Returns the element itself, or the original host for an element-transclusion anchor. */
 export function getDirectiveHostElement(
   node: Element | Node | null | undefined,
@@ -684,6 +705,26 @@ export function getNormalizedAttr(
 
     if (directiveNormalize(attr.name) === expected) {
       return attr.value;
+    }
+  }
+
+  return undefined;
+}
+
+/** Returns the actual DOM attribute name for a normalized directive-style name. */
+export function getNormalizedAttrName(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): string | undefined {
+  if (!(element instanceof Element)) return undefined;
+
+  const expected = directiveNormalize(normalizedName);
+
+  for (let index = 0; index < element.attributes.length; index += 1) {
+    const attr = element.attributes[index];
+
+    if (directiveNormalize(attr.name) === expected) {
+      return attr.name;
     }
   }
 

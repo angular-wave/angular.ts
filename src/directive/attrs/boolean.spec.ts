@@ -65,22 +65,21 @@ describe("boolean attr directives", () => {
   it("should not bind checked when ngModel is present", async () => {
     // test for https://github.com/angular/angular.js/issues/10662
     element = $compile(
-      '<input type="checkbox" ng-model="value" ng-false-value="\'false\'" ' +
-        'ng-true-value="\'true\'" ng-checked="value" />',
+      '<input type="checkbox" ng-model="value" ng-checked="value" />',
     )($rootScope);
 
-    $rootScope.value = "true";
+    $rootScope.value = true;
     await wait();
     expect(element.checked).toBe(true);
 
     element.checked = !element.checked;
     element.dispatchEvent(new Event("change"));
     expect(element.checked).toBe(false);
-    expect($rootScope.value).toBe("false");
+    expect($rootScope.value).toBe(false);
     element.checked = !element.checked;
     element.dispatchEvent(new Event("change"));
     expect(element.checked).toBe(true);
-    expect($rootScope.value).toBe("true");
+    expect($rootScope.value).toBe(true);
   });
 
   it("should bind selected", async () => {

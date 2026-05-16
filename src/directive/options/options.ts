@@ -1,9 +1,7 @@
-import { _compile, _parse } from "../../injection-tokens.ts";
+import { _attributes, _compile, _parse } from "../../injection-tokens.ts";
 import {
   createDocumentFragment,
   emptyElement,
-  getNormalizedAttr,
-  hasNormalizedAttr,
   removeElement,
   startingTag,
 } from "../../shared/dom.ts";
@@ -59,7 +57,7 @@ class OptionItem {
   }
 }
 
-ngOptionsDirective.$inject = [_compile, _parse];
+ngOptionsDirective.$inject = [_compile, _parse, _attributes];
 
 interface NgOptionsCollection {
   /** @internal */
@@ -82,6 +80,7 @@ interface NgOptionsDefinition {
 export function ngOptionsDirective(
   $compile: ng.CompileService,
   $parse: ng.ParseService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   function parseOptionsExpression(
     optionsExp: string,
@@ -215,7 +214,7 @@ export function ngOptionsDirective(
 
     const ngModelCtrl = ctrls[1];
 
-    const multiple = hasNormalizedAttr(selectElement, "multiple");
+    const multiple = $attributes.has(selectElement, "multiple");
 
     for (
       let i = 0, children = selectNode.childNodes, ii = children.length;
@@ -236,7 +235,7 @@ export function ngOptionsDirective(
     let options: NgOptionsCollection | undefined;
 
     const ngOptions = parseOptionsExpression(
-      getNormalizedAttr(selectElement, "ngOptions") || "",
+      $attributes.read(selectElement, "ngOptions") || "",
       selectNode,
       scope,
     );

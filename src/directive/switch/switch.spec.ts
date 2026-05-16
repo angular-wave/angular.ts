@@ -58,6 +58,36 @@ describe("ngSwitch", () => {
     expect(element.textContent).toEqual("true:misko");
   });
 
+  it("should read data-ng-switch and data-ng-switch-when from host elements", async () => {
+    element = $compile(
+      '<div data-ng-switch="select">' +
+        '<div data-ng-switch-when="1">first</div>' +
+        '<div data-ng-switch-when="2">second</div>' +
+        "</div>",
+    )($scope);
+
+    $scope.select = 1;
+    await wait();
+    expect(element.textContent).toEqual("first");
+
+    $scope.select = 2;
+    await wait();
+    expect(element.textContent).toEqual("second");
+  });
+
+  it("should use the default case when the switch expression is missing", async () => {
+    element = $compile(
+      "<ng-switch>" +
+        '<div ng-switch-when="1">first</div>' +
+        "<div ng-switch-default>default</div>" +
+        "</ng-switch>",
+    )($scope);
+
+    await wait();
+
+    expect(element.textContent).toEqual("default");
+  });
+
   it("should show all switch-whens that match the current value", async () => {
     element = $compile(
       '<ul ng-switch="select">' +
@@ -261,6 +291,20 @@ describe("ngSwitch", () => {
       await wait();
       expect(element.children.length).toBe(1);
       expect(element.textContent).toBe("Block3|");
+    });
+
+    it("should read data-ng-switch-when-separator from the host element", async () => {
+      element = $compile(
+        '<div ng-switch="mode">' +
+          '<p data-ng-switch-when="a|b" data-ng-switch-when-separator="|">Block1|</p>' +
+          "<p ng-switch-default>Block2|</p>" +
+          "</div>",
+      )($scope);
+
+      $scope.mode = "b";
+      await wait();
+
+      expect(element.textContent).toBe("Block1|");
     });
 
     it("should be possible to use a separator at the end of the value", async () => {

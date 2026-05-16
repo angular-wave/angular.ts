@@ -3226,7 +3226,7 @@ describe("ngOptions", () => {
       // IE9 and IE10 do not support MutationObserver
       // Since the feature is only needed for a test, it's okay to skip these browsers
       it("should render the initial options only one time", async () => {
-        scope.value = ["black"];
+        scope.selected = ["black"];
         scope.values = ["black", "white", "red"];
         // observe-child-list adds a MutationObserver that we will read out after ngOptions
         // has been compiled

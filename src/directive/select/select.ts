@@ -1,4 +1,4 @@
-import { _interpolate } from "../../injection-tokens.ts";
+import { _attributes, _interpolate } from "../../injection-tokens.ts";
 import {
   FUTURE_PARENT_ELEMENT_KEY,
   getCacheData,
@@ -19,7 +19,44 @@ import {
   type SelectScope,
 } from "./select-ctrl.ts";
 
-export function selectDirective(): ng.Directive {
+selectDirective.$inject = [_attributes];
+
+function readSelectAttr(
+  $attributes: ng.AttributesService | undefined,
+  element: Element,
+  attr: SelectAttributes,
+  normalizedName: keyof SelectAttributes & string,
+): string | undefined {
+  const value = $attributes?.read(element, normalizedName);
+
+  return isDefined(value)
+    ? value
+    : (attr[normalizedName] as string | undefined);
+}
+
+function hasSelectAttr(
+  $attributes: ng.AttributesService | undefined,
+  element: Element,
+  attr: SelectAttributes,
+  normalizedName: keyof SelectAttributes & string,
+): boolean {
+  return (
+    $attributes?.has(element, normalizedName) || isDefined(attr[normalizedName])
+  );
+}
+
+function setSelectAttr(
+  $attributes: ng.AttributesService,
+  element: Element,
+  normalizedName: keyof SelectAttributes & string,
+  value: string | null,
+): void {
+  $attributes.set(element, normalizedName, value);
+}
+
+export function selectDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     restrict: "E",
     require: ["select", "?ngModel"],
@@ -52,14 +89,21 @@ export function selectDirective(): ng.Directive {
     }
     selectCtrl._ngModelCtrl = ngModelCtrl;
 
+    const syncNativeValidity = () => {
+      ngModelCtrl.$setNativeValidity(
+        !selectElement.willValidate || selectElement.validity.valid,
+      );
+    };
+
     selectElement.addEventListener("change", () => {
       selectCtrl._removeUnknownOption();
       const viewValue = selectCtrl._readValue();
 
       ngModelCtrl.$setViewValue(viewValue);
+      syncNativeValidity();
     });
 
-    if (attr.multiple) {
+    if (hasSelectAttr($attributes, element, attr, "multiple")) {
       selectCtrl._multiple = true;
 
       selectCtrl._readValue = function () {
@@ -103,16 +147,19 @@ export function selectDirective(): ng.Directive {
 
       let lastViewRef = NaN;
 
-      _scope.$watch(attr.ngModel, () => {
-        if (
-          lastViewRef === ngModelCtrl.$viewValue &&
-          !equals(lastView, ngModelCtrl.$viewValue)
-        ) {
-          lastView = shallowCopy(ngModelCtrl.$viewValue);
-          ngModelCtrl.$render();
-        }
-        lastViewRef = ngModelCtrl.$viewValue;
-      });
+      _scope.$watch(
+        readSelectAttr($attributes, element, attr, "ngModel") || "",
+        () => {
+          if (
+            lastViewRef === ngModelCtrl.$viewValue &&
+            !equals(lastView, ngModelCtrl.$viewValue)
+          ) {
+            lastView = shallowCopy(ngModelCtrl.$viewValue);
+            ngModelCtrl.$render();
+          }
+          lastViewRef = ngModelCtrl.$viewValue;
+        },
+      );
 
       ngModelCtrl.$isEmpty = function (value: any[] | null | undefined) {
         return !value || value.length === 0;
@@ -122,7 +169,7 @@ export function selectDirective(): ng.Directive {
 
   function selectPostLink(
     _scope: ng.Scope,
-    _element: Element,
+    element: Element,
     _attrs: ng.Attributes,
     ctrls: [SelectController, NgModelController?],
   ) {
@@ -131,18 +178,28 @@ export function selectDirective(): ng.Directive {
     if (!ngModelCtrl) return;
 
     const selectCtrl = ctrls[0];
+    const selectElement = element as HTMLSelectElement;
+
+    const syncNativeValidity = () => {
+      ngModelCtrl.$setNativeValidity(
+        !selectElement.willValidate || selectElement.validity.valid,
+      );
+    };
 
     ngModelCtrl.$render = function () {
       selectCtrl._writeValue(ngModelCtrl.$viewValue);
+      syncNativeValidity();
     };
 
+    syncNativeValidity();
     selectCtrl._scheduleRender();
   }
 }
 
-optionDirective.$inject = [_interpolate];
+optionDirective.$inject = [_attributes, _interpolate];
 
 export function optionDirective(
+  $attributes: ng.AttributesService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
   return {
@@ -151,19 +208,29 @@ export function optionDirective(
     compile(element: Element, attr: SelectAttributes) {
       const optionElement = element as HTMLOptionElement;
 
+      const hasNgValue = hasSelectAttr($attributes, element, attr, "ngValue");
+
+      let initialValue = readSelectAttr($attributes, element, attr, "value");
+
       let interpolateValueFn: InterpolateFn;
 
       let interpolateTextFn: InterpolateFn;
 
-      if (isDefined(attr.ngValue)) {
+      if (hasNgValue) {
         // ngValue is handled during linking.
-      } else if (isDefined(attr.value)) {
-        interpolateValueFn = $interpolate(attr.value, true);
+      } else if (isDefined(initialValue)) {
+        interpolateValueFn = $interpolate(initialValue, true);
       } else {
         interpolateTextFn = $interpolate(optionElement.textContent, true);
 
         if (!interpolateTextFn) {
-          attr.$set("value", optionElement.textContent);
+          setSelectAttr(
+            $attributes,
+            optionElement,
+            "value",
+            optionElement.textContent,
+          );
+          initialValue = optionElement.textContent || undefined;
         }
       }
 
@@ -200,6 +267,9 @@ export function optionDirective(
             attrParam,
             interpolateValueFn,
             interpolateTextFn,
+            $attributes,
+            initialValue,
+            hasNgValue,
           );
         }
       };

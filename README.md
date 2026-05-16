@@ -137,3 +137,6 @@ For a complete starting point, see
 ## Documentation
 
 Documentation is available at https://angular-wave.github.io/angular.ts/.
+
+IMPORTANT: AngularTS is not backwards-compatible with AngularJS. For teams still working with AngularJS, it presents a frictionless and future-proof path to migration,
+which is supported by additional guidance for your LLM of choice.

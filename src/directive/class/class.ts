@@ -1,26 +1,20 @@
-import {
-  getCacheData,
-  getNormalizedAttr,
-  setCacheData,
-} from "../../shared/dom.ts";
+import { _attributes } from "../../injection-tokens.ts";
+import { getCacheData, setCacheData } from "../../shared/dom.ts";
 import {
   hasOwn,
-  hasAnimate,
   isArray,
   isObject,
   nullObject,
   isString,
 } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
 
+classDirective.$inject = [_attributes];
 /** Creates the `ngClass` directive. */
-export function classDirective(): ng.Directive {
+export function classDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attr: Attributes & Record<string, string>,
-    ): void {
+    link(scope: ng.Scope, element: HTMLElement): void {
       let classCounts = getCacheData(element, "$classCounts") as
         | Record<string, number>
         | undefined;
@@ -35,10 +29,7 @@ export function classDirective(): ng.Directive {
 
       const counts = classCounts;
 
-      // Cache once; `hasAnimate(element)` should be stable for this directive instance.
-      const animate = hasAnimate(element);
-
-      const expression = getNormalizedAttr(element, "ngClass");
+      const expression = $attributes.read(element, "ngClass");
 
       if (expression === undefined) {
         return;
@@ -69,15 +60,10 @@ export function classDirective(): ng.Directive {
 
         const toAdd = digestClassCounts(toAddArray, 1);
 
-        if (animate) {
-          if (toAdd.length) attr.$addClass(toAdd.join(" "));
+        if (toAdd.length) $attributes.addClass(element, toAdd.join(" "));
 
-          if (toRemove.length) attr.$removeClass(toRemove.join(" "));
-        } else {
-          if (toAdd.length) element.classList.add(...toAdd);
-
-          if (toRemove.length) element.classList.remove(...toRemove);
-        }
+        if (toRemove.length)
+          $attributes.removeClass(element, toRemove.join(" "));
       }
 
       /**

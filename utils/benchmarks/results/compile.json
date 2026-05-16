@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-05-13T00:27:25.184Z",
+  "savedAt": "2026-05-16T20:12:34.518Z",
   "result": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
     "iterations": 5000,
@@ -10,50 +10,60 @@
         "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 24.19999999552965,
-        "medianMs": 34.400000005960464,
-        "meanMs": 32.41428571407284,
-        "opsPerSecond": 154252.97487981428
+        "minMs": 23.199999999254942,
+        "medianMs": 33.19999999925494,
+        "meanMs": 31.514285713966405,
+        "opsPerSecond": 158658.20489734647
+      },
+      {
+        "name": "static attributed tree",
+        "template": "<section data-id=\"guide\" aria-label=\"Guide\"><header class=\"mast\"><h1 title=\"Title\">Title</h1></header><p data-copy=\"intro\">Copy</p><footer role=\"contentinfo\">End</footer></section>",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 31.100000001490116,
+        "medianMs": 37.899999998509884,
+        "meanMs": 40.2714285712157,
+        "opsPerSecond": 124157.5026611742
       },
       {
         "name": "text interpolation",
         "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 28.799999997019768,
-        "medianMs": 31.80000000447035,
-        "meanMs": 33.857142857142854,
-        "opsPerSecond": 147679.32489451478
+        "minMs": 30.599999997764826,
+        "medianMs": 31.200000002980232,
+        "meanMs": 33.800000000212876,
+        "opsPerSecond": 147928.99408190858
       },
       {
         "name": "bindings and events",
         "template": "<button ng-click=\"save(item)\">{{label}}</button>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 13.099999994039536,
-        "medianMs": 15.400000005960464,
-        "meanMs": 16.48571428656578,
-        "opsPerSecond": 303292.89426509733
+        "minMs": 20,
+        "medianMs": 20.400000002235174,
+        "meanMs": 21.5,
+        "opsPerSecond": 232558.13953488375
       },
       {
         "name": "repeat list",
         "template": "<ul><li ng-repeat=\"item in items\"><span>{{item.name}}</span><button ng-click=\"select(item)\">Select</button></li></ul>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 20.899999998509884,
-        "medianMs": 23.899999998509884,
-        "meanMs": 24.328571428145683,
-        "opsPerSecond": 205519.6711721227
+        "minMs": 35.900000002235174,
+        "medianMs": 36.5,
+        "meanMs": 38.800000000212876,
+        "opsPerSecond": 128865.97938073629
       },
       {
         "name": "nested template",
         "template": "<section ng-if=\"ready\"><header ng-bind=\"title\"></header><div ng-repeat=\"group in groups\"><h3>{{group.name}}</h3><p ng-repeat=\"item in group.items\">{{item.label}}</p></div></section>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 15.799999997019768,
-        "medianMs": 16.700000002980232,
-        "meanMs": 16.65714285735573,
-        "opsPerSecond": 300171.52658278483
+        "minMs": 14.800000000745058,
+        "medianMs": 17.199999999254942,
+        "meanMs": 22.257142857249296,
+        "opsPerSecond": 224646.98331086407
       }
     ]
   }

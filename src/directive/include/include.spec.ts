@@ -95,9 +95,40 @@ describe("ngInclude", () => {
       expect(body.textContent).toEqual("misko");
     });
 
+    it("should support normalized data-src aliases", async () => {
+      element = createElementFromHTML(
+        '<div><ng-include data-src="url"></ng-include></div>',
+      );
+      const body = document.getElementById("app");
+
+      body.append(element);
+      const injector = angular.bootstrap(element);
+
+      $rootScope = injector.get("$rootScope");
+      $templateCache = injector.get("$templateCache");
+      $templateCache.set("myUrl", [200, "{{name}}", {}]);
+      $rootScope.name = "misko";
+      $rootScope.url = "myUrl";
+      await waitUntil(() => body.textContent === "misko");
+      expect(body.textContent).toEqual("misko");
+    });
+
     it('should support ng-include="src" syntax', async () => {
       element = createElementFromHTML(
         '<div><div ng-include="url"></div></div>',
+      );
+      const injector = angular.bootstrap(element);
+
+      $rootScope = injector.get("$rootScope");
+      $rootScope.expr = "Alibaba";
+      $rootScope.url = "/mock/interpolation";
+      await waitUntil(() => element.textContent === "Alibaba");
+      expect(element.textContent).toEqual("Alibaba");
+    });
+
+    it("should support normalized data-ng-include aliases", async () => {
+      element = createElementFromHTML(
+        '<div><div data-ng-include="url"></div></div>',
       );
       const injector = angular.bootstrap(element);
 

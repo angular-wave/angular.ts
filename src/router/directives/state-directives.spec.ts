@@ -104,6 +104,16 @@ describe("ngStateRef", () => {
       await wait();
       expect(app.querySelector("a").getAttribute("href")).toBe("#/contacts/6");
     });
+
+    it("supports data-ng-sref normalized reads", async () => {
+      app.innerHTML =
+        '<a data-ng-sref="contacts.item.detail({ id: contact.id })">Details</a>';
+      $rootScope.contact = { id: 6 };
+      $compile(app)($rootScope);
+      await wait();
+
+      expect(app.querySelector("a").getAttribute("href")).toBe("#/contacts/6");
+    });
   });
 
   async function buildDOM() {
@@ -380,6 +390,17 @@ describe("ngStateRef", () => {
     });
 
     it("sets the correct initial href", () => {
+      expect(template.getAttribute("href")).toBe("#/contacts");
+    });
+
+    it("supports data-ng-state normalized reads", () => {
+      el = createElementFromHTML(
+        '<a data-ng-state="state" data-ng-state-params="params">state</a>',
+      );
+      scope = $rootScope;
+      Object.assign(scope, { state: "contacts", params: {} });
+      template = $compile(el)(scope);
+
       expect(template.getAttribute("href")).toBe("#/contacts");
     });
 
@@ -804,6 +825,18 @@ describe("ngSrefActive", () => {
     $state.transitionTo("contacts.item", { id: 2 });
     await wait(100);
     expect(template.querySelector("a").getAttribute("class")).toBeFalsy();
+  });
+
+  it("supports data-ng-sref-active normalized reads", async () => {
+    el = createElementFromHTML(
+      '<div><a data-ng-sref="contacts.item({ id: 1 })" data-ng-sref-active="active">Contacts</a></div>',
+    );
+    template = $compile(el)($rootScope);
+    expect(template.querySelector("a").getAttribute("class")).toBeFalsy();
+
+    $state.transitionTo("contacts.item", { id: 1 });
+    await wait(100);
+    expect(template.querySelector("a").getAttribute("class")).toBe("active");
   });
 
   it("should match state's parameters", async () => {

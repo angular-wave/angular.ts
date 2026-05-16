@@ -6,6 +6,7 @@ export type {
   AnnotatedFactory,
   AngularBootstrapConfig,
   AngularServiceProvider,
+  Attributes,
   ChangesObject,
   Component,
   Controller,
@@ -32,7 +33,6 @@ export type {
   TranscludeFunctionObject,
 } from "./interface.ts";
 
-export { Attributes } from "./core/compile/attributes.ts";
 export type {
   BoundTranscludeFn,
   CompileFn,
@@ -85,6 +85,8 @@ export type {
 
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 export type { AnchorScrollService } from "./services/anchor-scroll/anchor-scroll.ts";
+export { AttributesProvider } from "./services/attributes/attributes.ts";
+export type { AttributesService } from "./services/attributes/attributes.ts";
 export { CookieProvider, CookieService } from "./services/cookie/cookie.ts";
 export type {
   CookieOptions,

@@ -1,15 +1,10 @@
-import { _injector } from "../../injection-tokens.ts";
+import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import {
-  domInsert,
-  getDirectiveAttr,
-  removeElement,
-} from "../../shared/dom.ts";
+import { domInsert, removeElement } from "../../shared/dom.ts";
 import { values } from "../../shared/utils.ts";
-import type { Attributes } from "../../core/compile/attributes.ts";
 
 interface NgSwitchBlock {
   /** @internal */
@@ -30,11 +25,12 @@ class NgSwitchController {
   }
 }
 
-ngSwitchDirective.$inject = [_injector];
+ngSwitchDirective.$inject = [_injector, _attributes];
 
 /** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(
   $injector: ng.InjectorService,
+  $attributes: ng.AttributesService,
 ): ng.Directive<NgSwitchController> {
   const getAnimate = createLazyAnimate($injector);
 
@@ -46,12 +42,12 @@ export function ngSwitchDirective(
     link(
       scope: ng.Scope,
       element: Element,
-      attr: Attributes & Record<string, string>,
+      _attr: ng.Attributes,
       ngSwitchController: NgSwitchController,
     ): void {
       const watchExpr =
-        getDirectiveAttr(element, attr, "ngSwitch") ||
-        getDirectiveAttr(element, attr, "on") ||
+        $attributes.read(element, "ngSwitch") ||
+        $attributes.read(element, "on") ||
         "";
 
       let selectedTranscludes:
@@ -180,7 +176,11 @@ export function ngSwitchDirective(
   };
 }
 
-export function ngSwitchWhenDirective(): ng.Directive {
+ngSwitchWhenDirective.$inject = [_attributes];
+
+export function ngSwitchWhenDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     transclude: "element",
     terminal: true,
@@ -189,7 +189,7 @@ export function ngSwitchWhenDirective(): ng.Directive {
     link(
       scope: ng.Scope,
       element: Element,
-      attrs: Attributes & Record<string, string>,
+      _attrs: ng.Attributes,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {
@@ -197,13 +197,9 @@ export function ngSwitchWhenDirective(): ng.Directive {
         return;
       }
 
-      const when = getDirectiveAttr(element, attrs, "ngSwitchWhen") || "";
+      const when = $attributes.read(element, "ngSwitchWhen") || "";
 
-      const separator = getDirectiveAttr(
-        element,
-        attrs,
-        "ngSwitchWhenSeparator",
-      );
+      const separator = $attributes.read(element, "ngSwitchWhenSeparator");
 
       (separator !== undefined ? when.split(separator) : [when])
         .sort()
@@ -232,7 +228,7 @@ export function ngSwitchDefaultDirective(): ng.Directive {
     link(
       _scope: ng.Scope,
       element: Element,
-      _attr: Attributes,
+      _attr: ng.Attributes,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {

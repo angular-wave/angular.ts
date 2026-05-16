@@ -323,7 +323,7 @@ describe("$compile", () => {
 
       const cloneObserver = jasmine.createSpy("cloneObserver");
 
-      templateAttrs.$set("name", "template", false);
+      templateAttrs._setValue("name", "template", false);
       templateAttrs.$observe("name", templateObserver);
 
       const cloneAttrs = new Attributes(
@@ -334,7 +334,7 @@ describe("$compile", () => {
       );
 
       cloneAttrs.$observe("name", cloneObserver);
-      cloneAttrs.$set("name", "clone", false);
+      cloneAttrs._setValue("name", "clone", false);
 
       expect(templateObserver.calls.count()).toBe(1);
       expect(cloneObserver.calls.count()).toBe(2);
@@ -1074,7 +1074,7 @@ describe("$compile", () => {
           restrict: "A",
           compile(element, templateAttr) {
             expect(typeof templateAttr.$normalize).toBe("function");
-            expect(typeof templateAttr.$set).toBe("function");
+            expect(templateAttr.$set).toBeUndefined();
             expect(templateAttr._element() instanceof Element).toBeTrue();
             expect(element.textContent).toEqual("unlinked");
             expect(templateAttr.exp).toEqual("abc");
@@ -1187,7 +1187,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive attr="true"></my-directive>',
         function (element, attrs) {
-          attrs.$set("attr", "false");
+          attrs._setValue("attr", "false");
           expect(attrs.attr).toEqual("false");
           expect(element.getAttribute("attr")).toEqual("false");
         },
@@ -1199,7 +1199,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive attr="true"></my-directive>',
         function (element, attrs) {
-          attrs.$set("attr", "false");
+          attrs._setValue("attr", "false");
           expect(attrs.attr).toEqual("false");
         },
       );
@@ -1210,7 +1210,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive attr="true"></my-directive>',
         function (element, attrs) {
-          attrs.$set("attr", "false", false);
+          attrs._setValue("attr", "false", false);
           expect(element.getAttribute("attr")).toEqual("true");
           expect(attrs.attr).toEqual("false");
         },
@@ -1248,7 +1248,7 @@ describe("$compile", () => {
         "myDirective",
         "<input my-directive>",
         function (element, attrs) {
-          attrs.$set("disabled", true);
+          attrs._setValue("disabled", true);
           expect(element.disabled).toBe(true);
         },
       );
@@ -1259,7 +1259,7 @@ describe("$compile", () => {
         "myDirective",
         "<input my-directive>",
         function (element, attrs) {
-          attrs.$set("disabled", true, false);
+          attrs._setValue("disabled", true, false);
           expect(element.disabled).toBe(true);
         },
       );
@@ -1270,7 +1270,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("someAttribute", 43, true, "some-attribute");
+          attrs._setValue("someAttribute", 43, true, "some-attribute");
           expect(element.getAttribute("some-attribute")).toEqual("43");
         },
       );
@@ -1281,7 +1281,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("someAttribute", 43);
+          attrs._setValue("someAttribute", 43);
           expect(element.getAttribute("some-attribute")).toEqual("43");
         },
       );
@@ -1292,7 +1292,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("someAttribute", 43);
+          attrs._setValue("someAttribute", 43);
           expect(element.getAttribute("some-attribute")).toEqual("43");
         },
       );
@@ -1303,7 +1303,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("some-attribute", 43);
+          attrs._setValue("some-attribute", 43);
           expect(element.getAttribute("some-attribute")).toEqual("43");
         },
       );
@@ -1314,7 +1314,7 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive ng-attr-some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("someAttribute", 43);
+          attrs._setValue("someAttribute", 43);
           expect(element.getAttribute("some-attribute")).toEqual("43");
         },
       );
@@ -1325,15 +1325,15 @@ describe("$compile", () => {
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
         function (element, attrs) {
-          attrs.$set("someAttribute", 43, true, "some-attribute");
-          attrs.$set("someAttribute", 44);
+          attrs._setValue("someAttribute", 43, true, "some-attribute");
+          attrs._setValue("someAttribute", 44);
 
           expect(element.getAttribute("some-attribute")).toEqual("44");
         },
       );
     });
 
-    it("calls observer immediately when attribute is $set", () => {
+    it("calls observer immediately when attribute is set internally", () => {
       registerAndCompile(
         "myDirective",
         '<my-directive some-attribute="42"></my-directive>',
@@ -1344,7 +1344,7 @@ describe("$compile", () => {
             gotValue = value;
           });
 
-          attrs.$set("someAttribute", "43");
+          attrs._setValue("someAttribute", "43");
           expect(gotValue).toEqual("43");
         },
       );
@@ -1376,11 +1376,11 @@ describe("$compile", () => {
             gotValue = value;
           });
 
-          attrs.$set("someAttribute", "43");
+          attrs._setValue("someAttribute", "43");
           expect(gotValue).toEqual("43");
 
           remove();
-          attrs.$set("someAttribute", "44");
+          attrs._setValue("someAttribute", "44");
           expect(gotValue).toEqual("43");
         },
       );
@@ -1963,10 +1963,10 @@ describe("$compile", () => {
     const el = $("<div my-directive></div>");
 
     $compile(el)($rootScope);
-    givenAttrs.$set("anAttr", "42");
+    givenAttrs._setValue("anAttr", "42");
     expect(givenScope.anAttr).toEqual("42");
 
-    givenAttrs.$set("anAttr", "43");
+    givenAttrs._setValue("anAttr", "43");
     expect(givenScope.anAttr).toEqual("43");
   });
 
@@ -2507,13 +2507,14 @@ describe("$compile", () => {
       expect(controllerInvoked).toBe(true);
     });
 
-    it("gets scope, element, and attrs through DI", () => {
-      let gotScope, gotElement, gotAttrs;
+    it("gets scope, element, attrs, and attributes service through DI", () => {
+      let gotScope, gotElement, gotAttrs, gotAttributes;
 
-      function MyController($element, $scope, $attrs) {
+      function MyController($element, $scope, $attrs, $attributes) {
         gotElement = $element;
         gotScope = $scope;
         gotAttrs = $attrs;
+        gotAttributes = $attributes;
       }
       myModule
         .controller("MyController", MyController)
@@ -2528,6 +2529,7 @@ describe("$compile", () => {
       expect(gotScope).toBe($rootScope);
       expect(gotAttrs).toBeDefined();
       expect(gotAttrs.anAttr).toEqual("abc");
+      expect(gotAttributes.read(el, "anAttr")).toEqual("abc");
     });
 
     it("can be attached on the scope", () => {
@@ -4614,7 +4616,7 @@ describe("$compile", () => {
         myDirective: () => {
           return {
             compile(element, attrs) {
-              attrs.$set("myAttr", "{{myDifferentExpr}}");
+              attrs._setValue("myAttr", "{{myDifferentExpr}}");
             },
           };
         },
@@ -4635,7 +4637,7 @@ describe("$compile", () => {
         myDirective: () => {
           return {
             compile(element, attrs) {
-              attrs.$set("myAttr", null);
+              attrs._setValue("myAttr", null);
             },
           };
         },
@@ -4903,10 +4905,14 @@ describe("$compile", () => {
       expect(el.innerText).toEqual("42");
     });
 
-    it("may inject $element and $attrs to template function", async () => {
+    it("may inject $element, $attrs, and $attributes to template function", async () => {
       myModule.component("myComponent", {
-        template($element, $attrs) {
-          return $element.setAttribute("copiedAttr", $attrs.myAttr);
+        template($element, $attrs, $attributes) {
+          return $attributes.set(
+            $element,
+            "copiedAttr",
+            $attributes.read($element, "myAttr") || $attrs.myAttr,
+          );
         },
       });
       reloadModules();
@@ -4914,7 +4920,24 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect(el.getAttribute("copiedAttr")).toEqual("42");
+      expect(el.getAttribute("copied-attr")).toEqual("42");
+    });
+
+    it("may inject $attributes to templateUrl function", async () => {
+      myModule.component("myComponent", {
+        templateUrl($element, $attributes) {
+          return $attributes.read($element, "templatePath");
+        },
+      });
+      $templateCache.set("/template-from-attributes.html", "{{ 1 + 2 }}");
+      reloadModules();
+      const el = $(
+        '<my-component template-path="/template-from-attributes.html"></my-component>',
+      );
+
+      $compile(el)($rootScope);
+      await wait();
+      expect(el.innerText).toEqual("3");
     });
 
     it("may have a template function with DI support", async () => {
@@ -5136,7 +5159,7 @@ describe("$compile", () => {
       $compile(el)($rootScope);
       await wait();
       expect(changesSpy.calls.count()).toBe(1);
-      attrs.$set("myAttr", "43");
+      attrs._setValue("myAttr", "43");
       await wait();
       expect(changesSpy.calls.count()).toBe(2);
       const lastChanges = changesSpy.calls.mostRecent().args[0];
@@ -5180,7 +5203,7 @@ describe("$compile", () => {
 
       expect(lastChanges.myBinding.currentValue).toBe(43);
 
-      attrs.$set("myAttr", "fourtyThree");
+      attrs._setValue("myAttr", "fourtyThree");
       await wait();
       expect(changesSpy.calls.count()).toBe(3);
       lastChanges = changesSpy.calls.mostRecent().args[0];
@@ -5940,7 +5963,7 @@ describe("$compile", () => {
             template:
               '<div class="log" style="width: 10px" high-log>Replace!</div>',
             compile(element, attr) {
-              attr.$set("compiled", "COMPILED");
+              attr._setValue("compiled", "COMPILED");
               element.compiled = true;
               expect(element).toBe(attr._element());
             },
@@ -5950,7 +5973,7 @@ describe("$compile", () => {
             replace: true,
             template: '<div class="log" id="myid" high-log>No Merge!</div>',
             compile(element, attr) {
-              attr.$set("compiled", "COMPILED");
+              attr._setValue("compiled", "COMPILED");
               expect(element).toBe(attr._element());
             },
           }))
@@ -5959,7 +5982,7 @@ describe("$compile", () => {
             template:
               '<div class="log" style="width: 10px" high-log>Append!</div>',
             compile(element, attr) {
-              attr.$set("compiled", "COMPILED");
+              attr._setValue("compiled", "COMPILED");
               expect(element).toBe(attr._element());
             },
           }))
@@ -5968,7 +5991,7 @@ describe("$compile", () => {
             template:
               '<div class="class_{{1+1}}">Replace with interpolated class!</div>',
             compile(element, attr) {
-              attr.$set("compiled", "COMPILED");
+              attr._setValue("compiled", "COMPILED");
               expect(element).toBe(attr._element());
             },
           }))
@@ -5977,7 +6000,7 @@ describe("$compile", () => {
             template:
               '<div style="width:{{1+1}}px">Replace with interpolated style!</div>',
             compile(element, attr) {
-              attr.$set("compiled", "COMPILED");
+              attr._setValue("compiled", "COMPILED");
               expect(element).toBe(attr._element());
             },
           }))
@@ -7783,7 +7806,7 @@ describe("$compile", () => {
             scope: { checked: "@" },
             link(scope, element, attrs) {
               componentScope = scope;
-              attrs.$set("checked", true);
+              attrs._setValue("checked", true);
             },
           }));
           injector = createInjector(["myModule"]);
@@ -7821,7 +7844,7 @@ describe("$compile", () => {
           )
           .directive("replaceSomeAttr", () => ({
             compile(element, attr) {
-              attr.$set("someAttr", "bar-{{1+1}}");
+              attr._setValue("someAttr", "bar-{{1+1}}");
               expect(element).toBe(attr._element());
             },
           }));
@@ -7949,7 +7972,7 @@ describe("$compile", () => {
         module.directive("removeAttr", () => ({
           restrict: "A",
           compile(tElement, tAttr) {
-            tAttr.$set("removeAttr", null);
+            tAttr._setValue("removeAttr", null);
           },
         }));
 
@@ -8354,8 +8377,8 @@ describe("$compile", () => {
       describe("attrs", () => {
         it("should allow setting of attributes", async () => {
           module.directive("setter", () => (scope, element, attr) => {
-            attr.$set("name", "abc");
-            attr.$set("disabled", true);
+            attr._setValue("name", "abc");
+            attr._setValue("disabled", true);
             expect(attr.name).toBe("abc");
             expect(attr.disabled).toBe(true);
           });
@@ -8525,7 +8548,7 @@ describe("$compile", () => {
           expect(spies[0]).toHaveBeenCalledOnceWith("id_5");
         });
 
-        describe("$set", () => {
+        describe("_setValue", () => {
           let attr, $sce;
 
           beforeEach(async () => {
@@ -8551,50 +8574,50 @@ describe("$compile", () => {
           });
 
           it("should set attributes", async () => {
-            attr.$set("ngMyAttr", "value");
+            attr._setValue("ngMyAttr", "value");
             expect(element.getAttribute("ng-my-attr")).toEqual("value");
             expect(attr.ngMyAttr).toEqual("value");
           });
 
           it("should allow overriding of attribute name and remember the name", () => {
-            attr.$set("ngOther", "123", true, "other");
+            attr._setValue("ngOther", "123", true, "other");
             expect(element.getAttribute("other")).toEqual("123");
             expect(attr.ngOther).toEqual("123");
 
-            attr.$set("ngOther", "246");
+            attr._setValue("ngOther", "246");
             expect(element.getAttribute("other")).toEqual("246");
             expect(attr.ngOther).toEqual("246");
           });
 
           it("should remove attribute", () => {
-            attr.$set("ngMyAttr", "value");
+            attr._setValue("ngMyAttr", "value");
             expect(element.getAttribute("ng-my-attr")).toEqual("value");
 
-            attr.$set("ngMyAttr", undefined);
+            attr._setValue("ngMyAttr", undefined);
             expect(element.getAttribute("ng-my-attr")).toBeNull();
 
-            attr.$set("ngMyAttr", "value");
-            attr.$set("ngMyAttr", null);
+            attr._setValue("ngMyAttr", "value");
+            attr._setValue("ngMyAttr", null);
             expect(element.getAttribute("ng-my-attr")).toBeNull();
           });
 
           it("should set the value to empty for boolean attrs", () => {
-            attr.$set("disabled", "value");
+            attr._setValue("disabled", "value");
             expect(element.getAttribute("disabled")).toEqual("");
             element.removeAttribute("disabled");
 
-            attr.$set("dISaBlEd", "VaLuE");
+            attr._setValue("dISaBlEd", "VaLuE");
             expect(element.getAttribute("disabled")).toEqual("");
           });
 
           it("should call removeAttr for boolean attrs when value is `false`", () => {
-            attr.$set("disabled", false);
+            attr._setValue("disabled", false);
             expect(element.getAttribute("disabled")).toBeNull();
 
-            attr.$set("disabled", "value");
+            attr._setValue("disabled", "value");
             expect(element.getAttribute("disabled")).toEqual("");
 
-            attr.$set("dISaBlEd", false);
+            attr._setValue("dISaBlEd", false);
             expect(element.getAttribute("disabled")).toBeNull();
           });
 
@@ -8603,7 +8626,7 @@ describe("$compile", () => {
             element = $compile("<a></a>")($rootScope);
             await wait();
 
-            $rootScope.attr.$set("href", "evil:foo()");
+            $rootScope.attr._setValue("href", "evil:foo()");
             expect(element.getAttribute("href")).toEqual("evil:foo()");
             expect($rootScope.attr.href).toEqual("evil:foo()");
           });
@@ -8612,7 +8635,7 @@ describe("$compile", () => {
             // Breaking change in https://github.com/angular/angular.js/pull/16378
             element = $compile("<img></img>")($rootScope);
             await wait();
-            $rootScope.attr.$set("img", "evil:foo()");
+            $rootScope.attr._setValue("img", "evil:foo()");
             await wait();
             expect(element.getAttribute("img")).toEqual("evil:foo()");
             expect($rootScope.attr.img).toEqual("evil:foo()");
@@ -8620,7 +8643,7 @@ describe("$compile", () => {
 
           it("should not automatically sanitize img[srcset]", async () => {
             element = $compile("<img></img>")($rootScope);
-            $rootScope.attr.$set("srcset", "evil:foo()");
+            $rootScope.attr._setValue("srcset", "evil:foo()");
             await wait();
             expect(element.getAttribute("srcset")).toEqual("evil:foo()");
             expect($rootScope.attr.srcset).toEqual("evil:foo()");
@@ -8635,7 +8658,7 @@ describe("$compile", () => {
             initInjector("test1");
             element = $compile("<img></img>")($rootScope);
 
-            $rootScope.attr.$set(
+            $rootScope.attr._setValue(
               "srcset",
               "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
             );
@@ -8647,7 +8670,7 @@ describe("$compile", () => {
               "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
             );
 
-            $rootScope.attr.$set(
+            $rootScope.attr._setValue(
               "srcset",
               "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
             );
@@ -8665,7 +8688,9 @@ describe("$compile", () => {
 
             element = $compile("<img></img>")($rootScope);
             await wait();
-            expect(() => $rootScope.attr.$set("srcset", trusted)).not.toThrow();
+            expect(() =>
+              $rootScope.attr._setValue("srcset", trusted),
+            ).not.toThrow();
           });
         });
       });
@@ -15381,10 +15406,10 @@ describe("$compile", () => {
 
       module.directive("setter", () => (scope, elem, attrs) => {
         // Set srcset to a value
-        attrs.$set("srcset", "http://example.com/");
+        attrs._setValue("srcset", "http://example.com/");
         expect(attrs.srcset).toBe("http://example.com/");
         // Now set it to undefined
-        attrs.$set("srcset", undefined);
+        attrs._setValue("srcset", undefined);
         expect(attrs.srcset).toBeUndefined();
         linked = true;
       });

@@ -45,6 +45,13 @@ describe("ng-bind", () => {
       expect(element.textContent).toEqual("misko");
     });
 
+    it("should support normalized data-ng-bind aliases", async () => {
+      element = $compile('<div data-ng-bind="a"></div>')($rootScope);
+      $rootScope.a = "misko";
+      await wait();
+      expect(element.textContent).toEqual("misko");
+    });
+
     it("should set text to blank if undefined", async () => {
       element = $compile('<div ng-bind="a"></div>')($rootScope);
       $rootScope.a = "misko";
@@ -285,6 +292,13 @@ describe("ng-bind", () => {
         $rootScope.html = '<div onclick="">hello</div>';
         await wait();
         expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
+      });
+
+      it("should support normalized data-ng-bind-html aliases", async () => {
+        element = $compile('<div data-ng-bind-html="html"></div>')($rootScope);
+        $rootScope.html = "<span>hello</span>";
+        await wait();
+        expect(element.innerHTML).toEqual("<span>hello</span>");
       });
 
       it("should update html", async () => {

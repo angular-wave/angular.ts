@@ -29,8 +29,6 @@ describe("select", () => {
 
   let injector;
 
-  const optionAttributesList = [];
-
   let errors = [];
 
   async function compile(html) {
@@ -106,15 +104,6 @@ describe("select", () => {
             "{{ options.label }}" +
             "</option>",
         }));
-
-        $compileProvider.directive("exposeAttributes", () => ({
-          require: "^^select",
-          link: {
-            pre(scope, element, attrs, ctrl) {
-              optionAttributesList.push(attrs);
-            },
-          },
-        }));
       },
     ]);
     injector.invoke((_$rootScope_, _$compile_) => {
@@ -172,7 +161,10 @@ describe("select", () => {
 
   describe("option compile", () => {
     it("should set a static value from option text during compile", () => {
-      const directive = optionDirective(injector.get("$interpolate"));
+      const directive = optionDirective(
+        injector.get("$attributes"),
+        injector.get("$interpolate"),
+      );
 
       const option = document.createElement("option");
 
@@ -183,12 +175,16 @@ describe("select", () => {
       option.textContent = "literal";
       const link = directive.compile(option, attr);
 
-      expect(attr.$set).toHaveBeenCalledWith("value", "literal");
+      expect(attr.$set).not.toHaveBeenCalled();
+      expect(option.getAttribute("value")).toBe("literal");
       expect(link).toEqual(jasmine.any(Function));
     });
 
     it("should preserve explicit option values during compile", () => {
-      const directive = optionDirective(injector.get("$interpolate"));
+      const directive = optionDirective(
+        injector.get("$attributes"),
+        injector.get("$interpolate"),
+      );
 
       const option = document.createElement("option");
 
@@ -197,6 +193,26 @@ describe("select", () => {
         $set: jasmine.createSpy("$set"),
       };
 
+      const link = directive.compile(option, attr);
+
+      expect(attr.$set).not.toHaveBeenCalled();
+      expect(link).toEqual(jasmine.any(Function));
+    });
+
+    it("should preserve normalized data-value option values during compile", () => {
+      const directive = optionDirective(
+        injector.get("$attributes"),
+        injector.get("$interpolate"),
+      );
+
+      const option = document.createElement("option");
+
+      const attr = {
+        $set: jasmine.createSpy("$set"),
+      };
+
+      option.setAttribute("data-value", "explicit");
+      option.textContent = "literal";
       const link = directive.compile(option, attr);
 
       expect(attr.$set).not.toHaveBeenCalled();
@@ -1283,6 +1299,42 @@ describe("select", () => {
       ).toBeTrue();
     });
 
+    it("should support normalized data aliases for ngModel", async () => {
+      compile(
+        '<select data-ng-model="selection" multiple>' +
+          "<option>A</option>" +
+          "<option>B</option>" +
+          "</select>",
+      );
+
+      scope.selection = ["A"];
+      await wait();
+      let optionElements = element.querySelectorAll("option");
+
+      expect(optionElements[0].selected).toBeTrue();
+      expect(optionElements[1].selected).toBeFalse();
+
+      scope.selection.push("B");
+      await wait();
+      optionElements = element.querySelectorAll("option");
+
+      expect(optionElements[0].selected).toBeTrue();
+      expect(optionElements[1].selected).toBeTrue();
+    });
+
+    it("should read normalized data aliases for the multiple mode flag", async () => {
+      compile(
+        '<select ng-model="selection" data-multiple>' +
+          "<option>A</option>" +
+          "<option>B</option>" +
+          "</select>",
+      );
+
+      const selectCtrl = getController(element, "select");
+
+      expect(selectCtrl._multiple).toBeTrue();
+    });
+
     it("should work with optgroups", async () => {
       compile(
         '<select ng-model="selection" multiple>' +
@@ -1650,33 +1702,31 @@ describe("select", () => {
           ).toBeTrue();
         });
       });
-      it("should interact with custom attribute $observe and $set calls", async () => {
+      it("should interact with custom $attributes observe and set calls", async () => {
         const log = [];
-
-        let optionAttr;
 
         compile(
           '<select ng-model="selected">' +
-            '<option expose-attributes ng-value="option">{{option}}</option>' +
+            '<option ng-value="option">{{option}}</option>' +
             "</select>",
         );
         await wait();
-        optionAttr = optionAttributesList[0];
-        optionAttr.$observe("value", (newVal) => {
+
+        const $attributes = injector.get("$attributes");
+        const option = element.querySelectorAll("option")[1];
+
+        $attributes.observe(scope, option, "value", (newVal) => {
           log.push(newVal);
         });
 
         scope.option = "init";
         await wait();
-        expect(log[0]).toBe("init");
-        expect(element.querySelectorAll("option")[1].value).toBe("string:init");
+        expect(option.value).toBe("string:init");
 
-        optionAttr.$set("value", "update");
+        $attributes.set(option, "value", "update");
         await wait();
-        expect(log[1]).toBe("update");
-        expect(element.querySelectorAll("option")[1].value).toBe(
-          "string:update",
-        );
+        expect(log).toContain("update");
+        expect(option.value).toBe("string:update");
       });
 
       it("should ignore the option text / value attribute if the ngValue attribute exists", async () => {
@@ -1701,6 +1751,26 @@ describe("select", () => {
         );
         await wait();
         expect(element.value).toBe(`? undefined:undefined ?`);
+      });
+
+      it("should support normalized data-ng-value aliases", async () => {
+        scope.option = { id: 1 };
+        scope.selected = "NOMATCH";
+
+        compile(
+          '<select ng-model="selected">' +
+            '<option data-ng-value="option">{{option.id}}</option>' +
+            "</select>",
+        );
+        await wait();
+
+        scope.selected = scope.option;
+        await wait();
+        expect(element.selectedIndex).toBe(0);
+
+        setSelectValue(element, 0);
+        await wait();
+        expect(scope.selected).toBe(scope.option);
       });
 
       it("should select the first option if it is `undefined`", async () => {

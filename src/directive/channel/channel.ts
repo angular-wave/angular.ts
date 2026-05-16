@@ -1,8 +1,7 @@
-import { _eventBus } from "../../injection-tokens.ts";
-import { getNormalizedAttr } from "../../shared/dom.ts";
+import { _attributes, _eventBus } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
 
-ngChannelDirective.$inject = [_eventBus];
+ngChannelDirective.$inject = [_eventBus, _attributes];
 /**
  * Subscribes an element to a pub/sub channel.
  *
@@ -10,11 +9,14 @@ ngChannelDirective.$inject = [_eventBus];
  * merged into the current scope. Otherwise, string payloads replace the
  * element's HTML content directly.
  */
-export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
+export function ngChannelDirective(
+  $eventBus: ng.PubSubService,
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     scope: false,
     link: (scope: ng.Scope, element: HTMLElement): void => {
-      const channel = getNormalizedAttr(element, "ngChannel");
+      const channel = $attributes.read(element, "ngChannel");
 
       if (!channel) {
         return;

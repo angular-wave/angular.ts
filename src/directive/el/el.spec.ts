@@ -43,6 +43,15 @@ describe("ngEl", () => {
     expect($rootScope.$target.myEl.id).toBe("bar");
   });
 
+  it("should support normalized data-ng-el aliases", async () => {
+    el.innerHTML = `<div id="bar" data-ng-el="myEl"></div>`;
+    $compile(el)($rootScope);
+    await wait();
+
+    expect($rootScope.$target.myEl).toBeDefined();
+    expect($rootScope.$target.myEl.id).toBe("bar");
+  });
+
   it("should support multiple ng-el elements", async () => {
     el.innerHTML = `
       <div id="a" ng-el="first"></div>

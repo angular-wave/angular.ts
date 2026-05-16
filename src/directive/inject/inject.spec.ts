@@ -48,6 +48,15 @@ describe("ngInject", () => {
     expect(el.innerText).toEqual("1");
   });
 
+  it("should read data-ng-inject from the host element", async () => {
+    expect($test.a).toEqual(1);
+    el.innerHTML = `<div data-ng-inject="$test"> {{ $test.a }} </div>`;
+    $compile(el)($rootScope);
+    await wait();
+    expect($rootScope.$test).toEqual($test);
+    expect(el.innerText).toEqual("1");
+  });
+
   it("should evaluate expressions referencing injected", async () => {
     expect($test.a).toEqual(1);
     el.innerHTML = `<div ng-inject="$test"> {{ $test.a  + 1}} </div>`;

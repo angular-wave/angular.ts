@@ -1,4 +1,5 @@
 import {
+  _attributes,
   _compile,
   _exceptionHandler,
   _injector,
@@ -7,7 +8,6 @@ import {
   _webTransport,
 } from "../../injection-tokens.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
-import { getNormalizedAttr } from "../../shared/dom.ts";
 import {
   isDefined,
   isFunction,
@@ -43,6 +43,7 @@ ngWebTransportDirective.$inject = [
   _log,
   _exceptionHandler,
   _injector,
+  _attributes,
 ];
 
 /**
@@ -56,6 +57,7 @@ export function ngWebTransportDirective(
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $injector: ng.InjectorService,
+  $attributes: ng.AttributesService,
 ): ng.Directive {
   const decoder = new TextDecoder();
 
@@ -63,9 +65,9 @@ export function ngWebTransportDirective(
 
   return {
     restrict: "A",
-    link(scope: ng.Scope, element: HTMLElement, attrs: ng.Attributes) {
+    link(scope: ng.Scope, element: HTMLElement) {
       const attr = (name: string): string | undefined =>
-        getNormalizedAttr(element, name) ?? undefined;
+        $attributes.read(element, name);
 
       const eventName = attr("trigger") || "load";
 
@@ -223,7 +225,7 @@ export function ngWebTransportDirective(
         $log,
         getAnimate,
         scope,
-        attrs,
+        $attributes,
         element,
         logPrefix: "ngWebTransport",
       });

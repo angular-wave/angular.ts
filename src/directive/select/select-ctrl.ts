@@ -11,6 +11,7 @@ import {
   isNullOrUndefined,
   isUndefined,
 } from "../../shared/utils.ts";
+import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
 
 export type SelectScope = ng.Scope &
   Record<string, any> & {
@@ -23,6 +24,86 @@ export type NgModelController = ng.NgModelController & Record<string, any>;
 export type SelectAttributes = ng.Attributes & Record<string, any>;
 
 export type InterpolateFn = ((scope: ng.Scope) => any) | null | undefined;
+
+function readOptionElementAttr(
+  $attributes: ng.AttributesService | undefined,
+  optionElement: HTMLOptionElement,
+  optionAttrs: SelectAttributes,
+  normalizedName: string,
+): unknown {
+  const elementValue = $attributes?.read(optionElement, normalizedName);
+  const attrValue = optionAttrs[normalizedName];
+
+  if (
+    isDefined(attrValue) &&
+    (isUndefined(elementValue) || elementValue.includes("{{"))
+  ) {
+    return attrValue;
+  }
+
+  return elementValue ?? attrValue;
+}
+
+function hasInterpolatedOptionAttr(
+  $attributes: ng.AttributesService,
+  optionElement: HTMLOptionElement,
+  optionAttrs: SelectAttributes,
+  normalizedName: string,
+): boolean {
+  return Boolean(
+    ($attributes as InternalAttributesService)._isInterpolated(
+      optionElement,
+      normalizedName,
+    ) || $attributes.read(optionElement, normalizedName)?.includes("{{"),
+  );
+}
+
+function observeOptionElementAttr(
+  $attributes: ng.AttributesService | undefined,
+  optionScope: SelectScope,
+  optionElement: HTMLOptionElement,
+  optionAttrs: SelectAttributes,
+  normalizedName: string,
+  readValue: (observedValue?: unknown) => unknown,
+  callback: (value: unknown) => void,
+  skipInitial = false,
+): () => void {
+  if (!$attributes) {
+    return () => undefined;
+  }
+
+  let lastValue: unknown = {};
+  let skipNext = skipInitial;
+
+  return $attributes.observe(
+    optionScope,
+    optionElement,
+    normalizedName,
+    (observedValue) => {
+      if (skipNext) {
+        skipNext = false;
+
+        return;
+      }
+
+      const newValue = readValue(observedValue);
+
+      if (Object.is(newValue, lastValue)) return;
+
+      lastValue = newValue;
+      callback(newValue);
+    },
+  );
+}
+
+function setOptionElementAttr(
+  $attributes: ng.AttributesService,
+  optionElement: HTMLOptionElement,
+  normalizedName: string,
+  value: string,
+): void {
+  $attributes.set(optionElement, normalizedName, value);
+}
 
 /**
  * The controller for the `select` directive.
@@ -389,26 +470,35 @@ export class SelectController {
     optionAttrs: SelectAttributes,
     interpolateValueFn: InterpolateFn,
     interpolateTextFn: InterpolateFn,
+    $attributes: ng.AttributesService,
+    initialValue?: string,
+    hasNgValue = false,
   ) {
     let oldVal: any;
 
     let hashedVal: string | undefined;
 
-    let registeredValue = optionAttrs.value;
+    let registeredValue: any = initialValue;
 
-    if (optionAttrs.$attr.ngValue) {
-      optionAttrs.$observe("value", (newVal: any) => {
+    if (hasNgValue) {
+      let ngValueInitialized = false;
+
+      const syncNgValue = (newVal: unknown) => {
         let removal;
 
         const previouslySelected = optionElement.selected;
+
+        const rawNewVal = deProxy(newVal);
+
+        if (ngValueInitialized && Object.is(rawNewVal, oldVal)) return;
+
+        ngValueInitialized = true;
 
         if (isDefined(hashedVal)) {
           this._removeOption(oldVal);
           deleteProperty(this._selectValueMap, hashedVal);
           removal = true;
         }
-
-        const rawNewVal = deProxy(newVal);
 
         hashedVal = hashKey(rawNewVal);
         oldVal = rawNewVal;
@@ -420,31 +510,81 @@ export class SelectController {
         if (removal && previouslySelected) {
           this._scheduleViewValueUpdate();
         }
-      });
+      };
+
+      syncNgValue(undefined);
+      optionScope.$watch(optionAttrs.ngValue, syncNgValue);
+      observeOptionElementAttr(
+        $attributes,
+        optionScope,
+        optionElement,
+        optionAttrs,
+        "value",
+        (observedValue) => {
+          if (observedValue !== optionElement.getAttribute("value")) {
+            return oldVal;
+          }
+
+          if (isDefined(hashedVal) && observedValue === hashedVal) {
+            return oldVal;
+          }
+
+          return observedValue;
+        },
+        syncNgValue,
+        true,
+      );
     } else if (interpolateValueFn) {
-      optionAttrs.$observe("value", (newVal: any) => {
-        this._readValue();
-        let removal;
+      observeOptionElementAttr(
+        $attributes,
+        optionScope,
+        optionElement,
+        optionAttrs,
+        "value",
+        () =>
+          readOptionElementAttr(
+            $attributes,
+            optionElement,
+            optionAttrs,
+            "value",
+          ),
+        (newVal: unknown) => {
+          this._readValue();
+          let removal;
 
-        const previouslySelected = optionElement.selected;
+          const previouslySelected = optionElement.selected;
 
-        if (isDefined(oldVal)) {
-          this._removeOption(oldVal);
-          removal = true;
-        }
-        oldVal = newVal;
-        registeredValue = newVal;
-        this._addOption(newVal, optionElement);
+          if (isDefined(oldVal)) {
+            this._removeOption(oldVal);
+            removal = true;
+          }
+          oldVal = newVal;
+          registeredValue = newVal;
+          this._addOption(newVal, optionElement);
 
-        if (removal && previouslySelected) {
-          this._scheduleViewValueUpdate();
-        }
-      });
+          if (removal && previouslySelected) {
+            this._scheduleViewValueUpdate();
+          }
+        },
+        $attributes
+          ? hasInterpolatedOptionAttr(
+              $attributes,
+              optionElement,
+              optionAttrs,
+              "value",
+            )
+          : false,
+      );
     } else if (interpolateTextFn) {
       optionScope.value = interpolateTextFn(optionScope);
 
-      if (!optionAttrs.value) {
-        optionAttrs.$set("value", optionScope.value);
+      if (!registeredValue) {
+        setOptionElementAttr(
+          $attributes,
+          optionElement,
+          "value",
+          optionScope.value,
+        );
         registeredValue = optionScope.value;
         this._addOption(optionScope.value, optionElement);
       }
@@ -452,8 +592,8 @@ export class SelectController {
       optionScope.$watch("value", () => {
         const newVal = interpolateTextFn(optionScope);
 
-        if (!optionAttrs.value) {
-          optionAttrs.$set("value", newVal);
+        if (!registeredValue) {
+          setOptionElementAttr($attributes, optionElement, "value", newVal);
         }
         const previouslySelected = optionElement.selected;
 
@@ -469,19 +609,33 @@ export class SelectController {
         }
       });
     } else {
-      this._addOption(optionAttrs.value, optionElement);
+      this._addOption(registeredValue, optionElement);
     }
 
-    optionAttrs.$observe("disabled", (newVal: any) => {
-      if (newVal === "true" || (newVal && optionElement.selected)) {
-        if (this._multiple) {
-          this._scheduleViewValueUpdate(true);
-        } else {
-          this._ngModelCtrl.$setViewValue(null);
-          this._ngModelCtrl.$render();
+    observeOptionElementAttr(
+      $attributes,
+      optionScope,
+      optionElement,
+      optionAttrs,
+      "disabled",
+      () =>
+        readOptionElementAttr(
+          $attributes,
+          optionElement,
+          optionAttrs,
+          "disabled",
+        ),
+      (newVal: unknown) => {
+        if (newVal === "true" || (newVal && optionElement.selected)) {
+          if (this._multiple) {
+            this._scheduleViewValueUpdate(true);
+          } else {
+            this._ngModelCtrl.$setViewValue(null);
+            this._ngModelCtrl.$render();
+          }
         }
-      }
-    });
+      },
+    );
 
     optionElement.addEventListener("$destroy", () => {
       const currentValue = this._readValue();

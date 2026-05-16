@@ -1,13 +1,17 @@
-import { getNormalizedAttr } from "../../shared/dom.ts";
+import { _attributes } from "../../injection-tokens.ts";
 import { keys } from "../../shared/utils.ts";
+
+ngStyleDirective.$inject = [_attributes];
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
  */
-export function ngStyleDirective(): ng.Directive {
+export function ngStyleDirective(
+  $attributes: ng.AttributesService,
+): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement): void {
-      const expression = getNormalizedAttr(element, "ngStyle");
+      const expression = $attributes.read(element, "ngStyle");
 
       if (expression === undefined) {
         return;

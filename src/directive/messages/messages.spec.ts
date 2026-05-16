@@ -61,6 +61,21 @@ describe("ngMessages", () => {
     expect(element.textContent).toContain("Message is set");
   });
 
+  it("should support normalized data aliases for message collection and key", async () => {
+    element = $compile(
+      '<div data-ng-messages="col">' +
+        '  <div data-ng-message="val">Message is set</div>' +
+        "</div>",
+    )($rootScope);
+    await wait();
+    expect(element.textContent).not.toContain("Message is set");
+
+    $rootScope.col = { val: true };
+    await wait();
+
+    expect(element.textContent).toContain("Message is set");
+  });
+
   it("should render the same message if multiple message keys match", async () => {
     element = $compile(
       '<div ng-messages="col">' +

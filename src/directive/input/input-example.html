@@ -6,17 +6,19 @@
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
     <script type="module" src="/src/index.ts"></script>
   </head>
-  <body ng-app ng-init='value = { some: "hello" }'>
-    <input type="radio" ng-model="selected" ng-value="value" />
-    {{selected.some}}
-    <button ng-click="selected = value">Set</button>
-    <button ng-click="selected =  { some: 'unset' }">Unset</button>
+  <body ng-app>
+    <fieldset ng-init="selected = 'hello'">
+      <legend>Radio values</legend>
+      <input type="radio" ng-model="selected" value="hello" />
+      <input type="radio" ng-model="selected" value="unset" />
+      {{selected}}
+    </fieldset>
 
     <form
       name="myForm"
       ng-init="checkboxModel = {
         value1 : true,
-        value2 : 'YES'
+        value2 : false
       }"
     >
       <label
@@ -25,12 +27,7 @@
       ><br />
       <label
         >Value2:
-        <input
-          type="checkbox"
-          ng-model="checkboxModel.value2"
-          ng-true-value="'YES'"
-          ng-false-value="'NO'"
-        /> </label
+        <input type="checkbox" ng-model="checkboxModel.value2" /> </label
       ><br />
       <div>value1 = {{checkboxModel.value1}}</div>
       <br />

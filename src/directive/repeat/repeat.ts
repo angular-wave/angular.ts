@@ -1,4 +1,4 @@
-import { _injector } from "../../injection-tokens.ts";
+import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   callBackOnce,
   callFunction,
@@ -20,8 +20,6 @@ import {
 import {
   createDocumentFragment,
   getBlockNodes,
-  getDirectiveAttr,
-  hasDirectiveAttr,
   removeElement,
   removeElementData,
 } from "../../shared/dom.ts";
@@ -39,7 +37,7 @@ const ngRepeatError = createErrorFactory("ngRepeat");
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
-ngRepeatDirective.$inject = [_injector];
+ngRepeatDirective.$inject = [_injector, _attributes];
 
 type RepeatScope = ng.Scope &
   Record<string, unknown> & {
@@ -58,7 +56,10 @@ interface RepeatBlock {
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
 
-export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
+export function ngRepeatDirective(
+  $injector: ng.InjectorService,
+  $attributes: ng.AttributesService,
+): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
   const repeatPositionLocalKeys = [
@@ -528,17 +529,17 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     transclude: "element",
     priority: 1000,
     terminal: true,
-    compile($element: Element, $attr: ng.Attributes) {
-      const expression = getDirectiveAttr($element, $attr, "ngRepeat") || "";
+    compile($element: Element) {
+      const expression = $attributes.read($element, "ngRepeat") || "";
 
-      const hasAnimate = hasDirectiveAttr($element, $attr, "animate");
+      const hasAnimate = $attributes.has($element, "animate");
 
       const indexProperty =
-        getDirectiveAttr($element, $attr, "index") ||
-        getDirectiveAttr($element, $attr, "dataIndex") ||
+        $attributes.read($element, "index") ||
+        $attributes.read($element, "dataIndex") ||
         undefined;
 
-      const hasLazy = hasDirectiveAttr($element, $attr, "lazy");
+      const hasLazy = $attributes.has($element, "lazy");
 
       let match =
         /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(
@@ -587,7 +588,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       }
 
       const swap = callBackOnce(() => {
-        const targetSelector = getDirectiveAttr($element, $attr, "swap");
+        const targetSelector = $attributes.read($element, "swap");
 
         if (hasLazy && targetSelector) {
           document.querySelectorAll(targetSelector).forEach((x) => {

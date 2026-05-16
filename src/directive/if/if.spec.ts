@@ -72,6 +72,21 @@ describe("ngIf", () => {
       expect(element.children.length).toBe(1);
     });
 
+    it("should read data-ng-if from the host element", async () => {
+      element = createElementFromHTML(
+        '<div><span class="visible" data-ng-if="visible">Visible</span></div>',
+      );
+      $compile(element)($scope);
+
+      $scope.visible = true;
+      await wait();
+      expect(element.querySelector(".visible")!.textContent).toBe("Visible");
+
+      $scope.visible = false;
+      await wait();
+      expect(element.querySelector(".visible")).toBeNull();
+    });
+
     it("should leave the element if the condition is a non-empty string", async () => {
       makeIf("'f'", "'0'", "'false'", "'no'", "'n'", "'[]'");
       await wait();

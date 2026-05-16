@@ -41,4 +41,20 @@ describe("ngViewport", () => {
     await wait(100);
     expect($rootScope.viewable).toEqual(false);
   });
+
+  it("should support normalized data-on-enter aliases", async () => {
+    el.innerHTML = `<div
+      ng-viewport
+      data-on-enter="viewable = true"
+    >
+      Test
+    </div>`;
+    $compile(el)($rootScope);
+    await wait();
+    expect($rootScope.viewable).toEqual(undefined);
+
+    window.scrollTo(0, 1500);
+    await wait(100);
+    expect($rootScope.viewable).toEqual(true);
+  });
 });

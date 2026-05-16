@@ -27,6 +27,14 @@ describe("ngScopeDirective", () => {
     expect(scope.$scopename).toBe("myName");
   });
 
+  it("should support normalized data-ng-scope aliases", async () => {
+    const scope = $rootScope.$new();
+
+    $compile('<div data-ng-scope="myName"></div>')(scope);
+
+    expect(scope.$scopename).toBe("myName");
+  });
+
   it("should not create an isolate scope", () => {
     const scope = $rootScope.$new();
 
