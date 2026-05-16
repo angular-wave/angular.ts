@@ -178,7 +178,7 @@ impl WasmScope {
         });
     }
 
-    /// Flushes queued AngularTS scope callbacks for the wrapped scope.
+    /// Runs queued Wasm scope bridge callbacks for the wrapped scope.
     pub fn flush(&self) {
         if !self.reference.is_valid() {
             return;

@@ -1116,7 +1116,6 @@ describe("ngModel", () => {
         expect(stages.async.count).toBe(1);
 
         stages.async.defer.resolve();
-        scope.$flushQueue();
         await wait();
         expect(ctrl.$valid).toBe(true);
         expect(ctrl.$invalid).toBe(false);

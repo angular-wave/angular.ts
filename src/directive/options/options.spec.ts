@@ -2643,7 +2643,6 @@ describe("ngOptions", () => {
       await createSingleSelect(
         '<option ng-if="isBlank" value="">blank</option>',
       );
-      scope.$flushQueue();
 
       await wait();
 
@@ -2659,7 +2658,6 @@ describe("ngOptions", () => {
       await createSingleSelect(
         '<option ng-if="isBlank" value="">blank</option>',
       );
-      scope.$flushQueue();
 
       await wait();
 
@@ -2678,7 +2676,6 @@ describe("ngOptions", () => {
       expect(element.querySelectorAll("option")[0].selected).toBe(true);
 
       scope.selected = scope.values[1];
-      scope.$flushQueue();
       await wait();
       expect(element.querySelectorAll("option")[0].value).toBe("");
       await wait();
@@ -2694,7 +2691,6 @@ describe("ngOptions", () => {
       await createSingleSelect(
         '<option ng-if="isBlank" value="">blank</option>',
       );
-      scope.$flushQueue();
 
       await wait();
 
@@ -2702,7 +2698,6 @@ describe("ngOptions", () => {
       await wait();
       expect(element.querySelectorAll("option")[0].selected).toBe(true);
       scope.selected = scope.values[2];
-      scope.$flushQueue();
       await wait();
       expect(element.querySelectorAll("option")[0].selected).toBe(false);
       await wait();
@@ -2715,14 +2710,12 @@ describe("ngOptions", () => {
       await createSingleSelect(
         '<option ng-if="isBlank" value="">blank</option>',
       );
-      scope.$flushQueue();
 
       await wait();
 
       expect(element.querySelectorAll("option")[0].selected).toBe(true);
 
       scope.isBlank = true;
-      scope.$flushQueue();
 
       await wait();
 

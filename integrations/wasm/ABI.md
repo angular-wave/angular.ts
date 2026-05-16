@@ -211,7 +211,7 @@ Name-based variant of `scope_delete`.
 
 ### `scope_flush`
 
-Flushes queued AngularTS scope callbacks for the bound scope when available.
+Runs queued Wasm scope bridge callbacks for the bound scope.
 
 Returns `1` on success and `0` when the scope handle is invalid.
 

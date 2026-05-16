@@ -1,135 +1,1049 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>ParamDeclaration | AngularTS</title><meta name="description" content="Documentation for AngularTS"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="../index.html" class="title">AngularTS</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb" aria-label="Breadcrumb"><li><a href="" aria-current="page">ParamDeclaration</a></li></ul><h1>Interface ParamDeclaration</h1></div><section class="tsd-panel tsd-comment"><div class="tsd-comment tsd-typography"><p>Configuration for a single Parameter</p>
-<p>In a [[StateDeclaration.params]], each <code>ParamDeclaration</code>
-defines how a single State Parameter should work.</p>
-<h4 id="example" class="tsd-anchor-link">Example:<a href="#example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-6">var</span><span class="hl-2"> </span><span class="hl-7">mystate</span><span class="hl-2"> = {</span><br/><span class="hl-2">  </span><span class="hl-7">template:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;div ng-view/&gt;&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-8">controller</span><span class="hl-7">:</span><span class="hl-2"> </span><span class="hl-6">function</span><span class="hl-2">() {}</span><br/><span class="hl-2">  </span><span class="hl-7">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate/:start?{count:int}&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">params:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">start:</span><span class="hl-2"> { </span><span class="hl-10">// &lt;-- ParamDeclaration for `start`</span><br/><span class="hl-2">      </span><span class="hl-7">type:</span><span class="hl-2"> </span><span class="hl-9">&#39;date&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">      </span><span class="hl-7">value:</span><span class="hl-2"> </span><span class="hl-6">new</span><span class="hl-2"> </span><span class="hl-8">Date</span><span class="hl-2">(), </span><span class="hl-10">// &lt;-- Default value</span><br/><span class="hl-2">      </span><span class="hl-7">squash:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2">,</span><br/><span class="hl-2">    },</span><br/><br/><span class="hl-2">    </span><span class="hl-7">nonUrlParam:</span><span class="hl-2"> { </span><span class="hl-10">// &lt;-- ParamDeclaration for &#39;nonUrlParam&#39;</span><br/><span class="hl-2">     </span><span class="hl-7">type:</span><span class="hl-2"> </span><span class="hl-9">&quot;int&quot;</span><span class="hl-2">,</span><br/><span class="hl-2">     </span><span class="hl-7">array:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2">,</span><br/><span class="hl-2">     </span><span class="hl-7">value:</span><span class="hl-2"> []</span><br/><span class="hl-2">    },</span><br/><br/><span class="hl-2">    </span><span class="hl-7">count:</span><span class="hl-2"> </span><span class="hl-15">0</span><span class="hl-2">, </span><span class="hl-10">// &lt;-- Default value for &#39;param1&#39;</span><br/><span class="hl-2">              </span><span class="hl-10">// (shorthand ParamDeclaration.value)</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span>
+<!doctype html>
+<html class="default" lang="en" data-base="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="IE=edge" />
+    <title>ParamDeclaration | AngularTS</title>
+    <meta name="description" content="Documentation for AngularTS" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../assets/style.css" />
+    <link rel="stylesheet" href="../assets/highlight.css" />
+    <script defer src="../assets/main.js"></script>
+    <script async src="../assets/icons.js" id="tsd-icons-script"></script>
+    <script async src="../assets/search.js" id="tsd-search-script"></script>
+    <script async src="../assets/navigation.js" id="tsd-nav-script"></script>
+    <script
+      async
+      src="../assets/hierarchy.js"
+      id="tsd-hierarchy-script"
+    ></script>
+  </head>
+  <body>
+    <script>
+      document.documentElement.dataset.theme =
+        localStorage.getItem("tsd-theme") || "os";
+      document.body.style.display = "none";
+      setTimeout(
+        () =>
+          window.app
+            ? app.showPage()
+            : document.body.style.removeProperty("display"),
+        500,
+      );
+    </script>
+    <header class="tsd-page-toolbar">
+      <div class="tsd-toolbar-contents container">
+        <a href="../index.html" class="title">AngularTS</a>
+        <div id="tsd-toolbar-links"></div>
+        <button id="tsd-search-trigger" class="tsd-widget" aria-label="Search">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <use href="../assets/icons.svg#icon-search"></use>
+          </svg>
+        </button>
+        <dialog id="tsd-search" aria-label="Search">
+          <input
+            role="combobox"
+            id="tsd-search-input"
+            aria-controls="tsd-search-results"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            autocapitalize="off"
+            autocomplete="off"
+            placeholder="Search the docs"
+            maxlength="100"
+          />
+          <ul role="listbox" id="tsd-search-results"></ul>
+          <div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+            <div>Preparing search index...</div>
+          </div>
+        </dialog>
+        <a
+          href="#"
+          class="tsd-widget menu"
+          id="tsd-toolbar-menu-trigger"
+          data-toggle="menu"
+          aria-label="Menu"
+          ><svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <use href="../assets/icons.svg#icon-menu"></use></svg
+        ></a>
+      </div>
+    </header>
+    <div class="container container-main">
+      <div class="col-content">
+        <div class="tsd-page-title">
+          <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+            <li><a href="" aria-current="page">ParamDeclaration</a></li>
+          </ul>
+          <h1>Interface ParamDeclaration</h1>
+        </div>
+        <section class="tsd-panel tsd-comment">
+          <div class="tsd-comment tsd-typography">
+            <p>Configuration for a single Parameter</p>
+            <p>
+              In a [[StateDeclaration.params]], each
+              <code>ParamDeclaration</code> defines how a single State Parameter
+              should work.
+            </p>
+            <h4 id="example" class="tsd-anchor-link">
+              Example:<a
+                href="#example"
+                aria-label="Permalink"
+                class="tsd-anchor-icon"
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <use href="../assets/icons.svg#icon-anchor"></use></svg
+              ></a>
+            </h4>
+            <pre><code class="js"><span class="hl-6">var</span><span class="hl-2"> </span><span class="hl-7">mystate</span><span class="hl-2"> = {</span><br/><span class="hl-2">  </span><span class="hl-7">template:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;div ng-view/&gt;&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-8">controller</span><span class="hl-7">:</span><span class="hl-2"> </span><span class="hl-6">function</span><span class="hl-2">() {}</span><br/><span class="hl-2">  </span><span class="hl-7">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate/:start?{count:int}&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">params:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">start:</span><span class="hl-2"> { </span><span class="hl-10">// &lt;-- ParamDeclaration for `start`</span><br/><span class="hl-2">      </span><span class="hl-7">type:</span><span class="hl-2"> </span><span class="hl-9">&#39;date&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">      </span><span class="hl-7">value:</span><span class="hl-2"> </span><span class="hl-6">new</span><span class="hl-2"> </span><span class="hl-8">Date</span><span class="hl-2">(), </span><span class="hl-10">// &lt;-- Default value</span><br/><span class="hl-2">      </span><span class="hl-7">squash:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2">,</span><br/><span class="hl-2">    },</span><br/><br/><span class="hl-2">    </span><span class="hl-7">nonUrlParam:</span><span class="hl-2"> { </span><span class="hl-10">// &lt;-- ParamDeclaration for &#39;nonUrlParam&#39;</span><br/><span class="hl-2">     </span><span class="hl-7">type:</span><span class="hl-2"> </span><span class="hl-9">&quot;int&quot;</span><span class="hl-2">,</span><br/><span class="hl-2">     </span><span class="hl-7">array:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2">,</span><br/><span class="hl-2">     </span><span class="hl-7">value:</span><span class="hl-2"> []</span><br/><span class="hl-2">    },</span><br/><br/><span class="hl-2">    </span><span class="hl-7">count:</span><span class="hl-2"> </span><span class="hl-15">0</span><span class="hl-2">, </span><span class="hl-10">// &lt;-- Default value for &#39;param1&#39;</span><br/><span class="hl-2">              </span><span class="hl-10">// (shorthand ParamDeclaration.value)</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+          </div>
+        </section>
+        <div class="tsd-signature">
+          <span class="tsd-signature-keyword">interface</span>
+          <span class="tsd-kind-interface">ParamDeclaration</span>
+          <span class="tsd-signature-symbol">{</span><br />    <a
+            class="tsd-kind-property"
+            href="#array"
+            >array</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">boolean</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">&quot;auto&quot;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#dynamic"
+            >dynamic</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">boolean</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#inherit"
+            >inherit</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">boolean</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#raw"
+            >raw</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">boolean</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#squash"
+            >squash</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">boolean</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#type"
+            >type</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">ParamType</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#value"
+            >value</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">;</span><br /><span
+            class="tsd-signature-symbol"
+            >}</span
+          >
+        </div>
+        <section class="tsd-panel-group tsd-index-group">
+          <section class="tsd-panel tsd-index-panel">
+            <details class="tsd-index-content tsd-accordion" open>
+              <summary class="tsd-accordion-summary tsd-index-summary">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <use href="../assets/icons.svg#icon-chevronDown"></use>
+                </svg>
+                <h5 class="tsd-index-heading uppercase">Index</h5>
+              </summary>
+              <div class="tsd-accordion-details">
+                <section class="tsd-index-section">
+                  <h3 class="tsd-index-heading">Properties</h3>
+                  <div class="tsd-index-list">
+                    <a href="#array" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>array?</span></a
+                    >
+                    <a href="#dynamic" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>dynamic?</span></a
+                    >
+                    <a href="#inherit" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>inherit?</span></a
+                    >
+                    <a href="#raw" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>raw?</span></a
+                    >
+                    <a href="#squash" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>squash?</span></a
+                    >
+                    <a href="#type" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>type?</span></a
+                    >
+                    <a href="#value" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>value?</span></a
+                    >
+                  </div>
+                </section>
+              </div>
+            </details>
+          </section>
+        </section>
+        <details class="tsd-panel-group tsd-member-group tsd-accordion" open>
+          <summary class="tsd-accordion-summary" data-key="section-Properties">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <use href="../assets/icons.svg#icon-chevronDown"></use>
+            </svg>
+            <h2>Properties</h2>
+          </summary>
+          <section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="array">
+                <code class="tsd-tag">Optional</code><span>array</span
+                ><a href="#array" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">array</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">&quot;auto&quot;</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>The parameter's <code>array</code> mode</p>
+                <p>
+                  Explicitly specifies the array mode of a query parameter. Path
+                  parameters are always treated as single values.
+                </p>
+                <ul>
+                  <li>
+                    If <code>false</code>, the parameter value will be treated
+                    (encoded/decoded) as a single value
+                  </li>
+                  <li>
+                    If <code>true</code>, a query parameter value will be
+                    treated (encoded/decoded) as an array of values.
+                  </li>
+                  <li>
+                    If <code>auto</code> (for query parameters only), if
+                    multiple values for a single parameter are present in the
+                    URL (e.g.: /foo?bar=1&amp;bar=2&amp;bar=3) then the values
+                    are mapped to an array (e.g.:
+                    <code>{ foo: [ '1', '2', '3' ] }</code>). However, if only
+                    one value is present (e.g.: /foo?bar=1) then the value is
+                    treated as single value (e.g.: { foo: '1' }).
+                  </li>
+                </ul>
+                <p>
+                  If you specified a [[type]] for a query parameter, the value
+                  will be treated as an array of the specified [[ParamType]].
+                </p>
+                <h4 id="example-1" class="tsd-anchor-link">
+                  Example:<a
+                    href="#example-1"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h4>
+                <pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/foo?arrayParam&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">arrayParam</span><span class="hl-2">: { </span><span class="hl-14">array</span><span class="hl-2">: </span><span class="hl-6">true</span><span class="hl-2"> }</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// After the transition, URL should be &#39;/foo?arrayParam=1&amp;arrayParam=2&amp;arrayParam=3&#39;</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&quot;foo&quot;</span><span class="hl-2">, { </span><span class="hl-7">arrayParam:</span><span class="hl-2"> [ </span><span class="hl-15">1</span><span class="hl-2">, </span><span class="hl-15">2</span><span class="hl-2">, </span><span class="hl-15">3</span><span class="hl-2"> ] });</span>
+</code><button type="button">Copy</button></pre>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <div class="tsd-tag-default">
+                  <h4 class="tsd-anchor-link" id="default">
+                    Default<a
+                      href="#default"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </h4>
+                  <p>
+                    <code>false</code> for path parameters, such as
+                    <code>url: '/foo/:pathParam'</code>
+                  </p>
+                </div>
+                <div class="tsd-tag-default">
+                  <h4 class="tsd-anchor-link" id="default-1">
+                    Default<a
+                      href="#default-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </h4>
+                  <p>
+                    <code>auto</code> for query parameters, such as
+                    <code>url: '/foo?queryParam'</code>
+                  </p>
+                </div>
+                <div class="tsd-tag-default">
+                  <h4 class="tsd-anchor-link" id="default-2">
+                    Default<a
+                      href="#default-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </h4>
+                  <p>
+                    <code>true</code> for query parameters if the parameter name
+                    ends in <code>[]</code>, such as
+                    <code>url: '/foo?implicitArrayParam[]'</code>
+                  </p>
+                </div>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="dynamic">
+                <code class="tsd-tag">Optional</code><span>dynamic</span
+                ><a
+                  href="#dynamic"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">dynamic</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>Dynamic flag</p>
+                <p>
+                  When <code>dynamic</code> is <code>true</code>, changes to the
+                  parameter value will not cause the state to be entered/exited.
+                  The resolves will not be re-fetched, nor will views be
+                  reloaded.
+                </p>
+                <p>
+                  Normally, if a parameter value changes, the state which
+                  declared that the parameter will be reloaded (entered/exited).
+                  When a parameter is <code>dynamic</code>, a transition still
+                  occurs, but it does not cause the state to exit/enter.
+                </p>
+                <p>
+                  This can be useful to build UI where the component updates
+                  itself when the param values change. A common scenario where
+                  this is useful is searching/paging/sorting.
+                </p>
+                <hr />
+                <p>Default: <code>false</code></p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="inherit">
+                <code class="tsd-tag">Optional</code><span>inherit</span
+                ><a
+                  href="#inherit"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">inherit</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>Enables/disables inheriting of this parameter's value</p>
+                <p>
+                  When a transition is run with [[TransitionOptions.inherit]]
+                  set to <code>true</code>, the current param values are
+                  inherited in the new transition. However, parameters values
+                  which have <code>inherit: false</code> set will
+                  <em>not be inherited</em>.
+                </p>
+                <h4 id="example-state-" class="tsd-anchor-link">
+                  Example state :<a
+                    href="#example-state-"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h4>
+                <pre><code class="js"><span class="hl-6">var</span><span class="hl-2"> </span><span class="hl-7">fooState</span><span class="hl-2"> = {</span><br/><span class="hl-2">  </span><span class="hl-7">name:</span><span class="hl-2"> </span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">url:</span><span class="hl-2"> </span><span class="hl-9">&#39;/:fooId?mode&amp;refresh&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">params:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">refresh:</span><span class="hl-2"> { </span><span class="hl-7">inherit:</span><span class="hl-2"> </span><span class="hl-6">false</span><span class="hl-2"> }</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// Set fooId to 123</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;fooState&#39;</span><span class="hl-2">, { </span><span class="hl-7">fooId:</span><span class="hl-2"> </span><span class="hl-15">1234</span><span class="hl-2">, </span><span class="hl-7">mode:</span><span class="hl-2"> </span><span class="hl-9">&#39;list&#39;</span><span class="hl-2">, </span><span class="hl-7">refresh:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2"> });</span>
 </code><button type="button">Copy</button></pre>
 
-</div></section><div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">ParamDeclaration</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#array">array</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;auto&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#dynamic">dynamic</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#inherit">inherit</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#raw">raw</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#squash">squash</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#type">type</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">ParamType</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#value">value</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><section class="tsd-panel-group tsd-index-group"><section class="tsd-panel tsd-index-panel"><details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h5 class="tsd-index-heading uppercase">Index</h5></summary><div class="tsd-accordion-details"><section class="tsd-index-section"><h3 class="tsd-index-heading">Properties</h3><div class="tsd-index-list"><a href="#array" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>array?</span></a>
-<a href="#dynamic" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>dynamic?</span></a>
-<a href="#inherit" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>inherit?</span></a>
-<a href="#raw" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>raw?</span></a>
-<a href="#squash" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>squash?</span></a>
-<a href="#type" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>type?</span></a>
-<a href="#value" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>value?</span></a>
-</div></section></div></details></section></section><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h2>Properties</h2></summary><section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="array"><code class="tsd-tag">Optional</code><span>array</span><a href="#array" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">array</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;auto&quot;</span></div><div class="tsd-comment tsd-typography"><p>The parameter's <code>array</code> mode</p>
-<p>Explicitly specifies the array mode of a query parameter. Path parameters
-are always treated as single values.</p>
-<ul>
-<li>If <code>false</code>, the parameter value will be treated (encoded/decoded) as a single value</li>
-<li>If <code>true</code>, a query parameter value will be treated (encoded/decoded) as an array of values.</li>
-<li>If <code>auto</code> (for query parameters only), if multiple values for a single parameter are present
-in the URL (e.g.: /foo?bar=1&amp;bar=2&amp;bar=3) then the values are mapped to an array (e.g.:
-<code>{ foo: [ '1', '2', '3' ] }</code>). However, if only one value is present (e.g.: /foo?bar=1)
-then the value is treated as single value (e.g.: { foo: '1' }).</li>
-</ul>
-<p>If you specified a [[type]] for a query parameter, the value will be treated
-as an array of the specified [[ParamType]].</p>
-<h4 id="example-1" class="tsd-anchor-link">Example:<a href="#example-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/foo?arrayParam&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">arrayParam</span><span class="hl-2">: { </span><span class="hl-14">array</span><span class="hl-2">: </span><span class="hl-6">true</span><span class="hl-2"> }</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// After the transition, URL should be &#39;/foo?arrayParam=1&amp;arrayParam=2&amp;arrayParam=3&#39;</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&quot;foo&quot;</span><span class="hl-2">, { </span><span class="hl-7">arrayParam:</span><span class="hl-2"> [ </span><span class="hl-15">1</span><span class="hl-2">, </span><span class="hl-15">2</span><span class="hl-2">, </span><span class="hl-15">3</span><span class="hl-2"> ] });</span>
-</code><button type="button">Copy</button></pre>
-
-</div><div class="tsd-comment tsd-typography"><div class="tsd-tag-default"><h4 class="tsd-anchor-link" id="default">Default<a href="#default" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>false</code> for path parameters, such as <code>url: '/foo/:pathParam'</code></p>
-</div><div class="tsd-tag-default"><h4 class="tsd-anchor-link" id="default-1">Default<a href="#default-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>auto</code> for query parameters, such as <code>url: '/foo?queryParam'</code></p>
-</div><div class="tsd-tag-default"><h4 class="tsd-anchor-link" id="default-2">Default<a href="#default-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p><code>true</code> for query parameters if the parameter name ends in <code>[]</code>, such as <code>url: '/foo?implicitArrayParam[]'</code></p>
-</div></div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="dynamic"><code class="tsd-tag">Optional</code><span>dynamic</span><a href="#dynamic" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">dynamic</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div><div class="tsd-comment tsd-typography"><p>Dynamic flag</p>
-<p>When <code>dynamic</code> is <code>true</code>, changes to the parameter value will not cause the state to be entered/exited.
-The resolves will not be re-fetched, nor will views be reloaded.</p>
-<p>Normally, if a parameter value changes, the state which declared that the parameter will be reloaded (entered/exited).
-When a parameter is <code>dynamic</code>, a transition still occurs, but it does not cause the state to exit/enter.</p>
-<p>This can be useful to build UI where the component updates itself when the param values change.
-A common scenario where this is useful is searching/paging/sorting.</p>
-<hr>
-<p>Default: <code>false</code></p>
-</div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="inherit"><code class="tsd-tag">Optional</code><span>inherit</span><a href="#inherit" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">inherit</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div><div class="tsd-comment tsd-typography"><p>Enables/disables inheriting of this parameter's value</p>
-<p>When a transition is run with [[TransitionOptions.inherit]] set to
-<code>true</code>, the current param values are inherited in the new transition.
-However, parameters values which have <code>inherit: false</code> set  will <em>not be inherited</em>.</p>
-<h4 id="example-state-" class="tsd-anchor-link">Example state :<a href="#example-state-" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-6">var</span><span class="hl-2"> </span><span class="hl-7">fooState</span><span class="hl-2"> = {</span><br/><span class="hl-2">  </span><span class="hl-7">name:</span><span class="hl-2"> </span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">url:</span><span class="hl-2"> </span><span class="hl-9">&#39;/:fooId?mode&amp;refresh&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">params:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">refresh:</span><span class="hl-2"> { </span><span class="hl-7">inherit:</span><span class="hl-2"> </span><span class="hl-6">false</span><span class="hl-2"> }</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// Set fooId to 123</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;fooState&#39;</span><span class="hl-2">, { </span><span class="hl-7">fooId:</span><span class="hl-2"> </span><span class="hl-15">1234</span><span class="hl-2">, </span><span class="hl-7">mode:</span><span class="hl-2"> </span><span class="hl-9">&#39;list&#39;</span><span class="hl-2">, </span><span class="hl-7">refresh:</span><span class="hl-2"> </span><span class="hl-6">true</span><span class="hl-2"> });</span>
-</code><button type="button">Copy</button></pre>
-
-<p>In the component:
-<code>mode: 'list' is inherited, but refresh: true is not inherited. // The param values are thus: </code>{ fooId: 4567, mode: 'list' }`</p>
-<pre><code><span class="hl-2">&lt;</span><span class="hl-7">ng</span><span class="hl-2">-</span><span class="hl-7">sref</span><span class="hl-2">=</span><span class="hl-9">&quot;foo({ fooId: 4567 })&quot;</span><span class="hl-2">&gt;</span><span class="hl-15">4567</span><span class="hl-2">&lt;/</span><span class="hl-7">ng</span><span class="hl-2">-</span><span class="hl-7">sref</span><span class="hl-2">&gt;</span>
+                <p>
+                  In the component:
+                  <code
+                    >mode: 'list' is inherited, but refresh: true is not
+                    inherited. // The param values are thus: </code
+                  >{ fooId: 4567, mode: 'list' }`
+                </p>
+                <pre><code><span class="hl-2">&lt;</span><span class="hl-7">ng</span><span class="hl-2">-</span><span class="hl-7">sref</span><span class="hl-2">=</span><span class="hl-9">&quot;foo({ fooId: 4567 })&quot;</span><span class="hl-2">&gt;</span><span class="hl-15">4567</span><span class="hl-2">&lt;/</span><span class="hl-7">ng</span><span class="hl-2">-</span><span class="hl-7">sref</span><span class="hl-2">&gt;</span>
 </code><button>Copy</button></pre>
 
-<hr>
-<p>Default: <code>true</code></p>
-</div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="raw"><code class="tsd-tag">Optional</code><span>raw</span><a href="#raw" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">raw</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div><div class="tsd-comment tsd-typography"><p>Disables url-encoding of parameter values</p>
-<p>When <code>true</code>, parameter values are not url-encoded.
-This is commonly used to allow &quot;slug&quot; urls, with a parameter value including non-semantic slashes.</p>
-<h4 id="example-2" class="tsd-anchor-link">Example:<a href="#example-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/product/:slug&#39;</span><span class="hl-2">,</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">slug</span><span class="hl-2">: { </span><span class="hl-14">type</span><span class="hl-2">: </span><span class="hl-9">&#39;string&#39;</span><span class="hl-2">, </span><span class="hl-14">raw</span><span class="hl-2">: </span><span class="hl-6">true</span><span class="hl-2"> }</span><br/><span class="hl-2">}</span>
+                <hr />
+                <p>Default: <code>true</code></p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="raw">
+                <code class="tsd-tag">Optional</code><span>raw</span
+                ><a href="#raw" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">raw</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>Disables url-encoding of parameter values</p>
+                <p>
+                  When <code>true</code>, parameter values are not url-encoded.
+                  This is commonly used to allow &quot;slug&quot; urls, with a
+                  parameter value including non-semantic slashes.
+                </p>
+                <h4 id="example-2" class="tsd-anchor-link">
+                  Example:<a
+                    href="#example-2"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h4>
+                <pre><code class="js"><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/product/:slug&#39;</span><span class="hl-2">,</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">slug</span><span class="hl-2">: { </span><span class="hl-14">type</span><span class="hl-2">: </span><span class="hl-9">&#39;string&#39;</span><span class="hl-2">, </span><span class="hl-14">raw</span><span class="hl-2">: </span><span class="hl-6">true</span><span class="hl-2"> }</span><br/><span class="hl-2">}</span>
 </code><button type="button">Copy</button></pre>
 
-<p>This allows a URL parameter of <code>{ slug: 'camping/tents/awesome_tent' }</code>
-to serialize to <code>/product/camping/tents/awesome_tent</code>
-instead of <code>/product/camping%2Ftents%2Fawesome_tent</code>.</p>
-<hr>
-<h3 id="decoding-warning" class="tsd-anchor-link">Decoding warning<a href="#decoding-warning" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<p>The decoding behavior of raw parameters is not defined.
-For example, given a url template such as <code>/:raw1/:raw2</code>
-the url <code>/foo/bar/baz/qux/</code>, there is no way to determine which slashes belong to which params.</p>
-<p>It's generally safe to use a raw parameter at the end of a path, like '/product/:slug'.
-However, beware of the characters you allow in your raw parameter values.
-Avoid unencoded characters that could disrupt normal URL parsing, such as <code>?</code> and <code>#</code>.</p>
-<hr>
-<p>Default: <code>false</code></p>
-</div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="squash"><code class="tsd-tag">Optional</code><span>squash</span><a href="#squash" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">squash</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">boolean</span></div><div class="tsd-comment tsd-typography"><p>Squash mode: omit default parameter values in URL</p>
-<p>Configures how a default parameter value is represented in the URL when the current parameter value
-is the same as the default value.</p>
-<p>There are three squash settings:</p>
-<ul>
-<li><code>false</code>: The parameter's default value is not squashed. It is encoded and included in the URL</li>
-<li><code>true</code>: The parameter's default value is omitted from the URL.
-If the parameter is preceeded and followed by slashes in the state's url declaration, then one of those slashes are omitted.
-This can allow for cleaner looking URLs.</li>
-<li><code>&quot;&amp;lt;arbitrary string&amp;gt;&quot;</code>: The parameter's default value is replaced with an arbitrary
-placeholder of your choice.</li>
-</ul>
-<h4 id="example-3" class="tsd-anchor-link">Example:<a href="#example-3" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate/:myparam&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">myparam</span><span class="hl-2">: </span><span class="hl-9">&#39;defaultParamValue&#39;</span><br/><span class="hl-2">    </span><span class="hl-14">squash</span><span class="hl-2">: </span><span class="hl-6">true</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// URL will be `/mystate/`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam:</span><span class="hl-2"> </span><span class="hl-9">&#39;defaultParamValue&#39;</span><span class="hl-2"> });</span><br/><br/><span class="hl-10">// URL will be `/mystate/someOtherValue`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam:</span><span class="hl-2"> </span><span class="hl-9">&#39;someOtherValue&#39;</span><span class="hl-2"> });</span>
+                <p>
+                  This allows a URL parameter of
+                  <code>{ slug: 'camping/tents/awesome_tent' }</code> to
+                  serialize to
+                  <code>/product/camping/tents/awesome_tent</code> instead of
+                  <code>/product/camping%2Ftents%2Fawesome_tent</code>.
+                </p>
+                <hr />
+                <h3 id="decoding-warning" class="tsd-anchor-link">
+                  Decoding warning<a
+                    href="#decoding-warning"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h3>
+                <p>
+                  The decoding behavior of raw parameters is not defined. For
+                  example, given a url template such as
+                  <code>/:raw1/:raw2</code> the url
+                  <code>/foo/bar/baz/qux/</code>, there is no way to determine
+                  which slashes belong to which params.
+                </p>
+                <p>
+                  It's generally safe to use a raw parameter at the end of a
+                  path, like '/product/:slug'. However, beware of the characters
+                  you allow in your raw parameter values. Avoid unencoded
+                  characters that could disrupt normal URL parsing, such as
+                  <code>?</code> and <code>#</code>.
+                </p>
+                <hr />
+                <p>Default: <code>false</code></p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="squash">
+                <code class="tsd-tag">Optional</code><span>squash</span
+                ><a
+                  href="#squash"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">squash</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>Squash mode: omit default parameter values in URL</p>
+                <p>
+                  Configures how a default parameter value is represented in the
+                  URL when the current parameter value is the same as the
+                  default value.
+                </p>
+                <p>There are three squash settings:</p>
+                <ul>
+                  <li>
+                    <code>false</code>: The parameter's default value is not
+                    squashed. It is encoded and included in the URL
+                  </li>
+                  <li>
+                    <code>true</code>: The parameter's default value is omitted
+                    from the URL. If the parameter is preceeded and followed by
+                    slashes in the state's url declaration, then one of those
+                    slashes are omitted. This can allow for cleaner looking
+                    URLs.
+                  </li>
+                  <li>
+                    <code>&quot;&amp;lt;arbitrary string&amp;gt;&quot;</code>:
+                    The parameter's default value is replaced with an arbitrary
+                    placeholder of your choice.
+                  </li>
+                </ul>
+                <h4 id="example-3" class="tsd-anchor-link">
+                  Example:<a
+                    href="#example-3"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h4>
+                <pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate/:myparam&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">myparam</span><span class="hl-2">: </span><span class="hl-9">&#39;defaultParamValue&#39;</span><br/><span class="hl-2">    </span><span class="hl-14">squash</span><span class="hl-2">: </span><span class="hl-6">true</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// URL will be `/mystate/`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam:</span><span class="hl-2"> </span><span class="hl-9">&#39;defaultParamValue&#39;</span><span class="hl-2"> });</span><br/><br/><span class="hl-10">// URL will be `/mystate/someOtherValue`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam:</span><span class="hl-2"> </span><span class="hl-9">&#39;someOtherValue&#39;</span><span class="hl-2"> });</span>
 </code><button type="button">Copy</button></pre>
 
-<h4 id="example-4" class="tsd-anchor-link">Example:<a href="#example-4" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4>
-<pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;mystate2&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate2/:myparam2&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">myparam2</span><span class="hl-2">: </span><span class="hl-9">&#39;defaultParamValue&#39;</span><br/><span class="hl-2">    </span><span class="hl-14">squash</span><span class="hl-2">: </span><span class="hl-9">&quot;~&quot;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// URL will be `/mystate/~`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam2:</span><span class="hl-2"> </span><span class="hl-9">&#39;defaultParamValue&#39;</span><span class="hl-2"> });</span><br/><br/><span class="hl-10">// URL will be `/mystate/someOtherValue`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam2:</span><span class="hl-2"> </span><span class="hl-9">&#39;someOtherValue&#39;</span><span class="hl-2"> });</span>
+                <h4 id="example-4" class="tsd-anchor-link">
+                  Example:<a
+                    href="#example-4"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h4>
+                <pre><code class="js"><span class="hl-2">{</span><br/><span class="hl-2">  </span><span class="hl-14">name</span><span class="hl-2">: </span><span class="hl-9">&#39;mystate2&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">url</span><span class="hl-2">: </span><span class="hl-9">&#39;/mystate2/:myparam2&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">myparam2</span><span class="hl-2">: </span><span class="hl-9">&#39;defaultParamValue&#39;</span><br/><span class="hl-2">    </span><span class="hl-14">squash</span><span class="hl-2">: </span><span class="hl-9">&quot;~&quot;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// URL will be `/mystate/~`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam2:</span><span class="hl-2"> </span><span class="hl-9">&#39;defaultParamValue&#39;</span><span class="hl-2"> });</span><br/><br/><span class="hl-10">// URL will be `/mystate/someOtherValue`</span><br/><span class="hl-7">$state</span><span class="hl-2">.</span><span class="hl-8">go</span><span class="hl-2">(</span><span class="hl-9">&#39;mystate&#39;</span><span class="hl-2">, { </span><span class="hl-7">myparam2:</span><span class="hl-2"> </span><span class="hl-9">&#39;someOtherValue&#39;</span><span class="hl-2"> });</span>
 </code><button type="button">Copy</button></pre>
 
-<p>Default: If squash is not set, it uses the configured default squash policy. (See <a href="">[defaultSquashPolicy]</a>)</p>
-</div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="type"><code class="tsd-tag">Optional</code><span>type</span><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">ParamType</span></div><div class="tsd-comment tsd-typography"><p>The parameter's type</p>
-<p>Specifies the [[ParamType]] of the parameter.
-Parameter types control the encoding/decoding of parameter values.</p>
-<p>Set this property to the name of parameter's type.
-The type must be one of the built-in types.</p>
-<p>Supported built-in types are <code>string</code>, <code>path</code>, <code>query</code>, <code>hash</code>, <code>int</code>, <code>bool</code>, <code>date</code>, <code>json</code>, and <code>any</code>.</p>
-<hr>
-<p>Default:</p>
-<ul>
-<li>Path parameters (<code>/:fooParam</code>): <code>path</code></li>
-<li>Query parameters (<code>?queryParam</code>): <code>query</code></li>
-<li>Non-url parameters (<code>param: { foo: null }</code>): <code>any</code></li>
-</ul>
-</div></section><section class="tsd-panel tsd-member"><h3 class="tsd-anchor-link" id="value"><code class="tsd-tag">Optional</code><span>value</span><a href="#value" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="tsd-signature"><span class="tsd-kind-property">value</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span></div><div class="tsd-comment tsd-typography"><p>The default value for this parameter.</p>
-<p>Specifies the default value for this parameter.
-This implicitly sets this parameter as optional.</p>
-<p>When the router routes to a state and no value is specified for this parameter in the URL or transition,
-the default value will be used instead.
-If value is a function, it will be injected and invoked, and the return value used.</p>
-<p>Note:  <code>value: undefined</code> is treated as though <strong>no default value was specified</strong>, while <code>value: null</code> is treated
-as <strong>&quot;the default value is null&quot;</strong>.</p>
-<pre><code><span class="hl-10">// define default values for param1 and param2</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default</span><span class="hl-16">;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span>
+                <p>
+                  Default: If squash is not set, it uses the configured default
+                  squash policy. (See <a href="">[defaultSquashPolicy]</a>)
+                </p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="type">
+                <code class="tsd-tag">Optional</code><span>type</span
+                ><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">type</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">ParamType</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>The parameter's type</p>
+                <p>
+                  Specifies the [[ParamType]] of the parameter. Parameter types
+                  control the encoding/decoding of parameter values.
+                </p>
+                <p>
+                  Set this property to the name of parameter's type. The type
+                  must be one of the built-in types.
+                </p>
+                <p>
+                  Supported built-in types are <code>string</code>,
+                  <code>path</code>, <code>query</code>, <code>hash</code>,
+                  <code>int</code>, <code>bool</code>, <code>date</code>,
+                  <code>json</code>, and <code>any</code>.
+                </p>
+                <hr />
+                <p>Default:</p>
+                <ul>
+                  <li>
+                    Path parameters (<code>/:fooParam</code>): <code>path</code>
+                  </li>
+                  <li>
+                    Query parameters (<code>?queryParam</code>):
+                    <code>query</code>
+                  </li>
+                  <li>
+                    Non-url parameters (<code>param: { foo: null }</code>):
+                    <code>any</code>
+                  </li>
+                </ul>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="value">
+                <code class="tsd-tag">Optional</code><span>value</span
+                ><a href="#value" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">value</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">unknown</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>The default value for this parameter.</p>
+                <p>
+                  Specifies the default value for this parameter. This
+                  implicitly sets this parameter as optional.
+                </p>
+                <p>
+                  When the router routes to a state and no value is specified
+                  for this parameter in the URL or transition, the default value
+                  will be used instead. If value is a function, it will be
+                  injected and invoked, and the return value used.
+                </p>
+                <p>
+                  Note: <code>value: undefined</code> is treated as though
+                  <strong>no default value was specified</strong>, while
+                  <code>value: null</code> is treated as
+                  <strong>&quot;the default value is null&quot;</strong>.
+                </p>
+                <pre><code><span class="hl-10">// define default values for param1 and param2</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default</span><span class="hl-16">;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span>
 </code><button>Copy</button></pre>
 
-<h3 id="shorthand-declaration" class="tsd-anchor-link">Shorthand Declaration<a href="#shorthand-declaration" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<p>If you only want to set the default value of the parameter, you may use a shorthand syntax.
-In the params map, instead mapping the param name to a full parameter configuration object, simply set map it
-to the default parameter value, e.g.:</p>
-<pre><code><span class="hl-10">// Normal (non-shorthand) default value syntax</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default&quot;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// Shorthand default value syntax</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default&quot;</span><br/><span class="hl-2">}</span>
+                <h3 id="shorthand-declaration" class="tsd-anchor-link">
+                  Shorthand Declaration<a
+                    href="#shorthand-declaration"
+                    aria-label="Permalink"
+                    class="tsd-anchor-icon"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <use href="../assets/icons.svg#icon-anchor"></use></svg
+                  ></a>
+                </h3>
+                <p>
+                  If you only want to set the default value of the parameter,
+                  you may use a shorthand syntax. In the params map, instead
+                  mapping the param name to a full parameter configuration
+                  object, simply set map it to the default parameter value,
+                  e.g.:
+                </p>
+                <pre><code><span class="hl-10">// Normal (non-shorthand) default value syntax</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: {</span><br/><span class="hl-2">    </span><span class="hl-14">value</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default&quot;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-10">// Shorthand default value syntax</span><br/><span class="hl-14">params</span><span class="hl-2">: {</span><br/><span class="hl-2">  </span><span class="hl-14">param1</span><span class="hl-2">: </span><span class="hl-9">&quot;defaultValue&quot;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-14">param2</span><span class="hl-2">: </span><span class="hl-9">&quot;param2Default&quot;</span><br/><span class="hl-2">}</span>
 </code><button>Copy</button></pre>
 
-<p>This defines a default value for the parameter.
-If a parameter value is <code>undefined</code>, this default value will be used instead</p>
-<hr>
-<p>Default: <code>undefined</code></p>
-</div></section></section></details></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#example"><span>Example:</span></a><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary><div><a href="#array"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>array</span></a><ul><li><ul><li><ul><li><ul><li><a href="#example-1"><span>Example:</span></a></li></ul></li></ul></li></ul></li></ul><a href="#dynamic"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>dynamic</span></a><a href="#inherit"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>inherit</span></a><ul><li><ul><li><ul><li><ul><li><a href="#example-state-"><span>Example state :</span></a></li></ul></li></ul></li></ul></li></ul><a href="#raw"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>raw</span></a><ul><li><ul><li><ul><li><ul><li><a href="#example-2"><span>Example:</span></a></li></ul></li><li><a href="#decoding-warning"><span>Decoding warning</span></a></li></ul></li></ul></li></ul><a href="#squash"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>squash</span></a><ul><li><ul><li><ul><li><ul><li><a href="#example-3"><span>Example:</span></a></li><li><a href="#example-4"><span>Example:</span></a></li></ul></li></ul></li></ul></li></ul><a href="#type"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>type</span></a><a href="#value"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>value</span></a><ul><li><a href="#shorthand-declaration"><span>Shorthand <wbr/>Declaration</span></a></li></ul></div></details></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="../index.html">AngularTS</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
+                <p>
+                  This defines a default value for the parameter. If a parameter
+                  value is <code>undefined</code>, this default value will be
+                  used instead
+                </p>
+                <hr />
+                <p>Default: <code>undefined</code></p>
+              </div>
+            </section>
+          </section>
+        </details>
+      </div>
+      <div class="col-sidebar">
+        <div class="page-menu">
+          <div class="tsd-navigation settings">
+            <details class="tsd-accordion">
+              <summary class="tsd-accordion-summary">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <use href="../assets/icons.svg#icon-chevronDown"></use>
+                </svg>
+                <h3>Settings</h3>
+              </summary>
+              <div class="tsd-accordion-details">
+                <div class="tsd-filter-visibility">
+                  <span class="settings-label">Member Visibility</span>
+                  <ul id="tsd-filter-options">
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-protected"
+                          name="protected"
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>Protected</span></label
+                      >
+                    </li>
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-inherited"
+                          name="inherited"
+                          checked
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>Inherited</span></label
+                      >
+                    </li>
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-external"
+                          name="external"
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>External</span></label
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div class="tsd-theme-toggle">
+                  <label class="settings-label" for="tsd-theme">Theme</label
+                  ><select id="tsd-theme">
+                    <option value="os">OS</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+              </div>
+            </details>
+          </div>
+          <details open class="tsd-accordion tsd-page-navigation">
+            <summary class="tsd-accordion-summary">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <use href="../assets/icons.svg#icon-chevronDown"></use>
+              </svg>
+              <h3>On This Page</h3>
+            </summary>
+            <div class="tsd-accordion-details">
+              <a href="#example"><span>Example:</span></a>
+              <details open class="tsd-accordion tsd-page-navigation-section">
+                <summary
+                  class="tsd-accordion-summary"
+                  data-key="section-Properties"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <use href="../assets/icons.svg#icon-chevronDown"></use></svg
+                  >Properties
+                </summary>
+                <div>
+                  <a href="#array"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>array</span></a
+                  >
+                  <ul>
+                    <li>
+                      <ul>
+                        <li>
+                          <ul>
+                            <li>
+                              <ul>
+                                <li>
+                                  <a href="#example-1"><span>Example:</span></a>
+                                </li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <a href="#dynamic"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>dynamic</span></a
+                  ><a href="#inherit"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>inherit</span></a
+                  >
+                  <ul>
+                    <li>
+                      <ul>
+                        <li>
+                          <ul>
+                            <li>
+                              <ul>
+                                <li>
+                                  <a href="#example-state-"
+                                    ><span>Example state :</span></a
+                                  >
+                                </li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <a href="#raw"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>raw</span></a
+                  >
+                  <ul>
+                    <li>
+                      <ul>
+                        <li>
+                          <ul>
+                            <li>
+                              <ul>
+                                <li>
+                                  <a href="#example-2"><span>Example:</span></a>
+                                </li>
+                              </ul>
+                            </li>
+                            <li>
+                              <a href="#decoding-warning"
+                                ><span>Decoding warning</span></a
+                              >
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <a href="#squash"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>squash</span></a
+                  >
+                  <ul>
+                    <li>
+                      <ul>
+                        <li>
+                          <ul>
+                            <li>
+                              <ul>
+                                <li>
+                                  <a href="#example-3"><span>Example:</span></a>
+                                </li>
+                                <li>
+                                  <a href="#example-4"><span>Example:</span></a>
+                                </li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <a href="#type"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>type</span></a
+                  ><a href="#value"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>value</span></a
+                  >
+                  <ul>
+                    <li>
+                      <a href="#shorthand-declaration"
+                        ><span>Shorthand <wbr />Declaration</span></a
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+          </details>
+        </div>
+        <div class="site-menu">
+          <nav class="tsd-navigation">
+            <a href="../index.html">AngularTS</a>
+            <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+              <li>Loading...</li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <p class="tsd-generator">
+        Generated using
+        <a href="https://typedoc.org/" target="_blank">TypeDoc</a>
+      </p>
+    </footer>
+    <div class="overlay"></div>
+  </body>
+</html>

@@ -74,9 +74,7 @@ export function unbindScopeUpdates(controller: BridgeController): void {
 }
 
 export function flushScope(angularScope: Scope | undefined): void {
-  if (angularScope) {
-    angularScope.$flushQueue();
-  }
+  void angularScope;
 }
 
 export function invokeRustMethod(

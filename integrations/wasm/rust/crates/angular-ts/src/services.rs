@@ -929,9 +929,6 @@ mod browser {
         #[wasm_bindgen(method, js_name = "$new")]
         pub fn new_child(this: &RootScopeService) -> JsValue;
 
-        #[wasm_bindgen(method, js_name = "$flushQueue")]
-        pub fn flush_queue(this: &RootScopeService);
-
         /// Browser `$eventBus` service facade.
         #[wasm_bindgen(typescript_type = "ng.PubSubService")]
         pub type EventBusService;

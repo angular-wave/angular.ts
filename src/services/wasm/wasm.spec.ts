@@ -128,17 +128,28 @@ describe("WasmScopeAbi", () => {
     expect(rootScope.filters.status).toBeUndefined();
   });
 
-  it("flushes queued scope callbacks by name", () => {
-    abi.createScope(rootScope, { name: "todoList:main" });
+  it("runs bridge flush callbacks without synchronously draining scope post-update callbacks", async () => {
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const name = guest.write("todoList:main");
-    let flushed = false;
+    let bridgeFlushed = false;
+    let postUpdateFlushed = false;
+
+    scope.onFlush(() => {
+      bridgeFlushed = true;
+    });
 
     rootScope.$postUpdate(() => {
-      flushed = true;
+      postUpdateFlushed = true;
     });
 
     expect(imports.scope_flush_named(name.ptr, name.len)).toBe(1);
-    expect(flushed).toBeTrue();
+    await Promise.resolve();
+
+    expect(bridgeFlushed).toBeTrue();
+    expect(postUpdateFlushed).toBeFalse();
+
+    await wait();
+    expect(postUpdateFlushed).toBeTrue();
   });
 
   it("updates the DOM when a Wasm import mutates a bound scope", async () => {
@@ -149,7 +160,6 @@ describe("WasmScopeAbi", () => {
     el.setAttribute("ng-bind", "todo.title");
     compile(el)(rootScope);
 
-    rootScope.$flushQueue();
     await wait();
 
     expect(el.textContent).toBe("Initial");
@@ -364,7 +374,6 @@ async function renderWasmDomUpdate(target: HTMLElement): Promise<void> {
   };
   target.setAttribute("ng-bind", "todo.message");
   compile(target)(rootScope);
-  rootScope.$flushQueue();
   await wait();
 
   const guest = new GuestMemory();

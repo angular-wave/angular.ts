@@ -1,0 +1,1609 @@
+<!doctype html>
+<html class="default" lang="en" data-base="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="IE=edge" />
+    <title>NativeAnimationOptions | AngularTS</title>
+    <meta name="description" content="Documentation for AngularTS" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../assets/style.css" />
+    <link rel="stylesheet" href="../assets/highlight.css" />
+    <script defer src="../assets/main.js"></script>
+    <script async src="../assets/icons.js" id="tsd-icons-script"></script>
+    <script async src="../assets/search.js" id="tsd-search-script"></script>
+    <script async src="../assets/navigation.js" id="tsd-nav-script"></script>
+    <script
+      async
+      src="../assets/hierarchy.js"
+      id="tsd-hierarchy-script"
+    ></script>
+  </head>
+  <body>
+    <script>
+      document.documentElement.dataset.theme =
+        localStorage.getItem("tsd-theme") || "os";
+      document.body.style.display = "none";
+      setTimeout(
+        () =>
+          window.app
+            ? app.showPage()
+            : document.body.style.removeProperty("display"),
+        500,
+      );
+    </script>
+    <header class="tsd-page-toolbar">
+      <div class="tsd-toolbar-contents container">
+        <a href="../index.html" class="title">AngularTS</a>
+        <div id="tsd-toolbar-links"></div>
+        <button id="tsd-search-trigger" class="tsd-widget" aria-label="Search">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <use href="../assets/icons.svg#icon-search"></use>
+          </svg>
+        </button>
+        <dialog id="tsd-search" aria-label="Search">
+          <input
+            role="combobox"
+            id="tsd-search-input"
+            aria-controls="tsd-search-results"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            autocapitalize="off"
+            autocomplete="off"
+            placeholder="Search the docs"
+            maxlength="100"
+          />
+          <ul role="listbox" id="tsd-search-results"></ul>
+          <div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+            <div>Preparing search index...</div>
+          </div>
+        </dialog>
+        <a
+          href="#"
+          class="tsd-widget menu"
+          id="tsd-toolbar-menu-trigger"
+          data-toggle="menu"
+          aria-label="Menu"
+          ><svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <use href="../assets/icons.svg#icon-menu"></use></svg
+        ></a>
+      </div>
+    </header>
+    <div class="container container-main">
+      <div class="col-content">
+        <div class="tsd-page-title">
+          <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+            <li><a href="" aria-current="page">NativeAnimationOptions</a></li>
+          </ul>
+          <h1>Interface NativeAnimationOptions</h1>
+        </div>
+        <div class="tsd-signature">
+          <span class="tsd-signature-keyword">interface</span>
+          <span class="tsd-kind-interface">NativeAnimationOptions</span>
+          <span class="tsd-signature-symbol">{</span><br />    <a
+            class="tsd-kind-property"
+            href="#addclass"
+            >addClass</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#animation"
+            >animation</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#composite"
+            >composite</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">CompositeOperation</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#delay"
+            >delay</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#direction"
+            >direction</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">PlaybackDirection</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#duration"
+            >duration</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">number</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">CSSNumericValue</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#easing"
+            >easing</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#enddelay"
+            >endDelay</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#enter"
+            >enter</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">Keyframe</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#fill"
+            >fill</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">FillMode</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#from"
+            >from</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">Record</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#id"
+            >id</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#iterationcomposite"
+            >iterationComposite</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">IterationCompositeOperation</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#iterations"
+            >iterations</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#iterationstart"
+            >iterationStart</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#keyframes"
+            >keyframes</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">Keyframe</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#leave"
+            >leave</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">Keyframe</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#move"
+            >move</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">Keyframe</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#oncancel"
+            >onCancel</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../types/AnimationLifecycleCallback.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >AnimationLifecycleCallback</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#ondone"
+            >onDone</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../types/AnimationLifecycleCallback.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >AnimationLifecycleCallback</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#onstart"
+            >onStart</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../types/AnimationLifecycleCallback.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >AnimationLifecycleCallback</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#playbackrate"
+            >playbackRate</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#pseudoelement"
+            >pseudoElement</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">null</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#removeclass"
+            >removeClass</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#tempclasses"
+            >tempClasses</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#timeline"
+            >timeline</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">AnimationTimeline</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">null</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#to"
+            >to</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">Record</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br /><span
+            class="tsd-signature-symbol"
+            >}</span
+          >
+        </div>
+        <section class="tsd-panel tsd-hierarchy" data-refl="1132">
+          <h4>Hierarchy</h4>
+          <ul class="tsd-hierarchy">
+            <li class="tsd-hierarchy-item">
+              <span class="tsd-signature-type">KeyframeAnimationOptions</span>
+              <ul class="tsd-hierarchy">
+                <li class="tsd-hierarchy-item">
+                  <span class="tsd-hierarchy-target"
+                    >NativeAnimationOptions</span
+                  >
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+        <section class="tsd-panel-group tsd-index-group">
+          <section class="tsd-panel tsd-index-panel">
+            <details class="tsd-index-content tsd-accordion" open>
+              <summary class="tsd-accordion-summary tsd-index-summary">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <use href="../assets/icons.svg#icon-chevronDown"></use>
+                </svg>
+                <h5 class="tsd-index-heading uppercase">Index</h5>
+              </summary>
+              <div class="tsd-accordion-details">
+                <section class="tsd-index-section">
+                  <h3 class="tsd-index-heading">Properties</h3>
+                  <div class="tsd-index-list">
+                    <a href="#addclass" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>add<wbr />Class?</span></a
+                    >
+                    <a href="#animation" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>animation?</span></a
+                    >
+                    <a
+                      href="#composite"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>composite?</span></a
+                    >
+                    <a
+                      href="#delay"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>delay?</span></a
+                    >
+                    <a
+                      href="#direction"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>direction?</span></a
+                    >
+                    <a
+                      href="#duration"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>duration?</span></a
+                    >
+                    <a
+                      href="#easing"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>easing?</span></a
+                    >
+                    <a
+                      href="#enddelay"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>end<wbr />Delay?</span></a
+                    >
+                    <a href="#enter" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>enter?</span></a
+                    >
+                    <a
+                      href="#fill"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>fill?</span></a
+                    >
+                    <a href="#from" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>from?</span></a
+                    >
+                    <a
+                      href="#id"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>id?</span></a
+                    >
+                    <a
+                      href="#iterationcomposite"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>iteration<wbr />Composite?</span></a
+                    >
+                    <a
+                      href="#iterations"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>iterations?</span></a
+                    >
+                    <a
+                      href="#iterationstart"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>iteration<wbr />Start?</span></a
+                    >
+                    <a href="#keyframes" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>keyframes?</span></a
+                    >
+                    <a href="#leave" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>leave?</span></a
+                    >
+                    <a href="#move" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>move?</span></a
+                    >
+                    <a href="#oncancel" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>on<wbr />Cancel?</span></a
+                    >
+                    <a href="#ondone" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>on<wbr />Done?</span></a
+                    >
+                    <a href="#onstart" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>on<wbr />Start?</span></a
+                    >
+                    <a
+                      href="#playbackrate"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>playback<wbr />Rate?</span></a
+                    >
+                    <a
+                      href="#pseudoelement"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>pseudo<wbr />Element?</span></a
+                    >
+                    <a href="#removeclass" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>remove<wbr />Class?</span></a
+                    >
+                    <a href="#tempclasses" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>temp<wbr />Classes?</span></a
+                    >
+                    <a
+                      href="#timeline"
+                      class="tsd-index-link tsd-is-inherited tsd-is-external"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>timeline?</span></a
+                    >
+                    <a href="#to" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>to?</span></a
+                    >
+                  </div>
+                </section>
+              </div>
+            </details>
+          </section>
+        </section>
+        <details class="tsd-panel-group tsd-member-group tsd-accordion" open>
+          <summary class="tsd-accordion-summary" data-key="section-Properties">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <use href="../assets/icons.svg#icon-chevronDown"></use>
+            </svg>
+            <h2>Properties</h2>
+          </summary>
+          <section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="addclass">
+                <code class="tsd-tag">Optional</code><span>add<wbr />Class</span
+                ><a
+                  href="#addclass"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">addClass</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="animation">
+                <code class="tsd-tag">Optional</code><span>animation</span
+                ><a
+                  href="#animation"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">animation</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="composite">
+                <code class="tsd-tag">Optional</code><span>composite</span
+                ><a
+                  href="#composite"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">composite</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">CompositeOperation</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.composite</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="delay">
+                <code class="tsd-tag">Optional</code><span>delay</span
+                ><a href="#delay" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">delay</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">number</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.delay</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="direction">
+                <code class="tsd-tag">Optional</code><span>direction</span
+                ><a
+                  href="#direction"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">direction</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">PlaybackDirection</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.direction</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="duration">
+                <code class="tsd-tag">Optional</code><span>duration</span
+                ><a
+                  href="#duration"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">duration</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">number</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">CSSNumericValue</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.duration</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="easing">
+                <code class="tsd-tag">Optional</code><span>easing</span
+                ><a
+                  href="#easing"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">easing</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.easing</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="enddelay">
+                <code class="tsd-tag">Optional</code><span>end<wbr />Delay</span
+                ><a
+                  href="#enddelay"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">endDelay</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">number</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.endDelay</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="enter">
+                <code class="tsd-tag">Optional</code><span>enter</span
+                ><a href="#enter" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">enter</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Keyframe</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="fill">
+                <code class="tsd-tag">Optional</code><span>fill</span
+                ><a href="#fill" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">fill</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">FillMode</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.fill</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="from">
+                <code class="tsd-tag">Optional</code><span>from</span
+                ><a href="#from" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">from</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">number</span
+                ><span class="tsd-signature-symbol">&gt;</span>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="id">
+                <code class="tsd-tag">Optional</code><span>id</span
+                ><a href="#id" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">id</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.id</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="iterationcomposite">
+                <code class="tsd-tag">Optional</code
+                ><span>iteration<wbr />Composite</span
+                ><a
+                  href="#iterationcomposite"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">iterationComposite</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type"
+                  >IterationCompositeOperation</span
+                >
+              </div>
+              <aside class="tsd-sources">
+                <p>
+                  Inherited from KeyframeAnimationOptions.iterationComposite
+                </p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="iterations">
+                <code class="tsd-tag">Optional</code><span>iterations</span
+                ><a
+                  href="#iterations"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">iterations</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">number</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.iterations</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="iterationstart">
+                <code class="tsd-tag">Optional</code
+                ><span>iteration<wbr />Start</span
+                ><a
+                  href="#iterationstart"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">iterationStart</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">number</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.iterationStart</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="keyframes">
+                <code class="tsd-tag">Optional</code><span>keyframes</span
+                ><a
+                  href="#keyframes"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">keyframes</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Keyframe</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="leave">
+                <code class="tsd-tag">Optional</code><span>leave</span
+                ><a href="#leave" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">leave</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Keyframe</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="move">
+                <code class="tsd-tag">Optional</code><span>move</span
+                ><a href="#move" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">move</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">PropertyIndexedKeyframes</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Keyframe</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="oncancel">
+                <code class="tsd-tag">Optional</code><span>on<wbr />Cancel</span
+                ><a
+                  href="#oncancel"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">onCancel</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <a
+                  href="../types/AnimationLifecycleCallback.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >AnimationLifecycleCallback</a
+                >
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="ondone">
+                <code class="tsd-tag">Optional</code><span>on<wbr />Done</span
+                ><a
+                  href="#ondone"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">onDone</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <a
+                  href="../types/AnimationLifecycleCallback.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >AnimationLifecycleCallback</a
+                >
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="onstart">
+                <code class="tsd-tag">Optional</code><span>on<wbr />Start</span
+                ><a
+                  href="#onstart"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">onStart</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <a
+                  href="../types/AnimationLifecycleCallback.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >AnimationLifecycleCallback</a
+                >
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="playbackrate">
+                <code class="tsd-tag">Optional</code
+                ><span>playback<wbr />Rate</span
+                ><a
+                  href="#playbackrate"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">playbackRate</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">number</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.playbackRate</p>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="pseudoelement">
+                <code class="tsd-tag">Optional</code
+                ><span>pseudo<wbr />Element</span
+                ><a
+                  href="#pseudoelement"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">pseudoElement</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.pseudoElement</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="removeclass">
+                <code class="tsd-tag">Optional</code
+                ><span>remove<wbr />Class</span
+                ><a
+                  href="#removeclass"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">removeClass</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="tempclasses">
+                <code class="tsd-tag">Optional</code
+                ><span>temp<wbr />Classes</span
+                ><a
+                  href="#tempclasses"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">tempClasses</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"
+            >
+              <h3 class="tsd-anchor-link" id="timeline">
+                <code class="tsd-tag">Optional</code><span>timeline</span
+                ><a
+                  href="#timeline"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">timeline</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">AnimationTimeline</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from KeyframeAnimationOptions.timeline</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="to">
+                <code class="tsd-tag">Optional</code><span>to</span
+                ><a href="#to" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">to</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">number</span
+                ><span class="tsd-signature-symbol">&gt;</span>
+              </div>
+            </section>
+          </section>
+        </details>
+      </div>
+      <div class="col-sidebar">
+        <div class="page-menu">
+          <div class="tsd-navigation settings">
+            <details class="tsd-accordion">
+              <summary class="tsd-accordion-summary">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <use href="../assets/icons.svg#icon-chevronDown"></use>
+                </svg>
+                <h3>Settings</h3>
+              </summary>
+              <div class="tsd-accordion-details">
+                <div class="tsd-filter-visibility">
+                  <span class="settings-label">Member Visibility</span>
+                  <ul id="tsd-filter-options">
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-protected"
+                          name="protected"
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>Protected</span></label
+                      >
+                    </li>
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-inherited"
+                          name="inherited"
+                          checked
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>Inherited</span></label
+                      >
+                    </li>
+                    <li class="tsd-filter-item">
+                      <label class="tsd-filter-input"
+                        ><input
+                          type="checkbox"
+                          id="tsd-filter-external"
+                          name="external"
+                        /><svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            class="tsd-checkbox-background"
+                            width="30"
+                            height="30"
+                            x="1"
+                            y="1"
+                            rx="6"
+                            fill="none"
+                          ></rect>
+                          <path
+                            class="tsd-checkbox-checkmark"
+                            d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25"
+                            stroke="none"
+                            stroke-width="3.5"
+                            stroke-linejoin="round"
+                            fill="none"
+                          ></path></svg
+                        ><span>External</span></label
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div class="tsd-theme-toggle">
+                  <label class="settings-label" for="tsd-theme">Theme</label
+                  ><select id="tsd-theme">
+                    <option value="os">OS</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+              </div>
+            </details>
+          </div>
+          <details open class="tsd-accordion tsd-page-navigation">
+            <summary class="tsd-accordion-summary">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <use href="../assets/icons.svg#icon-chevronDown"></use>
+              </svg>
+              <h3>On This Page</h3>
+            </summary>
+            <div class="tsd-accordion-details">
+              <details open class="tsd-accordion tsd-page-navigation-section">
+                <summary
+                  class="tsd-accordion-summary"
+                  data-key="section-Properties"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <use href="../assets/icons.svg#icon-chevronDown"></use></svg
+                  >Properties
+                </summary>
+                <div>
+                  <a href="#addclass"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>add<wbr />Class</span></a
+                  ><a href="#animation"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>animation</span></a
+                  ><a href="#composite" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>composite</span></a
+                  ><a href="#delay" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>delay</span></a
+                  ><a href="#direction" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>direction</span></a
+                  ><a href="#duration" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>duration</span></a
+                  ><a href="#easing" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>easing</span></a
+                  ><a href="#enddelay" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>end<wbr />Delay</span></a
+                  ><a href="#enter"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>enter</span></a
+                  ><a href="#fill" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>fill</span></a
+                  ><a href="#from"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>from</span></a
+                  ><a href="#id" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>id</span></a
+                  ><a
+                    href="#iterationcomposite"
+                    class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>iteration<wbr />Composite</span></a
+                  ><a
+                    href="#iterations"
+                    class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>iterations</span></a
+                  ><a
+                    href="#iterationstart"
+                    class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>iteration<wbr />Start</span></a
+                  ><a href="#keyframes"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>keyframes</span></a
+                  ><a href="#leave"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>leave</span></a
+                  ><a href="#move"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>move</span></a
+                  ><a href="#oncancel"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>on<wbr />Cancel</span></a
+                  ><a href="#ondone"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>on<wbr />Done</span></a
+                  ><a href="#onstart"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>on<wbr />Start</span></a
+                  ><a
+                    href="#playbackrate"
+                    class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>playback<wbr />Rate</span></a
+                  ><a
+                    href="#pseudoelement"
+                    class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>pseudo<wbr />Element</span></a
+                  ><a href="#removeclass"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>remove<wbr />Class</span></a
+                  ><a href="#tempclasses"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>temp<wbr />Classes</span></a
+                  ><a href="#timeline" class="tsd-is-inherited tsd-is-external"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>timeline</span></a
+                  ><a href="#to"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>to</span></a
+                  >
+                </div>
+              </details>
+            </div>
+          </details>
+        </div>
+        <div class="site-menu">
+          <nav class="tsd-navigation">
+            <a href="../index.html">AngularTS</a>
+            <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+              <li>Loading...</li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <p class="tsd-generator">
+        Generated using
+        <a href="https://typedoc.org/" target="_blank">TypeDoc</a>
+      </p>
+    </footer>
+    <div class="overlay"></div>
+  </body>
+</html>

@@ -320,10 +320,6 @@ function createWebComponentClass<T extends object>(
     if (isFunction(cleanup)) {
       cleanupFns.set(host, cleanup);
     }
-
-    if (isFunction(scope.$flushQueue)) {
-      scope.$flushQueue();
-    }
   }
 
   function disconnectHost(host: HTMLElement): void {
@@ -502,10 +498,6 @@ function writeInput(
 ): void {
   if (scope) {
     scope[input.property] = value;
-
-    if (isFunction(scope.$flushQueue)) {
-      scope.$flushQueue();
-    }
 
     return;
   }

@@ -69,7 +69,6 @@ describe("$webComponent", () => {
     expect(element.shadowRoot.textContent).toContain("bye/root/3/false/ready");
 
     rootScope.shared = "next";
-    rootScope.$flushQueue();
 
     await wait();
 

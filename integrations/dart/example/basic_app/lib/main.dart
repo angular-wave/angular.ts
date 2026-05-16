@@ -89,11 +89,10 @@ final class TodoListController {
     refresh();
   }
 
-  /// Requests AngularTS to process changes made through Dart callbacks.
+  /// Publishes changes made through Dart callbacks.
   void refresh() {
     jsTodos = _toJsTodos(todos);
     _publishScopeState();
-    scope.flushQueue();
   }
 
   void _publishScopeState() {

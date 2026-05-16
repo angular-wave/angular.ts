@@ -5178,13 +5178,11 @@ describe("$compile", () => {
       expect(changesSpy.calls.count()).toBe(2);
       let lastChanges = changesSpy.calls.mostRecent().args[0];
 
-      expect(lastChanges.myAttr.currentValue).toBe("fourtyTwo");
+      expect(lastChanges.myBinding.currentValue).toBe(43);
 
       attrs.$set("myAttr", "fourtyThree");
       await wait();
       expect(changesSpy.calls.count()).toBe(3);
-      lastChanges = changesSpy.calls.mostRecent().args[0];
-      expect(lastChanges.myAttr.currentValue).toBe("fourtyThree");
       lastChanges = changesSpy.calls.mostRecent().args[0];
       expect(lastChanges.myAttr.currentValue).toBe("fourtyThree");
     });
@@ -5277,6 +5275,100 @@ describe("$compile", () => {
       await wait();
       // plus one more for onchanges
       expect(watchSpy.calls.count()).toBe(4);
+    });
+
+    it("runs parent and child $onChanges in link order", async () => {
+      const events = [];
+
+      myModule
+        .component("parent", {
+          bindings: { value: "<" },
+          controller() {
+            this.$onChanges = (changes) => {
+              events.push(`parent:${changes.value.currentValue}`);
+            };
+          },
+        })
+        .component("child", {
+          bindings: { value: "<" },
+          controller() {
+            this.$onChanges = (changes) => {
+              events.push(`child:${changes.value.currentValue}`);
+            };
+          },
+        });
+      reloadModules();
+
+      $rootScope.value = 1;
+      const el = $('<parent value="value"><child value="value"></child></parent>');
+
+      $compile(el)($rootScope);
+      await wait();
+      expect(events).toEqual(["parent:1", "child:1"]);
+    });
+
+    it("runs templateUrl parent and child $onChanges after async initialization", async () => {
+      const events = [];
+
+      myModule
+        .component("asyncParent", {
+          bindings: { value: "<" },
+          controller() {
+            this.$onChanges = (changes) => {
+              events.push(`parent:${changes.value.currentValue}`);
+            };
+          },
+          templateUrl: "/async-parent.html",
+        })
+        .component("asyncChild", {
+          bindings: { value: "<" },
+          controller() {
+            this.$onChanges = (changes) => {
+              events.push(`child:${changes.value.currentValue}`);
+            };
+          },
+        });
+      $templateCache.set(
+        "/async-parent.html",
+        '<async-child value="$ctrl.value"></async-child>',
+      );
+      reloadModules();
+
+      $rootScope.value = 1;
+      const el = $('<async-parent value="value"></async-parent>');
+
+      $compile(el)($rootScope);
+      await wait();
+      expect(events).toEqual(["parent:1", "child:1"]);
+    });
+
+    it("does not deliver delayed $onChanges after the component scope is destroyed", async () => {
+      const events = [];
+      myModule.component("myComponent", {
+        bindings: { value: "<" },
+        controller() {
+          this.$onChanges = (changes) => {
+            events.push(changes.value.currentValue);
+          };
+        },
+      });
+      reloadModules();
+
+      const componentScope = $rootScope.$new();
+
+      componentScope.value = 1;
+      const el = $('<my-component value="value"></my-component>');
+
+      $compile(el)(componentScope);
+      await wait();
+      expect(events).toEqual([1]);
+
+      queueMicrotask(() => {
+        componentScope.$destroy();
+      });
+      componentScope.value = 2;
+      await wait();
+      expect(events).toEqual([1]);
     });
   });
 
@@ -8950,8 +9042,6 @@ describe("$compile", () => {
           // Now we should have a double changes entry in the log
           expect(log[0]).toEqual({
             prop1: jasmine.objectContaining({ currentValue: 42 }),
-          });
-          expect(log[1]).toEqual({
             prop2: jasmine.objectContaining({ currentValue: 84 }),
           });
 
@@ -8963,8 +9053,6 @@ describe("$compile", () => {
           await wait();
           expect(log[0]).toEqual({
             prop1: jasmine.objectContaining({ currentValue: 17 }),
-          });
-          expect(log[1]).toEqual({
             prop2: jasmine.objectContaining({ currentValue: 34 }),
           });
 
@@ -9175,8 +9263,6 @@ describe("$compile", () => {
             prop: jasmine.objectContaining({
               currentValue: 9,
             }),
-          });
-          expect(log[1]).toEqual({
             attr: jasmine.objectContaining({
               currentValue: "9",
             }),
@@ -9215,9 +9301,6 @@ describe("$compile", () => {
             prop: jasmine.objectContaining({
               currentValue: 10,
             }),
-          });
-
-          expect(log[1]).toEqual({
             attr: jasmine.objectContaining({
               currentValue: "10",
             }),
@@ -10115,7 +10198,6 @@ describe("$compile", () => {
           expect(componentScope.owRefAlias.value).toBe("origin1");
 
           componentScope.owRef = { value: "isolate1" };
-          componentScope.$flushQueue();
           await wait();
           expect($rootScope.obj.value).toBe("origin1");
 

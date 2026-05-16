@@ -485,11 +485,8 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
     }}
 
     __flushScope() {{
-      const angularScope = this.__angularScope;
-
-      if (angularScope && typeof angularScope.$flushQueue === "function") {{
-        angularScope.$flushQueue();
-      }}
+      // Scope flushing is a bridge callback boundary. AngularTS schedules DOM
+      // updates through the normal scope microtask pipeline.
     }}
 
     __publishControllerAlias() {{

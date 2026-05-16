@@ -23,10 +23,6 @@ final class Scope<TState> {
   /// Explicit dynamic escape hatch for migration and advanced interop.
   ScopeUnsafe get unsafe => ScopeUnsafe(_scope);
 
-  /// Flushes queued scope listeners.
-  void flushQueue() {
-    interop.callMethod(_scope as JSObject, r'$flushQueue');
-  }
 }
 
 /// Represents scope unsafe.

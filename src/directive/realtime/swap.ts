@@ -139,10 +139,7 @@ export function createRealtimeSwapHandler({
               }
 
               content = insertedNodes;
-              scope.$flushQueue();
             });
-
-          scope.$flushQueue();
           break;
         }
 
@@ -156,10 +153,7 @@ export function createRealtimeSwapHandler({
                   target,
                   target.parentNode as Element,
                 );
-                scope.$flushQueue();
               });
-
-            scope.$flushQueue();
           } else {
             target.textContent = stringify(html);
           }
@@ -181,8 +175,6 @@ export function createRealtimeSwapHandler({
               parent.insertBefore(node, target);
             }
           });
-
-          if (animationEnabled) scope.$flushQueue();
           break;
         }
 
@@ -200,8 +192,6 @@ export function createRealtimeSwapHandler({
               target.insertBefore(node, firstChild);
             }
           });
-
-          if (animationEnabled) scope.$flushQueue();
           break;
         }
 
@@ -213,8 +203,6 @@ export function createRealtimeSwapHandler({
               target.appendChild(node);
             }
           });
-
-          if (animationEnabled) scope.$flushQueue();
           break;
         }
 
@@ -235,8 +223,6 @@ export function createRealtimeSwapHandler({
               parent.insertBefore(node, nextSibling);
             }
           });
-
-          if (animationEnabled) scope.$flushQueue();
           break;
         }
 
@@ -246,9 +232,7 @@ export function createRealtimeSwapHandler({
               .leave(target)
               .done(() => {
                 removeElement(target);
-                scope.$flushQueue();
               });
-            scope.$flushQueue();
           } else {
             removeElement(target);
           }
@@ -270,9 +254,7 @@ export function createRealtimeSwapHandler({
                 .done(() => {
                   content = nodes[0] as ChildNode;
                   assertDefined(animate).enter(nodes[0] as Element, target);
-                  scope.$flushQueue();
                 });
-              scope.$flushQueue();
             } else {
               content = nodes[0] as ChildNode;
 
@@ -285,7 +267,6 @@ export function createRealtimeSwapHandler({
                 target.replaceChildren(...nodes);
               } else {
                 assertDefined(animate).enter(nodes[0] as Element, target);
-                scope.$flushQueue();
               }
             }
           } else {

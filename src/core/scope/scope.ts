@@ -177,6 +177,44 @@ let $exceptionHandler: ng.ExceptionHandlerService;
 /** @internal */
 export const $postUpdateQueue: Array<() => void> = [];
 
+let postUpdateDrainScheduled = false;
+
+let postUpdateDraining = false;
+
+function schedulePostUpdateQueueDrain(): void {
+  if (postUpdateDrainScheduled || postUpdateDraining) {
+    return;
+  }
+
+  postUpdateDrainScheduled = true;
+
+  queueMicrotask(() => {
+    queueMicrotask(() => {
+      postUpdateDrainScheduled = false;
+      drainPostUpdateQueue();
+    });
+  });
+}
+
+function drainPostUpdateQueue(): void {
+  if ($postUpdateQueue.length === 0) {
+    return;
+  }
+
+  postUpdateDraining = true;
+
+  let index = 0;
+
+  try {
+    while (index < $postUpdateQueue.length) {
+      $postUpdateQueue[index++]();
+    }
+  } finally {
+    $postUpdateQueue.length = 0;
+    postUpdateDraining = false;
+  }
+}
+
 const arrayMutationMeta = new WeakMap<object, ArrayMutationMeta>();
 
 const arraySwapCandidates = new WeakMap<object, ArraySwapCandidate>();
@@ -1366,7 +1404,6 @@ export class Scope {
       _children: this._children,
       $destroy: this.$destroy.bind(this),
       $emit: this.$emit.bind(this),
-      $flushQueue: this.$flushQueue.bind(this),
       $getById: this.$getById.bind(this),
       $handler: this,
       $id: this.$id,
@@ -2800,7 +2837,6 @@ export class Scope {
 
         if (task._kind === "callback") {
           task._callback();
-          this._drainPostUpdateQueue();
 
           continue;
         }
@@ -2811,7 +2847,6 @@ export class Scope {
 
         for (let i = 0, l = filteredListeners.length; i < l; i++) {
           this._notifyListener(filteredListeners[i], task._target);
-          this._drainPostUpdateQueue();
         }
       }
     } finally {
@@ -2834,21 +2869,6 @@ export class Scope {
         this._queueScheduledFlush();
       }
     }
-  }
-
-  /** @internal Drains post-update callbacks in FIFO order. */
-  _drainPostUpdateQueue(): void {
-    if ($postUpdateQueue.length === 0) {
-      return;
-    }
-
-    let index = 0;
-
-    while (index < $postUpdateQueue.length) {
-      $postUpdateQueue[index++]();
-    }
-
-    $postUpdateQueue.length = 0;
   }
 
   /** @internal Schedules a callback to run in the shared listener flush queue. */
@@ -3933,6 +3953,7 @@ export class Scope {
       if (this._destroyed) return;
       fn();
     });
+    schedulePostUpdateQueueDrain();
   }
 
   $destroy() {
@@ -4129,11 +4150,6 @@ export class Scope {
     } catch (err) {
       $exceptionHandler(err);
     }
-  }
-
-  /* @ignore */
-  $flushQueue() {
-    this._drainPostUpdateQueue();
   }
 
   /** Searches this scope tree for a scope with the given id. */

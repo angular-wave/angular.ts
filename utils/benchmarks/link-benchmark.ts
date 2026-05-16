@@ -135,8 +135,6 @@ function linkWithNewScope(
   try {
     const linkedNodes = linkFn(scope, captureClone);
 
-    scope.$flushQueue();
-
     return linkedNodes;
   } finally {
     scope.$destroy();

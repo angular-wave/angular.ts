@@ -239,7 +239,7 @@ describe("event directives", () => {
       expect(element.textContent).toBe("1");
     });
 
-    it("should flush the scope queue after event expressions", () => {
+    it("should evaluate event expressions", () => {
       const directive = createEventDirective(
         $parse,
         $exceptionHandler,
@@ -250,7 +250,6 @@ describe("event directives", () => {
       const link = directive.compile(null, { ngClick: "click($event)" });
 
       const scope = {
-        $flushQueue: jasmine.createSpy("$flushQueue"),
         $on: jasmine.createSpy("$on"),
         click: jasmine.createSpy("click"),
       };
@@ -263,10 +262,9 @@ describe("event directives", () => {
       button.dispatchEvent(event);
 
       expect(scope.click).toHaveBeenCalledWith(event);
-      expect(scope.$flushQueue).toHaveBeenCalled();
     });
 
-    it("should flush from the root scope after child-scope event expressions", () => {
+    it("should evaluate child-scope event expressions without a root queue API", () => {
       const directive = createEventDirective(
         $parse,
         $exceptionHandler,
@@ -276,12 +274,9 @@ describe("event directives", () => {
 
       const link = directive.compile(null, { ngClick: "click($event)" });
 
-      const rootScope = {
-        $flushQueue: jasmine.createSpy("$flushQueue"),
-      };
+      const rootScope = {};
 
       const scope = {
-        $flushQueue: jasmine.createSpy("$flushQueue"),
         $on: jasmine.createSpy("$on"),
         $root: rootScope,
         click: jasmine.createSpy("click"),
@@ -292,8 +287,7 @@ describe("event directives", () => {
       link(scope, button);
       button.dispatchEvent(new Event("click"));
 
-      expect(rootScope.$flushQueue).toHaveBeenCalled();
-      expect(scope.$flushQueue).not.toHaveBeenCalled();
+      expect(scope.click).toHaveBeenCalled();
     });
 
     it("should delegate listener errors to $exceptionHandler", () => {

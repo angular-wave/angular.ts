@@ -3186,6 +3186,28 @@ describe("Scope", () => {
 
   describe("$postUpdate", () => {
     beforeEach(() => (logs = []));
+
+    it("should process callbacks on the microtask queue without a listener flush", async () => {
+      let signature = "";
+
+      scope.$postUpdate(() => {
+        signature += "A";
+        scope.$postUpdate(() => {
+          signature += "C";
+        });
+      });
+
+      scope.$postUpdate(() => {
+        signature += "B";
+      });
+
+      expect(signature).toBe("");
+
+      await wait();
+
+      expect(signature).toBe("ABC");
+    });
+
     it("should process callbacks as a queue (FIFO) when the scope is digested", async () => {
       let signature = "";
 
@@ -3298,6 +3320,26 @@ describe("Scope", () => {
       scope.a = 1;
       await wait();
       expect(signature).toBe("AB");
+    });
+
+    it("should skip $postUpdate callbacks registered on destroyed scopes", async () => {
+      const child = scope.$new();
+
+      let ran = false;
+
+      child.$postUpdate(() => {
+        ran = true;
+      });
+
+      child.$destroy();
+
+      scope.$watch("a", () => {
+        /* empty */
+      });
+      scope.a = 1;
+      await wait();
+
+      expect(ran).toBeFalse();
     });
   });
 
@@ -4957,64 +4999,6 @@ describe("Scope optimizations", () => {
     });
   });
 
-  describe("$flushQueue with index-based drain", () => {
-    it("should process all queued callbacks", () => {
-      let signature = "";
-
-      $postUpdateQueue.push(() => {
-        signature += "A";
-      });
-      $postUpdateQueue.push(() => {
-        signature += "B";
-      });
-      $postUpdateQueue.push(() => {
-        signature += "C";
-      });
-
-      scope.$flushQueue();
-      expect(signature).toBe("ABC");
-      expect($postUpdateQueue.length).toBe(0);
-    });
-
-    it("should handle an empty queue gracefully", () => {
-      $postUpdateQueue.length = 0;
-      expect(() => scope.$flushQueue()).not.toThrow();
-      expect($postUpdateQueue.length).toBe(0);
-    });
-
-    it("should clear the queue after processing", () => {
-      $postUpdateQueue.push(() => {});
-      $postUpdateQueue.push(() => {});
-      expect($postUpdateQueue.length).toBe(2);
-
-      scope.$flushQueue();
-      expect($postUpdateQueue.length).toBe(0);
-    });
-
-    it("should process callbacks that add to the queue during flushing", () => {
-      let signature = "";
-
-      $postUpdateQueue.push(() => {
-        signature += "A";
-        $postUpdateQueue.push(() => {
-          signature += "D";
-        });
-      });
-      $postUpdateQueue.push(() => {
-        signature += "B";
-      });
-      $postUpdateQueue.push(() => {
-        signature += "C";
-      });
-
-      scope.$flushQueue();
-      // D is added during iteration, and since we iterate with i < length,
-      // the dynamically-added item should also be processed
-      expect(signature).toBe("ABCD");
-      expect($postUpdateQueue.length).toBe(0);
-    });
-  });
-
   describe("internal listener scheduler", () => {
     it("should preserve remaining scheduled callbacks when a flush callback throws", () => {
       const queuedMicrotasks = [];
@@ -5161,23 +5145,24 @@ describe("Scope optimizations", () => {
     });
   });
 
-  describe("$postUpdate queue drain in #notifyListener", () => {
-    it("should drain $postUpdateQueue after watcher notification", async () => {
-      let signature = "";
+  describe("$postUpdate microtask boundary after #notifyListener", () => {
+    it("should run $postUpdate callbacks after watcher notification", async () => {
+      const events: string[] = [];
 
       scope.$postUpdate(() => {
-        signature += "POST";
+        events.push("POST");
       });
 
       scope.$watch("val", () => {
-        signature += "WATCH";
+        events.push("WATCH");
       });
 
       scope.val = 1;
+      expect(events).toEqual([]);
       await wait();
 
-      expect(signature).toContain("WATCH");
-      expect(signature).toContain("POST");
+      expect(events[0]).toBe("WATCH");
+      expect(events[events.length - 1]).toBe("POST");
     });
 
     it("should not re-evaluate a local watcher when the first result is undefined", () => {

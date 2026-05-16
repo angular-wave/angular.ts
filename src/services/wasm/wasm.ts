@@ -117,7 +117,7 @@ export interface WasmScopeAbiImports {
     pathPtr: number,
     pathLen: number,
   ): number;
-  /** Flushes queued AngularTS scope callbacks. Returns `1` on success. */
+  /** Runs queued Wasm scope bridge callbacks. Returns `1` on success. */
   scope_flush(scopeHandle: number): number;
   /** Name-based variant of `scope_flush`. */
   scope_flush_named(namePtr: number, nameLen: number): number;
@@ -257,11 +257,9 @@ export class WasmScope {
     return deleteScopePath(this.scope, path);
   }
 
-  /** Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`. */
+  /** Runs queued Wasm bridge callbacks for this scope. */
   flush(): void {
     this._scheduleFlushCallbacks();
-
-    this.scope.$flushQueue?.();
   }
 
   /** @internal */
@@ -284,8 +282,6 @@ export class WasmScope {
       for (let i = 0, l = callbacks.length; i < l; i++) {
         callbacks[i]();
       }
-
-      this.scope.$flushQueue?.();
     });
   }
 

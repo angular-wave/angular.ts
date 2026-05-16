@@ -84,10 +84,6 @@ export function ngWebTransportDirective(
 
         try {
           $parse(expression)(scope, locals);
-
-          if (isFunction(scope.$flushQueue)) {
-            scope.$flushQueue();
-          }
         } catch (error) {
           $exceptionHandler(error);
         }
@@ -138,10 +134,6 @@ export function ngWebTransportDirective(
 
         if (isFunction(parsed._assign)) {
           parsed._assign(scope, nextConnection);
-
-          if (isFunction(scope.$flushQueue)) {
-            scope.$flushQueue();
-          }
         } else {
           $log.warn(`ngWebTransport: "${expression}" is not assignable`);
         }

@@ -834,12 +834,6 @@ ng.Scope.prototype.$postUpdate = function(fn) {};
 ng.Scope.prototype.$destroy = function() {};
 
 /**
- * Public Scope.$flushQueue member exposed by the AngularTS namespace contract.
- * @return {void}
- */
-ng.Scope.prototype.$flushQueue = function() {};
-
-/**
  * Searches this scope tree for a scope with the given id.
  * @param {(number|string)} id
  * @return {(!ng.Scope|undefined)}
@@ -2252,12 +2246,6 @@ ng.RootScopeService.prototype.$postUpdate = function(fn) {};
  * @return {void}
  */
 ng.RootScopeService.prototype.$destroy = function() {};
-
-/**
- * Public RootScopeService.$flushQueue member exposed by the AngularTS namespace contract.
- * @return {void}
- */
-ng.RootScopeService.prototype.$flushQueue = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
@@ -6094,7 +6082,7 @@ ng.WasmScope.prototype.set = function(path, value) {};
 ng.WasmScope.prototype.delete = function(path) {};
 
 /**
- * Flushes queued scope callbacks when the wrapped scope exposes `$flushQueue`.
+ * Runs queued Wasm bridge callbacks for this scope.
  * @return {void}
  */
 ng.WasmScope.prototype.flush = function() {};
@@ -6286,7 +6274,7 @@ ng.WasmScopeAbiImports.prototype.scope_delete = function(scopeHandle, pathPtr, p
 ng.WasmScopeAbiImports.prototype.scope_delete_named = function(namePtr, nameLen, pathPtr, pathLen) {};
 
 /**
- * Flushes queued AngularTS scope callbacks. Returns `1` on success.
+ * Runs queued Wasm scope bridge callbacks. Returns `1` on success.
  * @param {number} scopeHandle
  * @return {number}
  */

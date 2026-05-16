@@ -495,6 +495,8 @@ export interface OnChangesQueueState {
   /** @internal */
   _queue: DirectiveBindingChangeState[];
   /** @internal */
+  _scheduled: boolean;
+  /** @internal */
   _flush: () => void;
 }
 
@@ -1549,10 +1551,11 @@ export class CompileProvider {
         const onChangesQueueState: OnChangesQueueState = {
           _exceptionHandler: $exceptionHandler,
           _queue: [],
+          _scheduled: false,
           _flush: undefined as never,
         };
 
-        // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
+        // This function runs queued onChanges hooks after the current listener turn.
         onChangesQueueState._flush = () => {
           flushDirectiveBindingOnChangesQueue(onChangesQueueState);
         };
@@ -1570,6 +1573,11 @@ export class CompileProvider {
         function triggerDirectiveBindingOnChanges(
           state: DirectiveBindingChangeState,
         ): void {
+          if (state._scope._destroyed || state._destAny._destroyed) {
+            state._changes = undefined;
+            return;
+          }
+
           if (state._destAny.$onChanges && state._changes) {
             callFunction(
               state._destAny.$onChanges as (...args: any[]) => unknown,
@@ -1584,6 +1592,8 @@ export class CompileProvider {
         function flushDirectiveBindingOnChangesQueue(
           queueState: OnChangesQueueState,
         ): void {
+          queueState._scheduled = false;
+
           const queue = queueState._queue;
 
           for (let i = 0, ii = queue.length; i < ii; ++i) {
@@ -1597,6 +1607,18 @@ export class CompileProvider {
           queue.length = 0;
         }
 
+        function scheduleDirectiveBindingOnChangesQueue(
+          queueState: OnChangesQueueState,
+        ): void {
+          if (queueState._scheduled) {
+            return;
+          }
+
+          queueState._scheduled = true;
+
+          queueMicrotask(queueState._flush);
+        }
+
         function recordDirectiveBindingChange(
           state: DirectiveBindingChangeState,
           key: string,
@@ -1607,10 +1629,7 @@ export class CompileProvider {
             return;
           }
 
-          if (!state._onChangesQueue._queue.length) {
-            state._scope.$postUpdate(state._onChangesQueue._flush);
-            state._onChangesQueue._queue.length = 0;
-          }
+          scheduleDirectiveBindingOnChangesQueue(state._onChangesQueue);
 
           if (!state._changes) {
             state._changes = {};
@@ -1735,13 +1754,6 @@ export class CompileProvider {
             return;
           }
 
-          recordDirectiveBindingChange(
-            state._bindingChangeState,
-            state._scopeName,
-            value,
-            state._firstChange,
-          );
-
           state._destAny[state._scopeName] = value;
 
           if (state._firstCall) {
@@ -1749,6 +1761,13 @@ export class CompileProvider {
 
             return;
           }
+
+          recordDirectiveBindingChange(
+            state._bindingChangeState,
+            state._scopeName,
+            value,
+            state._firstChange,
+          );
 
           triggerDirectiveBindingOnChanges(state._bindingChangeState);
           state._firstChange = false;
@@ -3935,10 +3954,11 @@ export class CompileProvider {
               }
 
               controllerScope.$on("$destroy", () => {
-                if (
-                  !controllerInstance._destroyed &&
-                  isFunction(controllerInstance.$destroy)
-                ) {
+                const wasDestroyed = controllerInstance._destroyed;
+
+                controllerInstance._destroyed = true;
+
+                if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
                   callFunction(controllerInstance.$destroy, controllerInstance);
                 }
               });
