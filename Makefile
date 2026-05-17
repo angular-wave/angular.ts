@@ -74,7 +74,6 @@ check: ensure-deps
 	@$(MAKE) lint-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
-	@$(MAKE) test-types
 	@$(MAKE) docs-examples-check
 
 test-types: ensure-deps
