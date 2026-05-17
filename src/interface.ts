@@ -568,8 +568,7 @@ export type RootElementService = HTMLElement;
 
 export interface InvocationDetail {
   expr: string;
-  /** @internal */
-  _reply?: {
+  reply?: {
     resolve: (value: unknown) => unknown;
     reject: (reason: unknown) => PromiseLike<never>;
   };

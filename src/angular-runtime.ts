@@ -259,8 +259,8 @@ export class AngularRuntime extends EventTarget {
     if (!target) {
       const { detail } = customEvent;
 
-      if (isInvocationDetail(detail) && detail._reply) {
-        detail._reply.reject(new Error(`No target found for "${injectable}"`));
+      if (isInvocationDetail(detail) && detail.reply) {
+        detail.reply.reject(new Error(`No target found for "${injectable}"`));
       }
 
       return false;
@@ -277,8 +277,8 @@ export class AngularRuntime extends EventTarget {
     try {
       const result = $parse(expr)(target);
 
-      if (isInvocationDetail(detail) && detail._reply) {
-        const { _reply: reply } = detail;
+      if (isInvocationDetail(detail) && detail.reply) {
+        const { reply } = detail;
 
         void Promise.resolve(result)
           .then((value) => {
@@ -291,8 +291,8 @@ export class AngularRuntime extends EventTarget {
           });
       }
     } catch (err) {
-      if (isInvocationDetail(detail) && detail._reply) {
-        detail._reply.reject(err);
+      if (isInvocationDetail(detail) && detail.reply) {
+        detail.reply.reject(err);
       }
     }
 
@@ -317,7 +317,7 @@ export class AngularRuntime extends EventTarget {
     return new Promise((resolve, reject) => {
       const ok = this.dispatchEvent(
         new CustomEvent(type, {
-          detail: { expr, __reply: { resolve, reject } } as never,
+          detail: { expr, reply: { resolve, reject } } as never,
         }),
       );
 
