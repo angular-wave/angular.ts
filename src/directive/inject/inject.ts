@@ -12,7 +12,7 @@ export function ngInjectDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    link(scope: ng.Scope & Record<string, any>, element: Element): void {
+    link(scope: ng.Scope & Record<string, unknown>, element: Element): void {
       const expr = $attributes.read(element, "ngInject");
 
       if (!expr) return;

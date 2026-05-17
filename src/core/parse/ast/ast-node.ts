@@ -1,10 +1,10 @@
-import type { ASTType } from "../ast-type.ts";
+import type { ASTNodeType } from "../ast-type.ts";
 
 /** Base properties for all AST nodes */
 interface BaseNode {
   /** The type of the AST node. */
   /** @internal */
-  _type: ASTType;
+  _type: ASTNodeType;
 
   /** Indicates whether the node depends on non-shallow state. */
   /** @internal */

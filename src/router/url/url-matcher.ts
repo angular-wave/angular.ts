@@ -18,16 +18,16 @@ const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
 const MAX_REGEX_LENGTH = 200;
 
 const PLACEHOLDER_REGEXP = new RegExp(
-  `([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${
-    MAX_REGEX_LENGTH
-  }}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`,
+  `([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${String(
+    MAX_REGEX_LENGTH,
+  )}}|\\\\.|\\{(?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.)*\\})+))?\\}`,
   "g",
 );
 
 const SEARCH_PLACEHOLDER_REGEXP = new RegExp(
-  `([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${
-    MAX_REGEX_LENGTH
-  }}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`,
+  `([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${String(
+    MAX_REGEX_LENGTH,
+  )}}|\\\\.|\\{(?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.)*\\})+))?\\}`,
   "g",
 );
 
@@ -86,7 +86,7 @@ function pushStaticSegmentWeights(weights: number[], segment: string): void {
 function getMatcherWeights(matcher: UrlMatcher): number[] {
   if (matcher._cache._weights) return matcher._cache._weights;
 
-  const path = matcher._cache._path || [matcher];
+  const path = matcher._cache._path ?? [matcher];
 
   const weights: number[] = [];
 
@@ -132,13 +132,17 @@ function appendPathParam(
 
   const squash = isDefaultValue ? param.squash : false;
 
-  const encoded = param.type.encode(value) as string | string[];
+  const encoded = param.type.encode(value) as
+    | string
+    | string[]
+    | null
+    | undefined;
 
   if (squash === true) return path.endsWith("/") ? path.slice(0, -1) : path;
 
   if (isString(squash)) return path + squash;
 
-  if (squash || isNullOrUndefined(encoded)) return path;
+  if (isNullOrUndefined(encoded)) return path;
 
   if (isArray(encoded)) return null;
 
@@ -146,7 +150,7 @@ function appendPathParam(
 }
 
 function appendQueryParam(
-  queryParts: Array<string | undefined>,
+  queryParts: (string | undefined)[],
   param: Param,
   values: RawParams,
 ): boolean {
@@ -212,7 +216,7 @@ function appendMatcherPath(
 }
 
 function appendMatcherQueryParams(
-  queryParts: Array<string | undefined>,
+  queryParts: (string | undefined)[],
   matcher: UrlMatcher,
   values: RawParams,
 ): boolean {
@@ -230,7 +234,7 @@ function appendMatcherQueryParams(
 function formatUrl(matchers: UrlMatcher[], values: RawParams): string | null {
   let path: string | null = "";
 
-  const queryParts: Array<string | undefined> = [];
+  const queryParts: (string | undefined)[] = [];
 
   for (let i = 0; i < matchers.length; i++) {
     path = appendMatcherPath(path, matchers[i], values);
@@ -317,16 +321,10 @@ function getParamType(
     ? match[4]
     : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
 
-  if (!defaultType) {
-    throw new Error(
-      `Missing default parameter type for '${isSearch ? "query" : "path"}'`,
-    );
-  }
-
   return !regexp
     ? defaultType
-    : paramTypes[regexp] ||
-        makeRegexpType(defaultType, regexp, config.caseInsensitive);
+    : (paramTypes[regexp] ??
+        makeRegexpType(defaultType, regexp, config.caseInsensitive));
 }
 
 /**
@@ -513,7 +511,7 @@ export class UrlMatcher {
   /** @internal */
   _append(url: UrlMatcher): UrlMatcher {
     url._cache = {
-      _path: (this._cache._path || [this]).concat(url),
+      _path: (this._cache._path ?? [this]).concat(url),
       _parent: this,
       _pattern: null,
     };
@@ -545,8 +543,9 @@ export class UrlMatcher {
    * @returns {RawParams | null} The captured parameter values.
    */
   /** @internal */
-  _exec(path: string, search: RawParams = {}, hash: string): RawParams | null {
-    const pathMatchers = this._cache._path || [this];
+  _exec(path: string, search?: RawParams, hash?: string): RawParams | null {
+    const searchParams = search ?? {};
+    const pathMatchers = this._cache._path ?? [this];
 
     const match = getPatternRegExp(this, pathMatchers).exec(path);
 
@@ -585,7 +584,7 @@ export class UrlMatcher {
         const param = matcherParams[j];
 
         if (param.location !== DefType._SEARCH) continue;
-        const value = param.value(search[param.id]);
+        const value = param.value(searchParams[param.id]);
 
         if (!param.validates(value)) return null;
         values[param.id] = value;
@@ -642,6 +641,6 @@ export class UrlMatcher {
    */
   /** @internal */
   _format(values: RawParams = {} as RawParams) {
-    return formatUrl(this._cache._path || [this], values);
+    return formatUrl(this._cache._path ?? [this], values);
   }
 }

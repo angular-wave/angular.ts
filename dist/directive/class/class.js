@@ -1,10 +1,12 @@
-import { getCacheData, setCacheData, getNormalizedAttr } from '../../shared/dom.js';
-import { nullObject, hasAnimate, isArray, isObject, hasOwn, isString } from '../../shared/utils.js';
+import { _attributes } from '../../injection-tokens.js';
+import { getCacheData, setCacheData } from '../../shared/dom.js';
+import { nullObject, isArray, isObject, hasOwn, isString } from '../../shared/utils.js';
 
+classDirective.$inject = [_attributes];
 /** Creates the `ngClass` directive. */
-function classDirective() {
+function classDirective($attributes) {
     return {
-        link(scope, element, attr) {
+        link(scope, element) {
             let classCounts = getCacheData(element, "$classCounts");
             let oldClassString = "";
             if (!classCounts) {
@@ -13,9 +15,7 @@ function classDirective() {
                 setCacheData(element, "$classCounts", classCounts);
             }
             const counts = classCounts;
-            // Cache once; `hasAnimate(element)` should be stable for this directive instance.
-            const animate = hasAnimate(element);
-            const expression = getNormalizedAttr(element, "ngClass");
+            const expression = $attributes.read(element, "ngClass");
             if (expression === undefined) {
                 return;
             }
@@ -33,18 +33,10 @@ function classDirective() {
                 const toAddArray = arrayDifference(newClassArray, oldClassArray);
                 const toRemove = digestClassCounts(toRemoveArray, -1);
                 const toAdd = digestClassCounts(toAddArray, 1);
-                if (animate) {
-                    if (toAdd.length)
-                        attr.$addClass(toAdd.join(" "));
-                    if (toRemove.length)
-                        attr.$removeClass(toRemove.join(" "));
-                }
-                else {
-                    if (toAdd.length)
-                        element.classList.add(...toAdd);
-                    if (toRemove.length)
-                        element.classList.remove(...toRemove);
-                }
+                if (toAdd.length)
+                    $attributes.addClass(element, toAdd.join(" "));
+                if (toRemove.length)
+                    $attributes.removeClass(element, toRemove.join(" "));
             }
             /**
              * Updates reference-counts for classes and returns the classes that should be

@@ -186,7 +186,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
-  sendText(data: string): Promise<void> {
+  async sendText(data: string): Promise<void> {
     return this.sendDatagram(data);
   }
 
@@ -263,14 +263,15 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       },
     );
 
-    transport.closed.then(
-      () => {
+    void transport.closed
+      .then(() => {
         this._handleNativeClose(undefined, transport);
-      },
-      (error: unknown) => {
+
+        return undefined;
+      })
+      .catch((error: unknown) => {
         this._handleNativeClose(error, transport);
-      },
-    );
+      });
   }
 
   private async _notifyReconnect(

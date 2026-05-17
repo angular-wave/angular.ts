@@ -47,9 +47,9 @@ export class PathNode {
 
       const resolvables = state.resolvables ?? [];
 
-      resolvables.forEach((resolvable) =>
-        this.resolvables.push(resolvable.clone()),
-      );
+      resolvables.forEach((resolvable) => {
+        this.resolvables.push(resolvable.clone());
+      });
     }
   }
 

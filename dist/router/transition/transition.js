@@ -155,7 +155,7 @@ class Transition {
      * @returns {RawParams}
      */
     params(pathname = "to") {
-        const path = this._treeChanges[pathname] || [];
+        const path = this._treeChanges[pathname] ?? [];
         return Object.freeze(collectPathParams(path));
     }
     /**
@@ -191,12 +191,12 @@ class Transition {
      */
     redirect(targetState) {
         let redirects = 1;
-        let trans = this._options.redirectedFrom || null;
+        let trans = this._options.redirectedFrom ?? null;
         while (trans) {
             if (++redirects > REDIRECT_MAX) {
                 throw new Error(`Too many consecutive Transition redirects (20+)`);
             }
-            trans = trans._options.redirectedFrom || null;
+            trans = trans._options.redirectedFrom ?? null;
         }
         const redirectOpts = {
             redirectedFrom: this,
@@ -397,7 +397,7 @@ class Transition {
         const toStateOrName = this.to();
         // (X) means the to state is invalid.
         const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
-        return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
+        return `Transition#${String(id)}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
     }
 }
 function pathStates(path) {

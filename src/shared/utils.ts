@@ -6,9 +6,9 @@ export type { ErrorHandlingConfig } from "./interface.ts";
 
 export const isProxySymbol = Symbol("isProxy");
 
-export type RuntimeFunction = (...args: any[]) => unknown;
+export type RuntimeFunction = (...args: never[]) => unknown;
 
-export type RuntimeConstructor = abstract new (...args: any[]) => unknown;
+export type RuntimeConstructor = abstract new (...args: never[]) => unknown;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -70,7 +70,7 @@ export function uppercase(string: unknown): unknown {
 /**
  * Returns true if `obj` is an array or array-like object such as `NodeList` or `Arguments`.
  */
-export function isArrayLike(obj: any): boolean {
+export function isArrayLike(obj: unknown): boolean {
   // `null`, `undefined` and `window` are not array-like
   if (isNullOrUndefined(obj) || isWindow(obj)) return false;
 
@@ -79,7 +79,7 @@ export function isArrayLike(obj: any): boolean {
   //   via the forEach method when constructing the JQLite object in the first place
   if (isArray(obj) || isInstanceOf(obj, Array) || isString(obj)) return true;
 
-  const arrayLikeObj = obj as ArrayLike<any> & object & Partial<NodeList>;
+  const arrayLikeObj = obj as ArrayLike<unknown> & object & Partial<NodeList>;
 
   const len = arrayLikeObj.length;
 
@@ -97,7 +97,7 @@ export function isArrayLike(obj: any): boolean {
  * @param value Reference to check.
  * @returns True if `value` is undefined.
  */
-export function isUndefined(value: any): value is undefined {
+export function isUndefined(value: unknown): value is undefined {
   return typeof value === "undefined";
 }
 
@@ -115,22 +115,22 @@ export function isDefined<T>(value: T | undefined): value is T {
 /**
  * Returns whether a value is a real array.
  */
-export function isArray<T = any>(array: any): array is T[] {
+export function isArray<T = unknown>(array: unknown): array is T[] {
   return Array.isArray(array);
 }
 
-export interface InstanceConstructor<T = any> {
-  prototype: T;
-}
+export type InstanceConstructor<T = unknown> = abstract new (
+  ...args: never[]
+) => T;
 
 /**
  * Returns whether a value is an instance of the provided constructor.
  */
 export function isInstanceOf<T>(
-  val: any,
+  val: unknown,
   type: InstanceConstructor<T>,
 ): val is T;
-export function isInstanceOf(val: any, type: any): boolean {
+export function isInstanceOf(val: unknown, type: InstanceConstructor): boolean {
   return val instanceof type;
 }
 
@@ -209,7 +209,7 @@ export function isNumber(value: unknown): value is number {
  * @param value Reference to check.
  * @returns True if `value` is a `Date`.
  */
-export function isDate(value: any): value is Date {
+export function isDate(value: unknown): value is Date {
   return toString.call(value) === "[object Date]";
 }
 
@@ -220,7 +220,7 @@ export function isDate(value: any): value is Date {
  * @param value Reference to check.
  * @returns True if `value` is an `Error`.
  */
-export function isError(value: any): value is Error {
+export function isError(value: unknown): value is Error {
   const tag = toString.call(value);
 
   switch (tag) {
@@ -248,7 +248,7 @@ export function isFunction(value: unknown): value is RuntimeFunction {
 export function callFunction(
   fn: RuntimeFunction,
   thisArg: unknown,
-  ...args: any[]
+  ...args: unknown[]
 ): unknown {
   return Reflect.apply(fn, thisArg, args) as unknown;
 }
@@ -259,12 +259,16 @@ export function callFunction(
  * @param value Reference to check.
  * @returns True if `value` is a `RegExp`.
  */
-export function isRegExp(value: any): value is RegExp {
+export function isRegExp(value: unknown): value is RegExp {
   return toString.call(value) === "[object RegExp]";
 }
 
-function isNodeLike(value: object): value is Node {
-  return "nodeName" in value && isFunction((value as Partial<Node>).cloneNode);
+function isNodeLike(value: unknown): value is Node {
+  return (
+    isObject(value) &&
+    "nodeName" in value &&
+    isFunction((value as Partial<Node>).cloneNode)
+  );
 }
 
 /**
@@ -273,7 +277,7 @@ function isNodeLike(value: object): value is Node {
  * @param obj Object to check
  * @returns True if `obj` is a window obj.
  */
-export function isWindow(obj: any): obj is Window {
+export function isWindow(obj: unknown): obj is Window {
   return isInstanceOf(obj, Window);
 }
 
@@ -287,28 +291,28 @@ export function isScope(obj: unknown): boolean {
 /**
  * Returns whether a value is a `File`.
  */
-export function isFile(obj: any): boolean {
+export function isFile(obj: unknown): boolean {
   return toString.call(obj) === "[object File]";
 }
 
 /**
  * Returns whether a value is a `FormData` instance.
  */
-export function isFormData(obj: any): boolean {
+export function isFormData(obj: unknown): boolean {
   return toString.call(obj) === "[object FormData]";
 }
 
 /**
  * Returns whether a value is a `Blob`.
  */
-export function isBlob(obj: any): boolean {
+export function isBlob(obj: unknown): boolean {
   return toString.call(obj) === "[object Blob]";
 }
 
 /**
  * Returns whether a value is boolean.
  */
-export function isBoolean(value: any): value is boolean {
+export function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
@@ -334,7 +338,7 @@ export function trim(value: unknown): unknown {
  * Converts a camelCase or PascalCase name to snake case.
  */
 export function snakeCase(name: string, separator?: string): string {
-  const modseparator = separator || "_";
+  const modseparator = separator ?? "_";
 
   return name.replace(
     /[A-Z]/g,
@@ -343,8 +347,8 @@ export function snakeCase(name: string, separator?: string): string {
   );
 }
 
-function getHashKeyTarget(obj: any): object | undefined {
-  const target = deProxy(obj);
+function getHashKeyTarget(obj: unknown): object | undefined {
+  const target = deProxy<unknown>(obj);
 
   const objType = typeof target;
 
@@ -353,7 +357,7 @@ function getHashKeyTarget(obj: any): object | undefined {
     : undefined;
 }
 
-function getGeneratedHashKey(obj: any): string | undefined {
+function getGeneratedHashKey(obj: unknown): string | undefined {
   const target = getHashKeyTarget(obj);
 
   return target ? generatedHashKeys.get(target) : undefined;
@@ -368,7 +372,10 @@ function getGeneratedHashKey(obj: any): string | undefined {
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(obj: Record<string, any>, hashkey: any): void {
+export function setHashKey(
+  obj: object,
+  hashkey: string | null | undefined | false,
+): void {
   const target = getHashKeyTarget(obj);
 
   if (!target) return;
@@ -383,17 +390,19 @@ export function setHashKey(obj: Record<string, any>, hashkey: any): void {
 /**
  * Read an explicit or internally generated hash key without creating one.
  */
-export function getHashKey(obj: any): string | undefined {
-  const target = deProxy(obj);
+export function getHashKey(obj: unknown): string | undefined {
+  const target = deProxy<unknown>(obj);
 
   const key = isObject(target)
     ? (target as UnknownRecord & { $hashKey?: unknown }).$hashKey
     : undefined;
 
   if (key) {
-    const hashKey = isFunction(key) ? callFunction(key, target) : key;
+    const resolvedHashKey = isFunction(key) ? callFunction(key, target) : key;
 
-    return isString(hashKey) ? hashKey : String(hashKey);
+    return isString(resolvedHashKey)
+      ? resolvedHashKey
+      : String(resolvedHashKey);
   }
 
   const hashKeyTarget = getHashKeyTarget(target);
@@ -412,10 +421,10 @@ export function getHashKey(obj: any): string | undefined {
  * @returns The extended destination object.
  */
 export function baseExtend(
-  dst: Record<string, any>,
-  objs: Array<Record<string, any>>,
+  dst: UnknownRecord,
+  objs: UnknownRecord[],
   deep = false,
-): Record<string, any> {
+): UnknownRecord {
   const hasInternalKey = getGeneratedHashKey(dst);
 
   const hadExplicitKey = hasOwn(dst, "$hashKey");
@@ -444,7 +453,7 @@ export function baseExtend(
           dst[key] = src.cloneNode(true);
         } else if (key !== "__proto__") {
           if (!isObject(dst[key])) dst[key] = isArray(src) ? [] : {};
-          baseExtend(dst[key], [src], true);
+          baseExtend(dst[key] as UnknownRecord, [src as UnknownRecord], true);
         }
       } else {
         dst[key] = src;
@@ -474,29 +483,42 @@ export function baseExtend(
  * @param src Source object(s).
  * @returns Reference to `dst`.
  */
-export function extend(dst: any, ...src: any[]): any {
-  return baseExtend(dst, src, false);
+export function extend<T>(dst: T, ...src: unknown[]): T {
+  return baseExtend(dst as UnknownRecord, src as UnknownRecord[], false) as T;
 }
 
 /**
  * Returns whether a number is `NaN`.
  */
-export function isNumberNaN(num: any): boolean {
+export function isNumberNaN(num: unknown): boolean {
   return Number.isNaN(num);
 }
 
 /**
  * Creates a new object that inherits from `parent` and extends it with `extra`.
  */
-export function inherit(parent: any, extra: any): any {
-  return extend(createObject(parent), extra);
+export function inherit<T extends object, E extends object>(
+  parent: T,
+  extra: E,
+): T & E;
+export function inherit<E extends object>(parent: null, extra: E): E;
+export function inherit(parent: object | null, extra: object): object {
+  const inherited = createObject(parent) as object;
+
+  return extend(inherited, extra);
 }
 
 /**
  * Returns whether an object defines its own `toString` implementation.
  */
-export function hasCustomToString(obj: { toString: () => string }): boolean {
-  return isFunction(obj.toString) && obj.toString !== toString;
+export function hasCustomToString(
+  obj: unknown,
+): obj is { toString: () => string } {
+  if (!isObject(obj)) return false;
+
+  const customToString: unknown = Reflect.get(obj, "toString");
+
+  return isFunction(customToString) && customToString !== toString;
 }
 
 /**
@@ -524,7 +546,7 @@ export function getNodeName(element: Element): string {
 /**
  * Returns whether an array-like collection contains a given value.
  */
-export function includes(array: any, obj: any): boolean {
+export function includes(array: ArrayLike<unknown>, obj: unknown): boolean {
   return Array.prototype.indexOf.call(array, obj) !== -1;
 }
 
@@ -610,7 +632,7 @@ export function simpleCompare(val1: unknown, val2: unknown): boolean {
     </file>
   </example>
  */
-export function equals(o1: any, o2: any): boolean {
+export function equals(o1: unknown, o2: unknown): boolean {
   if (o1 === o2) return true;
 
   if (o1 === null || o2 === null) return false;
@@ -721,13 +743,15 @@ export function stringify(value: unknown): string {
   }
 
   if (typeof value === "number") {
-    return `${value}`;
+    return String(value);
   }
 
-  const objectValue = value as object;
+  if (hasCustomToString(value) && !isArray(value) && !isDate(value)) {
+    const customToString = Reflect.get(value, "toString") as (
+      this: unknown,
+    ) => string;
 
-  if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-    return String(callFunction(objectValue.toString, value));
+    return customToString.call(value);
   }
 
   return assertDefined(toJson(value));
@@ -736,7 +760,7 @@ export function stringify(value: unknown): string {
 /**
  * Returns whether an object traversal depth limit is valid.
  */
-export function isValidObjectMaxDepth(maxDepth: any): boolean {
+export function isValidObjectMaxDepth(maxDepth: unknown): boolean {
   return isNumber(maxDepth) && maxDepth > 0;
 }
 
@@ -755,7 +779,7 @@ export function concat<T>(
  * Converts `arguments` or an array-like value into a real array.
  */
 export function sliceArgs<T>(args: IArguments | T[], startIndex?: number): T[] {
-  return Array.prototype.slice.call(args, startIndex || 0) as T[];
+  return Array.prototype.slice.call(args, startIndex ?? 0) as T[];
 }
 
 /**
@@ -768,16 +792,16 @@ export function sliceArgs<T>(args: IArguments | T[], startIndex?: number): T[] {
 export function bind(
   context: unknown,
   fn: unknown,
-  ...curryArgs: any[]
+  ...curryArgs: unknown[]
 ): unknown {
   if (isFunction(fn) && !isInstanceOf(fn, RegExp)) {
     return curryArgs.length
-      ? function (...args: any[]) {
+      ? function (...args: unknown[]) {
           return args.length
             ? callFunction(fn, context, ...curryArgs, ...args)
             : callFunction(fn, context, ...curryArgs);
         }
-      : function (...args: any[]) {
+      : function (...args: unknown[]) {
           return args.length
             ? callFunction(fn, context, ...args)
             : callFunction(fn, context);
@@ -812,7 +836,7 @@ function toJsonReplacer(key: string, value: unknown): unknown {
  * will be stripped since AngularTS uses this notation internally.
  *
  */
-export function toJson(obj: any, pretty?: boolean | number) {
+export function toJson(obj: unknown, pretty?: boolean | number) {
   if (isUndefined(obj)) return undefined;
 
   if (!isNumber(pretty)) {
@@ -825,7 +849,9 @@ export function toJson(obj: any, pretty?: boolean | number) {
 /**
  * Deserializes a JSON string.
  */
-export function fromJson(json: any): any {
+export function fromJson(json: string): unknown;
+export function fromJson<T>(json: T): T;
+export function fromJson(json: unknown): unknown {
   return isString(json) ? JSON.parse(json) : json;
 }
 
@@ -833,7 +859,13 @@ export function fromJson(json: any): any {
  * Parses an escaped URL query string into key-value pairs.
  */
 export function parseKeyValue(value: string) {
-  const obj: Record<string, boolean | string | undefined | any[]> = {};
+  type ParsedValue =
+    | boolean
+    | string
+    | undefined
+    | (boolean | string | undefined)[];
+
+  const obj: Record<string, ParsedValue> = {};
 
   const res = value || "";
 
@@ -883,7 +915,7 @@ export function parseKeyValue(value: string) {
  * Serializes an object or array-like value into a query-string fragment.
  */
 export function toKeyValue(
-  obj: string | Record<string, any> | ArrayLike<any> | null,
+  obj: string | Record<string, unknown> | ArrayLike<unknown> | null,
 ): string {
   const parts: string[] = [];
 
@@ -957,10 +989,10 @@ export function encodeUriSegment(val: string): string {
  *                     / "*" / "+" / "," / ";" / "="
  */
 export function encodeUriQuery(
-  val: string | number | boolean,
+  val: unknown,
   pctEncodeSpaces?: boolean,
 ): string {
-  return encodeURIComponent(val)
+  return encodeURIComponent(String(val))
     .replace(/%40/gi, "@")
     .replace(/%3A/gi, ":")
     .replace(/%24/g, "$")
@@ -977,9 +1009,9 @@ export const ngAttrPrefixes = ["ng-", "data-ng-"];
  * Assumes there are no proto properties.
  *
  */
-export function shallowCopy<T>(src: T, dst?: any): T {
+export function shallowCopy<T>(src: T, dst?: unknown): T {
   if (isArray(src)) {
-    const out: any[] = dst || [];
+    const out = (dst ?? []) as unknown[];
 
     out.push(...src);
 
@@ -987,7 +1019,7 @@ export function shallowCopy<T>(src: T, dst?: any): T {
   }
 
   if (isObject(src)) {
-    const out: Record<string, unknown> = dst || {};
+    const out = (dst ?? {}) as Record<string, unknown>;
 
     for (const key in src) {
       if (!hasOwn(src, key)) continue;
@@ -1043,7 +1075,7 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
       "areq",
       "Argument '{0}' is {1}",
       name || "?",
-      reason || "required",
+      reason ?? "required",
     );
   }
 
@@ -1056,7 +1088,7 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
  * @throws AngularTS error when `arg` is not a function.
  */
 export function assertArgFn(
-  arg: string | RuntimeFunction | RuntimeConstructor | any[],
+  arg: unknown,
   name: string,
   acceptArrayAnnotation?: boolean,
 ) {
@@ -1175,7 +1207,7 @@ export function toDebugString(obj: unknown): string {
   if (!isString(obj)) {
     const seen: object[] = [];
 
-    const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+    const copyObj: unknown = structuredClone(isProxy(obj) ? obj.$target : obj);
 
     return JSON.stringify(copyObj, (key, val) => {
       const replace = toJsonReplacer(key, val);
@@ -1201,17 +1233,17 @@ export function toDebugString(obj: unknown): string {
  *  object is either result of calling $hashKey function on the object or a
  *         uniquely generated id stored in internal metadata.
  */
-export function hashKey(obj: any): string {
+export function hashKey(obj: unknown): string {
   const key = getHashKey(obj);
 
   if (key) return key;
 
-  const target = deProxy(obj);
+  const target = deProxy<unknown>(obj);
 
   const objType = typeof target;
 
   if (objType === "function" || (objType === "object" && target !== null)) {
-    const generatedKey = `${objType}:${nextUid()}`;
+    const generatedKey = `${objType}:${String(nextUid())}`;
 
     generatedHashKeys.set(target as object, generatedKey);
 
@@ -1219,11 +1251,11 @@ export function hashKey(obj: any): string {
   }
 
   if (objType === "undefined") {
-    return `${objType}:${nextUid()}`;
+    return `${objType}:${String(nextUid())}`;
   }
 
   // account for primitives
-  return `${objType}:${obj}`;
+  return `${objType}:${String(obj)}`;
 }
 
 /**
@@ -1302,7 +1334,7 @@ function hasCustomOrDataAttribute(node: Node, attr: string): boolean {
 
   const value = element.dataset[attr] ?? element.getAttribute(attr);
 
-  return value !== null && value !== undefined && value !== "false";
+  return value !== null && value !== "false";
 }
 
 /**
@@ -1328,7 +1360,7 @@ export function isObjectEmpty(obj: object | null | undefined): boolean {
  * hasOwn({ foo: 123 }, 'foo'); // true
  * hasOwn({}, 'bar'); // false
  */
-export function hasOwn(obj: any, key: string | number | symbol): boolean {
+export function hasOwn(obj: unknown, key: string | number | symbol): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
@@ -1345,15 +1377,15 @@ export function deleteProperty(
 /**
  * Returns the object's own enumerable keys.
  */
-export function keys(obj: any): string[] {
-  return Object.keys(obj);
+export function keys(obj: unknown): string[] {
+  return Object.keys(obj as object);
 }
 
 /**
  * Returns the object's own enumerable values.
  */
 export function values<T>(obj: Record<string, T> | ArrayLike<T>): T[] {
-  return Object.values(obj);
+  return Object.values(obj as object) as T[];
 }
 
 /**
@@ -1366,10 +1398,12 @@ export function arrayFrom<T>(value: ArrayLike<T> | Iterable<T>): T[] {
 /**
  * Returns the object's own enumerable entries.
  */
-export function entries<T>(obj: Record<string, T>): Array<[string, T]>;
-export function entries(obj: any): Array<[string, any]>;
-export function entries(obj: any): Array<[string, any]> {
-  return Object.entries(obj);
+export function entries<T>(
+  obj: Record<string, T> | ArrayLike<T>,
+): [string, T][];
+export function entries(obj: unknown): [string, never][];
+export function entries(obj: unknown): [string, never][] {
+  return Object.entries(obj as object) as [string, never][];
 }
 
 /**
@@ -1390,11 +1424,11 @@ export const createObject: typeof Object.create = Object.create;
 export function callBackOnce(fn: RuntimeFunction) {
   let called = false;
 
-  return (...args: any[]): unknown => {
+  return (...args: unknown[]): unknown => {
     if (!called) {
       called = true;
 
-      return fn(...args);
+      return callFunction(fn, undefined, ...args);
     }
 
     return undefined; // satisfies consistent-return
@@ -1409,9 +1443,9 @@ export function callBackOnce(fn: RuntimeFunction) {
 export function callBackAfterFirst(fn: RuntimeFunction) {
   let calledOnce = false;
 
-  return (...args: any[]): unknown => {
+  return (...args: unknown[]): unknown => {
     if (calledOnce) {
-      return fn(...args);
+      return callFunction(fn, undefined, ...args);
     }
     calledOnce = true;
 
@@ -1425,7 +1459,7 @@ export function callBackAfterFirst(fn: RuntimeFunction) {
  * @param [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns A promise that resolves after the delay.
  */
-export function wait(timeout = 0) {
+export async function wait(timeout = 0) {
   return new Promise((resolve) => {
     setTimeout(resolve, timeout);
   });
@@ -1494,7 +1528,7 @@ export async function instantiateWasm(
 /**
  * Returns whether a function is an arrow function.
  */
-export function isArrowFunction(fn: any): boolean {
+export function isArrowFunction(fn: unknown): boolean {
   return isFunction(fn) && !fn.prototype;
 }
 
@@ -1506,6 +1540,6 @@ export function isArrowFunction(fn: any): boolean {
  * properties such as `toString` or `hasOwnProperty`.
  *
  */
-export function nullObject<T = any>(): Record<string, T> {
+export function nullObject<T = never>(): Record<string, T> {
   return createObject(null) as Record<string, T>;
 }

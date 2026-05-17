@@ -81,7 +81,7 @@ func basicAppBootstrapModule() *NgModule {
 		WithMethods("add", "toggle", "archive").
 		WithFields(
 			ScopeField{Name: "items", GoName: "items", GoType: "[]main.Todo"},
-			ScopeField{Name: "remainingCount", GoName: "remainingCount", GoType: "int"},
+			ScopeField{Name: "remainingCount", GoName: "remainingCount()", GoType: "int"},
 			ScopeField{Name: "newTodo", GoName: "newTodo", GoType: "string"},
 			ScopeField{Name: "titleSeen", GoName: "titleSeen", GoType: "string"},
 		).

@@ -20,16 +20,16 @@ export interface CompiledExpressionProps {
   /** @internal AST node decorated with metadata. */
   _decoratedNode: BodyNode;
   /** @internal Expression inputs; may be an array or a function. */
-  _inputs?: any[] | ((...args: any[]) => unknown);
+  _inputs?: unknown[] | ((...args: unknown[]) => unknown);
   /** @internal Optional interceptor applied to the evaluated result. */
-  _interceptor?: (value: any) => any;
+  _interceptor?: (value: unknown) => unknown;
   /**
    * @internal
    * Optional assign function for two-way binding.
    * Assigns a value to a context.
    * If value is not provided, may return the getter.
    */
-  _assign?: (scope: ng.Scope, value: any, locals?: object) => any;
+  _assign?: (scope: ng.Scope, value: unknown, locals?: object) => unknown;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface CompiledExpressionProps {
  * Evaluates the compiled expression.
  */
 export type CompiledExpressionFunction = (
-  context?: any,
+  context?: unknown,
   locals?: object,
   _assign?: unknown,
 ) => unknown;
@@ -56,7 +56,7 @@ export type CompiledExpression = CompiledExpressionFunction &
  */
 export type ParseService = (
   expression: string,
-  interceptorFn?: (value: any) => any,
+  interceptorFn?: (value: unknown) => unknown,
 ) => CompiledExpression;
 
 const lexer = new Lexer();
@@ -77,7 +77,7 @@ export class ParseProvider {
 
 function createParseService(
   $injector: ng.InjectorService,
-  cache: Record<string, CompiledExpression>,
+  cache: Partial<Record<string, CompiledExpression>>,
 ): ParseService {
   const parser = new Parser(lexer, createLazyFilter($injector));
 
@@ -110,7 +110,7 @@ function normalizeExpression(exp: string): string {
 
 function getParsedExpression(
   parser: Parser,
-  cache: Record<string, CompiledExpression>,
+  cache: Partial<Record<string, CompiledExpression>>,
   cacheKey: string,
 ): CompiledExpression {
   let parsedExpression = cache[cacheKey];

@@ -11,7 +11,7 @@ import { HttpRestBackend } from './http-rest-backend.js';
  * to the same cache entry.
  */
 function createRestCacheKey(request) {
-    return `${request.method} ${request.url}\n${stableSerialize(request.params || {})}`;
+    return `${request.method} ${request.url}\n${stableSerialize(request.params ?? {})}`;
 }
 function stableSerialize(value) {
     if (isArray(value)) {
@@ -23,7 +23,7 @@ function stableSerialize(value) {
             .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
             .join(",")}}`;
     }
-    return JSON.stringify(value) ?? "undefined";
+    return value === undefined ? "undefined" : JSON.stringify(value);
 }
 /**
  * Composes a network backend with an async cache store.
@@ -64,7 +64,7 @@ class CachedRestBackend {
             case "stale-while-revalidate":
                 return this._staleWhileRevalidate(request);
         }
-        throw new Error(`Unsupported REST cache strategy: ${this._strategy}`);
+        throw new Error(`Unsupported REST cache strategy: ${String(this._strategy)}`);
     }
     async _cacheFirst(request) {
         const key = createRestCacheKey(request);
@@ -144,7 +144,7 @@ class RestService {
      * @returns The expanded URL.
      */
     buildUrl(template, params) {
-        return expandUriTemplate(template, params || {});
+        return expandUriTemplate(template, params);
     }
     _mapEntity(data) {
         if (!data)
@@ -174,8 +174,8 @@ class RestService {
      */
     async get(id, params = {}) {
         if (isNullOrUndefined(id))
-            throw new Error(`badarg:id ${id}`);
-        const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
+            throw new Error(`badarg:id ${String(id)}`);
+        const url = this.buildUrl(`${this._baseUrl}/${String(id)}`, params);
         const collectionUrl = this.buildUrl(this._baseUrl, params);
         const resp = await this._request("GET", url, null, params, collectionUrl, id);
         return this._mapEntity(resp.data) ?? null;
@@ -189,7 +189,7 @@ class RestService {
      */
     async create(item) {
         if (isNullOrUndefined(item))
-            throw new Error(`badarg:item ${item}`);
+            throw new Error(`badarg:item ${String(item)}`);
         const resp = await this._request("POST", this._baseUrl, item, {}, this._baseUrl);
         return this._mapEntity(resp.data);
     }
@@ -203,8 +203,8 @@ class RestService {
      */
     async update(id, item) {
         if (isNullOrUndefined(id))
-            throw new Error(`badarg:id ${id}`);
-        const url = `${this._baseUrl}/${id}`;
+            throw new Error(`badarg:id ${String(id)}`);
+        const url = `${this._baseUrl}/${String(id)}`;
         try {
             const resp = await this._request("PUT", url, item, {}, this._baseUrl, id);
             return this._mapEntity(resp.data) ?? null;
@@ -222,8 +222,8 @@ class RestService {
      */
     async delete(id) {
         if (isNullOrUndefined(id))
-            throw new Error(`badarg:id ${id}`);
-        const url = `${this._baseUrl}/${id}`;
+            throw new Error(`badarg:id ${String(id)}`);
+        const url = `${this._baseUrl}/${String(id)}`;
         try {
             await this._request("DELETE", url, null, {}, this._baseUrl, id);
             return true;
@@ -252,7 +252,7 @@ class RestProvider {
             ($http) => {
                 return (baseUrl, entityClass, options = {}) => {
                     const { backend, ...requestOptions } = options;
-                    return new RestService(backend || new HttpRestBackend($http), baseUrl, entityClass, requestOptions);
+                    return new RestService(backend ?? new HttpRestBackend($http), baseUrl, entityClass, requestOptions);
                 };
             },
         ];

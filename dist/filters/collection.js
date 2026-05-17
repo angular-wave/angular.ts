@@ -37,7 +37,10 @@ function entriesFilter() {
             return arrayFrom(input.entries()).map(([key, value]) => ({ key, value }));
         }
         if (isObject(input)) {
-            return entries(input).map(([key, value]) => ({ key, value }));
+            return entries(input).map(([key, value]) => ({
+                key,
+                value: value,
+            }));
         }
         return [];
     };

@@ -49,6 +49,9 @@ class AST {
         };
         this._index = 0;
     }
+    _tokenAt(index = this._index) {
+        return this._tokens[index];
+    }
     /**
      * Parses the input text and generates an AST.
      * @param {string} text - The input text to parse.
@@ -74,9 +77,7 @@ class AST {
         const body = [];
         let hasMore = true;
         while (hasMore) {
-            if (this._tokens &&
-                this._tokens.length > this._index &&
-                !this._peek("}", ")", ";", "]"))
+            if (this._tokens.length > this._index && !this._peek("}", ")", ";", "]"))
                 body.push(this._expressionStatement());
             if (!this._expect(";")) {
                 hasMore = false;
@@ -114,8 +115,10 @@ class AST {
     /** @internal */
     _expression(minBindingPower) {
         let left = this._prefix();
-        while (this._tokens && this._index < this._tokens.length) {
-            const token = this._tokens[this._index];
+        while (this._index < this._tokens.length) {
+            const token = this._tokenAt();
+            if (!token)
+                break;
             const operator = token._text;
             const bindingPower = BINARY_BINDING_POWER[operator];
             if (!bindingPower || bindingPower.left < minBindingPower) {
@@ -190,8 +193,10 @@ class AST {
     /** @internal */
     _postfix(primary) {
         let expr = primary;
-        while (this._tokens && this._index < this._tokens.length) {
-            const next = this._tokens[this._index];
+        while (this._index < this._tokens.length) {
+            const next = this._tokenAt();
+            if (!next)
+                break;
             if (next._text === "(") {
                 this._index++;
                 expr = {
@@ -419,7 +424,7 @@ class AST {
      */
     /** @internal */
     _throwError(msg, token) {
-        throw $parseError("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text?.substring(token._index));
+        throw $parseError("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text.substring(token._index));
     }
     /**
      * Consumes a token if it matches the expected type.
@@ -428,7 +433,7 @@ class AST {
      */
     /** @internal */
     _consume(e1) {
-        if (this._tokens?.length === this._index) {
+        if (this._tokens.length === this._index) {
             throw $parseError("ueoe", "Unexpected end of expression: {0}", this._text);
         }
         const token = isDefined(e1)
@@ -437,7 +442,7 @@ class AST {
                 : false
             : this._tokens[this._index++];
         if (!token) {
-            return this._throwError(`is unexpected, expecting [${e1}]`, this._peekToken());
+            return this._throwError(`is unexpected, expecting [${String(e1)}]`, this._peekToken());
         }
         return token;
     }
@@ -447,7 +452,7 @@ class AST {
      */
     /** @internal */
     _peekToken() {
-        if (!this._tokens || this._tokens.length === this._index) {
+        if (this._tokens.length === this._index) {
             throw $parseError("ueoe", "Unexpected end of expression: {0}", this._text);
         }
         else {
@@ -461,7 +466,7 @@ class AST {
      */
     /** @internal */
     _peek(e1, e2, e3, e4) {
-        const token = this._tokens?.[this._index];
+        const token = this._tokenAt();
         if (!token)
             return false;
         if (!isDefined(e1))
@@ -476,7 +481,7 @@ class AST {
      */
     /** @internal */
     _expect(e1, e2, e3, e4) {
-        const token = this._tokens?.[this._index];
+        const token = this._tokenAt();
         if (!token)
             return false;
         if (isDefined(e1)) {
@@ -485,11 +490,8 @@ class AST {
                 return false;
             }
         }
-        if (token) {
-            this._index++;
-            return token;
-        }
-        return false;
+        this._index++;
+        return token;
     }
 }
 

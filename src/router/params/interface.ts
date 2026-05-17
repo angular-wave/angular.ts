@@ -359,7 +359,7 @@ export interface Replace {
    * The entire value must match using `===`.
    * When found, the [[to]] value is used instead.
    */
-  from: string;
+  from: string | null | undefined;
 
   /**
    * The new value

@@ -41,7 +41,7 @@ function hasSelectAttr(
   normalizedName: keyof SelectAttributes & string,
 ): boolean {
   return (
-    $attributes?.has(element, normalizedName) || isDefined(attr[normalizedName])
+    $attributes?.has(element, normalizedName) ?? isDefined(attr[normalizedName])
   );
 }
 
@@ -76,9 +76,7 @@ export function selectDirective(
   ) {
     const selectElement = element as HTMLSelectElement;
 
-    const selectCtrl = ctrls[0];
-
-    const ngModelCtrl = ctrls[1];
+    const [selectCtrl, ngModelCtrl] = ctrls;
 
     if (!ngModelCtrl) {
       selectCtrl._registerOption = () => {
@@ -107,7 +105,7 @@ export function selectDirective(
       selectCtrl._multiple = true;
 
       selectCtrl._readValue = function () {
-        const array: any[] = [];
+        const array: unknown[] = [];
 
         const options = selectElement.getElementsByTagName("option");
 
@@ -123,10 +121,10 @@ export function selectDirective(
           }
         });
 
-        return array as unknown[];
+        return array;
       };
 
-      selectCtrl._writeValue = function (value: any[]) {
+      selectCtrl._writeValue = function (value: unknown[] | undefined) {
         const options = selectElement.getElementsByTagName("option");
 
         arrayFrom(options).forEach((option: HTMLOptionElement) => {
@@ -143,12 +141,12 @@ export function selectDirective(
         });
       };
 
-      let lastView: any;
+      let lastView: unknown;
 
-      let lastViewRef = NaN;
+      let lastViewRef: unknown = NaN;
 
       _scope.$watch(
-        readSelectAttr($attributes, element, attr, "ngModel") || "",
+        readSelectAttr($attributes, element, attr, "ngModel") ?? "",
         () => {
           if (
             lastViewRef === ngModelCtrl.$viewValue &&
@@ -161,7 +159,7 @@ export function selectDirective(
         },
       );
 
-      ngModelCtrl.$isEmpty = function (value: any[] | null | undefined) {
+      ngModelCtrl.$isEmpty = function (value: unknown[] | null | undefined) {
         return !value || value.length === 0;
       };
     }
@@ -173,11 +171,10 @@ export function selectDirective(
     _attrs: ng.Attributes,
     ctrls: [SelectController, NgModelController?],
   ) {
-    const ngModelCtrl = ctrls[1];
+    const [selectCtrl, ngModelCtrl] = ctrls;
 
     if (!ngModelCtrl) return;
 
-    const selectCtrl = ctrls[0];
     const selectElement = element as HTMLSelectElement;
 
     const syncNativeValidity = () => {
@@ -252,10 +249,10 @@ export function optionDirective(
 
         const selectCtrl = ((parent
           ? getCacheData(parent, selectCtrlName)
-          : undefined) ||
+          : undefined) ??
           (parent?.parentElement
             ? getCacheData(parent.parentElement, selectCtrlName)
-            : undefined) ||
+            : undefined) ??
           (futureParent
             ? getInheritedData(futureParent, selectCtrlName)
             : null)) as SelectController | null;

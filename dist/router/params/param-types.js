@@ -45,7 +45,7 @@ function createDefaultParamTypes() {
              */
             is(val) {
                 return (!isNullOrUndefined(val) &&
-                    this.decode?.(stringify(val)) ===
+                    this.decode(stringify(val)) ===
                         val);
             },
             pattern: /-?\d+/,
@@ -66,15 +66,15 @@ function createDefaultParamTypes() {
                 }
                 return [
                     val.getFullYear(),
-                    `0${val.getMonth() + 1}`.slice(-2),
-                    `0${val.getDate()}`.slice(-2),
+                    `0${String(val.getMonth() + 1)}`.slice(-2),
+                    `0${String(val.getDate())}`.slice(-2),
                 ].join("-");
             },
             /**
              * @param {unknown} val
              */
             decode(val) {
-                if (this.is?.(val))
+                if (this.is(val))
                     return val;
                 const match = this.capture.exec(String(val));
                 return match

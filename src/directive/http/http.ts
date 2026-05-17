@@ -61,7 +61,7 @@ function defineDirective(
   attrOverride?: string,
 ): ng.DirectiveFactory {
   const attrName =
-    attrOverride || `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
+    attrOverride ?? `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
 
   const directive = createHttpDirective(
     method,
@@ -120,7 +120,7 @@ export function createHttpDirective(
     /** Collects form data from the element or its associated form. */
     function collectFormData(
       element: HttpDirectiveElement,
-    ): Record<string, any> {
+    ): Record<string, unknown> {
       let form: HTMLFormElement | null = null;
 
       const tag = element.tagName.toLowerCase();
@@ -181,7 +181,7 @@ export function createHttpDirective(
       link(
         scope: ng.Scope,
         element: HttpDirectiveElement,
-        attrs: ng.Attributes & Record<string, any>,
+        attrs: ng.Attributes & Record<string, unknown>,
       ) {
         const readAttr = (name: string): string | undefined => {
           const value = $attributes.read(element, name);
@@ -203,19 +203,18 @@ export function createHttpDirective(
         };
 
         const eventName =
-          readAttr("trigger") || getEventNameForElement(element);
+          readAttr("trigger") ?? getEventNameForElement(element);
 
         const tag = element.tagName.toLowerCase();
 
         if (hasAttr("latch")) {
-          $attributes.observe(
-            scope,
-            element,
-            "latch",
-            callBackAfterFirst(() =>
-              element.dispatchEvent(new Event(eventName)),
-            ),
-          );
+          const dispatchAfterFirst = callBackAfterFirst(() => {
+            element.dispatchEvent(new Event(eventName));
+          });
+
+          $attributes.observe(scope, element, "latch", () => {
+            dispatchAfterFirst();
+          });
         }
 
         let throttled = false;
@@ -244,7 +243,7 @@ export function createHttpDirective(
           element.dispatchEvent(new Event(eventName));
           intervalId = setInterval(
             () => element.dispatchEvent(new Event(eventName)),
-            parseInt(interval || "") || 1000,
+            parseInt(interval ?? "") || 1000,
           );
         }
 
@@ -323,7 +322,7 @@ export function createHttpDirective(
         ): void {
           const html = getRealtimeProtocolContent(data);
 
-          const nextSwap = data.swap || swap;
+          const nextSwap = data.swap ?? swap;
 
           if (!dispatchSseEvent("message", { data, event, source })) {
             source.close();
@@ -346,7 +345,7 @@ export function createHttpDirective(
             if ((element as HTMLButtonElement).disabled) return;
 
             if (tag === "form") event.preventDefault();
-            const swap = (readAttr("swap") as SwapModeType) || "innerHTML";
+            const swap = (readAttr("swap") ?? "innerHTML") as SwapModeType;
 
             const url = readAttr(attrName);
 
@@ -356,7 +355,7 @@ export function createHttpDirective(
               return;
             }
 
-            const handler = (res: ng.HttpResponse<any>) => {
+            const handler = (res: ng.HttpResponse<unknown>) => {
               if (hasAttr("loading")) {
                 setAttr("loading", false);
               }
@@ -367,7 +366,7 @@ export function createHttpDirective(
                 $attributes.removeClass(element, loadingClass);
               }
 
-              const html = res.data;
+              const html: unknown = res.data;
 
               if (
                 Http._OK <= res.status &&
@@ -450,7 +449,7 @@ export function createHttpDirective(
             }
 
             if (method === "post" || method === "put") {
-              let data: any;
+              let data: unknown;
 
               const config = createRequestConfig();
 
@@ -491,10 +490,10 @@ export function createHttpDirective(
                       setAttr("loading", false);
                     }
 
-                    const loadingClass = readAttr("loadingClass");
+                    const sseLoadingClass = readAttr("loadingClass");
 
-                    if (isDefined(loadingClass))
-                      $attributes.removeClass(element, loadingClass);
+                    if (isDefined(sseLoadingClass))
+                      $attributes.removeClass(element, sseLoadingClass);
                   },
                   onEvent: ({
                     data,
@@ -544,7 +543,13 @@ export function createHttpDirective(
                       return;
                     }
 
-                    const res = { status: 200, data };
+                    const res: Pick<
+                      ng.HttpResponse<unknown>,
+                      "status" | "data"
+                    > = {
+                      status: 200,
+                      data,
+                    };
 
                     handler(res as ng.HttpResponse<HttpResponsePayload>);
                     dispatchSseEvent("swapped", {
@@ -553,17 +558,23 @@ export function createHttpDirective(
                       source,
                     });
                   },
-                  onError: (err: any) => {
+                  onError: (err: unknown) => {
                     const source = sourceRef.current;
 
                     dispatchSseEvent("error", { error: err, source });
                     $log.error(`${attrName}: SSE error`, err);
-                    const res = { status: 500, data: err };
+                    const res: Pick<
+                      ng.HttpResponse<unknown>,
+                      "status" | "data"
+                    > = {
+                      status: 500,
+                      data: err,
+                    };
 
                     handler(res as ng.HttpResponse<HttpResponsePayload>);
                   },
                   onReconnect: (count: number) => {
-                    $log.info(`ngSse: reconnected ${count} time(s)`);
+                    $log.info(`ngSse: reconnected ${String(count)} time(s)`);
 
                     const onReconnect = readAttr("onReconnect");
 

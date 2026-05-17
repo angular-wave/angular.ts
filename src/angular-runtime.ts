@@ -26,8 +26,11 @@ import {
   setCacheData,
 } from "./shared/dom.ts";
 import type { AngularBootstrapConfig, InvocationDetail } from "./interface.ts";
-import { createInjector } from "./core/di/injector.ts";
-import { NgModule } from "./core/di/ng-module/ng-module.ts";
+import { createInjector, type ModuleLike } from "./core/di/injector.ts";
+import {
+  NgModule,
+  type ModuleConfigFn,
+} from "./core/di/ng-module/ng-module.ts";
 import { validateIsString } from "./shared/validate.ts";
 import type { ParseService } from "./core/parse/parse.ts";
 
@@ -107,7 +110,7 @@ export class AngularRuntime extends EventTarget {
   /** @internal */
   public _subapp: boolean;
   /** @internal */
-  public _bootsrappedModules: any[] = [];
+  public _bootsrappedModules: ModuleLike[] = [];
 
   /** Application-wide event bus, available after bootstrap providers are created. */
   public $eventBus!: ng.PubSubService;
@@ -215,7 +218,7 @@ export class AngularRuntime extends EventTarget {
   module(
     name: string,
     requires?: string[],
-    configFn?: ng.Injectable<any>,
+    configFn?: ModuleConfigFn,
   ): NgModule {
     assertNotHasOwnProperty(name, "module");
 
@@ -249,7 +252,7 @@ export class AngularRuntime extends EventTarget {
 
     const injectable = customEvent.type;
 
-    const target = this.$injector.has(injectable)
+    const target: unknown = this.$injector.has(injectable)
       ? this.$injector.get(injectable)
       : this.getScopeByName(injectable);
 
@@ -275,10 +278,17 @@ export class AngularRuntime extends EventTarget {
       const result = $parse(expr)(target);
 
       if (isInvocationDetail(detail) && detail._reply) {
-        Promise.resolve(result).then(
-          detail._reply.resolve,
-          detail._reply.reject,
-        );
+        const { _reply: reply } = detail;
+
+        void Promise.resolve(result)
+          .then((value) => {
+            reply.resolve(value);
+
+            return undefined;
+          })
+          .catch((reason: unknown) => {
+            reply.reject(reason);
+          });
       }
     } catch (err) {
       if (isInvocationDetail(detail) && detail._reply) {
@@ -293,7 +303,7 @@ export class AngularRuntime extends EventTarget {
    * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
    */
   emit(input: string): void {
-    const { type, expr } = this.splitInvocation(input);
+    const { type, expr } = AngularRuntime.splitInvocation(input);
 
     this.dispatchEvent(new CustomEvent(type, { detail: expr }));
   }
@@ -301,8 +311,8 @@ export class AngularRuntime extends EventTarget {
   /**
    * Await result. Accepts a single string: `"<target>.<expression>"`
    */
-  call(input: string): Promise<any> {
-    const { type, expr } = this.splitInvocation(input);
+  async call(input: string): Promise<unknown> {
+    const { type, expr } = AngularRuntime.splitInvocation(input);
 
     return new Promise((resolve, reject) => {
       const ok = this.dispatchEvent(
@@ -360,7 +370,7 @@ export class AngularRuntime extends EventTarget {
    */
   bootstrap(
     element: string | HTMLElement | HTMLDocument,
-    modules?: any[],
+    modules?: ModuleLike[],
     config: AngularBootstrapConfig = { strictDi: false },
   ): ng.InjectorService {
     if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
@@ -412,7 +422,7 @@ export class AngularRuntime extends EventTarget {
 
           if (existingScope?.$handler && !existingScope.$handler._destroyed) {
             existingScope.$destroy();
-          } else if (scope.$handler && !scope.$handler._destroyed) {
+          } else if (!scope.$handler._destroyed) {
             scope.$destroy();
           }
 
@@ -459,7 +469,7 @@ export class AngularRuntime extends EventTarget {
    * @param strictDi - Require explicit dependency annotations.
    * @returns The created injector.
    */
-  injector(modules: any[], strictDi?: boolean): ng.InjectorService {
+  injector(modules: ModuleLike[], strictDi?: boolean): ng.InjectorService {
     this.$injector = createInjector(modules, strictDi);
 
     return this.$injector;
@@ -545,7 +555,10 @@ export class AngularRuntime extends EventTarget {
   /**
    * Splits `"target.expression"` into the dispatch target and parse expression.
    */
-  private splitInvocation(input: string): { type: string; expr: string } {
+  private static splitInvocation(input: string): {
+    type: string;
+    expr: string;
+  } {
     if (!isString(input)) {
       throw new TypeError("Invocation must be a string.");
     }
@@ -582,7 +595,7 @@ function ensure(
   name: string,
   factory: () => NgModule,
 ): NgModule {
-  return obj[name] || (obj[name] = factory());
+  return obj[name] ?? (obj[name] = factory());
 }
 
 function normalizeRuntimeOptions(

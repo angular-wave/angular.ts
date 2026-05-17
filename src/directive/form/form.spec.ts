@@ -8,7 +8,7 @@ import {
   getController,
 } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
-import { assert } from "../../shared/utils.ts";
+import { assert, isFunction } from "../../shared/utils.ts";
 import { FormController } from "./form.ts";
 
 describe("form", () => {
@@ -413,6 +413,36 @@ describe("form", () => {
       form.dispatchEvent(new Event("submit"));
       expect(scope.submit).toHaveBeenCalled();
     });
+
+    it("should trigger update and submitted state for native action forms", async () => {
+      const form = $compile(
+        '<form name="test" action="/submit" ng-model-options="{ updateOn: \'submit\' }" >' +
+          '<input type="text" ng-model="name" />' +
+          "</form>",
+      )(scope);
+      await wait();
+
+      const inputElm = form.children[0];
+      const submitEvent = new Event("submit", {
+        bubbles: true,
+        cancelable: true,
+      });
+      const submitSpy = jasmine.createSpy("submit").and.callFake((event) => {
+        expect(event.defaultPrevented).toBe(false);
+        event.preventDefault();
+      });
+
+      inputElm.value = "a";
+      browserTrigger(inputElm, "input");
+      expect(scope.name).toEqual(undefined);
+
+      form.addEventListener("submit", submitSpy);
+      form.dispatchEvent(submitEvent);
+
+      expect(scope.name).toEqual("a");
+      expect(scope.test.$submitted).toBe(true);
+      expect(submitSpy).toHaveBeenCalled();
+    });
   });
 
   describe("rollback view value", () => {
@@ -454,7 +484,116 @@ describe("form", () => {
     });
   });
 
+  describe("native reset", () => {
+    it("should sync native reset values back to model controls", async () => {
+      scope.name = "model value";
+
+      const form = $compile(
+        '<form name="test">' +
+          '<input type="text" name="name" ng-model="name" value="native default" />' +
+          '<button type="reset">Reset</button>' +
+          "</form>",
+      )(scope);
+      await wait();
+
+      const inputElm = form.querySelector("input");
+
+      expect(inputElm.value).toBe("model value");
+
+      inputElm.value = "changed";
+      browserTrigger(inputElm, "input");
+      await wait();
+      expect(scope.name).toBe("changed");
+
+      form.querySelector("button").click();
+      await wait();
+
+      expect(inputElm.value).toBe("native default");
+      expect(scope.name).toBe("native default");
+    });
+
+    it("should sync reset values through nested logical groups", async () => {
+      scope.name = "model value";
+
+      const form = $compile(
+        '<form name="test">' +
+          '<div ng-form name="child">' +
+          '<input type="text" name="name" ng-model="name" value="native default" />' +
+          "</div>" +
+          '<button type="reset">Reset</button>' +
+          "</form>",
+      )(scope);
+      await wait();
+
+      const inputElm = form.querySelector("input");
+
+      inputElm.value = "changed";
+      browserTrigger(inputElm, "input");
+      await wait();
+      expect(scope.name).toBe("changed");
+
+      form.querySelector("button").click();
+      await wait();
+
+      expect(inputElm.value).toBe("native default");
+      expect(scope.name).toBe("native default");
+    });
+  });
+
   describe("preventing default submission", () => {
+    it("should submit through a native submit button", (done) => {
+      doc = createElementFromHTML(
+        '<form name="form" ng-submit="submitMe()">' +
+          '<button type="submit">Submit</button>' +
+          "</form>",
+      );
+      document.body.appendChild(doc);
+
+      let submitted = false;
+
+      scope.submitMe = function () {
+        submitted = true;
+      };
+
+      $compile(doc)(scope);
+      doc.querySelector("button").click();
+
+      window.setTimeout(() => {
+        expect(submitted).toBe(true);
+        expect(scope.form.$submitted).toBe(true);
+        done();
+      }, 0);
+    });
+
+    it("should submit through native requestSubmit when available", (done) => {
+      doc = createElementFromHTML(
+        '<form name="form" ng-submit="submitMe()">' +
+          '<button type="submit">Submit</button>' +
+          "</form>",
+      );
+      document.body.appendChild(doc);
+
+      let submitted = false;
+
+      scope.submitMe = function () {
+        submitted = true;
+      };
+
+      $compile(doc)(scope);
+
+      if (isFunction(doc.requestSubmit)) {
+        doc.requestSubmit();
+      } else {
+        doc.querySelector("button").click();
+      }
+
+      window.setTimeout(() => {
+        expect(submitted).toBe(true);
+        expect(scope.form.$submitted).toBe(true);
+        done();
+      }, 0);
+    });
+
     it("should prevent form submission", (done) => {
       const nextTurn = false;
 
@@ -613,6 +752,36 @@ describe("form", () => {
 
       child.$setSubmitted();
       expect(parent.$submitted).toBeTruthy();
+    });
+
+    it("should keep ngForm groups separate from native submit and reset behavior", async () => {
+      const group = $compile(
+        '<div ng-form name="group" ng-model-options="{ updateOn: \'submit\' }">' +
+          '<input type="text" ng-model="name" value="native default" />' +
+          "</div>",
+      )(scope);
+      await wait();
+
+      const inputElm = group.querySelector("input");
+
+      inputElm.value = "changed";
+      browserTrigger(inputElm, "input");
+      await wait();
+      expect(scope.name).toBeUndefined();
+
+      group.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      );
+      await wait();
+      expect(scope.name).toBeUndefined();
+      expect(scope.group.$submitted).toBe(false);
+
+      group.dispatchEvent(
+        new Event("reset", { bubbles: true, cancelable: true }),
+      );
+      await wait();
+      expect(inputElm.value).toBe("changed");
+      expect(scope.name).toBeUndefined();
     });
 
     it("should set $submitted to true on child forms when parent is submitted", () => {
@@ -810,14 +979,14 @@ describe("form", () => {
       expect(child).toBeDefined();
 
       expect(parent.$error.required).toEqual([child]);
-      expect(Array.from(parent._validControls.get("maxlength"))).toEqual([
-        child,
-      ]);
+      expect(
+        Array.from(parent._validCustomValidatorControls.get("maxlength")),
+      ).toEqual([child]);
 
       expect(child.$error.required).toEqual([input]);
-      expect(Array.from(child._validControls.get("maxlength"))).toEqual([
-        input,
-      ]);
+      expect(
+        Array.from(child._validCustomValidatorControls.get("maxlength")),
+      ).toEqual([input]);
 
       expect(doc.classList.contains("ng-invalid")).toBe(true);
       expect(doc.classList.contains("ng-invalid-required")).toBe(true);
@@ -836,10 +1005,14 @@ describe("form", () => {
       scope.inputPresent = false;
       await wait();
       expect(parent.$error.required).toBeFalsy();
-      expect(parent._validControls.get("maxlength")).toBeUndefined();
+      expect(
+        parent._validCustomValidatorControls.get("maxlength"),
+      ).toBeUndefined();
 
       expect(child.$error.required).toBeFalsy();
-      expect(child._validControls.get("maxlength")).toBeUndefined();
+      expect(
+        child._validCustomValidatorControls.get("maxlength"),
+      ).toBeUndefined();
 
       expect(doc.classList.contains("ng-valid")).toBe(true);
       expect(doc.classList.contains("ng-valid-required")).toBe(false);
@@ -1156,6 +1329,56 @@ describe("form", () => {
       expect(doc.classList.contains("ng-invalid-error")).toBe(false);
       expect(doc.classList.contains("ng-valid-another")).toBe(false);
       expect(doc.classList.contains("ng-invalid-another")).toBe(false);
+    });
+
+    it("aggregates native validity without native error buckets or CSS classes", async () => {
+      scope.showEmail = true;
+      doc = $compile(
+        '<form name="form">' +
+          '<div ng-form name="group">' +
+          '<input ng-if="showEmail" type="email" name="email" ng-model="email">' +
+          "</div>" +
+          "</form>",
+      )(scope);
+      await wait();
+
+      const input = doc.querySelector("input");
+      const groupElement = doc.querySelector("div");
+
+      input.value = "not email";
+      browserTrigger(input, "input");
+      await wait();
+
+      expect(scope.form.$invalid).toBeTrue();
+      expect(scope.form.group.$invalid).toBeTrue();
+      expect(scope.form.$error.native).toBeUndefined();
+      expect(scope.form.group.$error.native).toBeUndefined();
+      expect(Object.keys(scope.form.$error)).toEqual([]);
+      expect(Object.keys(scope.form.group.$error)).toEqual([]);
+      expect(doc.classList.contains("ng-invalid")).toBeTrue();
+      expect(groupElement.classList.contains("ng-invalid")).toBeTrue();
+      expect(doc.classList.contains("ng-invalid-native")).toBeFalse();
+      expect(doc.classList.contains("ng-valid-native")).toBeFalse();
+      expect(groupElement.classList.contains("ng-invalid-native")).toBeFalse();
+      expect(groupElement.classList.contains("ng-valid-native")).toBeFalse();
+
+      input.value = "ada@example.com";
+      browserTrigger(input, "input");
+      await wait();
+
+      expect(scope.form.$valid).toBeTrue();
+      expect(scope.form.group.$valid).toBeTrue();
+
+      input.value = "not email";
+      browserTrigger(input, "input");
+      await wait();
+      expect(scope.form.$invalid).toBeTrue();
+
+      scope.showEmail = false;
+      await wait();
+
+      expect(scope.form.$valid).toBeTrue();
+      expect(scope.form.group.$valid).toBeTrue();
     });
 
     it("should have ng-pristine/ng-dirty css class", async () => {

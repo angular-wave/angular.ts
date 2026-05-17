@@ -10,11 +10,11 @@ export function ngInitDirective(
   return {
     priority: 450,
     compile(element: Element) {
-      const initFn = $parse($attributes.read(element, "ngInit") || "");
+      const initFn = $parse($attributes.read(element, "ngInit") ?? "");
 
       return {
-        pre(scope: ng.Scope, element: Element) {
-          const controller = getController(element);
+        pre(scope: ng.Scope, linkElement: Element) {
+          const controller = getController(linkElement);
 
           if (controller) {
             initFn(controller);

@@ -24,7 +24,7 @@ export type ControllerService = (
   locals?: ControllerLocals,
   later?: boolean,
   ident?: string,
-) => any;
+) => unknown;
 
 type InjectableController = Injectable<ControllerConstructor>;
 
@@ -77,7 +77,7 @@ function unwrapController(
     ? injectable[injectable.length - 1]
     : injectable;
 
-  assertArgFn(candidate, argNameForErrors || "controller", true);
+  assertArgFn(candidate, argNameForErrors ?? "controller", true);
 
   const func = candidate as ControllerConstructor;
 
@@ -88,8 +88,8 @@ function unwrapController(
 
   return {
     func,
-    name: funcMetadata.name || "",
-    prototype: funcMetadata.prototype || null,
+    name: funcMetadata.name ?? "",
+    prototype: funcMetadata.prototype ?? null,
   };
 }
 
@@ -123,8 +123,10 @@ export class ControllerProvider {
               );
             }
 
-            constructorName = match[1];
-            identifier = identifier || match[3] || null;
+            const [, matchedConstructorName, , matchedIdentifier] = match;
+
+            constructorName = matchedConstructorName;
+            identifier = (identifier ?? matchedIdentifier) || null;
 
             const lookedUp = this._controllers.get(constructorName);
 
@@ -146,13 +148,18 @@ export class ControllerProvider {
 
           if (later) {
             instance = createObject(
-              meta.prototype || null,
+              meta.prototype ?? null,
             ) as ControllerInstance;
-            const exportName = constructorName || meta.name;
+            const exportName = constructorName ?? meta.name;
 
             if (identifier) {
               instance.$controllerIdentifier = identifier;
-              this._addIdentifier(locals, identifier, instance, exportName);
+              ControllerProvider._addIdentifier(
+                locals,
+                identifier,
+                instance,
+                exportName,
+              );
             }
 
             if (instance.constructor?.$scopename && locals?.$scope) {
@@ -166,7 +173,7 @@ export class ControllerProvider {
                 instance,
                 locals,
                 constructorName,
-              ) as unknown;
+              );
 
               if (
                 result !== instance &&
@@ -176,7 +183,12 @@ export class ControllerProvider {
 
                 if (identifier) {
                   instance.$controllerIdentifier = identifier;
-                  this._addIdentifier(locals, identifier, instance, exportName);
+                  ControllerProvider._addIdentifier(
+                    locals,
+                    identifier,
+                    instance,
+                    exportName,
+                  );
                 }
               }
 
@@ -185,17 +197,19 @@ export class ControllerProvider {
           }
 
           instance = $injector.instantiate(
-            injectable as any,
+            injectable as unknown as Parameters<
+              typeof $injector.instantiate
+            >[0],
             locals,
             constructorName,
           ) as ControllerInstance;
 
           if (identifier) {
-            this._addIdentifier(
+            ControllerProvider._addIdentifier(
               locals,
               identifier,
               instance,
-              constructorName || meta.name,
+              constructorName ?? meta.name,
             );
           }
 
@@ -232,7 +246,7 @@ export class ControllerProvider {
   }
 
   /** @internal */
-  _addIdentifier(
+  static _addIdentifier(
     locals: ControllerLocals | undefined,
     identifier: string,
     instance: object,

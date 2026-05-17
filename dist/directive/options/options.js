@@ -1,5 +1,5 @@
-import { _compile, _parse } from '../../injection-tokens.js';
-import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
+import { _compile, _parse, _attributes } from '../../injection-tokens.js';
+import { emptyElement, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
@@ -13,13 +13,13 @@ class OptionItem {
         this._element = null;
         this._selectValue = selectValue;
         this._viewValue = viewValue;
-        this._label = label;
+        this._label = String(label);
         this._group = group;
-        this._disabled = disabled;
+        this._disabled = Boolean(disabled);
     }
 }
-ngOptionsDirective.$inject = [_compile, _parse];
-function ngOptionsDirective($compile, $parse) {
+ngOptionsDirective.$inject = [_compile, _parse, _attributes];
+function ngOptionsDirective($compile, $parse, $attributes) {
     function parseOptionsExpression(optionsExp, selectElement, scope) {
         const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
@@ -54,7 +54,7 @@ function ngOptionsDirective($compile, $parse) {
             _getOptions() {
                 const optionItems = [];
                 const selectValueMap = {};
-                const optionValues = valuesFn(scope) || [];
+                const optionValues = valuesFn(scope) ?? [];
                 const addOption = (value, key) => {
                     const updatedLocals = getLocals(value, key);
                     const viewValue = viewValueFn(scope, updatedLocals);
@@ -99,7 +99,7 @@ function ngOptionsDirective($compile, $parse) {
         const selectNode = selectElement;
         const selectCtrl = ctrls[0];
         const ngModelCtrl = ctrls[1];
-        const multiple = hasNormalizedAttr(selectElement, "multiple");
+        const multiple = $attributes.has(selectElement, "multiple");
         for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
             if (children[i].value === "") {
                 selectCtrl._hasEmptyOption = true;
@@ -110,14 +110,14 @@ function ngOptionsDirective($compile, $parse) {
         emptyElement(selectNode);
         const providedEmptyOption = !!selectCtrl._emptyOption;
         let options;
-        const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") || "", selectNode, scope);
+        const ngOptions = parseOptionsExpression($attributes.read(selectElement, "ngOptions") ?? "", selectNode, scope);
         const listFragment = createDocumentFragment();
         selectCtrl._generateUnknownOptionValue = () => "?";
         if (!multiple) {
             selectCtrl._writeValue = function writeNgOptionsValue(value) {
                 if (!options)
                     return;
-                const selectedOption = selectNode.options[selectNode.selectedIndex];
+                const selectedOption = selectNode.options.item(selectNode.selectedIndex);
                 const option = options._getOptionFromViewValue(value);
                 if (selectedOption)
                     selectedOption.removeAttribute("selected");
@@ -149,7 +149,7 @@ function ngOptionsDirective($compile, $parse) {
             selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
                 if (!options)
                     return;
-                const selectedOptions = values?.map(getAndUpdateSelectedOption) || [];
+                const selectedOptions = values?.map(getAndUpdateSelectedOption) ?? [];
                 options._items.forEach((option) => {
                     if (option._element?.selected && !includes(selectedOptions, option)) {
                         option._element.selected = false;
@@ -244,7 +244,9 @@ function ngOptionsDirective($compile, $parse) {
                     if (!groupElement) {
                         groupElement = optGroupTemplate.cloneNode(false);
                         listFragment.appendChild(groupElement);
-                        groupElement.label = isNull(option._group) ? "null" : option._group;
+                        groupElement.label = isNull(option._group)
+                            ? "null"
+                            : String(option._group);
                         groupElementMap[String(option._group)] = groupElement;
                     }
                     _addOptionElement(option, groupElement);

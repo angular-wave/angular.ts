@@ -18,17 +18,21 @@ const $injectorError = createErrorFactory(_injector);
 
 export const providerSuffix = "Provider";
 
-type Callable = (...args: any[]) => any;
+type Callable = (...args: never[]) => unknown;
 
 type InjectableFn =
   | Callable
   | Constructor
   | AnnotatedFactory<Callable>
-  | Array<string | Callable | Constructor>;
+  | (string | Callable | Constructor)[];
 
-class AbstractInjector {
+const defaultLoadNewModules = (): void => {
+  /* empty */
+};
+
+abstract class AbstractInjector {
   /** @internal */
-  _cache: Record<string, any>;
+  _cache: Record<string, unknown>;
   strictDi: boolean;
   /** @internal */
   _path: string[];
@@ -51,7 +55,7 @@ class AbstractInjector {
    * @param {string} serviceName
    * @returns {any}
    */
-  get(serviceName: string): any {
+  get(serviceName: string): unknown {
     if (hasOwn(this._cache, serviceName)) {
       if (this._cache[serviceName] === true) {
         throw $injectorError(
@@ -61,7 +65,7 @@ class AbstractInjector {
         );
       }
 
-      return this._cache[serviceName] as unknown;
+      return this._cache[serviceName];
     }
 
     this._path.unshift(serviceName);
@@ -75,7 +79,7 @@ class AbstractInjector {
       throw err;
     }
 
-    return this._cache[serviceName] as unknown;
+    return this._cache[serviceName];
   }
 
   /**
@@ -89,10 +93,10 @@ class AbstractInjector {
    */
   _injectionArgs(
     fn: InjectableFn,
-    locals?: Record<string, any>,
+    locals?: object,
     serviceName?: string,
-  ): any[] {
-    const args: any[] = [];
+  ): unknown[] {
+    const args: unknown[] = [];
 
     const $inject = annotate(fn, this.strictDi, serviceName);
 
@@ -104,7 +108,13 @@ class AbstractInjector {
           key,
         );
       }
-      args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
+      const localValues = locals as Record<string, unknown> | undefined;
+
+      args.push(
+        localValues && hasOwn(localValues, key)
+          ? localValues[key]
+          : this.get(key),
+      );
     });
 
     return args;
@@ -121,10 +131,10 @@ class AbstractInjector {
    */
   invoke(
     fn: InjectableFn | string,
-    self?: any,
-    locals?: Record<string, any> | string,
+    self?: unknown,
+    locals?: object | string,
     serviceName?: string,
-  ): any {
+  ): unknown {
     if (isString(locals)) {
       serviceName = locals;
       locals = undefined;
@@ -145,7 +155,7 @@ class AbstractInjector {
     if (isClass(fn as RuntimeFunction)) {
       return Reflect.construct(fn as Callable, args) as unknown;
     } else {
-      return callFunction(fn as Callable, self, ...args);
+      return callFunction(fn as RuntimeFunction, self, ...args);
     }
   }
 
@@ -157,9 +167,9 @@ class AbstractInjector {
    */
   instantiate(
     type: InjectableFn,
-    locals?: Record<string, any>,
+    locals?: object,
     serviceName?: string,
-  ): any {
+  ): unknown {
     // Check if type is annotated and use just the given function at n-1 as parameter
     // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
     const ctor = (isArray(type) ? type[type.length - 1] : type) as Callable;
@@ -185,11 +195,7 @@ class AbstractInjector {
    */
 
   /** @internal */
-  _factory(serviceName: string): any {
-    void serviceName;
-
-    return undefined;
-  }
+  abstract _factory(serviceName: string): unknown;
 }
 
 /**
@@ -227,10 +233,8 @@ export class ProviderInjector extends AbstractInjector {
  */
 export class InjectorService extends AbstractInjector {
   loadNewModules: (
-    mods: Array<string | Callable | AnnotatedFactory<Callable>>,
-  ) => void = () => {
-    /* empty */
-  };
+    mods: (string | Callable | AnnotatedFactory<Callable>)[],
+  ) => void = defaultLoadNewModules;
 
   /** @internal */
   _providerInjector: ProviderInjector;
@@ -251,7 +255,7 @@ export class InjectorService extends AbstractInjector {
    * @returns {*}
    */
   /** @internal */
-  _factory(serviceName: string): any {
+  _factory(serviceName: string): unknown {
     const provider = this._providerInjector.get(
       serviceName + providerSuffix,
     ) as { $get: InjectableFn };

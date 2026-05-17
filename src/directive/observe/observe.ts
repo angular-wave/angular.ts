@@ -18,9 +18,7 @@ export function ngObserveDirective(source: string, prop: string): ng.Directive {
 
         scope[normalized] ??= element.getAttribute(source);
 
-        const observer = new MutationObserver((mutations) => {
-          const mutation = mutations[0];
-
+        const observer = new MutationObserver(([mutation]) => {
           const newValue = (mutation.target as HTMLElement).getAttribute(
             source,
           );

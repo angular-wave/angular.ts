@@ -9,32 +9,47 @@ import (
 	angularwasm "angular.ts/wasm/go"
 )
 
+var angularTsGoBridgeFunctions []js.Func
+
 func registerController(app *TodoApp) {
 	api := js.Global().Get("Object").New()
 
-	setFunc(api, "bind", func(this js.Value, args []js.Value) any {
+	angularTsGoSetFunc(api, "bind", func(this js.Value, args []js.Value) any {
 		result := app.bind(this, args)
 		app.sync()
+		app.syncAfterAsync(result)
 		return result
 	})
-	setFunc(api, "add", func(this js.Value, args []js.Value) any {
+	angularTsGoSetFunc(api, "add", func(this js.Value, args []js.Value) any {
 		result := app.add(this, args)
 		app.sync()
+		app.syncAfterAsync(result)
 		return result
 	})
-	setFunc(api, "toggle", func(this js.Value, args []js.Value) any {
+	angularTsGoSetFunc(api, "toggle", func(this js.Value, args []js.Value) any {
 		result := app.toggle(this, args)
 		app.sync()
+		app.syncAfterAsync(result)
 		return result
 	})
-	setFunc(api, "archive", func(this js.Value, args []js.Value) any {
+	angularTsGoSetFunc(api, "archive", func(this js.Value, args []js.Value) any {
 		result := app.archive(this, args)
 		app.sync()
+		app.syncAfterAsync(result)
 		return result
 	})
-	setFunc(api, "unbind", app.unbind)
+	angularTsGoSetFunc(api, "unbind", func(this js.Value, args []js.Value) any {
+		result := app.unbind(this, args)
+		return result
+	})
 
 	js.Global().Set("__ng_controller_GoTodoController", api)
+}
+
+func angularTsGoSetFunc(target js.Value, name string, fn func(js.Value, []js.Value) any) {
+	wrapped := js.FuncOf(fn)
+	angularTsGoBridgeFunctions = append(angularTsGoBridgeFunctions, wrapped)
+	target.Set(name, wrapped)
 }
 
 func (app *TodoApp) bindScope(scopeName string) {
@@ -61,4 +76,28 @@ func (app *TodoApp) sync() {
 		angularwasm.ValueAt("newTodo", app.newTodo),
 		angularwasm.ValueAt("titleSeen", app.titleSeen),
 	)
+}
+
+func (app *TodoApp) syncAfterAsync(result any) {
+	promise, ok := result.(js.Value)
+	if !ok || !promise.Truthy() {
+		return
+	}
+
+	if promise.Get("then").Type() != js.TypeFunction {
+		return
+	}
+
+	sync := js.FuncOf(func(this js.Value, args []js.Value) any {
+		app.sync()
+		return nil
+	})
+	angularTsGoBridgeFunctions = append(angularTsGoBridgeFunctions, sync)
+
+	if promise.Get("finally").Type() == js.TypeFunction {
+		promise.Call("finally", sync)
+		return
+	}
+
+	promise.Call("then", sync, sync)
 }

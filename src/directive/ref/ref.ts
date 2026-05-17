@@ -70,7 +70,7 @@ export function ngRefDirective(
           }
         }
 
-        const targetScope = deProxy(scope) as ng.Scope;
+        const targetScope = deProxy<unknown>(scope) as ng.Scope;
 
         setter(targetScope, refValue);
 

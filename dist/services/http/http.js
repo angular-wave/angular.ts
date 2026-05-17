@@ -1,6 +1,6 @@
 import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, assertDefined, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, stringify, assertDefined, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -19,7 +19,7 @@ function withResolvers() {
 /** Error used when `$http` receives a non-success response. */
 class HttpError extends Error {
     constructor(response) {
-        super(`$http request failed with status ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`);
+        super(`$http request failed with status ${String(response.status)}${response.statusText ? ` ${response.statusText}` : ""}`);
         this.name = "HttpError";
         this.response = response;
         this.data = response.data;
@@ -142,7 +142,9 @@ function parseHeaders(headers) {
     /** Adds a parsed header entry to the result map. */
     function fillInParsed(key, val) {
         if (key) {
-            parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
+            parsed[key] = parsed[key]
+                ? `${parsed[key]}, ${String(val)}`
+                : String(val);
         }
     }
     if (isString(headers)) {
@@ -175,13 +177,13 @@ function parseHeaders(headers) {
 function headersGetter(headers) {
     let headersObj;
     const getter = ((name) => {
-        if (!headersObj)
-            headersObj = parseHeaders(headers);
+        headersObj ?? (headersObj = parseHeaders(headers));
+        const parsedHeaders = headersObj;
         if (name) {
-            const value = headersObj[name.toLowerCase()];
+            const value = parsedHeaders[name.toLowerCase()];
             return value ?? "";
         }
-        return headersObj;
+        return parsedHeaders;
     });
     return getter;
 }
@@ -382,10 +384,10 @@ function HttpProvider() {
                 // apply interceptors
                 reversedInterceptors.forEach((interceptor) => {
                     if (interceptor.request || interceptor.requestError) {
-                        requestInterceptors.unshift(interceptor.request, interceptor.requestError);
+                        requestInterceptors.unshift(interceptor.request?.bind(interceptor), interceptor.requestError?.bind(interceptor));
                     }
                     if (interceptor.response || interceptor.responseError) {
-                        responseInterceptors.push(interceptor.response, interceptor.responseError);
+                        responseInterceptors.push(interceptor.response?.bind(interceptor), interceptor.responseError?.bind(interceptor));
                     }
                 });
                 promise = chainInterceptors(promise, requestInterceptors);
@@ -404,26 +406,25 @@ function HttpProvider() {
                 }
                 /** Resolves any header factory functions against the current request configuration. */
                 function executeHeaderFns(headers, configParam) {
-                    let headerContent;
                     const processedHeaders = {};
                     entries(headers).forEach(([header, headerFn]) => {
                         if (isFunction(headerFn)) {
-                            headerContent = headerFn(configParam);
+                            const headerContent = headerFn(configParam);
                             if (!isNullOrUndefined(headerContent)) {
-                                processedHeaders[header] = headerContent;
+                                processedHeaders[header] = stringify(headerContent);
                             }
                         }
-                        else {
-                            processedHeaders[header] = headerFn;
+                        else if (!isNullOrUndefined(headerFn)) {
+                            processedHeaders[header] = String(headerFn);
                         }
                     });
                     return processedHeaders;
                 }
                 /** Merges provider defaults with request-specific headers for a single request. */
                 function mergeHeaders(configParam) {
-                    let defHeaders = defaults.headers || {};
-                    const reqHeaders = extend({}, configParam.headers || {});
-                    defHeaders = extend({}, defHeaders.common || {}, defHeaders[lowercase(configParam.method)] || {});
+                    let defHeaders = defaults.headers ?? {};
+                    const reqHeaders = extend({}, configParam.headers ?? {});
+                    defHeaders = extend({}, defHeaders.common ?? {}, defHeaders[lowercase(configParam.method)] ?? {});
                     keys(defHeaders).forEach((defHeaderName) => {
                         const lowercaseDefHeaderName = lowercase(defHeaderName);
                         const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
@@ -438,9 +439,9 @@ function HttpProvider() {
                 }
                 /** Executes the request pipeline and attaches response transforms. */
                 function serverRequest(configParam) {
-                    const headers = configParam.headers || {};
+                    const headers = configParam.headers ?? {};
                     configParam.headers = headers;
-                    const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest || []);
+                    const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest ?? []);
                     // strip content-type if data is undefined
                     if (isUndefined(reqData)) {
                         keys(headers).forEach((header) => {
@@ -462,7 +463,7 @@ function HttpProvider() {
                     const httpResponse = response;
                     // make a copy since the response must be cacheable
                     const resp = extend({}, httpResponse);
-                    resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse || []);
+                    resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse ?? []);
                     return isSuccess(httpResponse.status)
                         ? resp
                         : Promise.reject(new HttpError(resp));
@@ -486,7 +487,7 @@ function HttpProvider() {
             /** Creates one shorthand method for requests that do not send a request body. */
             function createShortMethod(method) {
                 return function (url, config) {
-                    return $http(extend({}, config || {}, {
+                    return $http(extend({}, config ?? {}, {
                         method,
                         url,
                     }));
@@ -495,10 +496,10 @@ function HttpProvider() {
             /** Creates one shorthand method for requests that send a request body. */
             function createShortMethodWithData(method) {
                 return function (url, data, config) {
-                    return $http(extend({}, config || {}, {
+                    return $http(extend({}, config ?? {}, {
                         method,
                         url,
-                        data,
+                        data: data,
                     }));
                 };
             }
@@ -507,12 +508,12 @@ function HttpProvider() {
                 const { promise, resolve, reject } = withResolvers();
                 let cache;
                 let cachedResp;
-                const reqHeaders = config.headers || {};
+                const reqHeaders = config.headers ?? {};
                 config.headers = reqHeaders;
                 let { url } = config;
                 if (!isString(url)) {
                     // If it is not a string then the URL must be a $sce trusted object
-                    url = $sce.valueOf(url);
+                    url = String($sce.valueOf(url));
                 }
                 const paramSerializer = config.paramSerializer;
                 url = buildUrl(url, paramSerializer(config.params));
@@ -553,12 +554,12 @@ function HttpProvider() {
                 // if we won't have the response in cache, set the xsrf headers and
                 // send the request to the backend
                 if (isUndefined(cachedResp)) {
-                    const xsrfCookieName = config.xsrfCookieName || defaults.xsrfCookieName;
+                    const xsrfCookieName = config.xsrfCookieName ?? defaults.xsrfCookieName;
                     const xsrfValue = xsrfCookieName && urlIsAllowedOrigin(config.url)
                         ? $cookie.getAll()[xsrfCookieName]
                         : undefined;
                     if (xsrfValue) {
-                        const xsrfHeaderName = config.xsrfHeaderName || defaults.xsrfHeaderName;
+                        const xsrfHeaderName = config.xsrfHeaderName ?? defaults.xsrfHeaderName;
                         if (xsrfHeaderName) {
                             reqHeaders[xsrfHeaderName] = xsrfValue;
                         }
@@ -575,9 +576,7 @@ function HttpProvider() {
                                 if (isFunction(eventHandler)) {
                                     eventHandler(event);
                                 }
-                                else if (eventHandler &&
-                                    typeof eventHandler === "object" &&
-                                    "handleEvent" in eventHandler) {
+                                else if (typeof eventHandler === "object") {
                                     eventHandler.handleEvent(event);
                                 }
                             };
@@ -595,7 +594,7 @@ function HttpProvider() {
                             cache.set(url, [
                                 status,
                                 response,
-                                parseHeaders(headersString || ""),
+                                parseHeaders(headersString ?? ""),
                                 statusText,
                                 xhrStatus,
                             ]);
@@ -657,7 +656,7 @@ function HttpProvider() {
  * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
  */
 function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers, streamService) {
-    url = url || trimEmptyHash(window.location.href);
+    url = url ?? trimEmptyHash(window.location.href);
     const abortController = new AbortController();
     let abortReason = "abort";
     let timeoutId;
@@ -792,9 +791,7 @@ function notifyEvent(eventName, eventHandlers) {
     if (isFunction(handler)) {
         handler(event);
     }
-    else if (handler &&
-        typeof handler === "object" &&
-        "handleEvent" in handler) {
+    else if (typeof handler === "object") {
         handler.handleEvent(event);
     }
 }

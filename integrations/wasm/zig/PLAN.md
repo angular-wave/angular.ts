@@ -73,25 +73,31 @@ be layered over `std.json` after the raw ABI is validated.
 
 ### Phase A - ABI Module
 
-- [ ] Create a Zig ABI module under `integrations/wasm/zig`.
-- [ ] Declare the `angular_ts` host imports.
-- [ ] Export `ng_abi_alloc` and `ng_abi_free`.
-- [ ] Add UTF-8 pointer/length helpers.
-- [ ] Add result-buffer ownership helpers.
-- [ ] Add `Scope`, `Watch`, and `ScopeUpdate` wrappers.
+- [x] Create a Zig ABI module under `integrations/wasm/zig`.
+- [x] Declare the `angular_ts` host imports.
+- [x] Export `ng_abi_alloc` and `ng_abi_free`.
+- [x] Add UTF-8 pointer/length helpers.
+- [x] Add result-buffer ownership helpers.
+- [x] Add `Scope`, `Watch`, and `ScopeUpdate` wrappers.
 
 ### Phase B - Todo Proof
 
-- [ ] Create a Zig todo example.
-- [ ] Use `Scope.set` to update real AngularTS scope state.
-- [ ] Use `Scope.watch` to receive UI-originated scope updates.
-- [ ] Add a bootstrap adapter that binds AngularTS `WasmScope`.
+- [x] Create a Zig todo example.
+- [x] Use `Scope.set` to update real AngularTS scope state.
+- [x] Use `Scope.watch` to receive UI-originated scope updates.
+- [x] Add a bootstrap adapter that binds AngularTS `WasmScope`.
 
 ### Phase C - Browser Validation
 
-- [ ] Add Playwright coverage for the Zig todo example.
-- [ ] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
-- [ ] Verify result buffers are freed.
+- [x] Add Playwright coverage for the Zig todo example.
+- [x] Add a `wasm-build` target that emits `examples/todo/main.wasm`.
+- [x] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
+- [x] Verify result buffers are freed.
+
+Local `make browser-test` is blocked in the current sandbox because the shared
+Playwright web server cannot bind local TCP/UDP sockets. The target builds the
+Zig Wasm artifact before reaching that environment failure. Set
+`PW_SKIP_WEB_SERVER=1` to run against an already-running `PW_BASE_URL`.
 
 ## Non-Goals
 

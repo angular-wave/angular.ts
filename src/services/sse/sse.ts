@@ -79,7 +79,7 @@ export class SseProvider {
       return (url: string, config: SseConfig = {}): SseConnection => {
         const mergedConfig = { ...this.defaults, ...config };
 
-        const finalUrl = this._buildUrl(url, mergedConfig.params);
+        const finalUrl = SseProvider._buildUrl(url, mergedConfig.params);
 
         return new ConnectionManager(
           () =>
@@ -103,7 +103,10 @@ export class SseProvider {
    * Builds a URL with serialized query parameters.
    */
   /** @internal */
-  private _buildUrl(url: string, params?: Record<string, unknown>): string {
+  private static _buildUrl(
+    url: string,
+    params?: Record<string, unknown>,
+  ): string {
     if (!params) return url;
     const query = entries(params)
       .map(
@@ -129,7 +132,11 @@ function serializeQueryValue(value: unknown): string {
       return String(value);
     case "undefined":
       return "";
-    default:
+    case "object":
       return value === null ? "" : JSON.stringify(value);
+    case "function":
+      return JSON.stringify(value);
   }
+
+  return "";
 }

@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isArray, isString, keys } from '../../shared/utils.js';
+import { isNullOrUndefined, isArray, stringify, isString, keys } from '../../shared/utils.js';
 
 /**
  * RFC 6570 Level 4 URI Template expander
@@ -15,6 +15,7 @@ import { isNullOrUndefined, isArray, isString, keys } from '../../shared/utils.j
 function expandUriTemplate(template, vars = {}) {
     if (!isString(template))
         throw new TypeError("template must be a string");
+    vars = vars ?? {};
     return template.replace(/\{([^}]+)\}/g, (_match, expression) => {
         return expandExpression(expression, vars);
     });
@@ -24,7 +25,7 @@ function expandUriTemplate(template, vars = {}) {
  */
 function pctEncode(str, allowReserved) {
     // encodeURIComponent, then restore reserved if allowed
-    const encoded = encodeURIComponent(str);
+    const encoded = encodeURIComponent(String(str));
     if (allowReserved) {
         // Reserved characters per RFC 3986
         return encoded.replace(/(%3A|%2F|%3F|%23|%5B|%5D|%40|%21|%24|%26|%27|%28|%29|%2A|%2B|%2C|%3B|%3D)/gi, (char) => decodeURIComponent(char));
@@ -208,7 +209,7 @@ function expandExpression(expression, vars) {
             continue;
         }
         // PROCESS scalar (string/number/boolean)
-        let str = String(value);
+        let str = stringify(value);
         // apply prefix modifier if present
         if (typeof prefixLength === "number") {
             str = str.substring(0, prefixLength);

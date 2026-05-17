@@ -1,5 +1,5 @@
-import { _parse, _element, _attrs, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, keys, arrayRemove, isFunction, isArray, isUndefined, isBoolean, isObjectEmpty, snakeCase, extend } from '../../shared/utils.js';
+import { _parse, _attributes, _element, _attrs, _scope, _injector, _interpolate } from '../../injection-tokens.js';
+import { hasAnimate, isString, isFunction, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, extend, isUndefined } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, PRISTINE_CLASS, DIRTY_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 
@@ -18,6 +18,9 @@ const nullFormCtrl = {
     $setValidity: () => {
         /* empty */
     },
+    $setNativeValidity: () => {
+        /* empty */
+    },
     $setDirty: () => {
         /* empty */
     },
@@ -34,45 +37,44 @@ const nullFormCtrl = {
 const PENDING_CLASS = "ng-pending";
 const SUBMITTED_CLASS = "ng-submitted";
 let nextValidityPropagationId = 0;
+function toCustomValidationState(state) {
+    if (isUndefined(state))
+        return "pending";
+    if (state === true)
+        return "valid";
+    if (state === false)
+        return "invalid";
+    return "skipped";
+}
+function toPublicValidationState(state) {
+    if (state === "pending")
+        return undefined;
+    if (state === "valid")
+        return true;
+    if (state === "invalid")
+        return false;
+    return null;
+}
 /**
  * @property $dirty True if user has already interacted with the form.
- * @property $valid True if all of the containing forms and controls are valid.
- * @property $invalid True if at least one containing control or form is invalid.
+ * @property $valid True if all containing groups and controls are valid.
+ * @property $invalid True if at least one containing control or group is invalid.
  * @property $submitted True if user has submitted the form even if its invalid.
  *
- * @property $pending An object hash, containing references to controls or forms with
+ * @property $pending An object hash, containing references to controls or groups with
  *  pending validators, where:
  *
  *  - keys are validations tokens (error names).
  *  - values are arrays of controls or forms that have a pending validator for the given error name.
  *
- * See {@link form.FormController#$error $error} for a list of built-in validation tokens.
- *
- * @property $error An object hash, containing references to controls or forms with failing
+ * @property $error An object hash, containing references to controls or groups with failing
  *  validators, where:
  *
- *  - keys are validation tokens (error names),
+ *  - keys are AngularTS/custom validation tokens (error names),
  *  - values are arrays of controls or forms that have a failing validator for the given error name.
  *
- *  Built-in validation tokens:
- *  - `email`
- *  - `max`
- *  - `maxlength`
- *  - `min`
- *  - `minlength`
- *  - `number`
- *  - `pattern`
- *  - `required`
- *  - `url`
- *  - `date`
- *  - `datetimelocal`
- *  - `time`
- *  - `week`
- *  - `month`
- *
- *
- * `FormController` keeps track of all its controls and nested forms as well as the state of them,
- * such as being valid/invalid or dirty/pristine.
+ * `FormController` keeps track of all its controls and logical groups as well as the state of them,
+ * such as custom validity or dirty/pristine state.
  *
  * Each {@link ng.directive:form form} directive creates an instance
  * of `FormController`.
@@ -83,11 +85,13 @@ class FormController {
     /**
      * Creates a form controller for a specific form element and its scope.
      */
-    constructor($element, $attrs, $scope, $injector, $interpolate) {
+    constructor($element, $attrs, $scope, $injector, $interpolate, $attributes) {
         this._isAnimated = hasAnimate($element);
         this._controls = [];
-        this.$name =
-            $interpolate($attrs.name || $attrs.ngForm || "")?.($scope) || "";
+        const interpolatedName = $interpolate($attributes.read($element, "name") ??
+            $attributes.read($element, "ngForm") ??
+            "")?.($scope);
+        this.$name = isString(interpolatedName) ? interpolatedName : "";
         /** True if user has already interacted with the form. */
         this.$dirty = false;
         /** True if user has not interacted with the form yet. */
@@ -99,7 +103,9 @@ class FormController {
         this._element = $element;
         this._getAnimate = createLazyAnimate($injector);
         this.$error = {};
-        this._success = {};
+        this._customErrorControls = new Map();
+        this._pendingCustomValidatorControls = new Map();
+        this._validCustomValidatorControls = new Map();
         this.$pending = undefined;
         this._classCache = {};
         const isValid = this._element.classList.contains(VALID_CLASS);
@@ -117,8 +123,7 @@ class FormController {
      */
     $rollbackViewValue() {
         this._controls.forEach((control) => {
-            callFunction(control
-                .$rollbackViewValue, control);
+            control.$rollbackViewValue();
         });
     }
     /**
@@ -130,8 +135,15 @@ class FormController {
      */
     $commitViewValue() {
         this._controls.forEach((control) => {
-            callFunction(control
-                .$commitViewValue, control);
+            control.$commitViewValue();
+        });
+    }
+    /** @internal */
+    _syncNativeViewValue(trigger = "reset") {
+        this._controls.forEach((control) => {
+            if (isFunction(control._syncNativeViewValue)) {
+                callFunction(control._syncNativeViewValue, control, trigger);
+            }
         });
     }
     /**
@@ -152,7 +164,7 @@ class FormController {
     $addControl(control) {
         // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
         // and not added to the scope.  Now we throw an error.
-        assertNotHasOwnProperty(control.$name, "input");
+        assertNotHasOwnProperty(String(control.$name), "input");
         this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.$name) {
@@ -221,22 +233,15 @@ class FormController {
             this[String(control.$name)] === control) {
             deleteProperty(this, String(control.$name));
         }
-        if (this.$pending) {
-            keys(this.$pending).forEach((name) => {
-                this.$setValidity(name, null, control);
-            });
-        }
-        if (this.$error) {
-            keys(this.$error).forEach((name) => {
-                this.$setValidity(name, null, control);
-            });
-        }
-        if (this._success) {
-            keys(this._success).forEach((name) => {
-                this.$setValidity(name, null, control);
-            });
-        }
+        new Set([
+            ...this._pendingCustomValidatorControls.keys(),
+            ...this._customErrorControls.keys(),
+            ...this._validCustomValidatorControls.keys(),
+        ]).forEach((name) => {
+            this.$setValidity(name, null, control);
+        });
         arrayRemove(this._controls, control);
+        this.$setNativeValidity(true, control);
         control.$target._parentForm = nullFormCtrl;
     }
     /**
@@ -285,8 +290,7 @@ class FormController {
         this.$pristine = true;
         this.$submitted = false;
         this._controls.forEach((control) => {
-            callFunction(control
-                .$setPristine, control);
+            control.$setPristine();
         });
     }
     /**
@@ -300,8 +304,7 @@ class FormController {
      */
     $setUntouched() {
         this._controls.forEach((control) => {
-            callFunction(control
-                .$setUntouched, control);
+            control.$setUntouched();
         });
     }
     /**
@@ -309,12 +312,12 @@ class FormController {
      * parent forms of the form.
      */
     $setSubmitted() {
-        if (!this._parentForm || this._parentForm === nullFormCtrl) {
+        if (this._parentForm === nullFormCtrl) {
             this._setSubmitted();
             return;
         }
         let rootForm = this._parentForm;
-        while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
+        while (rootForm._parentForm !== nullFormCtrl) {
             rootForm = rootForm._parentForm;
         }
         rootForm._setSubmitted();
@@ -337,48 +340,66 @@ class FormController {
         });
     }
     /**
-     * Adds a controller reference to a named validity bucket.
+     * Adds a controller reference to a named custom-validity bucket.
      */
     /** @internal */
-    _set(object, property, controller) {
-        object = deProxy(object);
+    _setCustomValidityBucket(bucket, property, controller) {
         controller = this._resolveRegisteredControl(controller);
-        const list = object[property];
-        if (!list || !isArray(list)) {
-            object[property] = [controller];
+        let controls = bucket.get(property);
+        if (!controls) {
+            controls = new Set();
+            bucket.set(property, controls);
         }
-        else {
-            const rawList = deProxy(list);
-            const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
-            if (index === -1) {
-                list.push(controller);
-            }
+        if (!this._hasEquivalentControl(controls, controller)) {
+            controls.add(controller);
         }
     }
     /**
-     * Removes a controller reference from a named validity bucket.
+     * Removes a controller reference from a named custom-validity bucket.
      */
     /** @internal */
-    _unset(object, property, controller) {
-        object = deProxy(object);
-        const list = object[property];
-        if (!list) {
+    _unsetCustomValidityBucket(bucket, property, controller) {
+        const controls = bucket.get(property);
+        if (!controls)
             return;
-        }
-        if (!isArray(list)) {
-            if (list === controller || deProxy(list) === deProxy(controller)) {
-                deleteProperty(object, property);
+        const resolvedController = this._resolveRegisteredControl(controller);
+        controls.forEach((item) => {
+            if (this._isSameControl(item, controller) ||
+                this._isSameControl(item, resolvedController)) {
+                controls.delete(item);
             }
-            return;
+        });
+        if (controls.size === 0) {
+            bucket.delete(property);
         }
-        const rawList = deProxy(list);
-        const index = rawList.findIndex((item) => item === controller || deProxy(item) === deProxy(controller));
-        if (index !== -1) {
-            rawList.splice(index, 1);
+    }
+    /** @internal */
+    _hasEquivalentControl(controls, controller) {
+        for (const item of controls) {
+            if (this._isSameControl(item, controller)) {
+                return true;
+            }
         }
-        if (rawList.length === 0) {
-            deleteProperty(object, property);
-        }
+        return false;
+    }
+    /** @internal */
+    _isSameControl(left, right) {
+        return left === right || deProxy(left) === deProxy(right);
+    }
+    /** @internal */
+    _publicCustomValidityObject(bucket) {
+        const object = {};
+        bucket.forEach((controls, property) => {
+            object[property] = Array.from(controls);
+        });
+        return object;
+    }
+    /** @internal */
+    _syncPublicCustomValidityObjects() {
+        this.$error = this._publicCustomValidityObject(this._customErrorControls);
+        this.$pending = this._pendingCustomValidatorControls.size
+            ? this._publicCustomValidityObject(this._pendingCustomValidatorControls)
+            : undefined;
     }
     /**
      * Change the validity state of the form, and notify the parent form (if any).
@@ -400,45 +421,27 @@ class FormController {
      * @param controller - The controller whose validity state is
      *        triggering the change.
      */
-    $setValidity(validationErrorKey, state, controller) {
-        /**
-         * Creates a controller bucket if needed and records a controller under the given key.
-         */
-        const createAndSet = (ctrl, name, value, controllerParam) => {
-            if (!ctrl[name]) {
-                ctrl[name] = {};
-            }
-            this._set(ctrl[name], value, controllerParam);
-        };
-        /**
-         * Removes a controller from a bucket and cleans up empty containers.
-         */
-        const unsetAndCleanup = (ctrl, name, value, controllerParam) => {
-            if (ctrl[name]) {
-                this._unset(ctrl[name], value, controllerParam);
-            }
-            if (isObjectEmpty(ctrl[name])) {
-                ctrl[name] = undefined;
-            }
-        };
-        if (isUndefined(state)) {
-            createAndSet(this, "$pending", validationErrorKey, controller);
+    $setValidity(validationErrorKey, state, controller = this) {
+        const customState = toCustomValidationState(state);
+        if (customState === "pending") {
+            this._setCustomValidityBucket(this._pendingCustomValidatorControls, validationErrorKey, controller);
         }
         else {
-            unsetAndCleanup(this, "$pending", validationErrorKey, controller);
+            this._unsetCustomValidityBucket(this._pendingCustomValidatorControls, validationErrorKey, controller);
         }
-        if (!isBoolean(state)) {
-            this._unset(this.$error, validationErrorKey, controller);
-            this._unset(this._success, validationErrorKey, controller);
+        if (customState === "pending" || customState === "skipped") {
+            this._unsetCustomValidityBucket(this._customErrorControls, validationErrorKey, controller);
+            this._unsetCustomValidityBucket(this._validCustomValidatorControls, validationErrorKey, controller);
         }
-        else if (state) {
-            this._unset(this.$error, validationErrorKey, controller);
-            this._set(this._success, validationErrorKey, controller);
+        else if (customState === "valid") {
+            this._unsetCustomValidityBucket(this._customErrorControls, validationErrorKey, controller);
+            this._setCustomValidityBucket(this._validCustomValidatorControls, validationErrorKey, controller);
         }
         else {
-            this._set(this.$error, validationErrorKey, controller);
-            this._unset(this._success, validationErrorKey, controller);
+            this._setCustomValidityBucket(this._customErrorControls, validationErrorKey, controller);
+            this._unsetCustomValidityBucket(this._validCustomValidatorControls, validationErrorKey, controller);
         }
+        this._syncPublicCustomValidityObjects();
         if (this.$pending) {
             cachedToggleClass(this, PENDING_CLASS, true);
             this.$valid = this.$invalid = undefined;
@@ -446,29 +449,27 @@ class FormController {
         }
         else {
             cachedToggleClass(this, PENDING_CLASS, false);
-            this.$valid = isObjectEmpty(this.$error);
+            this.$valid = isObjectEmpty(this.$error) && this._hasNativeValidity();
             this.$invalid = !this.$valid;
             toggleValidationCss(this, "", this.$valid);
         }
-        // re-read the state as the set/unset methods could have
-        // combined state in this.$error[validationError] (used for forms),
-        // where setting/unsetting only increments/decrements the value,
-        // and does not replace it.
+        // Re-read after syncing map-backed custom-validity buckets.
         let combinedState;
         if (this.$pending?.[validationErrorKey]) {
-            combinedState = undefined;
+            combinedState = "pending";
         }
         else if (this.$error[validationErrorKey]) {
-            combinedState = false;
+            combinedState = "invalid";
         }
-        else if (this._success[validationErrorKey]) {
-            combinedState = true;
+        else if (this._validCustomValidatorControls.has(validationErrorKey)) {
+            combinedState = "valid";
         }
         else {
-            combinedState = null;
+            combinedState = "skipped";
         }
-        toggleValidationCss(this, validationErrorKey, combinedState);
-        this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+        const publicCombinedState = toPublicValidationState(combinedState);
+        toggleValidationCss(this, validationErrorKey, publicCombinedState);
+        this._parentForm.$setValidity(validationErrorKey, publicCombinedState, this);
         /**
          * Updates the CSS validity classes for the controller and validation key.
          */
@@ -480,6 +481,23 @@ class FormController {
             cachedToggleClass(ctrl, INVALID_CLASS + validationErrorKeyParam, isValid === false);
         }
     }
+    /** @internal */
+    _hasNativeValidity() {
+        return this._controls.every((control) => {
+            return deProxy(control)._hasNativeValidity();
+        });
+    }
+    $setNativeValidity(state, controller) {
+        this._validityPropagationId = nextValidityPropagationId++;
+        const isNativeValid = this._hasNativeValidity();
+        if (!this.$pending) {
+            this.$valid = isObjectEmpty(this.$error) && isNativeValid;
+            this.$invalid = !this.$valid;
+            cachedToggleClass(this, VALID_CLASS, this.$valid);
+            cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+        }
+        this._parentForm.$setNativeValidity(isNativeValid, this);
+    }
 }
 FormController.$nonscope = true;
 /* @ignore */ FormController.$inject = [
@@ -488,11 +506,12 @@ FormController.$nonscope = true;
     _scope,
     _injector,
     _interpolate,
+    _attributes,
 ];
 /**
  * Helper directive that makes it possible to create control groups inside a
  * {@link ng.directive:form `form`} directive.
- * These "child forms" can be used, for example, to determine the validity of a sub-group of
+ * These logical groups can be used, for example, to determine the validity of a sub-group of
  * controls.
  *
  * <div class="alert alert-danger">
@@ -516,11 +535,11 @@ FormController.$nonscope = true;
  *
  * ## Alias: {@link ng.directive:ngForm `ngForm`}
  *
- * In AngularTS, forms can be nested. This means that the outer form is valid when all of the child
- * forms are valid as well. However, browsers do not allow nesting of `<form>` elements, so
- * AngularTS provides the {@link ng.directive:ngForm `ngForm`} directive, which behaves identically to
- * `form` but can be nested. Nested forms can be useful, for example, if the validity of a sub-group
- * of controls needs to be determined.
+ * In AngularTS, logical form groups can be nested. This means that the outer
+ * form is valid when all child groups and controls are valid as well. Browsers
+ * do not allow nested native `<form>` elements, so AngularTS provides
+ * {@link ng.directive:ngForm `ngForm`} for grouping validation state without
+ * native form submission, reset, or `FormData` behavior.
  *
  * ## CSS classes
  *  - `ng-valid` is set if the form is valid.
@@ -533,38 +552,17 @@ FormController.$nonscope = true;
  * Keep in mind that ngAnimate can detect each of these classes when added and removed.
  *
  *
- * ## Submitting a form and preventing the default action
+ * ## Submitting a form
  *
- * Since the role of forms in client-side AngularTS applications is different than in classical
- * roundtrip apps, it is desirable for the browser not to translate the form submission into a full
- * page reload that sends the data to the server. Instead some javascript logic should be triggered
- * to handle the form submission in an application-specific way.
+ * Native `<form>` elements keep native browser submission behavior. On submit,
+ * AngularTS commits pending `ngModelOptions` view values, marks the form
+ * submitted, and lets `ngSubmit` run as a normal `submit` event listener.
+ * AngularTS prevents the default action only when the form has no `action`
+ * attribute. With an `action`, the native submit is left uncancelled.
  *
- * For this reason, AngularTS prevents the default action (form submission to the server) unless the
- * `<form>` element has an `action` attribute specified.
- *
- * You can use one of the following two ways to specify what javascript method should be called when
- * a form is submitted:
- *
- * - {@link ng.directive:ngSubmit ngSubmit} directive on the form element
- * - {@link ng.directive:ngClick ngClick} directive on the first
- *  button or input field of type submit (input[type=submit])
- *
- * To prevent double execution of the handler, use only one of the {@link ng.directive:ngSubmit ngSubmit}
- * or {@link ng.directive:ngClick ngClick} directives.
- * This is because of the following form submission rules in the HTML specification:
- *
- * - If a form has only one input field then hitting enter in this field triggers form submit
- * (`ngSubmit`)
- * - if a form has 2+ input fields and no buttons or input[type=submit] then hitting enter
- * doesn't trigger submit
- * - if a form has one or more input fields and one or more buttons or input[type=submit] then
- * hitting enter in any of the input fields will trigger the click handler on the *first* button or
- * input[type=submit] (`ngClick`) *and* a submit handler on the enclosing form (`ngSubmit`)
- *
- * Any pending `ngModelOptions` changes will take place immediately when an enclosing form is
- * submitted. Note that `ngClick` events will occur before the model is updated. Use `ngSubmit`
- * to have access to the updated model.
+ * Native reset behavior also remains browser-owned. After reset, AngularTS
+ * reads the resulting native control values back into registered model
+ * controllers.
  *
  * @animations
  * Animations in ngForm are triggered when any of the associated CSS classes are added and removed.
@@ -579,66 +577,152 @@ FormController.$nonscope = true;
 const formDirectiveFactory = function (isNgForm) {
     return [
         _parse,
+        _attributes,
         /**
          * Builds the form/ngForm directive definition.
          */
-        function ($parse) {
+        function ($parse, $attributes) {
             return {
                 name: "form",
                 restrict: isNgForm ? "EA" : "E",
                 require: ["form", "^^?form"], // first is the form's own ctrl, second is an optional parent form
                 controller: FormController,
-                compile: function ngFormCompile(formElement, attr) {
+                compile: function ngFormCompile(formElement) {
                     // Setup initial state of the control
                     formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
-                    const nameAttr = !isUndefined(attr.name)
+                    const nameAttr = $attributes.has(formElement, "name")
                         ? "name"
-                        : isNgForm && !isUndefined(attr.ngForm)
+                        : isNgForm && $attributes.has(formElement, "ngForm")
                             ? "ngForm"
                             : false;
                     return {
                         pre: function ngFormPreLink(scope, formElementParam, attrParam, ctrls) {
                             const controller = ctrls[0];
-                            // if `action` attr is not present on the form, prevent the default action (submission)
-                            if (!("action" in attrParam)) {
+                            if (formElementParam instanceof HTMLFormElement) {
+                                const shouldPreventSubmit = !("action" in attrParam);
                                 const handleFormSubmission = function (event) {
                                     controller.$commitViewValue();
                                     controller.$setSubmitted();
-                                    event.preventDefault();
+                                    if (shouldPreventSubmit) {
+                                        event.preventDefault();
+                                    }
                                 };
+                                let syncingNativeReset = false;
+                                const resetElementToDefault = (element) => {
+                                    if (element instanceof HTMLInputElement) {
+                                        if (element.type === "checkbox" ||
+                                            element.type === "radio") {
+                                            element.checked = element.defaultChecked;
+                                        }
+                                        else {
+                                            element.value = element.defaultValue;
+                                        }
+                                        return;
+                                    }
+                                    if (element instanceof HTMLTextAreaElement) {
+                                        element.value = element.defaultValue;
+                                        return;
+                                    }
+                                    if (element instanceof HTMLSelectElement) {
+                                        Array.from(element.options).forEach((option) => {
+                                            option.selected = option.defaultSelected;
+                                        });
+                                    }
+                                };
+                                const resetRegisteredControlsToDefaults = (formController) => {
+                                    formController.$getControls().forEach((control) => {
+                                        const actualControl = deProxy(control);
+                                        if (actualControl instanceof FormController) {
+                                            resetRegisteredControlsToDefaults(actualControl);
+                                        }
+                                        resetElementToDefault(actualControl._element);
+                                    });
+                                };
+                                const syncNativeResetState = () => {
+                                    if (!syncingNativeReset) {
+                                        syncingNativeReset = true;
+                                        formElementParam.reset();
+                                        resetRegisteredControlsToDefaults(controller);
+                                        syncingNativeReset = false;
+                                    }
+                                    controller._syncNativeViewValue("reset");
+                                    controller.$setNativeValidity();
+                                };
+                                const scheduleNativeResetSync = () => {
+                                    setTimeout(() => {
+                                        syncNativeResetState();
+                                    });
+                                };
+                                let resetEventSeen = false;
+                                const handleFormReset = function (event) {
+                                    if (event.defaultPrevented || syncingNativeReset)
+                                        return;
+                                    resetEventSeen = true;
+                                    scheduleNativeResetSync();
+                                };
+                                const handleResetClick = function (event) {
+                                    const target = event.target;
+                                    if (event.defaultPrevented ||
+                                        !(target instanceof HTMLButtonElement ||
+                                            target instanceof HTMLInputElement) ||
+                                        target.type !== "reset") {
+                                        return;
+                                    }
+                                    resetEventSeen = false;
+                                    setTimeout(() => {
+                                        if (resetEventSeen)
+                                            return;
+                                        syncNativeResetState();
+                                    });
+                                };
+                                const resetControls = Array.from(formElementParam.querySelectorAll("button,input")).filter((element) => {
+                                    return ((element instanceof HTMLButtonElement ||
+                                        element instanceof HTMLInputElement) &&
+                                        element.type === "reset");
+                                });
                                 formElementParam.addEventListener("submit", handleFormSubmission);
+                                formElementParam.addEventListener("reset", handleFormReset);
+                                formElementParam.addEventListener("click", handleResetClick);
+                                resetControls.forEach((control) => {
+                                    control.addEventListener("click", handleResetClick);
+                                });
                                 formElementParam.addEventListener("$destroy", () => {
                                     formElementParam.removeEventListener("submit", handleFormSubmission);
+                                    formElementParam.removeEventListener("reset", handleFormReset);
+                                    formElementParam.removeEventListener("click", handleResetClick);
+                                    resetControls.forEach((control) => {
+                                        control.removeEventListener("click", handleResetClick);
+                                    });
                                 });
                             }
-                            const parentFormCtrl = ctrls[1] || controller._parentForm;
+                            const parentFormCtrl = ctrls[1] ?? controller._parentForm;
                             parentFormCtrl.$addControl(controller);
                             const setter = nameAttr
-                                ? getSetter(controller.$name) ||
+                                ? (getSetter(String(controller.$name)) ??
                                     (() => {
                                         /* empty */
-                                    })
+                                    }))
                                 : () => {
                                     /* empty */
                                 };
                             if (nameAttr) {
                                 setter(scope, controller);
-                                attrParam.$observe(nameAttr, (newValue) => {
-                                    if (controller.$name === newValue)
+                                $attributes.observe(scope, formElementParam, nameAttr, (newValue) => {
+                                    const nextName = newValue ?? "";
+                                    if (controller.$name === nextName)
                                         return;
                                     scope.$target[String(controller.$name)] = undefined;
-                                    controller._parentForm._renameControl(controller, newValue);
+                                    controller._parentForm._renameControl(controller, nextName);
                                     if (scope.$target !== controller._parentForm &&
                                         controller._parentForm !== nullFormCtrl) ;
                                     else {
-                                        scope.$target[String(newValue)] = controller;
+                                        scope.$target[nextName] =
+                                            controller;
                                     }
                                 });
                             }
                             formElementParam.addEventListener("$destroy", () => {
-                                const parentForm = controller.$target._parentForm ||
-                                    controller._parentForm ||
-                                    nullFormCtrl;
+                                const parentForm = controller.$target._parentForm;
                                 parentForm.$removeControl(controller);
                                 setter(scope, undefined);
                                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards

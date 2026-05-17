@@ -1,5 +1,5 @@
 import { _injector, _cookie } from '../../injection-tokens.js';
-import { assert, isArray, isString, callFunction, isFunction, assertArgFn, isInstanceOf, assertNotHasOwnProperty, createErrorFactory, isObject, entries, isUndefined, assertDefined, isNullOrUndefined } from '../../shared/utils.js';
+import { assert, isArray, isString, callFunction, isFunction, assertArgFn, isInstanceOf, assertNotHasOwnProperty, createErrorFactory, isObject, entries, isUndefined, isNullOrUndefined } from '../../shared/utils.js';
 import { ProviderInjector, InjectorService, providerSuffix } from './internal-injector.js';
 import { createPersistentProxy } from '../../services/storage/storage.js';
 import { validateArray } from '../../shared/validate.js';
@@ -35,15 +35,13 @@ function createInjector(modulesToLoad, strictDi = false) {
     const runBlocks = loadModules(modulesToLoad);
     instanceInjector = protoInstanceInjector.get(_injector);
     runBlocks.forEach((fn) => {
-        if (fn) {
+        if (fn)
             instanceInjector.invoke(fn);
-        }
     });
     instanceInjector.loadNewModules = (mods) => {
         loadModules(mods).forEach((fn) => {
-            if (fn) {
+            if (fn)
                 instanceInjector.invoke(fn);
-            }
         });
     };
     return instanceInjector;
@@ -175,13 +173,12 @@ function createInjector(modulesToLoad, strictDi = false) {
                         let serialize = JSON.stringify;
                         let deserialize = JSON.parse;
                         if (backendOrConfig) {
-                            if (isFunction(backendOrConfig.getItem)) {
+                            if (isFunction(Reflect.get(backendOrConfig, "getItem"))) {
                                 // raw Storage object
                                 backend = backendOrConfig;
                             }
                             else if (isObject(backendOrConfig)) {
-                                backend =
-                                    assertDefined(backendOrConfig.backend) || localStorage;
+                                backend = backendOrConfig.backend ?? localStorage;
                                 const { serialize: configSerialize, deserialize: configDeserialize, } = backendOrConfig;
                                 if (configSerialize)
                                     serialize = configSerialize;
@@ -246,7 +243,7 @@ function createInjector(modulesToLoad, strictDi = false) {
             catch (err) {
                 // If module is array, fallback to last element for error message
                 const moduleName = isArray(module) ? module[module.length - 1] : module;
-                throw $injectorError("modulerr", "Failed to instantiate module {0} due to:\n{1}", moduleName, isInstanceOf(err, Error) ? err.stack || err.message : String(err));
+                throw $injectorError("modulerr", "Failed to instantiate module {0} due to:\n{1}", moduleName, isInstanceOf(err, Error) ? (err.stack ?? err.message) : String(err));
             }
         });
         return moduleRunBlocks;

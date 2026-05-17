@@ -2,6 +2,16 @@ import { _attributes } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
 
 ngListenerDirective.$inject = [_attributes];
+
+function fallbackWhenEmpty(
+  value: string | null | undefined,
+  fallback: string,
+): string {
+  if (value) return value;
+
+  return fallback;
+}
+
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(
   $attributes: ng.AttributesService,
@@ -11,7 +21,7 @@ export function ngListenerDirective(
     link: (scope: ng.Scope, element: HTMLElement): void => {
       const configuredChannel = $attributes.read(element, "ngListener");
 
-      const channel = configuredChannel || element.id;
+      const channel = fallbackWhenEmpty(configuredChannel, element.id);
 
       const hasTemplateContent = element.childNodes.length > 0;
 

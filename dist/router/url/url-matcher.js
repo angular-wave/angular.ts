@@ -3,8 +3,8 @@ import { DefType } from '../params/param.js';
 
 const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
 const MAX_REGEX_LENGTH = 200;
-const PLACEHOLDER_REGEXP = new RegExp(`([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
-const SEARCH_PLACEHOLDER_REGEXP = new RegExp(`([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`, "g");
+const PLACEHOLDER_REGEXP = new RegExp(`([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.|\\{(?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.)*\\})+))?\\}`, "g");
+const SEARCH_PLACEHOLDER_REGEXP = new RegExp(`([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.|\\{(?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.)*\\})+))?\\}`, "g");
 function quoteRegExp(str, param) {
     let result = str.replace(/[\\[\]^$*+?.()|{}]/g, "\\$&");
     if (!param)
@@ -39,7 +39,7 @@ function pushStaticSegmentWeights(weights, segment) {
 function getMatcherWeights(matcher) {
     if (matcher._cache._weights)
         return matcher._cache._weights;
-    const path = matcher._cache._path || [matcher];
+    const path = matcher._cache._path ?? [matcher];
     const weights = [];
     let staticSegment = "";
     for (let i = 0; i < path.length; i++) {
@@ -74,7 +74,7 @@ function appendPathParam(path, param, values) {
         return path.endsWith("/") ? path.slice(0, -1) : path;
     if (isString(squash))
         return path + squash;
-    if (squash || isNullOrUndefined(encoded))
+    if (isNullOrUndefined(encoded))
         return path;
     if (isArray(encoded))
         return null;
@@ -187,13 +187,10 @@ function getParamType(pattern, match, isSearch, paramTypes, config) {
     const regexp = isSearch
         ? match[4]
         : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
-    if (!defaultType) {
-        throw new Error(`Missing default parameter type for '${isSearch ? "query" : "path"}'`);
-    }
     return !regexp
         ? defaultType
-        : paramTypes[regexp] ||
-            makeRegexpType(defaultType, regexp, config.caseInsensitive);
+        : (paramTypes[regexp] ??
+            makeRegexpType(defaultType, regexp, config.caseInsensitive));
 }
 /**
  * @internal
@@ -325,7 +322,7 @@ class UrlMatcher {
     /** @internal */
     _append(url) {
         url._cache = {
-            _path: (this._cache._path || [this]).concat(url),
+            _path: (this._cache._path ?? [this]).concat(url),
             _parent: this,
             _pattern: null,
         };
@@ -356,7 +353,7 @@ class UrlMatcher {
      */
     /** @internal */
     _exec(path, search = {}, hash) {
-        const pathMatchers = this._cache._path || [this];
+        const pathMatchers = this._cache._path ?? [this];
         const match = getPatternRegExp(this, pathMatchers).exec(path);
         if (!match)
             return null;
@@ -436,7 +433,7 @@ class UrlMatcher {
      */
     /** @internal */
     _format(values = {}) {
-        return formatUrl(this._cache._path || [this], values);
+        return formatUrl(this._cache._path ?? [this], values);
     }
 }
 

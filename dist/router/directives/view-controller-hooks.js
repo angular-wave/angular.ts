@@ -1,4 +1,4 @@
-import { uppercase, isFunction } from '../../shared/utils.js';
+import { uppercase, isFunction, assertDefined } from '../../shared/utils.js';
 import { getCacheData, getInheritedData } from '../../shared/dom.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 
@@ -13,7 +13,7 @@ function appendParamSchema(nodes, schema) {
     }
 }
 function controllerKeyData(element, key) {
-    return (getCacheData(element, key) ||
+    return (getCacheData(element, key) ??
         getInheritedData(element, key));
 }
 /** @internal */
@@ -32,13 +32,13 @@ function getComponentController(element, componentName, tagRegexp) {
     const camelNameFromTag = directiveEl.tagName
         .toLowerCase()
         .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
-    const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ||
-        getInheritedData(directiveEl, "$isolateScope") ||
-        getCacheData(directiveEl, "$scope") ||
+    const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ??
+        getInheritedData(directiveEl, "$isolateScope") ??
+        getCacheData(directiveEl, "$scope") ??
         getInheritedData(directiveEl, "$scope");
-    return (controllerKeyData(directiveEl, `$${componentName}Controller`) ||
-        controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ||
-        controllerKeyData(directiveEl, "$ngControllerController") ||
+    return (controllerKeyData(directiveEl, `$${componentName}Controller`) ??
+        controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ??
+        controllerKeyData(directiveEl, "$ngControllerController") ??
         scopeWithCtrl?.$ctrl);
 }
 /** @ignore incrementing id */
@@ -69,8 +69,7 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
     if (isFunction(controllerInstance.ngOnParamsChanged)) {
         const onParamsChanged = controllerInstance.ngOnParamsChanged;
         const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-        const viewCreationTrans = resolveContext.getResolvable("$transition$")
-            .data;
+        const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
         // Fire callback on any successful transition
         const paramsUpdated = ($transition$) => {
             if (!$transition$)
@@ -88,8 +87,8 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
             }
             const toParams = $transition$.params("to");
             const fromParams = $transition$.params("from");
-            const toNodes = $transition$._treeChanges.to || [];
-            const fromNodes = $transition$._treeChanges.from || [];
+            const toNodes = $transition$._treeChanges.to;
+            const fromNodes = $transition$._treeChanges.from;
             const toSchema = [];
             appendParamSchema(toNodes, toSchema);
             const fromSchema = [];
@@ -118,13 +117,13 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
             }
         };
         const hookRegistryKey = [
-            viewState?.name || "",
-            cfg._viewDecl._ngViewName || "$default",
-            cfg._viewDecl._ngViewContextAnchor || "^",
+            viewState.name || "",
+            cfg._viewDecl._ngViewName ?? "$default",
+            cfg._viewDecl._ngViewContextAnchor ?? "^",
         ].join("::");
         const rootScope = $scope.$root;
         const registryProp = "__ngRouterParamsChangedHooks__";
-        const hookRegistry = (rootScope[registryProp] ||
+        const hookRegistry = (rootScope[registryProp] ??
             (rootScope[registryProp] = new Map()));
         hookRegistry.get(hookRegistryKey)?.();
         const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
@@ -148,13 +147,13 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
                 return false;
             const cache = trans._ngCanExitIds;
             return (cache?.[id] === true ||
-                prevTruthyAnswer(trans._options.redirectedFrom || null));
+                prevTruthyAnswer(trans._options.redirectedFrom ?? null));
         };
         // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
         const wrappedHook = (trans) => {
             let promise;
             const cacheTrans = trans;
-            const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds || {});
+            const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});
             if (!prevTruthyAnswer(trans)) {
                 promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
                 void promise.then((val) => (ids[id] = val !== false));

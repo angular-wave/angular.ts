@@ -24,11 +24,15 @@ pub use scope::{Scope, ScopePath};
 #[cfg(not(target_arch = "wasm32"))]
 pub use services::MemoryStorageBackend;
 pub use services::{
-    CookieOptions, CookieSameSite, CookieService, CookieStoreOptions, EventBusListener,
-    EventBusService, ExceptionHandlerService, HttpMethod, HttpResponse, HttpResponseStatus,
-    HttpService, LogService, PubSubService, RequestConfig, RequestShortcutConfig, RootScopeService,
-    Service, StorageBackend, StorageType, TemplateCacheService, TemplateRequestService,
-    TopicService,
+    ConnectionConfig, ConnectionEvent, CookieOptions, CookieSameSite, CookieService,
+    CookieStoreOptions, EventBusListener, EventBusService, ExceptionHandlerService, HttpMethod,
+    HttpResponse, HttpResponseStatus, HttpService, LogService, PubSubService,
+    RealtimeProtocolEventDetail, RealtimeProtocolMessage, RequestConfig, RequestShortcutConfig,
+    RestBackend, RestDefinition, RestFactory, RestOptions, RestRequest, RestResponse, RestService,
+    RootScopeService, Service, SseConfig, SseConnection, SseService, StateDeclaration,
+    StateRegistryService, StateResolveArray, StateResolveObject, StateService, StorageBackend,
+    StorageType, SwapModeType, TemplateCacheService, TemplateRequestService, TopicService,
+    Transition, WebSocketConfig, WebSocketConnection, WebSocketService,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};

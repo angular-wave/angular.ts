@@ -15,7 +15,7 @@ function removeFrom(array, obj) {
  */
 function defaults(opts, ...defaultsList) {
     const defaultVals = assign({}, ...defaultsList.reverse());
-    const optionVals = (opts || {});
+    const optionVals = (opts ?? {});
     const defaultKeys = keys(defaultVals);
     defaultKeys.forEach((key) => {
         if (key in optionVals)

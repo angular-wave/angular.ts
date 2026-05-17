@@ -99,7 +99,7 @@ export class RegisteredHook {
   }
 
   /** @internal */
-  _matchingNodes(
+  static _matchingNodes(
     nodes: PathNode[],
     criterion: HookMatchCriterion,
     transition: Transition,
@@ -149,7 +149,7 @@ export class RegisteredHook {
       }
 
       const matching = pathType._stateHook
-        ? this._matchingNodes(path, criterion, transition)
+        ? RegisteredHook._matchingNodes(path, criterion, transition)
         : transitionNode &&
             matchState(transitionNode.state, criterion, transition)
           ? [transitionNode]

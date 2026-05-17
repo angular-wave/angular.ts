@@ -45,6 +45,11 @@ parity tracking, and browser tests for Go-owned state flowing through
   route UI-originated scope updates into typed Go handlers.
 - Generated controller wrappers own the JavaScript export object and refresh
   scope state after bind, template method calls, and watched updates.
+- Typed service facades now cover `$http`, `$log`, `$exceptionHandler`,
+  `$rootScope`, `$eventBus`, template request/cache, storage/cookie,
+  router/state, WebSocket/SSE realtime, and core `$rest` resource APIs.
+- `NG_NAMESPACE_PARITY.md` tracks every published `ng` namespace type and
+  `make parity` checks it against `@types/namespace.d.ts`.
 
 See `PLAN.md` for the Rust feature parity checklist.
 
@@ -52,6 +57,7 @@ See `PLAN.md` for the Rust feature parity checklist.
 
 ```sh
 go generate ./examples/basic_app
+make parity
 go test ./...
 GOOS=js GOARCH=wasm go build ./...
 make browser-test
@@ -62,3 +68,6 @@ The browser demo is available at:
 ```text
 http://localhost:4000/integrations/wasm/go/examples/basic_app/
 ```
+
+Set `PW_SKIP_WEB_SERVER=1` when `PW_BASE_URL` points at an already-running
+server and the Playwright target should not start `make serve`.

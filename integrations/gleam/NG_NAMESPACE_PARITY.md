@@ -29,10 +29,11 @@ source for this inventory.
 | `Angular` | inventory |
 | `AnnotatedDirectiveFactory` | inventory |
 | `Attributes` | inventory |
-| `BoundTranscludeFn` | inventory |
+| `AttributesService` | inventory |
 | `Component` | started |
 | `Controller` | inventory |
 | `Directive` | started |
+| `DirectiveRestrict` | inventory |
 | `DirectiveFactory` | inventory |
 | `NgModule` | started |
 | `PublicLinkFn` | inventory |

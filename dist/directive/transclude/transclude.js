@@ -1,24 +1,24 @@
-import { _compile } from '../../injection-tokens.js';
+import { _compile, _attributes } from '../../injection-tokens.js';
 import { isFunction, isInstanceOf, arrayFrom, isArray, createErrorFactory } from '../../shared/utils.js';
-import { emptyElement, startingTag, getDirectiveAttr } from '../../shared/dom.js';
+import { emptyElement, startingTag } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 
 const ngTranscludeError = createErrorFactory("ngTransclude");
-ngTranscludeDirective.$inject = [_compile];
-function ngTranscludeDirective($compile) {
+ngTranscludeDirective.$inject = [_compile, _attributes];
+function ngTranscludeDirective($compile, $attributes) {
     return {
         compile: function ngTranscludeCompile(tElement) {
             const fallbackLinkFn = $compile(tElement.childNodes);
             emptyElement(tElement);
-            function ngTranscludePostLink($scope, $element, $attrs, _controller, $transclude) {
+            function ngTranscludePostLink($scope, $element, _attrs, _controller, $transclude) {
                 if (!$transclude) {
                     throw ngTranscludeError("orphan", "Illegal use of ngTransclude directive in the template! " +
                         "No parent directive that requires a transclusion found. " +
                         "Element: {0}", startingTag($element));
                 }
-                let transcludeName = getDirectiveAttr($element, $attrs, "ngTransclude");
-                const transcludeSlot = getDirectiveAttr($element, $attrs, "ngTranscludeSlot");
-                if (transcludeName === $attrs.$attr.ngTransclude) {
+                let transcludeName = $attributes.read($element, "ngTransclude");
+                const transcludeSlot = $attributes.read($element, "ngTranscludeSlot");
+                if (transcludeName === $attributes.originalName($element, "ngTransclude")) {
                     transcludeName = "";
                 }
                 const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0

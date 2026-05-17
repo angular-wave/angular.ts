@@ -27,15 +27,15 @@ function createWorkerConnection(scriptPath, config) {
                 return data;
             }
         },
-        logger: config?.logger || console,
-        err: (config?.err || (() => undefined)),
+        logger: config?.logger ?? console,
+        err: (config?.err ?? (() => undefined)),
     };
     const cfg = assign({}, defaults, config);
     let worker = new Worker(scriptPath, { type: "module" });
     let terminated = false;
     const wire = (workerParam) => {
         workerParam.onmessage = (event) => {
-            let { data } = event;
+            let data = event.data;
             try {
                 data = cfg.transformMessage(data);
             }
@@ -93,8 +93,8 @@ class WorkerProvider {
             (log, exceptionHandler) => {
                 return (scriptPath, config = {}) => createWorkerConnection(scriptPath, {
                     ...config,
-                    logger: config.logger || log,
-                    err: config.err || exceptionHandler,
+                    logger: config.logger ?? log,
+                    err: config.err ?? exceptionHandler,
                 });
             },
         ];

@@ -28,7 +28,7 @@ and parent form propagation.
   controller into compile/link lifecycle.
 - `ngModelError`: error factory for `ngModel`-specific runtime errors.
 - `NgModelOptions`: public option shape for update events, debounce,
-  `allowInvalid`, getter/setter mode, and date/time behavior.
+  `allowInvalid`, and getter/setter mode.
 - `ModelValidators`, `AsyncModelValidators`, `ModelParser`, `ModelFormatter`,
   and `ModelViewChangeListener`: public pipeline and callback shapes.
 

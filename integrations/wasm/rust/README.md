@@ -15,10 +15,20 @@ The integration is strict by default:
 - Public API coverage is tracked against the published AngularTS `ng`
   namespace in [NG_NAMESPACE_PARITY.md](NG_NAMESPACE_PARITY.md).
 
-This package is an early implementation. The current crates compile and
+This package is an active implementation. The current crates compile and
 establish the workspace, public facade shape, strict metadata-generating macros,
-generated-bootstrap command, and parity check. The full `wasm-bindgen`
-controller bridge is not implemented yet.
+generated-bootstrap command, parity check, `wasm-bindgen` bridge generation, and
+browser-tested example apps. The covered Rust facade set now includes core
+module/component/service authoring, scope and Wasm ABI types, `$http`,
+template/cache, storage/cookie, diagnostics/event bus, router/state, realtime
+WebSocket/SSE, and core `$rest` resource APIs.
+
+The bridge still requires Rust-side `#[wasm_bridge]` annotations for
+Wasm-visible controllers, service wrappers, values, and boundary types. The
+current target is eliminating raw `#[wasm_bindgen]` application authoring,
+manifest export strings, handwritten JavaScript entrypoints, and repetitive
+scope synchronization code, while keeping explicit Rust annotations at the
+Wasm boundary.
 
 ## Local Checks
 
@@ -33,7 +43,7 @@ Run only the namespace parity check:
 make parity
 ```
 
-Generate the placeholder bootstrap file:
+Generate the bootstrap file:
 
 ```sh
 make build-tool
@@ -125,7 +135,7 @@ Run:
 angular-ts-rs build --manifest examples/basic_app/angular-ts.json
 ```
 
-Generated JavaScript will eventually import AngularTS, initialize the
-`wasm-bindgen` package, register the Rust-authored module, and call
-`angular.bootstrap(...)`. That JavaScript is a build artifact, not application
-source.
+Generated JavaScript imports AngularTS, initializes the `wasm-bindgen` package,
+registers the Rust-authored module, and calls `angular.bootstrap(...)` when the
+manifest enables bootstrap. That JavaScript is a build artifact, not
+application source.

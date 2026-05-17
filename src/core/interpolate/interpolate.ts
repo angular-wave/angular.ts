@@ -22,13 +22,13 @@ export interface InterpolationFunction {
    * @param context - The scope/context
    * @param cb - Optional callback when expressions change
    */
-  (context: any, cb?: (val: any) => void): any;
+  (context: unknown, cb?: (val: unknown) => void): unknown;
   exp: string;
 }
 
-type WatchableContext = {
-  $watch: (expression: string, listener: () => void) => any;
-};
+interface WatchableContext {
+  $watch: (expression: string, listener: () => void) => unknown;
+}
 
 function getWatchableContext(context: unknown): WatchableContext | undefined {
   return isFunction((context as Partial<WatchableContext> | undefined)?.$watch)
@@ -162,7 +162,7 @@ export class InterpolateProvider {
 
           const textLength = text.length;
 
-          const concat: any[] = [];
+          const concat: unknown[] = [];
 
           const expressionPositions: number[] = [];
 
@@ -208,7 +208,7 @@ export class InterpolateProvider {
 
           if (!mustHaveExpression || expressions.length > 0) {
             if (singleExpression) {
-              const expression = expressions[0];
+              const [expression] = expressions;
 
               const parseFn = $parse(expression);
 
@@ -268,7 +268,7 @@ export class InterpolateProvider {
               if (contextAllowsConcatenation) {
                 return security.getTrusted(
                   trustedContext,
-                  singleExpression ? concat[0] : concat.join(""),
+                  concat.join(""),
                 ) as unknown;
               }
 

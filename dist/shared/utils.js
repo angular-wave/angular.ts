@@ -197,7 +197,9 @@ function isRegExp(value) {
     return toString.call(value) === "[object RegExp]";
 }
 function isNodeLike(value) {
-    return "nodeName" in value && isFunction(value.cloneNode);
+    return (isObject(value) &&
+        "nodeName" in value &&
+        isFunction(value.cloneNode));
 }
 /**
  * Checks if `obj` is a window object.
@@ -251,7 +253,7 @@ function trim(value) {
  * Converts a camelCase or PascalCase name to snake case.
  */
 function snakeCase(name, separator) {
-    const modseparator = separator || "_";
+    const modseparator = separator ?? "_";
     return name.replace(/[A-Z]/g, (letter, pos) => (pos ? modseparator : "") + letter.toLowerCase());
 }
 function getHashKeyTarget(obj) {
@@ -384,7 +386,10 @@ function inherit(parent, extra) {
  * Returns whether an object defines its own `toString` implementation.
  */
 function hasCustomToString(obj) {
-    return isFunction(obj.toString) && obj.toString !== toString;
+    if (!isObject(obj))
+        return false;
+    const customToString = Reflect.get(obj, "toString");
+    return isFunction(customToString) && customToString !== toString;
 }
 /**
  * Returns a string appropriate for the type of node.
@@ -579,11 +584,11 @@ function stringify(value) {
         return value;
     }
     if (typeof value === "number") {
-        return `${value}`;
+        return String(value);
     }
-    const objectValue = value;
-    if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
-        return String(callFunction(objectValue.toString, value));
+    if (hasCustomToString(value) && !isArray(value) && !isDate(value)) {
+        const customToString = Reflect.get(value, "toString");
+        return customToString.call(value);
     }
     return assertDefined(toJson(value));
 }
@@ -603,7 +608,7 @@ function concat(array1, array2, index) {
  * Converts `arguments` or an array-like value into a real array.
  */
 function sliceArgs(args, startIndex) {
-    return Array.prototype.slice.call(args, startIndex || 0);
+    return Array.prototype.slice.call(args, startIndex ?? 0);
 }
 /**
  * Returns a function which calls function `fn` bound to `self` (`self` becomes the `this` for
@@ -772,7 +777,7 @@ function encodeUriSegment(val) {
  *                     / "*" / "+" / "," / ";" / "="
  */
 function encodeUriQuery(val, pctEncodeSpaces) {
-    return encodeURIComponent(val)
+    return encodeURIComponent(String(val))
         .replace(/%40/gi, "@")
         .replace(/%3A/gi, ":")
         .replace(/%24/g, "$")
@@ -789,12 +794,12 @@ const ngAttrPrefixes = ["ng-", "data-ng-"];
  */
 function shallowCopy(src, dst) {
     if (isArray(src)) {
-        const out = dst || [];
+        const out = (dst ?? []);
         out.push(...src);
         return out;
     }
     if (isObject(src)) {
-        const out = dst || {};
+        const out = (dst ?? {});
         for (const key in src) {
             if (!hasOwn(src, key))
                 continue;
@@ -833,7 +838,7 @@ function assertDefined(value, errorMsg = "Expected value to be defined") {
  */
 function assertArg(arg, name, reason) {
     if (!arg) {
-        throw ngError("areq", "Argument '{0}' is {1}", name || "?", reason || "required");
+        throw ngError("areq", "Argument '{0}' is {1}", name || "?", reason ?? "required");
     }
     return arg;
 }
@@ -940,15 +945,15 @@ function hashKey(obj) {
     const target = deProxy(obj);
     const objType = typeof target;
     if (objType === "function" || (objType === "object" && target !== null)) {
-        const generatedKey = `${objType}:${nextUid()}`;
+        const generatedKey = `${objType}:${String(nextUid())}`;
         generatedHashKeys.set(target, generatedKey);
         return generatedKey;
     }
     if (objType === "undefined") {
-        return `${objType}:${nextUid()}`;
+        return `${objType}:${String(nextUid())}`;
     }
     // account for primitives
-    return `${objType}:${obj}`;
+    return `${objType}:${String(obj)}`;
 }
 /**
  * Merges two class name values into a single space-separated string.
@@ -1010,7 +1015,7 @@ function hasCustomOrDataAttribute(node, attr) {
         return false;
     const element = node;
     const value = element.dataset[attr] ?? element.getAttribute(attr);
-    return value !== null && value !== undefined && value !== "false";
+    return value !== null && value !== "false";
 }
 /**
  * Returns whether an object has no own enumerable keys.
@@ -1082,7 +1087,7 @@ function callBackOnce(fn) {
     return (...args) => {
         if (!called) {
             called = true;
-            return fn(...args);
+            return callFunction(fn, undefined, ...args);
         }
         return undefined; // satisfies consistent-return
     };
@@ -1096,7 +1101,7 @@ function callBackAfterFirst(fn) {
     let calledOnce = false;
     return (...args) => {
         if (calledOnce) {
-            return fn(...args);
+            return callFunction(fn, undefined, ...args);
         }
         calledOnce = true;
         return undefined;

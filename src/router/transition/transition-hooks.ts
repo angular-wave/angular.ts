@@ -32,7 +32,7 @@ function noop(): void {
   /* empty */
 }
 
-function afterViewCommitTask(): Promise<void> {
+async function afterViewCommitTask(): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
   });
@@ -47,7 +47,9 @@ type ViewTransitionDocument = Document & {
 
 let viewTransitionActive = false;
 
-function runWithViewTransition(updateCallback: () => void): Promise<void> {
+async function runWithViewTransition(
+  updateCallback: () => void,
+): Promise<void> {
   if (viewTransitionActive) {
     updateCallback();
 
@@ -72,14 +74,15 @@ function runWithViewTransition(updateCallback: () => void): Promise<void> {
     }
   });
 
-  viewTransition.finished.then(
-    () => {
+  void viewTransition.finished
+    .then(() => {
       viewTransitionActive = false;
-    },
-    () => {
+
+      return undefined;
+    })
+    .catch(() => {
       viewTransitionActive = false;
-    },
-  );
+    });
 
   if (callbackState.hasError) {
     throw callbackState.error;
@@ -231,7 +234,7 @@ function isTransitionToken(token: unknown): boolean {
   return token === "$transition$" || token === Transition;
 }
 
-function ignoredHook(trans: Transition) {
+async function ignoredHook(trans: Transition) {
   const ignoredReason = trans._ignoredReason();
 
   if (!ignoredReason) return undefined;
@@ -381,7 +384,7 @@ function registerRedirectToHook(
 
 const RESOLVE_HOOK_PRIORITY = 1000;
 
-function eagerResolvePath(trans: Transition): Promise<void> {
+async function eagerResolvePath(trans: Transition): Promise<void> {
   return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .resolvePath(true, trans)
     .then(noop);
@@ -395,7 +398,7 @@ function registerEagerResolvePath(
   });
 }
 
-function lazyResolveState(
+async function lazyResolveState(
   trans: Transition,
   state: StateDeclaration,
 ): Promise<void> {
@@ -427,7 +430,7 @@ function registerLazyResolveState(
   );
 }
 
-function resolveRemaining(trans: Transition): Promise<void> {
+async function resolveRemaining(trans: Transition): Promise<void> {
   return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .resolvePath(false, trans)
     .then(noop);
@@ -476,7 +479,7 @@ function updateViewConfigs(
   viewService._sync();
 }
 
-function activateViewsHook(
+async function activateViewsHook(
   this: TransitionService,
   transition: Transition,
 ): Promise<void> {
@@ -583,7 +586,15 @@ function registerUpdateGlobalState(
       }
     };
 
-    trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+    void trans.promise
+      .then(() => {
+        clearCurrentTransition();
+
+        return undefined;
+      })
+      .catch(() => {
+        clearCurrentTransition();
+      });
   });
 
   return transitionService.onSuccess({}, updateGlobalState, {

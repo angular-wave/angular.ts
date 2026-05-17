@@ -1,6 +1,5 @@
-import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector } from '../../injection-tokens.js';
+import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector, _attributes } from '../../injection-tokens.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { getNormalizedAttr } from '../../shared/dom.js';
 import { isString, isObject, isFunction, isUndefined, isDefined } from '../../shared/utils.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent, SwapMode } from '../realtime/protocol.js';
 import { createRealtimeSwapHandler } from '../realtime/swap.js';
@@ -12,19 +11,20 @@ ngWebTransportDirective.$inject = [
     _log,
     _exceptionHandler,
     _injector,
+    _attributes,
 ];
 /**
  * Connects an element to a WebTransport endpoint and evaluates template
  * expressions for incoming datagrams or unidirectional streams.
  */
-function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector) {
+function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector, $attributes) {
     const decoder = new TextDecoder();
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
-        link(scope, element, attrs) {
-            const attr = (name) => getNormalizedAttr(element, name) ?? undefined;
-            const eventName = attr("trigger") || "load";
+        link(scope, element) {
+            const attr = (name) => $attributes.read(element, name);
+            const eventName = attr("trigger") ?? "load";
             const mode = parseMode(attr("mode"));
             const transform = parseTransform(attr("transform"));
             let connection;
@@ -84,10 +84,10 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 return value === "" || value === "true";
             }
             function retryDelay() {
-                return parseInt(attr("retryDelay") || "", 10) || 1000;
+                return parseInt(attr("retryDelay") ?? "", 10) || 1000;
             }
             function maxRetries() {
-                const value = parseInt(attr("maxRetries") || "", 10);
+                const value = parseInt(attr("maxRetries") ?? "", 10);
                 return Number.isFinite(value) ? value : Infinity;
             }
             function closeConnection(reason) {
@@ -141,12 +141,12 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 $log,
                 getAnimate,
                 scope,
-                attrs,
+                $attributes,
                 element,
                 logPrefix: "ngWebTransport",
             });
             function handleProtocolMessage(message, event) {
-                const swap = message.swap || parseSwapMode(attr("swap")) || "innerHTML";
+                const swap = message.swap ?? parseSwapMode(attr("swap")) ?? "innerHTML";
                 const content = getRealtimeProtocolContent(message);
                 if (!isDefined(content) && swap !== "delete" && swap !== "none") {
                     return false;
@@ -155,7 +155,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                     ? document.querySelector(message.target)
                     : element;
                 if (!target) {
-                    $log.warn(`ngWebTransport: target "${message.target}" not found`);
+                    $log.warn(`ngWebTransport: target "${String(message.target)}" not found`);
                     return false;
                 }
                 const swapped = handleSwapResponse(isString(content) || isObject(content) ? content : String(content), swap, { targetSelector: message.target });

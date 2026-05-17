@@ -13,7 +13,7 @@ class PubSubProvider {
     constructor($exceptionHandler, angularProvider) {
         this.$get = () => this.eventBus;
         this.eventBus = eventBusInstance =
-            eventBusInstance || new PubSub($exceptionHandler.handler);
+            eventBusInstance ?? new PubSub($exceptionHandler.handler);
         angularProvider.$get().$eventBus = this.eventBus;
     }
 }

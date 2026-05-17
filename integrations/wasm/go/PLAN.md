@@ -120,10 +120,10 @@ Go is feature complete when:
   reflection output, not manifest string lists;
 - UI-originated scope updates route back into Go-owned state through
   `WasmScope` watches;
-- Go facade APIs cover the same required public namespace surface completed by
+- Go facade APIs cover the same app-authoring namespace surface completed by
   Rust: `WasmScope` boundary types, restricted `Scope`, `$rootScope`, authoring
-  metadata, `$http`, diagnostics/events, template request/cache, storage, and
-  cookies;
+  metadata, `$http`, diagnostics/events, template request/cache, storage,
+  cookies, router/state, realtime WebSocket/SSE, and core REST;
 - unsupported boundary types fail during `go generate`, `go vet`, or build-time
   validation rather than at runtime where practical;
 - generated bootstrap snapshot tests and Playwright browser tests cover the Go
@@ -153,8 +153,9 @@ same required surface:
 
 Deferred Go parity follows the Rust deferred list: providers, compile/link
 directive internals, transclusion, browser object escape hatches, animation,
-workers, web components, parse/interpolate/filter/SCE/location, router/state,
-forms, realtime, and REST unless a Go reference example needs them.
+workers, web components, parse/interpolate/filter/SCE/location, forms, REST
+cache/revalidation helpers, and WebTransport unless a Go reference example
+needs them.
 
 ## Code Generation Direction
 
@@ -224,15 +225,15 @@ metadata, scope refresh, and scope watch routing.
 
 ### Phase E - Go Scope and Template Ergonomics
 
-- [ ] Generate template-visible field and method bridges from Go metadata.
+- [x] Generate template-visible field and method bridges from Go metadata.
   - [x] Generate template-visible controller methods from Go metadata.
   - [x] Generate template-visible fields from Go metadata.
-- [ ] Generate scope refresh after method calls, lifecycle hooks, async
+- [x] Generate scope refresh after method calls, lifecycle hooks, async
       completions, and watched UI updates.
   - [x] Generate refresh after controller bind lifecycle.
   - [x] Generate refresh after template method calls.
   - [x] Generate refresh after watched UI updates.
-  - [ ] Generate refresh after async completions.
+  - [x] Generate refresh after async completions.
 - [x] Generate a state sync helper for Go-owned scope fields.
 - [x] Generate UI-to-Go watch routing through `GoWasmScopeAbi`.
 - [x] Remove manual scope set/sync calls from the Go todo app.
@@ -241,29 +242,42 @@ metadata, scope refresh, and scope watch routing.
 
 ### Phase F - Go Service Facades
 
-- [ ] Add typed `$http` request/response helpers matching Rust coverage.
-- [ ] Add `$log`, `$exceptionHandler`, `$rootScope`, `$scope`, and `$eventBus`
+- [x] Add typed `$http` request/response helpers matching Rust coverage.
+- [x] Add `$log`, `$exceptionHandler`, `$rootScope`, `$scope`, and `$eventBus`
       facades.
-- [ ] Add `TopicService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`
+- [x] Add `TopicService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`
       coverage.
-- [ ] Add `$templateRequest` and `$templateCache` facades.
-- [ ] Add storage and cookie facades.
+- [x] Add `$templateRequest` and `$templateCache` facades.
+- [x] Add storage and cookie facades.
+- [x] Add router/state facades for `StateService`, `StateRegistryService`,
+      `StateDeclaration`, `StateResolveArray`, `StateResolveObject`, and
+      `Transition`.
+- [x] Add realtime facades for WebSocket, SSE, connection config/events,
+      realtime protocol messages, and swap modes.
+- [x] Add core REST facades for `$rest`, resource clients, requests,
+      responses, definitions, options, and backends.
 
 ### Phase G - Go Namespace Parity
 
-- [ ] Add `integrations/wasm/go/NG_NAMESPACE_PARITY.md`.
-- [ ] Add a parity checker against `@types/namespace.d.ts`.
-- [ ] Give every public `ng` namespace type an explicit Go decision.
-- [ ] Promote required namespace entries to covered with tests.
+- [x] Add `integrations/wasm/go/NG_NAMESPACE_PARITY.md`.
+- [x] Add a parity checker against `@types/namespace.d.ts`.
+- [x] Give every public `ng` namespace type an explicit Go decision.
+- [x] Promote required namespace entries to covered with tests.
 
 ### Phase H - Go Feature Completion
 
-- [ ] Replace the proof todo app with the generated authoring model.
-- [ ] Add Playwright coverage for generated Go registration and lifecycle
+- [x] Replace the proof todo app with the generated authoring model.
+- [x] Add Playwright coverage for generated Go registration and lifecycle
       behavior.
-- [ ] Add browser coverage for UI-to-Go and Go-to-DOM state propagation.
+- [x] Add browser coverage for UI-to-Go and Go-to-DOM state propagation.
 - [ ] Run `make check` and `make browser-test` as the local completion gate.
-- [ ] Document remaining deferred parity with reasons.
+  - [x] `make check`
+  - [ ] `make browser-test`
+    - Blocked in the current sandbox because Playwright's configured web
+      server cannot bind local TCP/UDP sockets.
+    - `PW_SKIP_WEB_SERVER=1` allows the same Playwright test to run against an
+      already-running `PW_BASE_URL` without starting `make serve`.
+- [x] Document remaining deferred parity with reasons.
 
 ## Non-Goals
 

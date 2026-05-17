@@ -81,7 +81,7 @@ export function createDefaultParamTypes(): ParamTypeMap {
       is(val: unknown) {
         return (
           !isNullOrUndefined(val) &&
-          (this as unknown as ParamTypeDefinition).decode?.(stringify(val)) ===
+          (this as unknown as ParamTypeDefinition).decode(stringify(val)) ===
             val
         );
       },
@@ -105,15 +105,15 @@ export function createDefaultParamTypes(): ParamTypeMap {
 
         return [
           val.getFullYear(),
-          `0${val.getMonth() + 1}`.slice(-2),
-          `0${val.getDate()}`.slice(-2),
+          `0${String(val.getMonth() + 1)}`.slice(-2),
+          `0${String(val.getDate())}`.slice(-2),
         ].join("-");
       },
       /**
        * @param {unknown} val
        */
       decode(val: unknown) {
-        if ((this as unknown as ParamTypeDefinition).is?.(val)) return val;
+        if ((this as unknown as ParamTypeDefinition).is(val)) return val;
         const match = (this as { capture: RegExp }).capture.exec(String(val));
 
         return match

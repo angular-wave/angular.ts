@@ -5,5 +5,3 @@ export const NodeType = {
   _COMMENT_NODE: 8,
   _DOCUMENT_FRAGMENT_NODE: 11,
 } as const;
-
-export type NodeType = (typeof NodeType)[keyof typeof NodeType];

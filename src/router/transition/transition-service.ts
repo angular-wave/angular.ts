@@ -16,7 +16,7 @@ import type {
   TransitionOptions,
 } from "./interface.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
-import type { TransitionHookPhase } from "./transition-hook.ts";
+import type { TransitionHookPhaseValue } from "./transition-hook.ts";
 import type { StateProvider } from "../state/state-service.ts";
 import type { ViewService } from "../view/view.ts";
 import { defineCoreTransitionEvents } from "./transition-events.ts";
@@ -60,7 +60,7 @@ export interface TransitionService extends HookRegistry {
   _registeredHooks: RegisteredHooks;
 
   /** @internal Return event types, optionally filtered by phase. */
-  _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+  _getEvents(phase?: TransitionHookPhaseValue): TransitionEventType[];
 
   /** @internal Return hooks registered for a transition event name. */
   _getHooks(hookName: string): RegisteredHooks[string];
@@ -158,7 +158,7 @@ export class TransitionProvider implements TransitionService {
    * Returns known transition event types, optionally filtered by phase.
    */
   /** @internal */
-  _getEvents(phase?: TransitionHookPhase): TransitionEventType[] {
+  _getEvents(phase?: TransitionHookPhaseValue): TransitionEventType[] {
     const transitionHookTypes: TransitionEventType[] = [];
 
     this._eventTypes.forEach((eventType) => {

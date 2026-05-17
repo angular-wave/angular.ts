@@ -27,7 +27,8 @@ export const TransitionHookPhase = {
 } as const;
 
 /** @internal */
-export type TransitionHookPhase = number;
+export type TransitionHookPhaseValue =
+  (typeof TransitionHookPhase)[keyof typeof TransitionHookPhase];
 
 /** @internal */
 export interface TransitionHookOptions {
@@ -81,7 +82,7 @@ export class TransitionHook {
    * Runs hooks in sequence, waiting for each async hook before invoking the next.
    */
   /** @internal */
-  static _chain(
+  static async _chain(
     hooks: TransitionHook[],
     waitFor?: Promise<unknown>,
   ): Promise<void> {
@@ -102,7 +103,7 @@ export class TransitionHook {
   }
 
   /** @internal */
-  static _invokeHooks(
+  static async _invokeHooks(
     hooks: TransitionHook[],
     doneCallback: TransitionHookDoneCallback,
   ): Promise<unknown> {
@@ -135,7 +136,7 @@ export class TransitionHook {
   }
 
   /** @internal */
-  static _runDoneCallback(
+  static async _runDoneCallback(
     doneCallback: TransitionHookDoneCallback,
   ): Promise<unknown> {
     return isDoneTask(doneCallback)
@@ -176,7 +177,7 @@ export class TransitionHook {
   }
 
   /** @internal */
-  static _rejectError(
+  static async _rejectError(
     _hook: TransitionHook | undefined,
     error: unknown,
   ): Promise<never> {

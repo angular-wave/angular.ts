@@ -5,9 +5,9 @@ description: "Learn how AngularTS directives attach behavior to HTML, how built-
 ---
 
 Directives are how AngularTS attaches behavior and structure to HTML. A
-directive is a marker on a DOM element, attribute, class, or comment that tells
-`$compile` to attach behavior, transform DOM, wire events, create scopes, or
-connect controllers.
+directive is a marker on a DOM element or attribute that tells `$compile` to
+attach behavior, transform DOM, wire events, create scopes, or connect
+controllers.
 
 Every built-in directive in AngularTS is applied as an HTML attribute using the
 `ng-` prefix. The compiler normalizes prefixes, so `ng-bind`,
@@ -31,8 +31,7 @@ The `restrict` option controls where a directive can appear.
 | --- | --- | --- |
 | `A` | Attribute | `<span ng-bind="name"></span>` |
 | `E` | Element | `<my-widget></my-widget>` |
-| `C` | Class | `<div class="my-widget"></div>` |
-| `EA` | Element or attribute | `<ng-form>` or `<div ng-form>` |
+| `AE` / `EA` | Attribute or element | `<div ng-form>` or `<ng-form>` |
 
 Attribute directives are the common case in AngularTS. They keep the host
 element in place and augment it.

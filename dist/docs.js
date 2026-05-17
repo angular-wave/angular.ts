@@ -1,6 +1,5 @@
 export { angular } from './index.js';
 export { Angular } from './angular.js';
-export { Attributes } from './core/compile/attributes.js';
 export { NgModule } from './core/di/ng-module/ng-module.js';
 export { RootScopeProvider, Scope } from './core/scope/scope.js';
 export { ControllerProvider } from './core/controller/controller.js';
@@ -8,6 +7,7 @@ export { FilterProvider } from './core/filter/filter.js';
 export { InterpolateProvider } from './core/interpolate/interpolate.js';
 export { AnimateProvider } from './animations/animate.js';
 export { AnchorScrollProvider } from './services/anchor-scroll/anchor-scroll.js';
+export { AttributesProvider } from './services/attributes/attributes.js';
 export { CookieProvider, CookieService } from './services/cookie/cookie.js';
 export { ExceptionHandlerProvider } from './services/exception/exception.js';
 export { Http, HttpParamSerializerProvider, HttpProvider } from './services/http/http.js';

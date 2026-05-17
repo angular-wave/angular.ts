@@ -69,7 +69,7 @@ export function ngWebTransportDirective(
       const attr = (name: string): string | undefined =>
         $attributes.read(element, name);
 
-      const eventName = attr("trigger") || "load";
+      const eventName = attr("trigger") ?? "load";
 
       const mode = parseMode(attr("mode"));
 
@@ -148,11 +148,11 @@ export function ngWebTransportDirective(
       }
 
       function retryDelay(): number {
-        return parseInt(attr("retryDelay") || "", 10) || 1000;
+        return parseInt(attr("retryDelay") ?? "", 10) || 1000;
       }
 
       function maxRetries(): number {
-        const value = parseInt(attr("maxRetries") || "", 10);
+        const value = parseInt(attr("maxRetries") ?? "", 10);
 
         return Number.isFinite(value) ? value : Infinity;
       }
@@ -164,6 +164,7 @@ export function ngWebTransportDirective(
 
         current.closed.catch(() => {
           // Directive-owned sessions may be torn down before the browser finishes connecting.
+          return undefined;
         });
 
         try {
@@ -172,9 +173,12 @@ export function ngWebTransportDirective(
           current.ready
             .then(() => {
               current.close(reason ? { reason } : undefined);
+
+              return undefined;
             })
             .catch(() => {
               // The browser may reject a connection that is destroyed while opening.
+              return undefined;
             });
         }
       }
@@ -234,7 +238,7 @@ export function ngWebTransportDirective(
         message: RealtimeProtocolMessage,
         event: Event | null,
       ): boolean {
-        const swap = message.swap || parseSwapMode(attr("swap")) || "innerHTML";
+        const swap = message.swap ?? parseSwapMode(attr("swap")) ?? "innerHTML";
 
         const content = getRealtimeProtocolContent(message);
 
@@ -247,7 +251,9 @@ export function ngWebTransportDirective(
           : element;
 
         if (!target) {
-          $log.warn(`ngWebTransport: target "${message.target}" not found`);
+          $log.warn(
+            `ngWebTransport: target "${String(message.target)}" not found`,
+          );
 
           return false;
         }

@@ -34,7 +34,6 @@ export type {
 } from "./interface.ts";
 
 export type {
-  BoundTranscludeFn,
   CompileFn,
   PublicLinkFn,
   TranscludeFn,

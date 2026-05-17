@@ -9,13 +9,15 @@ pub type AnnotatedDirectiveFactory
 
 pub type Attributes
 
-pub type BoundTranscludeFn
+pub type AttributesService
 
 pub type Component
 
 pub type Controller
 
 pub type Directive(a)
+
+pub type DirectiveRestrict
 
 pub type DirectiveFactory
 

@@ -46,7 +46,7 @@ export function browserTrigger(
  * @param [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns A promise that resolves after the delay.
  */
-export function wait(timeout = 0): Promise<void> {
+export async function wait(timeout = 0): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, timeout);
   });

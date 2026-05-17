@@ -15,9 +15,9 @@ import {
 
 const filterError = createErrorFactory("filter");
 
-export type FilterFn = (input: any, ...args: any[]) => any;
+export type FilterFn = (...args: never[]) => unknown;
 
-export type FilterFactory = (...args: any[]) => FilterFn & {
+export type FilterFactory = (...args: never[]) => FilterFn & {
   $$moduleName: string;
 };
 
@@ -34,9 +34,9 @@ export function filterFilter() {
    * @returns Filtered array
    */
   return function (
-    array: any[] | ArrayLike<any> | null | undefined,
-    expression: any,
-    comparator?: boolean | ((actual: any, expected: any) => boolean),
+    array: unknown[] | ArrayLike<unknown> | null | undefined,
+    expression: unknown,
+    comparator?: boolean | ((actual: unknown, expected: unknown) => boolean),
     anyPropertyKey?: string,
   ) {
     if (!isArrayLike(array)) {
@@ -46,19 +46,19 @@ export function filterFilter() {
       throw filterError("notarray", "Expected array but received: {0}", array);
     }
 
-    anyPropertyKey = anyPropertyKey || "$";
-    let predicateFn;
+    anyPropertyKey = anyPropertyKey ?? "$";
+    let predicateFn: ((value: unknown) => boolean) | undefined;
 
     switch (getTypeForFilter(expression)) {
       case "function":
-        predicateFn = expression;
+        predicateFn = expression as (value: unknown) => boolean;
         break;
       case "boolean":
       case "null":
       case "number":
       case "string":
         predicateFn = createPredicateFn(
-          expression,
+          expression as string | Record<string, unknown> | null,
           comparator,
           anyPropertyKey,
           true,
@@ -67,7 +67,7 @@ export function filterFilter() {
 
       case "object":
         predicateFn = createPredicateFn(
-          expression,
+          expression as string | Record<string, unknown> | null,
           comparator,
           anyPropertyKey,
           false,
@@ -78,7 +78,13 @@ export function filterFilter() {
         return array;
     }
 
-    return arrayFrom<unknown>(array as ArrayLike<unknown>).filter(predicateFn);
+    return arrayFrom<unknown>(array as ArrayLike<unknown>).filter(
+      predicateFn as (
+        value: unknown,
+        index: number,
+        array: unknown[],
+      ) => boolean,
+    );
   };
 }
 
@@ -104,11 +110,11 @@ export function filterFilter() {
  * is typically enabled when filtering with primitive expressions.
  */
 function createPredicateFn(
-  expression: string | Record<string, any> | null,
-  comparator?: boolean | ((actual: any, expected: any) => boolean),
+  expression: string | Record<string, unknown> | null,
+  comparator?: boolean | ((actual: unknown, expected: unknown) => boolean),
   anyPropertyKey = "$",
   matchAgainstAnyProp = false,
-): (item: any) => boolean {
+): (item: unknown) => boolean {
   const shouldMatchPrimitives =
     expression !== null &&
     typeof expression === "object" &&
@@ -117,10 +123,7 @@ function createPredicateFn(
   if (comparator === true) {
     comparator = equals;
   } else if (!isFunction(comparator)) {
-    comparator = function (
-      actual: string | any[] | null,
-      expected: unknown,
-    ): boolean {
+    comparator = function (actual: unknown, expected: unknown): boolean {
       if (isUndefined(actual)) {
         // No substring matching against `undefined`
         return false;
@@ -139,14 +142,14 @@ function createPredicateFn(
         return false;
       }
 
-      actual = String(actual).toLowerCase();
+      const actualString = stringifyComparable(actual).toLowerCase();
       const expectedString = stringifyComparable(expected).toLowerCase();
 
-      return actual.includes(expectedString);
+      return actualString.includes(expectedString);
     };
   }
 
-  const predicateFn = function (item: any): boolean {
+  const predicateFn = function (item: unknown): boolean {
     if (shouldMatchPrimitives && !isObject(item)) {
       return deepCompare(
         item,
@@ -181,16 +184,26 @@ function stringifyComparable(value: unknown): string {
       return String(value);
     case "function":
       return value.toString();
-    default:
+    case "object":
+      if (hasCustomToString(value)) {
+        const customToString = Reflect.get(value, "toString") as (
+          this: unknown,
+        ) => string;
+
+        return customToString.call(value);
+      }
+
       return "";
   }
+
+  return "";
 }
 
 /** Recursively compares actual and expected values for the filter predicate. */
 function deepCompare(
-  actual: any,
-  expected: any,
-  comparator: (arg0: any, arg1: any) => any,
+  actual: unknown,
+  expected: unknown,
+  comparator: (arg0: unknown, arg1: unknown) => unknown,
   anyPropertyKey: string,
   matchAgainstAnyProp: boolean,
   dontMatchWholeObject = false,
@@ -226,7 +239,7 @@ function deepCompare(
   switch (actualType) {
     case "object":
       if (matchAgainstAnyProp) {
-        const actualObj = actual as Record<string, any>;
+        const actualObj = actual as Record<string, unknown>;
 
         for (const key in actualObj) {
           if (!hasOwn(actualObj, key)) continue;
@@ -251,9 +264,9 @@ function deepCompare(
       }
 
       if (expectedType === "object") {
-        const expectedObj = expected as Record<string, any>;
+        const expectedObj = expected as Record<string, unknown>;
 
-        const actualObj = actual as Record<string, any>;
+        const actualObj = actual as Record<string, unknown>;
 
         for (const key in expectedObj) {
           if (!hasOwn(expectedObj, key)) continue;
@@ -265,7 +278,7 @@ function deepCompare(
 
           const matchAnyProperty = key === anyPropertyKey;
 
-          const actualVal = matchAnyProperty ? actual : actualObj[key];
+          const actualVal: unknown = matchAnyProperty ? actual : actualObj[key];
 
           if (
             !deepCompare(
@@ -295,6 +308,6 @@ function deepCompare(
 
 // Used for easily differentiating between `null` and actual `object`
 /** Returns the filter classification used by the recursive comparison helpers. */
-function getTypeForFilter(val: any): string {
+function getTypeForFilter(val: unknown): string {
   return isNull(val) ? "null" : typeof val;
 }

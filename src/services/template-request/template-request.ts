@@ -69,7 +69,7 @@ export class TemplateRequestProvider {
        * @param templateUrl URL of the template.
        * @returns Resolves with template content.
        */
-      const fetchTemplate = (templateUrl: string): Promise<string> => {
+      const fetchTemplate = async (templateUrl: string): Promise<string> => {
         // Filter out default transformResponse for template requests
         let transformResponse = $http.defaults.transformResponse ?? null;
 

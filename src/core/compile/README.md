@@ -30,8 +30,10 @@ execution binds those plans to a concrete scope and DOM node list.
 - `DirectiveSuffix`: suffix used for directive factory providers.
 - `CompileFn`: public `$compile` entry point type.
 - `PublicLinkFn`: link function returned by `$compile`.
-- `TranscludeFn`, `BoundTranscludeFn`, and `SlotTranscludeFn`: public and
-  internal transclusion function shapes.
+- `TranscludeFn`: public transclusion function shape passed to directive link
+  functions.
+- `BoundTranscludeFn` and `SlotTranscludeFn`: internal transclusion function
+  shapes used by the compile/link runtime.
 - `getDirectiveRequire()`: normalizes `require` declarations.
 - `getDirectiveRestrict()`: validates and defaults directive restrictions.
 - `detectNamespaceForChildElements()`, `wrapTemplate()`, `replaceWith()`,

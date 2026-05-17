@@ -1,8 +1,41 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement } from '../../shared/dom.js';
-import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, deleteProperty, isArray } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, isArray, deleteProperty } from '../../shared/utils.js';
 
+function readOptionElementAttr($attributes, optionElement, optionAttrs, normalizedName) {
+    const elementValue = $attributes?.read(optionElement, normalizedName);
+    const attrValue = optionAttrs[normalizedName];
+    if (isDefined(attrValue) &&
+        (isUndefined(elementValue) || elementValue.includes("{{"))) {
+        return attrValue;
+    }
+    return elementValue ?? attrValue;
+}
+function hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, normalizedName) {
+    return Boolean($attributes._isInterpolated(optionElement, normalizedName) || $attributes.read(optionElement, normalizedName)?.includes("{{"));
+}
+function observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, normalizedName, readValue, callback, skipInitial = false) {
+    if (!$attributes) {
+        return () => undefined;
+    }
+    let lastValue = {};
+    let skipNext = skipInitial;
+    return $attributes.observe(optionScope, optionElement, normalizedName, (observedValue) => {
+        if (skipNext) {
+            skipNext = false;
+            return;
+        }
+        const newValue = readValue(observedValue);
+        if (Object.is(newValue, lastValue))
+            return;
+        lastValue = newValue;
+        callback(newValue);
+    });
+}
+function setOptionElementAttr($attributes, optionElement, normalizedName, value) {
+    $attributes.set(optionElement, normalizedName, value);
+}
 /**
  * The controller for the `select` directive.
  *
@@ -118,49 +151,49 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _writeValue(value) {
-        value = deProxy(value);
-        const currentlySelectedOption = this._element.options[this._element.selectedIndex];
+        const writeValue = deProxy(value);
+        const currentlySelectedOption = this._element.options.item(this._element.selectedIndex);
         if (currentlySelectedOption)
             currentlySelectedOption.selected = false;
-        if (this._hasOption(value)) {
+        if (this._hasOption(writeValue)) {
             this._removeUnknownOption();
-            const hashedVal = hashKey(value);
+            const hashedVal = hashKey(writeValue);
             this._element.value =
-                hashedVal in this._selectValueMap ? hashedVal : value;
-            const selectedOption = this._element.options[this._element.selectedIndex];
+                hashedVal in this._selectValueMap ? hashedVal : String(writeValue);
+            const selectedOption = this._element.options.item(this._element.selectedIndex);
             if (!selectedOption) {
-                this._selectUnknownOrEmptyOption(value);
+                this._selectUnknownOrEmptyOption(writeValue);
             }
             else {
                 selectedOption.selected = true;
             }
         }
         else {
-            this._selectUnknownOrEmptyOption(value);
+            this._selectUnknownOrEmptyOption(writeValue);
         }
     }
     /** @ignore */
     /** @internal */
     _addOption(value, element) {
-        value = deProxy(value);
+        const optionValue = deProxy(value);
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
-        assertNotHasOwnProperty(value, '"option value"');
-        if (value === "") {
+        assertNotHasOwnProperty(String(optionValue), '"option value"');
+        if (optionValue === "") {
             this._hasEmptyOption = true;
             this._emptyOption = element;
         }
-        const count = this._optionsMap.get(value) || 0;
-        this._optionsMap.set(value, count + 1);
+        const count = this._optionsMap.get(optionValue) ?? 0;
+        this._optionsMap.set(optionValue, count + 1);
         this._scheduleRender();
-        const currentViewValue = this._ngModelCtrl?.$viewValue;
-        const currentModelValue = this._ngModelCtrl?.$modelValue;
-        if (currentViewValue === value ||
-            currentModelValue === value ||
+        const currentViewValue = this._ngModelCtrl.$viewValue;
+        const currentModelValue = this._ngModelCtrl.$modelValue;
+        if (currentViewValue === optionValue ||
+            currentModelValue === optionValue ||
             ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
-                value === "")) {
+                optionValue === "")) {
             this._scheduleDeferred(() => {
-                this._ngModelCtrl?.$render?.();
+                this._ngModelCtrl.$render();
             });
         }
     }
@@ -204,26 +237,26 @@ class SelectController {
     /** @ignore */
     /** @internal */
     _removeOption(value) {
-        value = deProxy(value);
-        const count = this._optionsMap.get(value);
+        const optionValue = deProxy(value);
+        const count = this._optionsMap.get(optionValue);
         if (count) {
             if (count === 1) {
-                this._optionsMap.delete(value);
-                if (value === "") {
+                this._optionsMap.delete(optionValue);
+                if (optionValue === "") {
                     this._hasEmptyOption = false;
                     this._emptyOption = undefined;
                 }
             }
             else {
-                this._optionsMap.set(value, count - 1);
+                this._optionsMap.set(optionValue, count - 1);
             }
         }
     }
     /** @ignore */
     /** @internal */
     _hasOption(value) {
-        value = deProxy(value);
-        return !!this._optionsMap.get(value);
+        const optionValue = deProxy(value);
+        return !!this._optionsMap.get(optionValue);
     }
     /** @ignore */
     /** @internal */
@@ -277,20 +310,24 @@ class SelectController {
     }
     /** @ignore */
     /** @internal */
-    _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn) {
+    _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn, $attributes, initialValue, hasNgValue = false) {
         let oldVal;
         let hashedVal;
-        let registeredValue = optionAttrs.value;
-        if (optionAttrs.$attr.ngValue) {
-            optionAttrs.$observe("value", (newVal) => {
+        let registeredValue = initialValue;
+        if (hasNgValue) {
+            let ngValueInitialized = false;
+            const syncNgValue = (newVal) => {
                 let removal;
                 const previouslySelected = optionElement.selected;
+                const rawNewVal = deProxy(newVal);
+                if (ngValueInitialized && Object.is(rawNewVal, oldVal))
+                    return;
+                ngValueInitialized = true;
                 if (isDefined(hashedVal)) {
                     this._removeOption(oldVal);
                     deleteProperty(this._selectValueMap, hashedVal);
                     removal = true;
                 }
-                const rawNewVal = deProxy(newVal);
                 hashedVal = hashKey(rawNewVal);
                 oldVal = rawNewVal;
                 registeredValue = rawNewVal;
@@ -300,10 +337,21 @@ class SelectController {
                 if (removal && previouslySelected) {
                     this._scheduleViewValueUpdate();
                 }
-            });
+            };
+            syncNgValue(undefined);
+            optionScope.$watch(String(optionAttrs.ngValue ?? ""), syncNgValue);
+            observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", (observedValue) => {
+                if (observedValue !== optionElement.getAttribute("value")) {
+                    return oldVal;
+                }
+                if (isDefined(hashedVal) && observedValue === hashedVal) {
+                    return oldVal;
+                }
+                return observedValue;
+            }, syncNgValue, true);
         }
         else if (interpolateValueFn) {
-            optionAttrs.$observe("value", (newVal) => {
+            observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "value"), (newVal) => {
                 this._readValue();
                 let removal;
                 const previouslySelected = optionElement.selected;
@@ -317,19 +365,20 @@ class SelectController {
                 if (removal && previouslySelected) {
                     this._scheduleViewValueUpdate();
                 }
-            });
+            }, hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, "value"));
         }
         else if (interpolateTextFn) {
-            optionScope.value = interpolateTextFn(optionScope);
-            if (!optionAttrs.value) {
-                optionAttrs.$set("value", optionScope.value);
-                registeredValue = optionScope.value;
-                this._addOption(optionScope.value, optionElement);
+            const initialTextValue = interpolateTextFn(optionScope);
+            optionScope.value = initialTextValue;
+            if (!registeredValue) {
+                setOptionElementAttr($attributes, optionElement, "value", String(optionScope.value));
+                registeredValue = initialTextValue;
+                this._addOption(String(initialTextValue), optionElement);
             }
             optionScope.$watch("value", () => {
                 const newVal = interpolateTextFn(optionScope);
-                if (!optionAttrs.value) {
-                    optionAttrs.$set("value", newVal);
+                if (!registeredValue) {
+                    setOptionElementAttr($attributes, optionElement, "value", String(newVal));
                 }
                 const previouslySelected = optionElement.selected;
                 if (oldVal !== newVal) {
@@ -344,9 +393,9 @@ class SelectController {
             });
         }
         else {
-            this._addOption(optionAttrs.value, optionElement);
+            this._addOption(registeredValue, optionElement);
         }
-        optionAttrs.$observe("disabled", (newVal) => {
+        observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "disabled", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "disabled"), (newVal) => {
             if (newVal === "true" || (newVal && optionElement.selected)) {
                 if (this._multiple) {
                     this._scheduleViewValueUpdate(true);

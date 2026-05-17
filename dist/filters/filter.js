@@ -18,7 +18,7 @@ function filterFilter() {
             }
             throw filterError("notarray", "Expected array but received: {0}", array);
         }
-        anyPropertyKey = anyPropertyKey || "$";
+        anyPropertyKey = anyPropertyKey ?? "$";
         let predicateFn;
         switch (getTypeForFilter(expression)) {
             case "function":

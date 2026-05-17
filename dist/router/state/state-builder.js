@@ -32,8 +32,8 @@ function buildUrl(stateObject, routerState, root) {
     if (!url)
         return null;
     if (!isInstanceOf(url, UrlMatcher))
-        throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
-    const base = (parent?.navigable || root);
+        throw new Error(`Invalid url '${String(url)}' in state '${String(stateObject)}'`);
+    const base = (parent?.navigable ?? root);
     return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
 }
 /**
@@ -45,7 +45,7 @@ function buildParams(state, paramFactory) {
         if (param.location === DefType._PATH || param.location === DefType._SEARCH)
             params[param.id] = param;
     });
-    const paramConfigs = state.params || {};
+    const paramConfigs = state.params ?? {};
     const paramConfigKeys = keys(paramConfigs);
     paramConfigKeys.forEach((id) => {
         if (!hasOwn(params, id)) {
@@ -98,7 +98,7 @@ function viewsBuilder(state) {
             defaultViewConfig[key] = stateValues[key];
         }
     });
-    const viewsObject = (state.views || {
+    const viewsObject = (state.views ?? {
         $default: defaultViewConfig,
     });
     keys(viewsObject).forEach((entryName) => {
@@ -128,7 +128,7 @@ function getResolveLocals(ctx) {
     const locals = {};
     tokens.forEach((key) => {
         if (isString(key)) {
-            locals[key] = ctx.getResolvable(key).data;
+            locals[key] = assertDefined(ctx.getResolvable(key)).data;
         }
     });
     return locals;
@@ -143,8 +143,7 @@ function valueToResolvable(token, value, strictDi) {
     throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
 }
 function literalToResolvable(literal) {
-    if (literal &&
-        hasOwn(literal, "token") &&
+    if (hasOwn(literal, "token") &&
         (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))) {
         return new Resolvable(literal);
     }
@@ -199,7 +198,7 @@ function resolvablesBuilder(state, strictDi) {
         });
         return resolvables;
     }
-    const resolveObj = decl || {};
+    const resolveObj = decl ?? {};
     const resolveKeys = keys(resolveObj);
     resolveKeys.forEach((token) => {
         resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
@@ -213,7 +212,7 @@ function invokeStateLifecycleHook(trans, state, hookName, pathname) {
         return undefined;
     const hookContext = stateObject._hookContext;
     const $injector = assertDefined(hookContext._$injector);
-    const resolveContext = new ResolveContext(trans._treeChanges[pathname] || [], $injector);
+    const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
     const subContext = resolveContext.subContext(stateObject);
     const locals = assign(getResolveLocals(subContext), {
         $state$: state,
@@ -276,9 +275,9 @@ class StateBuilder {
         }
         state.parent = isRoot(state)
             ? null
-            : matcher.find(parent) || matcher.find("");
+            : (matcher.find(parent) ?? matcher.find(""));
         state._url =
-            buildUrl(state, routerState, matcher.find("")) || undefined;
+            buildUrl(state, routerState, matcher.find("")) ?? undefined;
         state.resolvables = resolvablesBuilder(state, this._$injector?.strictDi);
         this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
         this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
@@ -294,7 +293,7 @@ class StateBuilder {
             state.data = state.self.data = assign(createObject(state.parent.data), state.data);
         }
         state.path = state.parent
-            ? (state.parent.path || []).concat(state)
+            ? (state.parent.path ?? []).concat(state)
             : [state];
         state.includes = state.parent ? assign({}, state.parent.includes) : {};
         state.includes[state.name] = true;
@@ -308,7 +307,7 @@ class StateBuilder {
      */
     /** @internal */
     _parentName(state) {
-        const rawName = state.self?.name || state.name || "";
+        const rawName = state.self.name || state.name || "";
         const name = rawName;
         const segments = name.split(".");
         segments.pop();
@@ -325,7 +324,7 @@ class StateBuilder {
     }
     /** @internal */
     _name(state) {
-        const name = state.self?.name || state.name;
+        const name = state.self.name || state.name;
         if (name.includes(".") || !state.parent)
             return name;
         const parentName = isString(state.parent)

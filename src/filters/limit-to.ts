@@ -6,7 +6,7 @@ import {
   isString,
 } from "../shared/utils.ts";
 
-type LimitToInput = any[] | ArrayLike<any> | string | number;
+type LimitToInput = unknown[] | ArrayLike<unknown> | string | number;
 
 /** Creates the `limitTo` filter implementation. */
 export function limitToFilter() {
@@ -41,29 +41,29 @@ export function limitToFilter() {
     if (!isArrayLike(input)) return input;
 
     const numericBegin =
-      !begin || isNaN(begin as any) ? 0 : parseInt(String(begin), 10);
+      !begin || isNaN(Number(begin)) ? 0 : parseInt(String(begin), 10);
 
     const normalizedBegin =
       numericBegin < 0
-        ? Math.max(0, (input as ArrayLike<any>).length + numericBegin)
+        ? Math.max(0, (input as ArrayLike<unknown>).length + numericBegin)
         : numericBegin;
 
     if (numericLimit >= 0) {
       return sliceFn(
-        input as string | ArrayLike<any>,
+        input as string | ArrayLike<unknown>,
         normalizedBegin,
         normalizedBegin + numericLimit,
       );
     } else {
       if (normalizedBegin === 0) {
         return sliceFn(
-          input as string | ArrayLike<any>,
+          input as string | ArrayLike<unknown>,
           numericLimit,
-          (input as ArrayLike<any>).length,
+          (input as ArrayLike<unknown>).length,
         );
       } else {
         return sliceFn(
-          input as string | ArrayLike<any>,
+          input as string | ArrayLike<unknown>,
           Math.max(0, normalizedBegin + numericLimit),
           normalizedBegin,
         );
@@ -81,11 +81,11 @@ export function limitToFilter() {
  * Returns a sliced string if `input` is a string, otherwise an array.
  */
 function sliceFn(
-  input: string | ArrayLike<any>,
+  input: string | ArrayLike<unknown>,
   begin?: number,
   end?: number,
-): string | any[] {
+): string | unknown[] {
   if (isString(input)) return input.slice(begin, end);
 
-  return [].slice.call(input, begin, end);
+  return Array.prototype.slice.call(input, begin, end) as unknown[];
 }

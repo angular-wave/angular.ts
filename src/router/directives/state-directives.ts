@@ -18,6 +18,7 @@ import {
   isString,
   keys,
   assertDefined,
+  stringify,
 } from "../../shared/utils.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import type { RawParams } from "../params/interface.ts";
@@ -115,10 +116,10 @@ function parseStateRef(ref: string): ParsedStateRef {
  * Resolves the relative state context for a state-ref-bearing element.
  */
 function stateContext(el: Node): string | undefined {
-  const $ngView = getInheritedData(el, "$ngView");
+  const $ngView: unknown = getInheritedData(el, "$ngView");
 
   const path = ($ngView as { $cfg?: { _path?: unknown } } | undefined)?.$cfg
-    ?._path as Array<{ state: { name: string } }> | undefined;
+    ?._path as { state: { name: string } }[] | undefined;
 
   return path ? path[path.length - 1].state.name : undefined;
 }
@@ -131,11 +132,11 @@ function processedDef(
   $element: HTMLElement,
   def: StateRefDefinition,
 ): ProcessedDef {
-  const ngState = def._ngState || $state.current?.name;
+  const ngState = def._ngState ?? $state.current?.name;
 
   const ngStateOpts = assign(
     defaultOpts($element, $state),
-    def._ngStateOpts || {},
+    def._ngStateOpts ?? {},
   );
 
   const href = ngState
@@ -218,7 +219,10 @@ function clickHook(
             .go(target._ngState, target._ngStateParams, target._ngStateOpts)
             .then(() => {
               scope.$emit("$updateBrowser");
-            });
+
+              return undefined;
+            })
+            .catch(() => undefined);
         }
       });
     } else {
@@ -237,7 +241,7 @@ function defaultOpts(
   $state: { $current: StateObject | undefined },
 ): StateRefOptions {
   return {
-    relative: stateContext(el) || $state.$current,
+    relative: stateContext(el) ?? $state.$current,
     inherit: true,
     source: "sref",
   };
@@ -306,13 +310,13 @@ export function StateRefDirective(
     ) => {
       const type = getTypeInfo(element);
 
-      const active = ngSrefActive[1] || ngSrefActive[0];
+      const active = ngSrefActive[1] ?? ngSrefActive[0];
 
       let unlinkInfoFn: (() => void) | undefined;
 
       const rawDef: StateRefDefinition = {};
 
-      const ref = parseStateRef($attributes.read(element, "ngSref") || "");
+      const ref = parseStateRef($attributes.read(element, "ngSref") ?? "");
 
       const ngSrefOpts = $attributes.read(element, "ngSrefOpts");
 
@@ -326,16 +330,16 @@ export function StateRefDirective(
         : {};
 
       function update() {
-        rawDef._ngStateParams = assign({}, paramFn?.(scope));
+        rawDef._ngStateParams = assign({}, paramFn?.(scope)) as RawParams;
         const def = processedDef($state, element, rawDef);
 
         if (unlinkInfoFn) {
           unlinkInfoFn();
         }
 
-        if (active) {
-          unlinkInfoFn = active?._addStateInfo?.(
-            def._ngState || null,
+        if (active?._addStateInfo) {
+          unlinkInfoFn = active._addStateInfo(
+            def._ngState ?? null,
             def._ngStateParams,
           );
         }
@@ -349,12 +353,12 @@ export function StateRefDirective(
         scope.$watch(
           ref._paramExpr,
           function (val) {
-            rawDef._ngStateParams = assign({}, val);
+            rawDef._ngStateParams = assign({}, val) as RawParams;
             update();
           },
           true,
         );
-        rawDef._ngStateParams = assign({}, paramFn?.(scope));
+        rawDef._ngStateParams = assign({}, paramFn?.(scope)) as RawParams;
       }
 
       update();
@@ -405,7 +409,7 @@ export function StateRefDynamicDirective(
     ) {
       const type = getTypeInfo(element);
 
-      const active = ngSrefActive[1] || ngSrefActive[0];
+      const active = ngSrefActive[1] ?? ngSrefActive[0];
 
       let unlinkInfoFn: (() => void) | undefined;
 
@@ -434,9 +438,9 @@ export function StateRefDynamicDirective(
           unlinkInfoFn();
         }
 
-        if (active) {
-          unlinkInfoFn = active?._addStateInfo?.(
-            def._ngState || null,
+        if (active?._addStateInfo) {
+          unlinkInfoFn = active._addStateInfo(
+            def._ngState ?? null,
             def._ngStateParams,
           );
         }
@@ -470,9 +474,10 @@ export function StateRefDynamicDirective(
 
           watchDeregFns[field] =
             scope.$watch(expr, (newval) => {
-              rawDef[rawDefKeyByAttr[field]] = newval;
+              (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
+                newval;
               update();
-            }) || noopDeregister;
+            }) ?? noopDeregister;
         });
       });
       update();
@@ -526,17 +531,18 @@ export function StateRefActiveDirective(
       // slight difference in logic routing
       const activeEqRead = $attributes.read($element, "ngSrefActiveEq");
 
-      const activeEqExpr =
-        (activeEqRead?.includes("{{") ? $attrs.ngSrefActiveEq : activeEqRead) ||
-        "";
+      const activeEqExpr = activeEqRead?.includes("{{")
+        ? String($attrs.ngSrefActiveEq as string | number | boolean | bigint)
+        : (activeEqRead ?? "");
 
-      const activeEqClass =
-        assertDefined($interpolate(activeEqExpr, false))($scope) || "";
+      const activeEqClass = stringify(
+        assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
+      );
 
       const activeRead = $attributes.read($element, "ngSrefActive");
 
       const activeExpr = activeRead?.includes("{{")
-        ? $attrs.ngSrefActive
+        ? String($attrs.ngSrefActive as string | number | boolean | bigint)
         : activeRead;
 
       try {
@@ -546,9 +552,10 @@ export function StateRefActiveDirective(
         // Fall back to using $interpolate below
       }
       ngSrefActive =
-        ngSrefActive ||
-        assertDefined($interpolate(activeExpr || "", false))($scope) ||
-        "";
+        ngSrefActive ??
+        stringify(
+          assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "",
+        );
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]
       this._addStateInfo = function (newState, newParams) {
@@ -567,9 +574,13 @@ export function StateRefActiveDirective(
        * Updates active classes after a transition settles.
        */
       function updateAfterTransition(trans: ng.Transition): void {
-        trans.promise.then(update, () => {
-          /* empty */
-        });
+        void trans.promise
+          .then(() => {
+            update();
+
+            return undefined;
+          })
+          .catch(() => undefined);
       }
       $scope.$on("$destroy", setupEventListeners());
 
@@ -644,7 +655,7 @@ export function StateRefActiveDirective(
         const stateInfo = {
           _state: {
             name:
-              foundState?.name ||
+              foundState?.name ??
               (isObject(stateName) && "name" in stateName
                 ? String((stateName as { name?: unknown }).name)
                 : String(stateName)),
@@ -667,15 +678,13 @@ export function StateRefActiveDirective(
 
         const fuzzyStates: ActiveClassState[] = [];
 
-        let exactlyMatchesAny = false;
+        const exactlyMatchesAny = states.some((state) =>
+          $state.is(state._state.name, state._params as RawParams),
+        );
 
         states.forEach((state) => {
           if ($state.includes(state._state.name, state._params as RawParams)) {
             fuzzyStates.push(state);
-          }
-
-          if ($state.is(state._state.name, state._params as RawParams)) {
-            exactlyMatchesAny = true;
           }
         });
 

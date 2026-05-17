@@ -73,7 +73,7 @@ function normalizeNgViewTarget(context, rawViewName = "") {
 function contextDepth(context) {
     let cursor = context;
     let depth = 1;
-    while (cursor?.parent) {
+    while (cursor.parent) {
         depth += 1;
         cursor = cursor.parent;
     }
@@ -117,7 +117,7 @@ class ViewService {
             _router,
             ($templateFactory, $routerState) => {
                 this._templateFactory = $templateFactory;
-                this._rootViewContext($routerState._currentState || null);
+                this._rootViewContext($routerState._currentState ?? null);
                 return this;
             },
         ];
@@ -131,7 +131,7 @@ class ViewService {
      */
     /** @internal */
     _rootViewContext(context) {
-        return (this._rootContext = context || this._rootContext);
+        return (this._rootContext = context ?? this._rootContext);
     }
     /**
      * Removes a view config from the active registry.
@@ -197,12 +197,10 @@ class ViewService {
      */
     /** @internal */
     static _matches(ngViewsByFqn, ngView, viewConfig) {
-        if (!viewConfig?._viewDecl)
-            return false;
         const ngViewContext = ngView._creationContext;
         const viewDecl = viewConfig._viewDecl;
-        const vcName = viewDecl._ngViewName || "$default";
-        const vcContext = viewDecl._ngViewContextAnchor || "";
+        const vcName = viewDecl._ngViewName ?? "$default";
+        const vcContext = viewDecl._ngViewContextAnchor ?? "";
         const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
         if (normalizedTarget !== ngView._fqn)
             return false;

@@ -47,11 +47,11 @@ export function ngIncludeDirective(
     },
     compile(element: Element) {
       const srcExp =
-        $attributes.read(element, "ngInclude") ||
-        $attributes.read(element, "src") ||
+        $attributes.read(element, "ngInclude") ??
+        $attributes.read(element, "src") ??
         "";
 
-      const onloadExp = $attributes.read(element, "onload") || "";
+      const onloadExp = $attributes.read(element, "onload") ?? "";
 
       const autoScrollExp = $attributes.read(element, "autoscroll");
 
@@ -60,7 +60,7 @@ export function ngIncludeDirective(
       const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
 
       return (
-        scope: ng.Scope & Record<string, any>,
+        scope: ng.Scope & Record<string, unknown>,
         $element: Element,
         _$attr: Attributes,
         ctrl: { template: string | null },
@@ -129,7 +129,7 @@ export function ngIncludeDirective(
               .then((response) => {
                 if (scope._destroyed) return;
 
-                if (thisChangeId !== changeCounter) return;
+                if (thisChangeId !== changeCounter) return undefined;
                 const newScope = scope.$new();
 
                 ctrl.template = response;
@@ -162,9 +162,11 @@ export function ngIncludeDirective(
                 currentElement = clone;
                 currentScope.$emit("$includeContentLoaded", src);
                 onloadFn?.(scope);
+
+                return undefined;
               })
               .catch((err: unknown) => {
-                if (scope._destroyed) return;
+                if (scope._destroyed) return undefined;
 
                 if (thisChangeId === changeCounter) {
                   cleanupLastIncludeContent();
@@ -173,6 +175,8 @@ export function ngIncludeDirective(
                 $exceptionHandler(
                   isInstanceOf(err, Error) ? err : new Error(String(err)),
                 );
+
+                return undefined;
               });
           } else {
             cleanupLastIncludeContent();
@@ -206,7 +210,7 @@ export function ngIncludeFillContentDirective(
       _$attr: Attributes,
       ctrl: { template: string | null },
     ): void {
-      $element.innerHTML = ctrl.template || "";
+      $element.innerHTML = ctrl.template ?? "";
       $compile($element.childNodes)(scope);
     },
   };

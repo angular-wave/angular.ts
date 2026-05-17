@@ -2,20 +2,20 @@
  * Shared connection manager for push transports such as SSE and WebSocket.
  * Handles reconnect, heartbeat, and event callbacks.
  */
-import { isFunction, isInstanceOf } from "../../shared/utils.ts";
+import { isFunction, isInstanceOf, isString } from "../../shared/utils.ts";
 
 export interface ConnectionConfig {
   /** Called when the connection opens */
   onOpen?: (event: Event) => void;
 
   /** Called when a message is received */
-  onMessage?: (data: any, event: Event | MessageEvent) => void;
+  onMessage?: (data: unknown, event: Event | MessageEvent) => void;
 
   /** Called with every registered connection message, including custom SSE event types */
   onEvent?: (message: ConnectionEvent) => void;
 
   /** Called when an error occurs */
-  onError?: (err: any) => void;
+  onError?: (err: Event) => void;
 
   /** Called when a WebSocket connection closes */
   onClose?: (event: CloseEvent) => void;
@@ -33,16 +33,16 @@ export interface ConnectionConfig {
   heartbeatTimeout?: number;
 
   /** Function to transform incoming messages */
-  transformMessage?: (data: any) => any;
+  transformMessage?: (data: string) => unknown;
 
   /** Additional EventSource event names to subscribe to */
   eventTypes?: string[];
 }
 
-export interface ConnectionEvent<T = any> {
+export interface ConnectionEvent<T = unknown> {
   type: string;
   data: T;
-  rawData: any;
+  rawData: unknown;
   event: Event | MessageEvent;
 }
 
@@ -55,15 +55,15 @@ export class ConnectionManager {
   /** @internal */
   _config: {
     onOpen?: (event: Event) => void;
-    onMessage?: (data: any, event: Event | MessageEvent) => void;
+    onMessage?: (data: unknown, event: Event | MessageEvent) => void;
     onEvent?: (message: ConnectionEvent) => void;
-    onError?: (err: any) => void;
+    onError?: (err: Event) => void;
     onClose?: (event: CloseEvent) => void;
     onReconnect?: (attempt: number) => void;
     retryDelay: number;
     maxRetries: number;
     heartbeatTimeout: number;
-    transformMessage: (data: any) => any;
+    transformMessage: (data: string) => unknown;
     eventTypes?: string[];
   };
 
@@ -117,7 +117,7 @@ export class ConnectionManager {
     this._bindEvents();
   }
 
-  send(data: any): void {
+  send(data: unknown): void {
     if (isInstanceOf(this._connection, WebSocket)) {
       this._connection.send(JSON.stringify(data));
     } else {
@@ -180,26 +180,30 @@ export class ConnectionManager {
   }
 
   /** @internal */
-  private _handleMessage(data: any, event: Event | MessageEvent): void {
-    const rawData = data;
+  private _handleMessage(data: unknown, event: Event | MessageEvent): void {
+    const rawData: unknown = data;
+
+    let transformedData: unknown = data;
 
     try {
-      data = this._config.transformMessage?.(data) ?? data;
+      transformedData = isString(data)
+        ? (this._config.transformMessage(data) ?? data)
+        : data;
     } catch {
       /* empty */
     }
     this._config.onEvent?.({
       type: event.type || "message",
-      data,
+      data: transformedData,
       rawData,
       event,
     });
-    this._config.onMessage?.(data, event);
+    this._config.onMessage?.(transformedData, event);
     this._resetHeartbeat();
   }
 
   /** @internal */
-  private _handleError(err: any): void {
+  private _handleError(err: Event): void {
     this._config.onError?.(err);
     this._scheduleReconnect();
   }

@@ -13,7 +13,6 @@ import {
   isUndefined,
   createErrorFactory,
   isString,
-  assertDefined,
 } from "../../shared/utils.ts";
 import {
   InjectorService,
@@ -36,7 +35,11 @@ import type {
 } from "./interface.ts";
 const $injectorError = createErrorFactory(_injector);
 
-type ModuleLike = string | Injectable<(...args: any[]) => any>;
+type InjectableFunction = (...args: never[]) => unknown;
+
+type RunBlock = Injectable<InjectableFunction>;
+
+export type ModuleLike = string | RunBlock;
 
 /**
  *
@@ -80,19 +83,15 @@ export function createInjector(
 
   const runBlocks = loadModules(modulesToLoad);
 
-  instanceInjector = protoInstanceInjector.get(_injector);
+  instanceInjector = protoInstanceInjector.get(_injector) as InjectorService;
 
   runBlocks.forEach((fn) => {
-    if (fn) {
-      instanceInjector.invoke(fn);
-    }
+    if (fn) instanceInjector.invoke(fn);
   });
 
   instanceInjector.loadNewModules = (mods: ModuleLike[]) => {
     loadModules(mods).forEach((fn) => {
-      if (fn) {
-        instanceInjector.invoke(fn);
-      }
+      if (fn) instanceInjector.invoke(fn);
     });
   };
 
@@ -107,15 +106,19 @@ export function createInjector(
    */
   function provider(
     name: string,
-    providerDefinition: ServiceProvider | Injectable<(...args: any[]) => any>,
+    providerDefinition: ServiceProvider | Injectable<InjectableFunction>,
   ): ServiceProvider {
     assertNotHasOwnProperty(name, "service");
-    let newProvider: ServiceProvider;
+    let newProvider: Partial<ServiceProvider>;
 
     if (isFunction(providerDefinition) || isArray(providerDefinition)) {
-      newProvider = providerInjector.instantiate(providerDefinition as any);
+      newProvider = providerInjector.instantiate(
+        providerDefinition as Parameters<
+          typeof providerInjector.instantiate
+        >[0],
+      ) as ServiceProvider;
     } else {
-      newProvider = providerDefinition as ServiceProvider;
+      newProvider = providerDefinition;
     }
 
     if (!newProvider.$get) {
@@ -125,21 +128,18 @@ export function createInjector(
         name,
       );
     }
-    providerCache[name + providerSuffix] = newProvider;
+    providerCache[name + providerSuffix] = newProvider as ServiceProvider;
 
-    return newProvider;
+    return newProvider as ServiceProvider;
   }
 
   /**
    * Registers a factory.
    */
-  function factory(
-    name: string,
-    factoryFn: ng.AnnotatedFactory<any>,
-  ): ServiceProvider {
+  function factory(name: string, factoryFn: RunBlock): ServiceProvider {
     return provider(name, {
       $get() {
-        const result = instanceInjector.invoke(factoryFn, this);
+        const result: unknown = instanceInjector.invoke(factoryFn, this);
 
         if (isUndefined(result)) {
           throw $injectorError(
@@ -166,8 +166,7 @@ export function createInjector(
   ): ServiceProvider {
     return factory(name, [
       _injector,
-      ($injector: InjectorService) =>
-        $injector.instantiate(constructor) as unknown,
+      ($injector: InjectorService) => $injector.instantiate(constructor),
     ]);
   }
 
@@ -177,16 +176,16 @@ export function createInjector(
    * @param {any} val
    * @returns {ng.ServiceProvider}
    */
-  function value(name: string, val: any): ServiceProvider {
+  function value(name: string, val: unknown): ServiceProvider {
     return (providerCache[name + providerSuffix] = {
-      $get: () => val as unknown,
+      $get: () => val,
     });
   }
 
   /**
    * Register a constant value (available during config).
    */
-  function constant(name: string, constantValue: any): void {
+  function constant(name: string, constantValue: unknown): void {
     assertNotHasOwnProperty(name, "constant");
     providerInjector._cache[name] = constantValue;
     protoInstanceInjector._cache[name] = constantValue;
@@ -199,20 +198,25 @@ export function createInjector(
    */
   function decorator(
     serviceName: string,
-    decorFn: Injectable<(...args: any[]) => any>,
+    decorFn: Injectable<InjectableFunction>,
   ): void {
     const origProvider = providerInjector.get(
       serviceName + providerSuffix,
     ) as ServiceProvider;
 
-    const origGet = origProvider.$get;
+    const origGet = origProvider.$get as Parameters<
+      typeof instanceInjector.invoke
+    >[0];
 
     origProvider.$get = function () {
-      const origInstance = instanceInjector.invoke(origGet, origProvider);
+      const origInstance: unknown = instanceInjector.invoke(
+        origGet,
+        origProvider,
+      );
 
       return instanceInjector.invoke(decorFn, null, {
         $delegate: origInstance,
-      }) as unknown;
+      });
     };
   }
 
@@ -233,25 +237,25 @@ export function createInjector(
       $get: ($injector: InjectorService) => {
         switch (type) {
           case "session": {
-            const instance = $injector.instantiate(ctor);
+            const instance: unknown = $injector.instantiate(ctor);
 
             return createPersistentProxy(
-              instance,
+              instance as Record<PropertyKey, unknown>,
               name,
               sessionStorage,
             ) as unknown;
           }
           case "local": {
-            const instance = $injector.instantiate(ctor);
+            const instance: unknown = $injector.instantiate(ctor);
 
             return createPersistentProxy(
-              instance,
+              instance as Record<PropertyKey, unknown>,
               name,
               localStorage,
             ) as unknown;
           }
           case "cookie": {
-            const instance = $injector.instantiate(ctor);
+            const instance: unknown = $injector.instantiate(ctor);
 
             const $cookie = $injector.get(_cookie) as CookieService;
 
@@ -262,7 +266,7 @@ export function createInjector(
             const cookieOpts = backendOrConfig?.cookie ?? {};
 
             return createPersistentProxy(
-              instance,
+              instance as Record<PropertyKey, unknown>,
               name,
               {
                 getItem(key: string) {
@@ -286,7 +290,7 @@ export function createInjector(
             ) as unknown;
           }
           case "custom": {
-            const instance = $injector.instantiate(ctor);
+            const instance: unknown = $injector.instantiate(ctor);
 
             let backend: StorageLike = localStorage;
 
@@ -295,12 +299,11 @@ export function createInjector(
             let deserialize = JSON.parse;
 
             if (backendOrConfig) {
-              if (isFunction(backendOrConfig.getItem)) {
+              if (isFunction(Reflect.get(backendOrConfig, "getItem"))) {
                 // raw Storage object
                 backend = backendOrConfig;
               } else if (isObject(backendOrConfig)) {
-                backend =
-                  assertDefined(backendOrConfig.backend) || localStorage;
+                backend = backendOrConfig.backend ?? localStorage;
                 const {
                   serialize: configSerialize,
                   deserialize: configDeserialize,
@@ -315,10 +318,15 @@ export function createInjector(
               backend = localStorage;
             }
 
-            return createPersistentProxy(instance, name, backend, {
-              serialize,
-              deserialize,
-            }) as unknown;
+            return createPersistentProxy(
+              instance as Record<PropertyKey, unknown>,
+              name,
+              backend,
+              {
+                serialize,
+                deserialize,
+              },
+            ) as unknown;
           }
         }
 
@@ -333,10 +341,10 @@ export function createInjector(
    * @param {Array<string | Function | ng.AnnotatedFactory<any>>} modules - Modules to load
    * @returns {Array<any>} - Array of run block results
    */
-  function loadModules(modules: ModuleLike[]): any[] {
+  function loadModules(modules: ModuleLike[]): (RunBlock | undefined)[] {
     validateArray(modules, "modules");
 
-    let moduleRunBlocks: any[] = [];
+    let moduleRunBlocks: (RunBlock | undefined)[] = [];
 
     modules.forEach((module: ModuleLike) => {
       const moduleKey: unknown = isArray(module)
@@ -360,23 +368,35 @@ export function createInjector(
             moduleFn._configBlocks,
           );
 
-          invokeQueue.forEach((invokeArgs: any[]) => {
-            const invokeName = invokeArgs[1] as string;
+          invokeQueue.forEach((invokeArgs) => {
+            const [, invokeName] = invokeArgs;
 
             const providerInstance = providerInjector.get(
               invokeArgs[0],
-            ) as Record<string, (...args: any[]) => unknown>;
+            ) as Record<string, (...args: unknown[]) => unknown>;
 
             callFunction(
               providerInstance[invokeName],
               providerInstance,
-              ...invokeArgs[2],
+              ...(invokeArgs[2] as unknown[]),
             );
           });
         } else if (isFunction(module)) {
-          moduleRunBlocks.push(providerInjector.invoke(module));
+          moduleRunBlocks.push(
+            providerInjector.invoke(
+              module as unknown as Parameters<
+                typeof providerInjector.invoke
+              >[0],
+            ) as RunBlock,
+          );
         } else if (isArray(module)) {
-          moduleRunBlocks.push(providerInjector.invoke(module));
+          moduleRunBlocks.push(
+            providerInjector.invoke(
+              module as unknown as Parameters<
+                typeof providerInjector.invoke
+              >[0],
+            ) as RunBlock,
+          );
         } else {
           assertArgFn(module, "module");
         }
@@ -388,7 +408,7 @@ export function createInjector(
           "modulerr",
           "Failed to instantiate module {0} due to:\n{1}",
           moduleName,
-          isInstanceOf(err, Error) ? err.stack || err.message : String(err),
+          isInstanceOf(err, Error) ? (err.stack ?? err.message) : String(err),
         );
       }
     });
@@ -404,10 +424,10 @@ export function createInjector(
  * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
  * @returns {(key: string | Record<string, V>, value?: V) => any}
  */
-function supportObject<V>(
-  delegate: (key: string, value: V) => any,
-): (key: string | Record<string, V>, value?: V) => any {
-  return function (key: string | Record<string, V>, value?: V): any {
+function supportObject<V, R>(
+  delegate: (key: string, value: V) => R,
+): (key: string | Record<string, V>, value?: V) => R | undefined {
+  return function (key: string | Record<string, V>, value?: V): R | undefined {
     if (isObject(key)) {
       entries(key).forEach(([k, v]) => {
         delegate(k, v);

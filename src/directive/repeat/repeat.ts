@@ -54,7 +54,7 @@ interface RepeatBlock {
   _usesPositionLocals?: boolean;
 }
 
-type RepeatBlockMap = Record<string, RepeatBlock>;
+type RepeatBlockMap = Partial<Record<string, RepeatBlock>>;
 
 export function ngRepeatDirective(
   $injector: ng.InjectorService,
@@ -176,7 +176,7 @@ export function ngRepeatDirective(
     target.$index = index;
     target.$first = index === 0;
     target.$last = index === arrayLength - 1;
-    target.$middle = !(target.$first || target.$last);
+    target.$middle = !target.$first && !target.$last;
     target.$odd = (index & 1) !== 0;
     target.$even = !target.$odd;
   }
@@ -186,7 +186,7 @@ export function ngRepeatDirective(
     valueIdentifier: string,
     value: unknown,
   ) {
-    const current = scope[valueIdentifier];
+    const current: unknown = scope[valueIdentifier];
 
     if (
       !current ||
@@ -239,7 +239,7 @@ export function ngRepeatDirective(
       return arrayFrom<Node>(clone.childNodes);
     }
 
-    if (isInstanceOf(clone, NodeList) || isArray(clone)) {
+    if (isInstanceOf(clone, NodeList) || isArray<Node>(clone)) {
       return arrayFrom<Node>(clone);
     }
 
@@ -248,7 +248,7 @@ export function ngRepeatDirective(
 
   function restoreScopedBlocks(
     targetMap: RepeatBlockMap,
-    blockOrder: RepeatBlock[],
+    blockOrder: (RepeatBlock | undefined)[],
   ): void {
     for (let i = 0; i < blockOrder.length; i++) {
       const retainedBlock = blockOrder[i];
@@ -279,7 +279,7 @@ export function ngRepeatDirective(
       if (node.nodeType === NodeType._ELEMENT_NODE) {
         removeElement(node as Element);
       } else {
-        removeElementData(node as Element & Record<string, any>);
+        removeElementData(node as Element & Record<string, unknown>);
         node.parentNode?.removeChild(node);
       }
     }
@@ -296,7 +296,7 @@ export function ngRepeatDirective(
       if (node.nodeType === NodeType._ELEMENT_NODE) {
         removeElement(node as Element);
       } else {
-        removeElementData(node as Element & Record<string, any>);
+        removeElementData(node as Element & Record<string, unknown>);
         node.parentNode?.removeChild(node);
       }
 
@@ -329,7 +329,7 @@ export function ngRepeatDirective(
     let node: Node | null = removedNodes.firstChild;
 
     while (node) {
-      removeElementData(node as Element & Record<string, any>);
+      removeElementData(node as Element & Record<string, unknown>);
       node = node.nextSibling;
     }
 
@@ -354,7 +354,7 @@ export function ngRepeatDirective(
       return undefined;
     }
 
-    const property = indexProperty || "id";
+    const property = indexProperty ?? "id";
 
     if (!hasOwn(value, property)) {
       return undefined;
@@ -366,7 +366,7 @@ export function ngRepeatDirective(
       return undefined;
     }
 
-    return `property:${property}:${typeof indexValue}:${indexValue}`;
+    return `property:${property}:${typeof indexValue}:${String(indexValue)}`;
   }
 
   function createTrackByIdArrayFn(indexProperty: string | undefined) {
@@ -426,9 +426,9 @@ export function ngRepeatDirective(
     const rightBlock = nextBlockOrder[rightIndex];
 
     if (
-      !leftBlock?._scope ||
+      !leftBlock._scope ||
       !leftBlock._clone ||
-      !rightBlock?._scope ||
+      !rightBlock._scope ||
       !rightBlock._clone ||
       leftBlock !== lastBlockOrder[rightIndex] ||
       rightBlock !== lastBlockOrder[leftIndex]
@@ -530,13 +530,13 @@ export function ngRepeatDirective(
     priority: 1000,
     terminal: true,
     compile($element: Element) {
-      const expression = $attributes.read($element, "ngRepeat") || "";
+      const expression = $attributes.read($element, "ngRepeat") ?? "";
 
       const hasAnimate = $attributes.has($element, "animate");
 
       const indexProperty =
-        $attributes.read($element, "index") ||
-        $attributes.read($element, "dataIndex") ||
+        $attributes.read($element, "index") ??
+        $attributes.read($element, "dataIndex") ??
         undefined;
 
       const hasLazy = $attributes.has($element, "lazy");
@@ -554,11 +554,7 @@ export function ngRepeatDirective(
         );
       }
 
-      const lhs = match[1];
-
-      const rhs = match[2];
-
-      const aliasAs = match[3];
+      const [, lhs, rhs, aliasAs] = match;
 
       match = VAR_OR_TUPLE_REGEX.exec(lhs);
 
@@ -569,9 +565,9 @@ export function ngRepeatDirective(
           lhs,
         );
       }
-      const valueIdentifier = match[3] || match[1];
+      const [, itemIdentifier, keyIdentifier, valueAlias] = match;
 
-      const keyIdentifier = match[2];
+      const valueIdentifier = valueAlias || itemIdentifier;
 
       if (
         aliasAs &&
@@ -599,10 +595,10 @@ export function ngRepeatDirective(
 
       function ngRepeatLink(
         $scope: RepeatScope,
-        $element: any,
+        repeatElement: Node,
         attr: ng.Attributes,
         _ctrl: unknown,
-        $transclude?: any,
+        $transclude?: ng.TranscludeFn,
       ) {
         let previousNode: Node;
 
@@ -672,9 +668,9 @@ export function ngRepeatDirective(
 
         function attachTranscludedBlock(
           blockToLink: RepeatBlock,
-          valueToLink: any,
+          valueToLink: unknown,
           insertAfterNode: ChildNode,
-          blockMap: Record<string, RepeatBlock | true>,
+          blockMap: Partial<Record<string, RepeatBlock | true>>,
           clone: RepeatClone,
           scope: RepeatScope,
         ): void {
@@ -715,7 +711,7 @@ export function ngRepeatDirective(
 
           const secondBlock = lastBlockOrder[rightIndex];
 
-          if (!firstBlock?._clone || !secondBlock?._clone) {
+          if (!firstBlock._clone || !secondBlock._clone) {
             return false;
           }
 
@@ -779,11 +775,11 @@ export function ngRepeatDirective(
             swap();
             let index = 0;
 
-            previousNode = $element;
+            previousNode = repeatElement;
 
             let nextNode: Node | null;
 
-            const nextBlockMap: Record<string, RepeatBlock | true> =
+            const nextBlockMap: Partial<Record<string, RepeatBlock | true>> =
               nullObject();
 
             let key: PropertyKey;
@@ -804,7 +800,7 @@ export function ngRepeatDirective(
 
             let block: RepeatBlock;
 
-            let elementsToRemove: any;
+            let elementsToRemove: Element | undefined;
 
             if (aliasAs) {
               $scope[aliasAs] = collection;
@@ -838,7 +834,7 @@ export function ngRepeatDirective(
 
             const collectionLength = collectionKeys.length;
 
-            const nextBlockOrder: RepeatBlock[] = new Array(collectionLength);
+            const nextBlockOrder = new Array<RepeatBlock>(collectionLength);
 
             let hasRetainedBlocks = false;
 
@@ -856,8 +852,10 @@ export function ngRepeatDirective(
                 : (collection as Record<PropertyKey, unknown>)[key];
               trackById = trackByIdFn($scope, key, value);
 
-              if (lastBlockMap[trackById]) {
-                block = lastBlockMap[trackById];
+              const lastBlock = lastBlockMap[trackById];
+
+              if (lastBlock) {
+                block = lastBlock;
                 deleteProperty(lastBlockMap, trackById);
                 nextBlockMap[trackById] = block;
                 nextBlockOrder[index] = block;
@@ -949,13 +947,13 @@ export function ngRepeatDirective(
               collectionLength === 0 &&
               lastBlockOrder.length > 0
             ) {
-              const firstBlock = lastBlockOrder[0];
+              const [firstBlock] = lastBlockOrder;
 
               const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
 
-              const firstNode = firstBlock && getBlockStart(firstBlock);
+              const firstNode = getBlockStart(firstBlock);
 
-              const lastNode = lastBlock && getBlockEnd(lastBlock);
+              const lastNode = getBlockEnd(lastBlock);
 
               if (firstNode && lastNode) {
                 for (let i = 0; i < lastBlockOrder.length; i++) {
@@ -981,11 +979,9 @@ export function ngRepeatDirective(
               const lastRemovedBlock =
                 lastBlockOrder[lastBlockOrder.length - 1];
 
-              const firstRemovedNode =
-                firstRemovedBlock && getBlockStart(firstRemovedBlock);
+              const firstRemovedNode = getBlockStart(firstRemovedBlock);
 
-              const lastRemovedNode =
-                lastRemovedBlock && getBlockEnd(lastRemovedBlock);
+              const lastRemovedNode = getBlockEnd(lastRemovedBlock);
 
               if (firstRemovedNode && lastRemovedNode) {
                 for (
@@ -1003,7 +999,7 @@ export function ngRepeatDirective(
                 const retainedLastBlock = nextBlockOrder[retainedLastIndex];
 
                 if (
-                  retainedLastBlock?._scope &&
+                  retainedLastBlock._scope &&
                   retainedLastBlock._usesPositionLocals
                 ) {
                   key = isIndexKeyedCollection
@@ -1037,13 +1033,13 @@ export function ngRepeatDirective(
               lastBlockOrder.length > 0 &&
               !hasRetainedBlocks
             ) {
-              const firstBlock = lastBlockOrder[0];
+              const [firstBlock] = lastBlockOrder;
 
               const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
 
-              const firstNode = firstBlock && getBlockStart(firstBlock);
+              const firstNode = getBlockStart(firstBlock);
 
-              const lastNode = lastBlock && getBlockEnd(lastBlock);
+              const lastNode = getBlockEnd(lastBlock);
 
               if (firstNode && lastNode) {
                 for (let i = 0; i < lastBlockOrder.length; i++) {
@@ -1057,14 +1053,22 @@ export function ngRepeatDirective(
             }
 
             for (const blockKey in lastBlockMap) {
-              block = lastBlockMap[blockKey];
+              const remainingBlock = lastBlockMap[blockKey];
+
+              if (!remainingBlock) continue;
+
+              block = remainingBlock;
               const blockNodes = getBlockNodes(
                 isArray(block._clone)
                   ? block._clone
                   : [assertDefined(block._clone)],
               );
 
-              elementsToRemove = getBlockStart(block) as Element;
+              const blockStart = getBlockStart(block);
+
+              elementsToRemove = isInstanceOf(blockStart, Element)
+                ? blockStart
+                : undefined;
 
               if (hasAnimate && elementsToRemove) {
                 getAnimate().leave(elementsToRemove);
@@ -1093,8 +1097,7 @@ export function ngRepeatDirective(
 
               const retainedLastBlock = nextBlockOrder[retainedLastIndex];
 
-              const retainedLastNode =
-                retainedLastBlock && getBlockEnd(retainedLastBlock);
+              const retainedLastNode = getBlockEnd(retainedLastBlock);
 
               if (retainedLastNode) {
                 previousNode = retainedLastNode;
@@ -1227,7 +1230,7 @@ export function ngRepeatDirective(
 
                 if ($transclude) {
                   callFunction(
-                    $transclude,
+                    $transclude as (...args: unknown[]) => unknown,
                     undefined,
                     childScope,
                     attachTranscludedBlock.bind(
@@ -1240,11 +1243,8 @@ export function ngRepeatDirective(
                   );
                 }
 
-                if (block._scope) {
-                  block._usesPositionLocals = scopeUsesRepeatPositionLocals(
-                    block._scope,
-                  );
-                }
+                block._usesPositionLocals =
+                  scopeUsesRepeatPositionLocals(childScope);
               }
             }
 

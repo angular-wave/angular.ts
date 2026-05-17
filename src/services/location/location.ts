@@ -5,6 +5,7 @@ import {
 } from "../../injection-tokens.ts";
 import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.ts";
 import {
+  callFunction,
   encodeUriSegment,
   deleteProperty,
   entries,
@@ -32,7 +33,7 @@ import { validateRequired } from "../../shared/validate.ts";
  * @param state - The new history state associated with the URL (`history.state`).
  * @returns Nothing.
  */
-export type UrlChangeListener = (url: string, state: History["state"]) => void;
+export type UrlChangeListener = (url: string, state: unknown) => void;
 
 /**
  * Represents the configuration options for HTML5 mode.
@@ -107,7 +108,7 @@ const locationCleanupByRootElement = new WeakMap<HTMLElement, () => void>();
  */
 let _path = "";
 
-let _search: Record<string, any> = {};
+let _search: Record<string, unknown> = {};
 
 /**
  * @ignore
@@ -136,7 +137,7 @@ export class Location {
   /** @internal */
   _updateBrowser?: () => void;
   /** @internal */
-  _state: History["state"] = undefined;
+  _state: unknown = undefined;
   /**
    * @param appBase application base URL
    * @param appBaseNoFile application base URL stripped of any filename
@@ -155,7 +156,7 @@ export class Location {
 
     this.html5 = html5;
 
-    this.basePrefix = html5 ? prefix || "" : undefined;
+    this.basePrefix = html5 ? (prefix ?? "") : undefined;
 
     this.hashPrefix = html5 ? undefined : prefix;
 
@@ -274,7 +275,7 @@ export class Location {
    * @returns The `Location` instance.
    */
   setSearch(
-    search: string | number | Record<string, any>,
+    search: string | number | Record<string, unknown>,
     paramValue?: string | number | string[] | boolean | null,
   ) {
     validateRequired(search, "search");
@@ -307,7 +308,7 @@ export class Location {
           );
         }
 
-        const searchKey = isString(search) ? search : `${search}`;
+        const searchKey = isString(search) ? search : String(search);
 
         if (isUndefined(paramValue) || paramValue === null) {
           deleteProperty(_search, searchKey);
@@ -328,18 +329,18 @@ export class Location {
    *
    * @returns The current search object.
    */
-  getSearch(): Record<string, any> {
+  getSearch(): Record<string, unknown> {
     return _search;
   }
 
-  search(): Record<string, any>;
+  search(): Record<string, unknown>;
   search(
-    search: string | number | Record<string, any>,
+    search: string | number | Record<string, unknown>,
     paramValue?: string | number | string[] | boolean | null,
   ): this;
 
   search(
-    search?: string | number | Record<string, any>,
+    search?: string | number | Record<string, unknown>,
     paramValue?: string | number | string[] | boolean | null,
   ) {
     return arguments.length
@@ -355,7 +356,7 @@ export class Location {
     this._url = normalizePath(_path, _search, _hash);
     this.absUrl = this.html5
       ? this.appBaseNoFile + this._url.substring(1)
-      : this.appBase + (this._url ? this.hashPrefix + this._url : "");
+      : this.appBase + (this._url ? (this.hashPrefix ?? "") + this._url : "");
     urlUpdatedByLocation = true;
     setTimeout(() => this._updateBrowser?.());
   }
@@ -371,7 +372,7 @@ export class Location {
    *
    * @returns The `Location` instance.
    */
-  setState(state: any) {
+  setState(state: unknown) {
     if (!this.html5) {
       throw $locationError(
         "nostate",
@@ -390,7 +391,7 @@ export class Location {
   /**
    * Returns the current history state object.
    */
-  getState(): History["state"] {
+  getState(): unknown {
     return this._state;
   }
 
@@ -424,7 +425,7 @@ export class Location {
           isDefined((appUrl = stripBaseUrl(this.basePrefix, appUrl)))
         ) {
           rewrittenUrl =
-            this.appBaseNoFile + (stripBaseUrl("/", appUrl) || appUrl);
+            this.appBaseNoFile + (stripBaseUrl("/", appUrl) ?? appUrl);
         } else {
           rewrittenUrl = this.appBase + prevAppUrl;
         }
@@ -476,7 +477,7 @@ export class Location {
       this._compose();
     } else {
       const withoutBaseUrl =
-        stripBaseUrl(this.appBase, url) ||
+        stripBaseUrl(this.appBase, url) ??
         stripBaseUrl(this.appBaseNoFile, url);
 
       let withoutHashUrl = "";
@@ -485,19 +486,15 @@ export class Location {
         // The rest of the URL starts with a hash so we have
         // got either a hashbang path or a plain hash fragment
         withoutHashUrl =
-          stripBaseUrl(this.hashPrefix || "", withoutBaseUrl) || withoutBaseUrl;
+          stripBaseUrl(this.hashPrefix ?? "", withoutBaseUrl) ?? withoutBaseUrl;
       } else {
         // There was no hashbang path nor hash fragment:
         // If we are in HTML5 mode we use what is left as the path;
         // Otherwise we ignore what is left
-        if (this.html5) {
-          withoutHashUrl = withoutBaseUrl || "";
-        } else {
-          withoutHashUrl = "";
+        withoutHashUrl = "";
 
-          if (withoutBaseUrl === undefined) {
-            this.appBase = url;
-          }
+        if (withoutBaseUrl === undefined) {
+          this.appBase = url;
         }
       }
 
@@ -516,16 +513,16 @@ export class LocationProvider {
   /** @internal */
   _urlChangeInit: boolean;
   /** @internal */
-  _cachedState: History["state"];
+  _cachedState: unknown;
   /** @internal */
-  _lastHistoryState: History["state"];
+  _lastHistoryState: unknown;
   /** @internal */
   _lastBrowserUrl: string;
   /** @internal */
   _urlChangeHandler?: EventListener;
   /** @internal */
   _rootClickHandler?: EventListener;
-  lastCachedState: History["state"];
+  lastCachedState: unknown;
 
   constructor() {
     this.hashPrefixConf = "!";
@@ -564,7 +561,7 @@ export class LocationProvider {
    * @param [state=null] - Optional history state object to associate with the new URL.
    * @returns The provider instance.
    */
-  setUrl(url: string | undefined, state?: any) {
+  setUrl(url: string | undefined, state?: unknown) {
     if (state === undefined) {
       state = null;
     }
@@ -599,7 +596,7 @@ export class LocationProvider {
    *
    * @returns The cached history state.
    */
-  state(): History["state"] {
+  state(): unknown {
     return this._cachedState;
   }
 
@@ -609,7 +606,7 @@ export class LocationProvider {
    * @private
    */
   cacheState() {
-    const currentState = history.state ?? null;
+    const currentState: unknown = history.state ?? null;
 
     if (!equals(currentState, this.lastCachedState)) {
       this._cachedState = currentState;
@@ -623,7 +620,7 @@ export class LocationProvider {
    * Fires the state or URL change event.
    */
   _fireStateOrUrlChange(): void {
-    const prevLastHistoryState = this._lastHistoryState;
+    const prevLastHistoryState: unknown = this._lastHistoryState;
 
     this.cacheState();
 
@@ -648,7 +645,7 @@ export class LocationProvider {
    */
   _onUrlChange(callback: UrlChangeListener): void {
     if (!this._urlChangeInit) {
-      this._urlChangeHandler ||= this._fireStateOrUrlChange.bind(this);
+      this._urlChangeHandler ??= this._fireStateOrUrlChange.bind(this);
       window.addEventListener("popstate", this._urlChangeHandler);
       window.addEventListener("hashchange", this._urlChangeHandler);
       this._urlChangeInit = true;
@@ -703,11 +700,11 @@ export class LocationProvider {
 
       const setBrowserUrlWithFallback = (
         url: string | undefined,
-        state: any,
+        state: unknown,
       ) => {
         const oldUrl = $location.getUrl();
 
-        const oldState = $location._state;
+        const oldState: unknown = $location._state;
 
         try {
           this.setUrl(url, state);
@@ -722,6 +719,20 @@ export class LocationProvider {
           $location._state = oldState;
           $exceptionHandler(err);
         }
+      };
+
+      const broadcastRootScopeEvent = (
+        name: string,
+        ...args: unknown[]
+      ): ng.ScopeEvent | undefined => {
+        const broadcast = ($rootScope as unknown as { $broadcast?: unknown })
+          .$broadcast;
+
+        if (!isFunction(broadcast)) return undefined;
+
+        return callFunction(broadcast, $rootScope, name, ...args) as
+          | ng.ScopeEvent
+          | undefined;
       };
 
       const clickHandler = ((event: MouseEvent) => {
@@ -801,7 +812,7 @@ export class LocationProvider {
       };
 
       locationCleanupByRootElement.set($rootElement, cleanupLocation);
-      $rootScope.$on?.("$destroy", () => {
+      $rootScope.$on("$destroy", () => {
         destroyed = true;
         cleanupLocation();
 
@@ -820,7 +831,7 @@ export class LocationProvider {
       let initializing = true;
 
       // update $location when $browser url changes
-      this._onUrlChange((newUrl: string, newState: History["state"]) => {
+      this._onUrlChange((newUrl: string, newState: unknown) => {
         if (!startsWith(newUrl, appBaseNoFile)) {
           // If we are navigating outside of the app then force a reload
           window.location.href = newUrl;
@@ -829,16 +840,16 @@ export class LocationProvider {
         }
 
         queueMicrotask(() => {
-          if (destroyed || !isFunction($rootScope.$broadcast)) return;
+          if (destroyed) return;
 
           const oldUrl = $location.absUrl;
 
-          const oldState = $location._state;
+          const oldState: unknown = $location._state;
 
           $location.parse(newUrl);
           $location._state = newState;
 
-          const { defaultPrevented } = $rootScope.$broadcast(
+          const { defaultPrevented } = broadcastRootScopeEvent(
             "$locationChangeStart",
             newUrl,
             oldUrl,
@@ -870,7 +881,7 @@ export class LocationProvider {
 
           let newUrl = $location.absUrl;
 
-          const oldState = this.state();
+          const oldState: unknown = this.state();
 
           const urlOrStateChanged =
             !urlsEqual(oldUrl, newUrl) ||
@@ -880,13 +891,11 @@ export class LocationProvider {
             initializing = false;
 
             setTimeout(() => {
-              if (destroyed || !isFunction($rootScope.$broadcast)) {
-                return;
-              }
+              if (destroyed) return;
 
               newUrl = $location.absUrl;
 
-              const { defaultPrevented } = $rootScope.$broadcast(
+              const { defaultPrevented } = broadcastRootScopeEvent(
                 "$locationChangeStart",
                 $location.absUrl,
                 oldUrl,
@@ -921,10 +930,10 @@ export class LocationProvider {
 
       return $location;
 
-      function afterLocationChange(oldUrl: string, oldState: any) {
-        if (destroyed || !isFunction($rootScope.$broadcast)) return;
+      function afterLocationChange(oldUrl: string, oldState: unknown) {
+        if (destroyed) return;
 
-        $rootScope.$broadcast(
+        broadcastRootScopeEvent(
           "$locationChangeSuccess",
           $location.absUrl,
           oldUrl,
@@ -1043,7 +1052,7 @@ export function decodePath(path: string, html5Mode: boolean): string {
  */
 export function normalizePath(
   pathValue: string,
-  searchValue: Record<string, any> | string | null | undefined,
+  searchValue: Record<string, unknown> | string | null | undefined,
   hashValue: string | null | undefined,
 ): string {
   const search = toKeyValue(searchValue ?? null);

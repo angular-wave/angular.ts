@@ -1,6 +1,7 @@
 import { getBooleanAttrName } from '../../shared/dom.js';
+import { _attributes } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { directiveNormalize, assertDefined, snakeCase, isNullOrUndefined, nullObject, hasOwn, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
+import { directiveNormalize, assertDefined, hasOwn, snakeCase, isNullOrUndefined, nullObject, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
 const SIMPLE_ATTR_NAME = /^\w/;
@@ -29,6 +30,12 @@ class Attributes {
         this.$normalize = directiveNormalize;
         this._getAnimate = getLazyAnimate($injector);
         this._exceptionHandler = $exceptionHandler;
+        try {
+            this._attributes = $injector.get(_attributes);
+        }
+        catch {
+            this._attributes = undefined;
+        }
         this.$attr = {};
         if (attributesToCopy) {
             const attributeKeys = keys(attributesToCopy);
@@ -50,6 +57,10 @@ class Attributes {
     $addClass(classVal) {
         if (classVal && classVal.length > 0) {
             const element = this._element();
+            if (this._attributes) {
+                this._attributes.addClass(element, classVal);
+                return;
+            }
             const animate = getAnimateForNode(this._getAnimate, element);
             if (animate) {
                 animate.addClass(element, classVal);
@@ -62,6 +73,10 @@ class Attributes {
     $removeClass(classVal) {
         if (classVal && classVal.length > 0) {
             const element = this._element();
+            if (this._attributes) {
+                this._attributes.removeClass(element, classVal);
+                return;
+            }
             const animate = getAnimateForNode(this._getAnimate, element);
             if (animate) {
                 animate.removeClass(element, classVal);
@@ -76,6 +91,10 @@ class Attributes {
             return;
         }
         const element = this._element();
+        if (this._attributes) {
+            this._attributes.updateClass(element, newClasses, oldClasses);
+            return;
+        }
         const animate = getAnimateForNode(this._getAnimate, element);
         const toAdd = tokenDifference(newClasses, oldClasses);
         if (toAdd.length) {
@@ -96,10 +115,13 @@ class Attributes {
             }
         }
     }
-    $set(key, value, writeAttr, attrName) {
+    /** @internal */
+    _setValue(key, value, writeAttr, attrName) {
         const node = this._element();
         const booleanKey = getBooleanAttrName(node, key);
-        const aliasedKey = ALIASED_ATTR[key];
+        const aliasedKey = hasOwn(ALIASED_ATTR, key)
+            ? ALIASED_ATTR[key]
+            : undefined;
         let observer = key;
         if (booleanKey) {
             this._element()[key] = value;
@@ -119,7 +141,13 @@ class Attributes {
                 this.$attr[key] = attrName = snakeCase(key, "-");
             }
         }
-        if (writeAttr !== false) {
+        if (this._attributes) {
+            this._attributes.set(node, observer, value, {
+                writeAttr,
+                attrName,
+            });
+        }
+        else if (writeAttr !== false) {
             if (!attrName)
                 return;
             const elem = this._element();
@@ -142,8 +170,8 @@ class Attributes {
             }
         }
         const { _observers } = this;
-        if (_observers?.[observer]) {
-            const observerListeners = _observers[observer];
+        const observerListeners = _observers?.[observer];
+        if (observerListeners) {
             for (let i = 0, l = observerListeners.length; i < l; i++) {
                 try {
                     observerListeners[i](value);
@@ -155,10 +183,11 @@ class Attributes {
         }
     }
     $observe(key, fn) {
-        const _observers = this._observers || (this._observers = nullObject());
-        const listeners = _observers[key] || (_observers[key] = []);
+        const _observers = this._observers ?? (this._observers = nullObject());
+        const listeners = _observers[key] ?? (_observers[key] = []);
         listeners.push(fn);
-        if (!listeners._inter && hasOwn(this, key) && !isUndefined(this[key])) {
+        const isInterpolated = this._attributes?._isInterpolated(this._element(), key);
+        if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
             fn(this[key]);
         }
         return function () {

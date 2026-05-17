@@ -37,7 +37,9 @@ export type WebComponentInput = WebComponentInputType | WebComponentInputConfig;
 
 export type WebComponentInputs = Record<string, WebComponentInput>;
 
-export interface WebComponentContext<T extends object = Record<string, any>> {
+export interface WebComponentContext<
+  T extends object = Record<string, unknown>,
+> {
   /** Custom element host. */
   host: HTMLElement;
   /** Scope owned by the custom element. */
@@ -52,7 +54,9 @@ export interface WebComponentContext<T extends object = Record<string, any>> {
   dispatch(type: string, detail?: unknown, init?: CustomEventInit): boolean;
 }
 
-export interface WebComponentOptions<T extends object = Record<string, any>> {
+export interface WebComponentOptions<
+  T extends object = Record<string, unknown>,
+> {
   /** Template compiled into the host or shadow root. */
   template?: string;
   /** Enables shadow DOM, or passes ShadowRootInit options. */
@@ -85,12 +89,12 @@ export interface ElementScopeOptions {
 
 export interface WebComponentService {
   /** Define a scoped custom element. */
-  define<T extends object = Record<string, any>>(
+  define<T extends object = Record<string, unknown>>(
     name: string,
     options: WebComponentOptions<T>,
   ): CustomElementConstructor;
   /** Create and attach a normal AngularTS child scope for a custom element. */
-  createElementScope<T extends object = Record<string, any>>(
+  createElementScope<T extends object = Record<string, unknown>>(
     host: HTMLElement,
     initialState?: T,
     options?: ElementScopeOptions,
@@ -123,14 +127,14 @@ export class WebComponentProvider {
       rootScope: ng.Scope,
       compile: ng.CompileService,
     ): WebComponentService => {
-      const createElementScope = <T extends object = Record<string, any>>(
+      const createElementScope = <T extends object = Record<string, unknown>>(
         host: HTMLElement,
         initialState: T = {} as T,
         options: ElementScopeOptions = {},
       ): ng.Scope & T => {
-        const parentScope = (options.parentScope ||
-          getInheritedData(host, _scope) ||
-          getInheritedData(host.parentNode || host, _scope) ||
+        const parentScope = (options.parentScope ??
+          getInheritedData(host, _scope) ??
+          getInheritedData(host.parentNode ?? host, _scope) ??
           rootScope) as ng.Scope;
 
         const scope = options.isolate
@@ -144,7 +148,7 @@ export class WebComponentProvider {
 
       return {
         createElementScope,
-        define: <T extends object = Record<string, any>>(
+        define: <T extends object = Record<string, unknown>>(
           name: string,
           options: WebComponentOptions<T>,
         ) => {
@@ -370,11 +374,11 @@ function normalizeInputs(inputs: WebComponentInputs = {}): InputDefinition[] {
     const config = input;
 
     return {
-      attribute: config.attribute || kebobString(property),
+      attribute: config.attribute ?? kebobString(property),
       default: config.default,
       property,
       reflect: !!config.reflect,
-      type: config.type || String,
+      type: config.type ?? String,
     };
   });
 }
@@ -604,7 +608,9 @@ function appendLinkedNodes(
   if (!linked) return;
 
   if (Array.isArray(linked)) {
-    linked.forEach((node) => root.appendChild(node));
+    linked.forEach((node) => {
+      root.appendChild(node);
+    });
 
     return;
   }

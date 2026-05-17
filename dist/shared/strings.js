@@ -1,5 +1,5 @@
 import { tail, pushR } from './common.js';
-import { isArray, isString, isUndefined, isObject, isNull, isPromiseLike, callFunction, isFunction } from './utils.js';
+import { isArray, isString, isUndefined, isObject, isNull, isPromiseLike, isFunction } from './utils.js';
 
 /**
  * Functions that manipulate strings
@@ -38,8 +38,10 @@ function functionToString(fn) {
 }
 /** Returns the raw `toString()` value for a function or injectable array. */
 function fnToString(fn) {
-    const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
-    return _fn?.toString() || "undefined";
+    const _fn = isArray(fn)
+        ? fn.slice(-1)[0]
+        : fn;
+    return _fn ? _fn.toString() : "undefined";
 }
 /** Converts arbitrary values into short readable debug strings. */
 function stringify(value) {
@@ -53,7 +55,7 @@ function stringify(value) {
     const hasToString = (obj) => isObject(obj) &&
         !isArray(obj) &&
         obj.constructor !== Object &&
-        isFunction(obj.toString);
+        isFunction(Reflect.get(obj, "toString"));
     /** Formats a single item while tracking circular references. */
     function format(item) {
         if (isObject(item)) {
@@ -69,8 +71,10 @@ function stringify(value) {
             return "[Promise]";
         if (isRejection(item))
             return String(item._transitionRejection);
-        if (hasToString(item))
-            return String(callFunction(item.toString, item));
+        if (hasToString(item)) {
+            const toStringFn = Reflect.get(item, "toString");
+            return toStringFn.call(item);
+        }
         if (isFunction(item))
             return functionToString(item);
         return item;
@@ -101,8 +105,9 @@ function stripLastPathElement(str) {
  * Joins neighboring string entries while leaving other values untouched.
  */
 function joinNeighborsR(acc, str) {
-    if (isString(tail(acc)) && isString(str))
-        return acc.slice(0, -1).concat(tail(acc) + str);
+    const previous = tail(acc);
+    if (isString(previous) && isString(str))
+        return acc.slice(0, -1).concat(previous + str);
     return pushR(acc, str);
 }
 

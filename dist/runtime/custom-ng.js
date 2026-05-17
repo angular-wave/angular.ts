@@ -1,4 +1,4 @@
-import { _provide, _angular, _window, _document, _compile, _filter } from '../injection-tokens.js';
+import { _attributes, _provide, _angular, _window, _document, _compile, _filter } from '../injection-tokens.js';
 import { CompileProvider } from '../core/compile/compile.js';
 import { FilterProvider } from '../core/filter/filter.js';
 import { InterpolateProvider } from '../core/interpolate/interpolate.js';
@@ -6,6 +6,7 @@ import { ParseProvider } from '../core/parse/parse.js';
 import { RootScopeProvider } from '../core/scope/scope.js';
 import { ControllerProvider } from '../core/controller/controller.js';
 import { ExceptionHandlerProvider } from '../services/exception/exception.js';
+import { AttributesProvider } from '../services/attributes/attributes.js';
 import { keys } from '../shared/utils.js';
 
 /**
@@ -15,6 +16,7 @@ import { keys } from '../shared/utils.js';
  * custom builds do not pull them in unless explicitly requested.
  */
 const coreProviders = {
+    [_attributes]: AttributesProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,

@@ -42,11 +42,13 @@ open. The Rust feature-complete gate requires each required entry to become
 `covered` with tests or to be removed from the required surface by an explicit
 plan change.
 
-Next-priority Rust entries after the required surface are realtime, forms,
-router/state, and REST facades. Provider/config-time APIs, compile/link
-internals, browser object aliases, animation, worker, web component, and
-parse/interpolate/filter/SCE/location APIs remain deferred unless a Rust
-reference example makes one necessary.
+The selected next-priority Rust app-authoring surfaces after the required
+surface are now covered: router/state, realtime, and core REST facades. Forms
+and validation remain the next useful application-level gap. Provider/config-
+time APIs, compile/link internals, browser object aliases, animation, worker,
+web component, REST cache/revalidation helpers, and parse/interpolate/filter/
+SCE/location APIs remain deferred unless a Rust reference example makes one
+necessary.
 
 ## Status Legend
 
@@ -64,10 +66,10 @@ reference example makes one necessary.
 | `Angular` | deferred |
 | `AnnotatedDirectiveFactory` | deferred |
 | `Attributes` | deferred |
-| `BoundTranscludeFn` | deferred |
 | `Component` | covered |
 | `Controller` | covered |
 | `Directive` | deferred |
+| `DirectiveRestrict` | deferred |
 | `DirectiveFactory` | deferred |
 | `NgModule` | covered |
 | `PublicLinkFn` | deferred |
@@ -109,6 +111,7 @@ reference example makes one necessary.
 | `AngularService` | deferred |
 | `AnimateService` | deferred |
 | `AriaService` | deferred |
+| `AttributesService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
@@ -128,14 +131,14 @@ reference example makes one necessary.
 | `RootScopeService` | covered |
 | `SceDelegateService` | deferred |
 | `SceService` | deferred |
-| `StateRegistryService` | deferred |
-| `StateService` | deferred |
+| `StateRegistryService` | covered |
+| `StateService` | covered |
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
 | `TemplateRequestService` | covered |
 | `TopicService` | covered |
 | `WebComponentService` | deferred |
-| `WebSocketService` | deferred |
+| `WebSocketService` | covered |
 | `WebTransportService` | deferred |
 | `WindowService` | alias |
 
@@ -152,16 +155,16 @@ reference example makes one necessary.
 | `HttpResponseStatus` | covered |
 | `RequestConfig` | covered |
 | `RequestShortcutConfig` | covered |
-| `RestBackend` | deferred |
+| `RestBackend` | covered |
 | `RestCacheStore` | deferred |
 | `RestCacheStrategy` | deferred |
-| `RestDefinition` | deferred |
-| `RestFactory` | deferred |
-| `RestOptions` | deferred |
-| `RestRequest` | deferred |
-| `RestResponse` | deferred |
+| `RestDefinition` | covered |
+| `RestFactory` | covered |
+| `RestOptions` | covered |
+| `RestRequest` | covered |
+| `RestResponse` | covered |
 | `RestRevalidateEvent` | deferred |
-| `RestService` | deferred |
+| `RestService` | covered |
 
 ## Filters
 
@@ -194,27 +197,27 @@ reference example makes one necessary.
 
 | ng type | Rust status |
 | --- | --- |
-| `StateDeclaration` | deferred |
-| `StateResolveArray` | deferred |
-| `StateResolveObject` | deferred |
-| `Transition` | deferred |
+| `StateDeclaration` | covered |
+| `StateResolveArray` | covered |
+| `StateResolveObject` | covered |
+| `Transition` | covered |
 
 ## Realtime And Connections
 
 | ng type | Rust status |
 | --- | --- |
-| `ConnectionConfig` | deferred |
-| `ConnectionEvent` | deferred |
-| `RealtimeProtocolEventDetail` | deferred |
-| `RealtimeProtocolMessage` | deferred |
-| `SseConfig` | deferred |
-| `SseConnection` | deferred |
+| `ConnectionConfig` | covered |
+| `ConnectionEvent` | covered |
+| `RealtimeProtocolEventDetail` | covered |
+| `RealtimeProtocolMessage` | covered |
+| `SseConfig` | covered |
+| `SseConnection` | covered |
 | `SseProtocolEventDetail` | deferred |
 | `SseProtocolMessage` | deferred |
-| `SseService` | deferred |
-| `SwapModeType` | deferred |
-| `WebSocketConfig` | deferred |
-| `WebSocketConnection` | deferred |
+| `SseService` | covered |
+| `SwapModeType` | covered |
+| `WebSocketConfig` | covered |
+| `WebSocketConnection` | covered |
 | `WebTransportBufferInput` | deferred |
 | `WebTransportCertificateHash` | deferred |
 | `WebTransportConfig` | deferred |

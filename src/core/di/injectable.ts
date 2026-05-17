@@ -15,7 +15,7 @@ type RuntimeInjectable = RuntimeFunction | RuntimeConstructor;
 export function isInjectable<T extends RuntimeInjectable = RuntimeInjectable>(
   val: unknown,
 ): val is Injectable<T> {
-  if (isArray<unknown>(val) && val.length > 0) {
+  if (isArray(val) && val.length > 0) {
     const lastIndex = val.length - 1;
 
     for (let i = 0; i < lastIndex; i++) {

@@ -19,4 +19,4 @@ export const ASTType = {
   _UpdateExpression: 18,
 } as const;
 
-export type ASTType = (typeof ASTType)[keyof typeof ASTType];
+export type ASTNodeType = (typeof ASTType)[keyof typeof ASTType];

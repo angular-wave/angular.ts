@@ -56,7 +56,9 @@ function sanitizeSrcset(
 
     const uri = trim(rawUris[innerIdx]);
 
-    result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+    result += uri.startsWith("unsafe:")
+      ? uri
+      : String($sce.getTrustedMediaUrl(uri));
     result += ` ${trim(rawUris[innerIdx + 1])}`;
   }
 
@@ -64,7 +66,9 @@ function sanitizeSrcset(
 
   const uri = trim(lastTuple[0]);
 
-  result += uri.startsWith("unsafe:") ? uri : $sce.getTrustedMediaUrl(uri);
+  result += uri.startsWith("unsafe:")
+    ? uri
+    : String($sce.getTrustedMediaUrl(uri));
 
   if (lastTuple.length === 2) {
     result += ` ${trim(lastTuple[1])}`;
@@ -88,7 +92,7 @@ BOOLEAN_ATTR.forEach((i) => {
     element: Element,
     attr: Attributes & Record<string, string>,
   ): void {
-    scope.$watch(attr[normalized], (value) => {
+    scope.$watch(attr[normalized] ?? "", (value) => {
       $attributes.set(element, i, !!value);
     });
   }
@@ -143,7 +147,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         ): void {
           // special case ngPattern when a literal regular expression value
           // is used as the expression (this way we don't have to watch anything).
-          const ngPattern = attr.ngPattern as string;
+          const { ngPattern } = attr;
 
           if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
             const match = REGEX_STRING_REGEXP.exec(ngPattern);
@@ -159,8 +163,12 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             }
           }
 
-          scope.$watch(attr[ngAttr], (value) => {
-            $attributes.set(element, ngAttr, value);
+          scope.$watch(attr[ngAttr] ?? "", (value) => {
+            $attributes.set(
+              element,
+              ngAttr,
+              value as string | boolean | null | undefined,
+            );
           });
         },
       };
@@ -197,7 +205,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             }
           }
 
-          function sanitize(value: unknown): any {
+          function sanitize(value: unknown): unknown {
             if (isNullOrUndefined(value)) {
               return value;
             }
@@ -252,7 +260,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
               (attrName === "src" &&
                 ["img", "video", "audio", "source", "track"].includes(nodeName))
             ) {
-              $attributes.set(element, attrName, sanitize(value));
+              $attributes.set(element, attrName, sanitize(value) as string);
             } else if (attrName === "srcset") {
               $attributes.set(
                 element,
@@ -260,21 +268,25 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                 sanitizeSrcset($sce, value, "ng-srcset") as string,
               );
             } else {
-              $attributes.set(element, attrName, value);
+              $attributes.set(
+                element,
+                attrName,
+                value as string | boolean | null | undefined,
+              );
             }
           }
 
           // We need to sanitize the url at least once, in case it is a constant
           // non-interpolated attribute.
-          const initialValue = attr[normalized];
+          const initialValue = attr[normalized] as unknown;
 
-          if (initialValue && !String(initialValue).includes("{{")) {
+          if (initialValue && !stringify(initialValue).includes("{{")) {
             $attributes.set(
               element,
               normalized,
               attrName === "srcset"
                 ? (sanitizeSrcset($sce, initialValue, "ng-srcset") as string)
-                : sanitize(initialValue),
+                : (sanitize(initialValue) as string),
             );
           }
 

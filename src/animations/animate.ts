@@ -77,7 +77,7 @@ export class AnimationHandle implements PromiseLike<undefined> {
   readonly finished: Promise<undefined>;
   private readonly animations: Animation[];
   private readonly cleanup?: (ok: boolean) => void;
-  private doneCallbacks: Array<(ok: boolean) => void> = [];
+  private doneCallbacks: ((ok: boolean) => void)[] = [];
   private settled = false;
   private status = true;
 
@@ -94,7 +94,7 @@ export class AnimationHandle implements PromiseLike<undefined> {
       (item): item is Animation => !!item && "finished" in item,
     );
 
-    const promises = results.map((item) => {
+    const promises = results.map(async (item) => {
       if (!item) return Promise.resolve();
 
       if ("finished" in item) return item.finished.then(() => undefined);
@@ -123,18 +123,18 @@ export class AnimationHandle implements PromiseLike<undefined> {
     onfulfilled?:
       | ((value: undefined) => TResult1 | PromiseLike<TResult1>)
       | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): PromiseLike<TResult1 | TResult2> {
     return this.finished.then(onfulfilled, onrejected);
   }
 
-  catch<TResult = never>(
-    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
+  async catch<TResult = never>(
+    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
   ): Promise<undefined | TResult> {
     return this.finished.catch(onrejected);
   }
 
-  finally(onfinally?: (() => void) | null): Promise<undefined> {
+  async finally(onfinally?: (() => void) | null): Promise<undefined> {
     return this.finished.finally(onfinally);
   }
 
@@ -237,7 +237,7 @@ export interface AnimateService {
 type PresetRegistration = AnimationPreset | Injectable<() => AnimationPreset>;
 
 interface AnimateProviderInstance {
-  _registeredAnimations: Record<string, PresetRegistration>;
+  _registeredAnimations: Partial<Record<string, PresetRegistration>>;
   _customAnimationNames: Set<string>;
   register(name: string, preset: PresetRegistration): void;
   $get: [string, ($injector: ng.InjectorService) => AnimateService];
@@ -420,7 +420,7 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
           const customKeyframes =
             resolvedPreset?.custom && handler ? handler : undefined;
 
-          const keyframes = optionKeyframes || customKeyframes;
+          const keyframes = optionKeyframes ?? customKeyframes;
 
           const cssAnimation = keyframes
             ? undefined
@@ -476,7 +476,7 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
 
       return {
         cancel(handle?: AnimationHandle): void {
-          handle?.cancel?.();
+          handle?.cancel();
         },
 
         define: (name, preset): void => {
@@ -539,7 +539,9 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
           });
         },
 
-        animate: (element, from, to = {}, className, options) => {
+        animate: (element, from, to, className, options) => {
+          const toStyles = to ?? {};
+
           if (className) element.classList.add(...splitClasses(className));
 
           assign((element as HTMLElement).style, from);
@@ -547,28 +549,35 @@ export function AnimateProvider(this: AnimateProviderInstance): void {
           return run(
             "animate",
             element,
-            { ...options, from, to },
-            { from, to, className },
+            { ...options, from, to: toStyles },
+            { from, to: toStyles, className },
             () => {
-              assign((element as HTMLElement).style, to);
+              assign((element as HTMLElement).style, toStyles);
             },
           );
         },
 
         async transition(update): Promise<void> {
-          const documentWithTransitions = document as Document & {
-            startViewTransition?: (callback: () => void | Promise<void>) => {
-              finished: Promise<void>;
-            };
+          type ViewTransitionStarter = (
+            callback: () => void | Promise<void>,
+          ) => {
+            finished: Promise<void>;
           };
+          const startViewTransition = Reflect.get(
+            document,
+            "startViewTransition",
+          ) as unknown;
 
-          if (!documentWithTransitions.startViewTransition) {
+          if (!isFunction(startViewTransition)) {
             await update();
 
             return;
           }
 
-          await documentWithTransitions.startViewTransition(update).finished;
+          await (startViewTransition as ViewTransitionStarter).call(
+            document,
+            update,
+          ).finished;
         },
       };
     },
@@ -606,7 +615,7 @@ function animationNameFor(
   if (explicit) return normalizeAnimationName(explicit);
 
   const value =
-    (element as HTMLElement).dataset.animate || element.getAttribute("animate");
+    (element as HTMLElement).dataset.animate ?? element.getAttribute("animate");
 
   if (!value || value === "true" || value === "") return "fade";
 
@@ -636,14 +645,14 @@ function keyframesFromStyles(
 ): Keyframe[] | undefined {
   if (!from && !to) return undefined;
 
-  return [from || {}, to || {}] as Keyframe[];
+  return [from ?? {}, to ?? {}] as Keyframe[];
 }
 
 function animationOptionsFor(
   preset: AnimationPreset | undefined,
   options: NativeAnimationOptions,
 ): KeyframeAnimationOptions {
-  const defaults = preset?.options || {};
+  const defaults = preset?.options ?? {};
 
   const {
     keyframes: _keyframes,
@@ -683,7 +692,7 @@ function cssAnimationForPhase(
   const styles = getComputedStyle(element);
 
   const value =
-    readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ||
+    readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ??
     readCssAnimationProperty(styles, "--ng-animation");
 
   if (!value || value === "none") return undefined;
@@ -746,7 +755,7 @@ function shouldSkipAnimation(
 
   if (options.duration === 0) return true;
 
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function expandHeight(
@@ -762,7 +771,7 @@ function expandHeight(
 
   const previousOpacity = target.style.opacity;
 
-  const height = `${target.scrollHeight}px`;
+  const height = `${String(target.scrollHeight)}px`;
 
   target.style.overflow = "hidden";
 
@@ -796,7 +805,7 @@ function collapseHeight(
 
   const previousOpacity = target.style.opacity;
 
-  const height = `${target.offsetHeight || target.scrollHeight}px`;
+  const height = `${String(target.offsetHeight || target.scrollHeight)}px`;
 
   target.style.height = height;
   target.style.overflow = "hidden";
@@ -836,5 +845,13 @@ function cleanupHeightAnimation(
   };
 
   context.signal.addEventListener("abort", cleanup, { once: true });
-  animation.finished.then(cleanup, cleanup);
+  void animation.finished
+    .then(() => {
+      cleanup();
+
+      return undefined;
+    })
+    .catch(() => {
+      cleanup();
+    });
 }

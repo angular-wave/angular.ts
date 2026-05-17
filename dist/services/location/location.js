@@ -1,6 +1,6 @@
 import { _rootScope, _rootElement, _exceptionHandler } from '../../injection-tokens.js';
 import { trimEmptyHash, urlResolve } from '../../shared/url-utils/url-utils.js';
-import { assertDefined, isString, isNumber, isUndefined, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, startsWith, isFunction, equals, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
+import { assertDefined, isString, isNumber, isUndefined, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, startsWith, equals, encodeUriSegment, toKeyValue, createErrorFactory, isFunction, callFunction } from '../../shared/utils.js';
 import { getBaseHref } from '../../shared/dom.js';
 import { validateRequired } from '../../shared/validate.js';
 
@@ -40,7 +40,7 @@ class Location {
         this.appBase = appBase;
         this.appBaseNoFile = appBaseNoFile;
         this.html5 = html5;
-        this.basePrefix = html5 ? prefix || "" : undefined;
+        this.basePrefix = html5 ? (prefix ?? "") : undefined;
         this.hashPrefix = html5 ? undefined : prefix;
         /**
          * An absolute URL is the full URL, including protocol (http/https ), the optional subdomain (e.g. www ), domain (example.com), and path (which includes the directory and slug)
@@ -157,7 +157,7 @@ class Location {
                 if (!isString(search) && !isNumber(search)) {
                     throw $locationError("isrcharg", "The first argument of the `$location#search()` call must be a string or number when setting a single parameter.");
                 }
-                const searchKey = isString(search) ? search : `${search}`;
+                const searchKey = isString(search) ? search : String(search);
                 if (isUndefined(paramValue) || paramValue === null) {
                     deleteProperty(_search, searchKey);
                 }
@@ -191,7 +191,7 @@ class Location {
         this._url = normalizePath(_path, _search, _hash);
         this.absUrl = this.html5
             ? this.appBaseNoFile + this._url.substring(1)
-            : this.appBase + (this._url ? this.hashPrefix + this._url : "");
+            : this.appBase + (this._url ? (this.hashPrefix ?? "") + this._url : "");
         urlUpdatedByLocation = true;
         setTimeout(() => this._updateBrowser?.());
     }
@@ -243,7 +243,7 @@ class Location {
                 if (this.basePrefix &&
                     isDefined((appUrl = stripBaseUrl(this.basePrefix, appUrl)))) {
                     rewrittenUrl =
-                        this.appBaseNoFile + (stripBaseUrl("/", appUrl) || appUrl);
+                        this.appBaseNoFile + (stripBaseUrl("/", appUrl) ?? appUrl);
                 }
                 else {
                     rewrittenUrl = this.appBase + prevAppUrl;
@@ -285,27 +285,22 @@ class Location {
             this._compose();
         }
         else {
-            const withoutBaseUrl = stripBaseUrl(this.appBase, url) ||
+            const withoutBaseUrl = stripBaseUrl(this.appBase, url) ??
                 stripBaseUrl(this.appBaseNoFile, url);
             let withoutHashUrl = "";
             if (withoutBaseUrl?.charAt(0) === "#") {
                 // The rest of the URL starts with a hash so we have
                 // got either a hashbang path or a plain hash fragment
                 withoutHashUrl =
-                    stripBaseUrl(this.hashPrefix || "", withoutBaseUrl) || withoutBaseUrl;
+                    stripBaseUrl(this.hashPrefix ?? "", withoutBaseUrl) ?? withoutBaseUrl;
             }
             else {
                 // There was no hashbang path nor hash fragment:
                 // If we are in HTML5 mode we use what is left as the path;
                 // Otherwise we ignore what is left
-                if (this.html5) {
-                    withoutHashUrl = withoutBaseUrl || "";
-                }
-                else {
-                    withoutHashUrl = "";
-                    if (withoutBaseUrl === undefined) {
-                        this.appBase = url;
-                    }
+                withoutHashUrl = "";
+                if (withoutBaseUrl === undefined) {
+                    this.appBase = url;
                 }
             }
             parseAppUrl(withoutHashUrl, false);
@@ -355,6 +350,13 @@ class LocationProvider {
                         $location._state = oldState;
                         $exceptionHandler(err);
                     }
+                };
+                const broadcastRootScopeEvent = (name, ...args) => {
+                    const broadcast = $rootScope
+                        .$broadcast;
+                    if (!isFunction(broadcast))
+                        return undefined;
+                    return callFunction(broadcast, $rootScope, name, ...args);
                 };
                 const clickHandler = ((event) => {
                     const { rewriteLinks } = this.html5ModeConf;
@@ -415,7 +417,7 @@ class LocationProvider {
                     this._urlChangeListeners.length = 0;
                 };
                 locationCleanupByRootElement.set($rootElement, cleanupLocation);
-                $rootScope.$on?.("$destroy", () => {
+                $rootScope.$on("$destroy", () => {
                     destroyed = true;
                     cleanupLocation();
                     if (locationCleanupByRootElement.get($rootElement) === cleanupLocation) {
@@ -435,13 +437,13 @@ class LocationProvider {
                         return;
                     }
                     queueMicrotask(() => {
-                        if (destroyed || !isFunction($rootScope.$broadcast))
+                        if (destroyed)
                             return;
                         const oldUrl = $location.absUrl;
                         const oldState = $location._state;
                         $location.parse(newUrl);
                         $location._state = newState;
-                        const { defaultPrevented } = $rootScope.$broadcast("$locationChangeStart", newUrl, oldUrl, newState, oldState) ?? { defaultPrevented: false };
+                        const { defaultPrevented } = broadcastRootScopeEvent("$locationChangeStart", newUrl, oldUrl, newState, oldState) ?? { defaultPrevented: false };
                         // if the location was changed by a `$locationChangeStart` handler then stop
                         // processing this location change
                         if ($location.absUrl !== newUrl)
@@ -469,11 +471,10 @@ class LocationProvider {
                         if (initializing || urlOrStateChanged) {
                             initializing = false;
                             setTimeout(() => {
-                                if (destroyed || !isFunction($rootScope.$broadcast)) {
+                                if (destroyed)
                                     return;
-                                }
                                 newUrl = $location.absUrl;
-                                const { defaultPrevented } = $rootScope.$broadcast("$locationChangeStart", $location.absUrl, oldUrl, $location._state, oldState) ?? { defaultPrevented: false };
+                                const { defaultPrevented } = broadcastRootScopeEvent("$locationChangeStart", $location.absUrl, oldUrl, $location._state, oldState) ?? { defaultPrevented: false };
                                 // if the location was changed by a `$locationChangeStart` handler then stop
                                 // processing this location change
                                 if ($location.absUrl !== newUrl)
@@ -497,9 +498,9 @@ class LocationProvider {
                 $rootScope.$on("$updateBrowser", updateBrowser);
                 return $location;
                 function afterLocationChange(oldUrl, oldState) {
-                    if (destroyed || !isFunction($rootScope.$broadcast))
+                    if (destroyed)
                         return;
-                    $rootScope.$broadcast("$locationChangeSuccess", $location.absUrl, oldUrl, $location._state, oldState);
+                    broadcastRootScopeEvent("$locationChangeSuccess", $location.absUrl, oldUrl, $location._state, oldState);
                 }
             },
         ];
@@ -603,7 +604,7 @@ class LocationProvider {
      */
     _onUrlChange(callback) {
         if (!this._urlChangeInit) {
-            this._urlChangeHandler || (this._urlChangeHandler = this._fireStateOrUrlChange.bind(this));
+            this._urlChangeHandler ?? (this._urlChangeHandler = this._fireStateOrUrlChange.bind(this));
             window.addEventListener("popstate", this._urlChangeHandler);
             window.addEventListener("hashchange", this._urlChangeHandler);
             this._urlChangeInit = true;

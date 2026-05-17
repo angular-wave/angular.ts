@@ -4,7 +4,7 @@ import {
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
 import { domInsert, removeElement } from "../../shared/dom.ts";
-import { values } from "../../shared/utils.ts";
+import { assertDefined, values } from "../../shared/utils.ts";
 
 interface NgSwitchBlock {
   /** @internal */
@@ -15,9 +15,8 @@ interface NgSwitchBlock {
 
 class NgSwitchController {
   /** @internal */
-  _cases: Record<
-    string,
-    Array<{ transclude: ng.TranscludeFn; element: Element }>
+  _cases: Partial<
+    Record<string, { transclude: ng.TranscludeFn; element: Element }[]>
   >;
 
   constructor() {
@@ -26,6 +25,15 @@ class NgSwitchController {
 }
 
 ngSwitchDirective.$inject = [_injector, _attributes];
+
+function fallbackWhenEmpty(
+  value: string | null | undefined,
+  fallback: string,
+): string {
+  if (value) return value;
+
+  return fallback;
+}
 
 /** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(
@@ -45,14 +53,16 @@ export function ngSwitchDirective(
       _attr: ng.Attributes,
       ngSwitchController: NgSwitchController,
     ): void {
-      const watchExpr =
-        $attributes.read(element, "ngSwitch") ||
-        $attributes.read(element, "on") ||
-        "";
+      const ngSwitchExpr = $attributes.read(element, "ngSwitch");
+
+      const watchExpr = fallbackWhenEmpty(
+        ngSwitchExpr,
+        $attributes.read(element, "on") ?? "",
+      );
 
       let selectedTranscludes:
-        | Array<{ transclude: ng.TranscludeFn; element: Element }>
-        | undefined = [];
+        | { transclude: ng.TranscludeFn; element: Element }[]
+        | undefined;
 
       const selectedElements: NgSwitchBlock[] = [];
 
@@ -65,7 +75,7 @@ export function ngSwitchDirective(
 
       const selectedScopes: ng.Scope[] = [];
 
-      scope.$watch(watchExpr, (value: any) => {
+      scope.$watch(watchExpr, (value: unknown) => {
         let i;
 
         let ii;
@@ -114,7 +124,7 @@ export function ngSwitchDirective(
 
         if (
           (selectedTranscludes =
-            ngSwitchController._cases[`!${value}`] ||
+            ngSwitchController._cases[`!${String(value)}`] ??
             ngSwitchController._cases["?"])
         ) {
           values(selectedTranscludes).forEach(
@@ -126,7 +136,7 @@ export function ngSwitchDirective(
                 (caseElementParam, selectedScopeParam) => {
                   const caseElement = caseElementParam as HTMLElement;
 
-                  const selectedScope = selectedScopeParam as ng.Scope;
+                  const selectedScope = assertDefined(selectedScopeParam);
 
                   selectedScopes.push(selectedScope);
                   const anchor = selectedTransclude.element;
@@ -197,7 +207,7 @@ export function ngSwitchWhenDirective(
         return;
       }
 
-      const when = $attributes.read(element, "ngSwitchWhen") || "";
+      const when = $attributes.read(element, "ngSwitchWhen") ?? "";
 
       const separator = $attributes.read(element, "ngSwitchWhenSeparator");
 
@@ -209,8 +219,7 @@ export function ngSwitchWhenDirective(
             array[index - 1] !== elementParam,
         )
         .forEach((whenCase: string) => {
-          ctrl._cases[`!${whenCase}`] = ctrl._cases[`!${whenCase}`] || [];
-          ctrl._cases[`!${whenCase}`].push({
+          (ctrl._cases[`!${whenCase}`] ??= []).push({
             transclude: $transclude,
             element,
           });
@@ -236,8 +245,7 @@ export function ngSwitchDefaultDirective(): ng.Directive {
         return;
       }
 
-      ctrl._cases["?"] = ctrl._cases["?"] || [];
-      ctrl._cases["?"].push({
+      (ctrl._cases["?"] ??= []).push({
         transclude: $transclude,
         element,
       });

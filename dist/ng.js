@@ -1,4 +1,4 @@
-import { _router, _provide, _compile, _angular, _window, _document, _filter } from './injection-tokens.js';
+import { _attributes, _router, _provide, _compile, _angular, _window, _document, _filter } from './injection-tokens.js';
 import { AnimateProvider } from './animations/animate.js';
 import { CompileProvider } from './core/compile/compile.js';
 import { ControllerProvider } from './core/controller/controller.js';
@@ -28,7 +28,7 @@ import { ngFormDirective, formDirective } from './directive/form/form.js';
 import { ngSseDirective, ngPutDirective, ngPostDirective, ngGetDirective, ngDeleteDirective } from './directive/http/http.js';
 import { ngIfDirective } from './directive/if/if.js';
 import { ngIncludeDirective, ngIncludeFillContentDirective } from './directive/include/include.js';
-import { ngValueDirective, inputDirective, hiddenInputDirective } from './directive/input/input.js';
+import { inputDirective } from './directive/input/input.js';
 import { ngInitDirective } from './directive/init/init.js';
 import { ngInjectDirective } from './directive/inject/inject.js';
 import { ngListenerDirective } from './directive/listener/listener.js';
@@ -61,6 +61,7 @@ import { TemplateFactoryProvider } from './router/template-factory.js';
 import { TransitionProvider } from './router/transition/transition-service.js';
 import { ViewService } from './router/view/view.js';
 import { AnchorScrollProvider } from './services/anchor-scroll/anchor-scroll.js';
+import { AttributesProvider } from './services/attributes/attributes.js';
 import { CookieProvider } from './services/cookie/cookie.js';
 import { ExceptionHandlerProvider } from './services/exception/exception.js';
 import { HttpParamSerializerProvider, HttpProvider } from './services/http/http.js';
@@ -103,6 +104,7 @@ function registerBuiltInFilters($filterProvider) {
 }
 /** Providers required by scopes, expressions, controllers, and compile. */
 const ngCoreProviders = {
+    [_attributes]: AttributesProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,
@@ -193,7 +195,6 @@ const ngBindingDirectives = {
     ngRef: ngRefDirective,
     ngShow: ngShowDirective,
     ngStyle: ngStyleDirective,
-    ngValue: ngValueDirective,
 };
 /** Control-flow and composition directives. */
 const ngTemplateDirectives = {
@@ -268,7 +269,6 @@ const ngRouterDirectives = {
 };
 /** Fill/transclusion directives that intentionally register after their base directive. */
 const ngFillDirectives = {
-    input: hiddenInputDirective,
     ngInclude: ngIncludeFillContentDirective,
     ngView: ViewDirectiveFill,
 };

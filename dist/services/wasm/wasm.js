@@ -20,7 +20,7 @@ class WasmScope {
         this.abi = abi;
         this.scope = scope;
         this.handle = handle;
-        this.name = options.name ?? scope.$scopename ?? String(scope.$id ?? handle);
+        this.name = options.name ?? scope.$scopename ?? String(scope.$id);
         this._bindings = [];
         this._syncCallbacks = [];
         this._syncScheduled = false;
@@ -220,7 +220,7 @@ class WasmScopeAbi {
         if (!scope) {
             return false;
         }
-        if (scope && this._scopesByName.get(scope.name) === scope) {
+        if (this._scopesByName.get(scope.name) === scope) {
             this._scopesByName.delete(scope.name);
         }
         for (const [watchHandle, watch] of this._watches) {

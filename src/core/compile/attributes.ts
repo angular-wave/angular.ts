@@ -36,9 +36,9 @@ function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   return getAnimate;
 }
 
-type ObserverList = Array<(value?: unknown) => void>;
+type ObserverList = ((value?: unknown) => void)[];
 
-type ObserverMap = Record<string, ObserverList>;
+type ObserverMap = Partial<Record<string, ObserverList>>;
 
 export class Attributes {
   static $nonscope = true;
@@ -73,13 +73,13 @@ export class Attributes {
   _node: Node | Element | undefined;
   /** @internal */
   _observers: ObserverMap | undefined;
-  [key: string]: any;
+  [key: string]: unknown;
 
   constructor(
     $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
     node?: Node | Element,
-    attributesToCopy?: Record<string, any>,
+    attributesToCopy?: Record<string, unknown>,
   ) {
     this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
@@ -216,7 +216,7 @@ export class Attributes {
     let observer = key;
 
     if (booleanKey) {
-      (this._element() as Record<string, any>)[key] = value;
+      (this._element() as unknown as Record<string, unknown>)[key] = value;
       attrName = booleanKey;
     } else if (aliasedKey) {
       this[aliasedKey] = value;
@@ -255,15 +255,15 @@ export class Attributes {
           elem.setAttribute(attrName, value as string);
         }
       } else {
-        this._setSpecialAttr(elem, attrName, value as string);
+        Attributes._setSpecialAttr(elem, attrName, value as string);
       }
     }
 
     const { _observers } = this;
 
-    if (_observers?.[observer]) {
-      const observerListeners = _observers[observer];
+    const observerListeners = _observers?.[observer];
 
+    if (observerListeners) {
       for (let i = 0, l = observerListeners.length; i < l; i++) {
         try {
           observerListeners[i](value);
@@ -274,10 +274,10 @@ export class Attributes {
     }
   }
 
-  $observe(key: string, fn: (value?: any) => any): () => void {
-    const _observers = this._observers || (this._observers = nullObject());
+  $observe(key: string, fn: (value?: unknown) => unknown): () => void {
+    const _observers = this._observers ?? (this._observers = nullObject());
 
-    const listeners = _observers[key] || (_observers[key] = [] as ObserverList);
+    const listeners = _observers[key] ?? (_observers[key] = [] as ObserverList);
 
     listeners.push(fn as (value?: unknown) => void);
 
@@ -295,7 +295,7 @@ export class Attributes {
   }
 
   /** @internal */
-  _setSpecialAttr(
+  static _setSpecialAttr(
     element: Element,
     attrName: string,
     value: string | null,

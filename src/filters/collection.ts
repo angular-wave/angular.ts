@@ -9,17 +9,17 @@ import {
 } from "../shared/utils.ts";
 
 export interface EntryFilterItem {
-  key: any;
-  value: any;
+  key: unknown;
+  value: unknown;
 }
 
 type IterableMethodName = "keys" | "values" | "entries";
 
-type IterableRecord = Record<IterableMethodName, () => Iterable<any>>;
+type IterableRecord = Record<IterableMethodName, () => Iterable<unknown>>;
 
 /** Creates a filter that returns keys from objects and native keyed collections. */
 export function keysFilter() {
-  return function (input: any): any[] {
+  return function (input: unknown): unknown[] {
     if (isNullOrUndefined(input)) return [];
 
     if (hasIterableMethod(input, "keys")) {
@@ -36,7 +36,7 @@ export function keysFilter() {
 
 /** Creates a filter that returns values from objects and native keyed collections. */
 export function valuesFilter() {
-  return function (input: any): any[] {
+  return function (input: unknown): unknown[] {
     if (isNullOrUndefined(input)) return [];
 
     if (hasIterableMethod(input, "values")) {
@@ -44,7 +44,7 @@ export function valuesFilter() {
     }
 
     if (isObject(input)) {
-      return values(input);
+      return values(input as Record<string, unknown>);
     }
 
     return [];
@@ -53,15 +53,20 @@ export function valuesFilter() {
 
 /** Creates a filter that returns { key, value } pairs from objects and native collections. */
 export function entriesFilter() {
-  return function (input: any): EntryFilterItem[] {
+  return function (input: unknown): EntryFilterItem[] {
     if (isNullOrUndefined(input)) return [];
 
     if (hasIterableMethod(input, "entries")) {
-      return arrayFrom(input.entries()).map(([key, value]) => ({ key, value }));
+      return arrayFrom(input.entries() as Iterable<[unknown, unknown]>).map(
+        ([key, value]) => ({ key, value }),
+      );
     }
 
     if (isObject(input)) {
-      return entries(input).map(([key, value]) => ({ key, value }));
+      return entries(input).map(([key, value]) => ({
+        key,
+        value: value as unknown,
+      }));
     }
 
     return [];

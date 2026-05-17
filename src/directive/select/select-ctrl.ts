@@ -10,20 +10,21 @@ import {
   isDefined,
   isNullOrUndefined,
   isUndefined,
+  stringify,
 } from "../../shared/utils.ts";
 import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
 
 export type SelectScope = ng.Scope &
-  Record<string, any> & {
+  Record<string, unknown> & {
     /** @internal */
     _destroyed?: boolean;
   };
 
-export type NgModelController = ng.NgModelController & Record<string, any>;
+export type NgModelController = ng.NgModelController & Record<string, unknown>;
 
-export type SelectAttributes = ng.Attributes & Record<string, any>;
+export type SelectAttributes = ng.Attributes & Record<string, unknown>;
 
-export type InterpolateFn = ((scope: ng.Scope) => any) | null | undefined;
+export type InterpolateFn = ((scope: ng.Scope) => unknown) | null | undefined;
 
 function readOptionElementAttr(
   $attributes: ng.AttributesService | undefined,
@@ -32,7 +33,7 @@ function readOptionElementAttr(
   normalizedName: string,
 ): unknown {
   const elementValue = $attributes?.read(optionElement, normalizedName);
-  const attrValue = optionAttrs[normalizedName];
+  const attrValue: unknown = optionAttrs[normalizedName];
 
   if (
     isDefined(attrValue) &&
@@ -119,7 +120,7 @@ export class SelectController {
   /** @internal */
   _scope: SelectScope;
   /** @internal */
-  _selectValueMap: Record<string, any>;
+  _selectValueMap: Record<string, unknown>;
   /** @internal */
   _ngModelCtrl: NgModelController;
   /** @internal */
@@ -131,7 +132,7 @@ export class SelectController {
   /** @internal */
   _emptyOption?: HTMLOptionElement;
   /** @internal */
-  _optionsMap: Map<any, number>;
+  _optionsMap: Map<unknown, number>;
   /** @internal */
   _renderScheduled: boolean;
   /** @internal */
@@ -141,7 +142,7 @@ export class SelectController {
   /** @internal */
   _updateRescheduleRequested: boolean;
   /** @internal */
-  _deferredQueue: Array<() => void>;
+  _deferredQueue: (() => void)[];
   /** @internal */
   _deferredDrainScheduled: boolean;
   /** @internal */
@@ -205,7 +206,7 @@ export class SelectController {
 
   /** @ignore */
   /** @internal */
-  _renderUnknownOption(val: any) {
+  _renderUnknownOption(val: unknown) {
     const unknownVal = this._generateUnknownOptionValue(val);
 
     this._unknownOption.value = unknownVal;
@@ -217,7 +218,7 @@ export class SelectController {
 
   /** @ignore */
   /** @internal */
-  _updateUnknownOption(val: any) {
+  _updateUnknownOption(val: unknown) {
     const unknownVal = this._generateUnknownOptionValue(val);
 
     this._unknownOption.value = unknownVal;
@@ -228,7 +229,7 @@ export class SelectController {
 
   /** @ignore */
   /** @internal */
-  _generateUnknownOptionValue(val: any) {
+  _generateUnknownOptionValue(val: unknown) {
     if (isUndefined(val)) {
       return `? undefined:undefined ?`;
     }
@@ -268,67 +269,70 @@ export class SelectController {
     const realVal =
       val in this._selectValueMap ? this._selectValueMap[val] : val;
 
-    return this._hasOption(realVal) ? (deProxy(realVal) as unknown) : null;
+    return this._hasOption(realVal) ? deProxy(realVal) : null;
   }
 
   /** @ignore */
   /** @internal */
-  _writeValue(value: any) {
-    value = deProxy(value);
-    const currentlySelectedOption =
-      this._element.options[this._element.selectedIndex];
+  _writeValue(value: unknown) {
+    const writeValue: unknown = deProxy<unknown>(value);
+    const currentlySelectedOption = this._element.options.item(
+      this._element.selectedIndex,
+    );
 
     if (currentlySelectedOption) currentlySelectedOption.selected = false;
 
-    if (this._hasOption(value)) {
+    if (this._hasOption(writeValue)) {
       this._removeUnknownOption();
 
-      const hashedVal = hashKey(value);
+      const hashedVal = hashKey(writeValue);
 
       this._element.value =
-        hashedVal in this._selectValueMap ? hashedVal : value;
-      const selectedOption = this._element.options[this._element.selectedIndex];
+        hashedVal in this._selectValueMap ? hashedVal : String(writeValue);
+      const selectedOption = this._element.options.item(
+        this._element.selectedIndex,
+      );
 
       if (!selectedOption) {
-        this._selectUnknownOrEmptyOption(value);
+        this._selectUnknownOrEmptyOption(writeValue);
       } else {
         selectedOption.selected = true;
       }
     } else {
-      this._selectUnknownOrEmptyOption(value);
+      this._selectUnknownOrEmptyOption(writeValue);
     }
   }
 
   /** @ignore */
   /** @internal */
-  _addOption(value: any, element: HTMLOptionElement) {
-    value = deProxy(value);
+  _addOption(value: unknown, element: HTMLOptionElement) {
+    const optionValue: unknown = deProxy<unknown>(value);
 
     if (element.nodeType === NodeType._COMMENT_NODE) return;
 
-    assertNotHasOwnProperty(value, '"option value"');
+    assertNotHasOwnProperty(String(optionValue), '"option value"');
 
-    if (value === "") {
+    if (optionValue === "") {
       this._hasEmptyOption = true;
       this._emptyOption = element;
     }
-    const count = this._optionsMap.get(value) || 0;
+    const count = this._optionsMap.get(optionValue) ?? 0;
 
-    this._optionsMap.set(value, count + 1);
+    this._optionsMap.set(optionValue, count + 1);
     this._scheduleRender();
 
-    const currentViewValue = this._ngModelCtrl?.$viewValue;
+    const currentViewValue: unknown = this._ngModelCtrl.$viewValue;
 
-    const currentModelValue = this._ngModelCtrl?.$modelValue;
+    const currentModelValue: unknown = this._ngModelCtrl.$modelValue;
 
     if (
-      currentViewValue === value ||
-      currentModelValue === value ||
+      currentViewValue === optionValue ||
+      currentModelValue === optionValue ||
       ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
-        value === "")
+        optionValue === "")
     ) {
       this._scheduleDeferred(() => {
-        this._ngModelCtrl?.$render?.();
+        this._ngModelCtrl.$render();
       });
     }
   }
@@ -378,35 +382,35 @@ export class SelectController {
 
   /** @ignore */
   /** @internal */
-  _removeOption(value: any) {
-    value = deProxy(value);
-    const count = this._optionsMap.get(value);
+  _removeOption(value: unknown) {
+    const optionValue: unknown = deProxy<unknown>(value);
+    const count = this._optionsMap.get(optionValue);
 
     if (count) {
       if (count === 1) {
-        this._optionsMap.delete(value);
+        this._optionsMap.delete(optionValue);
 
-        if (value === "") {
+        if (optionValue === "") {
           this._hasEmptyOption = false;
           this._emptyOption = undefined;
         }
       } else {
-        this._optionsMap.set(value, count - 1);
+        this._optionsMap.set(optionValue, count - 1);
       }
     }
   }
 
   /** @ignore */
   /** @internal */
-  _hasOption(value: any) {
-    value = deProxy(value);
+  _hasOption(value: unknown) {
+    const optionValue: unknown = deProxy<unknown>(value);
 
-    return !!this._optionsMap.get(value);
+    return !!this._optionsMap.get(optionValue);
   }
 
   /** @ignore */
   /** @internal */
-  _selectUnknownOrEmptyOption(value: any) {
+  _selectUnknownOrEmptyOption(value: unknown) {
     if (isNullOrUndefined(value) && this._emptyOption) {
       this._removeUnknownOption();
       this._selectEmptyOption();
@@ -474,11 +478,11 @@ export class SelectController {
     initialValue?: string,
     hasNgValue = false,
   ) {
-    let oldVal: any;
+    let oldVal: unknown;
 
     let hashedVal: string | undefined;
 
-    let registeredValue: any = initialValue;
+    let registeredValue: unknown = initialValue;
 
     if (hasNgValue) {
       let ngValueInitialized = false;
@@ -488,7 +492,7 @@ export class SelectController {
 
         const previouslySelected = optionElement.selected;
 
-        const rawNewVal = deProxy(newVal);
+        const rawNewVal: unknown = deProxy<unknown>(newVal);
 
         if (ngValueInitialized && Object.is(rawNewVal, oldVal)) return;
 
@@ -513,7 +517,7 @@ export class SelectController {
       };
 
       syncNgValue(undefined);
-      optionScope.$watch(optionAttrs.ngValue, syncNgValue);
+      optionScope.$watch(stringify(optionAttrs.ngValue ?? ""), syncNgValue);
       observeOptionElementAttr(
         $attributes,
         optionScope,
@@ -566,34 +570,39 @@ export class SelectController {
             this._scheduleViewValueUpdate();
           }
         },
-        $attributes
-          ? hasInterpolatedOptionAttr(
-              $attributes,
-              optionElement,
-              optionAttrs,
-              "value",
-            )
-          : false,
+        hasInterpolatedOptionAttr(
+          $attributes,
+          optionElement,
+          optionAttrs,
+          "value",
+        ),
       );
     } else if (interpolateTextFn) {
-      optionScope.value = interpolateTextFn(optionScope);
+      const initialTextValue: unknown = interpolateTextFn(optionScope);
+
+      optionScope.value = initialTextValue;
 
       if (!registeredValue) {
         setOptionElementAttr(
           $attributes,
           optionElement,
           "value",
-          optionScope.value,
+          String(optionScope.value),
         );
-        registeredValue = optionScope.value;
-        this._addOption(optionScope.value, optionElement);
+        registeredValue = initialTextValue;
+        this._addOption(String(initialTextValue), optionElement);
       }
 
       optionScope.$watch("value", () => {
-        const newVal = interpolateTextFn(optionScope);
+        const newVal: unknown = interpolateTextFn(optionScope);
 
         if (!registeredValue) {
-          setOptionElementAttr($attributes, optionElement, "value", newVal);
+          setOptionElementAttr(
+            $attributes,
+            optionElement,
+            "value",
+            String(newVal),
+          );
         }
         const previouslySelected = optionElement.selected;
 
@@ -640,7 +649,7 @@ export class SelectController {
     optionElement.addEventListener("$destroy", () => {
       const currentValue = this._readValue();
 
-      const removeValue = oldVal ?? registeredValue;
+      const removeValue: unknown = oldVal ?? registeredValue;
 
       const shouldUpdateViewValue =
         (this._multiple &&

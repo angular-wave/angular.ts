@@ -128,9 +128,10 @@ function isTextNode(html) {
 }
 /** Returns `true` when a node can hold expando-backed cache data. */
 function elementAcceptsData(node) {
+    const nodeType = Reflect.get(node, "nodeType");
     // The window object can accept data but has no nodeType
     // Otherwise we are only interested in elements (1) and documents (9)
-    switch (node.nodeType) {
+    switch (nodeType) {
         case NodeType._ELEMENT_NODE:
         case NodeType._DOCUMENT_NODE:
         case NodeType._COMMENT_NODE:
@@ -161,8 +162,6 @@ function dealoc(element, onlyDescendants = false) {
         const domElement = singleNode.nodeType === NodeType._DOCUMENT_NODE
             ? singleNode.documentElement
             : singleNode;
-        if (!domElement)
-            return;
         const acceptsData = elementAcceptsData(domElement);
         if (!onlyDescendants && acceptsData) {
             cleanSingleElementData(domElement);
@@ -273,6 +272,24 @@ function getCacheData(element, key) {
 function setTranscludedHostElement(anchor, hostElement) {
     transcludedHostElements.set(anchor, hostElement);
 }
+/** Copies element-transclusion host metadata from an original node tree to its clone. */
+function cloneTranscludedHostElements(source, clone) {
+    const hostElement = transcludedHostElements.get(source);
+    if (hostElement instanceof Element) {
+        transcludedHostElements.set(clone, hostElement);
+    }
+    const sourceChildren = source.childNodes;
+    const cloneChildren = clone.childNodes;
+    for (let i = 0; i < sourceChildren.length; i++) {
+        const sourceChild = sourceChildren[i];
+        const cloneChild = i < cloneChildren.length
+            ? cloneChildren[i]
+            : undefined;
+        if (cloneChild) {
+            cloneTranscludedHostElements(sourceChild, cloneChild);
+        }
+    }
+}
 /** Returns the element itself, or the original host for an element-transclusion anchor. */
 function getDirectiveHostElement(node) {
     if (!node)
@@ -287,15 +304,13 @@ function getDirectiveHostElement(node) {
  * for compile/link contexts that provide synthetic or already-interpolated attrs.
  */
 function getDirectiveAttr(element, attrs, normalizedName) {
-    const hostElement = getDirectiveHostElement(element) || element;
+    const hostElement = getDirectiveHostElement(element) ?? element;
     const elementValue = getNormalizedAttr(hostElement, normalizedName);
-    return elementValue !== undefined
-        ? elementValue
-        : attrs?.[normalizedName];
+    return elementValue ?? attrs?.[normalizedName];
 }
 /** Returns whether a directive attribute is present on the host element or attrs. */
 function hasDirectiveAttr(element, attrs, normalizedName) {
-    return (hasNormalizedAttr(getDirectiveHostElement(element) || element, normalizedName) || attrs?.[normalizedName] !== undefined);
+    return (hasNormalizedAttr(getDirectiveHostElement(element) ?? element, normalizedName) || attrs?.[normalizedName] !== undefined);
 }
 /**
  * Deletes cache data for a given element for a particular key.
@@ -351,7 +366,7 @@ function setIsolateScope(element, scope) {
  * @returns The nearest inherited controller instance if found.
  */
 function getController(element, name) {
-    return getInheritedData(element, `$${name || "ngController"}Controller`);
+    return getInheritedData(element, `$${name ?? "ngController"}Controller`);
 }
 /**
  * Walk up the DOM tree (including Shadow DOM) to get inherited data.
@@ -366,18 +381,19 @@ function getInheritedData(element, name) {
         element = element.documentElement;
     }
     let value;
-    while (element) {
-        value = getCacheData(element, name);
+    let current = element;
+    for (;;) {
+        value = getCacheData(current, name);
         if (isDefined(value))
             return value;
-        let next = element.parentNode;
-        if (!next && element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
-            next = element.host;
+        let next = current.parentNode;
+        if (!next && current.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
+            next = current.host;
         }
         // Stop the loop when next is falsy, instead of assigning null
         if (!next)
             break;
-        element = next;
+        current = next;
     }
     return undefined;
 }
@@ -455,14 +471,12 @@ function getBlockNodes(nodes) {
             break; // stop if no next sibling
         node = next;
         if (blockNodes || nodes[i] !== node) {
-            if (!blockNodes) {
-                // use element to avoid circular dependency
-                blockNodes = Array.prototype.slice.call(nodes, 0, i);
-            }
+            // use element to avoid circular dependency
+            blockNodes ?? (blockNodes = Array.prototype.slice.call(nodes, 0, i));
             blockNodes.push(node);
         }
     }
-    return blockNodes || nodes;
+    return blockNodes ?? nodes;
 }
 /**
  * Gets the name of a boolean attribute if it exists on a given element.
@@ -492,6 +506,19 @@ function getNormalizedAttr(element, normalizedName) {
         const attr = element.attributes[index];
         if (directiveNormalize(attr.name) === expected) {
             return attr.value;
+        }
+    }
+    return undefined;
+}
+/** Returns the actual DOM attribute name for a normalized directive-style name. */
+function getNormalizedAttrName(element, normalizedName) {
+    if (!(element instanceof Element))
+        return undefined;
+    const expected = directiveNormalize(normalizedName);
+    for (let index = 0; index < element.attributes.length; index += 1) {
+        const attr = element.attributes[index];
+        if (directiveNormalize(attr.name) === expected) {
+            return attr.name;
         }
     }
     return undefined;
@@ -649,4 +676,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveAttr, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getOrSetCacheData, getScope, hasDirectiveAttr, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, setTranscludedHostElement, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveAttr, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, hasDirectiveAttr, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

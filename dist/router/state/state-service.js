@@ -117,9 +117,7 @@ class StateProvider {
         if (!lazy) {
             return Rejection.invalid(toState.error())._toPromise();
         }
-        if (!lazy.promise) {
-            lazy.promise = this._loadLazyRegistration(lazy, toState);
-        }
+        lazy.promise ?? (lazy.promise = this._loadLazyRegistration(lazy, toState));
         await lazy.promise;
         if (routerState._lastStartedTransition !== latest) {
             return Rejection.superseded()._toPromise();
@@ -343,8 +341,8 @@ class StateProvider {
        * @returns {boolean | undefined} Returns true if it is the state.
        */
     is(stateOrName, params, options) {
-        const relative = options?.relative === undefined ? this.$current : options.relative;
-        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+        const relative = options?.relative ?? this.$current;
+        const state = this._stateRegistry._matcher.find(stateOrName, relative);
         if (!isDefined(state))
             return undefined;
         if (this.$current !== state)
@@ -391,7 +389,7 @@ class StateProvider {
        * @returns {boolean | undefined} Returns true if it does include the state
        */
     includes(stateOrName, params, options) {
-        const relative = options?.relative === undefined ? this.$current : options.relative;
+        const relative = options?.relative ?? this.$current;
         const glob = isString(stateOrName) && Glob.fromString(stateOrName);
         if (glob) {
             const currentName = this.$current?.name;
@@ -399,7 +397,7 @@ class StateProvider {
                 return false;
             stateOrName = currentName;
         }
-        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+        const state = this._stateRegistry._matcher.find(stateOrName, relative);
         const include = this.$current?.includes;
         if (!isDefined(state) || !include)
             return undefined;
@@ -428,14 +426,14 @@ class StateProvider {
      * @returns {string | null} compiled state url
      */
     href(stateOrName, params, options) {
-        params = params || {};
-        const relative = options?.relative === undefined ? this.$current : options.relative;
-        const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+        params = params ?? {};
+        const relative = options?.relative ?? this.$current;
+        const state = this._stateRegistry._matcher.find(stateOrName, relative);
         if (!isDefined(state))
             return null;
         if (options?.inherit !== false)
             params = this._routerState._params.$inherit(params, assertDefined(this.$current), state);
-        const nav = state && options?.lossy !== false ? state.navigable : state;
+        const nav = options?.lossy !== false ? state.navigable : state;
         if (!nav || isNullOrUndefined(nav._url)) {
             return null;
         }
@@ -467,7 +465,7 @@ class StateProvider {
      * @returns the current global error handler
      */
     defaultErrorHandler(handler) {
-        return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
+        return (this._defaultErrorHandler = handler ?? this._defaultErrorHandler);
     }
     /**
      * @param {StateOrName} stateOrName
@@ -476,8 +474,8 @@ class StateProvider {
     get(stateOrName, base) {
         const reg = this._stateRegistry;
         if (arguments.length === 0)
-            return reg?.get();
-        return reg?.get(stateOrName, base || this.$current);
+            return reg.get();
+        return reg.get(stateOrName, base ?? this.$current);
     }
 }
 /* @ignore */

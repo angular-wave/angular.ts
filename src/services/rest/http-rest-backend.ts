@@ -8,20 +8,23 @@ import type { RestBackend, RestRequest } from "./rest.ts";
  * the transport swappable for custom resource backends.
  */
 export class HttpRestBackend implements RestBackend {
+  /** Runtime `$http` service used to execute requests. */
+  private readonly _$http: HttpService;
+  /** Default `$http` options merged into every request. */
+  private readonly _options: Record<string, unknown>;
+
   /** Creates a backend that executes REST requests through `$http`. */
-  constructor(
-    /** Runtime `$http` service used to execute requests. */
-    private readonly _$http: HttpService,
-    /** Default `$http` options merged into every request. */
-    private readonly _options: Record<string, unknown> = {},
-  ) {}
+  constructor($http: HttpService, options: Record<string, unknown> = {}) {
+    this._$http = $http;
+    this._options = options;
+  }
 
   /**
    * Send the REST request through `$http`.
    *
    * Request-specific options override backend defaults.
    */
-  request<T>(request: RestRequest): Promise<HttpResponse<T>> {
+  async request<T>(request: RestRequest): Promise<HttpResponse<T>> {
     return this._$http<T>({
       method: request.method,
       url: request.url,

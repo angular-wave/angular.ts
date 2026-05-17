@@ -37,7 +37,7 @@ export function ngWorkerDirective(
         return;
       }
 
-      const eventName = attr("trigger") || getEventNameForElement(element);
+      const eventName = attr("trigger") ?? getEventNameForElement(element);
 
       const paramsExpr = attr("params");
 
@@ -48,19 +48,20 @@ export function ngWorkerDirective(
       let intervalId: ReturnType<typeof setInterval> | undefined;
 
       if ($attributes.has(element, "latch")) {
-        $attributes.observe(
-          scope,
-          element,
-          "latch",
-          callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))),
-        );
+        const dispatchAfterFirst = callBackAfterFirst(() => {
+          element.dispatchEvent(new Event(eventName));
+        });
+
+        $attributes.observe(scope, element, "latch", () => {
+          dispatchAfterFirst();
+        });
       }
 
       if ($attributes.has(element, "interval")) {
         element.dispatchEvent(new Event(eventName));
         intervalId = setInterval(
           () => element.dispatchEvent(new Event(eventName)),
-          parseInt(attr("interval") || "", 10) || 1000,
+          parseInt(attr("interval") ?? "", 10) || 1000,
         );
       }
 
@@ -73,7 +74,7 @@ export function ngWorkerDirective(
           if (isDefined(onResult)) {
             $parse(onResult)(scope, { $result: result });
           } else {
-            handleSwap(String(result), attr("swap") || "innerHTML", element);
+            handleSwap(String(result), attr("swap") ?? "innerHTML", element);
           }
         },
         onError: (err: ErrorEvent) => {
@@ -94,7 +95,7 @@ export function ngWorkerDirective(
           if (element.hasAttribute("disabled")) return;
 
           if ($attributes.has(element, "delay")) {
-            await wait(parseInt(attr("delay") || "", 10) || 0);
+            await wait(parseInt(attr("delay") ?? "", 10) || 0);
           }
 
           if (throttled) return;
@@ -107,7 +108,7 @@ export function ngWorkerDirective(
                 $attributes.set(element, "throttled", false);
                 throttled = false;
               },
-              parseInt(attr("throttle") || "", 10),
+              parseInt(attr("throttle") ?? "", 10),
             );
           }
 

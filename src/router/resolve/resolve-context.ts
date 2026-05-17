@@ -64,7 +64,7 @@ export class ResolveContext {
   /**
    * Returns the most local resolvable registered for the specified token.
    */
-  getResolvable(token: ResolvableToken): Resolvable {
+  getResolvable(token: ResolvableToken): Resolvable | undefined {
     for (let i = this._path.length - 1; i >= 0; i--) {
       const { resolvables } = this._path[i];
 
@@ -77,7 +77,7 @@ export class ResolveContext {
       }
     }
 
-    return undefined as unknown as Resolvable;
+    return undefined;
   }
 
   /**
@@ -100,7 +100,7 @@ export class ResolveContext {
    * Adds or replaces resolvables for a specific state in this path.
    */
   addResolvables(
-    newResolvables: Array<Resolvable | ResolvableLiteral>,
+    newResolvables: (Resolvable | ResolvableLiteral)[],
     state: StateObject,
   ): void {
     let node: PathNode | undefined;
@@ -139,7 +139,9 @@ export class ResolveContext {
       }
     });
 
-    resolvables.forEach((resolvable) => nextResolvables.push(resolvable));
+    resolvables.forEach((resolvable) => {
+      nextResolvables.push(resolvable);
+    });
 
     node.resolvables = nextResolvables;
   }
@@ -147,8 +149,12 @@ export class ResolveContext {
   /**
    * Resolves the path's resolvables.
    */
-  resolvePath(eagerOnly = false, trans: Transition): Promise<ResolvedToken[]> {
-    const promises: Array<Promise<ResolvedToken>> = [];
+  async resolvePath(
+    eagerOnly: boolean | undefined,
+    trans: Transition,
+  ): Promise<ResolvedToken[]> {
+    const shouldResolveEagerOnly = eagerOnly ?? false;
+    const promises: Promise<ResolvedToken>[] = [];
 
     this._path.forEach((node, index) => {
       const subContext = new ResolveContext(
@@ -157,7 +163,7 @@ export class ResolveContext {
       );
 
       node.resolvables.forEach((resolvable) => {
-        if (!eagerOnly || resolvable.eager) {
+        if (!shouldResolveEagerOnly || resolvable.eager) {
           promises.push(resolveToken(resolvable, subContext, trans));
         }
       });

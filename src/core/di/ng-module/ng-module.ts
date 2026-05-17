@@ -59,7 +59,7 @@ import type {
   WebComponentService,
 } from "../../../services/web-component/web-component.ts";
 
-type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
+export type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 
 type NamedInjectable = Injectable<(...args: never[]) => unknown>;
 
@@ -376,10 +376,13 @@ export class NgModule {
   ): this {
     validate(isString, name, "name");
     validate(isString, src, "src");
+
+    const createWasmService = ($wasm: WasmService) => $wasm(src, imports, opts);
+
     this._invokeQueue.push([
       _provide,
       "factory",
-      [name, [_wasm, ($wasm: WasmService) => $wasm(src, imports, opts)]],
+      [name, [_wasm, createWasmService]],
     ]);
 
     return this;

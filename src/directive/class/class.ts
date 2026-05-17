@@ -123,7 +123,7 @@ export function arrayDifference(
   if (!tokens2?.length) return tokens1;
 
   if (tokens2.length === 1) {
-    const token = tokens2[0];
+    const [token] = tokens2;
 
     const out = [];
 
@@ -137,7 +137,7 @@ export function arrayDifference(
   }
 
   if (tokens1.length === 1) {
-    const token = tokens1[0];
+    const [token] = tokens1;
 
     for (let i = 0; i < tokens2.length; i++) {
       if (tokens2[i] === token) return [];
@@ -228,7 +228,10 @@ function stringifyClassPrimitive(value: unknown): string {
       return String(value);
     case "function":
       return value.toString();
-    default:
+    case "undefined":
+    case "object":
       return "";
   }
+
+  return "";
 }

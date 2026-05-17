@@ -18,6 +18,7 @@ import {
   isDefined,
   isFunction,
   isInstanceOf,
+  isObject,
   isRegExp,
   isString,
   isUndefined,
@@ -75,32 +76,29 @@ const trustedTypesPolicyByWindow = new WeakMap<
 >();
 
 export interface SceService {
-  getTrusted(type: SceContext, mayBeTrusted: any): any;
-  getTrustedHtml(value: any): any;
-  getTrustedResourceUrl(value: any): any;
-  getTrustedUrl(value: any): any;
-  getTrustedMediaUrl(value: any): any;
-  parse(
-    type: SceContext,
-    expression: string,
-  ): (context: any, locals: any) => any;
-  parseAsHtml(expression: string): (context: any, locals: any) => any;
-  parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
-  parseAsUrl(expression: string): (context: any, locals: any) => any;
-  parseAsMediaUrl(expression: string): (context: any, locals: any) => any;
-  trustAs(type: SceContext, value: any): any;
-  trustAsHtml(value: any): any;
-  trustAsResourceUrl(value: any): any;
-  trustAsUrl(value: any): any;
-  trustAsMediaUrl(value: any): any;
+  getTrusted(type: SceContext, mayBeTrusted: unknown): unknown;
+  getTrustedHtml(value: unknown): unknown;
+  getTrustedResourceUrl(value: unknown): unknown;
+  getTrustedUrl(value: unknown): unknown;
+  getTrustedMediaUrl(value: unknown): unknown;
+  parse(type: SceContext, expression: string): CompiledExpression;
+  parseAsHtml(expression: string): CompiledExpression;
+  parseAsResourceUrl(expression: string): CompiledExpression;
+  parseAsUrl(expression: string): CompiledExpression;
+  parseAsMediaUrl(expression: string): CompiledExpression;
+  trustAs(type: SceContext, value: unknown): unknown;
+  trustAsHtml(value: unknown): unknown;
+  trustAsResourceUrl(value: unknown): unknown;
+  trustAsUrl(value: unknown): unknown;
+  trustAsMediaUrl(value: unknown): unknown;
   isEnabled(): boolean;
-  valueOf(value?: any): any;
+  valueOf(value?: unknown): unknown;
 }
 
 export interface SceDelegateService {
-  getTrusted(type: SceContext, mayBeTrusted: any): any;
-  trustAs(type: SceContext, value: any): any;
-  valueOf(value?: any): any;
+  getTrusted(type: SceContext, mayBeTrusted: unknown): unknown;
+  trustAs(type: SceContext, value: unknown): unknown;
+  valueOf(value?: unknown): unknown;
 }
 
 export interface UriSanitizationConfig {
@@ -307,7 +305,16 @@ export class SceDelegateProvider implements UriSanitizationConfig {
   bannedResourceUrlList: (value?: SceMatcher[] | null) => SceMatcher[];
   aHrefSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
   imgSrcSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
-  $get: any[];
+  $get: [
+    string,
+    string,
+    string,
+    (
+      $injector: ng.InjectorService,
+      $window: Window,
+      $exceptionHandler: ng.ExceptionHandlerService,
+    ) => SceDelegateService,
+  ];
 
   constructor() {
     // Resource URLs can also be trusted by policy.
@@ -344,7 +351,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
      */
     this.trustedResourceUrlList = function (value?: SceMatcher[] | null) {
       if (arguments.length) {
-        const list = value || [];
+        const list = value ?? [];
 
         trustedResourceUrlList = list.map(adjustMatcher);
       }
@@ -376,7 +383,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
      */
     this.bannedResourceUrlList = function (value?: SceMatcher[] | null) {
       if (arguments.length) {
-        const list = value || [];
+        const list = value ?? [];
 
         bannedResourceUrlList = list.map(adjustMatcher);
       }
@@ -455,7 +462,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
       ) {
         const trustedTypesPolicy = getTrustedTypesPolicy($window);
 
-        let htmlSanitizer: (...args: any[]) => any = function () {
+        let htmlSanitizer: (...args: unknown[]) => unknown = function () {
           $exceptionHandler(
             $sceError(
               "unsafe",
@@ -465,7 +472,9 @@ export class SceDelegateProvider implements UriSanitizationConfig {
         };
 
         if ($injector.has("$sanitize")) {
-          htmlSanitizer = $injector.get("$sanitize") as (...args: any[]) => any;
+          htmlSanitizer = $injector.get("$sanitize") as (
+            ...args: unknown[]
+          ) => unknown;
         }
 
         /**
@@ -606,7 +615,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
          * @param trustedValue The value that should be considered trusted.
          * @returns A trusted representation of value, that can be used in the given context.
          */
-        function trustAs(type: SceContext, trustedValue: any): any {
+        function trustAs(type: SceContext, trustedValue: unknown): unknown {
           const Constructor =
             isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
 
@@ -667,9 +676,9 @@ export class SceDelegateProvider implements UriSanitizationConfig {
          *     `$sceDelegate.trustAs`} if `value` is the result of such a call.  Otherwise, returns
          *     `value` unchanged.
          */
-        function valueOf(maybeTrusted: any): any {
+        function valueOf(maybeTrusted: unknown): unknown {
           if (isInstanceOf(maybeTrusted, trustedValueHolderBase)) {
-            return (maybeTrusted as TrustedValueHolder)._unwrapTrustedValue();
+            return maybeTrusted._unwrapTrustedValue();
           }
 
           return maybeTrusted;
@@ -705,7 +714,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
          * @returns A version of the value that's safe to use in the given context, or throws an
          *     exception if this is impossible.
          */
-        function getTrusted(type: SceContext, maybeTrusted: any): any {
+        function getTrusted(type: SceContext, maybeTrusted: unknown): unknown {
           if (
             maybeTrusted === null ||
             isUndefined(maybeTrusted) ||
@@ -723,12 +732,12 @@ export class SceDelegateProvider implements UriSanitizationConfig {
 
           // If maybeTrusted is a trusted class instance but not of the correct trusted type
           // then unwrap it and allow it to pass through to the rest of the checks
-          if (
-            isFunction((maybeTrusted as TrustedValueHolder)._unwrapTrustedValue)
-          ) {
-            maybeTrusted = (
-              maybeTrusted as TrustedValueHolder
-            )._unwrapTrustedValue();
+          const unwrapTrustedValue: unknown = isObject(maybeTrusted)
+            ? Reflect.get(maybeTrusted, "_unwrapTrustedValue")
+            : undefined;
+
+          if (isFunction(unwrapTrustedValue)) {
+            maybeTrusted = unwrapTrustedValue.call(maybeTrusted);
           }
 
           // If we get here, then we will either sanitize the value or throw an exception.
@@ -741,7 +750,7 @@ export class SceDelegateProvider implements UriSanitizationConfig {
           }
 
           if (type === SCE_CONTEXTS._RESOURCE_URL) {
-            if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
+            if (isResourceUrlAllowedByPolicy(maybeTrusted as ResolvableUrl)) {
               return maybeTrusted;
             }
             $exceptionHandler(
@@ -753,18 +762,10 @@ export class SceDelegateProvider implements UriSanitizationConfig {
             );
 
             return undefined;
-          } else if (type === SCE_CONTEXTS._HTML) {
-            // htmlSanitizer throws its own error when no sanitizer is available.
-            return htmlSanitizer();
           }
 
-          // Default error when the $sce service has no way to make the input safe.
-          return $exceptionHandler(
-            $sceError(
-              "unsafe",
-              "Attempting to use an unsafe value in a safe context.",
-            ),
-          );
+          // htmlSanitizer throws its own error when no sanitizer is available.
+          return htmlSanitizer();
         }
 
         return { trustAs, getTrusted, valueOf };
@@ -818,9 +819,11 @@ export function SceProvider(this: unknown): void {
       sce.isEnabled = function () {
         return enabled;
       };
-      sce.trustAs = $sceDelegate.trustAs;
-      sce.getTrusted = $sceDelegate.getTrusted;
-      sce.valueOf = $sceDelegate.valueOf;
+      sce.trustAs = (type: SceContext, value: unknown): unknown =>
+        $sceDelegate.trustAs(type, value);
+      sce.getTrusted = (type: SceContext, value: unknown): unknown =>
+        $sceDelegate.getTrusted(type, value);
+      sce.valueOf = (value?: unknown): unknown => $sceDelegate.valueOf(value);
 
       if (!enabled) {
         /**
@@ -857,10 +860,7 @@ export function SceProvider(this: unknown): void {
           return parsed;
         }
 
-        return $parse(
-          expr,
-          (value: unknown) => sce.getTrusted(type, value) as unknown,
-        );
+        return $parse(expr, (value: unknown) => sce.getTrusted(type, value));
       };
 
       /**
@@ -999,11 +999,13 @@ export function SceProvider(this: unknown): void {
        */
 
       // Shorthand delegations.
-      const parse = sce.parseAs;
+      const parse = (type: SceContext, expr: string) => sce.parseAs(type, expr);
 
-      const { getTrusted } = sce;
+      const getTrusted = (type: SceContext, value: unknown): unknown =>
+        sce.getTrusted(type, value);
 
-      const { trustAs } = sce;
+      const trustAs = (type: SceContext, value: unknown): unknown =>
+        sce.trustAs(type, value);
 
       entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
         const lName = name.replace(/^_/, "").toLowerCase();
@@ -1014,11 +1016,11 @@ export function SceProvider(this: unknown): void {
         };
         /** @param value */
         sce[snakeToCamel(`get_trusted_${lName}`)] = function (value: unknown) {
-          return getTrusted(enumValue, value) as unknown;
+          return getTrusted(enumValue, value);
         };
         /** @param value */
         sce[snakeToCamel(`trust_as_${lName}`)] = function (value: unknown) {
-          return trustAs(enumValue, value) as unknown;
+          return trustAs(enumValue, value);
         };
       });
 

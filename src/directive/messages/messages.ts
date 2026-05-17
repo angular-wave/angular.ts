@@ -26,7 +26,7 @@ const ACTIVE_CLASS = "ng-active";
 
 const INACTIVE_CLASS = "ng-inactive";
 
-type MessageCollection = Record<string, any>;
+type MessageCollection = Record<string, unknown>;
 
 /** @internal */
 type MessageNodeComment = Comment & { _ngMessageNode?: string };
@@ -100,7 +100,7 @@ class NgMessageCtrl {
       ngMessagesMultipleExpression,
     );
 
-    this._scope.$watch(collectionExpression || "", this._render.bind(this));
+    this._scope.$watch(collectionExpression ?? "", this._render.bind(this));
   }
 
   /** @internal */
@@ -109,8 +109,8 @@ class NgMessageCtrl {
   }
 
   /** @internal */
-  _render(collection: MessageCollection = {}): void {
-    collection = collection || {};
+  _render(collection: MessageCollection | null | undefined = {}): void {
+    collection = collection ?? {};
     this._renderLater = false;
     this._cachedCollection = collection;
 
@@ -141,19 +141,20 @@ class NgMessageCtrl {
       let messageUsed = false;
 
       if (!messageFound) {
-        entries(collection).forEach(([key, value]) => {
-          if (truthy(value) && !messageUsed) {
+        for (const [key, value] of entries(collection)) {
+          if (truthy(value)) {
             truthyKeys++;
 
             if (messageCtrl.test(key)) {
-              if (matchedKeys[key]) return;
+              if (matchedKeys[key]) continue;
               matchedKeys[key] = true;
 
               messageUsed = true;
               messageCtrl.attach();
+              break;
             }
           }
-        });
+        }
       }
 
       if (messageUsed) {
@@ -209,6 +210,8 @@ class NgMessageCtrl {
         if (this._renderLater) {
           this._render(this._cachedCollection ?? {});
         }
+
+        return undefined;
       });
     }
   }
@@ -274,7 +277,7 @@ export function ngMessagesDirective(
       new NgMessageCtrl(
         $element,
         $scope,
-        $attributes.read($element, "ngMessages") ||
+        $attributes.read($element, "ngMessages") ??
           $attributes.read($element, "for"),
         $attributes.read($element, "multiple"),
         $attributes.read($element, "ngMessagesMultiple"),
@@ -327,12 +330,12 @@ export function ngMessagesIncludeDirective(
       ngMessagesCtrl: NgMessageCtrl,
     ) {
       const src =
-        $attributes.read(element, "ngMessagesInclude") ||
-        $attributes.read(element, "src") ||
+        $attributes.read(element, "ngMessagesInclude") ??
+        $attributes.read(element, "src") ??
         "";
 
       void $templateRequest(src).then((html: string) => {
-        if ($scope._destroyed) return;
+        if ($scope._destroyed) return undefined;
 
         if (isString(html) && !html.trim()) {
           // Empty template - nothing to compile
@@ -345,6 +348,8 @@ export function ngMessagesIncludeDirective(
 
           ngMessagesCtrl.reRender();
         }
+
+        return undefined;
       });
     },
   };
@@ -419,12 +424,12 @@ function ngMessageDirectiveFactory(
         if (!isDefault) {
           commentNode = element as unknown as MessageNodeComment;
           staticExp =
-            $attributes.read(element, "ngMessage") ||
-            $attributes.read(element, "when") ||
+            $attributes.read(element, "ngMessage") ??
+            $attributes.read(element, "when") ??
             undefined;
           dynamicExp =
-            $attributes.read(element, "ngMessageExp") ||
-            $attributes.read(element, "whenExp") ||
+            $attributes.read(element, "ngMessageExp") ??
+            $attributes.read(element, "whenExp") ??
             undefined;
 
           const assignRecords = function (
@@ -536,11 +541,11 @@ function ngMessageDirectiveFactory(
  * Checks whether the given key exists in a message collection.
  */
 function contains(
-  collection: string[] | object | any[] | null | undefined,
+  collection: string[] | object | unknown[] | null | undefined,
   key: string | number | symbol,
 ): boolean | undefined {
   if (collection) {
-    return isArray(collection)
+    return isArray<string>(collection)
       ? collection.includes(String(key))
       : hasOwn(collection, key);
   }

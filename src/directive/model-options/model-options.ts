@@ -72,7 +72,7 @@ class NgModelOptionsController {
       : defaultModelOptions;
 
     const modelOptionsDefinition = this._parse(
-      this._attributes.read(this._element, "ngModelOptions") || "",
+      this._attributes.read(this._element, "ngModelOptions") ?? "",
     )(this._scope) as ModelOptionsConfig;
 
     this.$options = parentOptions.createChild(modelOptionsDefinition);

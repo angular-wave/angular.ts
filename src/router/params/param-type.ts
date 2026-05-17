@@ -32,9 +32,11 @@ function valToString(val: unknown): string | undefined {
       return hasCustomToString(val as { toString: () => string })
         ? (val as { toString: () => string }).toString()
         : undefined;
-    default:
+    case "undefined":
       return undefined;
   }
+
+  return undefined;
 }
 
 /**
@@ -149,7 +151,7 @@ class ArrayParamType extends ParamType {
   }
 
   /** @internal */
-  _arrayWrap(val: unknown): unknown[] {
+  static _arrayWrap(val: unknown): unknown[] {
     return isArray(val) ? val : isDefined(val) ? [val] : [];
   }
 
@@ -167,9 +169,9 @@ class ArrayParamType extends ParamType {
 
   /** @internal */
   _mapArray(method: ArrayUnaryMethod, val: unknown, allTruthyMode = false) {
-    if (isArray(val) && val.length === 0) return val as unknown[];
+    if (isArray(val) && val.length === 0) return val;
 
-    const arr = this._arrayWrap(val);
+    const arr = ArrayParamType._arrayWrap(val);
 
     const type = this._type;
 
@@ -207,9 +209,9 @@ class ArrayParamType extends ParamType {
   }
 
   equals(val1: unknown, val2: unknown): boolean {
-    const left = this._arrayWrap(val1);
+    const left = ArrayParamType._arrayWrap(val1);
 
-    const right = this._arrayWrap(val2);
+    const right = ArrayParamType._arrayWrap(val2);
 
     if (left.length !== right.length) return false;
 

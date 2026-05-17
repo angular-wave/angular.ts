@@ -82,25 +82,31 @@ ranges and let applications choose their parser.
 
 ### Phase A - ABI Header
 
-- [ ] Create C headers under `integrations/wasm/c`.
-- [ ] Declare the `angular_ts` host imports.
-- [ ] Export `ng_abi_alloc` and `ng_abi_free`.
-- [ ] Add byte-slice and handle types.
-- [ ] Add helper functions for handle and name-targeted scopes.
-- [ ] Add result-buffer ownership helpers.
+- [x] Create C headers under `integrations/wasm/c`.
+- [x] Declare the `angular_ts` host imports.
+- [x] Export `ng_abi_alloc` and `ng_abi_free`.
+- [x] Add byte-slice and handle types.
+- [x] Add helper functions for handle and name-targeted scopes.
+- [x] Add result-buffer ownership helpers.
 
 ### Phase B - Todo Proof
 
-- [ ] Create a C todo example.
-- [ ] Use `ng_scope_set_json` to update real AngularTS scope state.
-- [ ] Use `ng_scope_watch_path` to receive UI-originated scope updates.
-- [ ] Add a bootstrap adapter that binds AngularTS `WasmScope`.
+- [x] Create a C todo example.
+- [x] Use `ng_scope_set_json` to update real AngularTS scope state.
+- [x] Use `ng_scope_watch_path` to receive UI-originated scope updates.
+- [x] Add a bootstrap adapter that binds AngularTS `WasmScope`.
 
 ### Phase C - Browser Validation
 
-- [ ] Add Playwright coverage for the C todo example.
-- [ ] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
-- [ ] Verify result buffers are freed.
+- [x] Add Playwright coverage for the C todo example.
+- [x] Add a `wasm-build` target that emits `examples/todo/main.wasm`.
+- [x] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
+- [x] Verify result buffers are freed.
+
+Local `make browser-test` is blocked in the current sandbox because the shared
+Playwright web server cannot bind local TCP/UDP sockets. The target builds the
+C Wasm artifact before reaching that environment failure. Set
+`PW_SKIP_WEB_SERVER=1` to run against an already-running `PW_BASE_URL`.
 
 ## Non-Goals
 

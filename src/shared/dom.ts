@@ -12,7 +12,7 @@ import {
   isString,
   uppercase,
   assertDefined,
-} from "./utils.js";
+} from "./utils.ts";
 import { NodeType } from "./node.ts";
 import type { ExpandoStore } from "../interface.ts";
 
@@ -36,6 +36,8 @@ let cacheSize = 0;
 const transcludedHostElements = new WeakMap<Node, Element>();
 
 const htmlParseCache = new Map<string, DocumentFragment>();
+
+type ExpandoOwner = Node | Window;
 
 export const Cache = {
   get size() {
@@ -143,10 +145,7 @@ export function createDocumentFragment(): DocumentFragment {
  * @param element - The element whose stored data should be updated.
  * @param [name] - Optional data key to remove. When omitted, all stored expando data is cleared.
  */
-export function removeElementData(
-  element: Element & Record<string, any>,
-  name?: string,
-): void {
+export function removeElementData(element: ExpandoOwner, name?: string): void {
   const expandoStore = expandoCache.get(element);
 
   if (expandoStore) {
@@ -174,7 +173,7 @@ export function removeElementData(
  * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
  */
 function getExpando(
-  element: Element & Record<string, any>,
+  element: ExpandoOwner,
   createIfNecessary = false,
 ): ExpandoStore | undefined {
   let expandoStore = expandoCache.get(element);
@@ -197,10 +196,12 @@ export function isTextNode(html: string): boolean {
 }
 
 /** Returns `true` when a node can hold expando-backed cache data. */
-function elementAcceptsData(node: Element | Node): boolean {
+function elementAcceptsData(node: Element | Node | Window): boolean {
+  const nodeType = Reflect.get(node, "nodeType") as unknown;
+
   // The window object can accept data but has no nodeType
   // Otherwise we are only interested in elements (1) and documents (9)
-  switch (node.nodeType) {
+  switch (nodeType) {
     case NodeType._ELEMENT_NODE:
     case NodeType._DOCUMENT_NODE:
     case NodeType._COMMENT_NODE:
@@ -214,9 +215,9 @@ function elementAcceptsData(node: Element | Node): boolean {
 /** Deallocates cached data for an element and its descendant tree. */
 export function dealoc(
   element:
-    | (Element & Record<string, any>)
+    | Element
     | Document
-    | Array<Element & Record<string, any>>
+    | Element[]
     | NodeListOf<Element>
     | HTMLCollectionOf<Element>
     | null
@@ -246,13 +247,10 @@ export function dealoc(
   } else {
     const singleNode = element;
 
-    const domElement =
+    const domElement: Element =
       singleNode.nodeType === NodeType._DOCUMENT_NODE
-        ? ((singleNode as Document).documentElement as Element &
-            Record<string, any>)
-        : (singleNode as Element & Record<string, any>);
-
-    if (!domElement) return;
+        ? (singleNode as Document).documentElement
+        : (singleNode as Element);
 
     const acceptsData = elementAcceptsData(domElement);
 
@@ -279,7 +277,7 @@ export function dealoc(
  *
  * @param element - The element whose expando store should be cleaned up.
  */
-function removeIfEmptyData(element: Element & Record<string, any>): void {
+function removeIfEmptyData(element: ExpandoOwner): void {
   const expandoStore = expandoCache.get(element);
 
   if (!expandoStore) {
@@ -306,9 +304,9 @@ function removeIfEmptyData(element: Element & Record<string, any>): void {
  */
 export function getOrSetCacheData(
   element: Element,
-  key?: string | Record<string, any>,
-  value?: any,
-): any {
+  key?: string | Record<string, unknown>,
+  value?: unknown,
+): unknown {
   if (!elementAcceptsData(element)) return undefined;
 
   const isSimpleSetter = isDefined(value);
@@ -351,13 +349,10 @@ export function getOrSetCacheData(
 export function setCacheData(
   element: Element | Node,
   key: string,
-  value?: any,
+  value?: unknown,
 ): void {
   if (elementAcceptsData(element)) {
-    const expandoStore = getExpando(
-      element as Element & Record<string, any>,
-      true,
-    );
+    const expandoStore = getExpando(element, true);
 
     assertDefined(expandoStore)[kebabToCamel(key)] = value;
   } else {
@@ -375,7 +370,7 @@ export function setCacheData(
  * @param [key] - The key (as a string) to retrieve.
  * @returns The stored value for the key, or `undefined` if no matching data exists.
  */
-export function getCacheData(element: Element, key?: string): any {
+export function getCacheData(element: Element, key?: string): unknown {
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
 
@@ -383,7 +378,7 @@ export function getCacheData(element: Element, key?: string): any {
       return undefined;
     }
 
-    return expandoStore?.[kebabToCamel(key)] as unknown;
+    return expandoStore?.[kebabToCamel(key)];
   }
 
   return undefined;
@@ -410,7 +405,10 @@ export function cloneTranscludedHostElements(source: Node, clone: Node): void {
 
   for (let i = 0; i < sourceChildren.length; i++) {
     const sourceChild = sourceChildren[i];
-    const cloneChild = cloneChildren[i];
+    const cloneChild =
+      i < cloneChildren.length
+        ? (cloneChildren[i] as Node | undefined)
+        : undefined;
 
     if (cloneChild) {
       cloneTranscludedHostElements(sourceChild, cloneChild);
@@ -437,27 +435,25 @@ export function getDirectiveHostElement(
  */
 export function getDirectiveAttr(
   element: Element | Node | null | undefined,
-  attrs: Record<string, any> | null | undefined,
+  attrs: Record<string, unknown> | null | undefined,
   normalizedName: string,
 ): string | undefined {
-  const hostElement = getDirectiveHostElement(element) || element;
+  const hostElement = getDirectiveHostElement(element) ?? element;
 
   const elementValue = getNormalizedAttr(hostElement, normalizedName);
 
-  return elementValue !== undefined
-    ? elementValue
-    : (attrs?.[normalizedName] as string | undefined);
+  return elementValue ?? (attrs?.[normalizedName] as string | undefined);
 }
 
 /** Returns whether a directive attribute is present on the host element or attrs. */
 export function hasDirectiveAttr(
   element: Element | Node | null | undefined,
-  attrs: Record<string, any> | null | undefined,
+  attrs: Record<string, unknown> | null | undefined,
   normalizedName: string,
 ): boolean {
   return (
     hasNormalizedAttr(
-      getDirectiveHostElement(element) || element,
+      getDirectiveHostElement(element) ?? element,
       normalizedName,
     ) || attrs?.[normalizedName] !== undefined
   );
@@ -477,7 +473,7 @@ export function deleteCacheData(element: Element, key?: string): void {
 
     if (expandoStore && hasOwn(expandoStore, kebabToCamel(key))) {
       deleteProperty(expandoStore, kebabToCamel(key));
-      removeIfEmptyData(element as Element & Record<string, any>);
+      removeIfEmptyData(element);
     }
   }
 }
@@ -527,7 +523,7 @@ export function getController(
   element: Element,
   name?: string,
 ): ng.Scope | undefined {
-  return getInheritedData(element, `$${name || "ngController"}Controller`) as
+  return getInheritedData(element, `$${name ?? "ngController"}Controller`) as
     | ng.Scope
     | undefined;
 }
@@ -539,29 +535,31 @@ export function getController(
  * @param name - The data key to look up.
  * @returns The first matching inherited value from the element tree, or `undefined` if none is found.
  */
-export function getInheritedData(element: Node, name: string): any {
+export function getInheritedData(element: Node, name: string): unknown {
   // if element is the document object work with the html element instead
   if (element.nodeType === NodeType._DOCUMENT_NODE) {
     element = (element as Document).documentElement;
   }
 
-  let value;
+  let value: unknown;
 
-  while (element) {
-    value = getCacheData(element as Element, name);
+  let current: Node = element;
+
+  for (;;) {
+    value = getCacheData(current as Element, name);
 
     if (isDefined(value)) return value;
 
-    let next = element.parentNode;
+    let next: Node | null = current.parentNode;
 
-    if (!next && element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
-      next = (element as ShadowRoot).host;
+    if (!next && current.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
+      next = (current as ShadowRoot).host;
     }
 
     // Stop the loop when next is falsy, instead of assigning null
     if (!next) break;
 
-    element = next;
+    current = next;
   }
 
   return undefined;
@@ -641,7 +639,7 @@ export function startingTag(elementOrStr: string | Element | Node): string {
  * @returns The contiguous DOM block spanning from the first node to the last node.
  */
 export function getBlockNodes(nodes: Node[]): Node[] {
-  let node = nodes[0];
+  let [node] = nodes;
 
   const endNode = nodes[nodes.length - 1];
 
@@ -655,15 +653,13 @@ export function getBlockNodes(nodes: Node[]): Node[] {
     node = next;
 
     if (blockNodes || nodes[i] !== node) {
-      if (!blockNodes) {
-        // use element to avoid circular dependency
-        blockNodes = Array.prototype.slice.call(nodes, 0, i) as Node[];
-      }
+      // use element to avoid circular dependency
+      blockNodes ??= Array.prototype.slice.call(nodes, 0, i) as Node[];
       blockNodes.push(node);
     }
   }
 
-  return blockNodes || nodes;
+  return blockNodes ?? nodes;
 }
 
 /**
@@ -917,8 +913,10 @@ export function getBaseHref(): string {
  *
  * @returns The extracted element node, the original node, or `undefined` when no element node exists.
  */
-export function extractElementNode(element: NodeList | Node): Node | undefined {
-  if (!element || !isArray(element)) return element as Node;
+export function extractElementNode(
+  element: NodeList | Node | null | undefined,
+): Node | undefined {
+  if (!element || !isArray(element)) return element as Node | undefined;
 
   const nodeList = element as NodeListOf<Node>;
 

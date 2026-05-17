@@ -105,7 +105,7 @@ interface NgViewData {
 }
 
 interface ActiveNgViewRootData {
-  $cfg: { _viewDecl: { _context: ViewContext } };
+  $cfg: { _viewDecl: { _context?: ViewContext } };
   $ngView: Partial<ActiveNgView>;
 }
 
@@ -209,8 +209,10 @@ export function ViewDirective(
 ): ng.Directive {
   void $state;
 
+  const rootContext = $view._rootViewContext() as ViewContext;
+
   const rootData: ActiveNgViewRootData = {
-    $cfg: { _viewDecl: { _context: $view._rootViewContext() as ViewContext } },
+    $cfg: { _viewDecl: { _context: rootContext } },
     $ngView: {},
   };
 
@@ -227,16 +229,16 @@ export function ViewDirective(
       const transclude = assertDefined($transclude);
 
       return function (scope: ng.Scope, $element: HTMLElement) {
-        const onloadExp = $attributes.read($element, "onload") || "",
+        const onloadExp = $attributes.read($element, "onload") ?? "",
           autoScrollExp = $attributes.read($element, "autoscroll"),
           inherited =
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
-              | undefined) || rootData,
-          rawName = assertDefined(
+              | undefined) ?? rootData,
+          rawName: unknown = assertDefined(
             $interpolate(
-              $attributes.read($element, "ngView") ||
-                $attributes.read($element, "name") ||
+              $attributes.read($element, "ngView") ??
+                $attributes.read($element, "name") ??
                 "",
             ),
           )(scope),
@@ -254,8 +256,9 @@ export function ViewDirective(
 
         let configUpdateVersion = 0;
 
-        const parentFqn =
-          inherited.$cfg._viewDecl._context.name || inherited.$ngView._fqn;
+        const inheritedContext = inherited.$cfg._viewDecl._context;
+
+        const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
 
         const activeNgView: ActiveNgView = {
           _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
@@ -265,13 +268,10 @@ export function ViewDirective(
           _config: null,
           _configUpdated: configUpdatedCallback,
           get _creationContext(): ViewContext {
-            // Inherit the parent view context for nested ng-view elements.
-            const fromParentTag = inherited.$ngView._creationContext;
-
             return (
-              inherited.$cfg._viewDecl._context ||
-              fromParentTag ||
-              rootData.$cfg._viewDecl._context
+              inheritedContext ??
+              inherited.$ngView._creationContext ??
+              rootContext
             );
           },
         };
@@ -302,7 +302,7 @@ export function ViewDirective(
 
           if (viewConfig === config) return;
 
-          activeNgView._config = config || null;
+          activeNgView._config = config;
           viewConfig = config;
           updateView(config);
         }
@@ -396,7 +396,7 @@ export function ViewDirective(
            *
            * @param event Event object.
            */
-          currentScope.$emit("$viewContentLoaded", config || viewConfig);
+          currentScope.$emit("$viewContentLoaded", config ?? viewConfig);
           onloadFn?.(currentScope);
         }
       };
@@ -433,13 +433,13 @@ export function ViewDirectiveFill(
           $element.innerHTML = initial;
 
           $compile(
-            ($element as HTMLIFrameElement).contentDocument ||
+            ($element as HTMLIFrameElement).contentDocument ??
               $element.childNodes,
           )(scope);
 
           return;
         }
-        const cfg = (data.$cfg || {
+        const cfg = (data.$cfg ?? {
           _viewDecl: {},
         }) as Pick<ViewConfig, "_viewDecl" | "_controller"> &
           Partial<
@@ -450,11 +450,11 @@ export function ViewDirectiveFill(
           cfg._path && new ResolveContext(cfg._path, $injector);
 
         $element.innerHTML = data.$cfg
-          ? getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ||
-            initial
+          ? (getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ??
+            initial)
           : initial;
         const link = $compile(
-          ($element as HTMLIFrameElement).contentDocument ||
+          ($element as HTMLIFrameElement).contentDocument ??
             $element.childNodes,
         );
 

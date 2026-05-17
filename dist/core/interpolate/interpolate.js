@@ -131,7 +131,7 @@ class InterpolateProvider {
                                 concat[expressionPositions[i]] = values[i];
                             }
                             if (contextAllowsConcatenation) {
-                                return security.getTrusted(trustedContext, singleExpression ? concat[0] : concat.join(""));
+                                return security.getTrusted(trustedContext, concat.join(""));
                             }
                             if (trustedContext && concat.length > 1) {
                                 throwNoconcat(text);

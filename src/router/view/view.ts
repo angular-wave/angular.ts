@@ -87,7 +87,9 @@ export function getViewTemplate(
 export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
   const params: RawParams = {};
 
-  config._path.forEach((node) => assign(params, node.paramValues));
+  config._path.forEach((node) => {
+    assign(params, node.paramValues);
+  });
 
   const viewResult = await config._factory._fromConfig(
     config._viewDecl,
@@ -107,15 +109,18 @@ export function normalizeNgViewTarget(
 ): { ngViewName: string; ngViewContextAnchor: string } {
   const viewAtContext = rawViewName.split("@");
 
-  let ngViewName = viewAtContext[0] || "$default";
+  const [viewName, viewContextAnchor] = viewAtContext;
 
-  let ngViewContextAnchor = isString(viewAtContext[1]) ? viewAtContext[1] : "^";
+  let ngViewName = viewName || "$default";
+
+  let ngViewContextAnchor = isString(viewContextAnchor)
+    ? viewContextAnchor
+    : "^";
 
   const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
 
   if (relativeViewNameSugar) {
-    ngViewContextAnchor = relativeViewNameSugar[1];
-    ngViewName = relativeViewNameSugar[2];
+    [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
   }
 
   if (ngViewName.startsWith("!")) {
@@ -159,7 +164,7 @@ function contextDepth(context: ViewContext): number {
 
   let depth = 1;
 
-  while (cursor?.parent) {
+  while (cursor.parent) {
     depth += 1;
     cursor = cursor.parent;
   }
@@ -240,7 +245,7 @@ export class ViewService {
       $routerState: RouterProvider,
     ): ViewService => {
       this._templateFactory = $templateFactory;
-      this._rootViewContext($routerState._currentState || null);
+      this._rootViewContext($routerState._currentState ?? null);
 
       return this;
     },
@@ -253,7 +258,7 @@ export class ViewService {
   _rootViewContext(
     context?: StateObject | null,
   ): StateObject | null | undefined {
-    return (this._rootContext = context || this._rootContext);
+    return (this._rootContext = context ?? this._rootContext);
   }
 
   /**
@@ -342,15 +347,13 @@ export class ViewService {
     ngView: ActiveNgView,
     viewConfig: ViewConfig,
   ): boolean {
-    if (!viewConfig?._viewDecl) return false;
-
     const ngViewContext = ngView._creationContext;
 
     const viewDecl = viewConfig._viewDecl;
 
-    const vcName = viewDecl._ngViewName || "$default";
+    const vcName = viewDecl._ngViewName ?? "$default";
 
-    const vcContext = viewDecl._ngViewContextAnchor || "";
+    const vcContext = viewDecl._ngViewContextAnchor ?? "";
 
     const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 

@@ -2,7 +2,7 @@ import { _aria, _attributes, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize, extend, stringify } from "../../shared/utils.ts";
 
 export interface AriaService {
-  config(key: string | number): any;
+  config(key: string | number): boolean | undefined;
   /** @internal */
   _watchExpr(
     attrName: string | number,
@@ -32,10 +32,17 @@ interface AriaProviderInstance {
   $get: ng.Injectable<(attributes: ng.AttributesService) => AriaService>;
 }
 
-type AriaNgModelController = ng.NgModelController & {
-  $validators: Record<string, any>;
-  $watch: (expr: string, listener: (value: any) => void) => void;
-  $viewValue: any;
+type AriaNgModelController = Omit<
+  ng.NgModelController,
+  "$isEmpty" | "$validators" | "$watch" | "$viewValue"
+> & {
+  $isEmpty: (value: unknown) => boolean;
+  $validators: Partial<Record<string, unknown>>;
+  $watch: {
+    (expr: "$modelValue", listener: (value: string) => void): void;
+    (expr: string, listener: (value: unknown) => void): void;
+  };
+  $viewValue: unknown;
 };
 
 /**
@@ -115,11 +122,11 @@ export function AriaProvider(this: AriaProviderInstance): void {
             !$attributes.has(elem, ariaCamelName)
           ) {
             scope.$watch(
-              $attributes.read(elem, attrName) || "",
-              (boolVal: any) => {
+              $attributes.read(elem, attrName) ?? "",
+              (boolVal: unknown) => {
                 // ensure boolean value
                 boolVal = negate ? !boolVal : !!boolVal;
-                elem.setAttribute(ariaAttr, boolVal);
+                elem.setAttribute(ariaAttr, String(boolVal));
               },
             );
           }
@@ -191,25 +198,28 @@ export function ngClickAriaDirective(
     compile(elem: HTMLElement) {
       if ($attributes.has(elem, ARIA_DISABLE_ATTR)) return undefined;
 
-      const fn = $parse($attributes.read(elem, "ngClick") || "");
+      const fn = $parse($attributes.read(elem, "ngClick") ?? "");
 
-      return (scope: ng.Scope, elem: HTMLElement) => {
-        if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
-          if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
-            elem.setAttribute("role", "button");
+      return (scope: ng.Scope, linkElem: HTMLElement) => {
+        if (!isNodeOneOf(linkElem, nativeAriaNodeNames)) {
+          if (
+            $aria.config("bindRoleForClick") &&
+            !linkElem.hasAttribute("role")
+          ) {
+            linkElem.setAttribute("role", "button");
           }
 
-          if ($aria.config("tabindex") && !elem.hasAttribute("tabindex")) {
-            elem.setAttribute("tabindex", "0");
+          if ($aria.config("tabindex") && !linkElem.hasAttribute("tabindex")) {
+            linkElem.setAttribute("tabindex", "0");
           }
 
           if (
             $aria.config("bindKeydown") &&
-            !$attributes.has(elem, "ngKeydown") &&
-            !$attributes.has(elem, "ngKeypress") &&
-            !$attributes.has(elem, "ngKeyup")
+            !$attributes.has(linkElem, "ngKeydown") &&
+            !$attributes.has(linkElem, "ngKeypress") &&
+            !$attributes.has(linkElem, "ngKeyup")
           ) {
-            elem.addEventListener(
+            linkElem.addEventListener(
               "keydown",
               /** Handles keyboard activation for synthetic button semantics. */
               (event) => {
@@ -316,11 +326,12 @@ export function ngModelAriaDirective(
     elem: HTMLElement,
     allowNonAriaNodes: boolean,
   ): boolean {
-    return ($aria.config(normalizedAttr) &&
+    return (
+      $aria.config(normalizedAttr) === true &&
       !elem.getAttribute(attr) &&
       (allowNonAriaNodes || !isNodeOneOf(elem, nativeAriaNodeNames)) &&
-      (elem.getAttribute("type") !== "hidden" ||
-        elem.nodeName !== "INPUT")) as boolean;
+      (elem.getAttribute("type") !== "hidden" || elem.nodeName !== "INPUT")
+    );
   }
 
   /** Determines whether a synthetic ARIA role should be attached to an element. */
@@ -341,9 +352,9 @@ export function ngModelAriaDirective(
 
     const role = $attributes.read(element, "role");
 
-    return (type || role) === "checkbox" || role === "menuitemcheckbox"
+    return (type ?? role) === "checkbox" || role === "menuitemcheckbox"
       ? "checkbox"
-      : (type || role) === "radio" || role === "menuitemradio"
+      : (type ?? role) === "radio" || role === "menuitemradio"
         ? "radio"
         : type === "range" || role === "progressbar" || role === "slider"
           ? "range"
@@ -467,7 +478,7 @@ export function ngModelAriaDirective(
           }
 
           if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-            ngModel.$watch("$invalid", (newVal: any) => {
+            ngModel.$watch("$invalid", (newVal: unknown) => {
               elem.setAttribute("aria-invalid", (!!newVal).toString());
             });
           }

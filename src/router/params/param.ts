@@ -4,10 +4,10 @@ import {
   isArray,
   isDefined,
   isInstanceOf,
-  isNullOrUndefined,
   isUndefined,
   isString,
   assertDefined,
+  stringify,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type {
@@ -30,7 +30,7 @@ export interface ParamRuntime {
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
 
 function isShorthand(cfg: unknown): boolean {
-  const config = (cfg || {}) as Record<string, unknown>;
+  const config = (cfg ?? {}) as Record<string, unknown>;
 
   for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
     if (hasOwn(config, SHORTHAND_KEYS[i])) {
@@ -63,7 +63,7 @@ function getParamDeclaration(
 ): ParamDeclaration {
   const { dynamic } = state;
 
-  const paramConfig = unwrapShorthand(state?.params?.[paramName]);
+  const paramConfig = unwrapShorthand(state.params?.[paramName]);
 
   if (isDefined(dynamic) && !hasOwn(paramConfig, "dynamic")) {
     paramConfig.dynamic = dynamic;
@@ -129,9 +129,7 @@ function getType(
         ? "any"
         : location === DefType._PATH
           ? "path"
-          : location === DefType._SEARCH
-            ? "query"
-            : "string";
+          : "query";
 
     return paramTypes[type];
   }
@@ -156,11 +154,11 @@ function getSquashPolicy(
 
   if (!isOptional || squash === false) return false;
 
-  if (!isDefined(squash) || isNullOrUndefined(squash)) return defaultPolicy;
+  if (!isDefined(squash)) return defaultPolicy;
 
   if (squash === true || isString(squash)) return squash;
   throw new Error(
-    `Invalid squash policy: '${squash}'. Valid policies: false, true, or arbitrary string`,
+    `Invalid squash policy: '${String(squash)}'. Valid policies: false, true, or arbitrary string`,
   );
 }
 
@@ -264,7 +262,7 @@ export class Param {
     type = getType(config, type, location, id, urlConfig._paramTypes);
     const arrayMode = getArrayMode(id, location, config);
 
-    type = arrayMode ? type?.$asArray(arrayMode) : type;
+    type = arrayMode ? type.$asArray(arrayMode) : type;
     const isOptional =
       config.value !== undefined || location === DefType._SEARCH;
 
@@ -336,7 +334,7 @@ export class Param {
 
     const defaultValueProvider = this.config._fn;
 
-    const defaultValue = defaultValueProvider
+    const defaultValue: unknown = defaultValueProvider
       ? injector.invoke(defaultValueProvider)
       : undefined;
 
@@ -346,7 +344,7 @@ export class Param {
       !this.type.is(defaultValue)
     )
       throw new Error(
-        `Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`,
+        `Default value (${stringify(defaultValue)}) for parameter '${this.id}' is not an instance of ParamType (${String(this.type.name)})`,
       );
 
     if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
@@ -373,7 +371,7 @@ export class Param {
   }
 
   toString() {
-    return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
+    return `{Param:${this.id} ${String(this.type)} squash: '${String(this.squash)}' optional: ${String(this.isOptional)}}`;
   }
 
   /**

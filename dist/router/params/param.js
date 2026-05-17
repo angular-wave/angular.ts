@@ -1,10 +1,10 @@
 import { isInjectable } from '../../core/di/injectable.js';
-import { isDefined, isUndefined, isString, hasOwn, assertDefined, isInstanceOf, isNullOrUndefined, isArray } from '../../shared/utils.js';
+import { isDefined, isUndefined, stringify, isString, hasOwn, assertDefined, isInstanceOf, isArray } from '../../shared/utils.js';
 import { ParamType } from './param-type.js';
 
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
 function isShorthand(cfg) {
-    const config = (cfg || {});
+    const config = (cfg ?? {});
     for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
         if (hasOwn(config, SHORTHAND_KEYS[i])) {
             return false;
@@ -28,7 +28,7 @@ const DefType = {
  */
 function getParamDeclaration(paramName, location, state) {
     const { dynamic } = state;
-    const paramConfig = unwrapShorthand(state?.params?.[paramName]);
+    const paramConfig = unwrapShorthand(state.params?.[paramName]);
     if (isDefined(dynamic) && !hasOwn(paramConfig, "dynamic")) {
         paramConfig.dynamic = dynamic;
     }
@@ -73,9 +73,7 @@ function getType(cfg, urlType, location, id, paramTypes) {
             ? "any"
             : location === DefType._PATH
                 ? "path"
-                : location === DefType._SEARCH
-                    ? "query"
-                    : "string";
+                : "query";
         return paramTypes[type];
     }
     return isInstanceOf(cfg.type, ParamType)
@@ -92,11 +90,11 @@ function getSquashPolicy(config, isOptional, defaultPolicy) {
     const { squash } = config;
     if (!isOptional || squash === false)
         return false;
-    if (!isDefined(squash) || isNullOrUndefined(squash))
+    if (!isDefined(squash))
         return defaultPolicy;
     if (squash === true || isString(squash))
         return squash;
-    throw new Error(`Invalid squash policy: '${squash}'. Valid policies: false, true, or arbitrary string`);
+    throw new Error(`Invalid squash policy: '${String(squash)}'. Valid policies: false, true, or arbitrary string`);
 }
 /**
  * @param {ParamDeclaration} config
@@ -153,7 +151,7 @@ class Param {
         const config = getParamDeclaration(id, location, state);
         type = getType(config, type, location, id, urlConfig._paramTypes);
         const arrayMode = getArrayMode(id, location, config);
-        type = arrayMode ? type?.$asArray(arrayMode) : type;
+        type = arrayMode ? type.$asArray(arrayMode) : type;
         const isOptional = config.value !== undefined || location === DefType._SEARCH;
         const dynamic = !!config.dynamic;
         const raw = !!config.raw;
@@ -210,7 +208,7 @@ class Param {
         if (defaultValue !== null &&
             defaultValue !== undefined &&
             !this.type.is(defaultValue))
-            throw new Error(`Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`);
+            throw new Error(`Default value (${stringify(defaultValue)}) for parameter '${this.id}' is not an instance of ParamType (${String(this.type.name)})`);
         if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
             this._defaultValueCache = { defaultValue };
         }
@@ -232,7 +230,7 @@ class Param {
         return !(isString(encoded) && !this.type.pattern.exec(encoded));
     }
     toString() {
-        return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
+        return `{Param:${this.id} ${String(this.type)} squash: '${String(this.squash)}' optional: ${String(this.isOptional)}}`;
     }
     /**
      * @param {Param[]} params

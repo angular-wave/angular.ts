@@ -1,7 +1,7 @@
-import { _http, _compile, _log, _parse, _state, _sse, _injector, _stream } from '../../injection-tokens.js';
+import { _http, _compile, _log, _parse, _state, _sse, _injector, _stream, _attributes } from '../../injection-tokens.js';
 import { Http } from '../../services/http/http.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { uppercase, isDefined, callBackAfterFirst, wait, toKeyValue, isString, isInstanceOf, isObject } from '../../shared/utils.js';
+import { uppercase, callBackAfterFirst, isDefined, wait, toKeyValue, isString, isInstanceOf, isObject } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent } from '../realtime/protocol.js';
 export { SwapMode } from '../realtime/protocol.js';
@@ -9,7 +9,7 @@ import { createRealtimeSwapHandler } from '../realtime/swap.js';
 
 /** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(method, attrOverride) {
-    const attrName = attrOverride || `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
+    const attrName = attrOverride ?? `ng${uppercase(method.charAt(0))}${method.slice(1)}`;
     const directive = createHttpDirective(method, attrName);
     directive.$inject = [
         _http,
@@ -20,6 +20,7 @@ function defineDirective(method, attrOverride) {
         _sse,
         _injector,
         _stream,
+        _attributes,
     ];
     return directive;
 }
@@ -31,7 +32,7 @@ const ngSseDirective = defineDirective("get", "ngSse");
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
 function createHttpDirective(method, attrName) {
     /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-    return function ($http, $compile, $log, $parse, $state, $sse, $injector, $stream) {
+    return function ($http, $compile, $log, $parse, $state, $sse, $injector, $stream, $attributes) {
         const getAnimate = createLazyAnimate($injector);
         /** Collects form data from the element or its associated form. */
         function collectFormData(element) {
@@ -77,10 +78,21 @@ function createHttpDirective(method, attrName) {
         return {
             restrict: "A",
             link(scope, element, attrs) {
-                const eventName = attrs.trigger || getEventNameForElement(element);
+                const readAttr = (name) => {
+                    const value = $attributes.read(element, name);
+                    const attrValue = attrs[name];
+                    return value?.includes("{{") ? attrValue : value;
+                };
+                const hasAttr = (name) => $attributes.has(element, name);
+                const setAttr = (name, value) => {
+                    $attributes.set(element, name, value, {
+                        attrName: $attributes.originalName(element, name),
+                    });
+                };
+                const eventName = readAttr("trigger") ?? getEventNameForElement(element);
                 const tag = element.tagName.toLowerCase();
-                if (isDefined(attrs.latch)) {
-                    attrs.$observe("latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
+                if (hasAttr("latch")) {
+                    $attributes.observe(scope, element, "latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
                 }
                 let throttled = false;
                 let intervalId;
@@ -96,16 +108,17 @@ function createHttpDirective(method, attrName) {
                     if (intervalId)
                         clearInterval(intervalId);
                 });
-                if (isDefined(attrs.interval)) {
+                if (hasAttr("interval")) {
+                    const interval = readAttr("interval");
                     element.dispatchEvent(new Event(eventName));
-                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attrs.interval) || 1000);
+                    intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(interval ?? "") || 1000);
                 }
                 const handleSwapResponse = createRealtimeSwapHandler({
                     $compile,
                     $log,
                     getAnimate,
                     scope,
-                    attrs,
+                    $attributes,
                     element,
                     logPrefix: attrName,
                 });
@@ -120,14 +133,15 @@ function createHttpDirective(method, attrName) {
                 }
                 function createRequestConfig() {
                     const config = {};
-                    if (attrs.enctype) {
+                    const enctype = readAttr("enctype");
+                    if (enctype) {
                         config.headers = {
-                            "Content-Type": attrs.enctype,
+                            "Content-Type": enctype,
                         };
                     }
-                    if (attrs.responseType === "stream" ||
-                        isDefined(attrs.stream) ||
-                        isDefined(attrs.responseStream)) {
+                    if (readAttr("responseType") === "stream" ||
+                        hasAttr("stream") ||
+                        hasAttr("responseStream")) {
                         config.responseType = "stream";
                     }
                     config.timeout = destroyPromise;
@@ -141,16 +155,17 @@ function createHttpDirective(method, attrName) {
                     }));
                 }
                 function parseSseEventTypes() {
-                    if (!isString(attrs.sseEvents))
+                    const sseEvents = readAttr("sseEvents");
+                    if (!isString(sseEvents))
                         return [];
-                    return attrs.sseEvents
+                    return sseEvents
                         .split(",")
                         .map((eventType) => eventType.trim())
                         .filter(Boolean);
                 }
                 function handleSseProtocolMessage(data, swap, event, source) {
                     const html = getRealtimeProtocolContent(data);
-                    const nextSwap = data.swap || swap;
+                    const nextSwap = data.swap ?? swap;
                     if (!dispatchSseEvent("message", { data, event, source })) {
                         source.close();
                         return;
@@ -166,36 +181,41 @@ function createHttpDirective(method, attrName) {
                             return;
                         if (tag === "form")
                             event.preventDefault();
-                        const swap = attrs.swap || "innerHTML";
-                        const url = attrs[attrName];
+                        const swap = (readAttr("swap") ?? "innerHTML");
+                        const url = readAttr(attrName);
                         if (!url) {
                             $log.warn(`${attrName}: no URL specified`);
                             return;
                         }
                         const handler = (res) => {
-                            if (isDefined(attrs.loading)) {
-                                attrs.$set("loading", false);
+                            if (hasAttr("loading")) {
+                                setAttr("loading", false);
                             }
-                            if (isDefined(attrs.loadingClass)) {
-                                attrs.$removeClass(attrs.loadingClass);
+                            const loadingClass = readAttr("loadingClass");
+                            if (isDefined(loadingClass)) {
+                                $attributes.removeClass(element, loadingClass);
                             }
                             const html = res.data;
                             if (Http._OK <= res.status &&
                                 res.status <= Http._MultipleChoices - 1) {
-                                if (isDefined(attrs.success)) {
-                                    $parse(attrs.success)(scope, { $res: html });
+                                const success = readAttr("success");
+                                if (isDefined(success)) {
+                                    $parse(success)(scope, { $res: html });
                                 }
-                                if (isDefined(attrs.stateSuccess)) {
-                                    void $state.go(attrs.stateSuccess);
+                                const stateSuccess = readAttr("stateSuccess");
+                                if (isDefined(stateSuccess)) {
+                                    void $state.go(stateSuccess);
                                 }
                             }
                             else if (Http._BadRequest <= res.status &&
                                 res.status <= Http._ErrorMax) {
-                                if (isDefined(attrs.error)) {
-                                    $parse(attrs.error)(scope, { $res: html });
+                                const error = readAttr("error");
+                                if (isDefined(error)) {
+                                    $parse(error)(scope, { $res: html });
                                 }
-                                if (isDefined(attrs.stateError)) {
-                                    void $state.go(attrs.stateError);
+                                const stateError = readAttr("stateError");
+                                if (isDefined(stateError)) {
+                                    void $state.go(stateError);
                                 }
                             }
                             if ($stream.isReadableStream(html)) {
@@ -204,8 +224,9 @@ function createHttpDirective(method, attrName) {
                                 });
                             }
                             else if (isObject(html)) {
-                                if (attrs.target) {
-                                    $parse(attrs.target)._assign?.(scope, html);
+                                const target = readAttr("target");
+                                if (target) {
+                                    $parse(target)._assign?.(scope, html);
                                 }
                                 else {
                                     scope.$merge(html);
@@ -215,31 +236,34 @@ function createHttpDirective(method, attrName) {
                                 handleSwapResponse(html, swap);
                             }
                         };
-                        if (isDefined(attrs.delay)) {
-                            await wait(parseInt(attrs.delay) | 0);
+                        const delay = readAttr("delay");
+                        if (isDefined(delay)) {
+                            await wait(parseInt(delay) | 0);
                         }
                         if (scope._destroyed)
                             return;
                         if (throttled)
                             return;
-                        if (isDefined(attrs.throttle)) {
+                        const throttle = readAttr("throttle");
+                        if (isDefined(throttle)) {
                             throttled = true;
-                            attrs.$set("throttled", true);
+                            setAttr("throttled", true);
                             setTimeout(() => {
-                                attrs.$set("throttled", false);
+                                setAttr("throttled", false);
                                 throttled = false;
-                            }, parseInt(attrs.throttle));
+                            }, parseInt(throttle));
                         }
-                        if (isDefined(attrs.loading)) {
-                            attrs.$set("loading", true);
+                        if (hasAttr("loading")) {
+                            setAttr("loading", true);
                         }
-                        if (isDefined(attrs.loadingClass)) {
-                            attrs.$addClass(attrs.loadingClass);
+                        const loadingClass = readAttr("loadingClass");
+                        if (isDefined(loadingClass)) {
+                            $attributes.addClass(element, loadingClass);
                         }
                         if (method === "post" || method === "put") {
                             let data;
                             const config = createRequestConfig();
-                            if (attrs.enctype) {
+                            if (readAttr("enctype")) {
                                 data = toKeyValue(collectFormData(element));
                             }
                             else {
@@ -248,11 +272,11 @@ function createHttpDirective(method, attrName) {
                             $http[method](url, data, config).then(handler).catch(handler);
                         }
                         else {
-                            if (method === "get" && attrs.ngSse) {
+                            if (method === "get" && hasAttr("ngSse")) {
                                 const sseUrl = url;
                                 const sourceRef = {};
                                 const config = {
-                                    withCredentials: attrs.withCredentials === "true",
+                                    withCredentials: readAttr("withCredentials") === "true",
                                     eventTypes: parseSseEventTypes(),
                                     transformMessage: (data) => {
                                         try {
@@ -268,10 +292,12 @@ function createHttpDirective(method, attrName) {
                                             sourceRef.current?.close();
                                             return;
                                         }
-                                        if (isDefined(attrs.loading))
-                                            attrs.$set("loading", false);
-                                        if (isDefined(attrs.loadingClass))
-                                            attrs.$removeClass(attrs.loadingClass);
+                                        if (hasAttr("loading")) {
+                                            setAttr("loading", false);
+                                        }
+                                        const loadingClass = readAttr("loadingClass");
+                                        if (isDefined(loadingClass))
+                                            $attributes.removeClass(element, loadingClass);
                                     },
                                     onEvent: ({ data, event: messageEvent, type, }) => {
                                         const source = sourceRef.current;
@@ -302,7 +328,10 @@ function createHttpDirective(method, attrName) {
                                             source.close();
                                             return;
                                         }
-                                        const res = { status: 200, data };
+                                        const res = {
+                                            status: 200,
+                                            data,
+                                        };
                                         handler(res);
                                         dispatchSseEvent("swapped", {
                                             data,
@@ -314,13 +343,17 @@ function createHttpDirective(method, attrName) {
                                         const source = sourceRef.current;
                                         dispatchSseEvent("error", { error: err, source });
                                         $log.error(`${attrName}: SSE error`, err);
-                                        const res = { status: 500, data: err };
+                                        const res = {
+                                            status: 500,
+                                            data: err,
+                                        };
                                         handler(res);
                                     },
                                     onReconnect: (count) => {
-                                        $log.info(`ngSse: reconnected ${count} time(s)`);
-                                        if (attrs.onReconnect)
-                                            $parse(attrs.onReconnect)(scope, { $count: count });
+                                        $log.info(`ngSse: reconnected ${String(count)} time(s)`);
+                                        const onReconnect = readAttr("onReconnect");
+                                        if (onReconnect)
+                                            $parse(onReconnect)(scope, { $count: count });
                                     },
                                 };
                                 const source = $sse(sseUrl, config);

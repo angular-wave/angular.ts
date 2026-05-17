@@ -85,9 +85,11 @@ function buildUrl(
   if (!url) return null;
 
   if (!isInstanceOf(url, UrlMatcher))
-    throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
+    throw new Error(
+      `Invalid url '${String(url)}' in state '${String(stateObject)}'`,
+    );
 
-  const base = (parent?.navigable || root) as StateObject;
+  const base = (parent?.navigable ?? root) as StateObject;
 
   return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
 }
@@ -106,7 +108,7 @@ function buildParams(
       params[param.id] = param;
   });
 
-  const paramConfigs = state.params || {};
+  const paramConfigs = state.params ?? {};
 
   const paramConfigKeys = keys(paramConfigs);
 
@@ -198,7 +200,7 @@ function viewsBuilder(
     }
   });
 
-  const viewsObject = (state.views || {
+  const viewsObject = (state.views ?? {
     $default: defaultViewConfig,
   }) as Record<string, ViewDeclaration | string>;
 
@@ -254,7 +256,7 @@ function getResolveLocals(ctx: ResolveContext): Record<string, unknown> {
 
   tokens.forEach((key) => {
     if (isString(key)) {
-      locals[key] = ctx.getResolvable(key).data;
+      locals[key] = assertDefined(ctx.getResolvable(key)).data;
     }
   });
 
@@ -283,7 +285,6 @@ function valueToResolvable(
 
 function literalToResolvable(literal: ResolvableLiteral): Resolvable {
   if (
-    literal &&
     hasOwn(literal, "token") &&
     (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))
   ) {
@@ -349,7 +350,7 @@ function resolvablesBuilder(
     return resolvables;
   }
 
-  const resolveObj = decl || {};
+  const resolveObj = decl ?? {};
 
   const resolveKeys = keys(resolveObj);
 
@@ -377,7 +378,7 @@ function invokeStateLifecycleHook(
   const $injector = assertDefined(hookContext._$injector);
 
   const resolveContext = new ResolveContext(
-    trans._treeChanges[pathname] || [],
+    trans._treeChanges[pathname],
     $injector,
   );
 
@@ -388,7 +389,7 @@ function invokeStateLifecycleHook(
     $transition$: trans,
   });
 
-  return $injector.invoke(hook, hookContext, locals) as HookResult;
+  return $injector.invoke(hook, hookContext, locals);
 }
 
 function invokeOnEnterHook(
@@ -470,7 +471,7 @@ export class StateBuilder {
   _build(state: StateObject): StateObject | null {
     const { _matcher: matcher, _routerState: routerState } = this;
 
-    const parent = this._parentName(state);
+    const parent = StateBuilder._parentName(state);
 
     if (parent && !matcher.find(parent, undefined, false)) {
       return null;
@@ -478,13 +479,13 @@ export class StateBuilder {
 
     state.parent = isRoot(state)
       ? null
-      : matcher.find(parent) || matcher.find("");
+      : (matcher.find(parent) ?? matcher.find(""));
     state._url =
       buildUrl(
         state as StateObject & BuiltStateDeclaration,
         routerState,
         matcher.find("") as StateObject | BuiltStateDeclaration,
-      ) || undefined;
+      ) ?? undefined;
     state.resolvables = resolvablesBuilder(
       state as StateObject & StateDeclaration,
       this._$injector?.strictDi,
@@ -511,7 +512,7 @@ export class StateBuilder {
       );
     }
     state.path = state.parent
-      ? (state.parent.path || []).concat(state)
+      ? (state.parent.path ?? []).concat(state)
       : [state];
     state.includes = state.parent ? assign({}, state.parent.includes) : {};
     state.includes[state.name] = true;
@@ -526,8 +527,8 @@ export class StateBuilder {
    * @returns {string}
    */
   /** @internal */
-  _parentName(state: StateObject): string {
-    const rawName = state.self?.name || state.name || "";
+  static _parentName(state: StateObject): string {
+    const rawName = state.self.name || state.name || "";
 
     const name = rawName;
 
@@ -552,8 +553,8 @@ export class StateBuilder {
   }
 
   /** @internal */
-  _name(state: StateObject): string {
-    const name = state.self?.name || state.name;
+  static _name(state: StateObject): string {
+    const name = state.self.name || state.name;
 
     if (name.includes(".") || !state.parent) return name;
     const parentName = isString(state.parent)

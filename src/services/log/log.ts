@@ -66,7 +66,7 @@ export class LogProvider {
    * Normalizes `Error` objects into readable log output.
    */
   /** @internal */
-  private _formatError(arg: unknown): unknown {
+  private static _formatError(arg: unknown): unknown {
     if (isError(arg)) {
       if (arg.stack) {
         arg =
@@ -84,7 +84,7 @@ export class LogProvider {
    * Builds a console-backed logger for the requested method name.
    */
   /** @internal */
-  private _consoleLog(type: string): LogCall {
+  private static _consoleLog(type: string): LogCall {
     const consoleRef = window.console as Console &
       Partial<Record<string, LogCall>>;
 
@@ -92,7 +92,7 @@ export class LogProvider {
       consoleRef[type]?.bind(consoleRef) ?? consoleRef.log.bind(consoleRef);
 
     return (...args) => {
-      const formattedArgs = args.map((arg) => this._formatError(arg));
+      const formattedArgs = args.map((arg) => LogProvider._formatError(arg));
 
       logFn(...formattedArgs);
     };
@@ -105,12 +105,12 @@ export class LogProvider {
     }
 
     return {
-      log: this._consoleLog("log"),
-      info: this._consoleLog("info"),
-      warn: this._consoleLog("warn"),
-      error: this._consoleLog("error"),
+      log: LogProvider._consoleLog("log"),
+      info: LogProvider._consoleLog("info"),
+      warn: LogProvider._consoleLog("warn"),
+      error: LogProvider._consoleLog("error"),
       debug: (() => {
-        const fn = this._consoleLog("debug");
+        const fn = LogProvider._consoleLog("debug");
 
         return (...args: unknown[]) => {
           if (this.debug) {

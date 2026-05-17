@@ -170,7 +170,7 @@ export class AttributesProvider {
 
         if (!pendingValues?.length) return false;
 
-        const nextValue = pendingValues[0];
+        const [nextValue] = pendingValues;
 
         if (!valuesMatch(nextValue, value)) return false;
 
@@ -371,9 +371,7 @@ export class AttributesProvider {
               observerName
             ] = value;
             attrName = booleanName;
-          } else if (!attrName) {
-            attrName = snakeCase(normalized, "-");
-          }
+          } else attrName ??= snakeCase(normalized, "-");
 
           if (options?.writeAttr !== false && attrName) {
             rememberPendingMutation(targetElement, observerName, value);
@@ -498,7 +496,7 @@ export class AttributesProvider {
           return (
             interpolatedAttributes
               .get(targetElement)
-              ?.has(directiveNormalize(normalizedName)) || false
+              ?.has(directiveNormalize(normalizedName)) ?? false
           );
         },
         _setObserverScope(element, normalizedName, scope) {

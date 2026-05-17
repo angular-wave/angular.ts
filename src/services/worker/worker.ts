@@ -2,27 +2,27 @@ import { _exceptionHandler, _log } from "../../injection-tokens.ts";
 import { assign, isString } from "../../shared/utils.ts";
 
 export interface WorkerConfig {
-  onMessage?: (data: any, event: MessageEvent) => void;
+  onMessage?: (data: unknown, event: MessageEvent) => void;
   onError?: (err: ErrorEvent) => void;
   autoRestart?: boolean;
   autoTerminate?: boolean;
-  transformMessage?: (data: any) => any;
+  transformMessage?: (data: unknown) => unknown;
   logger?: ng.LogService;
   err?: ng.ExceptionHandlerService;
 }
 
 export interface DefaultWorkerConfig {
-  onMessage: (data: any, event: MessageEvent) => void;
+  onMessage: (data: unknown, event: MessageEvent) => void;
   onError: (err: ErrorEvent) => void;
   autoRestart: boolean;
   autoTerminate: boolean;
-  transformMessage: (data: any) => any;
+  transformMessage: (data: unknown) => unknown;
   logger: ng.LogService;
   err: ng.ExceptionHandlerService;
 }
 
 export interface WorkerConnection {
-  post(data: any): void;
+  post(data: unknown): void;
   terminate(): void;
   restart(): void;
   config: WorkerConfig;
@@ -62,8 +62,8 @@ export function createWorkerConnection(
         return data;
       }
     },
-    logger: config?.logger || console,
-    err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
+    logger: config?.logger ?? console,
+    err: (config?.err ?? (() => undefined)) as ng.ExceptionHandlerService,
   };
 
   const cfg = assign({}, defaults, config) as DefaultWorkerConfig;
@@ -74,7 +74,7 @@ export function createWorkerConnection(
 
   const wire = (workerParam: Worker) => {
     workerParam.onmessage = (event: MessageEvent) => {
-      let { data } = event;
+      let data: unknown = event.data;
 
       try {
         data = cfg.transformMessage(data);
@@ -143,8 +143,8 @@ export class WorkerProvider {
       return (scriptPath: string | URL, config: WorkerConfig = {}) =>
         createWorkerConnection(scriptPath, {
           ...config,
-          logger: config.logger || log,
-          err: config.err || exceptionHandler,
+          logger: config.logger ?? log,
+          err: config.err ?? exceptionHandler,
         });
     },
   ];

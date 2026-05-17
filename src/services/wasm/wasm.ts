@@ -202,9 +202,9 @@ export class WasmScope {
   /** Wrapped AngularTS scope. */
   readonly scope: ng.Scope;
   /** @internal */
-  private _bindings: Array<() => void>;
+  private readonly _bindings: (() => void)[];
   /** @internal */
-  private _syncCallbacks: Array<() => void>;
+  private readonly _syncCallbacks: (() => void)[];
   /** @internal */
   private _syncScheduled: boolean;
   /** @internal */
@@ -225,7 +225,7 @@ export class WasmScope {
     this.abi = abi;
     this.scope = scope;
     this.handle = handle;
-    this.name = options.name ?? scope.$scopename ?? String(scope.$id ?? handle);
+    this.name = options.name ?? scope.$scopename ?? String(scope.$id);
     this._bindings = [];
     this._syncCallbacks = [];
     this._syncScheduled = false;
@@ -293,7 +293,7 @@ export class WasmScope {
    */
   onSync(callback: () => void): () => void {
     if (this._destroyed) {
-      return () => {};
+      return () => undefined;
     }
 
     this._syncCallbacks.push(callback);
@@ -335,7 +335,9 @@ export class WasmScope {
     );
 
     if (!dispose) {
-      return () => false;
+      return () => {
+        /* no watch was registered */
+      };
     }
 
     return dispose;
@@ -517,7 +519,7 @@ export class WasmScopeAbi {
       return false;
     }
 
-    if (scope && this._scopesByName.get(scope.name) === scope) {
+    if (this._scopesByName.get(scope.name) === scope) {
       this._scopesByName.delete(scope.name);
     }
 
@@ -792,7 +794,7 @@ export class WasmScopeAbi {
 
   /** @internal */
   private _readGuestString(ptr: number, len: number): string {
-    const memory = this._requireExports().memory;
+    const { memory } = this._requireExports();
     const bytes = new Uint8Array(memory.buffer, ptr, len);
 
     return textDecoder.decode(bytes);

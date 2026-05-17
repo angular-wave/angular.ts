@@ -266,7 +266,7 @@ class AngularRuntime extends EventTarget {
                     if (existingScope?.$handler && !existingScope.$handler._destroyed) {
                         existingScope.$destroy();
                     }
-                    else if (scope.$handler && !scope.$handler._destroyed) {
+                    else if (!scope.$handler._destroyed) {
                         scope.$destroy();
                     }
                     if (rootScopeCleanupByElement.get(rootElement)) {
@@ -392,7 +392,7 @@ class AngularRuntime extends EventTarget {
  * Returns the existing module instance for `name` or creates it via `factory`.
  */
 function ensure(obj, name, factory) {
-    return obj[name] || (obj[name] = factory());
+    return obj[name] ?? (obj[name] = factory());
 }
 function normalizeRuntimeOptions(options) {
     if (typeof options === "boolean") {

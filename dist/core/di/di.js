@@ -11,7 +11,7 @@ function stringifyFn(fn) {
 }
 function extractArgs(fn) {
     const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
-    return ARROW_ARG.exec(fnText) || FN_ARGS.exec(fnText);
+    return ARROW_ARG.exec(fnText) ?? FN_ARGS.exec(fnText);
 }
 function isClass(func) {
     return /^class\b/.test(stringifyFn(func));

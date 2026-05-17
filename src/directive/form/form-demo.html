@@ -5,6 +5,45 @@
     <title>AngularTS Form Input State Demo</title>
     <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
     <script type="module" src="/src/index.ts"></script>
+    <script>
+      function nativeFormDataEntries(form) {
+        return Array.from(new FormData(form).entries()).map(
+          ([name, value]) => ({
+            name,
+            value: value instanceof File ? value.name : value,
+          }),
+        );
+      }
+
+      function setNativeFact(form, testId, value) {
+        form.ownerDocument.querySelector(
+          `[data-testid="${testId}"]`,
+        ).textContent = value;
+      }
+
+      function updateNativeFormFacts(form) {
+        setNativeFact(
+          form,
+          "native-check-validity",
+          String(form.checkValidity()),
+        );
+        setNativeFact(
+          form,
+          "native-form-data",
+          JSON.stringify(nativeFormDataEntries(form), null, 2),
+        );
+        setNativeFact(
+          form,
+          "native-reset-count",
+          form.dataset.nativeResetCount || "0",
+        );
+        setNativeFact(
+          form,
+          "native-submit-count",
+          form.dataset.nativeSubmitCount || "0",
+        );
+      }
+    </script>
     <style>
       :root {
         color-scheme: light;
@@ -275,11 +314,26 @@
         <section class="panel">
           <h2>Inputs</h2>
           <form
+            id="demoFormElement"
             ng-scope="form"
             name="demoForm"
             novalidate
             data-testid="demo-form"
             ng-submit="submitCount = submitCount + 1"
+            oninput="updateNativeFormFacts(this)"
+            onchange="updateNativeFormFacts(this)"
+            onsubmit="
+              this.dataset.nativeSubmitCount = String(
+                Number(this.dataset.nativeSubmitCount || 0) + 1,
+              );
+              updateNativeFormFacts(this);
+            "
+            onreset="
+              this.dataset.nativeResetCount = String(
+                Number(this.dataset.nativeResetCount || 0) + 1,
+              );
+              setTimeout(() => updateNativeFormFacts(this));
+            "
           >
             <div class="input-grid">
               <div class="field-row" ng-repeat="field in fields">
@@ -605,11 +659,36 @@ $options.allowInvalid: {{ demoForm[field.name].$options.getOption('allowInvalid'
                   <th>submit count</th>
                   <td data-testid="submit-count">{{ submitCount }}</td>
                 </tr>
+                <tr>
+                  <th>native checkValidity()</th>
+                  <td data-testid="native-check-validity">true</td>
+                </tr>
+                <tr>
+                  <th>native submit events</th>
+                  <td data-testid="native-submit-count">0</td>
+                </tr>
+                <tr>
+                  <th>native reset events</th>
+                  <td data-testid="native-reset-count">0</td>
+                </tr>
+                <tr>
+                  <th>native FormData</th>
+                  <td>
+                    <pre data-testid="native-form-data">[]</pre>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </section>
         </section>
       </div>
     </main>
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => {
+          updateNativeFormFacts(document.getElementById("demoFormElement"));
+        });
+      });
+    </script>
   </body>
 </html>

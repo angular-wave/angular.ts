@@ -188,9 +188,10 @@ function registerRuntimeHostValues(
 
 /** Registers built-in filters against the already-registered `$filter` provider. */
 function registerBuiltInFilters($filterProvider: FilterProvider): void {
-  const filterEntries = Object.entries(ngBuiltInFilters) as Array<
-    [string, BuiltInFilterFactory]
-  >;
+  const filterEntries = Object.entries(ngBuiltInFilters) as [
+    string,
+    BuiltInFilterFactory,
+  ][];
 
   filterEntries.forEach(([name, factory]) => {
     $filterProvider.register(name, factory as FilterFactory);
@@ -435,9 +436,10 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
         let $filterProvider: FilterProvider | undefined;
 
         ngDefaultProviderGroups.forEach((providers) => {
-          const providerEntries = Object.entries(providers) as Array<
-            [string, ProviderFactory]
-          >;
+          const providerEntries = Object.entries(providers) as [
+            string,
+            ProviderFactory,
+          ][];
 
           providerEntries.forEach(([name, provider]) => {
             const registeredProvider = $provide.provider(name, provider);

@@ -28,9 +28,9 @@ export function buildPath(targetState: TargetState): PathNode[] {
 
   const path: PathNode[] = [];
 
-  states.forEach((state) =>
-    path.push(new PathNode(state).applyRawParams(toParams)),
-  );
+  states.forEach((state) => {
+    path.push(new PathNode(state).applyRawParams(toParams));
+  });
 
   return path;
 }

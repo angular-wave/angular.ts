@@ -6,7 +6,11 @@ import {
   isUndefined,
   keys,
 } from "../../shared/utils.ts";
-import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
+import {
+  TransitionHook,
+  TransitionHookPhase,
+  type TransitionHookPhaseValue,
+} from "./transition-hook.ts";
 import { buildHooksForPhase } from "./hook-builder.ts";
 import { TransitionRunner } from "./transition-runner.ts";
 import {
@@ -186,7 +190,9 @@ export class Transition {
     );
     const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
 
-    void TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
+    void TransitionHook._invokeHooks(onCreateHooks, async () =>
+      Promise.resolve(),
+    );
     this.applyViewConfigs();
   }
 
@@ -257,7 +263,7 @@ export class Transition {
    * @returns {RawParams}
    */
   params(pathname = "to"): RawParams {
-    const path = this._treeChanges[pathname] || [];
+    const path = this._treeChanges[pathname] ?? [];
 
     return Object.freeze(collectPathParams(path));
   }
@@ -301,13 +307,13 @@ export class Transition {
   redirect(targetState: TargetState): Transition {
     let redirects = 1;
 
-    let trans = this._options.redirectedFrom || null;
+    let trans = this._options.redirectedFrom ?? null;
 
     while (trans) {
       if (++redirects > REDIRECT_MAX) {
         throw new Error(`Too many consecutive Transition redirects (20+)`);
       }
-      trans = trans._options.redirectedFrom || null;
+      trans = trans._options.redirectedFrom ?? null;
     }
     const redirectOpts: TransitionOptions = {
       redirectedFrom: this,
@@ -469,12 +475,12 @@ export class Transition {
   }
 
   /** @internal */
-  _getHooksFor(phase: TransitionHookPhase): TransitionHook[] {
+  _getHooksFor(phase: TransitionHookPhaseValue): TransitionHook[] {
     return buildHooksForPhase(this, phase);
   }
 
   /** @internal */
-  _startTransition(): Promise<void> {
+  async _startTransition(): Promise<void> {
     const { _routerState } = this;
 
     _routerState._lastStartedTransitionId = this.$id;
@@ -493,7 +499,7 @@ export class Transition {
    *
    * @returns {Promise<StateDeclaration>} a promise for a successful transition.
    */
-  run(): Promise<StateDeclaration> {
+  async run(): Promise<StateDeclaration> {
     TransitionRunner._run(this);
 
     return this.promise;
@@ -587,7 +593,7 @@ export class Transition {
       to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName,
       toParams = stringify(avoidEmptyHash(this.params()));
 
-    return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
+    return `Transition#${String(id)}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
   }
 }
 

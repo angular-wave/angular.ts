@@ -1,4 +1,4 @@
-import { isFunction, uppercase } from "../../shared/utils.ts";
+import { assertDefined, isFunction, uppercase } from "../../shared/utils.ts";
 import { getCacheData, getInheritedData } from "../../shared/dom.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { TargetState } from "../state/target-state.ts";
@@ -51,7 +51,7 @@ function controllerKeyData(
   key: string,
 ): ViewControllerInstance | undefined {
   return (
-    (getCacheData(element, key) as ViewControllerInstance | undefined) ||
+    (getCacheData(element, key) as ViewControllerInstance | undefined) ??
     (getInheritedData(element, key) as ViewControllerInstance | undefined)
   );
 }
@@ -84,21 +84,21 @@ export function getComponentController(
   const scopeWithCtrl =
     (getCacheData(directiveEl, "$isolateScope") as
       | Record<string, ViewControllerInstance>
-      | undefined) ||
+      | undefined) ??
     (getInheritedData(directiveEl, "$isolateScope") as
       | Record<string, ViewControllerInstance>
-      | undefined) ||
+      | undefined) ??
     (getCacheData(directiveEl, "$scope") as
       | Record<string, ViewControllerInstance>
-      | undefined) ||
+      | undefined) ??
     (getInheritedData(directiveEl, "$scope") as
       | Record<string, ViewControllerInstance>
       | undefined);
 
   return (
-    controllerKeyData(directiveEl, `$${componentName}Controller`) ||
-    controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ||
-    controllerKeyData(directiveEl, "$ngControllerController") ||
+    controllerKeyData(directiveEl, `$${componentName}Controller`) ??
+    controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ??
+    controllerKeyData(directiveEl, "$ngControllerController") ??
     scopeWithCtrl?.$ctrl
   );
 }
@@ -153,8 +153,9 @@ export function registerViewControllerCallbacks(
       cfg._factory?._injector,
     );
 
-    const viewCreationTrans = resolveContext.getResolvable("$transition$")
-      .data as ng.Transition;
+    const viewCreationTrans = assertDefined(
+      resolveContext.getResolvable("$transition$"),
+    ).data as ng.Transition;
 
     // Fire callback on any successful transition
     const paramsUpdated = ($transition$: ng.Transition | undefined) => {
@@ -185,9 +186,9 @@ export function registerViewControllerCallbacks(
 
       const fromParams = $transition$.params("from");
 
-      const toNodes = $transition$._treeChanges.to || [];
+      const toNodes = $transition$._treeChanges.to;
 
-      const fromNodes = $transition$._treeChanges.from || [];
+      const fromNodes = $transition$._treeChanges.from;
 
       const toSchema: ParamSchemaEntry[] = [];
 
@@ -230,9 +231,9 @@ export function registerViewControllerCallbacks(
     };
 
     const hookRegistryKey = [
-      viewState?.name || "",
-      cfg._viewDecl._ngViewName || "$default",
-      cfg._viewDecl._ngViewContextAnchor || "^",
+      viewState.name || "",
+      cfg._viewDecl._ngViewName ?? "$default",
+      cfg._viewDecl._ngViewContextAnchor ?? "^",
     ].join("::");
 
     const rootScope = $scope.$root as ng.Scope &
@@ -240,7 +241,7 @@ export function registerViewControllerCallbacks(
 
     const registryProp = "__ngRouterParamsChangedHooks__";
 
-    const hookRegistry = (rootScope[registryProp] ||
+    const hookRegistry = (rootScope[registryProp] ??
       (rootScope[registryProp] = new Map<string, () => void>())) as Map<
       string,
       () => void
@@ -283,17 +284,17 @@ export function registerViewControllerCallbacks(
 
       return (
         cache?.[id] === true ||
-        prevTruthyAnswer(trans._options.redirectedFrom || null)
+        prevTruthyAnswer(trans._options.redirectedFrom ?? null)
       );
     };
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-    const wrappedHook = (trans: ng.Transition) => {
+    const wrappedHook = async (trans: ng.Transition) => {
       let promise: Promise<boolean | undefined | TargetState> | undefined;
 
       const cacheTrans = trans as NgCanExitTransition;
 
-      const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds || {});
+      const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});
 
       if (!prevTruthyAnswer(trans)) {
         promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));

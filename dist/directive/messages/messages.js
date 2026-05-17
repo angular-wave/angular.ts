@@ -1,6 +1,6 @@
-import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
+import { _injector, _parse, _attributes, _templateRequest, _compile } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { getDirectiveAttr, createNodelistFromHTML, removeElement } from '../../shared/dom.js';
+import { createNodelistFromHTML, removeElement } from '../../shared/dom.js';
 import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
 
 const ACTIVE_CLASS = "ng-active";
@@ -9,10 +9,9 @@ class NgMessageCtrl {
     /**
      * Creates a controller that manages message matching and attachment state.
      */
-    constructor($element, $scope, $attrs, getAnimate, $parse) {
+    constructor($element, $scope, collectionExpression, multipleExpression, ngMessagesMultipleExpression, getAnimate, $parse) {
         this._element = $element;
         this._scope = $scope;
-        this._attrs = $attrs;
         this._getAnimate = getAnimate;
         this._isAnimated = !!getAnimateForNode(getAnimate, $element);
         this._latestKey = 0;
@@ -21,9 +20,9 @@ class NgMessageCtrl {
         this._renderLater = false;
         this._cachedCollection = null;
         this._default = undefined;
-        this._multipleExpression = parseAttrTruthy($parse, this._attrs.multiple);
-        this._ngMessagesMultipleExpression = parseAttrTruthy($parse, this._attrs.ngMessagesMultiple);
-        this._scope.$watch(this._attrs.ngMessages || this._attrs.for, this._render.bind(this));
+        this._multipleExpression = parseAttrTruthy($parse, multipleExpression);
+        this._ngMessagesMultipleExpression = parseAttrTruthy($parse, ngMessagesMultipleExpression);
+        this._scope.$watch(collectionExpression ?? "", this._render.bind(this));
     }
     /** @internal */
     _getAttachId() {
@@ -31,7 +30,7 @@ class NgMessageCtrl {
     }
     /** @internal */
     _render(collection = {}) {
-        collection = collection || {};
+        collection = collection ?? {};
         this._renderLater = false;
         this._cachedCollection = collection;
         const multiple = evalAttrTruthy(this._scope, this._ngMessagesMultipleExpression) ||
@@ -50,18 +49,19 @@ class NgMessageCtrl {
             const messageCtrl = messageItem.message;
             let messageUsed = false;
             if (!messageFound) {
-                entries(collection).forEach(([key, value]) => {
-                    if (truthy(value) && !messageUsed) {
+                for (const [key, value] of entries(collection)) {
+                    if (truthy(value)) {
                         truthyKeys++;
                         if (messageCtrl.test(key)) {
                             if (matchedKeys[key])
-                                return;
+                                continue;
                             matchedKeys[key] = true;
                             messageUsed = true;
                             messageCtrl.attach();
+                            break;
                         }
                     }
-                });
+                }
             }
             if (messageUsed) {
                 messageFound = !multiple;
@@ -145,16 +145,17 @@ class NgMessageCtrl {
         this.reRender();
     }
 }
-ngMessagesDirective.$inject = [_injector, _parse];
+ngMessagesDirective.$inject = [_injector, _parse, _attributes];
 /**
  * Builds the root `ngMessages` directive.
  */
-function ngMessagesDirective($injector, $parse) {
+function ngMessagesDirective($injector, $parse, $attributes) {
     const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngMessages",
         restrict: "AE",
-        controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate, $parse),
+        controller: ($element, $scope) => new NgMessageCtrl($element, $scope, $attributes.read($element, "ngMessages") ??
+            $attributes.read($element, "for"), $attributes.read($element, "multiple"), $attributes.read($element, "ngMessagesMultiple"), getAnimate, $parse),
     };
 }
 /**
@@ -174,17 +175,17 @@ function evalAttrTruthy(scope, expr) {
 function truthy(val) {
     return isString(val) ? val.length > 0 : !!val;
 }
-ngMessagesIncludeDirective.$inject = [_templateRequest, _compile];
+ngMessagesIncludeDirective.$inject = [_templateRequest, _compile, _attributes];
 /**
  * Builds the directive that inlines external message templates.
  */
-function ngMessagesIncludeDirective($templateRequest, $compile) {
+function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
     return {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
-        link($scope, element, attrs, ngMessagesCtrl) {
-            const src = getDirectiveAttr(element, attrs, "ngMessagesInclude") ||
-                getDirectiveAttr(element, attrs, "src") ||
+        link($scope, element, _attrs, ngMessagesCtrl) {
+            const src = $attributes.read(element, "ngMessagesInclude") ??
+                $attributes.read(element, "src") ??
                 "";
             void $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
@@ -221,11 +222,11 @@ const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(isDefault) {
-    ngMessageDirectiveFn.$inject = [_injector, _parse];
+    ngMessageDirectiveFn.$inject = [_injector, _parse, _attributes];
     /**
      * Builds a concrete `ngMessage` directive definition.
      */
-    function ngMessageDirectiveFn($injector, $parse) {
+    function ngMessageDirectiveFn($injector, $parse, $attributes) {
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "AE",
@@ -233,7 +234,7 @@ function ngMessageDirectiveFactory(isDefault) {
             priority: 1, // must run before ngBind, otherwise the text is set on the comment
             terminal: true,
             require: "^^ngMessages",
-            link: (scope, element, attrs, ngMessagesCtrl, $transclude) => {
+            link: (scope, element, _attrs, ngMessagesCtrl, $transclude) => {
                 let commentNode = element;
                 let records = null;
                 let staticExp;
@@ -241,12 +242,12 @@ function ngMessageDirectiveFactory(isDefault) {
                 if (!isDefault) {
                     commentNode = element;
                     staticExp =
-                        getDirectiveAttr(element, attrs, "ngMessage") ||
-                            getDirectiveAttr(element, attrs, "when") ||
+                        $attributes.read(element, "ngMessage") ??
+                            $attributes.read(element, "when") ??
                             undefined;
                     dynamicExp =
-                        getDirectiveAttr(element, attrs, "ngMessageExp") ||
-                            getDirectiveAttr(element, attrs, "whenExp") ||
+                        $attributes.read(element, "ngMessageExp") ??
+                            $attributes.read(element, "whenExp") ??
                             undefined;
                     const assignRecords = function (items) {
                         records = items

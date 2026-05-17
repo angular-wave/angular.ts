@@ -45,9 +45,9 @@ export class TransitionEventType {
     hookOrder: number,
     criteriaMatchPath: PathType,
     reverseSort = false,
-    resultHandler: TransitionResultHandler = (hook, result) =>
+    resultHandler: TransitionResultHandler = async (hook, result) =>
       TransitionHook._handleResult(hook, result),
-    errorHandler: TransitionErrorHandler = (hook, error) =>
+    errorHandler: TransitionErrorHandler = async (hook, error) =>
       TransitionHook._rejectError(hook, error),
     synchronous = false,
   ) {

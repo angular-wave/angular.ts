@@ -8,13 +8,14 @@ import { NodeType } from "../../shared/node.ts";
 import {
   arrayFrom,
   isArray,
+  isFunction,
   isInstanceOf,
   stringify,
   assertDefined,
 } from "../../shared/utils.ts";
 import type { SwapModeType } from "./protocol.ts";
 
-type SwapNodes = Array<Node | ChildNode>;
+type SwapNodes = (Node | ChildNode)[];
 
 type ViewTransitionDocument = Document & {
   startViewTransition?: (callback?: () => void) => unknown;
@@ -87,14 +88,14 @@ export function createRealtimeSwapHandler({
     }
 
     const targetSelector =
-      options.targetSelector || $attributes.read(element, "target");
+      options.targetSelector ?? $attributes.read(element, "target");
 
     const target: Element | null = targetSelector
       ? document.querySelector(targetSelector)
       : element;
 
     if (!target) {
-      $log.warn(`${logPrefix}: target "${targetSelector}" not found`);
+      $log.warn(`${logPrefix}: target "${String(targetSelector)}" not found`);
 
       return false;
     }
@@ -108,7 +109,9 @@ export function createRealtimeSwapHandler({
 
           const frag = createDocumentFragment();
 
-          nodes.forEach((x) => frag.appendChild(x));
+          nodes.forEach((x) => {
+            frag.appendChild(x);
+          });
 
           if (!animationEnabled) {
             parent.replaceChild(frag, target);
@@ -255,13 +258,9 @@ export function createRealtimeSwapHandler({
                   assertDefined(animate).enter(nodes[0] as Element, target);
                 });
             } else {
-              content = nodes[0] as ChildNode;
+              content = nodes[0] as ChildNode | undefined;
 
-              if (
-                content &&
-                !isArray(content) &&
-                content.nodeType === NodeType._TEXT_NODE
-              ) {
+              if (content?.nodeType === NodeType._TEXT_NODE) {
                 emptyElement(target);
                 target.replaceChildren(...nodes);
               } else {
@@ -287,7 +286,7 @@ export function createRealtimeSwapHandler({
     ) {
       const documentWithTransitions = document as ViewTransitionDocument;
 
-      documentWithTransitions.startViewTransition?.(() => {
+      documentWithTransitions.startViewTransition(() => {
         applySwap();
       });
 
@@ -307,7 +306,12 @@ function shouldUseViewTransition(
 
   const documentWithTransitions = document as ViewTransitionDocument;
 
-  if (!documentWithTransitions.startViewTransition) return false;
+  const startViewTransition = Reflect.get(
+    documentWithTransitions,
+    "startViewTransition",
+  );
+
+  if (!isFunction(startViewTransition)) return false;
 
   if (!target.isConnected) return false;
 

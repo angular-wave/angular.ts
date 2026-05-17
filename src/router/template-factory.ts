@@ -24,21 +24,21 @@ interface BindingTuple {
   type: string;
 }
 
-type TemplateResult =
-  | Promise<{ _template: string | undefined }>
-  | Promise<{ _component: string }>;
+type TemplateResult = Promise<
+  { _template: string | undefined } | { _component: string }
+>;
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 
 const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
 
-function asTemplate(
+async function asTemplate(
   result: string | Promise<string> | null,
 ): Promise<{ _template: string | undefined }> {
   return Promise.resolve(result).then(toTemplateResult);
 }
 
-function asComponent(
+async function asComponent(
   result: string | Promise<string>,
 ): Promise<{ _component: string }> {
   return Promise.resolve(result).then(toComponentResult);
@@ -90,14 +90,14 @@ export class TemplateFactoryProvider {
    * Resolves a state's view config into either concrete template HTML or a component name.
    */
   /** @internal */
-  _fromConfig(
+  async _fromConfig(
     config: ViewDeclarationCommon,
     params: RawParams,
   ): TemplateResult {
     const { template, templateUrl, component } = config;
 
     if (isDefined(template)) {
-      return asTemplate(this._fromString(template, params));
+      return asTemplate(TemplateFactoryProvider._fromString(template, params));
     }
 
     if (isDefined(templateUrl)) {
@@ -115,7 +115,10 @@ export class TemplateFactoryProvider {
    * Resolves a literal template string or template factory function.
    */
   /** @internal */
-  _fromString(template: string | TemplateFactory, params?: RawParams): string {
+  static _fromString(
+    template: string | TemplateFactory,
+    params?: RawParams,
+  ): string {
     return isFunction(template) ? template(params) : template;
   }
 

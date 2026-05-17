@@ -30,7 +30,7 @@ function extractArgs(
 ): RegExpMatchArray | null {
   const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
 
-  return ARROW_ARG.exec(fnText) || FN_ARGS.exec(fnText);
+  return ARROW_ARG.exec(fnText) ?? FN_ARGS.exec(fnText);
 }
 
 export function isClass(func: RuntimeFunction | RuntimeConstructor): boolean {
@@ -77,12 +77,12 @@ export function annotate(
     const last = fn.length - 1;
 
     assertArgFn(fn[last], "fn");
-    inject = (fn as AnnotatedFactory<(...args: any[]) => any>).slice(
+    inject = (fn as AnnotatedFactory<(...args: unknown[]) => unknown>).slice(
       0,
       last,
     ) as string[];
   } else {
-    assertArgFn(fn as any, "fn", true);
+    assertArgFn(fn as RuntimeFunction | RuntimeConstructor, "fn", true);
   }
 
   return inject;

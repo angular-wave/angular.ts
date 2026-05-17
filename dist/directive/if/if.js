@@ -1,24 +1,24 @@
-import { _injector } from '../../injection-tokens.js';
+import { _injector, _attributes } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { getDirectiveAttr, removeElement } from '../../shared/dom.js';
+import { removeElement } from '../../shared/dom.js';
 
-ngIfDirective.$inject = [_injector];
+ngIfDirective.$inject = [_injector, _attributes];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
-function ngIfDirective($injector) {
+function ngIfDirective($injector, $attributes) {
     const getAnimate = createLazyAnimate($injector);
     return {
         transclude: "element",
         priority: 600,
         terminal: true,
         restrict: "A",
-        link($scope, $element, $attr, _ctrl, $transclude) {
+        link($scope, $element, _attr, _ctrl, $transclude) {
             if (!$transclude) {
                 return;
             }
             let block;
             let childScope;
             let previousElements;
-            const expression = getDirectiveAttr($element, $attr, "ngIf");
+            const expression = $attributes.read($element, "ngIf");
             if (typeof expression !== "string") {
                 return;
             }

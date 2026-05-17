@@ -8,7 +8,7 @@ type AsyncFilterState =
     }
   | {
       _status: "settled";
-      _value: any;
+      _value: unknown;
     };
 
 const asyncFilterStates = new WeakMap<object, AsyncFilterState>();
@@ -17,7 +17,7 @@ asyncFilter.$inject = [_rootScope];
 
 /** Creates a filter that unwraps promise-like values once they settle. */
 export function asyncFilter($rootScope: ng.RootScopeService) {
-  return function asyncFilterFn(input: any): any {
+  return function asyncFilterFn(input: unknown): unknown {
     if (!isPromiseLike(input)) {
       return input;
     }
@@ -26,7 +26,7 @@ export function asyncFilter($rootScope: ng.RootScopeService) {
       return undefined;
     }
 
-    const promise = input as PromiseLike<any> & object;
+    const promise = input as PromiseLike<unknown> & object;
 
     const state = asyncFilterStates.get(promise);
 
@@ -40,14 +40,15 @@ export function asyncFilter($rootScope: ng.RootScopeService) {
         _value: undefined,
       });
 
-      Promise.resolve(input).then(
-        (value) => {
+      void Promise.resolve(input)
+        .then((value) => {
           settleAsyncValue($rootScope, promise, value);
-        },
-        (reason: unknown) => {
+
+          return undefined;
+        })
+        .catch((reason: unknown) => {
           settleAsyncValue($rootScope, promise, reason);
-        },
-      );
+        });
     }
 
     return undefined;
@@ -57,7 +58,7 @@ export function asyncFilter($rootScope: ng.RootScopeService) {
 function settleAsyncValue(
   $rootScope: ng.RootScopeService,
   promise: object,
-  value: any,
+  value: unknown,
 ): void {
   asyncFilterStates.set(promise, {
     _status: "settled",

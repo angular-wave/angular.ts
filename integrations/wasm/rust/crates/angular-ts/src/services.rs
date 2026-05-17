@@ -273,6 +273,646 @@ impl HttpMethod {
             Self::Options => "OPTIONS",
         }
     }
+
+    /// Converts the uppercase method string used by AngularTS request configs.
+    pub fn from_angular(value: &str) -> Option<Self> {
+        match value {
+            "GET" => Some(Self::Get),
+            "POST" => Some(Self::Post),
+            "PUT" => Some(Self::Put),
+            "DELETE" => Some(Self::Delete),
+            "PATCH" => Some(Self::Patch),
+            "HEAD" => Some(Self::Head),
+            "OPTIONS" => Some(Self::Options),
+            _ => None,
+        }
+    }
+}
+
+/// Minimal Rust representation of an AngularTS state declaration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StateDeclaration {
+    name: String,
+    url: Option<String>,
+    component: Option<String>,
+    template: Option<String>,
+    template_url: Option<String>,
+    abstract_state: bool,
+}
+
+impl StateDeclaration {
+    /// Creates a state declaration with the required state name.
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            url: None,
+            component: None,
+            template: None,
+            template_url: None,
+            abstract_state: false,
+        }
+    }
+
+    /// State name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// URL fragment for this state, when configured.
+    pub fn url(&self) -> Option<&str> {
+        self.url.as_deref()
+    }
+
+    /// Component name for this state's default view, when configured.
+    pub fn component(&self) -> Option<&str> {
+        self.component.as_deref()
+    }
+
+    /// Inline template for this state's default view, when configured.
+    pub fn template(&self) -> Option<&str> {
+        self.template.as_deref()
+    }
+
+    /// Template URL for this state's default view, when configured.
+    pub fn template_url(&self) -> Option<&str> {
+        self.template_url.as_deref()
+    }
+
+    /// Whether this is an abstract state.
+    pub const fn abstract_state(&self) -> bool {
+        self.abstract_state
+    }
+
+    /// Sets the state URL fragment.
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
+    }
+
+    /// Sets the component name for the default view.
+    pub fn with_component(mut self, component: impl Into<String>) -> Self {
+        self.component = Some(component.into());
+        self
+    }
+
+    /// Sets the inline template for the default view.
+    pub fn with_template(mut self, template: impl Into<String>) -> Self {
+        self.template = Some(template.into());
+        self
+    }
+
+    /// Sets the template URL for the default view.
+    pub fn with_template_url(mut self, template_url: impl Into<String>) -> Self {
+        self.template_url = Some(template_url.into());
+        self
+    }
+
+    /// Marks this state as abstract or concrete.
+    pub const fn with_abstract(mut self, abstract_state: bool) -> Self {
+        self.abstract_state = abstract_state;
+        self
+    }
+
+    /// Converts this declaration into the JavaScript object accepted by `$stateRegistry`.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let state = Object::new();
+
+        Reflect::set(
+            &state,
+            &JsValue::from_str("name"),
+            &JsValue::from_str(&self.name),
+        )?;
+
+        if let Some(url) = &self.url {
+            Reflect::set(&state, &JsValue::from_str("url"), &JsValue::from_str(url))?;
+        }
+
+        if let Some(component) = &self.component {
+            Reflect::set(
+                &state,
+                &JsValue::from_str("component"),
+                &JsValue::from_str(component),
+            )?;
+        }
+
+        if let Some(template) = &self.template {
+            Reflect::set(
+                &state,
+                &JsValue::from_str("template"),
+                &JsValue::from_str(template),
+            )?;
+        }
+
+        if let Some(template_url) = &self.template_url {
+            Reflect::set(
+                &state,
+                &JsValue::from_str("templateUrl"),
+                &JsValue::from_str(template_url),
+            )?;
+        }
+
+        if self.abstract_state {
+            Reflect::set(
+                &state,
+                &JsValue::from_str("abstract"),
+                &JsValue::from_bool(true),
+            )?;
+        }
+
+        Ok(state.into())
+    }
+}
+
+/// Minimal resolve metadata for Rust-authored state declarations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StateResolve {
+    token: String,
+    deps: Vec<String>,
+    eager: bool,
+}
+
+impl StateResolve {
+    /// Creates a resolve declaration for a token.
+    pub fn new(token: impl Into<String>) -> Self {
+        Self {
+            token: token.into(),
+            deps: Vec::new(),
+            eager: false,
+        }
+    }
+
+    /// Resolve token.
+    pub fn token(&self) -> &str {
+        &self.token
+    }
+
+    /// Dependency tokens used by the resolve.
+    pub fn deps(&self) -> &[String] {
+        &self.deps
+    }
+
+    /// Whether the resolve should start eagerly.
+    pub const fn eager(&self) -> bool {
+        self.eager
+    }
+
+    /// Adds a dependency token.
+    pub fn dep(mut self, dep: impl Into<String>) -> Self {
+        self.deps.push(dep.into());
+        self
+    }
+
+    /// Sets the eager flag.
+    pub const fn with_eager(mut self, eager: bool) -> Self {
+        self.eager = eager;
+        self
+    }
+}
+
+/// Rust representation of AngularTS object-style state resolves.
+pub type StateResolveObject = Vec<StateResolve>;
+
+/// Rust representation of AngularTS array-style state resolves.
+pub type StateResolveArray = Vec<StateResolve>;
+
+/// Realtime DOM/content swap modes understood by AngularTS realtime directives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SwapModeType {
+    InnerHtml,
+    OuterHtml,
+    TextContent,
+    BeforeBegin,
+    AfterBegin,
+    BeforeEnd,
+    AfterEnd,
+    Delete,
+    None,
+}
+
+impl SwapModeType {
+    /// Returns the swap string used by AngularTS realtime protocol messages.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InnerHtml => "innerHTML",
+            Self::OuterHtml => "outerHTML",
+            Self::TextContent => "textContent",
+            Self::BeforeBegin => "beforebegin",
+            Self::AfterBegin => "afterbegin",
+            Self::BeforeEnd => "beforeend",
+            Self::AfterEnd => "afterend",
+            Self::Delete => "delete",
+            Self::None => "none",
+        }
+    }
+
+    /// Converts a realtime protocol swap string.
+    pub fn from_angular(value: &str) -> Option<Self> {
+        match value {
+            "innerHTML" => Some(Self::InnerHtml),
+            "outerHTML" => Some(Self::OuterHtml),
+            "textContent" => Some(Self::TextContent),
+            "beforebegin" => Some(Self::BeforeBegin),
+            "afterbegin" => Some(Self::AfterBegin),
+            "beforeend" => Some(Self::BeforeEnd),
+            "afterend" => Some(Self::AfterEnd),
+            "delete" => Some(Self::Delete),
+            "none" => Some(Self::None),
+            _ => None,
+        }
+    }
+}
+
+/// Rust representation of AngularTS shared realtime connection options.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ConnectionConfig {
+    retry_delay: Option<u32>,
+    max_retries: Option<u32>,
+    heartbeat_timeout: Option<u32>,
+    event_types: Vec<String>,
+}
+
+impl ConnectionConfig {
+    /// Creates empty connection options.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Optional delay between reconnect attempts in milliseconds.
+    pub const fn retry_delay(&self) -> Option<u32> {
+        self.retry_delay
+    }
+
+    /// Optional maximum reconnect attempt count.
+    pub const fn max_retries(&self) -> Option<u32> {
+        self.max_retries
+    }
+
+    /// Optional heartbeat timeout in milliseconds.
+    pub const fn heartbeat_timeout(&self) -> Option<u32> {
+        self.heartbeat_timeout
+    }
+
+    /// Additional SSE event types.
+    pub fn event_types(&self) -> &[String] {
+        &self.event_types
+    }
+
+    /// Sets reconnect delay in milliseconds.
+    pub const fn retry_delay_ms(mut self, retry_delay: u32) -> Self {
+        self.retry_delay = Some(retry_delay);
+        self
+    }
+
+    /// Sets maximum reconnect attempts.
+    pub const fn with_max_retries(mut self, max_retries: u32) -> Self {
+        self.max_retries = Some(max_retries);
+        self
+    }
+
+    /// Sets heartbeat timeout in milliseconds.
+    pub const fn heartbeat_timeout_ms(mut self, heartbeat_timeout: u32) -> Self {
+        self.heartbeat_timeout = Some(heartbeat_timeout);
+        self
+    }
+
+    /// Adds an extra event type to subscribe to.
+    pub fn event_type(mut self, event_type: impl Into<String>) -> Self {
+        self.event_types.push(event_type.into());
+        self
+    }
+
+    /// Converts this config into the JavaScript object accepted by realtime services.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Array, Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let config = Object::new();
+
+        if let Some(retry_delay) = self.retry_delay {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("retryDelay"),
+                &JsValue::from_f64(retry_delay as f64),
+            )?;
+        }
+
+        if let Some(max_retries) = self.max_retries {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("maxRetries"),
+                &JsValue::from_f64(max_retries as f64),
+            )?;
+        }
+
+        if let Some(heartbeat_timeout) = self.heartbeat_timeout {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("heartbeatTimeout"),
+                &JsValue::from_f64(heartbeat_timeout as f64),
+            )?;
+        }
+
+        if !self.event_types.is_empty() {
+            let event_types = Array::new();
+            for event_type in &self.event_types {
+                event_types.push(&JsValue::from_str(event_type));
+            }
+            Reflect::set(&config, &JsValue::from_str("eventTypes"), &event_types)?;
+        }
+
+        Ok(config.into())
+    }
+}
+
+/// Realtime connection event metadata.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConnectionEvent<T> {
+    event_type: String,
+    data: T,
+}
+
+impl<T> ConnectionEvent<T> {
+    /// Creates a connection event wrapper.
+    pub fn new(event_type: impl Into<String>, data: T) -> Self {
+        Self {
+            event_type: event_type.into(),
+            data,
+        }
+    }
+
+    /// Event type, such as `message`.
+    pub fn event_type(&self) -> &str {
+        &self.event_type
+    }
+
+    /// Decoded event data.
+    pub const fn data(&self) -> &T {
+        &self.data
+    }
+}
+
+/// Realtime protocol message consumed by AngularTS realtime directives.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RealtimeProtocolMessage {
+    html: Option<String>,
+    target: Option<String>,
+    swap: Option<SwapModeType>,
+}
+
+impl RealtimeProtocolMessage {
+    /// Creates an empty realtime protocol message.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// HTML or text payload.
+    pub fn html(&self) -> Option<&str> {
+        self.html.as_deref()
+    }
+
+    /// CSS selector target override.
+    pub fn target(&self) -> Option<&str> {
+        self.target.as_deref()
+    }
+
+    /// Swap mode override.
+    pub const fn swap(&self) -> Option<SwapModeType> {
+        self.swap
+    }
+
+    /// Sets the HTML or text payload.
+    pub fn with_html(mut self, html: impl Into<String>) -> Self {
+        self.html = Some(html.into());
+        self
+    }
+
+    /// Sets a CSS selector target override.
+    pub fn with_target(mut self, target: impl Into<String>) -> Self {
+        self.target = Some(target.into());
+        self
+    }
+
+    /// Sets the swap mode override.
+    pub const fn with_swap(mut self, swap: SwapModeType) -> Self {
+        self.swap = Some(swap);
+        self
+    }
+
+    /// Converts this message into a JavaScript realtime protocol object.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let message = Object::new();
+
+        if let Some(html) = &self.html {
+            Reflect::set(
+                &message,
+                &JsValue::from_str("html"),
+                &JsValue::from_str(html),
+            )?;
+        }
+
+        if let Some(target) = &self.target {
+            Reflect::set(
+                &message,
+                &JsValue::from_str("target"),
+                &JsValue::from_str(target),
+            )?;
+        }
+
+        if let Some(swap) = self.swap {
+            Reflect::set(
+                &message,
+                &JsValue::from_str("swap"),
+                &JsValue::from_str(swap.as_str()),
+            )?;
+        }
+
+        Ok(message.into())
+    }
+}
+
+/// Realtime protocol event detail shape.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RealtimeProtocolEventDetail<T> {
+    data: Option<T>,
+    url: Option<String>,
+    error: Option<String>,
+}
+
+impl<T> RealtimeProtocolEventDetail<T> {
+    /// Creates an event detail wrapper.
+    pub fn new(data: Option<T>) -> Self {
+        Self {
+            data,
+            url: None,
+            error: None,
+        }
+    }
+
+    /// Decoded event data.
+    pub const fn data(&self) -> Option<&T> {
+        self.data.as_ref()
+    }
+
+    /// Source URL, when present.
+    pub fn url(&self) -> Option<&str> {
+        self.url.as_deref()
+    }
+
+    /// Error string, when present.
+    pub fn error(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
+
+    /// Sets the source URL.
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
+    }
+
+    /// Sets an error string.
+    pub fn with_error(mut self, error: impl Into<String>) -> Self {
+        self.error = Some(error.into());
+        self
+    }
+}
+
+/// WebSocket-specific connection options.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct WebSocketConfig {
+    connection: ConnectionConfig,
+    protocols: Vec<String>,
+}
+
+impl WebSocketConfig {
+    /// Creates empty WebSocket options.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Shared connection options.
+    pub const fn connection(&self) -> &ConnectionConfig {
+        &self.connection
+    }
+
+    /// WebSocket protocols.
+    pub fn protocols(&self) -> &[String] {
+        &self.protocols
+    }
+
+    /// Replaces the shared connection options.
+    pub fn with_connection(mut self, connection: ConnectionConfig) -> Self {
+        self.connection = connection;
+        self
+    }
+
+    /// Adds a WebSocket protocol.
+    pub fn protocol(mut self, protocol: impl Into<String>) -> Self {
+        self.protocols.push(protocol.into());
+        self
+    }
+
+    /// Converts this config into the JavaScript object accepted by `$websocket`.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Array, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let config = self.connection.to_js_value()?;
+
+        if !self.protocols.is_empty() {
+            let protocols = Array::new();
+            for protocol in &self.protocols {
+                protocols.push(&JsValue::from_str(protocol));
+            }
+            Reflect::set(&config, &JsValue::from_str("protocols"), &protocols)?;
+        }
+
+        Ok(config)
+    }
+}
+
+/// SSE-specific connection options.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SseConfig {
+    connection: ConnectionConfig,
+    with_credentials: bool,
+    params: Vec<(String, String)>,
+}
+
+impl SseConfig {
+    /// Creates empty SSE options.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Shared connection options.
+    pub const fn connection(&self) -> &ConnectionConfig {
+        &self.connection
+    }
+
+    /// Whether cookies/credentials should be included.
+    pub const fn with_credentials_value(&self) -> bool {
+        self.with_credentials
+    }
+
+    /// Query parameters appended to the URL.
+    pub fn params(&self) -> &[(String, String)] {
+        &self.params
+    }
+
+    /// Replaces the shared connection options.
+    pub fn with_connection(mut self, connection: ConnectionConfig) -> Self {
+        self.connection = connection;
+        self
+    }
+
+    /// Sets whether cookies/credentials should be included.
+    pub const fn with_credentials(mut self, with_credentials: bool) -> Self {
+        self.with_credentials = with_credentials;
+        self
+    }
+
+    /// Adds or replaces a query parameter.
+    pub fn param(mut self, name: impl Into<String>, value: impl ToString) -> Self {
+        replace_pair(&mut self.params, name.into(), value.to_string());
+        self
+    }
+
+    /// Converts this config into the JavaScript object accepted by `$sse`.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let config = self.connection.to_js_value()?;
+
+        if self.with_credentials {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("withCredentials"),
+                &JsValue::from_bool(true),
+            )?;
+        }
+
+        if !self.params.is_empty() {
+            let params = Object::new();
+            for (name, value) in &self.params {
+                Reflect::set(&params, &JsValue::from_str(name), &JsValue::from_str(value))?;
+            }
+            Reflect::set(&config, &JsValue::from_str("params"), &params)?;
+        }
+
+        Ok(config)
+    }
 }
 
 /// Final transport status reported by AngularTS `$http`.
@@ -627,6 +1267,257 @@ impl<T> HttpResponse<T> {
     }
 }
 
+/// REST resource definition registered with AngularTS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestDefinition {
+    name: String,
+    url: String,
+}
+
+impl RestDefinition {
+    /// Creates a named REST resource definition.
+    pub fn new(name: impl Into<String>, url: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            url: url.into(),
+        }
+    }
+
+    /// Resource name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Base URL or URI template.
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+}
+
+/// Extra REST options merged into requests made by a REST resource.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RestOptions {
+    values: Vec<(String, String)>,
+}
+
+impl RestOptions {
+    /// Creates empty REST options.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Backend-specific string options.
+    pub fn values(&self) -> &[(String, String)] {
+        &self.values
+    }
+
+    /// Adds or replaces one backend-specific string option.
+    pub fn option(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        replace_pair(&mut self.values, name.into(), value.into());
+        self
+    }
+
+    /// Converts this config into the JavaScript object accepted by `$rest`.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let options = Object::new();
+
+        for (name, value) in &self.values {
+            Reflect::set(
+                &options,
+                &JsValue::from_str(name),
+                &JsValue::from_str(value),
+            )?;
+        }
+
+        Ok(options.into())
+    }
+}
+
+/// Normalized REST request produced by AngularTS `RestService`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestRequest {
+    method: HttpMethod,
+    url: String,
+    collection_url: Option<String>,
+    id: Option<String>,
+    params: Vec<(String, String)>,
+    options: RestOptions,
+}
+
+impl RestRequest {
+    /// Creates a REST request for the given HTTP method and URL.
+    pub fn new(method: HttpMethod, url: impl Into<String>) -> Self {
+        Self {
+            method,
+            url: url.into(),
+            collection_url: None,
+            id: None,
+            params: Vec::new(),
+            options: RestOptions::new(),
+        }
+    }
+
+    /// HTTP method.
+    pub const fn method(&self) -> HttpMethod {
+        self.method
+    }
+
+    /// Expanded request URL.
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    /// Collection URL used for cache invalidation.
+    pub fn collection_url(&self) -> Option<&str> {
+        self.collection_url.as_deref()
+    }
+
+    /// Resource identifier.
+    pub fn id(&self) -> Option<&str> {
+        self.id.as_deref()
+    }
+
+    /// URI template and query parameters.
+    pub fn params(&self) -> &[(String, String)] {
+        &self.params
+    }
+
+    /// Backend-specific options.
+    pub const fn options(&self) -> &RestOptions {
+        &self.options
+    }
+
+    /// Sets the collection URL.
+    pub fn with_collection_url(mut self, collection_url: impl Into<String>) -> Self {
+        self.collection_url = Some(collection_url.into());
+        self
+    }
+
+    /// Sets the resource identifier.
+    pub fn with_id(mut self, id: impl Into<String>) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+
+    /// Adds or replaces one URI/query parameter.
+    pub fn param(mut self, name: impl Into<String>, value: impl ToString) -> Self {
+        replace_pair(&mut self.params, name.into(), value.to_string());
+        self
+    }
+
+    /// Replaces backend-specific options.
+    pub fn with_options(mut self, options: RestOptions) -> Self {
+        self.options = options;
+        self
+    }
+
+    /// Converts this request into the JavaScript object accepted by `RestBackend`.
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let request = Object::new();
+
+        Reflect::set(
+            &request,
+            &JsValue::from_str("method"),
+            &JsValue::from_str(self.method.as_str()),
+        )?;
+        Reflect::set(
+            &request,
+            &JsValue::from_str("url"),
+            &JsValue::from_str(&self.url),
+        )?;
+
+        if let Some(collection_url) = &self.collection_url {
+            Reflect::set(
+                &request,
+                &JsValue::from_str("collectionUrl"),
+                &JsValue::from_str(collection_url),
+            )?;
+        }
+
+        if let Some(id) = &self.id {
+            Reflect::set(&request, &JsValue::from_str("id"), &JsValue::from_str(id))?;
+        }
+
+        if !self.params.is_empty() {
+            let params = Object::new();
+            for (name, value) in &self.params {
+                Reflect::set(&params, &JsValue::from_str(name), &JsValue::from_str(value))?;
+            }
+            Reflect::set(&request, &JsValue::from_str("params"), &params)?;
+        }
+
+        Reflect::set(
+            &request,
+            &JsValue::from_str("options"),
+            &self.options.to_js_value()?,
+        )?;
+
+        Ok(request.into())
+    }
+}
+
+/// Response shape returned by REST backends.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestResponse<T> {
+    data: T,
+    source: Option<String>,
+    stale: bool,
+}
+
+impl<T> RestResponse<T> {
+    /// Creates a REST response around response data.
+    pub fn new(data: T) -> Self {
+        Self {
+            data,
+            source: None,
+            stale: false,
+        }
+    }
+
+    /// Response payload.
+    pub const fn data(&self) -> &T {
+        &self.data
+    }
+
+    /// Backend source, such as `network` or `cache`.
+    pub fn source(&self) -> Option<&str> {
+        self.source.as_deref()
+    }
+
+    /// Whether the response may be stale.
+    pub const fn stale(&self) -> bool {
+        self.stale
+    }
+
+    /// Sets the backend source.
+    pub fn with_source(mut self, source: impl Into<String>) -> Self {
+        self.source = Some(source.into());
+        self
+    }
+
+    /// Sets the stale flag.
+    pub const fn with_stale(mut self, stale: bool) -> Self {
+        self.stale = stale;
+        self
+    }
+}
+
+/// Rust trait equivalent of the public AngularTS `RestBackend` interface.
+pub trait RestBackend {
+    /// Execute one normalized REST request.
+    fn request<T>(&self, request: RestRequest) -> RestResponse<T>
+    where
+        T: Default;
+}
+
 /// Listener callback shape used by the `$eventBus` facade.
 pub type EventBusListener<T> = fn(T);
 
@@ -706,6 +1597,33 @@ mod host {
 
     #[derive(Debug, Clone, Copy)]
     pub struct EventBusService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct StateService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct StateRegistryService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Transition;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct WebSocketService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct WebSocketConnection;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct SseService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct SseConnection;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct RestFactory;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct RestService;
 
     #[derive(Debug, Clone, Default)]
     pub struct CookieService {
@@ -818,6 +1736,31 @@ mod host {
         const EXPORT_NAME: &'static str = "__ng_service_EventBusService";
     }
 
+    impl Service for StateService {
+        const TOKEN_NAME: &'static str = "$state";
+        const EXPORT_NAME: &'static str = "__ng_service_StateService";
+    }
+
+    impl Service for StateRegistryService {
+        const TOKEN_NAME: &'static str = "$stateRegistry";
+        const EXPORT_NAME: &'static str = "__ng_service_StateRegistryService";
+    }
+
+    impl Service for WebSocketService {
+        const TOKEN_NAME: &'static str = "$websocket";
+        const EXPORT_NAME: &'static str = "__ng_service_WebSocketService";
+    }
+
+    impl Service for SseService {
+        const TOKEN_NAME: &'static str = "$sse";
+        const EXPORT_NAME: &'static str = "__ng_service_SseService";
+    }
+
+    impl Service for RestFactory {
+        const TOKEN_NAME: &'static str = "$rest";
+        const EXPORT_NAME: &'static str = "__ng_service_RestFactory";
+    }
+
     impl Service for CookieService {
         const TOKEN_NAME: &'static str = "$cookie";
         const EXPORT_NAME: &'static str = "__ng_service_CookieService";
@@ -837,7 +1780,8 @@ mod host {
 #[cfg(target_arch = "wasm32")]
 mod browser {
     use super::{
-        decode_http_response, HttpResponse, RequestConfig, RequestShortcutConfig, Service,
+        decode_http_response, HttpResponse, RequestConfig, RequestShortcutConfig, RestOptions,
+        Service, SseConfig, StateDeclaration, WebSocketConfig,
     };
     use js_sys::{Array, Function, Promise, Reflect};
     use serde::{de::DeserializeOwned, Serialize};
@@ -951,6 +1895,147 @@ mod browser {
 
         #[wasm_bindgen(method, js_name = dispose)]
         pub fn dispose(this: &EventBusService);
+
+        /// Browser `$state` service facade.
+        #[wasm_bindgen(typescript_type = "ng.StateService")]
+        pub type StateService;
+
+        #[wasm_bindgen(method, getter)]
+        pub fn current(this: &StateService) -> JsValue;
+
+        #[wasm_bindgen(method, getter)]
+        pub fn params(this: &StateService) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = go)]
+        pub fn go(this: &StateService, state: &str) -> Promise;
+
+        #[wasm_bindgen(method, js_name = go)]
+        pub fn go_with_params(this: &StateService, state: &str, params: &JsValue) -> Promise;
+
+        #[wasm_bindgen(method, js_name = href)]
+        pub fn href(this: &StateService, state: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = href)]
+        pub fn href_with_params(this: &StateService, state: &str, params: &JsValue) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = is)]
+        pub fn is_state(this: &StateService, state: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = includes)]
+        pub fn includes(this: &StateService, state: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = reload)]
+        pub fn reload(this: &StateService) -> Promise;
+
+        #[wasm_bindgen(method, js_name = get)]
+        pub fn get_state(this: &StateService, state: &str) -> JsValue;
+
+        /// Browser `$stateRegistry` service facade.
+        #[wasm_bindgen(typescript_type = "ng.StateRegistryService")]
+        pub type StateRegistryService;
+
+        #[wasm_bindgen(method, js_name = register)]
+        pub fn register(this: &StateRegistryService, state: &JsValue) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = deregister)]
+        pub fn deregister(this: &StateRegistryService, state: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = get)]
+        pub fn registry_get(this: &StateRegistryService, state: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = get)]
+        pub fn registry_get_all(this: &StateRegistryService) -> JsValue;
+
+        /// Browser router transition facade.
+        #[wasm_bindgen(typescript_type = "ng.Transition")]
+        pub type Transition;
+
+        #[wasm_bindgen(method, js_name = from)]
+        pub fn from_state(this: &Transition) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = to)]
+        pub fn to_state(this: &Transition) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = params)]
+        pub fn transition_params(this: &Transition) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = entering)]
+        pub fn entering(this: &Transition) -> Array;
+
+        #[wasm_bindgen(method, js_name = exiting)]
+        pub fn exiting(this: &Transition) -> Array;
+
+        #[wasm_bindgen(method, js_name = dynamic)]
+        pub fn dynamic(this: &Transition) -> bool;
+
+        #[wasm_bindgen(method, js_name = isActive)]
+        pub fn is_active(this: &Transition) -> bool;
+
+        #[wasm_bindgen(method, js_name = valid)]
+        pub fn valid(this: &Transition) -> bool;
+
+        #[wasm_bindgen(method, js_name = abort)]
+        pub fn abort(this: &Transition);
+
+        #[wasm_bindgen(method, js_name = toString)]
+        pub fn transition_to_string(this: &Transition) -> String;
+
+        /// Browser `$websocket` service facade.
+        #[wasm_bindgen(typescript_type = "ng.WebSocketService")]
+        pub type WebSocketService;
+
+        /// Browser `$websocket` connection facade.
+        #[wasm_bindgen(typescript_type = "ng.WebSocketConnection")]
+        pub type WebSocketConnection;
+
+        #[wasm_bindgen(method, js_name = connect)]
+        pub fn websocket_connect(this: &WebSocketConnection);
+
+        #[wasm_bindgen(method, js_name = send)]
+        pub fn websocket_send(this: &WebSocketConnection, data: &JsValue);
+
+        #[wasm_bindgen(method, js_name = close)]
+        pub fn websocket_close(this: &WebSocketConnection);
+
+        /// Browser `$sse` service facade.
+        #[wasm_bindgen(typescript_type = "ng.SseService")]
+        pub type SseService;
+
+        /// Browser `$sse` connection facade.
+        #[wasm_bindgen(typescript_type = "ng.SseConnection")]
+        pub type SseConnection;
+
+        #[wasm_bindgen(method, js_name = connect)]
+        pub fn sse_connect(this: &SseConnection);
+
+        #[wasm_bindgen(method, js_name = close)]
+        pub fn sse_close(this: &SseConnection);
+
+        /// Browser `$rest` factory facade.
+        #[wasm_bindgen(typescript_type = "ng.RestFactory")]
+        pub type RestFactory;
+
+        /// Browser REST resource facade.
+        #[wasm_bindgen(typescript_type = "ng.RestService<unknown, unknown>")]
+        pub type RestService;
+
+        #[wasm_bindgen(method, js_name = list)]
+        pub fn rest_list(this: &RestService) -> Promise;
+
+        #[wasm_bindgen(method, js_name = list)]
+        pub fn rest_list_with_params(this: &RestService, params: &JsValue) -> Promise;
+
+        #[wasm_bindgen(method, js_name = get)]
+        pub fn rest_get(this: &RestService, id: &JsValue) -> Promise;
+
+        #[wasm_bindgen(method, js_name = create)]
+        pub fn rest_create(this: &RestService, item: &JsValue) -> Promise;
+
+        #[wasm_bindgen(method, js_name = update)]
+        pub fn rest_update(this: &RestService, id: &JsValue, item: &JsValue) -> Promise;
+
+        #[wasm_bindgen(method, js_name = delete)]
+        pub fn rest_delete(this: &RestService, id: &JsValue) -> Promise;
 
         /// Browser `$templateCache` service facade.
         #[wasm_bindgen(typescript_type = "ng.TemplateCacheService")]
@@ -1284,6 +2369,124 @@ mod browser {
         }
     }
 
+    impl StateRegistryService {
+        /// Registers a Rust-authored state declaration.
+        pub fn register_state(&self, state: &StateDeclaration) -> Result<JsValue, JsValue> {
+            Ok(self.register(&state.to_js_value()?))
+        }
+    }
+
+    impl WebSocketService {
+        /// Opens a managed WebSocket connection using Rust config builders.
+        pub fn open(
+            &self,
+            url: &str,
+            config: &WebSocketConfig,
+        ) -> Result<WebSocketConnection, JsValue> {
+            let service: &Function = self.unchecked_ref();
+            let protocols = Array::new();
+
+            for protocol in config.protocols() {
+                protocols.push(&JsValue::from_str(protocol));
+            }
+
+            let value = Reflect::apply(
+                service,
+                &JsValue::UNDEFINED,
+                &Array::of3(&JsValue::from_str(url), &protocols, &config.to_js_value()?),
+            )?;
+
+            value.dyn_into::<WebSocketConnection>()
+        }
+    }
+
+    impl WebSocketConnection {
+        /// Sends a serializable JSON message through the native WebSocket.
+        pub fn send_json<T>(&self, data: &T) -> Result<(), JsValue>
+        where
+            T: Serialize,
+        {
+            let value = serde_wasm_bindgen::to_value(data)
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            self.websocket_send(&value);
+            Ok(())
+        }
+    }
+
+    impl SseService {
+        /// Opens a managed SSE connection using Rust config builders.
+        pub fn open(&self, url: &str, config: &SseConfig) -> Result<SseConnection, JsValue> {
+            let service: &Function = self.unchecked_ref();
+            let value = Reflect::apply(
+                service,
+                &JsValue::UNDEFINED,
+                &Array::of2(&JsValue::from_str(url), &config.to_js_value()?),
+            )?;
+
+            value.dyn_into::<SseConnection>()
+        }
+    }
+
+    impl RestFactory {
+        /// Creates a REST resource client for a base URL.
+        pub fn resource(
+            &self,
+            base_url: &str,
+            options: Option<&RestOptions>,
+        ) -> Result<RestService, JsValue> {
+            let service: &Function = self.unchecked_ref();
+            let args = Array::new();
+            args.push(&JsValue::from_str(base_url));
+            args.push(&JsValue::UNDEFINED);
+            if let Some(options) = options {
+                args.push(&options.to_js_value()?);
+            }
+            let value = Reflect::apply(service, &JsValue::UNDEFINED, &args)?;
+
+            value.dyn_into::<RestService>()
+        }
+    }
+
+    impl RestService {
+        /// Fetches a collection and decodes the JSON response.
+        pub async fn list_json<T>(&self) -> Result<Vec<T>, JsValue>
+        where
+            T: DeserializeOwned,
+        {
+            let value = JsFuture::from(self.rest_list()).await?;
+            serde_wasm_bindgen::from_value(value)
+                .map_err(|error| JsValue::from_str(&error.to_string()))
+        }
+
+        /// Fetches one resource by ID and decodes the JSON response.
+        pub async fn get_json<T, ID>(&self, id: &ID) -> Result<T, JsValue>
+        where
+            T: DeserializeOwned,
+            ID: Serialize,
+        {
+            let id = serde_wasm_bindgen::to_value(id)
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            let value = JsFuture::from(self.rest_get(&id)).await?;
+
+            serde_wasm_bindgen::from_value(value)
+                .map_err(|error| JsValue::from_str(&error.to_string()))
+        }
+
+        /// Creates a resource and decodes the JSON response.
+        pub async fn create_json<T, B>(&self, body: &B) -> Result<T, JsValue>
+        where
+            T: DeserializeOwned,
+            B: Serialize,
+        {
+            let body = serde_wasm_bindgen::to_value(body)
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            let value = JsFuture::from(self.rest_create(&body)).await?;
+
+            serde_wasm_bindgen::from_value(value)
+                .map_err(|error| JsValue::from_str(&error.to_string()))
+        }
+    }
+
     impl super::TopicService {
         /// Publishes one value under this topic facade.
         pub fn publish(&self, event_bus: &EventBusService, event: &str, value: &JsValue) -> bool {
@@ -1341,6 +2544,31 @@ mod browser {
         const EXPORT_NAME: &'static str = "__ng_service_EventBusService";
     }
 
+    impl Service for StateService {
+        const TOKEN_NAME: &'static str = "$state";
+        const EXPORT_NAME: &'static str = "__ng_service_StateService";
+    }
+
+    impl Service for StateRegistryService {
+        const TOKEN_NAME: &'static str = "$stateRegistry";
+        const EXPORT_NAME: &'static str = "__ng_service_StateRegistryService";
+    }
+
+    impl Service for WebSocketService {
+        const TOKEN_NAME: &'static str = "$websocket";
+        const EXPORT_NAME: &'static str = "__ng_service_WebSocketService";
+    }
+
+    impl Service for SseService {
+        const TOKEN_NAME: &'static str = "$sse";
+        const EXPORT_NAME: &'static str = "__ng_service_SseService";
+    }
+
+    impl Service for RestFactory {
+        const TOKEN_NAME: &'static str = "$rest";
+        const EXPORT_NAME: &'static str = "__ng_service_RestFactory";
+    }
+
     impl Service for CookieService {
         const TOKEN_NAME: &'static str = "$cookie";
         const EXPORT_NAME: &'static str = "__ng_service_CookieService";
@@ -1360,13 +2588,16 @@ mod browser {
 #[cfg(target_arch = "wasm32")]
 pub use browser::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, HttpServiceExt,
-    LogService, RootScopeService, TemplateCacheService, TemplateRequestService,
-    TemplateRequestServiceExt,
+    LogService, RestFactory, RestService, RootScopeService, SseConnection, SseService,
+    StateRegistryService, StateService, TemplateCacheService, TemplateRequestService,
+    TemplateRequestServiceExt, Transition, WebSocketConnection, WebSocketService,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use host::{
-    CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService,
-    RootScopeService, TemplateCacheService, TemplateRequestService,
+    CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService, RestFactory,
+    RestService, RootScopeService, SseConnection, SseService, StateRegistryService, StateService,
+    TemplateCacheService, TemplateRequestService, Transition, WebSocketConnection,
+    WebSocketService,
 };
 
 /// Public `ng.PubSubService` facade. `$eventBus` uses this runtime shape.
@@ -1383,6 +2614,11 @@ mod tests {
         assert_eq!(ExceptionHandlerService::TOKEN_NAME, "$exceptionHandler");
         assert_eq!(RootScopeService::TOKEN_NAME, "$rootScope");
         assert_eq!(EventBusService::TOKEN_NAME, "$eventBus");
+        assert_eq!(StateService::TOKEN_NAME, "$state");
+        assert_eq!(StateRegistryService::TOKEN_NAME, "$stateRegistry");
+        assert_eq!(WebSocketService::TOKEN_NAME, "$websocket");
+        assert_eq!(SseService::TOKEN_NAME, "$sse");
+        assert_eq!(RestFactory::TOKEN_NAME, "$rest");
         assert_eq!(CookieService::TOKEN_NAME, "$cookie");
         assert_eq!(TemplateCacheService::TOKEN_NAME, "$templateCache");
         assert_eq!(TemplateRequestService::TOKEN_NAME, "$templateRequest");
@@ -1531,5 +2767,103 @@ mod tests {
         cookies.remove("session");
 
         assert_eq!(cookies.get("session"), None);
+    }
+
+    #[test]
+    fn state_declarations_and_resolves_preserve_router_metadata() {
+        let state = StateDeclaration::new("todos.detail")
+            .with_url("/todos/:id")
+            .with_component("TodoDetail")
+            .with_template_url("/templates/todo-detail.html")
+            .with_abstract(false);
+        let resolves: StateResolveArray = vec![StateResolve::new("todo")
+            .dep("TodoStore")
+            .dep("$transition$")
+            .with_eager(true)];
+
+        assert_eq!(state.name(), "todos.detail");
+        assert_eq!(state.url(), Some("/todos/:id"));
+        assert_eq!(state.component(), Some("TodoDetail"));
+        assert_eq!(state.template_url(), Some("/templates/todo-detail.html"));
+        assert!(!state.abstract_state());
+        assert_eq!(resolves[0].token(), "todo");
+        assert_eq!(
+            resolves[0].deps(),
+            &["TodoStore".to_string(), "$transition$".to_string()]
+        );
+        assert!(resolves[0].eager());
+    }
+
+    #[test]
+    fn realtime_configs_preserve_transport_options() {
+        let connection = ConnectionConfig::new()
+            .retry_delay_ms(250)
+            .with_max_retries(5)
+            .heartbeat_timeout_ms(5_000)
+            .event_type("notice");
+        let websocket = WebSocketConfig::new()
+            .with_connection(connection.clone())
+            .protocol("json.v1");
+        let sse = SseConfig::new()
+            .with_connection(connection.clone())
+            .with_credentials(true)
+            .param("room", "main");
+        let message = RealtimeProtocolMessage::new()
+            .with_html("<li>Saved</li>")
+            .with_target("#feed")
+            .with_swap(SwapModeType::BeforeEnd);
+        let event = ConnectionEvent::new("message", "payload");
+
+        assert_eq!(connection.retry_delay(), Some(250));
+        assert_eq!(connection.max_retries(), Some(5));
+        assert_eq!(connection.heartbeat_timeout(), Some(5_000));
+        assert_eq!(connection.event_types(), &["notice".to_string()]);
+        assert_eq!(websocket.protocols(), &["json.v1".to_string()]);
+        assert!(sse.with_credentials_value());
+        assert_eq!(sse.params(), &[("room".to_string(), "main".to_string())]);
+        assert_eq!(SwapModeType::BeforeEnd.as_str(), "beforeend");
+        assert_eq!(
+            SwapModeType::from_angular("textContent"),
+            Some(SwapModeType::TextContent)
+        );
+        assert_eq!(message.html(), Some("<li>Saved</li>"));
+        assert_eq!(message.target(), Some("#feed"));
+        assert_eq!(message.swap(), Some(SwapModeType::BeforeEnd));
+        assert_eq!(event.event_type(), "message");
+        assert_eq!(event.data(), &"payload");
+    }
+
+    #[test]
+    fn rest_facades_preserve_request_and_response_metadata() {
+        let definition = RestDefinition::new("todos", "/api/todos");
+        let options = RestOptions::new().option("cache", "network-first");
+        let request = RestRequest::new(HttpMethod::Get, "/api/todos/1")
+            .with_collection_url("/api/todos")
+            .with_id("1")
+            .param("include", "comments")
+            .with_options(options.clone());
+        let response = RestResponse::new("ok")
+            .with_source("network")
+            .with_stale(false);
+
+        assert_eq!(definition.name(), "todos");
+        assert_eq!(definition.url(), "/api/todos");
+        assert_eq!(
+            options.values(),
+            &[("cache".to_string(), "network-first".to_string())]
+        );
+        assert_eq!(request.method(), HttpMethod::Get);
+        assert_eq!(HttpMethod::from_angular("DELETE"), Some(HttpMethod::Delete));
+        assert_eq!(request.url(), "/api/todos/1");
+        assert_eq!(request.collection_url(), Some("/api/todos"));
+        assert_eq!(request.id(), Some("1"));
+        assert_eq!(
+            request.params(),
+            &[("include".to_string(), "comments".to_string())]
+        );
+        assert_eq!(request.options().values(), options.values());
+        assert_eq!(response.data(), &"ok");
+        assert_eq!(response.source(), Some("network"));
+        assert!(!response.stale());
     }
 }

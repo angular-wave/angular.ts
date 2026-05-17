@@ -27,7 +27,7 @@ function limitToFilter() {
             input = input.toString();
         if (!isArrayLike(input))
             return input;
-        const numericBegin = !begin || isNaN(begin) ? 0 : parseInt(String(begin), 10);
+        const numericBegin = !begin || isNaN(Number(begin)) ? 0 : parseInt(String(begin), 10);
         const normalizedBegin = numericBegin < 0
             ? Math.max(0, input.length + numericBegin)
             : numericBegin;

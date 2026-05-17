@@ -4,7 +4,13 @@ import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
 import type { ResolveContext } from "../resolve/resolve-context.ts";
-import { deleteProperty, hasOwn, isString, keys } from "../../shared/utils.ts";
+import {
+  assertDefined,
+  deleteProperty,
+  hasOwn,
+  isString,
+  keys,
+} from "../../shared/utils.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuiltStateDeclaration,
@@ -279,7 +285,9 @@ export class StateRegistryProvider {
 
     const declarations: StateDeclaration[] = [];
 
-    registered.forEach((state) => declarations.push(state.self));
+    registered.forEach((state) => {
+      declarations.push(state.self);
+    });
 
     this._notifyListeners("registered", declarations);
   }
@@ -429,7 +437,7 @@ export function getLocals(ctx: ResolveContext): Record<string, unknown> {
 
   tokens.forEach((key) => {
     if (isString(key)) {
-      locals[key] = ctx.getResolvable(key).data;
+      locals[key] = assertDefined(ctx.getResolvable(key)).data;
     }
   });
 

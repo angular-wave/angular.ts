@@ -15,9 +15,9 @@ class WebComponentProvider {
             _compile,
             (injector, rootScope, compile) => {
                 const createElementScope = (host, initialState = {}, options = {}) => {
-                    const parentScope = (options.parentScope ||
-                        getInheritedData(host, _scope) ||
-                        getInheritedData(host.parentNode || host, _scope) ||
+                    const parentScope = (options.parentScope ??
+                        getInheritedData(host, _scope) ??
+                        getInheritedData(host.parentNode ?? host, _scope) ??
                         rootScope);
                     const scope = options.isolate
                         ? parentScope.$newIsolate(initialState)
@@ -175,11 +175,11 @@ function normalizeInputs(inputs = {}) {
         }
         const config = input;
         return {
-            attribute: config.attribute || kebobString(property),
+            attribute: config.attribute ?? kebobString(property),
             default: config.default,
             property,
             reflect: !!config.reflect,
-            type: config.type || String,
+            type: config.type ?? String,
         };
     });
 }

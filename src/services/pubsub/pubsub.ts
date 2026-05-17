@@ -4,11 +4,11 @@ import {
 } from "../../injection-tokens.ts";
 import { nullObject } from "../../shared/utils.ts";
 
-type PubSubListener = (...args: any[]) => unknown;
+type PubSubListener = (...args: unknown[]) => unknown;
 
 interface ListenerEntry {
   _fn: PubSubListener;
-  _context: any;
+  _context: unknown;
 }
 let eventBusInstance: PubSub | undefined;
 
@@ -29,7 +29,7 @@ export class PubSubProvider {
     angularProvider: ng.AngularServiceProvider,
   ) {
     this.eventBus = eventBusInstance =
-      eventBusInstance || new PubSub($exceptionHandler.handler);
+      eventBusInstance ?? new PubSub($exceptionHandler.handler);
     angularProvider.$get().$eventBus = this.eventBus;
   }
 
@@ -41,14 +41,18 @@ export interface TopicService {
   /** Base topic prefix used by this facade. */
   readonly topic: string;
   /** Publish an event under `${topic}:${event}`. */
-  publish(event: string, ...args: any[]): boolean;
+  publish(event: string, ...args: unknown[]): boolean;
   /** Subscribe to an event under `${topic}:${event}`. */
-  subscribe(event: string, fn: PubSubListener, context?: any): () => boolean;
+  subscribe(
+    event: string,
+    fn: PubSubListener,
+    context?: unknown,
+  ): () => boolean;
   /** Subscribe once to an event under `${topic}:${event}`. */
   subscribeOnce(
     event: string,
     fn: PubSubListener,
-    context?: any,
+    context?: unknown,
   ): () => boolean;
   /** Return subscriber count for an event under `${topic}:${event}`. */
   getCount(event: string): number;
@@ -68,16 +72,20 @@ export function createTopicService(
 
   return {
     topic,
-    publish(event: string, ...args: any[]): boolean {
+    publish(event: string, ...args: unknown[]): boolean {
       return eventBus.publish(eventName(event), ...args);
     },
-    subscribe(event: string, fn: PubSubListener, context?: any): () => boolean {
+    subscribe(
+      event: string,
+      fn: PubSubListener,
+      context?: unknown,
+    ): () => boolean {
       return eventBus.subscribe(eventName(event), fn, context);
     },
     subscribeOnce(
       event: string,
       fn: PubSubListener,
-      context?: any,
+      context?: unknown,
     ): () => boolean {
       return eventBus.subscribeOnce(eventName(event), fn, context);
     },
@@ -89,7 +97,7 @@ export function createTopicService(
 
 export class PubSub {
   /** @internal */
-  private _topics: Record<string, ListenerEntry[]>;
+  private _topics: Partial<Record<string, ListenerEntry[]>>;
   /** @internal */
   private _disposed: boolean;
   /** @internal */
@@ -146,13 +154,17 @@ export class PubSub {
    * @param [context] - Optional `this` context for the callback.
    * @returns A function that unsubscribes this listener.
    */
-  subscribe(topic: string, fn: PubSubListener, context?: any): () => boolean {
+  subscribe(
+    topic: string,
+    fn: PubSubListener,
+    context?: unknown,
+  ): () => boolean {
     if (this._disposed) return () => false;
     let listeners = this._topics[topic];
 
     if (!listeners) this._topics[topic] = listeners = [];
 
-    const entry = { _fn: fn, _context: context };
+    const entry: ListenerEntry = { _fn: fn, _context: context };
 
     listeners.push(entry);
 
@@ -172,13 +184,13 @@ export class PubSub {
   subscribeOnce(
     topic: string,
     fn: PubSubListener,
-    context?: any,
+    context?: unknown,
   ): () => boolean {
     if (this._disposed) return () => false;
 
     let called = false;
 
-    const wrapper = (...args: any[]) => {
+    const wrapper = (...args: unknown[]) => {
       if (called) return;
       called = true;
 
@@ -199,7 +211,7 @@ export class PubSub {
    * @param [context] - Optional `this` context.
    * @returns True if the listener was found and removed.
    */
-  unsubscribe(topic: string, fn: PubSubListener, context?: any): boolean {
+  unsubscribe(topic: string, fn: PubSubListener, context?: unknown): boolean {
     if (this._disposed) return false;
 
     const listeners = this._topics[topic];
@@ -241,7 +253,7 @@ export class PubSub {
    * @param args - Arguments to pass to listeners.
    * @returns True if any listeners exist for this topic.
    */
-  publish(topic: string, ...args: any[]): boolean {
+  publish(topic: string, ...args: unknown[]): boolean {
     if (this._disposed) return false;
 
     const listeners = this._topics[topic];

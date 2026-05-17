@@ -79,8 +79,8 @@ export class TargetState {
   ) {
     this._stateRegistry = _stateRegistry;
     this._identifier = _identifier;
-    this._params = assign({}, _params || {});
-    this._options = assign({}, _options || {});
+    this._params = assign({}, _params);
+    this._options = assign({}, _options);
     this._definition = _stateRegistry._matcher.find(
       _identifier,
       this._options.relative,
@@ -89,7 +89,7 @@ export class TargetState {
 
   /** The name of the state this object targets */
   name(): StateOrName {
-    return this._definition?.name || this._identifier;
+    return this._definition?.name ?? this._identifier;
   }
 
   /** The identifier used when creating this TargetState */
@@ -143,9 +143,6 @@ export class TargetState {
     if (!this._definition) {
       return `No such state '${stateNameString(this.name())}'`;
     }
-
-    if (!this._definition.self)
-      return `State '${stateNameString(this.name())}' has an invalid definition`;
 
     return undefined;
   }

@@ -25,7 +25,7 @@ async function resolveResolvable(
 ): Promise<ResolvableData> {
   const dependencies = resolveContext.getDependencies(resolvable);
 
-  const dependencyPromises = dependencies.map((dependency) =>
+  const dependencyPromises = dependencies.map(async (dependency) =>
     dependency.get(resolveContext, trans),
   );
 
@@ -119,7 +119,7 @@ export class Resolvable {
    * Resolves this token by first resolving its dependencies, then invoking
    * the resolve function and caching the resulting value.
    */
-  resolve(
+  async resolve(
     resolveContext: ResolveContext,
     trans?: Transition,
   ): Promise<ResolvableData> {
@@ -131,7 +131,7 @@ export class Resolvable {
   /**
    * Returns the cached promise, resolving the token first if necessary.
    */
-  get(
+  async get(
     resolveContext: ResolveContext,
     trans?: Transition,
   ): Promise<ResolvableData> {

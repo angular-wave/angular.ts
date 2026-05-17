@@ -204,7 +204,10 @@ describe("$compile", () => {
 
     it("defaults directive restrict to EA and validates invalid values", () => {
       expect(getDirectiveRestrict(undefined, "testDirective")).toBe("EA");
+      expect(getDirectiveRestrict("AE", "testDirective")).toBe("AE");
+      expect(getDirectiveRestrict("EA", "testDirective")).toBe("EA");
       expect(() => getDirectiveRestrict("C", "testDirective")).toThrow();
+      expect(() => getDirectiveRestrict("AECM", "testDirective")).toThrow();
     });
 
     it("detects child namespace from parent element", () => {
@@ -11094,6 +11097,9 @@ describe("$compile", () => {
       it("should throw badrestrict on first compilation when restrict is invalid", async () => {
         module
           .directive("invalidRestrictBadString", () => ({ restrict: '"' }))
+          .directive("invalidRestrictLegacyAll", () => ({
+            restrict: "AECM" as never,
+          }))
           .directive("invalidRestrictTrue", () => ({ restrict: true }))
           .directive("invalidRestrictObject", () => ({ restrict: {} }))
           .directive("invalidRestrictNumber", () => ({ restrict: 42 }))
@@ -11115,19 +11121,24 @@ describe("$compile", () => {
         expect(log.length).toBe(2);
         expect(log[1]).toMatch(/\$compile.*badrestrict.*'"'/);
 
+        $compile("<div invalid-restrict-legacy-all>")($rootScope);
+        await wait();
+        expect(log.length).toBe(3);
+        expect(log[2]).toMatch(/\$compile.*badrestrict.*'AECM'/);
+
         $compile("<div invalid-restrict-bad-string invalid-restrict-object>")(
           $rootScope,
         );
         await wait();
-        expect(log.length).toBe(3);
-        expect(log[2]).toMatch(/\$compile.*badrestrict.*'{}'/);
+        expect(log.length).toBe(4);
+        expect(log[3]).toMatch(/\$compile.*badrestrict.*'{}'/);
 
         $compile("<div invalid-restrict-object invalid-restrict-number>")(
           $rootScope,
         );
         await wait();
-        expect(log.length).toBe(4);
-        expect(log[3]).toMatch(/\$compile.*badrestrict.*'42'/);
+        expect(log.length).toBe(5);
+        expect(log[4]).toMatch(/\$compile.*badrestrict.*'42'/);
       });
 
       describe("should bind to controller via object notation", () => {

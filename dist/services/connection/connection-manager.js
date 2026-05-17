@@ -101,19 +101,20 @@ class ConnectionManager {
     /** @internal */
     _handleMessage(data, event) {
         const rawData = data;
+        let transformedData = data;
         try {
-            data = this._config.transformMessage?.(data) ?? data;
+            transformedData = this._config.transformMessage(data) ?? data;
         }
         catch {
             /* empty */
         }
         this._config.onEvent?.({
             type: event.type || "message",
-            data,
+            data: transformedData,
             rawData,
             event,
         });
-        this._config.onMessage?.(data, event);
+        this._config.onMessage?.(transformedData, event);
         this._resetHeartbeat();
     }
     /** @internal */

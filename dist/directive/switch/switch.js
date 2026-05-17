@@ -1,6 +1,6 @@
-import { _injector } from '../../injection-tokens.js';
+import { _injector, _attributes } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { getDirectiveAttr, removeElement, domInsert } from '../../shared/dom.js';
+import { removeElement, domInsert } from '../../shared/dom.js';
 import { values } from '../../shared/utils.js';
 
 class NgSwitchController {
@@ -8,19 +8,23 @@ class NgSwitchController {
         this._cases = {};
     }
 }
-ngSwitchDirective.$inject = [_injector];
+ngSwitchDirective.$inject = [_injector, _attributes];
+function fallbackWhenEmpty(value, fallback) {
+    if (value)
+        return value;
+    return fallback;
+}
 /** Switches between transcluded case blocks and animates block entry/exit. */
-function ngSwitchDirective($injector) {
+function ngSwitchDirective($injector, $attributes) {
     const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
         controller: NgSwitchController,
-        link(scope, element, attr, ngSwitchController) {
-            const watchExpr = getDirectiveAttr(element, attr, "ngSwitch") ||
-                getDirectiveAttr(element, attr, "on") ||
-                "";
-            let selectedTranscludes = [];
+        link(scope, element, _attr, ngSwitchController) {
+            const ngSwitchExpr = $attributes.read(element, "ngSwitch");
+            const watchExpr = fallbackWhenEmpty(ngSwitchExpr, $attributes.read(element, "on") ?? "");
+            let selectedTranscludes;
             const selectedElements = [];
             const previousLeaveAnimations = new Set();
             const selectedScopes = [];
@@ -60,7 +64,7 @@ function ngSwitchDirective($injector) {
                 selectedElements.length = 0;
                 selectedScopes.length = 0;
                 if ((selectedTranscludes =
-                    ngSwitchController._cases[`!${value}`] ||
+                    ngSwitchController._cases[`!${String(value)}`] ??
                         ngSwitchController._cases["?"])) {
                     values(selectedTranscludes).forEach((selectedTransclude) => {
                         selectedTransclude.transclude((caseElementParam, selectedScopeParam) => {
@@ -102,26 +106,27 @@ function ngSwitchDirective($injector) {
         },
     };
 }
-function ngSwitchWhenDirective() {
+ngSwitchWhenDirective.$inject = [_attributes];
+function ngSwitchWhenDirective($attributes) {
     return {
         transclude: "element",
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(scope, element, attrs, ctrl, $transclude) {
+        link(scope, element, _attrs, ctrl, $transclude) {
             if (!$transclude) {
                 return;
             }
-            const when = getDirectiveAttr(element, attrs, "ngSwitchWhen") || "";
-            const separator = getDirectiveAttr(element, attrs, "ngSwitchWhenSeparator");
+            const when = $attributes.read(element, "ngSwitchWhen") ?? "";
+            const separator = $attributes.read(element, "ngSwitchWhenSeparator");
             (separator !== undefined ? when.split(separator) : [when])
                 .sort()
                 .filter(
             // Filter duplicate cases
             (elementParam, index, array) => array[index - 1] !== elementParam)
                 .forEach((whenCase) => {
-                ctrl._cases[`!${whenCase}`] = ctrl._cases[`!${whenCase}`] || [];
-                ctrl._cases[`!${whenCase}`].push({
+                var _a, _b;
+                ((_a = ctrl._cases)[_b = `!${whenCase}`] ?? (_a[_b] = [])).push({
                     transclude: $transclude,
                     element,
                 });
@@ -136,11 +141,11 @@ function ngSwitchDefaultDirective() {
         priority: 1200,
         require: "^ngSwitch",
         link(_scope, element, _attr, ctrl, $transclude) {
+            var _a;
             if (!$transclude) {
                 return;
             }
-            ctrl._cases["?"] = ctrl._cases["?"] || [];
-            ctrl._cases["?"].push({
+            ((_a = ctrl._cases)["?"] ?? (_a["?"] = [])).push({
                 transclude: $transclude,
                 element,
             });

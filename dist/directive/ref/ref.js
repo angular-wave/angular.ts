@@ -1,16 +1,16 @@
-import { _parse } from '../../injection-tokens.js';
+import { _parse, _attributes } from '../../injection-tokens.js';
 import { directiveNormalize, getNodeName, isString, deProxy, createErrorFactory } from '../../shared/utils.js';
-import { hasNormalizedAttr, getNormalizedAttr, getCacheData } from '../../shared/dom.js';
+import { getCacheData } from '../../shared/dom.js';
 
 const ngRefError = createErrorFactory("ngRef");
-ngRefDirective.$inject = [_parse];
-function ngRefDirective($parse) {
+ngRefDirective.$inject = [_parse, _attributes];
+function ngRefDirective($parse, $attributes) {
     return {
         priority: -1,
         restrict: "A",
         compile(tElement, tAttrs) {
             const controllerName = directiveNormalize(getNodeName(tElement));
-            const expression = tAttrs.ngRef;
+            const expression = $attributes?.read(tElement, "ngRef") ?? tAttrs.ngRef;
             if (!isString(expression))
                 return () => undefined;
             const getter = $parse(expression);
@@ -20,8 +20,8 @@ function ngRefDirective($parse) {
                 };
             return (scope, element) => {
                 let refValue;
-                if (hasNormalizedAttr(element, "ngRefRead")) {
-                    const readTarget = getNormalizedAttr(element, "ngRefRead");
+                if ($attributes?.has(element, "ngRefRead")) {
+                    const readTarget = $attributes.read(element, "ngRefRead");
                     if (readTarget === "$element") {
                         refValue = element;
                     }

@@ -1,6 +1,6 @@
-import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
+import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _attributes, _compile } from '../../injection-tokens.js';
 import { isInstanceOf, isDefined } from '../../shared/utils.js';
-import { getDirectiveAttr, removeElement } from '../../shared/dom.js';
+import { removeElement } from '../../shared/dom.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 
 ngIncludeDirective.$inject = [
@@ -9,11 +9,12 @@ ngIncludeDirective.$inject = [
     _injector,
     _exceptionHandler,
     _parse,
+    _attributes,
 ];
 /**
  * Loads external template content, transcludes it, and swaps it into the DOM.
  */
-function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse) {
+function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse, $attributes) {
     const getAnimate = createLazyAnimate($injector);
     return {
         priority: 400,
@@ -23,12 +24,12 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
             /* empty */
             return undefined;
         },
-        compile(element, attr) {
-            const srcExp = getDirectiveAttr(element, attr, "ngInclude") ||
-                getDirectiveAttr(element, attr, "src") ||
+        compile(element) {
+            const srcExp = $attributes.read(element, "ngInclude") ??
+                $attributes.read(element, "src") ??
                 "";
-            const onloadExp = getDirectiveAttr(element, attr, "onload") || "";
-            const autoScrollExp = getDirectiveAttr(element, attr, "autoscroll");
+            const onloadExp = $attributes.read(element, "onload") ?? "";
+            const autoScrollExp = $attributes.read(element, "autoscroll");
             const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
             const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
             return (scope, $element, _$attr, ctrl, $transclude) => {
@@ -143,7 +144,7 @@ function ngIncludeFillContentDirective($compile) {
         priority: -400,
         require: "ngInclude",
         link(scope, $element, _$attr, ctrl) {
-            $element.innerHTML = ctrl.template || "";
+            $element.innerHTML = ctrl.template ?? "";
             $compile($element.childNodes)(scope);
         },
     };

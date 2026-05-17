@@ -1,11 +1,12 @@
 import type {
   BoundTranscludeFn,
+  ChildTranscludeOrLinkFn,
   CloneAttachFn,
   PublicLinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
 } from "./core/compile/compile.ts";
 
-export type Constructor<T = any> = new (...args: any[]) => T;
+export type Constructor<T = unknown> = new (...args: never[]) => T;
 
 export const PublicInjectionTokens = {
   $angular: "$angular",
@@ -88,7 +89,7 @@ export const PublicInjectionTokens = {
  * `$attrs` as a normalized attribute view with observer and class helpers, not
  * as a constructible class.
  */
-export interface Attributes extends Record<string, any> {
+export interface Attributes extends Record<string, unknown> {
   /** Map from normalized attribute names to original DOM attribute names. */
   $attr: Record<string, string>;
 
@@ -135,7 +136,7 @@ export interface AngularBootstrapConfig {
  */
 export type Expression = string;
 
-export type ExpandoStore = Record<string, any>;
+export type ExpandoStore = Record<string, unknown>;
 
 /**
  * Dependency-annotated factory array used by AngularTS DI system.
@@ -143,15 +144,15 @@ export type ExpandoStore = Record<string, any>;
  * Example:
  * ['dep1', 'dep2', (dep1, dep2) => new MyController(dep1, dep2)]
  */
-export type AnnotatedFactory<TFunction extends (...args: any[]) => any> = [
-  ...string[],
-  TFunction,
-];
+export type AnnotatedFactory<TFunction extends (...args: never[]) => unknown> =
+  [...string[], TFunction];
 
 /**
  * A class (constructor function) that can be instantiated.
  */
-export type InjectableClass<TInstance = any> = new (...args: any) => TInstance;
+export type InjectableClass<TInstance = unknown> = new (
+  ...args: never[]
+) => TInstance;
 
 /**
  * A factory that can be:
@@ -161,22 +162,26 @@ export type InjectableClass<TInstance = any> = new (...args: any) => TInstance;
  *
  * Parentheses are required around constructor types when used in unions.
  */
-export type FactoryFunction<T> = T extends abstract new (...args: any[]) => any
+export type FactoryFunction<T> = T extends abstract new (
+  ...args: never[]
+) => unknown
   ? (...args: ConstructorParameters<T>) => InstanceType<T>
   : T;
 
 export type Injectable<
-  T extends ((...args: any[]) => any) | (abstract new (...args: any[]) => any),
+  T extends
+    | ((...args: never[]) => unknown)
+    | (abstract new (...args: never[]) => unknown),
 > =
   | AnnotatedFactory<FactoryFunction<T>>
-  | (T extends abstract new (...args: any[]) => any
+  | (T extends abstract new (...args: never[]) => unknown
       ? InjectableClass<InstanceType<T>>
       : never)
   | T;
 
-export type ServiceProviderClass = new (...args: any[]) => ServiceProvider;
+export type ServiceProviderClass = new (...args: never[]) => ServiceProvider;
 
-export type ServiceProviderFactory = (...args: any[]) => ServiceProvider;
+export type ServiceProviderFactory = (...args: never[]) => ServiceProvider;
 
 /**
  * An object that defines how a service is constructed.
@@ -185,16 +190,16 @@ export type ServiceProviderFactory = (...args: any[]) => ServiceProvider;
  * either as a plain factory function or as an {@link AnnotatedFactory}.
  */
 export interface ServiceProvider {
-  $get: Injectable<any>;
+  $get: Injectable<(...args: never[]) => unknown>;
 }
 
 export interface AngularServiceProvider {
-  $get: (...args: any[]) => ng.AngularService;
+  $get: (...args: never[]) => ng.AngularService;
 }
 
 export type ProviderDefinition =
   | ServiceProvider
-  | Injectable<(...args: any[]) => any>
+  | Injectable<(...args: never[]) => unknown>
   | Injectable<Constructor>;
 
 /**
@@ -235,48 +240,59 @@ export interface Provider {
    * @param name - The name of the service.
    * @param factoryFn - A function (or annotated array) that returns the service instance.
    */
-  factory(name: string, factoryFn: Injectable<any>): Provider;
+  factory(
+    name: string,
+    factoryFn: Injectable<(...args: never[]) => unknown>,
+  ): Provider;
 
   /**
    * Register a constructor function to create a service.
    * @param name - The name of the service.
    * @param constructor - A class or function to instantiate.
    */
-  service(name: string, constructor: Injectable<any>): Provider;
+  service(
+    name: string,
+    constructor:
+      | Injectable<Constructor>
+      | Injectable<(...args: never[]) => unknown>,
+  ): Provider;
 
   /**
    * Register a fixed value as a service.
    * @param name - The name of the service.
    * @param val - The value to use.
    */
-  value(name: string, val: any): Provider;
+  value(name: string, val: unknown): Provider;
 
   /**
    * Register a constant service, such as a string, a number, an array, an object or a function, with the $injector. Unlike value it can be injected into a module configuration function (see config) and it cannot be overridden by an Angular decorator.
    * @param name - The name of the constant.
    * @param val - The constant value.
    */
-  constant(name: string, val: any): Provider;
+  constant(name: string, val: unknown): Provider;
 
   /**
    * Register a decorator function to modify or replace an existing service.
    * @param name - The name of the service to decorate.
    * @param fn - A function that takes `$delegate` and returns a decorated service.
    */
-  decorator(name: string, fn: Injectable<any>): Provider;
+  decorator(
+    name: string,
+    fn: Injectable<(...args: never[]) => unknown>,
+  ): Provider;
 }
 
 /**
  * A controller constructor function used in AngularTS.
  */
 export type ControllerConstructor =
-  | (new (...args: any[]) => Controller)
-  | ((...args: any[]) => undefined | Controller);
+  | (new (...args: never[]) => Controller)
+  | ((...args: never[]) => undefined | Controller);
 
 /**
  * Describes the changes in component bindings during `$onChanges`.
  */
-export interface ChangesObject<T = any> {
+export interface ChangesObject<T = unknown> {
   /** New value of the binding */
   currentValue: T;
   /** Whether this is the first change */
@@ -350,10 +366,7 @@ export interface PostLink {
  * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
  * https://docs.angularjs.org/guide/component
  */
-export interface Controller {
-  // Controller implementations frequently do not implement any of its methods.
-  // A string indexer indicates to TypeScript not to issue a weak type error in this case.
-  [s: string]: any;
+export type Controller = object & {
   /** Optional controller name (used in debugging) */
   name?: string;
   /**
@@ -383,7 +396,7 @@ export interface Controller {
    * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
    */
   $postLink?: () => void;
-}
+};
 
 /**
  * Defines a component's configuration object (a simplified directive definition object).
@@ -404,7 +417,7 @@ export interface Component {
    * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
-  template?: string | Injectable<(...args: any[]) => string> | undefined;
+  template?: string | Injectable<(...args: never[]) => string> | undefined;
   /**
    * Path or function that returns a path to an html template that should be used as the contents of this component.
    * If templateUrl is a function, then it is injected with the following locals:
@@ -413,7 +426,7 @@ export interface Component {
    * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
-  templateUrl?: string | Injectable<(...args: any[]) => string> | undefined;
+  templateUrl?: string | Injectable<(...args: never[]) => string> | undefined;
   /**
    * Define DOM attribute binding to component properties. Component properties are always bound to the component
    * controller and not to the scope.
@@ -449,38 +462,47 @@ export type TController<T> = T;
  * Defines optional pre/post link functions in directive compile phase.
  */
 export interface DirectivePrePost {
-  pre?: DirectiveLinkFn<any>;
-  post?: DirectiveLinkFn<any>;
+  pre?: DirectiveLinkFn<unknown>;
+  post?: DirectiveLinkFn<unknown>;
 }
 
 /**
  * A link function executed during directive linking.
  */
-export type DirectiveLinkFn<T> = (
-  scope: ng.Scope,
-  element: HTMLElement,
-  attrs: Attributes,
-  controller: TController<T>,
-  transclude?: ng.TranscludeFn,
-) => void;
+export type DirectiveLinkFn<T> = {
+  bivarianceHack(
+    scope: ng.Scope,
+    element: HTMLElement,
+    attrs: Attributes,
+    controller: TController<T>,
+    transclude?: ng.TranscludeFn,
+  ): void;
+}["bivarianceHack"];
 
 /**
  * A compile function used to prepare directives before linking.
  */
-export type DirectiveCompileFn = (
-  templateElement: HTMLElement,
-  templateAttributes: Attributes & Record<string, any>,
-  transclude?: (...args: any[]) => any,
-) => undefined | DirectiveLinkFn<any> | DirectivePrePost;
+export type DirectiveCompileFn = {
+  bivarianceHack(
+    templateElement: HTMLElement,
+    templateAttributes: Attributes & Record<string, unknown>,
+    transclude?: ChildTranscludeOrLinkFn,
+  ): undefined | DirectiveLinkFn<unknown> | DirectivePrePost;
+}["bivarianceHack"];
+
+/**
+ * Supported directive matching locations.
+ */
+export type DirectiveRestrict = "A" | "E" | "AE" | "EA";
 
 /**
  * Defines the structure of an AngularTS directive.
  */
-export interface Directive<TCtrl = any> {
+export interface Directive<TCtrl = unknown> {
   /** Optional name (usually inferred) */
   name?: string;
   /** Restrict option: 'A' and/or 'E'. Defaults to 'EA' if not defined */
-  restrict?: string;
+  restrict?: DirectiveRestrict;
   /** Compile function for the directive */
   compile?: DirectiveCompileFn;
   /** Controller constructor or injectable string name */
@@ -513,14 +535,16 @@ export interface Directive<TCtrl = any> {
   count?: number;
   /** Internal hook for directive compilation state */
   /** @internal */
-  _addStateInfo?: (...args: any[]) => any;
+  _addStateInfo?: {
+    bivarianceHack(...args: unknown[]): unknown;
+  }["bivarianceHack"];
 }
 
 export type DirectiveFactoryFn = (
-  ...args: any[]
-) => Directive | DirectiveLinkFn<any>;
+  ...args: never[]
+) => Directive | DirectiveLinkFn<unknown>;
 
-export type AnnotatedDirectiveFactory = Array<string | DirectiveFactoryFn>;
+export type AnnotatedDirectiveFactory = (string | DirectiveFactoryFn)[];
 
 export type DirectiveFactory = DirectiveFactoryFn | AnnotatedDirectiveFactory;
 
@@ -546,7 +570,7 @@ export interface InvocationDetail {
   expr: string;
   /** @internal */
   _reply?: {
-    resolve: (value: any) => any;
-    reject: (reason: any) => PromiseLike<never>;
+    resolve: (value: unknown) => unknown;
+    reject: (reason: unknown) => PromiseLike<never>;
   };
 }

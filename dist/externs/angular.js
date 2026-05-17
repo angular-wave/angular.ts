@@ -170,40 +170,40 @@ ng.Angular.prototype.getScopeByName = function(name) {};
 ng.AnnotatedDirectiveFactory;
 
 /**
- * Public AngularTS Attributes contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public `$attrs` contract passed to directive compile/link/template hooks. The runtime object is an internal compile facade. Public code should treat `$attrs` as a normalized attribute view with observer and class helpers, not as a constructible class.
  * @record
  */
 ng.Attributes = function() {};
 
 /**
- * Public Attributes.$attr member exposed by the AngularTS namespace contract.
+ * Map from normalized attribute names to original DOM attribute names.
  * @type {!Object<string, string>}
  */
 ng.Attributes.prototype.$attr;
 
 /**
- * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or `data-`) to its normalized, camelCase form. Also there is special case for Moz prefix starting with upper case letter. Normalization follows the directive matching rules used by `$compile`.
+ * Normalize a DOM attribute name using AngularTS directive matching rules.
  * @param {string} name
  * @return {string}
  */
 ng.Attributes.prototype.$normalize = function(name) {};
 
 /**
- * Public Attributes.$addClass member exposed by the AngularTS namespace contract.
+ * Add one or more classes to the directive element.
  * @param {string} classVal
  * @return {void}
  */
 ng.Attributes.prototype.$addClass = function(classVal) {};
 
 /**
- * Public Attributes.$removeClass member exposed by the AngularTS namespace contract.
+ * Remove one or more classes from the directive element.
  * @param {string} classVal
  * @return {void}
  */
 ng.Attributes.prototype.$removeClass = function(classVal) {};
 
 /**
- * Public Attributes.$updateClass member exposed by the AngularTS namespace contract.
+ * Replace old class tokens with new class tokens on the directive element.
  * @param {string} newClasses
  * @param {string} oldClasses
  * @return {void}
@@ -211,17 +211,7 @@ ng.Attributes.prototype.$removeClass = function(classVal) {};
 ng.Attributes.prototype.$updateClass = function(newClasses, oldClasses) {};
 
 /**
- * Public Attributes.$set member exposed by the AngularTS namespace contract.
- * @param {string} key
- * @param {(boolean|null|string)} value
- * @param {(boolean|undefined)} writeAttr
- * @param {(string|undefined)} attrName
- * @return {void}
- */
-ng.Attributes.prototype.$set = function(key, value, writeAttr, attrName) {};
-
-/**
- * Public Attributes.$observe member exposed by the AngularTS namespace contract.
+ * Observe changes to a normalized attribute value.
  * @param {string} key
  * @param {function((?|undefined)): ?} fn
  * @return {function(): void}
@@ -229,10 +219,79 @@ ng.Attributes.prototype.$set = function(key, value, writeAttr, attrName) {};
 ng.Attributes.prototype.$observe = function(key, fn) {};
 
 /**
- * A specialized version of `TranscludeFn` with the parent scope already bound. Used internally to thread controller context and future parent elements.
- * @typedef {function((!ng.Scope|null|undefined), (function((!Array<!Node>|!Node|!Object|null|undefined), (!ng.Scope|null|undefined)): ?|undefined), (?|undefined), (!Element|!Node|null|undefined), (!ng.Scope|undefined)): (!Array<!Node>|!Node|!Object|null|undefined)}
+ * Public AngularTS AttributesService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
  */
-ng.BoundTranscludeFn;
+ng.AttributesService = function() {};
+
+/**
+ * Public AttributesService.read member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AttributesService.prototype.read = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.has member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.AttributesService.prototype.has = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.originalName member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AttributesService.prototype.originalName = function(element, normalizedName) {};
+
+/**
+ * Public AttributesService.observe member exposed by the AngularTS namespace contract.
+ * @param {(!ng.Scope|null|undefined)} scope
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @param {function((string|undefined)): void} callback
+ * @return {function(): void}
+ */
+ng.AttributesService.prototype.observe = function(scope, element, normalizedName, callback) {};
+
+/**
+ * Public AttributesService.set member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @param {(boolean|null|string|undefined)} value
+ * @param {(!Object|undefined)} options
+ * @return {void}
+ */
+ng.AttributesService.prototype.set = function(element, normalizedName, value, options) {};
+
+/**
+ * Public AttributesService.addClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} classValue
+ * @return {void}
+ */
+ng.AttributesService.prototype.addClass = function(element, classValue) {};
+
+/**
+ * Public AttributesService.removeClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} classValue
+ * @return {void}
+ */
+ng.AttributesService.prototype.removeClass = function(element, classValue) {};
+
+/**
+ * Public AttributesService.updateClass member exposed by the AngularTS namespace contract.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} newClasses
+ * @param {string} oldClasses
+ * @return {void}
+ */
+ng.AttributesService.prototype.updateClass = function(element, newClasses, oldClasses) {};
 
 /**
  * Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications.
@@ -253,13 +312,13 @@ ng.Component.prototype.controller;
 ng.Component.prototype.controllerAs;
 
 /**
- * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.template;
 
 /**
- * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.templateUrl;
@@ -1424,7 +1483,7 @@ ng.AriaService = function() {};
 /**
  * Public AriaService.config member exposed by the AngularTS namespace contract.
  * @param {(number|string)} key
- * @return {?}
+ * @return {(boolean|undefined)}
  */
 ng.AriaService.prototype.config = function(key) {};
 
@@ -3629,6 +3688,12 @@ ng.InjectionTokens.prototype.$angular;
 ng.InjectionTokens.prototype.$attrs;
 
 /**
+ * Public InjectionTokens.$attributes member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$attributes;
+
+/**
  * Public InjectionTokens.$scope member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -4165,6 +4230,18 @@ ng.NgModelController.prototype.$valid;
 ng.NgModelController.prototype.$invalid;
 
 /**
+ * Public NgModelController.$validity member exposed by the AngularTS namespace contract.
+ * @type {(!Object|null)}
+ */
+ng.NgModelController.prototype.$validity;
+
+/**
+ * Public NgModelController.$validationMessage member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NgModelController.prototype.$validationMessage;
+
+/**
  * Public NgModelController.$error member exposed by the AngularTS namespace contract.
  * @type {!Object<string, boolean>}
  */
@@ -4172,15 +4249,21 @@ ng.NgModelController.prototype.$error;
 
 /**
  * Public NgModelController.$pending member exposed by the AngularTS namespace contract.
- * @type {(!Object<string, ?>|undefined)}
+ * @type {(!Object<string, boolean>|undefined)}
  */
 ng.NgModelController.prototype.$pending;
 
 /**
  * Public NgModelController.$name member exposed by the AngularTS namespace contract.
- * @type {?}
+ * @type {(number|string)}
  */
 ng.NgModelController.prototype.$name;
+
+/**
+ * Public NgModelController.$target member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NgModelController.prototype.$target;
 
 /**
  * Public NgModelController.$options member exposed by the AngularTS namespace contract.
@@ -4195,6 +4278,20 @@ ng.NgModelController.prototype.$options;
  * @return {void}
  */
 ng.NgModelController.prototype.$setValidity = function(validationErrorKey, state) {};
+
+/**
+ * Public NgModelController.$setNativeValidity member exposed by the AngularTS namespace contract.
+ * @param {(boolean|null)} state
+ * @return {void}
+ */
+ng.NgModelController.prototype.$setNativeValidity = function(state) {};
+
+/**
+ * Sets the control's single native custom-validity message. Native controls expose this through `ValidityState.customError`; an empty message clears the custom error.
+ * @param {string} message
+ * @return {void}
+ */
+ng.NgModelController.prototype.$setCustomValidity = function(message) {};
 
 /**
  * Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `$render()` method is invoked in the following situations: * `$rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `$render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and the `$viewValue` are different from last time. Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue` or `$viewValue` are objects (rather than a string or number) then `$render()` will not be invoked if you only change a property on the objects.
@@ -4252,7 +4349,7 @@ ng.NgModelController.prototype.$validate = function() {};
 ng.NgModelController.prototype.$commitViewValue = function() {};
 
 /**
- * Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the {@link ng.directive :input input} directive calls it when the value of the input changes and {@link ng.directive :select select} calls it when an option is selected. When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers` and `$validators` pipelines. If there are no special {@link ngModelOptions } specified then the staged value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and `$asyncValidators` are called and the value is applied to `$modelValue`. Finally, the value is set to the **expression** specified in the `ng-model` attribute and all the registered change listeners, in the `$viewChangeListeners` list are called. In case the {@link ng.directive :ngModelOptions ngModelOptions} directive is used with `updateOn` and the `default` trigger is not listed, all those actions will remain pending until one of the `updateOn` events is triggered on the DOM element. All these actions will be debounced if the {@link ng.directive :ngModelOptions ngModelOptions} directive is used with a custom debounce for this particular event. Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce` is specified, once the timer runs out. When used with standard inputs, the view value will always be a string (which is in some cases parsed into another type, such as a `Date` object for `input[date]`.) However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to `$setViewValue`. This is because `ngModel` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the `$parsers` and `$validators` pipelines. For this reason, you should not change properties of the copy once it has been passed to `$setViewValue`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling `$setViewValue` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that `$setViewValue` does not call `$render` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the `ngModel` scope expression. Its new value will be picked up by the model controller, which will run it through the `$formatters`, `$render` it to update the DOM, and finally call `$validate` on it. </div>
+ * Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the {@link ng.directive :input input} directive calls it when the value of the input changes and {@link ng.directive :select select} calls it when an option is selected. When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers` and `$validators` pipelines. If there are no special {@link ngModelOptions } specified then the staged value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and `$asyncValidators` are called and the value is applied to `$modelValue`. Finally, the value is set to the **expression** specified in the `ng-model` attribute and all the registered change listeners, in the `$viewChangeListeners` list are called. In case the {@link ng.directive :ngModelOptions ngModelOptions} directive is used with `updateOn` and the `default` trigger is not listed, all those actions will remain pending until one of the `updateOn` events is triggered on the DOM element. All these actions will be debounced if the {@link ng.directive :ngModelOptions ngModelOptions} directive is used with a custom debounce for this particular event. Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce` is specified, once the timer runs out. Standard native inputs pass through browser-native values, such as strings from text-like controls, booleans from checkboxes, and `FileList | null` from file inputs. However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to `$setViewValue`. This is because `ngModel` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the `$parsers` and `$validators` pipelines. For this reason, you should not change properties of the copy once it has been passed to `$setViewValue`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling `$setViewValue` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that `$setViewValue` does not call `$render` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the `ngModel` scope expression. Its new value will be picked up by the model controller, which will run it through the `$formatters`, `$render` it to update the DOM, and finally call `$validate` on it. </div>
  * @param {?} value
  * @param {(string|undefined)} trigger
  * @return {void}
@@ -4261,7 +4358,7 @@ ng.NgModelController.prototype.$setViewValue = function(value, trigger) {};
 
 /**
  * Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See {@link ngModelOptions } for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the {@link ngModelOptions } directive from which they might have been obtained initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to override the `getterSetter` option. </div>
- * @param {?} options
+ * @param {!Object} options
  * @return {void}
  */
 ng.NgModelController.prototype.$overrideModelOptions = function(options) {};
@@ -4292,13 +4389,13 @@ ng.RequestConfig.prototype.url;
 
 /**
  * Event handlers notified by the underlying transport.
- * @type {(!Object<string, (!Object|function(!Event): void)>|undefined)}
+ * @type {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}
  */
 ng.RequestConfig.prototype.eventHandlers;
 
 /**
  * Upload event handlers. Not used by the fetch transport.
- * @type {(!Object<string, (!Object|function(!Event): void)>|undefined)}
+ * @type {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}
  */
 ng.RequestConfig.prototype.uploadEventHandlers;
 

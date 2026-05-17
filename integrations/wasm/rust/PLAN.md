@@ -95,20 +95,25 @@ Required before the Rust feature-complete gate:
 - persistence facades for `StorageBackend`, `StorageType`, `CookieService`,
   `CookieOptions`, and `CookieStoreOptions`.
 
-Next after the required Rust surface, still before switching implementation
-focus to another language unless explicitly reprioritized:
+Implemented Rust API expansion priorities after the required Rust surface:
 
-- realtime facades for `ConnectionConfig`, `ConnectionEvent`,
-  `WebSocketService`, `WebSocketConfig`, `WebSocketConnection`, `SseService`,
-  `SseConfig`, `SseConnection`, `RealtimeProtocolMessage`,
-  `RealtimeProtocolEventDetail`, and `SwapModeType`;
-- form and validation facades for `NgModelController` and `Validator`;
-- router/state facades for `StateService`, `StateRegistryService`,
-  `StateDeclaration`, `Transition`, `StateResolveArray`, and
-  `StateResolveObject`;
-- REST facades for `RestService`, `RestRequest`, `RestResponse`,
-  `RestDefinition`, `RestOptions`, `RestBackend`, and cache/revalidation
-  types, if Rust apps need a higher-level data API beyond `$http`.
+1. router/state facades for `StateService`, `StateRegistryService`,
+   `StateDeclaration`, `Transition`, `StateResolveArray`, and
+   `StateResolveObject`;
+2. realtime facades for `ConnectionConfig`, `ConnectionEvent`,
+   `WebSocketService`, `WebSocketConfig`, `WebSocketConnection`, `SseService`,
+   `SseConfig`, `SseConnection`, `RealtimeProtocolMessage`,
+   `RealtimeProtocolEventDetail`, and `SwapModeType`;
+3. core REST facades for `RestFactory`, `RestService`, `RestRequest`,
+   `RestResponse`, `RestDefinition`, `RestOptions`, and `RestBackend`.
+
+REST cache/revalidation helper types remain deferred until a Rust app needs
+cache policy control beyond the core `$rest` resource facade.
+
+Next Rust API expansion priority:
+
+4. form and validation facades for `NgModelController` and `Validator`, once
+   router, realtime, and REST app-authoring surfaces are in place.
 
 Deferred from the Rust feature-complete gate:
 
@@ -116,7 +121,7 @@ Deferred from the Rust feature-complete gate:
   `AngularServiceProvider`;
 - compile/link/transclusion directive internals such as `CompileService`,
   `Directive`, `DirectiveFactory`, `AnnotatedDirectiveFactory`,
-  `PublicLinkFn`, `BoundTranscludeFn`, `TranscludeFn`, and `Attributes`;
+  `PublicLinkFn`, `TranscludeFn`, and `Attributes`;
 - browser object aliases such as `DocumentService`, `WindowService`, and
   `RootElementService`, except as explicit unsafe host handles;
 - animation, worker, web component, parse/interpolate/filter/SCE/location
@@ -441,8 +446,10 @@ domain methods, wasm service wrappers, controller exports, and manifest strings.
 Rust feature completeness requires:
 
 - no handwritten JavaScript in the Rust todo application source;
-- no manual `wasm-bindgen` exports or getter glue in the Rust todo application
-  source for AngularTS-visible controllers, services, methods, or state;
+- no raw `#[wasm_bindgen]` exports, handwritten JavaScript entrypoints,
+  manifest export strings, getter methods, or repetitive scope synchronization
+  in the Rust todo application source for AngularTS-visible controllers,
+  services, methods, or state;
 - generated bootstrap owns Wasm loading, AngularTS module registration, and
   `WasmScopeAbi` attachment;
 - Rust-authored modules, services, factories, values, components, controllers,
@@ -496,10 +503,10 @@ registration, bridge exports, scope refresh, and UI-to-Rust update routing.
 - Rust facade service types now expose selected MVP method surfaces for
   `$http`, `$log`, `$exceptionHandler`, `$rootScope`, `$scope`, and
   `$eventBus`, but full namespace parity remains open.
-- The acceptance coverage now guards against raw bridge export glue,
-  hand-written template-state getters, manual `scope.set(...)`, manual
-  `scope.sync(...)`, raw controller pointer capture, and manual `spawn_local`
-  async wiring.
+- The acceptance coverage now guards against raw `#[wasm_bindgen]` authoring,
+  raw bridge export-name overrides, hand-written template-state getters, manual
+  `scope.set(...)`, manual `scope.sync(...)`, raw controller pointer capture,
+  and manual `spawn_local` async wiring.
 
 ## Minimal Boilerplate Plan
 
@@ -550,8 +557,9 @@ Concrete steps:
 Only after these steps are complete should Rust API coverage expand beyond the
 current MVP services.
 
-The next implementation steps are the required namespace porting surface above,
-not another Wasm language target.
+The router/state, realtime, and core REST Rust facades are now implemented.
+The remaining application-level Rust API gap is forms/validation, not another
+Wasm language target.
 
 ## Deferred Scope
 
@@ -713,8 +721,8 @@ Initial docs should explain:
       facade so examples do not own ABI callback exports or controller maps.
 - [x] Generate watched path routing metadata so examples do not need to call
       `WasmScope::watch_with` manually for each UI-originated update.
-- [x] Add an authoring ergonomics acceptance test or snapshot proving the Rust
-      todo source has no bridge glue.
+- [x] Add an authoring ergonomics acceptance test proving the Rust todo source
+      avoids raw bridge export glue and repetitive scope synchronization.
 - [x] Add template file loading.
 - [x] Add ergonomic async `$http` helpers for injected Rust/Wasm service values.
 - [x] Support async Rust template methods in generated bridge wrappers so
@@ -742,6 +750,11 @@ Initial docs should explain:
 - [x] Add template request/cache facades used by Rust-authored template-file
       components.
 - [x] Add storage and cookie facades for persisted Rust app state.
+- [x] Add router/state facades for Rust-authored navigation and state
+      declarations.
+- [x] Add realtime facades for WebSocket, SSE, and realtime protocol messages.
+- [x] Add core REST facades for `$rest` resource clients, requests, responses,
+      and backends.
 - [x] Add compile-fail macro tests.
 - [x] Add generated glue snapshot tests.
 - [x] Resolve or explicitly defer all MVP open questions.

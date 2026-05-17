@@ -48,9 +48,10 @@ wire UI-originated scope changes back into Rust.
 Rust is feature complete when:
 
 - the Rust todo app is implemented entirely through the shared `WasmScope` ABI;
-- the Rust todo app does not require manual `wasm-bindgen` exports, getters, or
-  JavaScript-like bridge glue for AngularTS-visible controllers, services,
-  methods, or state;
+- the Rust todo app does not require raw `#[wasm_bindgen]` exports,
+  handwritten JavaScript entrypoints, manifest export strings, getter methods,
+  or repetitive scope synchronization for AngularTS-visible controllers,
+  services, methods, or state;
 - Rust-authored modules, services, factories, values, components, controllers,
   typed DI, template files, and lifecycle hooks are generated without
   handwritten JavaScript;
@@ -187,7 +188,7 @@ buffer_free(bufferHandle)
 - [x] Generate Rust watched path routing metadata instead of requiring manual
       `WasmScope::watch_with` calls in examples.
 - [x] Add Rust authoring ergonomics acceptance coverage proving application
-      source contains no bridge glue.
+      source avoids raw bridge export glue and repetitive scope synchronization.
 - [x] Resolve Rust MVP open design questions.
 - [x] Update Rust namespace parity so every published `ng` type has an
       explicit final MVP decision.
@@ -195,22 +196,27 @@ buffer_free(bufferHandle)
 ### Phase E - Deferred Language Binding Guidance
 
 Do not start or expand these implementation tasks until Phase D is complete.
-Existing notes and partial helpers remain frozen as reference material.
+Existing notes and partial helpers remain frozen as reference material. The
+selected Rust API expansion sequence, router/state first, realtime second, and
+REST third, is now implemented; forms/validation are the remaining
+application-level Rust API gap.
 
 - [x] Add Go facade helpers over pointer/length operations.
+- [x] Bring Go app-authoring service facades to parity with the completed Rust
+      router/state, realtime, and core REST surface.
 - [ ] Add AssemblyScript facade helpers over pointer/length operations.
 - [ ] Add C# facade helpers over pointer/length operations.
-- [ ] Add Zig facade helpers over pointer/length operations.
-- [ ] Add C++ facade helpers over pointer/length operations.
-- [ ] Add C facade helpers over pointer/length operations.
-- [ ] Add a minimal C header-style ABI reference.
+- [x] Add Zig facade helpers over pointer/length operations.
+- [x] Add C++ facade helpers over pointer/length operations.
+- [x] Add C facade helpers over pointer/length operations.
+- [x] Add a minimal C header-style ABI reference.
 - [x] Add Go binding notes.
 - [ ] Add AssemblyScript binding notes.
 - [ ] Add C#/.NET WebAssembly binding notes.
-- [ ] Add Zig binding notes.
-- [ ] Add C++ binding notes.
-- [ ] Add C binding notes.
-- [ ] Add examples showing manual ABI usage without `wasm-bindgen`.
+- [x] Add Zig binding notes.
+- [x] Add C++ binding notes.
+- [x] Add C binding notes.
+- [x] Add examples showing manual ABI usage without `wasm-bindgen`.
 
 ### Phase F - Deferred Additional Language Proofs
 
@@ -222,10 +228,23 @@ complete, including the required namespace porting surface.
       ABI.
 - [ ] Add a C#/.NET WebAssembly todo proof of concept using the shared
       `WasmScope` ABI.
-- [ ] Add Zig, C++, and C minimal todo proofs using the shared `WasmScope` ABI.
-- [ ] Add browser Playwright coverage for all examples.
-- [ ] Add parity checklists for supported language facades where they expose
+- [x] Add a Zig minimal todo proof using the shared `WasmScope` ABI.
+- [x] Add a C++ minimal todo proof using the shared `WasmScope` ABI.
+- [x] Add a C minimal todo proof using the shared `WasmScope` ABI.
+- [x] Add browser Playwright coverage for all examples.
+- [x] Add parity checklists for supported language facades where they expose
       AngularTS namespace types.
+
+## Requested Language Sequence Status
+
+The requested Go -> Zig -> C++ -> C parity sequence is complete at the source,
+wasm-build, format, unit/native test, JavaScript syntax, and typecheck levels.
+Live Playwright browser execution still requires an environment that can bind
+the shared local web server sockets, or an already-running server with
+`PW_SKIP_WEB_SERVER=1` and `PW_BASE_URL` set.
+
+AssemblyScript and C# remain deferred top-level backlog items and are not part
+of this requested sequence.
 
 ## Done Criteria
 

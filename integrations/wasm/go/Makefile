@@ -1,13 +1,16 @@
-.PHONY: check test generate example-build browser-test clean
+.PHONY: check test parity generate example-build browser-test clean
 
 GO ?= go
 PLAYWRIGHT ?= ../../../node_modules/.bin/playwright
 
-check: generate test
+check: parity generate test
 	GOOS=js GOARCH=wasm $(GO) build ./...
 
 test:
 	$(GO) test ./...
+
+parity:
+	node tool/check-ng-namespace-parity.mjs
 
 generate:
 	$(GO) generate ./examples/basic_app

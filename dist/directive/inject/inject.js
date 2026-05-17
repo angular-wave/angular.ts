@@ -1,15 +1,14 @@
-import { _log, _injector } from '../../injection-tokens.js';
+import { _log, _injector, _attributes } from '../../injection-tokens.js';
 
-ngInjectDirective.$inject = [_log, _injector];
+ngInjectDirective.$inject = [_log, _injector, _attributes];
 /**
  * Injects named services from `$injector` onto the current scope.
  */
-function ngInjectDirective($log, $injector) {
+function ngInjectDirective($log, $injector, $attributes) {
     return {
         restrict: "A",
-        link(scope, _element, attrs) {
-            const attrMap = attrs;
-            const expr = attrMap.ngInject;
+        link(scope, element) {
+            const expr = $attributes.read(element, "ngInject");
             if (!expr)
                 return;
             const tokens = expr

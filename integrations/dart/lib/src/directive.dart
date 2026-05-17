@@ -16,14 +16,8 @@ enum DirectiveRestrict {
   /// Invokes attribute element.
   attributeElement('AE'),
 
-  /// Invokes class name.
-  className('C'),
-
-  /// Invokes comment.
-  comment('M'),
-
-  /// Invokes all.
-  all('AECM');
+  /// Invokes element attribute.
+  elementAttribute('EA');
 
   const DirectiveRestrict(this.symbol);
 

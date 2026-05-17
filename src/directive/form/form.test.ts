@@ -82,6 +82,9 @@ test("form demo renders every MDN input type and live controller state", async (
   await expectModelValue(page, "datetime", "2026-05-16T12:30Z");
   await expect(page.getByTestId("form-valid")).toHaveText("true");
   await expect(page.getByTestId("form-submitted")).toHaveText("false");
+  await expect(page.getByTestId("native-form-data")).toBeVisible();
+
+  const form = page.getByTestId("demo-form");
   const emailState = page.locator(
     '[data-testid="inline-control-state"][data-control-state-for="emailInput"]',
   );
@@ -99,6 +102,29 @@ test("form demo renders every MDN input type and live controller state", async (
   await expect(page.getByTestId("form-valid")).toHaveText("true");
   await expect(page.getByTestId("form-submitted")).toHaveText("true");
   await expect(page.getByTestId("submit-count")).toHaveText("1");
+
+  await page.locator("#textInput").press("Enter");
+  await expect(page.getByTestId("submit-count")).toHaveText("2");
+
+  const submittedByRequestSubmit = await form.evaluate((node) => {
+    const formElement = node as HTMLFormElement;
+
+    if (formElement.requestSubmit) {
+      formElement.requestSubmit();
+
+      return true;
+    }
+
+    return false;
+  });
+  if (submittedByRequestSubmit) {
+    await expect(page.getByTestId("submit-count")).toHaveText("3");
+  }
+
+  await page.locator("#textInput").fill("changed text");
+  await expect(page.locator("#textInput")).toHaveValue("changed text");
+  await page.locator("#resetInput").click();
+  await expect(page.locator("#textInput")).toHaveValue("");
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);

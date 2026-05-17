@@ -77,25 +77,31 @@ The base wrapper should stay JSON-library agnostic.
 
 ### Phase A - ABI Headers
 
-- [ ] Create C++ headers under `integrations/wasm/cpp`.
-- [ ] Declare the `angular_ts` host imports.
-- [ ] Export `ng_abi_alloc` and `ng_abi_free`.
-- [ ] Add `ResultBuffer` RAII wrapper.
-- [ ] Add `Watch` RAII wrapper.
-- [ ] Add `Scope` wrapper for handle and name targeting.
+- [x] Create C++ headers under `integrations/wasm/cpp`.
+- [x] Declare the `angular_ts` host imports.
+- [x] Export `ng_abi_alloc` and `ng_abi_free`.
+- [x] Add `ResultBuffer` RAII wrapper.
+- [x] Add `Watch` RAII wrapper.
+- [x] Add `Scope` wrapper for handle and name targeting.
 
 ### Phase B - Todo Proof
 
-- [ ] Create a C++ todo example.
-- [ ] Use `Scope::SetJson` to update real AngularTS scope state.
-- [ ] Use `Scope::WatchPath` to receive UI-originated scope updates.
-- [ ] Add a bootstrap adapter that binds AngularTS `WasmScope`.
+- [x] Create a C++ todo example.
+- [x] Use `Scope::SetJson` to update real AngularTS scope state.
+- [x] Use `Scope::WatchPath` to receive UI-originated scope updates.
+- [x] Add a bootstrap adapter that binds AngularTS `WasmScope`.
 
 ### Phase C - Browser Validation
 
-- [ ] Add Playwright coverage for the C++ todo example.
-- [ ] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
-- [ ] Verify result buffers are freed.
+- [x] Add Playwright coverage for the C++ todo example.
+- [x] Add a `wasm-build` target that emits `examples/todo/main.wasm`.
+- [x] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
+- [x] Verify result buffers are freed.
+
+Local `make browser-test` is blocked in the current sandbox because the shared
+Playwright web server cannot bind local TCP/UDP sockets. The target builds the
+C++ Wasm artifact before reaching that environment failure. Set
+`PW_SKIP_WEB_SERVER=1` to run against an already-running `PW_BASE_URL`.
 
 ## Non-Goals
 

@@ -1,5 +1,5 @@
 import { isAssignable } from "../interpreter.ts";
-import { ASTType } from "../ast-type.ts";
+import { ASTType, type ASTNodeType } from "../ast-type.ts";
 import {
   hasOwn,
   isDefined,
@@ -18,9 +18,8 @@ const literals: Record<string, unknown> = {
   undefined,
 };
 
-const BINARY_BINDING_POWER: Record<
-  string,
-  { left: number; right: number; type: ASTType }
+const BINARY_BINDING_POWER: Partial<
+  Record<string, { left: number; right: number; type: ASTNodeType }>
 > = {
   "=": { left: 10, right: 9, type: ASTType._AssignmentExpression },
   "?": { left: 20, right: 19, type: ASTType._ConditionalExpression },
@@ -72,6 +71,10 @@ export class AST {
     this._index = 0;
   }
 
+  private _tokenAt(index = this._index): Token | undefined {
+    return this._tokens[index] as Token | undefined;
+  }
+
   /**
    * Parses the input text and generates an AST.
    * @param {string} text - The input text to parse.
@@ -103,11 +106,7 @@ export class AST {
     let hasMore = true;
 
     while (hasMore) {
-      if (
-        this._tokens &&
-        this._tokens.length > this._index &&
-        !this._peek("}", ")", ";", "]")
-      )
+      if (this._tokens.length > this._index && !this._peek("}", ")", ";", "]"))
         body.push(this._expressionStatement());
 
       if (!this._expect(";")) {
@@ -153,8 +152,10 @@ export class AST {
   _expression(minBindingPower: number): ASTNode {
     let left = this._prefix();
 
-    while (this._tokens && this._index < this._tokens.length) {
-      const token = this._tokens[this._index];
+    while (this._index < this._tokens.length) {
+      const token = this._tokenAt();
+
+      if (!token) break;
 
       const operator = token._text;
 
@@ -247,8 +248,10 @@ export class AST {
   _postfix(primary: ASTNode): ASTNode {
     let expr = primary;
 
-    while (this._tokens && this._index < this._tokens.length) {
-      const next = this._tokens[this._index];
+    while (this._index < this._tokens.length) {
+      const next = this._tokenAt();
+
+      if (!next) break;
 
       if (next._text === "(") {
         this._index++;
@@ -503,7 +506,7 @@ export class AST {
       msg,
       token._index + 1,
       this._text,
-      this._text?.substring(token._index),
+      this._text.substring(token._index),
     );
   }
 
@@ -514,7 +517,7 @@ export class AST {
    */
   /** @internal */
   _consume(e1?: string): Token {
-    if (this._tokens?.length === this._index) {
+    if (this._tokens.length === this._index) {
       throw $parseError(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -530,7 +533,7 @@ export class AST {
 
     if (!token) {
       return this._throwError(
-        `is unexpected, expecting [${e1}]`,
+        `is unexpected, expecting [${String(e1)}]`,
         this._peekToken(),
       );
     }
@@ -544,7 +547,7 @@ export class AST {
    */
   /** @internal */
   _peekToken(): Token {
-    if (!this._tokens || this._tokens.length === this._index) {
+    if (this._tokens.length === this._index) {
       throw $parseError(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -562,7 +565,7 @@ export class AST {
    */
   /** @internal */
   _peek(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
-    const token = this._tokens?.[this._index];
+    const token = this._tokenAt();
 
     if (!token) return false;
 
@@ -580,7 +583,7 @@ export class AST {
    */
   /** @internal */
   _expect(e1?: string, e2?: string, e3?: string, e4?: string): Token | false {
-    const token = this._tokens?.[this._index];
+    const token = this._tokenAt();
 
     if (!token) return false;
 
@@ -592,12 +595,8 @@ export class AST {
       }
     }
 
-    if (token) {
-      this._index++;
+    this._index++;
 
-      return token;
-    }
-
-    return false;
+    return token;
   }
 }

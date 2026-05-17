@@ -1,4 +1,4 @@
-import { _view, _state, _anchorScroll, _interpolate, _parse, _compile, _controller, _transitions, _injector } from '../../injection-tokens.js';
+import { _view, _state, _anchorScroll, _interpolate, _parse, _attributes, _compile, _controller, _transitions, _injector } from '../../injection-tokens.js';
 import { assertDefined, assign, isString, isDefined, isInstanceOf, isArray, arrayFrom } from '../../shared/utils.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { dealoc, getCacheData, setCacheData, getInheritedData, removeElement } from '../../shared/dom.js';
@@ -111,13 +111,21 @@ function withResolvers() {
  * });
  * ```
  */
-ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
+ViewDirective.$inject = [
+    _view,
+    _state,
+    _anchorScroll,
+    _interpolate,
+    _parse,
+    _attributes,
+];
 /**
  * Renders and updates the currently active view configuration.
  */
-function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
+function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attributes) {
+    const rootContext = $view._rootViewContext();
     const rootData = {
-        $cfg: { _viewDecl: { _context: $view._rootViewContext() } },
+        $cfg: { _viewDecl: { _context: rootContext } },
         $ngView: {},
     };
     const directive = {
@@ -127,15 +135,18 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
         transclude: "element",
         compile(_tElement, _tAttrs, $transclude) {
             const transclude = assertDefined($transclude);
-            return function (scope, $element, attrs) {
-                const onloadExp = attrs.onload || "", autoScrollExp = attrs.autoscroll, inherited = getInheritedData($element, "$ngView") || rootData, rawName = assertDefined($interpolate(attrs.ngView || attrs.name || ""))(scope), name = isString(rawName) && rawName ? rawName : "$default";
+            return function (scope, $element) {
+                const onloadExp = $attributes.read($element, "onload") ?? "", autoScrollExp = $attributes.read($element, "autoscroll"), inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate($attributes.read($element, "ngView") ??
+                    $attributes.read($element, "name") ??
+                    ""))(scope), name = isString(rawName) && rawName ? rawName : "$default";
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 let currentEl = null;
                 let currentScope = null;
                 let viewConfig;
                 let configUpdateVersion = 0;
-                const parentFqn = inherited.$cfg._viewDecl._context.name || inherited.$ngView._fqn;
+                const inheritedContext = inherited.$cfg._viewDecl._context;
+                const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                 const activeNgView = {
                     _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
                     _element: $element,
@@ -144,11 +155,9 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
                     _config: null,
                     _configUpdated: configUpdatedCallback,
                     get _creationContext() {
-                        // Inherit the parent view context for nested ng-view elements.
-                        const fromParentTag = inherited.$ngView._creationContext;
-                        return (inherited.$cfg._viewDecl._context ||
-                            fromParentTag ||
-                            rootData.$cfg._viewDecl._context);
+                        return (inheritedContext ??
+                            inherited.$ngView._creationContext ??
+                            rootContext);
                     },
                 };
                 function configUpdatedCallback(config) {
@@ -170,7 +179,7 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
                     }
                     if (viewConfig === config)
                         return;
-                    activeNgView._config = config || null;
+                    activeNgView._config = config;
                     viewConfig = config;
                     updateView(config);
                 }
@@ -241,7 +250,7 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
                      *
                      * @param event Event object.
                      */
-                    currentScope.$emit("$viewContentLoaded", config || viewConfig);
+                    currentScope.$emit("$viewContentLoaded", config ?? viewConfig);
                     onloadFn?.(currentScope);
                 }
             };
@@ -263,19 +272,19 @@ function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
                 const data = getCacheData($element, "$ngView");
                 if (!data) {
                     $element.innerHTML = initial;
-                    $compile($element.contentDocument ||
+                    $compile($element.contentDocument ??
                         $element.childNodes)(scope);
                     return;
                 }
-                const cfg = (data.$cfg || {
+                const cfg = (data.$cfg ?? {
                     _viewDecl: {},
                 });
                 const resolveCtx = cfg._path && new ResolveContext(cfg._path, $injector);
                 $element.innerHTML = data.$cfg
-                    ? getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ||
-                        initial
+                    ? (getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ??
+                        initial)
                     : initial;
-                const link = $compile($element.contentDocument ||
+                const link = $compile($element.contentDocument ??
                     $element.childNodes);
                 const controller = cfg._controller;
                 const locals = resolveCtx ? getLocals(resolveCtx) : undefined;

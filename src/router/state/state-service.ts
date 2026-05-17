@@ -208,7 +208,9 @@ export class StateProvider {
 
     const states = isArray(result) ? result : [result];
 
-    states.forEach((state) => this.state(state));
+    states.forEach((state) => {
+      this.state(state);
+    });
   }
 
   /** @internal */
@@ -242,9 +244,7 @@ export class StateProvider {
       return Rejection.invalid(toState.error())._toPromise();
     }
 
-    if (!lazy.promise) {
-      lazy.promise = this._loadLazyRegistration(lazy, toState);
-    }
+    lazy.promise ??= this._loadLazyRegistration(lazy, toState);
 
     await lazy.promise;
 
@@ -341,6 +341,7 @@ export class StateProvider {
    *
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
+
   reload(reloadState?: string | StateDeclaration | StateObject) {
     const current = this._routerState._current;
 
@@ -392,6 +393,7 @@ export class StateProvider {
    *
    * @returns A promise representing the state of the new transition.
    */
+
   go(
     to: StateOrName,
     params?: RawParams,
@@ -399,7 +401,11 @@ export class StateProvider {
   ): TransitionPromise | Promise<StateTransitionResult> {
     const defautGoOpts = { relative: this.$current, inherit: true };
 
-    const transOpts = defaults(options, defautGoOpts, defaultTransOpts);
+    const transOpts = defaults(
+      options,
+      defautGoOpts,
+      defaultTransOpts,
+    ) as TransitionOptions;
 
     return this.transitionTo(to, params, transOpts);
   }
@@ -478,6 +484,7 @@ export class StateProvider {
    *
    * @returns A promise representing the state of the new transition. See [[go]]
    */
+
   transitionTo(
     to: StateOrName,
     toParams: RawParams = {},
@@ -520,10 +527,9 @@ export class StateProvider {
     params?: RawParams,
     options?: { relative: StateOrName | undefined },
   ): boolean | undefined {
-    const relative =
-      options?.relative === undefined ? this.$current : options.relative;
+    const relative = options?.relative ?? this.$current;
 
-    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+    const state = this._stateRegistry._matcher.find(stateOrName, relative);
 
     if (!isDefined(state)) return undefined;
 
@@ -580,8 +586,7 @@ export class StateProvider {
     params?: RawParams,
     options?: TransitionOptions,
   ): boolean | undefined {
-    const relative =
-      options?.relative === undefined ? this.$current : options.relative;
+    const relative = options?.relative ?? this.$current;
 
     const glob = isString(stateOrName) && Glob.fromString(stateOrName);
 
@@ -591,7 +596,7 @@ export class StateProvider {
       if (!currentName || !glob.matches(currentName)) return false;
       stateOrName = currentName;
     }
-    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+    const state = this._stateRegistry._matcher.find(stateOrName, relative);
 
     const include = this.$current?.includes;
 
@@ -631,11 +636,10 @@ export class StateProvider {
     params?: RawParams,
     options?: HrefOptions,
   ): string | null {
-    params = params || {};
-    const relative =
-      options?.relative === undefined ? this.$current : options.relative;
+    params = params ?? {};
+    const relative = options?.relative ?? this.$current;
 
-    const state = this._stateRegistry?._matcher.find(stateOrName, relative);
+    const state = this._stateRegistry._matcher.find(stateOrName, relative);
 
     if (!isDefined(state)) return null;
 
@@ -645,7 +649,7 @@ export class StateProvider {
         assertDefined(this.$current),
         state,
       );
-    const nav = state && options?.lossy !== false ? state.navigable : state;
+    const nav = options?.lossy !== false ? state.navigable : state;
 
     if (!nav || isNullOrUndefined(nav._url)) {
       return null;
@@ -680,7 +684,7 @@ export class StateProvider {
    * @returns the current global error handler
    */
   defaultErrorHandler(handler?: ng.ExceptionHandlerService) {
-    return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
+    return (this._defaultErrorHandler = handler ?? this._defaultErrorHandler);
   }
 
   /**
@@ -690,9 +694,9 @@ export class StateProvider {
   get(stateOrName?: StateOrName, base?: StateOrName) {
     const reg = this._stateRegistry;
 
-    if (arguments.length === 0) return reg?.get();
+    if (arguments.length === 0) return reg.get();
 
-    return reg?.get(stateOrName, base || this.$current);
+    return reg.get(stateOrName, base ?? this.$current);
   }
 }
 

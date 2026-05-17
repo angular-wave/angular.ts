@@ -29,10 +29,11 @@ an unsafe JavaScript escape hatch can reach it.
 | `Angular` | started |
 | `AnnotatedDirectiveFactory` | started |
 | `Attributes` | started |
-| `BoundTranscludeFn` | started |
+| `AttributesService` | planned |
 | `Component` | started |
 | `Controller` | started |
 | `Directive` | started |
+| `DirectiveRestrict` | started |
 | `DirectiveFactory` | started |
 | `NgModule` | started |
 | `PublicLinkFn` | started |
@@ -189,6 +190,24 @@ an unsafe JavaScript escape hatch can reach it.
 | `WebTransportReconnectEvent` | started |
 | `WebTransportRetryDelay` | started |
 | `NativeWebTransport` | started |
+
+## Wasm
+
+| ng type | Dart status |
+| --- | --- |
+| `WasmAbiExports` | planned |
+| `WasmInstantiationResult` | planned |
+| `WasmOptions` | planned |
+| `WasmScope` | planned |
+| `WasmScopeAbi` | planned |
+| `WasmScopeAbiImportObject` | planned |
+| `WasmScopeAbiImports` | planned |
+| `WasmScopeBindingOptions` | planned |
+| `WasmScopeOptions` | planned |
+| `WasmScopeReference` | planned |
+| `WasmScopeUpdate` | planned |
+| `WasmScopeWatchOptions` | planned |
+| `WasmService` | started |
 
 ## Web Components
 

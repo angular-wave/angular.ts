@@ -78,9 +78,6 @@ describe("ngModelOptions", () => {
           expect(inputOptions.getOption("allowInvalid")).toEqual(
             defaultModelOptions.getOption("allowInvalid"),
           );
-          expect(inputOptions.getOption("timezone")).toEqual(
-            defaultModelOptions.getOption("timezone"),
-          );
         });
 
         it("if `ngModelOptions` on the same element does not specify the option", () => {

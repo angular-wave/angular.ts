@@ -19,6 +19,7 @@ import type { StateProvider } from "./state-service.ts";
  *
  * @internal
  */
+
 export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
   promise.catch(() => undefined);
 
@@ -30,7 +31,7 @@ export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
  *
  * @internal
  */
-export function silentRejection(reason: unknown): Promise<never> {
+export async function silentRejection(reason: unknown): Promise<never> {
   const promise = Promise.reject(
     reason instanceof Error ? reason : Rejection.errored(reason),
   );
@@ -39,6 +40,7 @@ export function silentRejection(reason: unknown): Promise<never> {
 }
 
 /** @internal */
+
 export function transitionToState(
   stateService: StateProvider,
   to: StateOrName,
@@ -101,7 +103,7 @@ async function runRedirectTransition(
   }
 }
 
-function handleTransitionRejection(
+async function handleTransitionRejection(
   stateService: StateProvider,
   trans: Transition,
   error: unknown,

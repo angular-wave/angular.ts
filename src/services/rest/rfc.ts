@@ -3,6 +3,7 @@ import {
   isNullOrUndefined,
   keys,
   isString,
+  stringify,
 } from "../../shared/utils.ts";
 
 /**
@@ -19,9 +20,11 @@ import {
  */
 export function expandUriTemplate(
   template: string,
-  vars: Record<string, any> = {},
+  vars: Record<string, unknown> | null | undefined = {},
 ): string {
   if (!isString(template)) throw new TypeError("template must be a string");
+
+  vars = vars ?? {};
 
   return template.replace(/\{([^}]+)\}/g, (_match, expression: string) => {
     return expandExpression(expression, vars);
@@ -31,9 +34,9 @@ export function expandUriTemplate(
 /**
  * Helper: percent-encode a string. If allowReserved true, reserved chars are NOT encoded.
  */
-export function pctEncode(str: string, allowReserved: boolean): string {
+export function pctEncode(str: unknown, allowReserved: boolean): string {
   // encodeURIComponent, then restore reserved if allowed
-  const encoded = encodeURIComponent(str);
+  const encoded = encodeURIComponent(String(str));
 
   if (allowReserved) {
     // Reserved characters per RFC 3986
@@ -51,7 +54,7 @@ export function pctEncode(str: string, allowReserved: boolean): string {
  */
 export function expandExpression(
   expression: string,
-  vars: Record<string, any>,
+  vars: Record<string, unknown>,
 ): string {
   // Operator if first char in operator set
   const operator = /^[+#./;?&]/.test(expression) ? expression[0] : "";
@@ -144,11 +147,11 @@ export function expandExpression(
     const varspec = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
 
     if (!varspec) throw new Error(`Invalid varspec: ${spec}`);
-    const varname = varspec[1];
+    const [, varname, modifier, prefix] = varspec;
 
-    const explode = varspec[2] === "*";
+    const explode = modifier === "*";
 
-    const prefixLength = varspec[3] ? parseInt(varspec[3], 10) : undefined;
+    const prefixLength = prefix ? parseInt(prefix, 10) : undefined;
 
     const value = vars[varname];
 
@@ -182,17 +185,17 @@ export function expandExpression(
 
           if (conf.named) {
             expandedParts.push(
-              `${pctEncode(varname, conf.allowReserved)}=${pctEncode(String(item), conf.allowReserved)}`,
+              `${pctEncode(varname, conf.allowReserved)}=${pctEncode(item, conf.allowReserved)}`,
             );
           } else {
-            expandedParts.push(pctEncode(String(item), conf.allowReserved));
+            expandedParts.push(pctEncode(item, conf.allowReserved));
           }
         }
       } else {
         // join by comma (or operator.sep?) — RFC: simple join with ','
         const joined = value
           .filter((val) => val !== null && val !== undefined)
-          .map((val) => pctEncode(String(val), conf.allowReserved))
+          .map((val) => pctEncode(val, conf.allowReserved))
           .join(",");
 
         if (conf.named) {
@@ -216,7 +219,7 @@ export function expandExpression(
 
     // PROCESS objects (associative arrays)
     if (typeof value === "object") {
-      const objectValue = value as Record<string, any>;
+      const objectValue = value as Record<string, unknown>;
 
       const keyItems = keys(objectValue);
 
@@ -271,7 +274,7 @@ export function expandExpression(
     }
 
     // PROCESS scalar (string/number/boolean)
-    let str = String(value);
+    let str = stringify(value);
 
     // apply prefix modifier if present
     if (typeof prefixLength === "number") {

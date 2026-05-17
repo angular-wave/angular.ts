@@ -74,6 +74,7 @@ import type {
   Attributes as TAttributes,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
+  DirectiveRestrict as TDirectiveRestrict,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
   Controller as TController,
@@ -96,7 +97,6 @@ import type {
   Validator as TValidator,
 } from "./shared/interface.ts";
 import type {
-  BoundTranscludeFn as TBoundTranscludeFn,
   CompileFn as TCompileFn,
   PublicLinkFn as TPublicLinkFn,
   TranscludeFn as TTranscludeFn,
@@ -221,6 +221,7 @@ declare global {
     angular: TAngular;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- Public global declaration for ng.* types.
   export namespace ng {
     // Core types (docs preserved)
     export type Angular = TAngular;
@@ -231,13 +232,13 @@ declare global {
 
     export type AttributesService = TAttributesService;
 
-    export type BoundTranscludeFn = TBoundTranscludeFn;
-
-    export type Component = TComponent & Record<string, any>;
+    export type Component = TComponent;
 
     export type Controller = TController;
 
-    export type Directive<TController = any> = TDirective<TController>;
+    export type Directive<TController = unknown> = TDirective<TController>;
+
+    export type DirectiveRestrict = TDirectiveRestrict;
 
     export type DirectiveFactory = TDirectiveFactory;
 
@@ -247,7 +248,7 @@ declare global {
 
     export type PubSubProvider = TPubSubProvider;
 
-    export type Scope = TScope & Record<string, any>;
+    export type Scope = TScope;
 
     export type TranscludeFn = TTranscludeFn;
 
@@ -335,7 +336,7 @@ declare global {
 
     export type RootElementService = Element;
 
-    export type RootScopeService = TScope & Record<string, any>;
+    export type RootScopeService = TScope;
 
     export type StateService = TStateProvider;
 
@@ -374,7 +375,7 @@ declare global {
     // Support types
     export type AngularService = Angular;
 
-    export type AnnotatedFactory<T extends (...args: any[]) => any> =
+    export type AnnotatedFactory<T extends (...args: never[]) => unknown> =
       TAnnotatedFactory<T>;
 
     export type AnimationOptions = TNativeAnimationOptions;
@@ -393,8 +394,9 @@ declare global {
 
     export type AngularElementModuleOptions = TAngularElementModuleOptions;
 
-    export type AngularElementOptions<T extends object = Record<string, any>> =
-      TAngularElementOptions<T>;
+    export type AngularElementOptions<
+      T extends object = Record<string, unknown>,
+    > = TAngularElementOptions<T>;
 
     export type ControllerConstructor = TControllerConstructor;
 
@@ -422,8 +424,8 @@ declare global {
 
     export type Injectable<
       T extends
-        | ((...args: any[]) => any)
-        | (abstract new (...args: any[]) => any),
+        | ((...args: never[]) => unknown)
+        | (abstract new (...args: never[]) => unknown),
     > = TInjectable<T>;
 
     export type InjectionTokens = typeof PublicInjectionTokens;
@@ -488,8 +490,9 @@ declare global {
 
     export type ElementScopeOptions = TElementScopeOptions;
 
-    export type WebComponentContext<T extends object = Record<string, any>> =
-      TWebComponentContext<T>;
+    export type WebComponentContext<
+      T extends object = Record<string, unknown>,
+    > = TWebComponentContext<T>;
 
     export type WebComponentInput = TWebComponentInput;
 
@@ -497,8 +500,9 @@ declare global {
 
     export type WebComponentInputs = TWebComponentInputs;
 
-    export type WebComponentOptions<T extends object = Record<string, any>> =
-      TWebComponentOptions<T>;
+    export type WebComponentOptions<
+      T extends object = Record<string, unknown>,
+    > = TWebComponentOptions<T>;
 
     export type WebComponentService = TWebComponentService;
 

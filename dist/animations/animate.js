@@ -1,5 +1,5 @@
 import { _injector } from '../injection-tokens.js';
-import { isString, assign, assertDefined, createErrorFactory, isFunction } from '../shared/utils.js';
+import { isString, isFunction, assign, assertDefined, createErrorFactory } from '../shared/utils.js';
 import { domInsert, removeElement } from '../shared/dom.js';
 
 const $animateError = createErrorFactory("$animate");
@@ -204,7 +204,7 @@ function AnimateProvider() {
                 else {
                     const optionKeyframes = keyframesForPhase(phase, options);
                     const customKeyframes = resolvedPreset?.custom && handler ? handler : undefined;
-                    const keyframes = optionKeyframes || customKeyframes;
+                    const keyframes = optionKeyframes ?? customKeyframes;
                     const cssAnimation = keyframes
                         ? undefined
                         : cssAnimationForPhase(element, phase);
@@ -241,7 +241,7 @@ function AnimateProvider() {
             };
             return {
                 cancel(handle) {
-                    handle?.cancel?.();
+                    handle?.cancel();
                 },
                 define: (name, preset) => {
                     this.register(name, preset);
@@ -297,12 +297,12 @@ function AnimateProvider() {
                     });
                 },
                 async transition(update) {
-                    const documentWithTransitions = document;
-                    if (!documentWithTransitions.startViewTransition) {
+                    const startViewTransition = Reflect.get(document, "startViewTransition");
+                    if (!isFunction(startViewTransition)) {
                         await update();
                         return;
                     }
-                    await documentWithTransitions.startViewTransition(update).finished;
+                    await startViewTransition.call(document, update).finished;
                 },
             };
         },
@@ -330,7 +330,7 @@ function animationNameFor(element, options) {
     const explicit = options?.animation;
     if (explicit)
         return normalizeAnimationName(explicit);
-    const value = element.dataset.animate || element.getAttribute("animate");
+    const value = element.dataset.animate ?? element.getAttribute("animate");
     if (!value || value === "true" || value === "")
         return "fade";
     if (value === "false")
@@ -351,10 +351,10 @@ function keyframesForPhase(phase, options) {
 function keyframesFromStyles(from, to) {
     if (!from && !to)
         return undefined;
-    return [from || {}, to || {}];
+    return [from ?? {}, to ?? {}];
 }
 function animationOptionsFor(preset, options) {
-    const defaults = preset?.options || {};
+    const defaults = preset?.options ?? {};
     const { keyframes: _keyframes, enter, leave, move, animation, tempClasses, onStart, onDone, onCancel, ...rest } = options;
     return {
         duration: DEFAULT_DURATION,
@@ -365,7 +365,7 @@ function animationOptionsFor(preset, options) {
 }
 function cssAnimationForPhase(element, phase) {
     const styles = getComputedStyle(element);
-    const value = readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ||
+    const value = readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ??
         readCssAnimationProperty(styles, "--ng-animation");
     if (!value || value === "none")
         return undefined;
@@ -403,14 +403,14 @@ function shouldSkipAnimation(element, options) {
         return true;
     if (options.duration === 0)
         return true;
-    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 function expandHeight(element, context, options) {
     const target = element;
     const previousOverflow = target.style.overflow;
     const previousHeight = target.style.height;
     const previousOpacity = target.style.opacity;
-    const height = `${target.scrollHeight}px`;
+    const height = `${String(target.scrollHeight)}px`;
     target.style.overflow = "hidden";
     const animation = target.animate([
         { height: "0px", opacity: 0 },
@@ -428,7 +428,7 @@ function collapseHeight(element, context, options) {
     const previousOverflow = target.style.overflow;
     const previousHeight = target.style.height;
     const previousOpacity = target.style.opacity;
-    const height = `${target.offsetHeight || target.scrollHeight}px`;
+    const height = `${String(target.offsetHeight || target.scrollHeight)}px`;
     target.style.height = height;
     target.style.overflow = "hidden";
     const animation = target.animate([

@@ -12,7 +12,7 @@ import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
 export { HttpRestBackend } from "./http-rest-backend.ts";
 
 /** Resource definition registered with {@link RestProvider.rest}. */
-export interface RestDefinition<T = any> {
+export interface RestDefinition<T = unknown> {
   /** Informational name for the resource definition. */
   name: string;
   /** Base URL or RFC 6570 URI template for the resource. */
@@ -29,7 +29,7 @@ export interface RestDefinition<T = any> {
  *
  * @param data - Raw data, typically parsed JSON.
  */
-export type EntityClass<T = any> = new (data: any) => T;
+export type EntityClass<T = unknown> = new (data: unknown) => T;
 
 /**
  * Normalized request object passed from {@link RestService} to a
@@ -50,9 +50,9 @@ export interface RestRequest {
   /** Request body for write operations. */
   data?: unknown;
   /** URI template and query parameters. */
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   /** Backend-specific request options. */
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 /**
@@ -160,7 +160,7 @@ export interface CachedRestBackendOptions {
 }
 
 /** Extra backend options merged into requests made by a REST resource. */
-export interface RestOptions extends Record<string, any> {
+export interface RestOptions extends Record<string, unknown> {
   /** Optional backend used instead of the default HTTP backend. */
   backend?: RestBackend;
 }
@@ -173,7 +173,7 @@ export interface RestOptions extends Record<string, any> {
  * to the same cache entry.
  */
 export function createRestCacheKey(request: RestRequest): string {
-  return `${request.method} ${request.url}\n${stableSerialize(request.params || {})}`;
+  return `${request.method} ${request.url}\n${stableSerialize(request.params ?? {})}`;
 }
 
 function stableSerialize(value: unknown): string {
@@ -193,7 +193,7 @@ function stableSerialize(value: unknown): string {
       .join(",")}}`;
   }
 
-  return JSON.stringify(value) ?? "undefined";
+  return value === undefined ? "undefined" : JSON.stringify(value);
 }
 
 /**
@@ -245,7 +245,9 @@ export class CachedRestBackend implements RestBackend {
         return this._staleWhileRevalidate(request);
     }
 
-    throw new Error(`Unsupported REST cache strategy: ${this._strategy}`);
+    throw new Error(
+      `Unsupported REST cache strategy: ${String(this._strategy)}`,
+    );
   }
 
   private async _cacheFirst<T>(request: RestRequest): Promise<RestResponse<T>> {
@@ -289,6 +291,8 @@ export class CachedRestBackend implements RestBackend {
       void this._fetchAndCache<T>(request, key).then(
         (response) => {
           this._onRevalidate?.({ key, request, response });
+
+          return undefined;
         },
         () => undefined,
       );
@@ -327,7 +331,7 @@ export class CachedRestBackend implements RestBackend {
  * A `RestService` is usually created by injecting `$rest` and calling it with a
  * base URL, optional {@link EntityClass}, and optional backend request defaults.
  */
-export class RestService<T = any, ID = any> {
+export class RestService<T = unknown, ID = unknown> {
   static $nonscope = true;
 
   /** @internal */
@@ -368,8 +372,8 @@ export class RestService<T = any, ID = any> {
    * @param params - Values used for URI template expansion.
    * @returns The expanded URL.
    */
-  buildUrl(template: string, params: Record<string, any>): string {
-    return expandUriTemplate(template, params || {});
+  buildUrl(template: string, params: Record<string, unknown>): string {
+    return expandUriTemplate(template, params);
   }
 
   private _mapEntity(data: unknown): unknown {
@@ -384,7 +388,7 @@ export class RestService<T = any, ID = any> {
    * Parameters are used for URI template expansion and are also forwarded to
    * `$http` as query params. Non-array responses resolve to an empty array.
    */
-  async list(params: Record<string, any> = {}): Promise<T[]> {
+  async list(params: Record<string, unknown> = {}): Promise<T[]> {
     const url = this.buildUrl(this._baseUrl, params);
 
     const resp = await this._request<unknown[]>("GET", url, null, params, url);
@@ -402,9 +406,9 @@ export class RestService<T = any, ID = any> {
    * @returns The mapped entity, raw response value, or `null` when empty.
    * @throws Error when `id` is null or undefined.
    */
-  async get(id: ID, params: Record<string, any> = {}): Promise<unknown> {
-    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
-    const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
+  async get(id: ID, params: Record<string, unknown> = {}): Promise<unknown> {
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
+    const url = this.buildUrl(`${this._baseUrl}/${String(id)}`, params);
 
     const collectionUrl = this.buildUrl(this._baseUrl, params);
 
@@ -428,7 +432,7 @@ export class RestService<T = any, ID = any> {
    * @throws Error when `item` is null or undefined.
    */
   async create(item: T): Promise<unknown> {
-    if (isNullOrUndefined(item)) throw new Error(`badarg:item ${item}`);
+    if (isNullOrUndefined(item)) throw new Error(`badarg:item ${String(item)}`);
     const resp = await this._request<unknown>(
       "POST",
       this._baseUrl,
@@ -449,8 +453,8 @@ export class RestService<T = any, ID = any> {
    * @throws Error when `id` is null or undefined.
    */
   async update(id: ID, item: Partial<T>): Promise<unknown> {
-    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
-    const url = `${this._baseUrl}/${id}`;
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
+    const url = `${this._baseUrl}/${String(id)}`;
 
     try {
       const resp = await this._request<unknown>(
@@ -476,8 +480,8 @@ export class RestService<T = any, ID = any> {
    * @throws Error when `id` is null or undefined.
    */
   async delete(id: ID): Promise<boolean> {
-    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${id}`);
-    const url = `${this._baseUrl}/${id}`;
+    if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
+    const url = `${this._baseUrl}/${String(id)}`;
 
     try {
       await this._request("DELETE", url, null, {}, this._baseUrl, id);
@@ -492,7 +496,7 @@ export class RestService<T = any, ID = any> {
     method: HttpMethod,
     url: string,
     data: unknown = null,
-    params: Record<string, any> = {},
+    params: Record<string, unknown> = {},
     collectionUrl?: string,
     id?: unknown,
   ): Promise<RestResponse<R>> {
@@ -514,7 +518,7 @@ export class RestService<T = any, ID = any> {
  * Creates a typed {@link RestService} for a base URL, optional entity mapper,
  * and optional backend request defaults.
  */
-export type RestFactory = <T = any, ID = any>(
+export type RestFactory = <T = unknown, ID = unknown>(
   baseUrl: string,
   entityClass?: EntityClass<T>,
   options?: RestOptions,
@@ -531,7 +535,7 @@ export class RestProvider {
           const { backend, ...requestOptions } = options;
 
           return new RestService(
-            backend || new HttpRestBackend($http),
+            backend ?? new HttpRestBackend($http),
             baseUrl,
             entityClass,
             requestOptions,

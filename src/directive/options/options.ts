@@ -32,28 +32,28 @@ class OptionItem {
   /** @internal */
   _element: HTMLOptionElement | null = null;
   /** @internal */
-  _selectValue: any;
+  _selectValue: string;
   /** @internal */
-  _viewValue: any;
+  _viewValue: unknown;
   /** @internal */
-  _label: any;
+  _label: string;
   /** @internal */
-  _group: any;
+  _group: unknown;
   /** @internal */
-  _disabled: any;
+  _disabled: boolean;
 
   constructor(
-    selectValue: any,
-    viewValue: any,
-    label: any,
-    group: any,
-    disabled: any,
+    selectValue: string,
+    viewValue: unknown,
+    label: unknown,
+    group: unknown,
+    disabled: unknown,
   ) {
     this._selectValue = selectValue;
     this._viewValue = viewValue;
-    this._label = label;
+    this._label = String(label);
     this._group = group;
-    this._disabled = disabled;
+    this._disabled = Boolean(disabled);
   }
 }
 
@@ -63,11 +63,11 @@ interface NgOptionsCollection {
   /** @internal */
   _items: OptionItem[];
   /** @internal */
-  _selectValueMap: Record<string, OptionItem>;
+  _selectValueMap: Partial<Record<string, OptionItem>>;
   /** @internal */
-  _getOptionFromViewValue(value: any): OptionItem | undefined;
+  _getOptionFromViewValue(value: unknown): OptionItem | undefined;
   /** @internal */
-  _getViewValueFromOption(option: OptionItem): any;
+  _getViewValueFromOption(option: OptionItem): unknown;
 }
 
 interface NgOptionsDefinition {
@@ -100,13 +100,22 @@ export function ngOptionsDirective(
       );
     }
 
-    const valueName = match[5] || match[7];
+    const [
+      ,
+      selectAsExpression,
+      displayExpression,
+      ,
+      ,
+      valueAlias,
+      keyName,
+      itemAlias,
+    ] = match;
 
-    const keyName = match[6];
+    const valueName = valueAlias || itemAlias;
 
-    const selectAs = match[0].includes(" as ") && match[1];
+    const selectAs = match[0].includes(" as ") && selectAsExpression;
 
-    const valueFn = $parse(match[2] ? match[1] : valueName);
+    const valueFn = $parse(displayExpression ? selectAsExpression : valueName);
 
     const selectAsFn = selectAs && $parse(selectAs);
 
@@ -120,16 +129,16 @@ export function ngOptionsDirective(
 
     const valuesFn = $parse(match[8]);
 
-    const locals: Record<string, any> = {};
+    const locals: Record<string, unknown> = {};
 
     const getLocals = keyName
-      ? (value: any, key: any) => {
+      ? (value: unknown, key: unknown) => {
           locals[keyName] = key;
           locals[valueName] = value;
 
           return locals;
         }
-      : (value: any) => {
+      : (value: unknown) => {
           locals[valueName] = value;
 
           return locals;
@@ -143,9 +152,9 @@ export function ngOptionsDirective(
 
         const selectValueMap: Record<string, OptionItem> = {};
 
-        const optionValues = valuesFn(scope) || [];
+        const optionValues = valuesFn(scope) ?? [];
 
-        const addOption = (value: any, key: any) => {
+        const addOption = (value: unknown, key: unknown) => {
           const updatedLocals = getLocals(value, key);
 
           const viewValue = viewValueFn(scope, updatedLocals);
@@ -195,7 +204,7 @@ export function ngOptionsDirective(
           },
           /** @internal */
           _getViewValueFromOption(option: OptionItem) {
-            return option._viewValue as unknown;
+            return option._viewValue;
           },
         };
       },
@@ -203,16 +212,14 @@ export function ngOptionsDirective(
   }
 
   function ngOptionsPostLink(
-    scope: ng.Scope & Record<string, any>,
+    scope: ng.Scope & Record<string, unknown>,
     selectElement: Element,
-    attr: ng.Attributes & Record<string, any>,
-    ctrls: [SelectController, ng.NgModelController & Record<string, any>],
+    attr: ng.Attributes & Record<string, unknown>,
+    ctrls: [SelectController, ng.NgModelController & Record<string, unknown>],
   ) {
     const selectNode = selectElement as HTMLSelectElement;
 
-    const selectCtrl = ctrls[0];
-
-    const ngModelCtrl = ctrls[1];
+    const [selectCtrl, ngModelCtrl] = ctrls;
 
     const multiple = $attributes.has(selectElement, "multiple");
 
@@ -235,7 +242,7 @@ export function ngOptionsDirective(
     let options: NgOptionsCollection | undefined;
 
     const ngOptions = parseOptionsExpression(
-      $attributes.read(selectElement, "ngOptions") || "",
+      $attributes.read(selectElement, "ngOptions") ?? "",
       selectNode,
       scope,
     );
@@ -245,10 +252,12 @@ export function ngOptionsDirective(
     selectCtrl._generateUnknownOptionValue = () => "?";
 
     if (!multiple) {
-      selectCtrl._writeValue = function writeNgOptionsValue(value: any) {
+      selectCtrl._writeValue = function writeNgOptionsValue(value: unknown) {
         if (!options) return;
 
-        const selectedOption = selectNode.options[selectNode.selectedIndex];
+        const selectedOption = selectNode.options.item(
+          selectNode.selectedIndex,
+        );
 
         const option = options._getOptionFromViewValue(value);
 
@@ -276,16 +285,18 @@ export function ngOptionsDirective(
           selectCtrl._unselectEmptyOption();
           selectCtrl._removeUnknownOption();
 
-          return options._getViewValueFromOption(selectedOption) as unknown;
+          return options._getViewValueFromOption(selectedOption);
         }
 
         return null;
       };
     } else {
-      selectCtrl._writeValue = function writeNgOptionsMultiple(values: any[]) {
+      selectCtrl._writeValue = function writeNgOptionsMultiple(
+        values: unknown[] | undefined,
+      ) {
         if (!options) return;
 
-        const selectedOptions = values?.map(getAndUpdateSelectedOption) || [];
+        const selectedOptions = values?.map(getAndUpdateSelectedOption) ?? [];
 
         options._items.forEach((option) => {
           if (option._element?.selected && !includes(selectedOptions, option)) {
@@ -351,7 +362,10 @@ export function ngOptionsDirective(
       }
     }
 
-    scope.$watch(ngOptions._getWatchables, updateOptions as any);
+    scope.$watch(
+      ngOptions._getWatchables,
+      updateOptions as unknown as Parameters<typeof scope.$watch>[1],
+    );
 
     function _addOptionElement(
       option: OptionItem,
@@ -365,7 +379,7 @@ export function ngOptionsDirective(
       updateOptionElement(option, optionElement);
     }
 
-    function getAndUpdateSelectedOption(viewValue: any) {
+    function getAndUpdateSelectedOption(viewValue: unknown) {
       const option = options?._getOptionFromViewValue(viewValue);
 
       const element = option?._element;
@@ -410,7 +424,7 @@ export function ngOptionsDirective(
 
       options = ngOptions._getOptions();
 
-      const groupElementMap: Record<string, HTMLOptGroupElement> = {};
+      const groupElementMap: Partial<Record<string, HTMLOptGroupElement>> = {};
 
       options._items.forEach((option) => {
         let groupElement;
@@ -423,7 +437,9 @@ export function ngOptionsDirective(
               false,
             ) as HTMLOptGroupElement;
             listFragment.appendChild(groupElement);
-            groupElement.label = isNull(option._group) ? "null" : option._group;
+            groupElement.label = isNull(option._group)
+              ? "null"
+              : String(option._group as string | number | boolean | bigint);
             groupElementMap[String(option._group)] = groupElement;
           }
 

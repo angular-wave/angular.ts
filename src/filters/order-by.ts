@@ -55,9 +55,9 @@ export function orderByFilter($parse: ng.ParseService) {
    */
   return function (
     array:
-      | any[]
-      | ArrayLike<any>
-      | (() => any[] | ArrayLike<any>)
+      | unknown[]
+      | ArrayLike<unknown>
+      | (() => unknown[] | ArrayLike<unknown>)
       | null
       | undefined,
     sortPredicate?: SortPredicate | SortPredicate[],
@@ -211,9 +211,15 @@ export function orderByFilter($parse: ng.ParseService) {
       case "boolean": /* falls through */
       case "string":
         return true;
-      default:
+      case "bigint":
+      case "symbol":
+      case "undefined":
+      case "object":
+      case "function":
         return false;
     }
+
+    return false;
   }
 
   /**

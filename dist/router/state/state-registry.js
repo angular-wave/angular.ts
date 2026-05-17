@@ -3,7 +3,7 @@ import { StateMatcher } from './state-matcher.js';
 import { StateBuilder } from './state-builder.js';
 import { StateObject } from './state-object.js';
 import { annotate } from '../../core/di/di.js';
-import { isString, hasOwn, deleteProperty, keys } from '../../shared/utils.js';
+import { isString, hasOwn, deleteProperty, keys, assertDefined } from '../../shared/utils.js';
 
 function stateOrNameToString(stateOrName) {
     return isString(stateOrName) ? stateOrName : stateOrName.name;
@@ -308,7 +308,7 @@ function getLocals(ctx) {
     const locals = {};
     tokens.forEach((key) => {
         if (isString(key)) {
-            locals[key] = ctx.getResolvable(key).data;
+            locals[key] = assertDefined(ctx.getResolvable(key)).data;
         }
     });
     return locals;

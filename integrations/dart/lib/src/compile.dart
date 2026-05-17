@@ -37,12 +37,6 @@ final class TranscludeFn extends AngularTsJsFacade {
   const TranscludeFn(super.raw);
 }
 
-/// Wrapper for AngularTS bound transclusion functions.
-final class BoundTranscludeFn extends AngularTsJsFacade {
-  /// Creates a bound transclude fn.
-  const BoundTranscludeFn(super.raw);
-}
-
 /// Wrapper for the public link function returned by `$compile`.
 final class PublicLinkFn extends AngularTsJsFacade {
   /// Creates a public link fn.

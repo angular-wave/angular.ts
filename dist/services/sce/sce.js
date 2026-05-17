@@ -1,6 +1,6 @@
 import { _injector, _window, _exceptionHandler, _parse, _sceDelegate } from '../../injection-tokens.js';
 import { urlResolve, urlIsSameOrigin, urlIsSameOriginAsBaseUrl } from '../../shared/url-utils/url-utils.js';
-import { isDefined, entries, isString, isRegExp, hasOwn, isUndefined, isInstanceOf, isFunction, createErrorFactory } from '../../shared/utils.js';
+import { isDefined, entries, isString, isRegExp, hasOwn, isUndefined, isInstanceOf, isObject, isFunction, createErrorFactory } from '../../shared/utils.js';
 import { snakeToCamel } from '../../shared/dom.js';
 import { SCE_CONTEXTS } from './context.js';
 
@@ -191,7 +191,7 @@ class SceDelegateProvider {
          */
         this.trustedResourceUrlList = function (value) {
             if (arguments.length) {
-                const list = value || [];
+                const list = value ?? [];
                 trustedResourceUrlList = list.map(adjustMatcher);
             }
             return trustedResourceUrlList;
@@ -220,7 +220,7 @@ class SceDelegateProvider {
          */
         this.bannedResourceUrlList = function (value) {
             if (arguments.length) {
-                const list = value || [];
+                const list = value ?? [];
                 bannedResourceUrlList = list.map(adjustMatcher);
             }
             return bannedResourceUrlList;
@@ -476,8 +476,11 @@ class SceDelegateProvider {
                     }
                     // If maybeTrusted is a trusted class instance but not of the correct trusted type
                     // then unwrap it and allow it to pass through to the rest of the checks
-                    if (isFunction(maybeTrusted._unwrapTrustedValue)) {
-                        maybeTrusted = maybeTrusted._unwrapTrustedValue();
+                    const unwrapTrustedValue = isObject(maybeTrusted)
+                        ? Reflect.get(maybeTrusted, "_unwrapTrustedValue")
+                        : undefined;
+                    if (isFunction(unwrapTrustedValue)) {
+                        maybeTrusted = unwrapTrustedValue.call(maybeTrusted);
                     }
                     // If we get here, then we will either sanitize the value or throw an exception.
                     if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
@@ -491,12 +494,8 @@ class SceDelegateProvider {
                         $exceptionHandler($sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted)));
                         return undefined;
                     }
-                    else if (type === SCE_CONTEXTS._HTML) {
-                        // htmlSanitizer throws its own error when no sanitizer is available.
-                        return htmlSanitizer();
-                    }
-                    // Default error when the $sce service has no way to make the input safe.
-                    return $exceptionHandler($sceError("unsafe", "Attempting to use an unsafe value in a safe context."));
+                    // htmlSanitizer throws its own error when no sanitizer is available.
+                    return htmlSanitizer();
                 }
                 return { trustAs, getTrusted, valueOf };
             },
@@ -537,9 +536,9 @@ function SceProvider() {
             sce.isEnabled = function () {
                 return enabled;
             };
-            sce.trustAs = $sceDelegate.trustAs;
-            sce.getTrusted = $sceDelegate.getTrusted;
-            sce.valueOf = $sceDelegate.valueOf;
+            sce.trustAs = (type, value) => $sceDelegate.trustAs(type, value);
+            sce.getTrusted = (type, value) => $sceDelegate.getTrusted(type, value);
+            sce.valueOf = (value) => $sceDelegate.valueOf(value);
             if (!enabled) {
                 /**
                  * Disables trust enforcement when SCE is configured off.
@@ -695,9 +694,9 @@ function SceProvider() {
              *      in `context`.
              */
             // Shorthand delegations.
-            const parse = sce.parseAs;
-            const { getTrusted } = sce;
-            const { trustAs } = sce;
+            const parse = (type, expr) => sce.parseAs(type, expr);
+            const getTrusted = (type, value) => sce.getTrusted(type, value);
+            const trustAs = (type, value) => sce.trustAs(type, value);
             entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
                 const lName = name.replace(/^_/, "").toLowerCase();
                 /** @param expr */

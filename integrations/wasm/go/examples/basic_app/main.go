@@ -22,24 +22,13 @@ type TodoApp struct {
 	titleSeen string
 }
 
-var keptFunctions []js.Func
-
 func main() {
 	app := &TodoApp{}
 	registerController(app)
 
-	js.Global().Call(
-		"dispatchEvent",
-		js.Global().Get("CustomEvent").New("angular-ts-go-ready"),
-	)
+	angularwasm.NotifyReady()
 
 	select {}
-}
-
-func setFunc(target js.Value, name string, fn func(js.Value, []js.Value) any) {
-	wrapped := js.FuncOf(fn)
-	keptFunctions = append(keptFunctions, wrapped)
-	target.Set(name, wrapped)
 }
 
 func (app *TodoApp) bind(_ js.Value, args []js.Value) any {

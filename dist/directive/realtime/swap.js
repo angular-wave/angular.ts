@@ -1,12 +1,12 @@
 import { emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
-import { stringify, isInstanceOf, arrayFrom, isArray, assertDefined } from '../../shared/utils.js';
+import { stringify, isInstanceOf, arrayFrom, isFunction, isArray, assertDefined } from '../../shared/utils.js';
 
 /** Creates a per-directive realtime DOM swap handler. */
-function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, element, logPrefix, }) {
+function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attributes, element, logPrefix, }) {
     let content;
     return (html, swap, options = {}) => {
-        const animationEnabled = !!attrs.animate;
+        const animationEnabled = !!$attributes.read(element, "animate");
         const animate = animationEnabled ? getAnimate() : undefined;
         let nodes = [];
         if (!["textContent", "delete", "none"].includes(swap)) {
@@ -17,12 +17,12 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                 ? arrayFrom(compiled.childNodes)
                 : [compiled];
         }
-        const targetSelector = (options.targetSelector || attrs.target);
+        const targetSelector = options.targetSelector ?? $attributes.read(element, "target");
         const target = targetSelector
             ? document.querySelector(targetSelector)
             : element;
         if (!target) {
-            $log.warn(`${logPrefix}: target "${targetSelector}" not found`);
+            $log.warn(`${logPrefix}: target "${String(targetSelector)}" not found`);
             return false;
         }
         const applySwap = () => {
@@ -150,9 +150,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
                         }
                         else {
                             content = nodes[0];
-                            if (content &&
-                                !isArray(content) &&
-                                content.nodeType === NodeType._TEXT_NODE) {
+                            if (content?.nodeType === NodeType._TEXT_NODE) {
                                 emptyElement(target);
                                 target.replaceChildren(...nodes);
                             }
@@ -169,9 +167,9 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
             }
             return true;
         };
-        if (shouldUseViewTransition(attrs, target, animationEnabled)) {
+        if (shouldUseViewTransition($attributes.read(element, "viewTransition"), target, animationEnabled)) {
             const documentWithTransitions = document;
-            documentWithTransitions.startViewTransition?.(() => {
+            documentWithTransitions.startViewTransition(() => {
                 applySwap();
             });
             return true;
@@ -179,15 +177,15 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, attrs, e
         return applySwap();
     };
 }
-function shouldUseViewTransition(attrs, target, animationEnabled) {
+function shouldUseViewTransition(attrValue, target, animationEnabled) {
     if (animationEnabled)
         return false;
     const documentWithTransitions = document;
-    if (!documentWithTransitions.startViewTransition)
+    const startViewTransition = Reflect.get(documentWithTransitions, "startViewTransition");
+    if (!isFunction(startViewTransition))
         return false;
     if (!target.isConnected)
         return false;
-    const attrValue = attrs.viewTransition ?? attrs.dataViewTransition;
     const targetValue = target.getAttribute("data-view-transition");
     return (isTruthyTransitionFlag(attrValue) || isTruthyTransitionFlag(targetValue));
 }

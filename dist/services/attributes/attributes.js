@@ -192,9 +192,8 @@ class AttributesProvider {
                             targetElement[observerName] = value;
                             attrName = booleanName;
                         }
-                        else if (!attrName) {
-                            attrName = snakeCase(normalized, "-");
-                        }
+                        else
+                            attrName ?? (attrName = snakeCase(normalized, "-"));
                         if (options?.writeAttr !== false && attrName) {
                             rememberPendingMutation(targetElement, observerName, value);
                             if (isNullOrUndefined(value)) {
@@ -305,7 +304,7 @@ class AttributesProvider {
                             return false;
                         return (interpolatedAttributes
                             .get(targetElement)
-                            ?.has(directiveNormalize(normalizedName)) || false);
+                            ?.has(directiveNormalize(normalizedName)) ?? false);
                     },
                     _setObserverScope(element, normalizedName, scope) {
                         const targetElement = getElement(element);

@@ -54,7 +54,7 @@ function unwrapNgModelController(
   ctrl: NgModelControllerProxied,
 ): NgModelControllerProxied {
   while (isProxy(ctrl)) {
-    ctrl = ctrl.$target as NgModelControllerProxied;
+    ctrl = ctrl.$target as unknown as NgModelControllerProxied;
   }
 
   return ctrl;
@@ -187,6 +187,12 @@ function createInputControlBinding(
     syncNativeValidity();
   }
 
+  function syncNativeViewValue(trigger = "input"): void {
+    ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
+    ctrl.$commitViewValue();
+    syncNativeValidity();
+  }
+
   function disconnect(): void {
     eventRemovers.forEach((remove) => {
       remove();
@@ -194,6 +200,9 @@ function createInputControlBinding(
     eventRemovers.clear();
     if (ctrl._setNativeCustomValidity === setNativeCustomValidity) {
       ctrl._setNativeCustomValidity = null;
+    }
+    if (ctrl._syncNativeViewValue === syncNativeViewValue) {
+      ctrl._syncNativeViewValue = null;
     }
   }
 
@@ -206,6 +215,7 @@ function createInputControlBinding(
     connect(): void {
       ctrl._hasNativeValidators = true;
       ctrl._setNativeCustomValidity = setNativeCustomValidity;
+      ctrl._syncNativeViewValue = syncNativeViewValue;
       Object.defineProperty(ctrl, "$validity", {
         configurable: true,
         get: () => element.validity,
@@ -289,7 +299,7 @@ export function inputDirective(): ng.Directive {
         attr: ng.Attributes,
         ctrls: [NgModelControllerProxied | undefined],
       ) {
-        const model = ctrls[0];
+        const [model] = ctrls;
 
         if (!model) return;
 

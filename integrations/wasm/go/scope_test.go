@@ -135,6 +135,39 @@ func TestSyncScopeRejectsInvalidPath(t *testing.T) {
 	}
 }
 
+func TestWasmBoundaryTypesMirrorScopeFacade(t *testing.T) {
+	scope := WasmScope{Handle: 12}
+	update := WasmScopeUpdate{
+		ScopeHandle: scope.Handle,
+		Path:        "count",
+		JSON:        []byte("4"),
+	}
+	reference := WasmScopeReference{Handle: scope.Handle, Name: "todoList:main"}
+	watchOptions := WasmScopeWatchOptions{Path: "count"}
+	bindingOptions := WasmScopeBindingOptions{Name: "todoList:main"}
+	imports := WasmScopeAbiImports{Module: "angular_ts"}
+	exports := WasmAbiExports{
+		Alloc:         "ng_abi_alloc",
+		Free:          "ng_abi_free",
+		OnScopeBind:   "ng_scope_on_bind",
+		OnScopeUnbind: "ng_scope_on_unbind",
+		OnScopeUpdate: "ng_scope_on_update",
+	}
+
+	if reference.Handle != 12 || reference.Name != "todoList:main" {
+		t.Fatalf("unexpected reference: %#v", reference)
+	}
+	if update.Path != "count" || string(update.JSON) != "4" {
+		t.Fatalf("unexpected update: %#v", update)
+	}
+	if watchOptions.Path != "count" || bindingOptions.Name != "todoList:main" {
+		t.Fatalf("unexpected scope options")
+	}
+	if imports.Module != "angular_ts" || exports.Alloc != "ng_abi_alloc" {
+		t.Fatalf("unexpected abi metadata: %#v %#v", imports, exports)
+	}
+}
+
 type recordingScope struct {
 	values map[string]any
 	syncs  int

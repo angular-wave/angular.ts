@@ -1,6 +1,7 @@
 const PublicInjectionTokens = {
     $angular: "$angular",
     $attrs: "$attrs",
+    $attributes: "$attributes",
     $scope: "$scope",
     $element: "$element",
     $anchorScroll: "$anchorScroll",

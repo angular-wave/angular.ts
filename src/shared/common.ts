@@ -15,13 +15,16 @@ export function removeFrom<T>(array: T[], obj: T): T[] {
  * Applies option defaults and only copies option keys known by the defaults.
  * Earlier defaults take precedence over later defaults.
  */
-export function defaults(opts: any, ...defaultsList: any[]): any {
+export function defaults(
+  opts: object | null | undefined,
+  ...defaultsList: object[]
+): Record<string, unknown> {
   const defaultVals = assign({}, ...defaultsList.reverse()) as Record<
     string,
     unknown
   >;
 
-  const optionVals = (opts || {}) as Record<string, unknown>;
+  const optionVals = (opts ?? {}) as Record<string, unknown>;
 
   const defaultKeys = keys(defaultVals);
 
