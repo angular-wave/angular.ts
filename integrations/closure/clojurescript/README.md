@@ -11,8 +11,9 @@ AngularTS type hints such as `^js/ng.NgModule` and `^js/ng.Scope`, and
 fails generation if the required AngularTS extern contracts disappear. Extern
 JSDoc is preserved where ClojureScript can use it: public type descriptions are
 kept in a source-only `public-type-docs` comment block, and generated strict
-wrapper docstrings use the original extern descriptions, parameter docs, and
-return docs. Generation fails if a public extern type is missing documentation.
+wrapper and property reader docstrings use the original extern descriptions,
+parameter docs, return docs, and property type docs. Generation fails if a
+public extern type is missing documentation.
 
 The facade is deliberately strict:
 
@@ -23,8 +24,10 @@ The facade is deliberately strict:
   non-void return type has a concrete Closure extern tag that ClojureScript can
   represent. Wildcards, unions, function-typed parameters, and variadic externs
   are skipped unless there is a hand-written strict wrapper.
-- The generator pins the reviewed public type-tag count and strict wrapper set,
-  so extern-surface changes require an intentional update.
+- Generated property readers are emitted only when the property `@type` has a
+  concrete Closure extern tag that ClojureScript can represent.
+- The generator pins the reviewed public type-tag and strict wrapper counts, so
+  extern-surface changes require an intentional update.
 - The build runs Shadow CLJS with Closure `ADVANCED` optimizations and treats
   compiler inference warnings as warnings.
 

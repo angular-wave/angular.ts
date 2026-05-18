@@ -23,7 +23,7 @@ final class CookieOptions {
     this.domain,
     this.expires,
     this.secure,
-    this.sameSite,
+    this.samesite,
   });
 
   /// The path.
@@ -39,7 +39,16 @@ final class CookieOptions {
   final bool? secure;
 
   /// The same site.
-  final SameSite? sameSite;
+  final SameSite? samesite;
+
+  /// The to map.
+  Map<String, Object?> toMap() => {
+        if (path != null) 'path': path,
+        if (domain != null) 'domain': domain,
+        if (expires != null) 'expires': expires,
+        if (secure != null) 'secure': secure,
+        if (samesite != null) 'samesite': samesite!.value,
+      };
 }
 
 /// Represents cookie store options.

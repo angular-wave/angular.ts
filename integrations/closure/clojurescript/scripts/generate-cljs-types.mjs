@@ -8,32 +8,9 @@ const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 159;
-const expectedStrictWrapperNames = [
-  "angular-call",
-  "angular-dispatch-event",
-  "angular-emit",
-  "angular-get-injector",
-  "angular-get-scope",
-  "angular-register-ng-module",
-  "ng-module-animation",
-  "ng-module-component",
-  "ng-module-config",
-  "ng-module-controller",
-  "ng-module-decorator",
-  "ng-module-directive",
-  "ng-module-factory",
-  "ng-module-provider",
-  "ng-module-run",
-  "ng-module-service",
-  "ng-module-state",
-  "ng-module-topic",
-  "ng-module-web-component",
-  "pub-sub-service-dispose",
-  "pub-sub-service-get-count",
-  "pub-sub-service-is-disposed",
-  "pub-sub-service-reset",
-];
+const expectedTypeTagCount = 160;
+const expectedStrictWrapperCount = 218;
+const expectedStrictPropertyReaderCount = 336;
 
 const source = readFileSync(externsPath, "utf8");
 
@@ -107,12 +84,71 @@ function toKebabCase(name) {
     .toLowerCase();
 }
 
+function stripOuterParens(value) {
+  let type = value.trim();
+
+  while (type.startsWith("(") && type.endsWith(")")) {
+    let depth = 0;
+    let wrapsWholeExpression = true;
+
+    for (let i = 0; i < type.length; i++) {
+      const char = type[i];
+
+      if (char === "(") {
+        depth++;
+      } else if (char === ")") {
+        depth--;
+      }
+
+      if (depth === 0 && i < type.length - 1) {
+        wrapsWholeExpression = false;
+        break;
+      }
+    }
+
+    if (!wrapsWholeExpression) break;
+
+    type = type.slice(1, -1).trim();
+  }
+
+  return type;
+}
+
 function cleanClosureType(typeExpression) {
-  return typeExpression
-    .trim()
+  return stripOuterParens(typeExpression)
     .replace(/=$/, "")
     .replace(/^\?/, "")
-    .replace(/^!/, "");
+    .replace(/^!/, "")
+    .trim();
+}
+
+function splitTopLevelUnion(typeExpression) {
+  const type = stripOuterParens(typeExpression);
+  const parts = [];
+  let angleDepth = 0;
+  let parenDepth = 0;
+  let start = 0;
+
+  for (let i = 0; i < type.length; i++) {
+    const char = type[i];
+
+    if (char === "<") {
+      angleDepth++;
+    } else if (char === ">") {
+      angleDepth--;
+    } else if (char === "(") {
+      parenDepth++;
+    } else if (char === ")") {
+      parenDepth--;
+    } else if (char === "|" && angleDepth === 0 && parenDepth === 0) {
+      parts.push(type.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+
+  parts.push(type.slice(start).trim());
+
+  return parts;
 }
 
 function closureTypeToCljsTag(typeExpression) {
@@ -121,10 +157,27 @@ function closureTypeToCljsTag(typeExpression) {
   if (
     !type ||
     type === "*" ||
-    type === "?" ||
-    type.includes("|") ||
-    type.includes("function(")
+    type === "?"
   ) {
+    return "";
+  }
+
+  const unionParts = splitTopLevelUnion(type);
+
+  if (unionParts.length > 1) {
+    const meaningfulTypes = unionParts
+      .map(cleanClosureType)
+      .filter((part) => !["null", "undefined", "void"].includes(part));
+    const tags = [
+      ...new Set(meaningfulTypes.map(closureTypeToCljsTag).filter(Boolean)),
+    ];
+
+    return tags.length === 1 && tags.length === meaningfulTypes.length
+      ? tags[0]
+      : "";
+  }
+
+  if (type.startsWith("function(")) {
     return "";
   }
 
@@ -213,6 +266,14 @@ function parseJsDocReturn(jsDoc) {
   };
 }
 
+function parseJsDocType(jsDoc) {
+  const match = jsDoc.match(/@type[ \t]*\{([^}]+)\}/);
+
+  if (!match) return undefined;
+
+  return match[1].trim();
+}
+
 function collectPrototypeMethods(ownerNames) {
   const methods = [];
   const ownerSet = new Set(ownerNames);
@@ -241,11 +302,7 @@ function collectPrototypeMethods(ownerNames) {
       }));
     const returnInfo = parseJsDocReturn(jsDoc);
 
-    if (
-      hasVarArgs ||
-      params.some(({ tag }) => !tag) ||
-      (!returnInfo.tag && !returnInfo.voidReturn)
-    ) {
+    if (params.some(({ tag }) => !tag) || (!returnInfo.tag && !returnInfo.voidReturn)) {
       continue;
     }
 
@@ -256,6 +313,7 @@ function collectPrototypeMethods(ownerNames) {
       paramDocs: parseJsDocParamDocs(jsDoc),
       returnDoc: parseJsDocReturnDoc(jsDoc),
       params,
+      hasVarArgs,
       receiverTag: `js/ng.${owner}`,
       returnTag: returnInfo.tag,
       wrapperName: `${toKebabCase(owner)}-${toKebabCase(method)}`,
@@ -267,10 +325,40 @@ function collectPrototypeMethods(ownerNames) {
   );
 }
 
-function sortedDifference(left, right) {
-  const rightSet = new Set(right);
+function collectPrototypeProperties(ownerNames) {
+  const properties = [];
+  const ownerSet = new Set(ownerNames);
+  const pattern =
+    /(\/\*\*(?:(?!\/\*\*)[\s\S])*?\*\/)\s*ng\.([A-Za-z_$][\w$]*)\.prototype\.([A-Za-z_$][\w$]*)\s*;/g;
+  let match;
 
-  return left.filter((value) => !rightSet.has(value)).sort();
+  while ((match = pattern.exec(source)) !== null) {
+    const [, jsDoc, owner, property] = match;
+
+    if (!ownerSet.has(owner)) continue;
+
+    const typeExpression = parseJsDocType(jsDoc);
+
+    if (!typeExpression) continue;
+
+    const propertyTag = closureTypeToCljsTag(typeExpression);
+
+    if (!propertyTag) continue;
+
+    properties.push({
+      owner,
+      property,
+      description: extractJsDocDescription(jsDoc),
+      receiverTag: `js/ng.${owner}`,
+      propertyTag,
+      typeExpression,
+      readerName: `${toKebabCase(owner)}-${toKebabCase(property)}`,
+    });
+  }
+
+  return properties.sort((left, right) =>
+    left.readerName.localeCompare(right.readerName),
+  );
 }
 
 function taggedArg(tag, name) {
@@ -303,10 +391,44 @@ function renderPrototypeWrapper(method) {
     }
   }
 
+  if (method.hasVarArgs) {
+    const extraArgs = ["value", "extra", "more"];
+    const arities = [];
+
+    for (let i = 0; i <= extraArgs.length; i++) {
+      const currentExtraArgs = extraArgs.slice(0, i);
+      const arityArgs = [...args, ...currentExtraArgs];
+      const arityCallArgs = [
+        ...method.params.map(({ name }) => name),
+        ...currentExtraArgs,
+      ].join(" ");
+
+      arities.push(`  (${returnTag}[${arityArgs.join(" ")}]
+   (.${method.method} target${arityCallArgs ? ` ${arityCallArgs}` : ""}))`);
+    }
+
+    return `(defn ${method.wrapperName}
+  ${cljsString(description)}
+${arities.join("\n")})`;
+  }
+
   return `(defn ${method.wrapperName}
   ${cljsString(description)}
   ${returnTag}[${args.join(" ")}]
   (.${method.method} target${callArgs ? ` ${callArgs}` : ""}))`;
+}
+
+function renderPrototypePropertyReader(property) {
+  let description =
+    property.description ||
+    `Typed reader for ng.${property.owner}.prototype.${property.property}.`;
+
+  description += `\n\nType: {${property.typeExpression}}`;
+
+  return `(defn ${property.readerName}
+  ${cljsString(description)}
+  ^${property.propertyTag} [^${property.receiverTag} target]
+  (.-${property.property} target))`;
 }
 
 for (const typeName of [
@@ -335,21 +457,13 @@ assertExtern(
 
 const typeNames = collectExternTypes();
 const typeDocs = collectExternTypeDocs();
-const generatedMethods = collectPrototypeMethods([
-  "Angular",
-  "NgModule",
-  "PubSubService",
-]);
+const generatedMethods = collectPrototypeMethods(typeNames);
+const generatedProperties = collectPrototypeProperties(typeNames);
 const generatedWrapperNames = generatedMethods.map(({ wrapperName }) => wrapperName);
+const generatedPropertyReaderNames = generatedProperties.map(
+  ({ readerName }) => readerName,
+);
 const missingTypeDocs = typeNames.filter((name) => !typeDocs.has(name));
-const missingExpectedWrappers = sortedDifference(
-  expectedStrictWrapperNames,
-  generatedWrapperNames,
-);
-const unexpectedWrappers = sortedDifference(
-  generatedWrapperNames,
-  expectedStrictWrapperNames,
-);
 
 if (typeNames.length !== expectedTypeTagCount) {
   console.error(
@@ -397,19 +511,24 @@ if (wrappersMissingReturnDocs.length > 0) {
   process.exit(1);
 }
 
-if (missingExpectedWrappers.length > 0 || unexpectedWrappers.length > 0) {
-  if (missingExpectedWrappers.length > 0) {
-    console.error("Missing expected strict ClojureScript wrappers:");
-    missingExpectedWrappers.forEach((name) => console.error(`  - ${name}`));
-  }
-
-  if (unexpectedWrappers.length > 0) {
-    console.error("Unexpected strict ClojureScript wrappers:");
-    unexpectedWrappers.forEach((name) => console.error(`  - ${name}`));
-  }
-
+if (generatedWrapperNames.length !== expectedStrictWrapperCount) {
   console.error(
-    "Update expectedStrictWrapperNames after reviewing the extern signature change.",
+    `Expected ${expectedStrictWrapperCount} strict ClojureScript wrappers, ` +
+      `found ${generatedWrapperNames.length}.`,
+  );
+  console.error(
+    "Review the generated wrapper set and update expectedStrictWrapperCount.",
+  );
+  process.exit(1);
+}
+
+if (generatedPropertyReaderNames.length !== expectedStrictPropertyReaderCount) {
+  console.error(
+    `Expected ${expectedStrictPropertyReaderCount} strict ClojureScript ` +
+      `property readers, found ${generatedPropertyReaderNames.length}.`,
+  );
+  console.error(
+    "Review the generated property reader set and update expectedStrictPropertyReaderCount.",
   );
   process.exit(1);
 }
@@ -435,6 +554,10 @@ const output = `;; Generated from ../externs/angular.js by scripts/generate-cljs
   "Extern methods with fully concrete ClojureScript wrapper signatures."
   #{${generatedWrapperNames.map((name) => `"${name}"`).join("\n    ")}})
 
+(def strict-property-reader-names
+  "Extern properties with fully concrete ClojureScript reader signatures."
+  #{${generatedPropertyReaderNames.map((name) => `"${name}"`).join("\n    ")}})
+
 (def angular
   "AngularTS global runtime, typed from the generated Closure externs."
   ^js/ng.Angular js/angular)
@@ -448,14 +571,7 @@ const output = `;; Generated from ../externs/angular.js by scripts/generate-cljs
 
 ${generatedMethods.map(renderPrototypeWrapper).join("\n\n")}
 
-(defn pub-sub-service-publish
-  "Typed variadic wrapper for ng.PubSubService.prototype.publish."
-  (^boolean [^js/ng.PubSubService event-bus ^string topic]
-   (.publish event-bus topic))
-  (^boolean [^js/ng.PubSubService event-bus ^string topic value]
-   (.publish event-bus topic value))
-  (^boolean [^js/ng.PubSubService event-bus ^string topic value extra]
-   (.publish event-bus topic value extra)))
+${generatedProperties.map(renderPrototypePropertyReader).join("\n\n")}
 
 (defn module
   "Retrieve or create an AngularTS module."
@@ -497,13 +613,15 @@ if (checkMode) {
 
   console.log(
     `Validated ${typeNames.length} ClojureScript AngularTS type tags and ` +
-      `${generatedMethods.length} typed method wrappers.`,
+      `${generatedMethods.length} typed method wrappers plus ` +
+      `${generatedProperties.length} typed property readers.`,
   );
 } else {
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, output);
   console.log(
     `Generated ${outputPath} from ${typeNames.length} extern types and ` +
-      `${generatedMethods.length} typed method wrappers.`,
+      `${generatedMethods.length} typed method wrappers plus ` +
+      `${generatedProperties.length} typed property readers.`,
   );
 }

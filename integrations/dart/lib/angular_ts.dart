@@ -6,6 +6,7 @@ export 'src/component.dart';
 export 'src/compile.dart';
 export 'src/cookie.dart';
 export 'src/directive.dart';
+export 'src/facade.dart';
 export 'src/filters.dart';
 export 'src/http.dart';
 export 'src/injectable.dart';

@@ -1,5 +1,6 @@
 import 'dart:js_interop';
 
+import 'facade.dart';
 import 'injector.dart';
 import 'scope.dart';
 import 'services.dart';

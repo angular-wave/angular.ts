@@ -376,6 +376,7 @@ export class RestService<T = unknown, ID = unknown> {
     return expandUriTemplate(template, params);
   }
 
+  /** @internal */
   private _mapEntity(data: unknown): unknown {
     if (!data) return data;
 
@@ -492,6 +493,7 @@ export class RestService<T = unknown, ID = unknown> {
     }
   }
 
+  /** @internal */
   private async _request<R>(
     method: HttpMethod,
     url: string,

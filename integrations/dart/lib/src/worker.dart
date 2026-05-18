@@ -102,6 +102,11 @@ final class WorkerConnection {
   /// The raw.
   final JSObject raw;
 
+  /// Runtime configuration attached to this connection.
+  Object? get config => unsafe.jsToDart<Object?>(
+        unsafe.getProperty(raw, 'config'),
+      );
+
   /// Posts data to the worker.
   void post(Object? data) {
     unsafe.callMethod(raw, 'post', unsafe.dartToJs(data));

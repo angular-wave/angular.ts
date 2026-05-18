@@ -2,6 +2,7 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart';
 
+import 'generated/ng_facades.dart';
 import 'scope.dart';
 import 'services.dart';
 import 'unsafe.dart' as unsafe;
@@ -32,15 +33,23 @@ typedef OnChangesObject = Map<String, ChangesObject<Object?>>;
 typedef CloneAttachFn = void Function(JSAny? clone, Scope<Object>? scope);
 
 /// Wrapper for AngularTS transclusion functions.
-final class TranscludeFn extends AngularTsJsFacade {
+final class TranscludeFn extends GeneratedNgTranscludeFn {
   /// Creates a transclude fn.
   const TranscludeFn(super.raw);
 }
 
 /// Wrapper for the public link function returned by `$compile`.
-final class PublicLinkFn extends AngularTsJsFacade {
+final class PublicLinkFn extends GeneratedNgPublicLinkFn {
   /// Creates a public link fn.
   const PublicLinkFn(super.raw);
+
+  /// Optional pre-link metadata attached to this link function.
+  @override
+  Object? get pre => unsafe.getProperty(raw, 'pre');
+
+  /// Optional post-link metadata attached to this link function.
+  @override
+  Object? get post => unsafe.getProperty(raw, 'post');
 }
 
 /// Dart-facing directive link context.

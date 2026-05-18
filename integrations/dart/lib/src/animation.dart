@@ -89,6 +89,20 @@ final class NativeAnimationOptions {
     this.onStart,
     this.onDone,
     this.onCancel,
+    this.composite,
+    this.delay,
+    this.direction,
+    this.duration,
+    this.easing,
+    this.endDelay,
+    this.fill,
+    this.id,
+    this.iterationComposite,
+    this.iterationStart,
+    this.iterations,
+    this.playbackRate,
+    this.pseudoElement,
+    this.timeline,
   });
 
   /// The animation.
@@ -129,6 +143,48 @@ final class NativeAnimationOptions {
 
   /// The on cancel.
   final AnimationLifecycleCallback? onCancel;
+
+  /// The composite operation.
+  final Object? composite;
+
+  /// The start delay.
+  final Object? delay;
+
+  /// The playback direction.
+  final Object? direction;
+
+  /// The animation duration.
+  final Object? duration;
+
+  /// The easing function.
+  final Object? easing;
+
+  /// The end delay.
+  final Object? endDelay;
+
+  /// The fill mode.
+  final Object? fill;
+
+  /// The animation id.
+  final String? id;
+
+  /// The iteration composite operation.
+  final Object? iterationComposite;
+
+  /// The iteration start offset.
+  final Object? iterationStart;
+
+  /// The iteration count.
+  final Object? iterations;
+
+  /// The playback rate.
+  final Object? playbackRate;
+
+  /// The pseudo-element selector.
+  final String? pseudoElement;
+
+  /// The animation timeline.
+  final Object? timeline;
 }
 
 /// Signature for animation options.
@@ -185,6 +241,15 @@ final class AnimationPreset {
 
 /// Handle returned by an AngularTS animation operation.
 abstract interface class AnimationHandle {
+  /// Abort controller backing this animation.
+  AbortController get controller;
+
+  /// Promise that resolves when the animation finishes.
+  JSPromise<JSAny?> get finished;
+
+  /// Promise-like continuation hook.
+  Object? then([Object? onfulfilled, Object? onrejected]);
+
   /// The done.
   void done(void Function(bool ok) callback);
 

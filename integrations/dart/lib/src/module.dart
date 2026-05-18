@@ -4,6 +4,7 @@ import 'component.dart';
 import 'directive.dart';
 import 'injectable.dart';
 import 'module_options.dart';
+import 'rest.dart';
 import 'token.dart';
 import 'unsafe.dart' as unsafe;
 import 'web_component.dart';
@@ -184,6 +185,22 @@ final class NgModule {
   /// The state.
   NgModule state(StateDeclaration state) {
     unsafe.callMethod(_module, 'state', state.toJsObject());
+
+    return this;
+  }
+
+  /// Registers an AngularTS REST resource.
+  NgModule rest<T>(
+    RestDefinition<T> definition,
+  ) {
+    unsafe.callMethod(
+      _module,
+      'rest',
+      definition.name.toJS,
+      definition.url.toJS,
+      unsafe.dartToJs(definition.entityClass),
+      unsafe.dartToJs(definition.options.extra),
+    );
 
     return this;
   }

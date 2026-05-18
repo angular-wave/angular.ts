@@ -1,6 +1,7 @@
 import 'dart:js_interop';
 
 import 'injectable.dart';
+import 'router.dart' show ResolvableLiteral, ViewDeclaration;
 import 'token.dart';
 import 'unsafe.dart' as unsafe;
 
@@ -9,41 +10,141 @@ final class StateDeclaration {
   /// Creates a state declaration.
   const StateDeclaration({
     required this.name,
+    this.abstractState,
+    this.parent,
+    this.views,
     this.url,
+    this.params,
+    this.data,
+    this.redirectTo,
+    this.onEnter,
+    this.onRetain,
+    this.onExit,
+    this.dynamicState,
+    this.component,
+    this.bindings,
     this.template,
     this.controller,
-    this.resolve = const {},
+    this.templateUrl,
+    this.resolve,
   });
 
   /// The name.
   final String name;
 
+  /// Whether this state is abstract.
+  final bool? abstractState;
+
+  /// Parent state name or declaration.
+  final Object? parent;
+
+  /// Named view declarations.
+  final Map<String, Object?>? views;
+
   /// The url.
   final String? url;
 
+  /// State parameter declarations.
+  final Map<String, Object?>? params;
+
+  /// State metadata.
+  final Object? data;
+
+  /// Redirect target or redirect callback.
+  final Object? redirectTo;
+
+  /// Hook invoked when this state is entered.
+  final Object? onEnter;
+
+  /// Hook invoked when this state is retained.
+  final Object? onRetain;
+
+  /// Hook invoked when this state is exited.
+  final Object? onExit;
+
+  /// Whether this state's parameters are dynamic by default.
+  final bool? dynamicState;
+
+  /// Component name for the default view.
+  final String? component;
+
+  /// Component binding to resolve-name map.
+  final Map<String, String>? bindings;
+
   /// The template.
-  final String? template;
+  final Object? template;
 
   /// The controller.
-  final InjectableFactory<Object?>? controller;
+  final Object? controller;
+
+  /// The template url.
+  final Object? templateUrl;
 
   /// The resolve.
-  final Map<String, InjectableFactory<Object?>> resolve;
+  final Object? resolve;
 
   /// The to js object.
   JSObject toJsObject() {
     return unsafe.object({
       'name': name,
+      if (abstractState != null) 'abstract': abstractState,
+      if (parent != null) 'parent': _stateValueToJs(parent),
+      if (views != null) 'views': _viewsToJs(),
       if (url != null) 'url': url,
+      if (params != null) 'params': params,
+      if (data != null) 'data': data,
+      if (redirectTo != null) 'redirectTo': redirectTo,
+      if (onEnter != null) 'onEnter': _injectableValueToJs(onEnter),
+      if (onRetain != null) 'onRetain': _injectableValueToJs(onRetain),
+      if (onExit != null) 'onExit': _injectableValueToJs(onExit),
+      if (dynamicState != null) 'dynamic': dynamicState,
+      if (component != null) 'component': component,
+      if (bindings != null) 'bindings': bindings,
       if (template != null) 'template': template,
-      if (controller != null) 'controller': controller!.toAnnotatedArray(),
-      if (resolve.isNotEmpty)
-        'resolve': unsafe.object({
-          for (final entry in resolve.entries)
-            entry.key: entry.value.toAnnotatedArray(),
-        }),
+      if (controller != null) 'controller': _injectableValueToJs(controller),
+      if (templateUrl != null) 'templateUrl': templateUrl,
+      if (resolve != null) 'resolve': _resolveToJs(resolve),
     });
   }
+
+  Object? _viewsToJs() {
+    return {
+      for (final entry in views!.entries)
+        entry.key: switch (entry.value) {
+          final ViewDeclaration view => unsafe.JsValue(view.toJsObject()),
+          final StateDeclaration state => unsafe.JsValue(state.toJsObject()),
+          final Object? value => value,
+        },
+    };
+  }
+
+  Object? _resolveToJs(Object? value) {
+    if (value is List<ResolvableLiteral>) {
+      return [for (final item in value) unsafe.JsValue(item.toJsObject())];
+    }
+
+    if (value is Map<String, InjectableFactory<Object?>>) {
+      return unsafe.object({
+        for (final entry in value.entries)
+          entry.key: unsafe.JsValue(entry.value.toAnnotatedArray()),
+      });
+    }
+
+    return value;
+  }
+}
+
+Object? _stateValueToJs(Object? value) {
+  if (value is StateDeclaration) return unsafe.JsValue(value.toJsObject());
+  return value;
+}
+
+Object? _injectableValueToJs(Object? value) {
+  if (value is InjectableFactory<Object?>) {
+    return unsafe.JsValue(value.toAnnotatedArray());
+  }
+
+  return value;
 }
 
 /// WebAssembly injectable registration options.

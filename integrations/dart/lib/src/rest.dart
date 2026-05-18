@@ -36,7 +36,7 @@ final class RestDefinition<T> {
   const RestDefinition({
     required this.name,
     required this.url,
-    this.entityFactory,
+    this.entityClass,
     this.options = const RestOptions(),
   });
 
@@ -46,8 +46,8 @@ final class RestDefinition<T> {
   /// The url.
   final String url;
 
-  /// The entity factory.
-  final EntityFactory<T>? entityFactory;
+  /// The entity class.
+  final EntityClass<T>? entityClass;
 
   /// The options.
   final RestOptions options;
@@ -95,6 +95,11 @@ final class RestResponse<T> {
     required this.data,
     this.source,
     this.stale = false,
+    this.status,
+    this.headers,
+    this.config,
+    this.statusText,
+    this.xhrStatus,
   });
 
   /// The data.
@@ -105,6 +110,21 @@ final class RestResponse<T> {
 
   /// The stale.
   final bool stale;
+
+  /// The status.
+  final int? status;
+
+  /// The headers.
+  final HttpHeaders? headers;
+
+  /// The config.
+  final RequestConfig? config;
+
+  /// The status text.
+  final String? statusText;
+
+  /// The xhr status.
+  final HttpResponseStatus? xhrStatus;
 }
 
 /// Supported rest response source values.

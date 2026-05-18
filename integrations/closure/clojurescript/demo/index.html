@@ -26,8 +26,7 @@
   <body ng-app="cljsTodo">
     <main class="demo-shell" ng-controller="TodoCtrl as $ctrl">
       <section class="demo-hero">
-        <h1>{{ $ctrl.greeting }}</h1>
-        <p cljs-badge></p>
+        <h1>ClojureScript Todo App</h1>
       </section>
 
       <section class="demo-content">
@@ -37,16 +36,14 @@
             id="cljs-new-todo"
             name="todo"
             type="text"
-            ng-input="$ctrl.setNewTodo($event.target.value)"
+            ng-model="$ctrl.newTodo"
             ng-required="true"
             placeholder="What needs doing?"
           />
           <button type="submit">Add</button>
         </form>
 
-        <p id="cljs-remaining" class="demo-note">
-          {{ $ctrl.remainingCount }} of {{ $ctrl.tasks.length }} remaining
-        </p>
+        <p id="cljs-count" class="demo-note">{{ $ctrl.tasks.length }} todos</p>
 
         <div class="demo-actions">
           <button type="button" ng-click="$ctrl.archive()">

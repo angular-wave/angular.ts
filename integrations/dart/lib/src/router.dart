@@ -21,6 +21,12 @@ typedef TemplateUrlFactory = String? Function(Map<String, Object?>? params);
 /// Signature for redirect to result.
 typedef RedirectToResult = Object?;
 
+/// State hook invoked for a state during a transition.
+typedef TransitionStateHookFn = Object? Function(
+  Transition transition,
+  Object? state,
+);
+
 /// Represents view declaration.
 final class ViewDeclaration {
   /// Creates a view declaration.
@@ -111,6 +117,93 @@ final class Transition {
 
   /// The raw.
   final JSObject raw;
+
+  /// The promise for this transition.
+  JSPromise<JSAny?> get promise =>
+      unsafe.getProperty(raw, 'promise') as JSPromise<JSAny?>;
+
+  /// The transition id.
+  int? get $id => unsafe.jsToDart<int?>(unsafe.getProperty(raw, r'$id'));
+
+  /// Whether this transition succeeded.
+  bool? get success {
+    final value = unsafe.getProperty(raw, 'success');
+    return value == null ? null : (value as JSBoolean).toDart;
+  }
+
+  /// Applies view configurations for this transition.
+  void applyViewConfigs() {
+    unsafe.callMethod(raw, 'applyViewConfigs');
+  }
+
+  /// Runs this transition.
+  Object? run() => unsafe.callMethod(raw, 'run');
+
+  /// Internal source state object.
+  Object? $from() => unsafe.callMethod(raw, r'$from');
+
+  /// Internal target state object.
+  Object? $to() => unsafe.callMethod(raw, r'$to');
+
+  /// Source state declaration.
+  Object? from() => unsafe.callMethod(raw, 'from');
+
+  /// Target state declaration.
+  Object? to() => unsafe.callMethod(raw, 'to');
+
+  /// Transition parameters for a path.
+  Object? params([String? pathname]) {
+    return unsafe.callMethod(raw, 'params', pathname?.toJS);
+  }
+
+  /// States entered by this transition.
+  Object? entering() => unsafe.callMethod(raw, 'entering');
+
+  /// States exited by this transition.
+  Object? exiting() => unsafe.callMethod(raw, 'exiting');
+
+  /// Creates a redirect transition.
+  Transition redirect(Object? targetState) {
+    final result = unsafe.callMethod(
+      raw,
+      'redirect',
+      unsafe.dartToJs(targetState),
+    );
+
+    return Transition(result as JSObject);
+  }
+
+  /// Whether this transition is dynamic.
+  bool dynamic() {
+    final value = unsafe.callMethod(raw, 'dynamic');
+    return (value as JSBoolean).toDart;
+  }
+
+  /// Whether this transition is active.
+  bool isActive() {
+    final value = unsafe.callMethod(raw, 'isActive');
+    return (value as JSBoolean).toDart;
+  }
+
+  /// Whether this transition is valid.
+  bool valid() {
+    final value = unsafe.callMethod(raw, 'valid');
+    return (value as JSBoolean).toDart;
+  }
+
+  /// Aborts this transition.
+  void abort() {
+    unsafe.callMethod(raw, 'abort');
+  }
+
+  /// Transition error reason.
+  Object? error() => unsafe.callMethod(raw, 'error');
+
+  @override
+  String toString() {
+    final value = unsafe.callMethod(raw, 'toString');
+    return value == null ? '' : (value as JSString).toDart;
+  }
 }
 
 /// Represents transition promise.

@@ -16,6 +16,7 @@ final class ConnectionConfig {
     this.maxRetries,
     this.heartbeatTimeout,
     this.eventTypes = const [],
+    this.transformMessage,
   });
 
   /// Callback for function.
@@ -47,6 +48,9 @@ final class ConnectionConfig {
 
   /// The event types.
   final List<String> eventTypes;
+
+  /// Transforms raw message data before callbacks receive it.
+  final Object? Function(Object? data)? transformMessage;
 }
 
 /// Represents connection event.
@@ -76,26 +80,51 @@ final class ConnectionEvent<T> {
 final class RealtimeProtocolMessage {
   /// Creates a realtime protocol message.
   const RealtimeProtocolMessage({
-    required this.type,
-    this.payload,
-    this.id,
+    this.data,
+    this.html,
+    this.target,
+    this.swap,
   });
 
-  /// The type.
-  final String type;
+  /// Plain value used as swap content when html is omitted.
+  final Object? data;
 
-  /// The payload.
-  final Object? payload;
+  /// HTML or text payload to apply with the configured swap mode.
+  final Object? html;
 
-  /// The id.
-  final String? id;
+  /// Optional CSS selector that overrides the directive target.
+  final String? target;
+
+  /// Optional swap mode that overrides the directive swap mode.
+  final SwapModeType? swap;
 }
 
-/// Signature for realtime protocol event detail.
-typedef RealtimeProtocolEventDetail<T, TSource> = ({
-  T data,
-  TSource source,
-});
+/// Realtime protocol event detail.
+final class RealtimeProtocolEventDetail<T, TSource> {
+  /// Creates a realtime protocol event detail.
+  const RealtimeProtocolEventDetail({
+    this.data,
+    this.event,
+    this.source,
+    this.url,
+    this.error,
+  });
+
+  /// Parsed event payload.
+  final T? data;
+
+  /// Native event that produced the detail.
+  final Event? event;
+
+  /// Source connection.
+  final TSource? source;
+
+  /// Source URL.
+  final String? url;
+
+  /// Transport or parsing error.
+  final Object? error;
+}
 
 /// Signature for sse protocol message.
 typedef SseProtocolMessage = RealtimeProtocolMessage;
@@ -106,20 +135,32 @@ typedef SseProtocolEventDetail<T>
 
 /// Supported swap mode type values.
 enum SwapModeType {
-  /// Invokes inner.
-  inner('inner'),
+  /// Replaces the contents inside the element.
+  innerHTML('innerHTML'),
 
-  /// Invokes outer.
-  outer('outer'),
+  /// Replaces the entire element.
+  outerHTML('outerHTML'),
 
-  /// Invokes before.
-  before('before'),
+  /// Inserts plain text.
+  textContent('textContent'),
 
-  /// Invokes after.
-  after('after'),
+  /// Inserts HTML before the element.
+  beforebegin('beforebegin'),
 
-  /// Invokes replace.
-  replace('replace');
+  /// Inserts HTML inside the element, before its first child.
+  afterbegin('afterbegin'),
+
+  /// Inserts HTML inside the element, after its last child.
+  beforeend('beforeend'),
+
+  /// Inserts HTML after the element.
+  afterend('afterend'),
+
+  /// Removes the element.
+  delete('delete'),
+
+  /// Performs no insertion.
+  none('none');
 
   const SwapModeType(this.value);
 
@@ -132,6 +173,17 @@ final class SseConfig {
   /// Creates a sse config.
   const SseConfig({
     this.connection = const ConnectionConfig(),
+    this.onOpen,
+    this.onMessage,
+    this.onEvent,
+    this.onError,
+    this.onClose,
+    this.onReconnect,
+    this.retryDelay,
+    this.maxRetries,
+    this.heartbeatTimeout,
+    this.eventTypes = const [],
+    this.transformMessage,
     this.withCredentials,
     this.params,
     this.headers,
@@ -139,6 +191,39 @@ final class SseConfig {
 
   /// The connection.
   final ConnectionConfig connection;
+
+  /// Callback for function.
+  final void Function(Event event)? onOpen;
+
+  /// Callback for function.
+  final void Function(Object? data, Event event)? onMessage;
+
+  /// Callback for function.
+  final void Function(ConnectionEvent<Object?> message)? onEvent;
+
+  /// Callback for function.
+  final void Function(Object? error)? onError;
+
+  /// Callback for function.
+  final void Function(CloseEvent event)? onClose;
+
+  /// Callback for function.
+  final void Function(int attempt)? onReconnect;
+
+  /// The retry delay.
+  final int? retryDelay;
+
+  /// The max retries.
+  final int? maxRetries;
+
+  /// The heartbeat timeout.
+  final int? heartbeatTimeout;
+
+  /// The event types.
+  final List<String> eventTypes;
+
+  /// Transforms raw message data before callbacks receive it.
+  final Object? Function(Object? data)? transformMessage;
 
   /// The with credentials.
   final bool? withCredentials;
@@ -164,12 +249,56 @@ final class WebSocketConfig {
   /// Creates a web socket config.
   const WebSocketConfig({
     this.connection = const ConnectionConfig(),
+    this.onOpen,
+    this.onMessage,
+    this.onEvent,
+    this.onError,
+    this.onClose,
+    this.onReconnect,
+    this.retryDelay,
+    this.maxRetries,
+    this.heartbeatTimeout,
+    this.eventTypes = const [],
+    this.transformMessage,
     this.protocols = const [],
     this.onProtocolMessage,
   });
 
   /// The connection.
   final ConnectionConfig connection;
+
+  /// Callback for function.
+  final void Function(Event event)? onOpen;
+
+  /// Callback for function.
+  final void Function(Object? data, Event event)? onMessage;
+
+  /// Callback for function.
+  final void Function(ConnectionEvent<Object?> message)? onEvent;
+
+  /// Callback for function.
+  final void Function(Object? error)? onError;
+
+  /// Callback for function.
+  final void Function(CloseEvent event)? onClose;
+
+  /// Callback for function.
+  final void Function(int attempt)? onReconnect;
+
+  /// The retry delay.
+  final int? retryDelay;
+
+  /// The max retries.
+  final int? maxRetries;
+
+  /// The heartbeat timeout.
+  final int? heartbeatTimeout;
+
+  /// The event types.
+  final List<String> eventTypes;
+
+  /// Transforms raw message data before callbacks receive it.
+  final Object? Function(Object? data)? transformMessage;
 
   /// The protocols.
   final List<String> protocols;
@@ -278,18 +407,36 @@ final class WebTransportConfig {
   /// Creates a web transport config.
   const WebTransportConfig({
     this.options = const WebTransportOptions(),
+    this.allowPooling,
+    this.congestionControl,
+    this.requireUnreliable,
+    this.serverCertificateHashes = const [],
     this.onOpen,
     this.onClose,
     this.onError,
     this.onDatagram,
     this.onProtocolMessage,
+    this.transformDatagram,
     this.reconnect,
+    this.retryDelay,
     this.maxRetries,
     this.onReconnect,
   });
 
   /// The options.
   final WebTransportOptions options;
+
+  /// The allow pooling.
+  final bool? allowPooling;
+
+  /// The congestion control.
+  final String? congestionControl;
+
+  /// The require unreliable.
+  final bool? requireUnreliable;
+
+  /// The server certificate hashes.
+  final List<WebTransportCertificateHash> serverCertificateHashes;
 
   /// Callback for function.
   final void Function()? onOpen;
@@ -309,8 +456,14 @@ final class WebTransportConfig {
     WebTransportDatagramEvent<RealtimeProtocolMessage> event,
   )? onProtocolMessage;
 
+  /// Converts incoming datagram bytes into the event message.
+  final Object? Function(JSAny data)? transformDatagram;
+
   /// The reconnect.
   final bool? reconnect;
+
+  /// The retry delay.
+  final Object? retryDelay;
 
   /// The max retries.
   final int? maxRetries;
@@ -320,7 +473,28 @@ final class WebTransportConfig {
 }
 
 /// Native browser WebTransport instance.
-abstract interface class NativeWebTransport {}
+abstract interface class NativeWebTransport {
+  /// Resolves when the native WebTransport session is ready.
+  Future<void> get ready;
+
+  /// Resolves or rejects when the native WebTransport session closes.
+  Future<Object?> get closed;
+
+  /// Native datagram streams.
+  JSObject get datagrams;
+
+  /// Incoming unidirectional stream reader when exposed by the browser.
+  JSObject? get incomingUnidirectionalStreams;
+
+  /// The close.
+  void close([Object? closeInfo]);
+
+  /// The create bidirectional stream.
+  Future<JSObject> createBidirectionalStream();
+
+  /// The create unidirectional stream.
+  Future<Object?> createUnidirectionalStream();
+}
 
 /// Runtime handle for an AngularTS WebTransport connection.
 abstract interface class WebTransportConnection {
@@ -332,6 +506,9 @@ abstract interface class WebTransportConnection {
 
   /// Native WebTransport instance.
   NativeWebTransport get transport;
+
+  /// The create bidirectional stream.
+  Future<JSObject> createBidirectionalStream();
 
   /// The send datagram.
   Future<void> sendDatagram(WebTransportBufferInput data);

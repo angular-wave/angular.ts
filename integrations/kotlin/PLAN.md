@@ -1,301 +1,607 @@
-# AngularTS Kotlin Integration Plan
+# AngularTS Kotlin Implementation Roadmap
 
-## Goal
+This roadmap makes `integrations/kotlin` a first-class Kotlin/JS integration
+that develops alongside `integrations/dart` and reaches feature parity with the
+public AngularTS `ng` namespace.
 
-Make AngularTS a first-class Kotlin web authoring target with feature parity to
-the Dart integration. Kotlin developers should be able to write AngularTS
-applications from Kotlin using idiomatic Kotlin/JS APIs, while AngularTS remains
-the JavaScript runtime that owns templates, dependency injection, scopes,
-directives, components, services, and web components.
+The roadmap is executable: each phase lists concrete files, implementation
+tasks, and acceptance commands. Do not mark a phase complete until its commands
+pass locally and in CI.
 
-The Kotlin integration is an official package maintained in this repository and
-published separately for Kotlin/JS consumers.
+Execution markers:
 
-First-class support requires feature parity with every type made public through
-the AngularTS `ng` namespace. The parity source of truth is:
+- `[ ]` work item is not started.
+- `[x]` work item is complete.
+- `[gate]` command or condition that must pass before closing the phase.
+- `[blocked]` work item needs an upstream decision or dependency before it can
+  proceed.
+
+## Contract
+
+The source of truth is the generated TypeScript declaration:
 
 ```text
 @types/namespace.d.ts
 ```
 
-## Dart Parity Target
+Kotlin is parity-complete when every public `ng` namespace type is either:
 
-Kotlin is considered feature-parity complete when it can cover the same
-authoring surface as the Dart package:
+- represented by a generated Kotlin/JS external facade;
+- represented by a handwritten ergonomic Kotlin API;
+- represented by a Kotlin platform/browser type;
+- explicitly listed as unsupported with a reason and an unsafe fallback.
 
-- typed modules, DI tokens, providers, services, factories, controllers,
-  components, directives, scopes, and web components;
-- strict public APIs by default, with unsafe JavaScript interop isolated behind
-  clearly named escape hatches;
-- typed wrappers for the AngularTS runtime services represented in the Dart
-  parity file;
-- compiler coverage that proves normal Kotlin authoring does not rely on raw
-  dynamic objects or stringly typed injection arrays;
-- browser tests that render at least one AngularTS app authored in Kotlin
-  against the built `dist` runtime artifact;
-- a Kotlin namespace parity checklist equivalent to
-  `integrations/dart/NG_NAMESPACE_PARITY.md`.
+The Dart integration is the reference implementation for process and coverage,
+not for API shape. Kotlin should reuse the Dart strategy where it is useful:
 
-## Type Safety Principle
+- generated raw facade layer from `@types/namespace.d.ts`;
+- small handwritten ergonomic authoring layer;
+- checked parity inventory;
+- checked generated output freshness;
+- explicit unsafe interop package.
 
-The Kotlin integration should be as precise and strict as the AngularTS runtime
-contract allows. Public Kotlin APIs should prefer value classes, generic tokens,
-data classes, sealed interfaces, typed callbacks, and explicit DSL builders over
-`dynamic`, raw `js()` objects, or untyped external declarations.
+## Non-Negotiable API Rules
 
-`dynamic` is allowed only as an explicit escape hatch for legacy
-AngularJS-compatible behavior, unknown third-party services, or intentionally
-untyped interop. Escape hatches must be named clearly and kept out of the
-default authoring path.
+- Public Kotlin APIs prefer typed wrappers, value classes, sealed interfaces,
+  enums, data classes, DSL builders, and typed callbacks.
+- `dynamic`, raw `js()`, and untyped JavaScript objects are allowed only under
+  `angular.ts.unsafe`.
+- Dependency injection must use token-backed helpers in normal authoring code.
+- String injection arrays are a low-level compatibility detail, not the primary
+  Kotlin API.
+- Templates remain AngularTS templates; Kotlin owns registration, config, DI,
+  controllers, services, and typed wrapper APIs.
+- Kotlin must bind against the same built `dist` runtime that Dart examples use.
 
-## Package Shape
+## Target Layout
 
 ```text
-integrations/
-  kotlin/
+integrations/kotlin/
+  settings.gradle.kts
+  build.gradle.kts
+  Makefile
+  README.md
+  NG_NAMESPACE_PARITY.md
+  KOTLIN_BINDING_GENERATION_ROADMAP.md
+  src/jsMain/kotlin/angular/ts/
+    AngularTS.kt
+    Bootstrap.kt
+    Component.kt
+    Directive.kt
+    Injectable.kt
+    Injector.kt
+    Module.kt
+    Runtime.kt
+    Scope.kt
+    Token.kt
+    WebComponent.kt
+    generated/NgFacades.kt
+    unsafe/Unsafe.kt
+  src/jsTest/kotlin/angular/ts/
+    AngularTsTest.kt
+  examples/basic_app/
     build.gradle.kts
-    settings.gradle.kts
-    src/jsMain/kotlin/angular/ts/
-      AngularTS.kt
-      Bootstrap.kt
-      Component.kt
-      Directive.kt
-      Injectable.kt
-      Injector.kt
-      Module.kt
-      Runtime.kt
-      Scope.kt
-      Token.kt
-      WebComponent.kt
-      unsafe/
-    src/jsTest/kotlin/
-    examples/
-      basic-app/
-      web-components/
-    tool/
+    src/jsMain/kotlin/Main.kt
+    web/index.html
+  tool/
+    generate_kotlin_bindings.mjs
+    check_generated_bindings.mjs
+    check_ng_namespace_parity.mjs
+    check_ng_namespace_members.mjs
+    generator-overrides.json
 ```
 
-The npm package remains the source of the AngularTS runtime. The Kotlin package
-wraps the runtime through Kotlin/JS external bindings and ships through Kotlin
-tooling.
+## Make Targets
 
-## Kotlin Technology Choices
+Add these targets in phase 1 and keep them stable:
 
-- Use Kotlin/JS IR output for browser applications.
-- Use external declarations only in low-level runtime binding modules.
-- Expose idiomatic Kotlin builders and typed data classes for normal authoring.
-- Use value classes for DI tokens where practical.
-- Use sealed interfaces and enums for closed option sets.
-- Avoid raw `dynamic` and `js()` in public APIs except under explicit unsafe
-  namespaces.
-- Keep template strings as AngularTS templates.
-- Use Kotlin test tooling for unit tests and Playwright for browser smoke tests.
+```make
+.PHONY: all deps format format-check test generate generate-check parity check runtime-build example-build runtime-test demo clean
 
-## Target Kotlin Authoring API
+GRADLE ?= gradle
+NODE ?= node
+PLAYWRIGHT ?= ../../node_modules/.bin/playwright
+
+all: check
+
+deps:
+	$(GRADLE) kotlinNpmInstall
+
+format:
+	$(GRADLE) formatKotlin
+
+format-check:
+	$(GRADLE) checkKotlinFormat
+
+test:
+	$(GRADLE) jsBrowserTest
+
+generate:
+	$(NODE) tool/generate_kotlin_bindings.mjs
+	$(GRADLE) formatKotlin
+
+generate-check:
+	$(NODE) tool/check_generated_bindings.mjs
+
+parity:
+	$(NODE) tool/check_ng_namespace_parity.mjs
+	$(NODE) tool/check_ng_namespace_members.mjs
+
+runtime-build:
+	$(MAKE) -C ../.. build
+
+example-build:
+	$(GRADLE) :examples:basic_app:jsBrowserProductionWebpack
+
+runtime-test: runtime-build example-build
+	$(PLAYWRIGHT) test --config playwright.config.ts
+
+check: generate-check format-check test parity runtime-test
+```
+
+If the repo does not adopt ktlint, replace `format` and `format-check` with the
+selected Kotlin formatter before phase 1 is marked complete.
+
+## Phase 0: Namespace Inventory
+
+Goal: create the parity contract before implementing wrappers.
+
+Status: `[x]`
+
+Files:
+
+```text
+integrations/kotlin/NG_NAMESPACE_PARITY.md
+integrations/kotlin/tool/check_ng_namespace_parity.mjs
+integrations/kotlin/tool/check_ng_namespace_members.mjs
+integrations/kotlin/tool/generator-overrides.json
+```
+
+Tasks:
+
+- [x] Parse `@types/namespace.d.ts` with the TypeScript compiler API.
+- [x] Find `export namespace ng`.
+- [x] Emit a sorted inventory of every public type.
+- [x] Start every type as `planned`, `alias`, `generated`, `manual`, `review`, or
+  `unsupported`.
+- [x] Mirror the Dart categories so comparisons stay obvious: core, providers,
+  services, HTTP and REST, filters, animation, router, realtime and
+  connections, wasm, web components, storage/workers/misc.
+- [x] Add a member-level checker that verifies public members are generated,
+  manually covered, or explicitly ignored.
+
+Acceptance:
+
+```sh
+# [gate]
+node integrations/kotlin/tool/check_ng_namespace_parity.mjs
+node integrations/kotlin/tool/check_ng_namespace_members.mjs
+```
+
+Done when:
+
+- [x] adding a new public `ng` type to `@types/namespace.d.ts` fails the Kotlin
+  parity check until `NG_NAMESPACE_PARITY.md` is updated;
+- [x] removing or renaming a public member fails the member checker until overrides
+  or wrappers are updated.
+
+## Phase 1: Kotlin/JS Package Skeleton
+
+Goal: make `integrations/kotlin` build and test as an empty integration.
+
+Status: `[x]`
+
+Files:
+
+```text
+integrations/kotlin/settings.gradle.kts
+integrations/kotlin/build.gradle.kts
+integrations/kotlin/Makefile
+integrations/kotlin/README.md
+integrations/kotlin/src/jsMain/kotlin/angular/ts/AngularTS.kt
+integrations/kotlin/src/jsMain/kotlin/angular/ts/unsafe/Unsafe.kt
+integrations/kotlin/src/jsTest/kotlin/angular/ts/AngularTsTest.kt
+```
+
+Tasks:
+
+- [x] Configure Kotlin/JS IR for browser output.
+- [x] Add strict compiler options and explicit API mode if practical.
+- [x] Add npm wiring so Kotlin can import the repository's built AngularTS runtime.
+- [x] Add a tiny smoke test that imports the Kotlin package and asserts the test
+  harness runs.
+- [x] Add `Makefile` targets listed above, even if some are placeholders until
+  later phases.
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin deps
+make -C integrations/kotlin format-check
+make -C integrations/kotlin test
+make -C integrations/kotlin check
+```
+
+Done when:
+
+- [x] the package has no handwritten dynamic public APIs outside
+  `angular.ts.unsafe`;
+- [x] `make -C integrations/kotlin check` is the canonical local gate.
+
+## Phase 2: Generated Raw Facades
+
+Goal: generate the low-level Kotlin/JS boundary from the same TypeScript
+namespace source that Dart uses.
+
+Status: `[x]`
+
+Files:
+
+```text
+integrations/kotlin/tool/generate_kotlin_bindings.mjs
+integrations/kotlin/tool/check_generated_bindings.mjs
+integrations/kotlin/tool/generator-overrides.json
+integrations/kotlin/src/jsMain/kotlin/angular/ts/generated/NgFacades.kt
+integrations/kotlin/KOTLIN_BINDING_GENERATION_ROADMAP.md
+```
+
+Generator requirements:
+
+- [x] Parse `@types/namespace.d.ts`.
+- [x] Generate deterministic Kotlin source.
+- [x] Emit `external interface` or `external class` declarations only in
+  `angular.ts.generated`.
+- [x] Avoid exposing generated raw facades from the top-level ergonomic package
+  unless a facade is intentionally stable enough to be public.
+- [x] Support override metadata for renames, manual members, unsupported members,
+  platform type mappings, return type fixes, and reserved Kotlin identifiers.
+
+Initial TypeScript to Kotlin mapping:
+
+| TypeScript | Kotlin generated type |
+| --- | --- |
+| `string` | `String` |
+| `boolean` | `Boolean` |
+| `number` | `Double` |
+| integer override | `Int` |
+| `void` | `Unit` |
+| `Promise<T>` | `Promise<JsAny?>` or `Promise<dynamic>` |
+| arrays | `ReadonlyArray<JsAny?>` or `Array<dynamic>` |
+| broad unions | `dynamic` in generated layer only |
+| unknown/dynamic | `dynamic` in generated layer only |
+| function types | generated `FunctionN` facade or `dynamic` |
+| DOM types | Kotlin web types through overrides |
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin generate
+make -C integrations/kotlin generate-check
+make -C integrations/kotlin parity
+make -C integrations/kotlin check
+```
+
+Done when:
+
+- [x] generated output is deterministic;
+- [x] stale generated output fails `generate-check`;
+- [x] missing public namespace members fail `parity`;
+- [x] generated raw dynamic does not leak into the handwritten top-level API.
+
+## Phase 3: Ergonomic Core Authoring API
+
+Goal: implement the small handwritten API Kotlin users should actually use.
+
+Status: `[ ]`
+
+Files:
+
+```text
+src/jsMain/kotlin/angular/ts/Token.kt
+src/jsMain/kotlin/angular/ts/Injectable.kt
+src/jsMain/kotlin/angular/ts/Module.kt
+src/jsMain/kotlin/angular/ts/Bootstrap.kt
+src/jsMain/kotlin/angular/ts/Injector.kt
+src/jsMain/kotlin/angular/ts/Runtime.kt
+```
+
+Public API target:
 
 ```kotlin
-import angular.ts.ng
-import web.dom.document
+val app = ng.module("demo")
+val todoStore = ng.token<TodoStore>("todoStore")
 
-class TodoStore {
-    private val items = mutableListOf("Learn AngularTS")
-    fun all(): List<String> = items
-    fun add(title: String) {
-        title.trim().takeIf { it.isNotEmpty() }?.let(items::add)
-    }
-}
+app.service(todoStore, ng.inject0 { TodoStore() })
+app.factory(todoStore, ng.inject0 { TodoStore() })
+app.value(todoStore, TodoStore())
 
-class TodoList(private val store: TodoStore) {
-    val todos: List<String>
-        get() = store.all()
-
-    fun add(title: String) {
-        store.add(title)
-    }
-}
-
-fun main() {
-    val app = ng.module("demo")
-    val todoStore = ng.token<TodoStore>("todoStore")
-
-    app.service(todoStore, ng.inject0 { TodoStore() })
-
-    app.component(
-        "todoList",
-        ng.component<TodoList> {
-            template = """
-                <section>
-                  <button ng-click="${'$'}ctrl.add(newTodo)">Add</button>
-                  <p ng-repeat="todo in ${'$'}ctrl.todos">{{ todo }}</p>
-                </section>
-            """.trimIndent()
-            controller = ng.inject1(todoStore) { TodoList(it) }
-        },
-    )
-
-    ng.bootstrap(document.body!!, listOf(app.name))
-}
+ng.bootstrap(document.body ?: error("missing body"), listOf(app.name))
 ```
 
-The exact DSL can change, but normal applications should not hand-write
-AngularTS JavaScript registration glue.
+Tasks:
 
-## Public Kotlin Surface
+- [ ] Implement `ng.module(name, requires)`.
+- [ ] Implement `ng.bootstrap(root, modules, config)`.
+- [x] Implement `ng.token<T>(name)`.
+- [ ] Implement `NgModule.value`, `factory`, `service`, `controller`,
+  `component`, `directive`, and `webComponent` as typed entry points.
+- [ ] Implement `Injector.get<T>(token)`.
+- [ ] Implement injection helpers:
+  - [x] `ng.inject0(factory)`
+  - [x] `ng.inject1(tokenA, factory)`
+  - [x] `ng.inject2(tokenA, tokenB, factory)`
+  - [ ] continue to the highest arity needed by AngularTS built-ins;
+  - [ ] `ng.injectUnsafe(tokens, jsFunction)` in `angular.ts.unsafe`.
+- [ ] Convert typed injection helpers into AngularTS-compatible `$inject` metadata.
 
-Initial package API:
+Acceptance:
 
-- `ng.module(name: String, requires: List<String> = emptyList()): NgModule`
-- `ng.bootstrap(root: Element, modules: List<String>, config: BootstrapConfig)`
-- `ng.token<T>(name: String): Token<T>`
-- `NgModule.component<T>(name: String, options: Component<T>)`
-- `NgModule.directive<T>(name: String, options: Directive<T>)`
-- `NgModule.controller<T>(name: String, controller: InjectableFactory<T>)`
-- `NgModule.service<T>(token: Token<T>, service: InjectableFactory<T>)`
-- `NgModule.factory<T>(token: Token<T>, factory: InjectableFactory<T>)`
-- `NgModule.value<T>(token: Token<T>, value: T)`
-- `NgModule.webComponent<T>(name: String, options: WebComponent<T>)`
-- `Injector.get<T>(token: Token<T>): T`
-- `Scope<TState>` wrappers for watch/listen/destroy operations.
-- Explicit unsafe APIs such as `Injector.getUnsafe(name: String)` and
-  `Scope.unsafe`.
+```sh
+# [gate]
+make -C integrations/kotlin test
+make -C integrations/kotlin parity
+make -C integrations/kotlin check
+```
 
-Typed injection helpers should cover common arities without exposing string
-arrays in normal application code:
+Done when:
 
-- `ng.inject0(factory)`
-- `ng.inject1(tokenA, factory)`
-- `ng.inject2(tokenA, tokenB, factory)`
-- Continue through the practical arities used by AngularTS services and
-  controllers.
-- `ng.injectUnsafe(tokens, jsFunction)` is the explicit higher-arity or legacy
-  escape hatch.
+- [ ] a Kotlin service can be registered and injected without handwritten string
+  token arrays;
+- [ ] unsafe injection requires importing `angular.ts.unsafe`.
 
-## Interop Design
+## Phase 4: Components, Directives, Scope
 
-The Kotlin package should convert Kotlin declarations into JavaScript runtime
-shapes at the boundary:
+Goal: cover AngularTS authoring primitives.
 
-- Kotlin `Component` becomes the JavaScript component config object.
-- Kotlin `Directive` becomes the JavaScript directive definition object or
-  factory.
-- Kotlin callbacks are converted to JS-callable functions.
-- Controller and service instances are exported as JS-visible view models only
-  when template access requires it.
-- Injection metadata is always explicit and token-backed.
-- Public Kotlin APIs should not accept raw dynamic config objects when a typed
-  config object or DSL builder can describe the shape.
-- Config builders should validate and preserve the relationship between
-  controller, scope, bindings, and lifecycle hook types.
-- JavaScript object/property escape hatches are available for migration and
-  advanced scenarios, but they are not the default API path.
+Status: `[ ]`
 
-## Phases
+Files:
 
-### Phase 1: Package Skeleton
+```text
+src/jsMain/kotlin/angular/ts/Component.kt
+src/jsMain/kotlin/angular/ts/Directive.kt
+src/jsMain/kotlin/angular/ts/Scope.kt
+```
 
-- Add `build.gradle.kts` and `settings.gradle.kts`.
-- Add `src/jsMain/kotlin/angular/ts/AngularTS.kt`.
-- Add minimal Kotlin/JS external bindings for the AngularTS runtime.
-- Add strict Kotlin compiler settings.
-- Add internal unsafe interop helpers that are not exported from the main
-  authoring API.
+Tasks:
 
-### Phase 2: Runtime API
+- [ ] Implement `Component<TController>` config builder.
+- [ ] Implement controller construction helpers that expose template-visible
+  properties intentionally.
+- [ ] Map component lifecycle hooks to typed Kotlin callbacks.
+- [ ] Implement `Directive<TScope>` config builder.
+- [ ] Implement typed link/pre-link/post-link wrappers.
+- [ ] Implement `Scope<TState>` helpers for `watch`, `on`, `emit`, `broadcast`,
+  `evalAsync`, `applyAsync`, and `destroy`.
+- [ ] Add explicit `scope.unsafe` for dynamic property access.
 
-- Implement `module`, `bootstrap`, and `injector` wrappers.
-- Implement `NgModule` wrapper methods for values, services, factories,
-  controllers, components, directives, and web components.
-- Add token-backed explicit injection annotation support.
-- Add typed Kotlin-to-JS config object builders.
-- Add unsafe fallbacks in a separate package.
+Acceptance:
 
-### Phase 3: Component Authoring
+```sh
+# [gate]
+make -C integrations/kotlin test
+make -C integrations/kotlin runtime-test
+make -C integrations/kotlin parity
+```
 
-- Implement typed `Component` and controller wrappers.
-- Support lifecycle hooks that map to AngularTS component hooks.
-- Add examples for controller classes and function controllers.
-- Add tests for template rendering and DI.
-- Add compile-time examples that demonstrate typed DI failures are caught by
-  the Kotlin compiler.
+Done when:
 
-### Phase 4: Directive And Scope Support
+- [ ] a Kotlin component renders through AngularTS templates in a browser test;
+- [ ] a Kotlin directive links and tears down in a browser test;
+- [ ] dynamic scope access is isolated under `unsafe`.
 
-- Implement typed `Directive` wrappers.
-- Add `Scope` helper APIs for watch/listen/destroy operations.
-- Add dynamic property escape hatches under explicitly unsafe APIs.
-- Add tests for directive linking and teardown.
+## Phase 5: Built-In Service Facades
 
-### Phase 5: Services And Runtime Facades
+Goal: expose Kotlin equivalents for the public `ng` service/provider surface.
 
-- Add typed facades for built-in AngularTS services covered by Dart.
-- Add HTTP, REST, filters, animation, router, realtime, storage, worker, and
-  cookie facades.
-- Preserve unsupported or structurally dynamic mappings in the Kotlin namespace
-  parity checklist with reasons.
+Status: `[ ]`
 
-### Phase 6: Web Components
+Implement in this order:
 
-- Implement Kotlin `WebComponent` config wrappers.
-- Support inputs, shadow DOM, connected/disconnected hooks, and DOM event
-  dispatch.
-- Add typed web component event payload helpers.
-- Add an example that publishes multiple web components from one AngularTS
-  runtime.
+1. [ ] Core services and providers:
+   `Angular`, `NgModule`, `InjectorService`, `ProvideService`, `Scope`,
+   `RootScopeService`, `CompileService`, `ControllerService`,
+   `AttributesService`, `ParseService`, `InterpolateService`,
+   `ExceptionHandlerService`, `LogService`.
+2. [ ] Browser and storage services:
+   `AnchorScrollService`, `AriaService`, `CookieService`, `LocationService`,
+   `TemplateCacheService`, `TemplateRequestService`, `StorageBackend`.
+3. [ ] Filters:
+   `FilterService`, `FilterProvider`, `FilterFn`, filter option records.
+4. [ ] HTTP and REST:
+   `HttpService`, `HttpPromise`, `HttpResponse`, `RequestConfig`,
+   `RestService`, `RestRequest`, `RestResponse`, cache options.
+5. [ ] Router:
+   `StateService`, `StateRegistryService`, `TransitionService`, `Transition`,
+   `StateDeclaration`, resolve shapes.
+6. [ ] Realtime:
+   `SseService`, `WebSocketService`, `WebTransportService`,
+   connection configs/events/messages.
+7. [ ] Animation:
+   `AnimateService`, `AnimationHandle`, presets, phases, result/context types.
+8. [ ] Worker and wasm:
+   `WorkerConfig`, `WorkerConnection`, `WasmService`, wasm ABI/config types.
 
-### Phase 7: Tooling And CI
+Tasks for each group:
 
-- Add Kotlin unit tests.
-- Add a Kotlin/JS example build check.
-- Add browser smoke tests that compile Kotlin to JavaScript, load AngularTS, and
-  verify a rendered app against the built `dist` runtime artifact.
-- Add compiler-based type tests for DI tokens, component controllers,
-  directives, and web component payloads.
-- Preserve upstream TypeScript documentation as KDoc on equivalent public Kotlin
-  types, callbacks, configuration objects, and methods.
+- [ ] Prefer generated raw facade inheritance/delegation for simple members.
+- [ ] Add handwritten Kotlin DSLs only where they improve safety or hide dynamic JS
+  config shapes.
+- [ ] Update `NG_NAMESPACE_PARITY.md`.
+- [ ] Update `generator-overrides.json` for manual or unsupported members.
+- [ ] Add tests for at least one representative service call in the group.
 
-### Phase 8: Namespace Parity And Publishing
+Acceptance for each group:
 
-- Add `integrations/kotlin/NG_NAMESPACE_PARITY.md`.
-- Add a parity checker against `@types/namespace.d.ts`.
-- Give every public `ng` namespace type an explicit Kotlin decision.
-- Publish the package for Kotlin/JS consumers.
-- Document version compatibility with `@angular-wave/angular.ts`.
-- Add official docs under the AngularTS docs site.
+```sh
+# [gate]
+make -C integrations/kotlin generate
+make -C integrations/kotlin generate-check
+make -C integrations/kotlin test
+make -C integrations/kotlin parity
+make -C integrations/kotlin check
+```
 
-## Open Questions
+Done when:
 
-- Whether runtime external declarations should be generated from `.d.ts` or
-  hand-curated for a Kotlin-friendly DSL.
-- Whether the integration should target only Kotlin/JS initially or reserve room
-  for Kotlin/Wasm once the AngularTS browser boundary is stable.
-- How far typed injection helpers should go before requiring a list-based
-  advanced API.
-- How to preserve strong types for lifecycle hooks while allowing legacy
-  AngularJS-compatible controller shapes.
-- Whether built-in service tokens should be generated from TypeScript
-  declarations.
+- [ ] every public `ng` type in the group is marked `generated`, `manual`, `alias`,
+  or `unsupported`;
+- [ ] no group is considered complete with only an unsafe fallback.
 
-## Definition Of First-Class Support
+## Phase 6: Web Components
 
-The Kotlin integration is first class when:
+Goal: support AngularTS-backed custom elements from Kotlin.
 
-- It is maintained in this repository.
-- It is published as an official Kotlin/JS package.
-- It has official documentation and examples.
-- CI verifies Kotlin compilation, tests, and at least one browser-rendered
-  AngularTS app authored in Kotlin.
-- Public Kotlin APIs are strict by default and use explicit unsafe escape
-  hatches for dynamic AngularTS patterns.
-- Every public `ng` namespace type has a Kotlin equivalent or documented parity
-  decision.
-- Equivalent public Kotlin types and methods preserve the upstream API
-  documentation in KDoc form.
-- AngularTS public API changes include Kotlin integration updates when needed.
+Status: `[ ]`
 
-## Implementation Status
+Files:
 
-- Package skeleton: planned.
-- Typed DI tokens: planned.
-- Typed module/component/directive/service/web component facade: planned.
-- Browser example: planned.
-- Namespace parity file: planned.
+```text
+src/jsMain/kotlin/angular/ts/WebComponent.kt
+examples/web_components/
+```
+
+Tasks:
+
+- [ ] Implement `WebComponent<TState>` builder.
+- [ ] Support inputs, input aliases, shadow DOM, lifecycle hooks, and typed custom
+  event dispatch.
+- [ ] Implement `AngularElementOptions`, `AngularElementDefinition`, and related
+  runtime wrappers.
+- [ ] Add an example that publishes at least two custom elements from one runtime.
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin example-build
+make -C integrations/kotlin runtime-test
+make -C integrations/kotlin parity
+```
+
+Done when:
+
+- [ ] browser tests instantiate Kotlin-authored custom elements and verify inputs,
+  rendered DOM, and dispatched events.
+
+## Phase 7: Examples And Runtime Tests
+
+Goal: prove Kotlin apps work against the built AngularTS runtime artifact.
+
+Status: `[ ]`
+
+Files:
+
+```text
+integrations/kotlin/playwright.config.ts
+integrations/kotlin/examples/basic_app/
+integrations/kotlin/examples/web_components/
+```
+
+Tasks:
+
+- [ ] Add a basic app that registers a service, component, directive, and filter.
+- [ ] Add a web component example.
+- [ ] Compile each example through Kotlin/JS production webpack.
+- [ ] Serve examples through the repository dev server.
+- [ ] Add Playwright tests that load the examples and assert visible AngularTS
+  behavior.
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin runtime-build
+make -C integrations/kotlin example-build
+make -C integrations/kotlin runtime-test
+make -C integrations/kotlin check
+```
+
+Done when:
+
+- [ ] runtime tests fail if the root AngularTS `dist` artifact is stale or
+  incompatible with Kotlin wrappers.
+
+## Phase 8: CI And Release Readiness
+
+Goal: make Kotlin maintenance part of the normal integration workflow.
+
+Status: `[ ]`
+
+Tasks:
+
+- [ ] Add Kotlin `check` to the repository integration CI matrix.
+- [ ] Cache Gradle and Kotlin/JS npm dependencies.
+- [ ] Document prerequisites in `integrations/kotlin/README.md`.
+- [ ] Add publishing metadata, but keep publishing manual until parity is green.
+- [ ] Add a release checklist that includes:
+  - [ ] regenerate bindings;
+  - [ ] run Kotlin check;
+  - [ ] run Dart check;
+  - [ ] compare Kotlin and Dart parity files for newly introduced public types;
+  - [ ] run root build.
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin check
+make -C integrations/dart check
+make build
+```
+
+Done when:
+
+- [ ] Kotlin is blocked by the same namespace drift failures as Dart;
+- [ ] Kotlin examples are tested against `dist`;
+- [ ] release notes can list Kotlin as supported without caveats beyond explicitly
+  documented unsupported namespace entries.
+
+## Phase 9: Public Namespace Closure
+
+Goal: close all non-unsupported entries in `NG_NAMESPACE_PARITY.md`.
+
+Status: `[ ]`
+
+Tasks:
+
+- [ ] Work through the parity file by category.
+- [ ] Do not close a type until member-level coverage is green.
+- [ ] Convert `review` entries into `generated`, `manual`, `alias`, or
+  `unsupported`.
+- [ ] For every `unsupported` entry, document:
+  - [ ] why Kotlin cannot model it safely yet;
+  - [ ] the unsafe fallback;
+  - [ ] the issue or follow-up phase that would remove the limitation.
+
+Acceptance:
+
+```sh
+# [gate]
+make -C integrations/kotlin parity
+make -C integrations/kotlin check
+```
+
+Done when:
+
+- [ ] every public `ng` namespace type has an explicit Kotlin decision;
+- [ ] no public type is reachable only through undocumented `dynamic` usage;
+- [ ] Kotlin and Dart parity files both fail on the same upstream namespace drift.
+
+## Suggested Work Order
+
+1. Phase 0 namespace inventory and parity checker.
+2. Phase 1 Kotlin package skeleton and Makefile.
+3. Phase 2 generated raw facade layer.
+4. Phase 3 tokens, injection helpers, module registration, bootstrap.
+5. Phase 4 component/directive/scope authoring.
+6. Phase 7 basic browser example, early.
+7. Phase 5 service groups, one category at a time.
+8. Phase 6 web components.
+9. Phase 8 CI.
+10. Phase 9 final namespace closure.
+
+This order gives Kotlin a running app before chasing every service facade, while
+still making namespace parity measurable from the start.

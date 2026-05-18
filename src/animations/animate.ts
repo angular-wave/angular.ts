@@ -237,7 +237,9 @@ export interface AnimateService {
 type PresetRegistration = AnimationPreset | Injectable<() => AnimationPreset>;
 
 interface AnimateProviderInstance {
+  /** @internal */
   _registeredAnimations: Partial<Record<string, PresetRegistration>>;
+  /** @internal */
   _customAnimationNames: Set<string>;
   register(name: string, preset: PresetRegistration): void;
   $get: [string, ($injector: ng.InjectorService) => AnimateService];
@@ -283,7 +285,9 @@ const BUILT_IN_PRESETS: Record<string, AnimationPreset> = {
 AnimateProvider.$inject = [] as string[];
 
 export function AnimateProvider(this: AnimateProviderInstance): void {
+  /** @internal */
   this._registeredAnimations = { ...BUILT_IN_PRESETS };
+  /** @internal */
   this._customAnimationNames = new Set();
 
   this.register = (name: string, preset: PresetRegistration): void => {

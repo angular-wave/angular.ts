@@ -140,6 +140,8 @@ final class HttpProviderDefaults {
   /// Creates a http provider defaults.
   const HttpProviderDefaults({
     this.cache,
+    this.transformRequest,
+    this.transformResponse,
     this.headers,
     this.xsrfHeaderName,
     this.xsrfCookieName,
@@ -149,6 +151,12 @@ final class HttpProviderDefaults {
 
   /// The cache.
   final Object? cache;
+
+  /// Request body transform pipeline.
+  final Object? transformRequest;
+
+  /// Response body transform pipeline.
+  final Object? transformResponse;
 
   /// The headers.
   final HttpRequestConfigHeaders? headers;
@@ -168,6 +176,8 @@ final class HttpProviderDefaults {
   /// The to map.
   Map<String, Object?> toMap() => {
         if (cache != null) 'cache': cache,
+        if (transformRequest != null) 'transformRequest': transformRequest,
+        if (transformResponse != null) 'transformResponse': transformResponse,
         if (headers != null) 'headers': headers!.toMap(),
         if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
         if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
@@ -181,6 +191,14 @@ final class RequestShortcutConfig {
   /// Creates a request shortcut config.
   const RequestShortcutConfig({
     this.defaults = const HttpProviderDefaults(),
+    this.cache,
+    this.transformRequest,
+    this.transformResponse,
+    this.headers,
+    this.xsrfHeaderName,
+    this.xsrfCookieName,
+    this.withCredentials,
+    this.paramSerializer,
     this.params,
     this.data,
     this.timeout,
@@ -189,6 +207,30 @@ final class RequestShortcutConfig {
 
   /// The defaults.
   final HttpProviderDefaults defaults;
+
+  /// The cache.
+  final Object? cache;
+
+  /// Request body transform pipeline.
+  final Object? transformRequest;
+
+  /// Response body transform pipeline.
+  final Object? transformResponse;
+
+  /// The headers.
+  final HttpRequestConfigHeaders? headers;
+
+  /// The xsrf header name.
+  final String? xsrfHeaderName;
+
+  /// The xsrf cookie name.
+  final String? xsrfCookieName;
+
+  /// The with credentials.
+  final bool? withCredentials;
+
+  /// The param serializer.
+  final Object? paramSerializer;
 
   /// The params.
   final HttpParams? params;
@@ -205,6 +247,14 @@ final class RequestShortcutConfig {
   /// The to map.
   Map<String, Object?> toMap() => {
         ...defaults.toMap(),
+        if (cache != null) 'cache': cache,
+        if (transformRequest != null) 'transformRequest': transformRequest,
+        if (transformResponse != null) 'transformResponse': transformResponse,
+        if (headers != null) 'headers': headers!.toMap(),
+        if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
+        if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
+        if (withCredentials != null) 'withCredentials': withCredentials,
+        if (paramSerializer != null) 'paramSerializer': paramSerializer,
         if (params != null) 'params': params,
         if (data != null) 'data': data,
         if (timeout != null) 'timeout': timeout,
@@ -219,6 +269,18 @@ final class RequestConfig {
     required this.method,
     required this.url,
     this.shortcut = const RequestShortcutConfig(),
+    this.cache,
+    this.transformRequest,
+    this.transformResponse,
+    this.headers,
+    this.xsrfHeaderName,
+    this.xsrfCookieName,
+    this.withCredentials,
+    this.paramSerializer,
+    this.params,
+    this.data,
+    this.timeout,
+    this.responseType,
     this.eventHandlers,
     this.uploadEventHandlers,
   });
@@ -232,6 +294,42 @@ final class RequestConfig {
   /// The shortcut.
   final RequestShortcutConfig shortcut;
 
+  /// The cache.
+  final Object? cache;
+
+  /// Request body transform pipeline.
+  final Object? transformRequest;
+
+  /// Response body transform pipeline.
+  final Object? transformResponse;
+
+  /// The headers.
+  final HttpRequestConfigHeaders? headers;
+
+  /// The xsrf header name.
+  final String? xsrfHeaderName;
+
+  /// The xsrf cookie name.
+  final String? xsrfCookieName;
+
+  /// The with credentials.
+  final bool? withCredentials;
+
+  /// The param serializer.
+  final Object? paramSerializer;
+
+  /// The params.
+  final HttpParams? params;
+
+  /// The data.
+  final Object? data;
+
+  /// The timeout.
+  final Object? timeout;
+
+  /// The response type.
+  final HttpResponseType? responseType;
+
   /// The event handlers.
   final Map<String, JSFunction>? eventHandlers;
 
@@ -242,6 +340,18 @@ final class RequestConfig {
   JSObject toJsObject() {
     return unsafe.object({
       ...shortcut.toMap(),
+      if (cache != null) 'cache': cache,
+      if (transformRequest != null) 'transformRequest': transformRequest,
+      if (transformResponse != null) 'transformResponse': transformResponse,
+      if (headers != null) 'headers': headers!.toMap(),
+      if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
+      if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
+      if (withCredentials != null) 'withCredentials': withCredentials,
+      if (paramSerializer != null) 'paramSerializer': paramSerializer,
+      if (params != null) 'params': params,
+      if (data != null) 'data': data,
+      if (timeout != null) 'timeout': timeout,
+      if (responseType != null) 'responseType': responseType!.value,
       'method': method.value,
       'url': url,
       if (eventHandlers != null) 'eventHandlers': eventHandlers,

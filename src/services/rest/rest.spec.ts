@@ -870,6 +870,17 @@ describe("RFC 6570 helpers", () => {
         "/docs?q=1",
       );
     });
+
+    it("preserves literal empty and unterminated expressions", () => {
+      expect(expandUriTemplate("/users/{}", { id: 10 })).toBe("/users/{}");
+      expect(expandUriTemplate("/users/{id", { id: 10 })).toBe("/users/{id");
+    });
+
+    it("scans templates with repeated opening braces in linear time", () => {
+      const template = `{${"{|".repeat(5000)}`;
+
+      expect(expandUriTemplate(template, {})).toBe(template);
+    });
   });
 
   describe("expandExpression", () => {

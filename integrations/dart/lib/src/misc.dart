@@ -38,10 +38,25 @@ abstract mixin class Controller {
 /// Details for an AngularTS event/invocation expression.
 final class InvocationDetail {
   /// Creates a invocation detail.
-  const InvocationDetail({required this.expr});
+  const InvocationDetail({required this.expr, this.reply});
 
   /// The expr.
   final String expr;
+
+  /// Optional promise reply channel for invocation results.
+  final InvocationReply? reply;
+}
+
+/// Promise reply channel for an AngularTS invocation.
+final class InvocationReply {
+  /// Creates a invocation reply.
+  const InvocationReply({required this.resolve, required this.reject});
+
+  /// Resolves an invocation result.
+  final Object? Function(Object? value) resolve;
+
+  /// Rejects an invocation result.
+  final Future<Never> Function(Object? reason) reject;
 }
 
 /// Event object passed through AngularTS scope event propagation.
@@ -86,6 +101,9 @@ final class ServiceProvider<TValue> {
 
   /// The get.
   final InjectableFactory<TValue> get;
+
+  /// The JS `$get` provider factory.
+  InjectableFactory<TValue> get $get => get;
 
   /// The to js object.
   JSObject toJsObject() {

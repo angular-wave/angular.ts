@@ -70,6 +70,11 @@ JSAny? getProperty(JSObject target, String property) {
   return target.getProperty(property.toJS);
 }
 
+/// The set property.
+void setProperty(JSObject target, String property, Object? value) {
+  target.setProperty(property.toJS, dartToJs(value));
+}
+
 /// The strings.
 JSArray<JSString> strings(List<String> values) {
   return [for (final value in values) value.toJS].toJS;
@@ -93,4 +98,50 @@ JSAny? callMethod(
   if (arg1 != null) return target.callMethod(method.toJS, arg1);
 
   return target.callMethod(method.toJS);
+}
+
+/// Calls a method with exactly one argument, including `null`.
+JSAny? callMethod1(JSObject target, String method, JSAny? arg1) {
+  return target.callMethodVarArgs(method.toJS, [arg1]);
+}
+
+/// Calls a method with exactly two arguments, including `null`.
+JSAny? callMethod2(JSObject target, String method, JSAny? arg1, JSAny? arg2) {
+  return target.callMethodVarArgs(method.toJS, [arg1, arg2]);
+}
+
+/// Calls a method with exactly three arguments, including `null`.
+JSAny? callMethod3(
+  JSObject target,
+  String method,
+  JSAny? arg1,
+  JSAny? arg2,
+  JSAny? arg3,
+) {
+  return target.callMethodVarArgs(method.toJS, [arg1, arg2, arg3]);
+}
+
+/// Calls a method with exactly four arguments, including `null`.
+JSAny? callMethod4(
+  JSObject target,
+  String method,
+  JSAny? arg1,
+  JSAny? arg2,
+  JSAny? arg3,
+  JSAny? arg4,
+) {
+  return target.callMethodVarArgs(method.toJS, [arg1, arg2, arg3, arg4]);
+}
+
+/// Calls a method with exactly five arguments, including `null`.
+JSAny? callMethod5(
+  JSObject target,
+  String method,
+  JSAny? arg1,
+  JSAny? arg2,
+  JSAny? arg3,
+  JSAny? arg4,
+  JSAny? arg5,
+) {
+  return target.callMethodVarArgs(method.toJS, [arg1, arg2, arg3, arg4, arg5]);
 }

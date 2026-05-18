@@ -1,4 +1,4 @@
-.PHONY: all deps analyze test parity format check runtime-build runtime-test example-deps example-build demo clean
+.PHONY: all deps analyze test parity generated-base-check manual-overrides-check generate generate-check format format-check check runtime-build runtime-test example-deps example-build demo clean
 
 DART ?= dart
 PLAYWRIGHT ?= ../../node_modules/.bin/playwright
@@ -18,11 +18,29 @@ test: deps
 
 parity: deps
 	$(DART) run tool/check_ng_namespace_parity.dart
+	node tool/check_ng_namespace_members.mjs
+	node tool/check_manual_overrides.mjs
+
+generated-base-check:
+	node tool/check_generated_base_usage.mjs
+
+manual-overrides-check:
+	node tool/check_manual_overrides.mjs
+
+generate:
+	node tool/generate_dart_bindings.mjs
+	$(DART) format lib/src/generated/ng_facades.dart
+
+generate-check:
+	node tool/check_generated_bindings.mjs
 
 format:
 	$(DART) format lib test example tool
 
-check: analyze test parity runtime-test
+format-check: deps
+	$(DART) format --set-exit-if-changed lib test example tool
+
+check: generate-check format-check analyze test parity generated-base-check runtime-test
 
 runtime-build:
 	$(MAKE) -C ../.. build

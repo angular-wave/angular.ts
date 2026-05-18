@@ -26,9 +26,36 @@ export function expandUriTemplate(
 
   vars = vars ?? {};
 
-  return template.replace(/\{([^}]+)\}/g, (_match, expression: string) => {
-    return expandExpression(expression, vars);
-  });
+  const parts: string[] = [];
+  let cursor = 0;
+
+  while (cursor < template.length) {
+    const open = template.indexOf("{", cursor);
+
+    if (open === -1) {
+      parts.push(template.slice(cursor));
+      break;
+    }
+
+    const close = template.indexOf("}", open + 1);
+
+    if (close === -1) {
+      parts.push(template.slice(cursor));
+      break;
+    }
+
+    if (close === open + 1) {
+      parts.push(template.slice(cursor, close + 1));
+      cursor = close + 1;
+      continue;
+    }
+
+    parts.push(template.slice(cursor, open));
+    parts.push(expandExpression(template.slice(open + 1, close), vars));
+    cursor = close + 1;
+  }
+
+  return parts.join("");
 }
 
 /**
