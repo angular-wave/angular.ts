@@ -107,6 +107,7 @@ class NgMessageCtrl {
                 if (this._renderLater) {
                     this._render(this._cachedCollection ?? {});
                 }
+                return undefined;
             });
         }
     }
@@ -189,13 +190,14 @@ function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
                 "";
             void $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
-                    return;
+                    return undefined;
                 if (isString(html) && !html.trim()) ;
                 else {
                     // Non-empty template - compile and link
                     $compile(createNodelistFromHTML(html))($scope, insertCompiledMessageTemplate(element));
                     ngMessagesCtrl.reRender();
                 }
+                return undefined;
             });
         },
     };

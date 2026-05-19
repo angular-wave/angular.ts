@@ -166,7 +166,7 @@ class Attributes {
                 }
             }
             else {
-                this._setSpecialAttr(elem, attrName, value);
+                Attributes._setSpecialAttr(elem, attrName, value);
             }
         }
         const { _observers } = this;
@@ -195,7 +195,7 @@ class Attributes {
         };
     }
     /** @internal */
-    _setSpecialAttr(element, attrName, value) {
+    static _setSpecialAttr(element, attrName, value) {
         specialAttrHolder.innerHTML = `<span ${attrName}>`;
         const { attributes } = specialAttrHolder.firstChild;
         const attribute = attributes[0];

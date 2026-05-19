@@ -93,7 +93,7 @@ class InterpolateProvider {
                         : parseStringifyInterceptor;
                     if (!mustHaveExpression || expressions.length > 0) {
                         if (singleExpression) {
-                            const expression = expressions[0];
+                            const [expression] = expressions;
                             const parseFn = $parse(expression);
                             const watchProp = expression.trim();
                             const compute = interceptor

@@ -48,8 +48,9 @@ class ControllerProvider {
                         if (!match) {
                             throw $controllerError("ctrlfmt", "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.", expression);
                         }
-                        constructorName = match[1];
-                        identifier = (identifier ?? match[3]) || null;
+                        const [, matchedConstructorName, , matchedIdentifier] = match;
+                        constructorName = matchedConstructorName;
+                        identifier = (identifier ?? matchedIdentifier) || null;
                         const lookedUp = this._controllers.get(constructorName);
                         if (!lookedUp) {
                             throw $controllerError("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
@@ -64,7 +65,7 @@ class ControllerProvider {
                         const exportName = constructorName ?? meta.name;
                         if (identifier) {
                             instance.$controllerIdentifier = identifier;
-                            this._addIdentifier(locals, identifier, instance, exportName);
+                            ControllerProvider._addIdentifier(locals, identifier, instance, exportName);
                         }
                         if (instance.constructor?.$scopename && locals?.$scope) {
                             locals.$scope.$scopename =
@@ -77,7 +78,7 @@ class ControllerProvider {
                                 instance = result;
                                 if (identifier) {
                                     instance.$controllerIdentifier = identifier;
-                                    this._addIdentifier(locals, identifier, instance, exportName);
+                                    ControllerProvider._addIdentifier(locals, identifier, instance, exportName);
                                 }
                             }
                             return instance;
@@ -85,7 +86,7 @@ class ControllerProvider {
                     }
                     instance = $injector.instantiate(injectable, locals, constructorName);
                     if (identifier) {
-                        this._addIdentifier(locals, identifier, instance, constructorName ?? meta.name);
+                        ControllerProvider._addIdentifier(locals, identifier, instance, constructorName ?? meta.name);
                     }
                     return instance;
                 };
@@ -110,7 +111,7 @@ class ControllerProvider {
         }
     }
     /** @internal */
-    _addIdentifier(locals, identifier, instance, name) {
+    static _addIdentifier(locals, identifier, instance, name) {
         if (!(locals && isObject(locals.$scope))) {
             throw $controllerError("noscp", "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.", name, identifier);
         }

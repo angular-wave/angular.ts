@@ -19,9 +19,10 @@ function valToString(val) {
             return hasCustomToString(val)
                 ? val.toString()
                 : undefined;
-        default:
+        case "undefined":
             return undefined;
     }
+    return undefined;
 }
 /**
  * An internal class which implements [[ParamTypeDefinition]].
@@ -98,7 +99,7 @@ class ArrayParamType extends ParamType {
         this.$arrayMode = mode;
     }
     /** @internal */
-    _arrayWrap(val) {
+    static _arrayWrap(val) {
         return isArray(val) ? val : isDefined(val) ? [val] : [];
     }
     /** @internal */
@@ -116,7 +117,7 @@ class ArrayParamType extends ParamType {
     _mapArray(method, val, allTruthyMode = false) {
         if (isArray(val) && val.length === 0)
             return val;
-        const arr = this._arrayWrap(val);
+        const arr = ArrayParamType._arrayWrap(val);
         const type = this._type;
         if (allTruthyMode) {
             for (let i = 0; i < arr.length; i++) {
@@ -144,8 +145,8 @@ class ArrayParamType extends ParamType {
         return this._mapArray("is", val, true);
     }
     equals(val1, val2) {
-        const left = this._arrayWrap(val1);
-        const right = this._arrayWrap(val2);
+        const left = ArrayParamType._arrayWrap(val1);
+        const right = ArrayParamType._arrayWrap(val2);
         if (left.length !== right.length)
             return false;
         const { _type: type } = this;

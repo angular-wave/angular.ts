@@ -9,13 +9,13 @@ import { Transition } from './transition.js';
 function noop() {
     /* empty */
 }
-function afterViewCommitTask() {
+async function afterViewCommitTask() {
     return new Promise((resolve) => {
         setTimeout(resolve, 0);
     });
 }
 let viewTransitionActive = false;
-function runWithViewTransition(updateCallback) {
+async function runWithViewTransition(updateCallback) {
     if (viewTransitionActive) {
         updateCallback();
         return Promise.resolve();
@@ -34,9 +34,12 @@ function runWithViewTransition(updateCallback) {
             throw error;
         }
     });
-    viewTransition.finished.then(() => {
+    void viewTransition.finished
+        .then(() => {
         viewTransitionActive = false;
-    }, () => {
+        return undefined;
+    })
+        .catch(() => {
         viewTransitionActive = false;
     });
     if (callbackState.hasError) {
@@ -130,7 +133,7 @@ function collectPathNodes(nodes, path) {
 function isTransitionToken(token) {
     return token === "$transition$" || token === Transition;
 }
-function ignoredHook(trans) {
+async function ignoredHook(trans) {
     const ignoredReason = trans._ignoredReason();
     if (!ignoredReason)
         return undefined;
@@ -211,7 +214,7 @@ function registerRedirectToHook(transitionService) {
     }, redirectToHook, { bind: transitionService });
 }
 const RESOLVE_HOOK_PRIORITY = 1000;
-function eagerResolvePath(trans) {
+async function eagerResolvePath(trans) {
     return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
         .resolvePath(true, trans)
         .then(noop);
@@ -221,7 +224,7 @@ function registerEagerResolvePath(transitionService) {
         priority: RESOLVE_HOOK_PRIORITY,
     });
 }
-function lazyResolveState(trans, state) {
+async function lazyResolveState(trans, state) {
     const stateObject = state._state?.();
     if (!stateObject) {
         throw new Error(`State '${state.name}' is not built`);
@@ -239,7 +242,7 @@ function registerLazyResolveState(transitionService) {
         priority: RESOLVE_HOOK_PRIORITY,
     });
 }
-function resolveRemaining(trans) {
+async function resolveRemaining(trans) {
     return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
         .resolvePath(false, trans)
         .then(noop);
@@ -271,7 +274,7 @@ function updateViewConfigs(viewService, enteringViews, exitingViews) {
     });
     viewService._sync();
 }
-function activateViewsHook(transition) {
+async function activateViewsHook(transition) {
     const viewService = this._view;
     const enteringViews = transitionViews(transition, "entering");
     const exitingViews = transitionViews(transition, "exiting");
@@ -340,7 +343,14 @@ function registerUpdateGlobalState(transitionService) {
                 routerState._transition = undefined;
             }
         };
-        trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+        void trans.promise
+            .then(() => {
+            clearCurrentTransition();
+            return undefined;
+        })
+            .catch(() => {
+            clearCurrentTransition();
+        });
     });
     return transitionService.onSuccess({}, updateGlobalState, {
         priority: 10000,

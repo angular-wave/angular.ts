@@ -644,11 +644,12 @@ class NgModelController {
                 validationDone(true);
             }
             else {
-                Promise.all(validatorPromises).then(() => {
+                void Promise.all(validatorPromises)
+                    .then(() => {
                     validationDone(allValid);
-                }, () => {
-                    /* empty */
-                });
+                    return undefined;
+                })
+                    .catch(() => undefined);
             }
         };
         /**
@@ -833,7 +834,7 @@ class NgModelController {
     /** @internal */
     _debounceViewValueCommit(trigger) {
         let debounceDelay = this.$options.getOption("debounce");
-        const debounceDelayMap = debounceDelay;
+        const debounceDelayMap = typeof debounceDelay === "object" ? debounceDelay : {};
         const updateOn = this.$options.getOption("updateOn");
         if (trigger) {
             const debounceVal = debounceDelayMap[trigger];
@@ -852,12 +853,13 @@ class NgModelController {
             clearTimeout(this._pendingDebounce);
         }
         const pendingViewValue = this.$viewValue;
-        if (debounceDelay > 0) {
+        const normalizedDebounceDelay = isNumber(debounceDelay) ? debounceDelay : 0;
+        if (normalizedDebounceDelay > 0) {
             // this fails if debounceDelay is an object
             this._pendingDebounce = setTimeout(() => {
                 this.$viewValue = pendingViewValue;
                 this.$commitViewValue();
-            }, debounceDelay);
+            }, normalizedDebounceDelay);
         }
         else {
             this.$commitViewValue();
@@ -1138,9 +1140,8 @@ function ngModelDirective($attributes) {
             element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
             return {
                 pre: (scope, preElement, attr, ctrls) => {
-                    const modelCtrl = ctrls[0];
-                    const formCtrl = ctrls[1] ?? modelCtrl._parentForm;
-                    const optionsCtrl = ctrls[2];
+                    const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
+                    const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
                     if (optionsCtrl) {
                         modelCtrl.$options = optionsCtrl.$options;
                     }
@@ -1192,7 +1193,7 @@ function ngModelDirective($attributes) {
                     });
                 },
                 post: (scope, elementPost, _attr, ctrls) => {
-                    const modelCtrl = ctrls[0];
+                    const [modelCtrl] = ctrls;
                     const { change } = elementPost.dataset;
                     const changeFn = change ? modelCtrl._parse(change) : undefined;
                     modelCtrl._setUpdateOnEvents();

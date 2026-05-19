@@ -156,19 +156,20 @@ class CompileProvider {
                             for (let i = 0, l = directiveFactoryRegistry[name].length; i < l; i++) {
                                 const directiveFactoryInstance = directiveFactoryRegistry[name][i];
                                 try {
-                                    let directive = $injector.invoke(directiveFactoryInstance);
+                                    const directive = $injector.invoke(directiveFactoryInstance);
+                                    let normalizedDirective;
                                     if (isFunction(directive)) {
-                                        directive = {
+                                        normalizedDirective = {
                                             compile: valueFn(directive),
                                         };
                                     }
                                     else {
-                                        const directiveObject = directive;
-                                        if (!directiveObject.compile && directiveObject.link) {
-                                            directiveObject.compile = valueFn(directiveObject.link);
+                                        normalizedDirective = directive;
+                                        if (!normalizedDirective.compile &&
+                                            normalizedDirective.link) {
+                                            normalizedDirective.compile = valueFn(normalizedDirective.link);
                                         }
                                     }
-                                    const normalizedDirective = directive;
                                     normalizedDirective.priority =
                                         normalizedDirective.priority || 0;
                                     normalizedDirective.index = i;
@@ -447,7 +448,7 @@ class CompileProvider {
                 const security = getSecurityAdapter($injector);
                 const internalAttributes = $attributes;
                 let lazyTemplateRequest;
-                function requestTemplate(templateUrl) {
+                async function requestTemplate(templateUrl) {
                     if (lazyTemplateRequest === undefined) {
                         lazyTemplateRequest = $injector.has(_templateRequest)
                             ? $injector.get(_templateRequest)
@@ -457,10 +458,10 @@ class CompileProvider {
                         ? lazyTemplateRequest(templateUrl)
                         : fetchTemplate(templateUrl);
                 }
-                function fetchTemplate(templateUrl) {
+                async function fetchTemplate(templateUrl) {
                     return fetch(templateUrl, {
                         headers: { Accept: "text/html" },
-                    }).then((response) => {
+                    }).then(async (response) => {
                         if (!response.ok) {
                             throw new Error(`Failed to fetch template "${templateUrl}": ${String(response.status)} ${response.statusText}`);
                         }
@@ -643,7 +644,7 @@ class CompileProvider {
                     return [element];
                 }
                 function snapshotNodeList(nodes) {
-                    const length = nodes.length;
+                    const { length } = nodes;
                     if (length === 1) {
                         return [nodes[0]];
                     }
@@ -974,9 +975,9 @@ class CompileProvider {
                 }
                 function createTemplateLinkExecutor(templatePlan) {
                     if (templatePlan._nodeIndices.length === 1) {
-                        const index = templatePlan._nodeIndices[0];
-                        const nodeLinkPlan = templatePlan._nodeLinkPlans[0];
-                        const childLinkExecutor = templatePlan._childLinkExecutors[0];
+                        const [index] = templatePlan._nodeIndices;
+                        const [nodeLinkPlan] = templatePlan._nodeLinkPlans;
+                        const [childLinkExecutor] = templatePlan._childLinkExecutors;
                         return function singleTemplateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
                             executeTemplateLinkMapping(templatePlan, nodeLinkPlan, childLinkExecutor, getTemplateNodeAt(nodeList, index), scope, _parentBoundTranscludeFn ?? null);
                         };
@@ -1387,7 +1388,7 @@ class CompileProvider {
                     scope.$watch(linkState._propName, () => {
                         handlePropertyDirectiveValueWatch(bindingState);
                     });
-                    scope.$watch(String(attrsAny[linkState._attrName] ?? ""), (val) => {
+                    scope.$watch(stringify(attrsAny[linkState._attrName] ?? ""), (val) => {
                         handlePropertyDirectiveAttrWatch(bindingState, val);
                     });
                 }
@@ -1521,7 +1522,7 @@ class CompileProvider {
                             : collectElementTemplateNodes(typeof wrappedTemplate === "string"
                                 ? createNodelistFromHTML(wrappedTemplate)
                                 : wrappedTemplate);
-                        compileNode = templateNodes[0];
+                        [compileNode] = templateNodes;
                         if (templateNodes.length !== 1 ||
                             compileNode.nodeType !== NodeType._ELEMENT_NODE) {
                             throw $compileError("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", delayedState._origAsyncDirective.name, delayedState._templateUrl);
@@ -1683,7 +1684,8 @@ class CompileProvider {
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
                         const controller = assertDefined(elementControllers[name]);
-                        const bindings = controllerDirective._bindings._bindToController;
+                        const bindings = assertDefined(controllerDirective._bindings)
+                            ._bindToController;
                         const controllerInstance = controller();
                         controller._instance = controllerScope.$new(controllerInstance);
                         setCacheData(elementNode, `$${controllerDirective.name}Controller`, controller._instance);
@@ -2249,8 +2251,8 @@ class CompileProvider {
                 }
                 function collectDirectiveLinkFns(directive, directiveName, compileNode, templateAttrs, childTranscludeFn, preLinkFns, postLinkFns, newIsolateScopeDirective) {
                     try {
-                        const compile = assertDefined(directive.compile);
-                        const linkFn = compile.call(directive, compileNode, templateAttrs, childTranscludeFn);
+                        const compileDirective = assertDefined(directive.compile);
+                        const linkFn = compileDirective.call(directive, compileNode, templateAttrs, childTranscludeFn);
                         appendDirectiveLinkResult(linkFn, directive, directiveName, preLinkFns, postLinkFns, newIsolateScopeDirective);
                     }
                     catch (err) {
@@ -2331,7 +2333,7 @@ class CompileProvider {
                             value[i] = getControllers(directiveName, require[i], $element, elementControllers);
                         }
                     }
-                    else if (require !== null && typeof require === "object") {
+                    else if (typeof require === "object") {
                         value = {};
                         for (const property in require) {
                             if (!hasOwn(require, property)) {
@@ -2581,6 +2583,7 @@ class CompileProvider {
                     requestTemplate(templateUrl)
                         .then((content) => {
                         handleDelayedTemplateLoaded(delayedState, content);
+                        return undefined;
                     })
                         .catch((error) => {
                         handleDelayedTemplateLoadError(delayedState, error);
@@ -2751,7 +2754,7 @@ class CompileProvider {
                         _preLinkCtx: {
                             _attrName: compileState._attrName,
                             _propName: compileState._propName,
-                            _ngPropGetter: $parse(String(attr[compileState._attrName] ?? "")),
+                            _ngPropGetter: $parse(stringify(attr[compileState._attrName] ?? "")),
                             _sanitizer: compileState._sanitizer,
                         },
                     };
@@ -3092,7 +3095,8 @@ function getDirectiveRequire(directive) {
  * Validates and normalizes a directive `restrict` value.
  */
 function getDirectiveRestrict(restrict, name) {
-    if (restrict && !(typeof restrict === "string" && /[EA]/.test(restrict))) {
+    if (restrict &&
+        !(typeof restrict === "string" && /^(?:A|E|AE|EA)$/.test(restrict))) {
         throw $compileError("badrestrict", "Restrict property '{0}' of directive '{1}' is invalid", restrict, name);
     }
     return typeof restrict === "string" ? restrict : "EA";

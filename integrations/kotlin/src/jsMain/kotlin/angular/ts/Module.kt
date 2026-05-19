@@ -56,11 +56,19 @@ public class NgModule internal constructor(
         return this
     }
 
+    public fun <TState : Any> appComponent(
+        name: String,
+        options: AppComponent<TState>,
+    ): NgModule {
+        raw.appComponent(name, options.toJs())
+        return this
+    }
+
     public fun <TState : Any> webComponent(
         name: String,
-        options: WebComponent<TState>,
+        elementClass: ScopeElementConstructor<TState>,
     ): NgModule {
-        raw.webComponent(name, options.toJs())
+        raw.webComponent(name, elementClass.raw)
         return this
     }
 

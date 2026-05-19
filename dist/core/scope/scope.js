@@ -1,5 +1,5 @@
 import { _exceptionHandler, _parse } from '../../injection-tokens.js';
-import { isFunction, isProxy, isArray, isPromiseLike, isObject, hasOwn, keys, deleteProperty, isUndefined, isDefined, isInstanceOf, getHashKey, isProxySymbol, isString, assert, assertDefined, createObject, callFunction, isNull, nextUid, nullObject } from '../../shared/utils.js';
+import { isFunction, isProxy, isArray, isPromiseLike, isObject, hasOwn, keys, deleteProperty, isUndefined, isDefined, isInstanceOf, getHashKey, isProxySymbol, isString, assert, callFunction, assertDefined, createObject, isNull, nextUid, nullObject } from '../../shared/utils.js';
 import { ASTType } from '../parse/ast-type.js';
 
 let uid = 0;
@@ -368,19 +368,18 @@ function collectListenerKeys(node, keySet, seenKeys, listener) {
 function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
     if (!node)
         return;
-    switch (node._type) {
-        case ASTType._LogicalExpression:
-            collectExpressionListenerKeys(node._left, keySet, seenKeys, listener);
-            collectExpressionListenerKeys(node._right, keySet, seenKeys, listener);
-            return;
-        case ASTType._ConditionalExpression:
-            collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
-            collectExpressionListenerKeys(node._alternate, keySet, seenKeys, listener);
-            collectExpressionListenerKeys(node._consequent, keySet, seenKeys, listener);
-            return;
-        default:
-            collectListenerKeys(node, keySet, seenKeys, listener);
+    if (node._type === ASTType._LogicalExpression) {
+        collectExpressionListenerKeys(node._left, keySet, seenKeys, listener);
+        collectExpressionListenerKeys(node._right, keySet, seenKeys, listener);
+        return;
     }
+    if (node._type === ASTType._ConditionalExpression) {
+        collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
+        collectExpressionListenerKeys(node._alternate, keySet, seenKeys, listener);
+        collectExpressionListenerKeys(node._consequent, keySet, seenKeys, listener);
+        return;
+    }
+    collectListenerKeys(node, keySet, seenKeys, listener);
 }
 function getFilterInputWatchKeys(expr) {
     if (!expr._filter) {
@@ -400,17 +399,6 @@ function getFilterInputWatchKeys(expr) {
     }
     return watchKeys;
 }
-/**
- * @private
- * Creates a scope proxy for the target object, intercepting property changes.
- * Nested scopeable values are proxied lazily when read, without writing proxy
- * helper state back into the target model.
- *
- * @param target - The object to be wrapped in a proxy.
- * @param [context] - The context for the handler, used to track listeners.
- * @returns - A proxy that intercepts operations on the target object,
- *                                     or the original value if the target is not an object.
- */
 function createScope(target = {}, context) {
     return getCachedScopeProxy(target, context ?? new Scope());
 }
@@ -677,7 +665,6 @@ function isNonScope(target) {
  * Scope class for the Proxy. It intercepts operations like property access (get)
  * and property setting (set), and adds support for deep change tracking and
  * observer-like behavior.
- * @extends {Record<string, any>}
  */
 class Scope {
     /**
@@ -1369,7 +1356,7 @@ class Scope {
             return Reflect.apply(method, target, args);
         }
         if (property === "set") {
-            const key = args[0];
+            const [key] = args;
             const hadKey = target.has(key);
             const previousValue = hadKey ? target.get(key) : undefined;
             const result = Reflect.apply(method, target, args);
@@ -1508,9 +1495,12 @@ class Scope {
     }
     /** @internal Resolves promise-like assignments back through the same scope property. */
     _schedulePromiseSettlement(target, property, promise, proxy) {
-        Promise.resolve(promise).then((value) => {
+        void Promise.resolve(promise)
+            .then((value) => {
             this._applyPromiseSettlement(target, property, promise, value, proxy);
-        }, (reason) => {
+            return undefined;
+        })
+            .catch((reason) => {
             this._applyPromiseSettlement(target, property, promise, reason, proxy);
         });
     }
@@ -1749,7 +1739,7 @@ class Scope {
         if (!listenerFn) {
             let res = get(this.$target);
             while (isFunction(res)) {
-                res = res(this.$target);
+                res = callFunction(res, undefined, this.$target);
             }
             return undefined;
         }
@@ -1794,7 +1784,7 @@ class Scope {
             // 6
             case ASTType._BinaryExpression: {
                 if (expr._isPure) {
-                    const watch = assertDefined(expr._toWatch)[0];
+                    const [watch] = assertDefined(expr._toWatch);
                     key = resolveNodeWatchKey(watch);
                     if (!key) {
                         throw new Error("Unable to determine key");
@@ -1820,7 +1810,7 @@ class Scope {
             }
             // 7
             case ASTType._UnaryExpression: {
-                const x = assertDefined(expr._toWatch)[0];
+                const [x] = assertDefined(expr._toWatch);
                 key = resolveNodeWatchKey(x);
                 if (!key) {
                     throw new Error("Unable to determine key");
@@ -1946,7 +1936,7 @@ class Scope {
                         currentKey = getNodeName(prop._value);
                     }
                     else {
-                        const target = assertDefined(expr._toWatch)[0];
+                        const [target] = assertDefined(expr._toWatch);
                         currentKey = resolveNodeWatchKey(target);
                         if (!currentKey) {
                             collectWatchKeys(target, collectedKeys);
@@ -1961,7 +1951,14 @@ class Scope {
                 }
                 break;
             }
-            default: {
+            case ASTType._Program:
+            case ASTType._ExpressionStatement:
+            case ASTType._Literal:
+            case ASTType._LocalsExpression:
+            case ASTType._Property:
+            case ASTType._ThisExpression:
+            case ASTType._NGValueParameter:
+            case ASTType._UpdateExpression: {
                 throw new Error(`Unsupported type ${String(type)}`);
             }
         }
@@ -1969,7 +1966,7 @@ class Scope {
         const listenerObject = listener._watchFn(this.$target);
         if (isObject(listenerObject)) {
             if (!key && keySet.length > 0) {
-                key = keySet[0];
+                [key] = keySet;
             }
             if (key) {
                 const listenerTarget = getObjectListenerTarget(listenerObject);
@@ -2123,18 +2120,18 @@ class Scope {
         let owner = parent;
         while (owner && owner !== this) {
             if (hasOwn(owner.$target, key)) {
-                this._registerForeignKeyOwner(owner, key);
+                Scope._registerForeignKeyOwner(owner, key);
                 return;
             }
             owner = owner.$parent
                 ?.$handler;
         }
         if (parent) {
-            this._registerForeignKeyOwner(parent, key);
+            Scope._registerForeignKeyOwner(parent, key);
         }
     }
     /** @internal Registers one inherited key against a resolved parent scope owner. */
-    _registerForeignKeyOwner(owner, key) {
+    static _registerForeignKeyOwner(owner, key) {
         const ownerValue = owner.$target[key];
         if (isObject(ownerValue) && !isNonScope(ownerValue)) {
             const ownerTarget = ownerValue;
@@ -2603,7 +2600,7 @@ class Scope {
                 }
                 newVal = listener._invokeWatchFn
                     ? listener._invokeWatchFn(_originalTarget)
-                    : newVal(_originalTarget);
+                    : callFunction(newVal, undefined, _originalTarget);
             }
             else if (!isArray(newVal)) {
                 _listenerFn(newVal, _originalTarget);

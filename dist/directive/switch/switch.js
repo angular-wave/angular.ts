@@ -1,7 +1,7 @@
 import { _injector, _attributes } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { removeElement, domInsert } from '../../shared/dom.js';
-import { values } from '../../shared/utils.js';
+import { values, assertDefined } from '../../shared/utils.js';
 
 class NgSwitchController {
     constructor() {
@@ -69,7 +69,7 @@ function ngSwitchDirective($injector, $attributes) {
                     values(selectedTranscludes).forEach((selectedTransclude) => {
                         selectedTransclude.transclude((caseElementParam, selectedScopeParam) => {
                             const caseElement = caseElementParam;
-                            const selectedScope = selectedScopeParam;
+                            const selectedScope = assertDefined(selectedScopeParam);
                             selectedScopes.push(selectedScope);
                             const anchor = selectedTransclude.element;
                             const block = {

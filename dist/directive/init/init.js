@@ -8,8 +8,8 @@ function ngInitDirective($parse, $attributes) {
         compile(element) {
             const initFn = $parse($attributes.read(element, "ngInit") ?? "");
             return {
-                pre(scope, element) {
-                    const controller = getController(element);
+                pre(scope, linkElement) {
+                    const controller = getController(linkElement);
                     if (controller) {
                         initFn(controller);
                     }

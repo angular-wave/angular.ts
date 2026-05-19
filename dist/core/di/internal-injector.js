@@ -4,6 +4,9 @@ import { annotate, isClass } from './di.js';
 
 const $injectorError = createErrorFactory(_injector);
 const providerSuffix = "Provider";
+const defaultLoadNewModules = () => {
+    /* empty */
+};
 class AbstractInjector {
     /**
      * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
@@ -55,7 +58,10 @@ class AbstractInjector {
             if (!isString(key)) {
                 throw $injectorError("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
             }
-            args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
+            const localValues = locals;
+            args.push(localValues && hasOwn(localValues, key)
+                ? localValues[key]
+                : this.get(key));
         });
         return args;
     }
@@ -109,15 +115,6 @@ class AbstractInjector {
             }
         }
     }
-    /**
-     * @abstract
-     * @param {string} _serviceName
-     * @returns {any}
-     */
-    /** @internal */
-    _factory(serviceName) {
-        return undefined;
-    }
 }
 /**
  * Injector for providers
@@ -153,9 +150,7 @@ class InjectorService extends AbstractInjector {
      */
     constructor(providerInjector, strictDi) {
         super(strictDi);
-        this.loadNewModules = () => {
-            /* empty */
-        };
+        this.loadNewModules = defaultLoadNewModules;
         this._providerInjector = providerInjector;
         this._modules = providerInjector._modules;
     }

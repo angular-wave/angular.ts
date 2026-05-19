@@ -59,8 +59,8 @@ final class AngularElementOptions<TScope> {
     this.extra = const {},
   });
 
-  /// Web component definition passed to AngularTS.
-  final WebComponent<TScope> component;
+  /// App component definition passed to AngularTS.
+  final AppComponent<TScope> component;
 
   /// Custom runtime `ng` module configuration.
   final Object? ngModule;

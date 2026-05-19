@@ -1,5 +1,5 @@
 import { _parse, _log, _exceptionHandler, _attributes } from '../../injection-tokens.js';
-import { callBackAfterFirst, isDefined, wait } from '../../shared/utils.js';
+import { isDefined, wait, callBackAfterFirst } from '../../shared/utils.js';
 import { createWorkerConnection } from '../../services/worker/worker.js';
 import { getEventNameForElement } from '../events/event-name.js';
 
@@ -23,7 +23,12 @@ function ngWorkerDirective($parse, $log, $exceptionHandler, $attributes) {
             let throttled = false;
             let intervalId;
             if ($attributes.has(element, "latch")) {
-                $attributes.observe(scope, element, "latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
+                const dispatchAfterFirst = callBackAfterFirst(() => {
+                    element.dispatchEvent(new Event(eventName));
+                });
+                $attributes.observe(scope, element, "latch", () => {
+                    dispatchAfterFirst();
+                });
             }
             if ($attributes.has(element, "interval")) {
                 element.dispatchEvent(new Event(eventName));

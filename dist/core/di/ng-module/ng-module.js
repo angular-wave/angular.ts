@@ -206,10 +206,11 @@ class NgModule {
     wasm(name, src, imports = {}, opts = {}) {
         validate(isString, name, "name");
         validate(isString, src, "src");
+        const createWasmService = ($wasm) => $wasm(src, imports, opts);
         this._invokeQueue.push([
             _provide,
             "factory",
-            [name, [_wasm, ($wasm) => $wasm(src, imports, opts)]],
+            [name, [_wasm, createWasmService]],
         ]);
         return this;
     }
@@ -361,22 +362,40 @@ class NgModule {
         return this;
     }
     /**
-     * Register a scoped custom element backed by a normal AngularTS child scope.
+     * Register an options-backed application host custom element.
      *
-     * The definition is installed when the module runs. The custom element can be
-     * consumed as a native element while its internal model remains part of the
-     * AngularTS scope tree.
+     * The definition is installed when the module runs. The host element is a
+     * native custom element backed by an AngularTS child scope.
      *
      * @param {string} name - Custom element tag name.
-     * @param {WebComponentOptions} options - Custom element options.
+     * @param {AppComponentOptions} options - App component options.
      * @returns {NgModule}
      */
-    webComponent(name, options) {
+    appComponent(name, options) {
         validate(isString, name, "name");
         validate(isObject, options, "options");
         this._runBlocks.push([
             _webComponent,
-            ($webComponent) => $webComponent.define(name, options),
+            ($webComponent) => $webComponent.defineAppComponent(name, options),
+        ]);
+        return this;
+    }
+    /**
+     * Register a user-authored native custom element backed by an AngularTS scope.
+     *
+     * The element class must extend `ScopeElement`. Its static template, shadow,
+     * scope, inputs, and isolate properties configure the AngularTS wiring.
+     *
+     * @param {string} name - Custom element tag name.
+     * @param {ScopeElementConstructor} elementClass - Custom element class.
+     * @returns {NgModule}
+     */
+    webComponent(name, elementClass) {
+        validate(isString, name, "name");
+        validate(isFunction, elementClass, "elementClass");
+        this._runBlocks.push([
+            _webComponent,
+            ($webComponent) => $webComponent.defineElement(name, elementClass),
         ]);
         return this;
     }

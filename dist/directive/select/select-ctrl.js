@@ -1,7 +1,7 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement } from '../../shared/dom.js';
-import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, isDefined, isArray, deleteProperty } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty } from '../../shared/utils.js';
 
 function readOptionElementAttr($attributes, optionElement, optionAttrs, normalizedName) {
     const elementValue = $attributes?.read(optionElement, normalizedName);
@@ -339,7 +339,7 @@ class SelectController {
                 }
             };
             syncNgValue(undefined);
-            optionScope.$watch(String(optionAttrs.ngValue ?? ""), syncNgValue);
+            optionScope.$watch(stringify(optionAttrs.ngValue ?? ""), syncNgValue);
             observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", (observedValue) => {
                 if (observedValue !== optionElement.getAttribute("value")) {
                     return oldVal;

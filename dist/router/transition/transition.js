@@ -101,7 +101,7 @@ class Transition {
         const toPath = buildToPath(fromPath, targetState);
         this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
         const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
-        void TransitionHook._invokeHooks(onCreateHooks, () => Promise.resolve());
+        void TransitionHook._invokeHooks(onCreateHooks, async () => Promise.resolve());
         this.applyViewConfigs();
     }
     applyViewConfigs() {
@@ -313,7 +313,7 @@ class Transition {
         return buildHooksForPhase(this, phase);
     }
     /** @internal */
-    _startTransition() {
+    async _startTransition() {
         const { _routerState } = this;
         _routerState._lastStartedTransitionId = this.$id;
         _routerState._transition = this;
@@ -329,7 +329,7 @@ class Transition {
      *
      * @returns {Promise<StateDeclaration>} a promise for a successful transition.
      */
-    run() {
+    async run() {
         TransitionRunner._run(this);
         return this.promise;
     }

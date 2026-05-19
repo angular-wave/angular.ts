@@ -352,7 +352,8 @@ class UrlMatcher {
      * @returns {RawParams | null} The captured parameter values.
      */
     /** @internal */
-    _exec(path, search = {}, hash) {
+    _exec(path, search, hash) {
+        const searchParams = search ?? {};
         const pathMatchers = this._cache._path ?? [this];
         const match = getPatternRegExp(this, pathMatchers).exec(path);
         if (!match)
@@ -383,7 +384,7 @@ class UrlMatcher {
                 const param = matcherParams[j];
                 if (param.location !== DefType._SEARCH)
                     continue;
-                const value = param.value(search[param.id]);
+                const value = param.value(searchParams[param.id]);
                 if (!param.validates(value))
                     return null;
                 values[param.id] = value;

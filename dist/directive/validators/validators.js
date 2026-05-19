@@ -364,7 +364,9 @@ const minlengthDirective = [
                 }
             });
             ctrl.$validators.minlength = function (modelValue, viewValue) {
-                const valid = ctrl.$isEmpty(viewValue) || viewValue.length >= minlengthParsed;
+                const valid = ctrl.$isEmpty(viewValue) ||
+                    (isString(viewValue) && viewValue.length >= minlengthParsed) ||
+                    (Array.isArray(viewValue) && viewValue.length >= minlengthParsed);
                 setNativeCustomValidityIssue(ctrl, "minlength", valid
                     ? null
                     : `Value must be at least ${String(minlengthParsed)} characters.`);

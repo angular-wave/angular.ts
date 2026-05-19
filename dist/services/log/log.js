@@ -20,7 +20,7 @@ class LogProvider {
      * Normalizes `Error` objects into readable log output.
      */
     /** @internal */
-    _formatError(arg) {
+    static _formatError(arg) {
         if (isError(arg)) {
             if (arg.stack) {
                 arg =
@@ -36,11 +36,11 @@ class LogProvider {
      * Builds a console-backed logger for the requested method name.
      */
     /** @internal */
-    _consoleLog(type) {
+    static _consoleLog(type) {
         const consoleRef = window.console;
         const logFn = consoleRef[type]?.bind(consoleRef) ?? consoleRef.log.bind(consoleRef);
         return (...args) => {
-            const formattedArgs = args.map((arg) => this._formatError(arg));
+            const formattedArgs = args.map((arg) => LogProvider._formatError(arg));
             logFn(...formattedArgs);
         };
     }
@@ -50,12 +50,12 @@ class LogProvider {
             return this._override();
         }
         return {
-            log: this._consoleLog("log"),
-            info: this._consoleLog("info"),
-            warn: this._consoleLog("warn"),
-            error: this._consoleLog("error"),
+            log: LogProvider._consoleLog("log"),
+            info: LogProvider._consoleLog("info"),
+            warn: LogProvider._consoleLog("warn"),
+            error: LogProvider._consoleLog("error"),
             debug: (() => {
-                const fn = this._consoleLog("debug");
+                const fn = LogProvider._consoleLog("debug");
                 return (...args) => {
                     if (this.debug) {
                         fn(...args);

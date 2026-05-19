@@ -462,7 +462,7 @@ function startingTag(elementOrStr) {
  * @returns The contiguous DOM block spanning from the first node to the last node.
  */
 function getBlockNodes(nodes) {
-    let node = nodes[0];
+    let [node] = nodes;
     const endNode = nodes[nodes.length - 1];
     let blockNodes;
     for (let i = 1; node !== endNode; i++) {

@@ -3,13 +3,21 @@ import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 
-pub opaque type WebComponent(scope) {
-  WebComponent(
+pub opaque type AppComponent(scope) {
+  AppComponent(
     template: Option(String),
     shadow: Bool,
     isolate: Bool,
     inputs: List(InputEntry),
   )
+}
+
+pub opaque type ScopeElement(scope) {
+  ScopeElement(handle: Dynamic)
+}
+
+pub opaque type ScopeElementConstructor(scope) {
+  ScopeElementConstructor(handle: Dynamic)
 }
 
 pub opaque type Input {
@@ -20,8 +28,8 @@ pub type InputEntry {
   InputEntry(name: String, input: Input)
 }
 
-pub fn new(template: String) -> WebComponent(scope) {
-  WebComponent(
+pub fn new(template: String) -> AppComponent(scope) {
+  AppComponent(
     template: Some(template),
     shadow: False,
     isolate: False,
@@ -29,33 +37,50 @@ pub fn new(template: String) -> WebComponent(scope) {
   )
 }
 
-pub fn empty() -> WebComponent(scope) {
-  WebComponent(template: None, shadow: False, isolate: False, inputs: [])
+pub fn empty() -> AppComponent(scope) {
+  AppComponent(template: None, shadow: False, isolate: False, inputs: [])
 }
 
 pub fn shadow(
-  web_component: WebComponent(scope),
+  app_component: AppComponent(scope),
   enabled: Bool,
-) -> WebComponent(scope) {
-  WebComponent(..web_component, shadow: enabled)
+) -> AppComponent(scope) {
+  AppComponent(..app_component, shadow: enabled)
 }
 
 pub fn isolate(
-  web_component: WebComponent(scope),
+  app_component: AppComponent(scope),
   enabled: Bool,
-) -> WebComponent(scope) {
-  WebComponent(..web_component, isolate: enabled)
+) -> AppComponent(scope) {
+  AppComponent(..app_component, isolate: enabled)
 }
 
 pub fn input(
-  web_component: WebComponent(scope),
+  app_component: AppComponent(scope),
   name: String,
   input: Input,
-) -> WebComponent(scope) {
-  WebComponent(..web_component, inputs: [
+) -> AppComponent(scope) {
+  AppComponent(..app_component, inputs: [
     InputEntry(name, input),
-    ..web_component.inputs
+    ..app_component.inputs
   ])
+}
+
+pub fn scope_element(handle: Dynamic) -> ScopeElement(scope) {
+  ScopeElement(handle)
+}
+
+pub fn scope_element_constructor(
+  handle: Dynamic,
+) -> ScopeElementConstructor(scope) {
+  ScopeElementConstructor(handle)
+}
+
+pub fn scope_element_constructor_handle(
+  constructor: ScopeElementConstructor(scope),
+) -> Dynamic {
+  let ScopeElementConstructor(handle) = constructor
+  handle
 }
 
 pub fn input_string() -> Input {
@@ -70,25 +95,25 @@ pub fn input_bool() -> Input {
   Input(boolean_constructor())
 }
 
-pub fn to_js_object(web_component: WebComponent(scope)) -> Dynamic {
+pub fn to_js_object(app_component: AppComponent(scope)) -> Dynamic {
   let object = unsafe.empty_object()
 
-  case web_component.template {
+  case app_component.template {
     Some(template) -> unsafe.set_string(object, "template", template)
     None -> object
   }
 
-  case web_component.shadow {
+  case app_component.shadow {
     True -> unsafe.set_bool(object, "shadow", True)
     False -> object
   }
 
-  case web_component.isolate {
+  case app_component.isolate {
     True -> unsafe.set_bool(object, "isolate", True)
     False -> object
   }
 
-  case web_component.inputs {
+  case app_component.inputs {
     [] -> object
     inputs -> unsafe.set_property(object, "inputs", inputs_to_js(inputs))
   }

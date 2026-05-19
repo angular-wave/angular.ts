@@ -29,7 +29,7 @@ class ManagedWebTransportConnection {
             writer.releaseLock();
         }
     }
-    sendText(data) {
+    async sendText(data) {
         return this.sendDatagram(data);
     }
     async sendStream(data) {
@@ -85,9 +85,12 @@ class ManagedWebTransportConnection {
             this._handleNativeClose(error, transport);
             throw error;
         });
-        transport.closed.then(() => {
+        void transport.closed
+            .then(() => {
             this._handleNativeClose(undefined, transport);
-        }, (error) => {
+            return undefined;
+        })
+            .catch((error) => {
             this._handleNativeClose(error, transport);
         });
     }

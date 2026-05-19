@@ -19,7 +19,7 @@ export { SceDelegateProvider, SceProvider } from './services/sce/sce.js';
 export { SseProvider } from './services/sse/sse.js';
 export { StreamProvider } from './services/stream/readable-stream.js';
 export { TemplateCacheProvider } from './services/template-cache/template-cache.js';
-export { WebComponentProvider } from './services/web-component/web-component.js';
+export { ScopeElement, WebComponentProvider } from './services/web-component/web-component.js';
 export { WebSocketProvider } from './services/websocket/websocket.js';
 export { WebTransportProvider } from './services/webtransport/webtransport.js';
 export { WorkerProvider, createWorkerConnection } from './services/worker/worker.js';

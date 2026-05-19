@@ -33,7 +33,7 @@ class TransitionHook {
      * Runs hooks in sequence, waiting for each async hook before invoking the next.
      */
     /** @internal */
-    static _chain(hooks, waitFor) {
+    static async _chain(hooks, waitFor) {
         return TransitionHook._chainFrom(hooks, 0, waitFor);
     }
     /** @internal */
@@ -45,7 +45,7 @@ class TransitionHook {
         }
     }
     /** @internal */
-    static _invokeHooks(hooks, doneCallback) {
+    static async _invokeHooks(hooks, doneCallback) {
         for (let idx = 0; idx < hooks.length; idx++) {
             const hookResult = hooks[idx]._invokeHook();
             if (isPromiseLike(hookResult)) {
@@ -60,7 +60,7 @@ class TransitionHook {
         return TransitionHook._runDoneCallback(doneCallback);
     }
     /** @internal */
-    static _runDoneCallback(doneCallback) {
+    static async _runDoneCallback(doneCallback) {
         return isDoneTask(doneCallback)
             ? doneCallback._startTransition()
             : doneCallback();
@@ -83,7 +83,7 @@ class TransitionHook {
         return hook?._logError(error);
     }
     /** @internal */
-    static _rejectError(_hook, error) {
+    static async _rejectError(_hook, error) {
         const promise = Promise.resolve().then(() => {
             throw error;
         });

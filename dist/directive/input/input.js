@@ -215,7 +215,7 @@ function inputDirective() {
         require: ["?ngModel"],
         link: {
             pre(_scope, element, attr, ctrls) {
-                const model = ctrls[0];
+                const [model] = ctrls;
                 if (!model)
                     return;
                 const input = element;

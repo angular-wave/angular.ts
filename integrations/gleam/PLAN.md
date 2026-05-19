@@ -247,7 +247,8 @@ AngularTS registration glue in normal applications.
 
 ### Phase 6: Web Components
 
-- Implement Gleam `WebComponent` config wrappers.
+- Implement Gleam `AppComponent` config wrappers and native `webComponent`
+  registration helpers.
 - Support inputs, shadow DOM, connected/disconnected hooks, and DOM event
   dispatch.
 - Add typed web component event payload helpers.

@@ -16,9 +16,29 @@ function expandUriTemplate(template, vars = {}) {
     if (!isString(template))
         throw new TypeError("template must be a string");
     vars = vars ?? {};
-    return template.replace(/\{([^}]+)\}/g, (_match, expression) => {
-        return expandExpression(expression, vars);
-    });
+    const parts = [];
+    let cursor = 0;
+    while (cursor < template.length) {
+        const open = template.indexOf("{", cursor);
+        if (open === -1) {
+            parts.push(template.slice(cursor));
+            break;
+        }
+        const close = template.indexOf("}", open + 1);
+        if (close === -1) {
+            parts.push(template.slice(cursor));
+            break;
+        }
+        if (close === open + 1) {
+            parts.push(template.slice(cursor, close + 1));
+            cursor = close + 1;
+            continue;
+        }
+        parts.push(template.slice(cursor, open));
+        parts.push(expandExpression(template.slice(open + 1, close), vars));
+        cursor = close + 1;
+    }
+    return parts.join("");
 }
 /**
  * Helper: percent-encode a string. If allowReserved true, reserved chars are NOT encoded.
@@ -111,9 +131,9 @@ function expandExpression(expression, vars) {
         const varspec = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
         if (!varspec)
             throw new Error(`Invalid varspec: ${spec}`);
-        const varname = varspec[1];
-        const explode = varspec[2] === "*";
-        const prefixLength = varspec[3] ? parseInt(varspec[3], 10) : undefined;
+        const [, varname, modifier, prefix] = varspec;
+        const explode = modifier === "*";
+        const prefixLength = prefix ? parseInt(prefix, 10) : undefined;
         const value = vars[varname];
         // undefined or null = skip (no expansion)
         if (isNullOrUndefined(value)) {
@@ -140,10 +160,10 @@ function expandExpression(expression, vars) {
                     if (item === null || item === undefined)
                         continue;
                     if (conf.named) {
-                        expandedParts.push(`${pctEncode(varname, conf.allowReserved)}=${pctEncode(String(item), conf.allowReserved)}`);
+                        expandedParts.push(`${pctEncode(varname, conf.allowReserved)}=${pctEncode(item, conf.allowReserved)}`);
                     }
                     else {
-                        expandedParts.push(pctEncode(String(item), conf.allowReserved));
+                        expandedParts.push(pctEncode(item, conf.allowReserved));
                     }
                 }
             }
@@ -151,7 +171,7 @@ function expandExpression(expression, vars) {
                 // join by comma (or operator.sep?) — RFC: simple join with ','
                 const joined = value
                     .filter((val) => val !== null && val !== undefined)
-                    .map((val) => pctEncode(String(val), conf.allowReserved))
+                    .map((val) => pctEncode(val, conf.allowReserved))
                     .join(",");
                 if (conf.named) {
                     if (joined === "") {

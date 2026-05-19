@@ -1,4 +1,4 @@
-import { isFunction, isInstanceOf } from '../../shared/utils.js';
+import { isFunction, isInstanceOf, isString } from '../../shared/utils.js';
 
 /**
  * Shared connection manager for push transports such as SSE and WebSocket.
@@ -103,7 +103,9 @@ class ConnectionManager {
         const rawData = data;
         let transformedData = data;
         try {
-            transformedData = this._config.transformMessage(data) ?? data;
+            transformedData = isString(data)
+                ? (this._config.transformMessage(data) ?? data)
+                : data;
         }
         catch {
             /* empty */

@@ -1,13 +1,46 @@
 import { _injector, _rootScope, _compile, _scope } from '../../injection-tokens.js';
 import { getInheritedData, setScope, dealoc } from '../../shared/dom.js';
 import { kebobString } from '../../shared/strings.js';
-import { isFunction, isNumber, isString, stringify, uppercase, deleteProperty, isObject } from '../../shared/utils.js';
+import { isFunction, uppercase, deleteProperty, isNumber, isString, stringify, isObject } from '../../shared/utils.js';
 
+/** Native custom element base class backed by an AngularTS child scope. */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
+class ScopeElement extends HTMLElement {
+    static get observedAttributes() {
+        return getScopeElementInputs(this).map((input) => input.attribute);
+    }
+    connectedCallback() {
+        queueScopeElementConnect(this);
+    }
+    disconnectedCallback() {
+        queueScopeElementDisconnect(this);
+    }
+    attributeChangedCallback(attribute, oldValue, newValue) {
+        syncScopeElementAttribute(this, attribute, oldValue, newValue);
+    }
+    /** Dispatch a composed bubbling DOM event from this custom element. */
+    dispatch(type, detail, init = {}) {
+        return this.dispatchEvent(new CustomEvent(type, {
+            bubbles: true,
+            composed: true,
+            ...init,
+            detail,
+        }));
+    }
+}
 const pendingValueStore = new WeakMap();
+const scopeElementDefinitions = new WeakMap();
+const scopeElementInputs = new WeakMap();
+const scopeElementScopes = new WeakMap();
+const scopeElementContexts = new WeakMap();
+const scopeElementDestroyTimers = new WeakMap();
+const scopeElementCleanupFns = new WeakMap();
+const queuedScopeElementConnects = new WeakSet();
+const scopeElementReflectingAttributes = new WeakMap();
 /** Provider for scoped custom element integration. */
 class WebComponentProvider {
     constructor() {
-        /** Default options merged into every custom element definition. */
+        /** Default options merged into every app component definition. */
         this.defaults = {};
         this.$get = [
             _injector,
@@ -27,140 +60,193 @@ class WebComponentProvider {
                 };
                 return {
                     createElementScope,
-                    define: (name, options) => {
-                        const existing = customElements.get(name);
-                        if (existing)
-                            return existing;
+                    defineAppComponent: (name, options) => {
                         const mergedOptions = {
                             ...this.defaults,
                             ...options,
                         };
-                        const inputs = normalizeInputs(mergedOptions.inputs);
-                        const elementClass = createWebComponentClass(name, inputs, mergedOptions, injector, compile, createElementScope);
-                        customElements.define(name, elementClass);
-                        return elementClass;
+                        return defineAppComponent(name, mergedOptions, injector, compile, createElementScope);
+                    },
+                    defineElement: (name, elementClass) => {
+                        return defineScopeElement(name, elementClass, resolveScopeElementOptions(elementClass), injector, compile, createElementScope);
                     },
                 };
             },
         ];
     }
 }
-function createWebComponentClass(name, inputs, options, injector, compile, createElementScope) {
-    const attributes = inputs.map((input) => input.attribute);
-    const scopes = new WeakMap();
-    const contexts = new WeakMap();
-    const destroyTimers = new WeakMap();
-    const cleanupFns = new WeakMap();
-    const queuedConnects = new WeakSet();
-    const reflectingAttributes = new WeakMap();
-    class AngularTsWebComponent extends HTMLElement {
-        static get observedAttributes() {
-            return attributes;
+function defineAppComponent(name, options, injector, compile, createElementScope) {
+    class AngularTsAppComponent extends ScopeElement {
+        connected() {
+            const context = getScopeElementContext(this);
+            return options.connected?.(context);
         }
-        connectedCallback() {
-            const destroyTimer = destroyTimers.get(this);
-            if (destroyTimer) {
-                clearTimeout(destroyTimer);
-                destroyTimers.delete(this);
-            }
-            if (queuedConnects.has(this))
-                return;
-            queuedConnects.add(this);
-            queueMicrotask(() => {
-                queuedConnects.delete(this);
-                if (!this.isConnected)
-                    return;
-                connectHost(this);
-            });
+        disconnected() {
+            const context = getScopeElementContext(this);
+            if (context)
+                options.disconnected?.(context);
         }
-        disconnectedCallback() {
-            const timer = setTimeout(() => {
-                destroyTimers.delete(this);
-                if (this.isConnected)
-                    return;
-                disconnectHost(this);
-            }, 0);
-            destroyTimers.set(this, timer);
-        }
-        attributeChangedCallback(attribute, oldValue, newValue) {
-            if (oldValue === newValue)
-                return;
-            const reflected = reflectingAttributes.get(this);
-            if (reflected?.has(attribute))
-                return;
-            const input = inputs.find((candidate) => candidate.attribute === attribute);
-            if (!input)
-                return;
-            writeInput(this, input, coerceAttributeValue(input, newValue), scopes.get(this));
-            const context = contexts.get(this);
-            if (context) {
-                options.attributeChanged?.(attribute, oldValue, newValue, context);
-            }
+        attributeChanged(name, oldValue, newValue) {
+            const context = getScopeElementContext(this);
+            if (context)
+                options.attributeChanged?.(name, oldValue, newValue, context);
         }
     }
+    AngularTsAppComponent.template = options.template;
+    AngularTsAppComponent.shadow = options.shadow;
+    AngularTsAppComponent.scope = options.scope;
+    AngularTsAppComponent.inputs = options.inputs;
+    AngularTsAppComponent.isolate = options.isolate;
+    Object.defineProperty(AngularTsAppComponent, "name", {
+        value: customElementClassName(name),
+    });
+    return defineScopeElement(name, AngularTsAppComponent, options, injector, compile, createElementScope);
+}
+function defineScopeElement(name, elementClass, options, injector, compile, createElementScope) {
+    const existing = customElements.get(name);
+    if (existing)
+        return existing;
+    const inputs = normalizeInputs(options.inputs);
+    scopeElementDefinitions.set(elementClass, {
+        compile,
+        createElementScope,
+        injector,
+        inputs,
+        options: options,
+    });
+    scopeElementInputs.set(elementClass, inputs);
+    installScopeElementInputs(elementClass, inputs);
+    customElements.define(name, elementClass);
+    return elementClass;
+}
+function resolveScopeElementOptions(elementClass) {
+    return {
+        inputs: elementClass.inputs,
+        isolate: elementClass.isolate,
+        scope: elementClass.scope,
+        shadow: elementClass.shadow,
+        template: elementClass.template,
+    };
+}
+function getScopeElementInputs(elementClass) {
+    return (scopeElementInputs.get(elementClass) ?? normalizeInputs(elementClass.inputs));
+}
+function installScopeElementInputs(elementClass, inputs) {
     inputs.forEach((input) => {
-        Object.defineProperty(AngularTsWebComponent.prototype, input.property, {
+        if (Object.prototype.hasOwnProperty.call(elementClass.prototype, input.property)) {
+            return;
+        }
+        Object.defineProperty(elementClass.prototype, input.property, {
             configurable: true,
             enumerable: true,
             get() {
-                const scope = scopes.get(this);
+                const scope = scopeElementScopes.get(this);
                 if (scope)
                     return scope[input.property];
                 return getPendingValues(this)[input.property];
             },
             set(value) {
                 const nextValue = coercePropertyValue(input, value);
-                writeInput(this, input, nextValue, scopes.get(this));
+                writeInput(this, input, nextValue, scopeElementScopes.get(this));
                 if (input.reflect) {
-                    reflectInput(this, input, nextValue, reflectingAttributes);
+                    reflectInput(this, input, nextValue, scopeElementReflectingAttributes);
                 }
             },
         });
     });
-    function connectHost(host) {
-        const existingScope = scopes.get(host);
-        if (existingScope && !existingScope.$handler._destroyed)
-            return;
-        const renderRoot = resolveRenderRoot(host, options.shadow);
-        const initialState = resolveInitialState(options.scope);
-        const scope = createElementScope(host, initialState, {
-            isolate: options.isolate,
-        });
-        const context = createContext(host, scope, injector, renderRoot);
-        scopes.set(host, scope);
-        contexts.set(host, context);
-        applyInputDefaults(host, inputs);
-        upgradeOwnProperties(host, inputs);
-        applyAttributes(host, inputs, scope);
-        applyPendingValues(host, inputs, scope);
-        renderTemplate(renderRoot, host, scope, options.template, compile);
-        const cleanup = options.connected?.(context);
-        if (isFunction(cleanup)) {
-            cleanupFns.set(host, cleanup);
-        }
+}
+function queueScopeElementConnect(host) {
+    const destroyTimer = scopeElementDestroyTimers.get(host);
+    if (destroyTimer) {
+        clearTimeout(destroyTimer);
+        scopeElementDestroyTimers.delete(host);
     }
-    function disconnectHost(host) {
-        const context = contexts.get(host);
-        const scope = scopes.get(host);
-        if (!scope)
+    if (queuedScopeElementConnects.has(host))
+        return;
+    queuedScopeElementConnects.add(host);
+    queueMicrotask(() => {
+        queuedScopeElementConnects.delete(host);
+        if (!host.isConnected)
             return;
-        const cleanup = cleanupFns.get(host);
-        cleanup?.();
-        cleanupFns.delete(host);
-        if (context) {
-            options.disconnected?.(context);
-        }
-        if (!scope.$handler._destroyed) {
-            scope.$destroy();
-        }
-        scopes.delete(host);
-        contexts.delete(host);
-        clearRenderedContent(resolveRenderRoot(host, options.shadow));
-    }
-    Object.defineProperty(AngularTsWebComponent, "name", {
-        value: customElementClassName(name),
+        connectScopeElement(host);
     });
-    return AngularTsWebComponent;
+}
+function queueScopeElementDisconnect(host) {
+    const timer = setTimeout(() => {
+        scopeElementDestroyTimers.delete(host);
+        if (host.isConnected)
+            return;
+        disconnectScopeElement(host);
+    }, 0);
+    scopeElementDestroyTimers.set(host, timer);
+}
+function syncScopeElementAttribute(host, attribute, oldValue, newValue) {
+    if (oldValue === newValue)
+        return;
+    const reflected = scopeElementReflectingAttributes.get(host);
+    if (reflected?.has(attribute))
+        return;
+    const definition = getScopeElementDefinition(host);
+    const input = definition.inputs.find((candidate) => candidate.attribute === attribute);
+    if (!input)
+        return;
+    writeInput(host, input, coerceAttributeValue(input, newValue), scopeElementScopes.get(host));
+    host.attributeChanged?.(attribute, oldValue, newValue);
+}
+function connectScopeElement(host) {
+    const existingScope = scopeElementScopes.get(host);
+    if (existingScope && !existingScope.$handler._destroyed)
+        return;
+    const definition = getScopeElementDefinition(host);
+    const options = definition.options;
+    const renderRoot = resolveRenderRoot(host, options.shadow);
+    const initialState = resolveInitialState(options.scope);
+    const scope = definition.createElementScope(host, initialState, {
+        isolate: options.isolate,
+    });
+    const element = host;
+    const context = createContext(host, scope, definition.injector, renderRoot);
+    element.scope = scope;
+    element.injector = definition.injector;
+    element.root = renderRoot;
+    scopeElementScopes.set(host, scope);
+    scopeElementContexts.set(host, context);
+    applyInputDefaults(host, definition.inputs);
+    upgradeOwnProperties(host, definition.inputs);
+    applyAttributes(host, definition.inputs, scope);
+    applyPendingValues(host, definition.inputs, scope);
+    renderTemplate(renderRoot, host, scope, options.template, definition.compile);
+    const cleanup = element.connected?.();
+    if (isFunction(cleanup)) {
+        scopeElementCleanupFns.set(host, cleanup);
+    }
+}
+function disconnectScopeElement(host) {
+    const scope = scopeElementScopes.get(host);
+    if (!scope)
+        return;
+    const cleanup = scopeElementCleanupFns.get(host);
+    cleanup?.();
+    scopeElementCleanupFns.delete(host);
+    const element = host;
+    element.disconnected?.();
+    if (!scope.$handler._destroyed) {
+        scope.$destroy();
+    }
+    const definition = getScopeElementDefinition(host);
+    scopeElementScopes.delete(host);
+    scopeElementContexts.delete(host);
+    clearRenderedContent(resolveRenderRoot(host, definition.options.shadow));
+}
+function getScopeElementDefinition(host) {
+    const definition = scopeElementDefinitions.get(host.constructor);
+    if (!definition) {
+        throw new Error(`Custom element ${host.localName} was not registered with $webComponent`);
+    }
+    return definition;
+}
+function getScopeElementContext(host) {
+    return scopeElementContexts.get(host);
 }
 function normalizeInputs(inputs = {}) {
     return Object.keys(inputs).map((property) => {
@@ -320,6 +406,7 @@ function renderTemplate(root, host, scope, template, compile) {
     if (!template)
         return;
     clearRenderedContent(root);
+    setScope(root, scope);
     const linked = compile(template)(scope, undefined, {
         _futureParentElement: host,
     });
@@ -329,7 +416,9 @@ function appendLinkedNodes(root, linked) {
     if (!linked)
         return;
     if (Array.isArray(linked)) {
-        linked.forEach((node) => root.appendChild(node));
+        linked.forEach((node) => {
+            root.appendChild(node);
+        });
         return;
     }
     root.appendChild(linked);
@@ -345,4 +434,4 @@ function customElementClassName(name) {
         .join("");
 }
 
-export { WebComponentProvider };
+export { ScopeElement, WebComponentProvider };

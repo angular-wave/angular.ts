@@ -279,9 +279,14 @@ void main() {
       ..setProperty('trustAs'.toJS, ((JSAny? _, JSAny? value) => value).toJS)
       ..setProperty('valueOf'.toJS, (([JSAny? value]) => value).toJS);
     final sceDelegateService = ng.SceDelegateService(sceDelegateServiceRaw);
+    final elementConstructor = (() => null).toJS;
     final webComponentServiceRaw = JSObject()
       ..setProperty(
-        'define'.toJS,
+        'defineAppComponent'.toJS,
+        ((JSAny? _, JSAny? __) => elementConstructor).toJS,
+      )
+      ..setProperty(
+        'defineElement'.toJS,
         ((JSAny? _, JSAny? __) => (() => null).toJS).toJS,
       )
       ..setProperty(
@@ -394,7 +399,7 @@ void main() {
     final transition = ng.Transition(transitionRaw);
     const elementModule = ng.AngularElementModuleOptions(name: 'demo');
     const elementOptions = ng.AngularElementOptions<Object>(
-      component: ng.WebComponent<Object>(template: '<span></span>'),
+      component: ng.AppComponent<Object>(template: '<span></span>'),
       subapp: true,
       attachToWindow: false,
       registerBuiltins: false,
@@ -660,9 +665,16 @@ void main() {
     expect(sceDelegateService.trustAs('html', 'safe'), isNotNull);
     expect(sceDelegateService.valueOf('safe'), isNotNull);
     expect(
-      webComponentService.define(
-        'x-demo',
-        const ng.WebComponent<Object>(template: '<span></span>'),
+      webComponentService.defineAppComponent(
+        'x-demo-app',
+        const ng.AppComponent<Object>(template: '<span></span>'),
+      ),
+      isNotNull,
+    );
+    expect(
+      webComponentService.defineElement(
+        'x-demo-element',
+        elementConstructor,
       ),
       isNotNull,
     );

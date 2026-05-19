@@ -196,12 +196,14 @@ source for this inventory.
 | `AngularElementDefinition` | inventory |
 | `AngularElementModuleOptions` | inventory |
 | `AngularElementOptions` | inventory |
+| `AppComponentOptions` | started |
 | `ElementScopeOptions` | inventory |
+| `ScopeElement` | started |
+| `ScopeElementConstructor` | started |
 | `WebComponentContext` | inventory |
 | `WebComponentInput` | inventory |
 | `WebComponentInputConfig` | inventory |
 | `WebComponentInputs` | inventory |
-| `WebComponentOptions` | started |
 | `WebComponentService` | inventory |
 
 ## Storage, Workers, Wasm, And Misc

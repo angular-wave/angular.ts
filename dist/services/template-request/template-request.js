@@ -30,7 +30,7 @@ class TemplateRequestProvider {
                  * @param templateUrl URL of the template.
                  * @returns Resolves with template content.
                  */
-                const fetchTemplate = (templateUrl) => {
+                const fetchTemplate = async (templateUrl) => {
                     // Filter out default transformResponse for template requests
                     let transformResponse = $http.defaults.transformResponse ?? null;
                     if (isArray(transformResponse)) {

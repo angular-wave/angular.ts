@@ -97,6 +97,7 @@ public external interface DirectiveFactory
 
 public external interface NgModule {
     public fun animation(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun appComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun component(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun config(p0: dynamic = definedExternally): dynamic
     public fun constant(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
@@ -1075,6 +1076,38 @@ public external interface ElementScopeOptions {
     public var parentScope: dynamic
 }
 
+public external interface AppComponentOptions<T> {
+    public fun attributeChanged(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally, p3: dynamic = definedExternally): Unit
+    public fun connected(p0: dynamic = definedExternally): Function<*>
+    public fun disconnected(p0: dynamic = definedExternally): Unit
+    public var inputs: dynamic
+    public var isolate: Boolean
+    public var scope: dynamic
+    public var shadow: dynamic
+    public var template: String
+}
+
+public external interface ScopeElement<T> {
+    public fun attributeChanged(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally): Unit
+    public fun attributeChangedCallback(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally): Unit
+    public fun connected(): Function<*>
+    public fun connectedCallback(): Unit
+    public fun disconnected(): Unit
+    public fun disconnectedCallback(): Unit
+    public fun dispatch(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    public var injector: dynamic
+    public var root: dynamic
+    public var scope: dynamic
+}
+
+public external interface ScopeElementConstructor<T> {
+    public var inputs: dynamic
+    public var isolate: Boolean
+    public var scope: dynamic
+    public var shadow: dynamic
+    public var template: String
+}
+
 public external interface WebComponentContext<T> {
     public fun dispatch(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
     public var host: dynamic
@@ -1095,20 +1128,10 @@ public external interface WebComponentInputConfig {
 
 public external interface WebComponentInputs
 
-public external interface WebComponentOptions<T> {
-    public fun attributeChanged(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally, p3: dynamic = definedExternally): Unit
-    public fun connected(p0: dynamic = definedExternally): Function<*>
-    public fun disconnected(p0: dynamic = definedExternally): Unit
-    public var inputs: dynamic
-    public var isolate: Boolean
-    public var scope: dynamic
-    public var shadow: dynamic
-    public var template: String
-}
-
 public external interface WebComponentService {
     public fun createElementScope(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun define(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun defineAppComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun defineElement(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
 }
 
 public external interface WebSocketConfig {

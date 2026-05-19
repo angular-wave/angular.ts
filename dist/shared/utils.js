@@ -296,8 +296,10 @@ function getHashKey(obj) {
         ? target.$hashKey
         : undefined;
     if (key) {
-        const hashKey = isFunction(key) ? callFunction(key, target) : key;
-        return isString(hashKey) ? hashKey : String(hashKey);
+        const resolvedHashKey = isFunction(key) ? callFunction(key, target) : key;
+        return isString(resolvedHashKey)
+            ? resolvedHashKey
+            : String(resolvedHashKey);
     }
     const hashKeyTarget = getHashKeyTarget(target);
     return hashKeyTarget ? generatedHashKeys.get(hashKeyTarget) : undefined;
@@ -376,11 +378,9 @@ function extend(dst, ...src) {
 function isNumberNaN(num) {
     return Number.isNaN(num);
 }
-/**
- * Creates a new object that inherits from `parent` and extends it with `extra`.
- */
 function inherit(parent, extra) {
-    return extend(createObject(parent), extra);
+    const inherited = createObject(parent);
+    return extend(inherited, extra);
 }
 /**
  * Returns whether an object defines its own `toString` implementation.
@@ -666,9 +666,6 @@ function toJson(obj, pretty) {
     }
     return JSON.stringify(obj, toJsonReplacer, pretty);
 }
-/**
- * Deserializes a JSON string.
- */
 function fromJson(json) {
     return isString(json) ? JSON.parse(json) : json;
 }
@@ -1113,7 +1110,7 @@ function callBackAfterFirst(fn) {
  * @param [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns A promise that resolves after the delay.
  */
-function wait(timeout = 0) {
+async function wait(timeout = 0) {
     return new Promise((resolve) => {
         setTimeout(resolve, timeout);
     });

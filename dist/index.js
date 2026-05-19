@@ -1,5 +1,6 @@
 import { Angular } from './angular.js';
 import './services/rest/rest.js';
+export { ScopeElement } from './services/web-component/web-component.js';
 export { WasmScope, WasmScopeAbi } from './services/wasm/wasm.js';
 export { HttpRestBackend } from './services/rest/http-rest-backend.js';
 

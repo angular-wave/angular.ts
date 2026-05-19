@@ -26,7 +26,9 @@ function getViewTemplate(config, ngView, context) {
 /** @internal */
 async function loadViewConfig(config) {
     const params = {};
-    config._path.forEach((node) => assign(params, node.paramValues));
+    config._path.forEach((node) => {
+        assign(params, node.paramValues);
+    });
     const viewResult = await config._factory._fromConfig(config._viewDecl, params);
     config._controller = config._viewDecl.controller;
     assign(config, viewResult);
@@ -35,12 +37,14 @@ async function loadViewConfig(config) {
 /** @internal */
 function normalizeNgViewTarget(context, rawViewName = "") {
     const viewAtContext = rawViewName.split("@");
-    let ngViewName = viewAtContext[0] || "$default";
-    let ngViewContextAnchor = isString(viewAtContext[1]) ? viewAtContext[1] : "^";
+    const [viewName, viewContextAnchor] = viewAtContext;
+    let ngViewName = viewName || "$default";
+    let ngViewContextAnchor = isString(viewContextAnchor)
+        ? viewContextAnchor
+        : "^";
     const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
     if (relativeViewNameSugar) {
-        ngViewContextAnchor = relativeViewNameSugar[1];
-        ngViewName = relativeViewNameSugar[2];
+        [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
     }
     if (ngViewName.startsWith("!")) {
         ngViewName = ngViewName.substring(1);

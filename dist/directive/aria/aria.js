@@ -119,19 +119,20 @@ function ngClickAriaDirective($aria, $parse, $attributes) {
             if ($attributes.has(elem, ARIA_DISABLE_ATTR))
                 return undefined;
             const fn = $parse($attributes.read(elem, "ngClick") ?? "");
-            return (scope, elem) => {
-                if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
-                    if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
-                        elem.setAttribute("role", "button");
+            return (scope, linkElem) => {
+                if (!isNodeOneOf(linkElem, nativeAriaNodeNames)) {
+                    if ($aria.config("bindRoleForClick") &&
+                        !linkElem.hasAttribute("role")) {
+                        linkElem.setAttribute("role", "button");
                     }
-                    if ($aria.config("tabindex") && !elem.hasAttribute("tabindex")) {
-                        elem.setAttribute("tabindex", "0");
+                    if ($aria.config("tabindex") && !linkElem.hasAttribute("tabindex")) {
+                        linkElem.setAttribute("tabindex", "0");
                     }
                     if ($aria.config("bindKeydown") &&
-                        !$attributes.has(elem, "ngKeydown") &&
-                        !$attributes.has(elem, "ngKeypress") &&
-                        !$attributes.has(elem, "ngKeyup")) {
-                        elem.addEventListener("keydown", 
+                        !$attributes.has(linkElem, "ngKeydown") &&
+                        !$attributes.has(linkElem, "ngKeypress") &&
+                        !$attributes.has(linkElem, "ngKeyup")) {
+                        linkElem.addEventListener("keydown", 
                         /** Handles keyboard activation for synthetic button semantics. */
                         (event) => {
                             const keyCode = parseInt(event.key, 10);

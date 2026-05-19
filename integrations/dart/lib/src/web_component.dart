@@ -2,6 +2,7 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart';
 
+import 'generated/ng_facades.dart';
 import 'injector.dart';
 import 'scope.dart';
 import 'unsafe.dart' as unsafe;
@@ -133,24 +134,40 @@ WebComponentInput<T> inputCustom<T>(
   );
 }
 
-/// Signature for web component connected.
-typedef WebComponentConnected<TScope> = void Function(
+/// Signature for app component connected.
+typedef AppComponentConnected<TScope> = void Function(
     WebComponentContext<TScope> context);
 
-/// Signature for web component disconnected.
-typedef WebComponentDisconnected<TScope> = void Function(
+/// Signature for app component disconnected.
+typedef AppComponentDisconnected<TScope> = void Function(
     WebComponentContext<TScope> context);
 
-/// Signature for web component attribute changed.
-typedef WebComponentAttributeChanged<TScope> = void Function(
+/// Signature for app component attribute changed.
+typedef AppComponentAttributeChanged<TScope> = void Function(
   String name,
   String? oldValue,
   String? newValue,
   WebComponentContext<TScope> context,
 );
 
-/// Signature for web component scope factory.
-typedef WebComponentScopeFactory<TScope> = TScope Function();
+/// Signature for app component scope factory.
+typedef AppComponentScopeFactory<TScope> = TScope Function();
+
+/// Backwards-compatible connected hook alias.
+typedef WebComponentConnected<TScope> = AppComponentConnected<TScope>;
+
+/// Backwards-compatible disconnected hook alias.
+typedef WebComponentDisconnected<TScope> = AppComponentDisconnected<TScope>;
+
+/// Backwards-compatible attribute changed hook alias.
+typedef WebComponentAttributeChanged<TScope>
+    = AppComponentAttributeChanged<TScope>;
+
+/// Backwards-compatible scope factory alias.
+typedef WebComponentScopeFactory<TScope> = AppComponentScopeFactory<TScope>;
+
+/// Constructor for a native custom element backed by an AngularTS child scope.
+typedef ScopeElementConstructor<TScope> = CustomElementConstructor;
 
 /// Represents element scope options.
 final class ElementScopeOptions implements unsafe.JsConvertible {
@@ -234,10 +251,16 @@ final class WebComponentContext<TScope> {
   }
 }
 
-/// AngularTS web component configuration.
-final class WebComponent<TScope> implements unsafe.JsConvertible {
-  /// Creates a web component.
-  const WebComponent({
+/// Typed wrapper around an AngularTS-backed native custom element instance.
+final class ScopeElement<TScope> extends GeneratedNgScopeElement {
+  /// Creates a scope element.
+  const ScopeElement(super.raw);
+}
+
+/// AngularTS options-backed app component configuration.
+final class AppComponent<TScope> implements unsafe.JsConvertible {
+  /// Creates an app component.
+  const AppComponent({
     this.template,
     this.shadow = false,
     this.scope,
@@ -264,13 +287,13 @@ final class WebComponent<TScope> implements unsafe.JsConvertible {
   final bool isolate;
 
   /// The connected.
-  final WebComponentConnected<TScope>? connected;
+  final AppComponentConnected<TScope>? connected;
 
   /// The disconnected.
-  final WebComponentDisconnected<TScope>? disconnected;
+  final AppComponentDisconnected<TScope>? disconnected;
 
   /// The attribute changed.
-  final WebComponentAttributeChanged<TScope>? attributeChanged;
+  final AppComponentAttributeChanged<TScope>? attributeChanged;
 
   /// The to js object.
   JSObject toJsObject() {
@@ -293,7 +316,7 @@ final class WebComponent<TScope> implements unsafe.JsConvertible {
 
   Object? _scopeToJs() {
     final scope = this.scope;
-    if (scope is WebComponentScopeFactory<TScope>) {
+    if (scope is AppComponentScopeFactory<TScope>) {
       return unsafe.JsValue((() => unsafe.dartToJs(scope())).toJS);
     }
 
@@ -331,3 +354,6 @@ final class WebComponent<TScope> implements unsafe.JsConvertible {
     }).toJS;
   }
 }
+
+/// Backwards-compatible alias for the former options-backed name.
+typedef WebComponent<TScope> = AppComponent<TScope>;

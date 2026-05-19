@@ -12,7 +12,7 @@ class AnimationHandle {
         this.cleanup = cleanup;
         const results = Array.isArray(result) ? result : [result];
         this.animations = results.filter((item) => !!item && "finished" in item);
-        const promises = results.map((item) => {
+        const promises = results.map(async (item) => {
             if (!item)
                 return Promise.resolve();
             if ("finished" in item)
@@ -31,10 +31,10 @@ class AnimationHandle {
     then(onfulfilled, onrejected) {
         return this.finished.then(onfulfilled, onrejected);
     }
-    catch(onrejected) {
+    async catch(onrejected) {
         return this.finished.catch(onrejected);
     }
-    finally(onfinally) {
+    async finally(onfinally) {
         return this.finished.finally(onfinally);
     }
     done(callback) {
@@ -115,7 +115,9 @@ const BUILT_IN_PRESETS = {
 };
 AnimateProvider.$inject = [];
 function AnimateProvider() {
+    /** @internal */
     this._registeredAnimations = { ...BUILT_IN_PRESETS };
+    /** @internal */
     this._customAnimationNames = new Set();
     this.register = (name, preset) => {
         if (!name || !isString(name)) {
@@ -288,12 +290,13 @@ function AnimateProvider() {
                         removeClass: remove,
                     });
                 },
-                animate: (element, from, to = {}, className, options) => {
+                animate: (element, from, to, className, options) => {
+                    const toStyles = to ?? {};
                     if (className)
                         element.classList.add(...splitClasses(className));
                     assign(element.style, from);
-                    return run("animate", element, { ...options, from, to }, { from, to, className }, () => {
-                        assign(element.style, to);
+                    return run("animate", element, { ...options, from, to: toStyles }, { from, to: toStyles, className }, () => {
+                        assign(element.style, toStyles);
                     });
                 },
                 async transition(update) {
@@ -453,7 +456,14 @@ function cleanupHeightAnimation(element, context, animation, previous) {
         element.style.overflow = previous.overflow;
     };
     context.signal.addEventListener("abort", cleanup, { once: true });
-    animation.finished.then(cleanup, cleanup);
+    void animation.finished
+        .then(() => {
+        cleanup();
+        return undefined;
+    })
+        .catch(() => {
+        cleanup();
+    });
 }
 
 export { AnimateProvider, AnimationHandle };

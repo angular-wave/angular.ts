@@ -147,8 +147,8 @@ class AngularRuntime extends EventTarget {
             : this.getScopeByName(injectable);
         if (!target) {
             const { detail } = customEvent;
-            if (isInvocationDetail(detail) && detail._reply) {
-                detail._reply.reject(new Error(`No target found for "${injectable}"`));
+            if (isInvocationDetail(detail) && detail.reply) {
+                detail.reply.reject(new Error(`No target found for "${injectable}"`));
             }
             return false;
         }
@@ -160,13 +160,21 @@ class AngularRuntime extends EventTarget {
                 : "";
         try {
             const result = $parse(expr)(target);
-            if (isInvocationDetail(detail) && detail._reply) {
-                Promise.resolve(result).then(detail._reply.resolve, detail._reply.reject);
+            if (isInvocationDetail(detail) && detail.reply) {
+                const { reply } = detail;
+                void Promise.resolve(result)
+                    .then((value) => {
+                    reply.resolve(value);
+                    return undefined;
+                })
+                    .catch((reason) => {
+                    reply.reject(reason);
+                });
             }
         }
         catch (err) {
-            if (isInvocationDetail(detail) && detail._reply) {
-                detail._reply.reject(err);
+            if (isInvocationDetail(detail) && detail.reply) {
+                detail.reply.reject(err);
             }
         }
         return true;
@@ -175,17 +183,17 @@ class AngularRuntime extends EventTarget {
      * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
      */
     emit(input) {
-        const { type, expr } = this.splitInvocation(input);
+        const { type, expr } = AngularRuntime.splitInvocation(input);
         this.dispatchEvent(new CustomEvent(type, { detail: expr }));
     }
     /**
      * Await result. Accepts a single string: `"<target>.<expression>"`
      */
-    call(input) {
-        const { type, expr } = this.splitInvocation(input);
+    async call(input) {
+        const { type, expr } = AngularRuntime.splitInvocation(input);
         return new Promise((resolve, reject) => {
             const ok = this.dispatchEvent(new CustomEvent(type, {
-                detail: { expr, __reply: { resolve, reject } },
+                detail: { expr, reply: { resolve, reject } },
             }));
             if (!ok) {
                 reject(new Error(`Dispatch failed for "${type}"`));
@@ -371,7 +379,7 @@ class AngularRuntime extends EventTarget {
     /**
      * Splits `"target.expression"` into the dispatch target and parse expression.
      */
-    splitInvocation(input) {
+    static splitInvocation(input) {
         if (!isString(input)) {
             throw new TypeError("Invocation must be a string.");
         }

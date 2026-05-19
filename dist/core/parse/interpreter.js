@@ -113,13 +113,13 @@ class ASTInterpreter {
         if (!context && !create) {
             const path = getNonComputedPath(ast);
             if (path) {
-                return this._path(path);
+                return ASTInterpreter._path(path);
             }
         }
-        const self = this;
+        const self = ASTInterpreter;
         switch (ast._type) {
             case ASTType._Literal:
-                return this._value(ast._value, context);
+                return ASTInterpreter._value(ast._value, context);
             case ASTType._UnaryExpression: {
                 const unaryRight = this._recurse(assertDefined(ast._argument));
                 return self[`unary${String(ast._operator)}`](unaryRight, context);
@@ -147,9 +147,9 @@ class ASTInterpreter {
                 return self[`binary${String(ast._operator)}`](logicalLeft, logicalRight, context);
             }
             case ASTType._ConditionalExpression:
-                return this["ternary?:"](this._recurse(assertDefined(ast._test)), this._recurse(assertDefined(ast._alternate)), this._recurse(assertDefined(ast._consequent)), context);
+                return ASTInterpreter["ternary?:"](this._recurse(assertDefined(ast._test)), this._recurse(assertDefined(ast._alternate)), this._recurse(assertDefined(ast._consequent)), context);
             case ASTType._Identifier:
-                return this._identifier(assertDefined(ast._name), context, create);
+                return ASTInterpreter._identifier(assertDefined(ast._name), context, create);
             case ASTType._MemberExpression:
                 return this._compileMemberExpression(ast, context, create);
             case ASTType._CallExpression:
@@ -161,7 +161,7 @@ class ASTInterpreter {
             case ASTType._ObjectExpression:
                 return this._compileObjectExpression(ast, context);
             case ASTType._ThisExpression:
-                return (scope) => context ? { value: scope } : getProxyTarget(scope);
+                return (scope) => (context ? { value: scope } : getProxyTarget(scope));
             case ASTType._LocalsExpression:
                 return (scope, locals) => (context ? { value: locals } : locals);
             case ASTType._NGValueParameter:
@@ -169,6 +169,10 @@ class ASTInterpreter {
             case ASTType._UpdateExpression: {
                 return this._compileUpdateExpression(ast, context);
             }
+            case ASTType._Program:
+            case ASTType._ExpressionStatement:
+            case ASTType._Property:
+                throw new Error(`Unknown AST type ${String(ast._type)}`);
         }
         throw new Error(`Unknown AST type ${String(ast._type)}`);
     }
@@ -185,23 +189,23 @@ class ASTInterpreter {
         const callee = assertDefined(ast._callee);
         const right = this._recurse(callee, true);
         if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
-            return this._compileIdentifierTwoArgCall(assertDefined(callee._name), callArguments, args);
+            return ASTInterpreter._compileIdentifierTwoArgCall(assertDefined(callee._name), callArguments, args);
         }
         if (args.length <= 1) {
-            return this._compileSmallCall(right, args[0], args.length, context);
+            return ASTInterpreter._compileSmallCall(right, args[0], args.length, context);
         }
         if (args.length === 2) {
-            return this._compileTwoArgCall(right, args[0], args[1], context);
+            return ASTInterpreter._compileTwoArgCall(right, args[0], args[1], context);
         }
-        return this._compileVariadicCall(right, args, context);
+        return ASTInterpreter._compileVariadicCall(right, args, context);
     }
     /** @internal */
-    _compileIdentifierTwoArgCall(calleeName, callArguments, args) {
+    static _compileIdentifierTwoArgCall(calleeName, callArguments, args) {
         const argPath0 = getNonComputedPath(callArguments[0]);
         const argPath1 = getNonComputedPath(callArguments[1]);
         if (argPath0?.length === 1 && argPath1?.length === 1) {
-            const argName0 = argPath0[0];
-            const argName1 = argPath1[0];
+            const [argName0] = argPath0;
+            const [argName1] = argPath1;
             return (scope, locals) => {
                 const base = getProxyTarget(scope);
                 if (!locals) {
@@ -231,12 +235,9 @@ class ASTInterpreter {
                 return callFunction(calleeValue, calleeBase, isFunction(value0) ? value0() : value0, isFunction(value1) ? value1() : value1);
             };
         }
-        const arg0 = args[0];
-        const arg1 = args[1];
+        const [arg0, arg1] = args;
         return (scope, locals, assign) => {
-            const base = locals && calleeName in locals
-                ? locals
-                : getProxyTarget(scope);
+            const base = locals && calleeName in locals ? locals : getProxyTarget(scope);
             if (isNullOrUndefined(base)) {
                 return undefined;
             }
@@ -250,7 +251,7 @@ class ASTInterpreter {
         };
     }
     /** @internal */
-    _compileSmallCall(callee, arg, argCount, context) {
+    static _compileSmallCall(callee, arg, argCount, context) {
         return argCount
             ? (scope, locals, assign) => {
                 const rhs = getExpressionReference(callee(scope, locals, assign));
@@ -270,7 +271,7 @@ class ASTInterpreter {
             };
     }
     /** @internal */
-    _compileTwoArgCall(callee, arg0, arg1, context) {
+    static _compileTwoArgCall(callee, arg0, arg1, context) {
         if (!context) {
             return (scope, locals, assign) => {
                 const rhs = getExpressionReference(callee(scope, locals, assign));
@@ -294,7 +295,7 @@ class ASTInterpreter {
         };
     }
     /** @internal */
-    _compileVariadicCall(callee, args, context) {
+    static _compileVariadicCall(callee, args, context) {
         return (scope, locals, assign) => {
             const rhs = getExpressionReference(callee(scope, locals, assign));
             let value;
@@ -313,16 +314,14 @@ class ASTInterpreter {
     _compileFilterCall(ast, callArguments, args, context) {
         const filter = this._$filter(assertDefined(ast._callee._name));
         if (args.length === 1) {
-            const arg0 = args[0];
+            const [arg0] = args;
             if (!context) {
                 const argPath = getNonComputedPath(callArguments[0]);
                 if (argPath?.length === 1) {
-                    const argName = argPath[0];
+                    const [argName] = argPath;
                     return (scope, locals) => {
                         const evalScope = scope ? deProxy(scope) : scope;
-                        const base = locals && argName in locals
-                            ? locals
-                            : getProxyTarget(evalScope);
+                        const base = locals && argName in locals ? locals : getProxyTarget(evalScope);
                         return callFunction(filter, undefined, readProperty(base, argName));
                     };
                 }
@@ -336,8 +335,7 @@ class ASTInterpreter {
                 : (scope, locals, assign) => callFunction(filter, undefined, arg0(scope && deProxy(scope), locals, assign));
         }
         if (args.length === 2) {
-            const arg0 = args[0];
-            const arg1 = args[1];
+            const [arg0, arg1] = args;
             return context
                 ? (scope, locals, assign) => {
                     const evalScope = scope ? deProxy(scope) : scope;
@@ -364,9 +362,9 @@ class ASTInterpreter {
     _compileMemberExpression(ast, context, create) {
         const left = this._recurse(assertDefined(ast._object), false, !!create);
         if (ast._computed) {
-            return this._computedMember(left, this._recurse(assertDefined(ast._property)), context, create);
+            return ASTInterpreter._computedMember(left, this._recurse(assertDefined(ast._property)), context, create);
         }
-        return this._nonComputedMember(left, assertDefined(ast._property._name), context, create);
+        return ASTInterpreter._nonComputedMember(left, assertDefined(ast._property._name), context, create);
     }
     /** @internal */
     _compileAssignmentExpression(ast, context) {
@@ -464,8 +462,7 @@ class ASTInterpreter {
     }
     /** @internal */
     _compileSmallStaticObject(properties) {
-        const property0 = properties[0];
-        const property1 = properties[1];
+        const [property0, property1] = properties;
         const key0 = getObjectPropertyKey(property0);
         const key1 = getObjectPropertyKey(property1);
         if (properties.length === 2) {
@@ -478,7 +475,7 @@ class ASTInterpreter {
                 return object;
             };
         }
-        const property2 = properties[2];
+        const [, , property2] = properties;
         const key2 = getObjectPropertyKey(property2);
         const valuePath0 = getNonComputedPath(property0._value);
         const valuePath1 = getNonComputedPath(property1._value);
@@ -507,7 +504,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The unary plus function.
      */
-    "unary+"(argument, context) {
+    static "unary+"(argument, context) {
         return (scope, locals, assign) => {
             let arg = argument(scope, locals, assign);
             if (isDefined(arg)) {
@@ -525,7 +522,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The unary minus function.
      */
-    "unary-"(argument, context) {
+    static "unary-"(argument, context) {
         return (scope, locals, assign) => {
             let arg = argument(scope, locals, assign);
             if (isDefined(arg)) {
@@ -543,7 +540,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The unary negation function.
      */
-    "unary!"(argument, context) {
+    static "unary!"(argument, context) {
         return (scope, locals, assign) => {
             const arg = !argument(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -556,7 +553,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary plus function.
      */
-    "binary+"(left, right, context) {
+    static "binary+"(left, right, context) {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
             const rhs = right(scope, locals, assign);
@@ -571,7 +568,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary minus function.
      */
-    "binary-"(left, right, context) {
+    static "binary-"(left, right, context) {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
             const rhs = right(scope, locals, assign);
@@ -586,7 +583,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary multiplication function.
      */
-    "binary*"(left, right, context) {
+    static "binary*"(left, right, context) {
         return (scope, locals, assign) => {
             const arg = Number(left(scope, locals, assign)) *
                 Number(right(scope, locals, assign));
@@ -600,7 +597,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary division function.
      */
-    "binary/"(left, right, context) {
+    static "binary/"(left, right, context) {
         return (scope, locals, assign) => {
             const arg = Number(left(scope, locals, assign)) /
                 Number(right(scope, locals, assign));
@@ -614,7 +611,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary division function.
      */
-    "binary%"(left, right, context) {
+    static "binary%"(left, right, context) {
         return (scope, locals, assign) => {
             const arg = Number(left(scope, locals, assign)) %
                 Number(right(scope, locals, assign));
@@ -628,7 +625,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary strict equality function.
      */
-    "binary==="(left, right, context) {
+    static "binary==="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) === right(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -641,7 +638,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary strict inequality function.
      */
-    "binary!=="(left, right, context) {
+    static "binary!=="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) !== right(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -654,7 +651,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary equality function.
      */
-    "binary=="(left, right, context) {
+    static "binary=="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) == right(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -667,7 +664,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary inequality function.
      */
-    "binary!="(left, right, context) {
+    static "binary!="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) != right(scope, locals, assign);
             return context ? { value: arg } : arg;
@@ -680,7 +677,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary less-than function.
      */
-    "binary<"(left, right, context) {
+    static "binary<"(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) <
                 right(scope, locals, assign);
@@ -694,7 +691,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary greater-than function.
      */
-    "binary>"(left, right, context) {
+    static "binary>"(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) >
                 right(scope, locals, assign);
@@ -708,7 +705,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary less-than-or-equal-to function.
      */
-    "binary<="(left, right, context) {
+    static "binary<="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) <=
                 right(scope, locals, assign);
@@ -722,7 +719,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary greater-than-or-equal-to function.
      */
-    "binary>="(left, right, context) {
+    static "binary>="(left, right, context) {
         return (scope, locals, assign) => {
             const arg = left(scope, locals, assign) >=
                 right(scope, locals, assign);
@@ -736,7 +733,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary logical AND function.
      */
-    "binary&&"(left, right, context) {
+    static "binary&&"(left, right, context) {
         if (!context) {
             return (scope, locals, assign) => left(scope, locals, assign) && right(scope, locals, assign);
         }
@@ -752,7 +749,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary logical OR function.
      */
-    "binary||"(left, right, context) {
+    static "binary||"(left, right, context) {
         if (!context) {
             return (scope, locals, assign) => {
                 const lhs = left(scope, locals, assign);
@@ -775,7 +772,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The binary nullish coalescing function.
      */
-    "binary??"(left, right, context) {
+    static "binary??"(left, right, context) {
         if (!context) {
             return (scope, locals, assign) => {
                 const lhs = left(scope, locals, assign);
@@ -796,7 +793,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The ternary conditional function.
      */
-    "ternary?:"(test, alternate, consequent, context) {
+    static "ternary?:"(test, alternate, consequent, context) {
         return (scope, locals, assign) => {
             const arg = test(scope, locals, assign)
                 ? alternate(scope, locals, assign)
@@ -811,7 +808,7 @@ class ASTInterpreter {
      * @returns {CompiledExpressionFunction} The function returning the literal value.
      */
     /** @internal */
-    _value(value, context) {
+    static _value(value, context) {
         return () => context ? { context: undefined, name: undefined, value } : value;
     }
     /**
@@ -822,7 +819,7 @@ class ASTInterpreter {
      *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
      */
     /** @internal */
-    _identifier(name, context, create) {
+    static _identifier(name, context, create) {
         return (scope, locals) => {
             const base = locals && name in locals ? locals : getProxyTarget(scope);
             if (create &&
@@ -838,7 +835,7 @@ class ASTInterpreter {
         };
     }
     /** @internal */
-    _path(path) {
+    static _path(path) {
         return createPathGetter(path);
     }
     /**
@@ -850,7 +847,7 @@ class ASTInterpreter {
      * @returns {CompiledExpressionFunction}  The function returning the computed member value.
      */
     /** @internal */
-    _computedMember(left, right, context, create) {
+    static _computedMember(left, right, context, create) {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
             let rhs;
@@ -879,7 +876,7 @@ class ASTInterpreter {
      * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
      */
     /** @internal */
-    _nonComputedMember(left, right, context, create) {
+    static _nonComputedMember(left, right, context, create) {
         if (!context && !create) {
             return (scope, locals, assign) => {
                 const lhs = left(scope, locals, assign);
@@ -944,14 +941,11 @@ function isSmallStaticObject(properties) {
     return true;
 }
 function compileObjectPathProjection(key0, key1, key2, valuePath0, valuePath1, valuePath2) {
-    const sourceKey = valuePath0[0];
-    const valueKey0 = valuePath0[1];
-    const valueKey1 = valuePath1[1];
-    const valueKey2 = valuePath2[1];
+    const [sourceKey, valueKey0] = valuePath0;
+    const [, valueKey1] = valuePath1;
+    const [, valueKey2] = valuePath2;
     return (scope, locals) => {
-        const base = locals && sourceKey in locals
-            ? locals
-            : getProxyTarget(scope);
+        const base = locals && sourceKey in locals ? locals : getProxyTarget(scope);
         const source = readProperty(base, sourceKey);
         const object = {};
         if (isNullOrUndefined(source)) {
@@ -988,7 +982,7 @@ function compileObjectProperties(interpreter, properties) {
     return compiled;
 }
 function createPathGetter(path) {
-    const p0 = path[0];
+    const [p0] = path;
     switch (path.length) {
         case 1:
             return (scope, locals) => {
@@ -996,29 +990,24 @@ function createPathGetter(path) {
                     const base = getProxyTarget(scope);
                     return readProperty(base, p0);
                 }
-                const base = p0 in locals
-                    ? locals
-                    : getProxyTarget(scope);
+                const base = p0 in locals ? locals : getProxyTarget(scope);
                 return readProperty(base, p0);
             };
         case 2: {
-            const p1 = path[1];
+            const [, p1] = path;
             return (scope, locals) => {
                 if (!locals) {
                     const base = getProxyTarget(scope);
                     const value = readProperty(base, p0);
                     return readProperty(value, p1);
                 }
-                const base = p0 in locals
-                    ? locals
-                    : getProxyTarget(scope);
+                const base = p0 in locals ? locals : getProxyTarget(scope);
                 const value = readProperty(base, p0);
                 return readProperty(value, p1);
             };
         }
         case 3: {
-            const p1 = path[1];
-            const p2 = path[2];
+            const [, p1, p2] = path;
             return (scope, locals) => {
                 if (!locals) {
                     const base = getProxyTarget(scope);
@@ -1029,9 +1018,7 @@ function createPathGetter(path) {
                     const next = readProperty(value, p1);
                     return readProperty(next, p2);
                 }
-                const base = p0 in locals
-                    ? locals
-                    : getProxyTarget(scope);
+                const base = p0 in locals ? locals : getProxyTarget(scope);
                 const value = readProperty(base, p0);
                 if (isNullOrUndefined(value)) {
                     return undefined;
@@ -1042,9 +1029,7 @@ function createPathGetter(path) {
         }
     }
     return (scope, locals) => {
-        const base = locals && p0 in locals
-            ? locals
-            : getProxyTarget(scope);
+        const base = locals && p0 in locals ? locals : getProxyTarget(scope);
         let value = readProperty(base, p0);
         for (let i = 1, l = path.length; i < l; i++) {
             if (isNullOrUndefined(value)) {
@@ -1267,9 +1252,12 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = [decoratedNode]; // treat like assignment: watch the expression
             return decoratedNode;
         }
-        default:
+        case ASTType._ExpressionStatement:
+        case ASTType._Property:
+        case ASTType._NGValueParameter:
             throw new Error(`Unknown AST node type: ${String(ast._type)}`);
     }
+    throw new Error(`Unknown AST node type: ${String(ast._type)}`);
 }
 /**
  * Converts a single expression AST node into an assignment expression if the expression is assignable.
@@ -1348,6 +1336,20 @@ function isPure(node, parentIsPure) {
             return false;
         case ASTType._UpdateExpression:
             return false;
+        case ASTType._Program:
+        case ASTType._ExpressionStatement:
+        case ASTType._AssignmentExpression:
+        case ASTType._ConditionalExpression:
+        case ASTType._LogicalExpression:
+        case ASTType._Identifier:
+        case ASTType._Literal:
+        case ASTType._ArrayExpression:
+        case ASTType._LocalsExpression:
+        case ASTType._Property:
+        case ASTType._ObjectExpression:
+        case ASTType._ThisExpression:
+        case ASTType._NGValueParameter:
+            break;
     }
     return parentIsPure ?? PURITY_RELATIVE;
 }

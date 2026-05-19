@@ -33,7 +33,7 @@ class RegisteredHook {
         this._invokeLimit = options.invokeLimit;
     }
     /** @internal */
-    _matchingNodes(nodes, criterion, transition) {
+    static _matchingNodes(nodes, criterion, transition) {
         if (criterion === true)
             return nodes;
         const matching = [];
@@ -65,7 +65,7 @@ class RegisteredHook {
                 continue;
             }
             const matching = pathType._stateHook
-                ? this._matchingNodes(path, criterion, transition)
+                ? RegisteredHook._matchingNodes(path, criterion, transition)
                 : transitionNode &&
                     matchState(transitionNode.state, criterion, transition)
                     ? [transitionNode]

@@ -74,7 +74,7 @@ class WasmScope {
      */
     onSync(callback) {
         if (this._destroyed) {
-            return () => { };
+            return () => undefined;
         }
         this._syncCallbacks.push(callback);
         return () => {
@@ -102,7 +102,9 @@ class WasmScope {
             });
         }, !options.initial);
         if (!dispose) {
-            return () => false;
+            return () => {
+                /* no watch was registered */
+            };
         }
         return dispose;
     }
@@ -378,7 +380,7 @@ class WasmScopeAbi {
     }
     /** @internal */
     _readGuestString(ptr, len) {
-        const memory = this._requireExports().memory;
+        const { memory } = this._requireExports();
         const bytes = new Uint8Array(memory.buffer, ptr, len);
         return textDecoder.decode(bytes);
     }

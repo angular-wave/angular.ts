@@ -322,15 +322,13 @@ function ngRepeatDirective($injector, $attributes) {
             if (!match) {
                 throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
             }
-            const lhs = match[1];
-            const rhs = match[2];
-            const aliasAs = match[3];
+            const [, lhs, rhs, aliasAs] = match;
             match = VAR_OR_TUPLE_REGEX.exec(lhs);
             if (!match) {
                 throw ngRepeatError("iidexp", "'_item_' in '_item_ in _collection_' should be an identifier or '(_key_, _value_)' expression, but got '{0}'.", lhs);
             }
-            const valueIdentifier = match[3] || match[1];
-            const keyIdentifier = match[2];
+            const [, itemIdentifier, keyIdentifier, valueAlias] = match;
+            const valueIdentifier = valueAlias || itemIdentifier;
             if (aliasAs &&
                 (!/^[$a-zA-Z_][$a-zA-Z0-9_]*$/.test(aliasAs) ||
                     /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|\$parent|\$root|\$id)$/.test(aliasAs))) {
@@ -344,7 +342,7 @@ function ngRepeatDirective($injector, $attributes) {
                     });
                 }
             });
-            function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
+            function ngRepeatLink($scope, repeatElement, attr, _ctrl, $transclude) {
                 let previousNode;
                 let pendingInsertAnchor;
                 let pendingInsertEnd;
@@ -458,7 +456,7 @@ function ngRepeatDirective($injector, $attributes) {
                 $scope.$watch(rhs, (collection) => {
                     swap();
                     let index = 0;
-                    previousNode = $element;
+                    previousNode = repeatElement;
                     let nextNode;
                     const nextBlockMap = nullObject();
                     let key;
@@ -565,7 +563,7 @@ function ngRepeatDirective($injector, $attributes) {
                     if (!hasAnimate &&
                         collectionLength === 0 &&
                         lastBlockOrder.length > 0) {
-                        const firstBlock = lastBlockOrder[0];
+                        const [firstBlock] = lastBlockOrder;
                         const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
                         const firstNode = getBlockStart(firstBlock);
                         const lastNode = getBlockEnd(lastBlock);
@@ -612,7 +610,7 @@ function ngRepeatDirective($injector, $attributes) {
                         collectionLength > 0 &&
                         lastBlockOrder.length > 0 &&
                         !hasRetainedBlocks) {
-                        const firstBlock = lastBlockOrder[0];
+                        const [firstBlock] = lastBlockOrder;
                         const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
                         const firstNode = getBlockStart(firstBlock);
                         const lastNode = getBlockEnd(lastBlock);
@@ -633,7 +631,10 @@ function ngRepeatDirective($injector, $attributes) {
                         const blockNodes = getBlockNodes(isArray(block._clone)
                             ? block._clone
                             : [assertDefined(block._clone)]);
-                        elementsToRemove = getBlockStart(block);
+                        const blockStart = getBlockStart(block);
+                        elementsToRemove = isInstanceOf(blockStart, Element)
+                            ? blockStart
+                            : undefined;
                         if (hasAnimate && elementsToRemove) {
                             getAnimate().leave(elementsToRemove);
                         }

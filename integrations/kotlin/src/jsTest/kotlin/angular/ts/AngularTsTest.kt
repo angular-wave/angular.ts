@@ -681,9 +681,9 @@ class AngularTsTest {
                     },
                 ),
             )
-            .webComponent(
+            .appComponent(
                 "message-card",
-                WebComponent<Unit>(
+                AppComponent<Unit>(
                     template = "<span>{{ message }}</span>",
                     shadow = true,
                     inputs = mapOf("message" to WebComponentInput(attribute = "message")),

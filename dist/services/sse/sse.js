@@ -16,7 +16,7 @@ class SseProvider {
                 this._$log = log;
                 return (url, config = {}) => {
                     const mergedConfig = { ...this.defaults, ...config };
-                    const finalUrl = this._buildUrl(url, mergedConfig.params);
+                    const finalUrl = SseProvider._buildUrl(url, mergedConfig.params);
                     return new ConnectionManager(() => new EventSource(finalUrl, {
                         withCredentials: !!mergedConfig.withCredentials,
                     }), {
@@ -47,7 +47,7 @@ class SseProvider {
      * Builds a URL with serialized query parameters.
      */
     /** @internal */
-    _buildUrl(url, params) {
+    static _buildUrl(url, params) {
         if (!params)
             return url;
         const query = entries(params)
@@ -67,9 +67,12 @@ function serializeQueryValue(value) {
             return String(value);
         case "undefined":
             return "";
-        default:
+        case "object":
             return value === null ? "" : JSON.stringify(value);
+        case "function":
+            return JSON.stringify(value);
     }
+    return "";
 }
 
 export { SseProvider };

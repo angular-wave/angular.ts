@@ -356,7 +356,7 @@ function HttpProvider() {
             /**
              * Issues an HTTP request using the provider defaults and configured interceptors.
              */
-            const $http = function (requestConfig) {
+            const $http = async function (requestConfig) {
                 if (!isObject(requestConfig)) {
                     throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
                 }
@@ -391,11 +391,11 @@ function HttpProvider() {
                     }
                 });
                 promise = chainInterceptors(promise, requestInterceptors);
-                promise = promise.then((value) => serverRequest(value));
+                promise = promise.then(async (value) => serverRequest(value));
                 promise = chainInterceptors(promise, responseInterceptors);
                 return promise;
                 /** Applies a list of interceptor success/error pairs to a promise chain. */
-                function chainInterceptors(promiseParam, interceptors) {
+                async function chainInterceptors(promiseParam, interceptors) {
                     for (let i = 0, ii = interceptors.length; i < ii;) {
                         const thenFn = interceptors[i++];
                         const rejectFn = interceptors[i++];
@@ -438,7 +438,7 @@ function HttpProvider() {
                     return executeHeaderFns(reqHeaders, shallowCopy(configParam));
                 }
                 /** Executes the request pipeline and attaches response transforms. */
-                function serverRequest(configParam) {
+                async function serverRequest(configParam) {
                     const headers = configParam.headers ?? {};
                     configParam.headers = headers;
                     const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest ?? []);
@@ -459,7 +459,7 @@ function HttpProvider() {
                     return sendReq(configParam, reqData).then(transformResponse, transformResponse);
                 }
                 /** Applies response transforms and rejects responses outside the success range. */
-                function transformResponse(response) {
+                async function transformResponse(response) {
                     const httpResponse = response;
                     // make a copy since the response must be cacheable
                     const resp = extend({}, httpResponse);
@@ -486,7 +486,7 @@ function HttpProvider() {
             return $http;
             /** Creates one shorthand method for requests that do not send a request body. */
             function createShortMethod(method) {
-                return function (url, config) {
+                return async function (url, config) {
                     return $http(extend({}, config ?? {}, {
                         method,
                         url,
@@ -495,16 +495,16 @@ function HttpProvider() {
             }
             /** Creates one shorthand method for requests that send a request body. */
             function createShortMethodWithData(method) {
-                return function (url, data, config) {
+                return async function (url, data, config) {
                     return $http(extend({}, config ?? {}, {
                         method,
                         url,
-                        data: data,
+                        data,
                     }));
                 };
             }
             /** Sends the request through the low-level HTTP backend and cache layer. */
-            function sendReq(config, reqData) {
+            async function sendReq(config, reqData) {
                 const { promise, resolve, reject } = withResolvers();
                 let cache;
                 let cachedResp;
@@ -518,7 +518,9 @@ function HttpProvider() {
                 const paramSerializer = config.paramSerializer;
                 url = buildUrl(url, paramSerializer(config.params));
                 $http.pendingRequests.push(config);
-                promise.then(removePendingReq, removePendingReq);
+                void promise.then(removePendingReq, removePendingReq).catch(() => {
+                    return undefined;
+                });
                 if ((config.cache || defaults.cache) &&
                     config.cache !== false &&
                     config.method === "GET") {
@@ -534,7 +536,9 @@ function HttpProvider() {
                     if (isDefined(cachedResp)) {
                         if (isPromiseLike(cachedResp)) {
                             // cached request has already been sent, but there is no response yet
-                            cachedResp.then(resolvePromiseWithResult, resolvePromiseWithResult);
+                            void Promise.resolve(cachedResp)
+                                .then(resolvePromiseWithResult, resolvePromiseWithResult)
+                                .catch(() => undefined);
                         }
                         else {
                             // serving from cache
@@ -686,26 +690,33 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
     else if (isPromiseLike(timeout)) {
         void timeout.then(() => {
             timeoutRequest("abort");
+            return undefined;
         });
     }
-    fetch(url, init).then((response) => {
-        const status = response.status || 0;
-        responseBody(response, responseType, streamService).then((body) => {
-            notifyEvent("load", eventHandlers);
-            completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
-        }, () => {
+    void (async () => {
+        try {
+            const response = await fetch(url, init);
+            const status = response.status || 0;
+            try {
+                const body = await responseBody(response, responseType, streamService);
+                notifyEvent("load", eventHandlers);
+                completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
+            }
+            catch {
+                notifyEvent("error", eventHandlers);
+                completeRequest(-1, null, null, "", "error");
+            }
+        }
+        catch (error) {
+            if (isObject(error) && "name" in error && error.name === "AbortError") {
+                notifyEvent(abortReason, eventHandlers);
+                completeRequest(-1, null, null, "", abortReason);
+                return;
+            }
             notifyEvent("error", eventHandlers);
             completeRequest(-1, null, null, "", "error");
-        });
-    }, (error) => {
-        if (isObject(error) && "name" in error && error.name === "AbortError") {
-            notifyEvent(abortReason, eventHandlers);
-            completeRequest(-1, null, null, "", abortReason);
-            return;
         }
-        notifyEvent("error", eventHandlers);
-        completeRequest(-1, null, null, "", "error");
-    });
+    })();
     /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
     function timeoutRequest(reason) {
         abortReason = reason;
@@ -741,10 +752,10 @@ function normalizeFetchBody(post) {
         ArrayBuffer.isView(post)) {
         return post;
     }
-    return String(post);
+    return stringify(post);
 }
 /** Reads a fetch response body using the closest `$http` responseType equivalent. */
-function responseBody(response, responseType, streamService) {
+async function responseBody(response, responseType, streamService) {
     switch (responseType) {
         case "arraybuffer":
             return response.arrayBuffer();
@@ -767,7 +778,7 @@ function responseBody(response, responseType, streamService) {
     }
 }
 /** Reads text via `$stream` when available, falling back to the native response reader. */
-function responseText(response, streamService) {
+async function responseText(response, streamService) {
     return response.body && streamService
         ? streamService.readText(response.body)
         : response.text();

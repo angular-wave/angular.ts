@@ -19,7 +19,7 @@ function silenceUncaughtInPromise(promise) {
  *
  * @internal
  */
-function silentRejection(reason) {
+async function silentRejection(reason) {
     const promise = Promise.reject(reason instanceof Error ? reason : Rejection.errored(reason));
     return silenceUncaughtInPromise(promise);
 }
@@ -64,7 +64,7 @@ async function runRedirectTransition(stateService, redirect) {
         return handleTransitionRejection(stateService, redirect, reason);
     }
 }
-function handleTransitionRejection(stateService, trans, error) {
+async function handleTransitionRejection(stateService, trans, error) {
     const routerState = stateService._routerState;
     if (isInstanceOf(error, Rejection)) {
         const isLatest = routerState._lastStartedTransitionId <= trans.$id;

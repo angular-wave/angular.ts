@@ -47,7 +47,9 @@ function buildHooks(transition, hookType, hooks) {
     hookTuples.sort(hookType._reverseSort
         ? sortByReverseNodeDepthThenPriority
         : sortByNodeDepthThenPriority);
-    hookTuples.forEach((tuple) => hooks.push(tuple.transitionHook));
+    hookTuples.forEach((tuple) => {
+        hooks.push(tuple.transitionHook);
+    });
 }
 /**
  * Sorts hooks first by state depth, then by explicit hook priority.

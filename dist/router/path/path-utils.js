@@ -13,7 +13,9 @@ function buildPath(targetState) {
     }
     const states = stateObject.path ?? [];
     const path = [];
-    states.forEach((state) => path.push(new PathNode(state).applyRawParams(toParams)));
+    states.forEach((state) => {
+        path.push(new PathNode(state).applyRawParams(toParams));
+    });
     return path;
 }
 /**

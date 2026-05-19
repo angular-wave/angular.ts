@@ -6,20 +6,16 @@
  */
 class HttpRestBackend {
     /** Creates a backend that executes REST requests through `$http`. */
-    constructor(
-    /** Runtime `$http` service used to execute requests. */
-    _$http, 
-    /** Default `$http` options merged into every request. */
-    _options = {}) {
-        this._$http = _$http;
-        this._options = _options;
+    constructor($http, options = {}) {
+        this._$http = $http;
+        this._options = options;
     }
     /**
      * Send the REST request through `$http`.
      *
      * Request-specific options override backend defaults.
      */
-    request(request) {
+    async request(request) {
         return this._$http({
             method: request.method,
             url: request.url,

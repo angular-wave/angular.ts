@@ -216,12 +216,14 @@ an unsafe JavaScript escape hatch can reach it.
 | `AngularElementDefinition` | started |
 | `AngularElementModuleOptions` | started |
 | `AngularElementOptions` | started |
+| `AppComponentOptions` | started |
 | `ElementScopeOptions` | started |
+| `ScopeElement` | started |
+| `ScopeElementConstructor` | started |
 | `WebComponentContext` | started |
 | `WebComponentInput` | started |
 | `WebComponentInputConfig` | started |
 | `WebComponentInputs` | started |
-| `WebComponentOptions` | started |
 
 ## Storage, Workers, And Misc
 

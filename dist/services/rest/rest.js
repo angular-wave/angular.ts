@@ -93,6 +93,7 @@ class CachedRestBackend {
         if (isDefined(cached)) {
             void this._fetchAndCache(request, key).then((response) => {
                 this._onRevalidate?.({ key, request, response });
+                return undefined;
             }, () => undefined);
             return { ...cached, source: "cache", stale: true };
         }
@@ -146,6 +147,7 @@ class RestService {
     buildUrl(template, params) {
         return expandUriTemplate(template, params);
     }
+    /** @internal */
     _mapEntity(data) {
         if (!data)
             return data;
@@ -232,6 +234,7 @@ class RestService {
             return false;
         }
     }
+    /** @internal */
     async _request(method, url, data = null, params = {}, collectionUrl, id) {
         return this._backend.request({
             method,

@@ -109,7 +109,9 @@ function clickHook(el, $state, type, rawDef, scope) {
                         .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                         .then(() => {
                         scope.$emit("$updateBrowser");
-                    });
+                        return undefined;
+                    })
+                        .catch(() => undefined);
                 }
             });
         }
@@ -344,9 +346,12 @@ function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegis
              * Updates active classes after a transition settles.
              */
             function updateAfterTransition(trans) {
-                trans.promise.then(update, () => {
-                    /* empty */
-                });
+                void trans.promise
+                    .then(() => {
+                    update();
+                    return undefined;
+                })
+                    .catch(() => undefined);
             }
             $scope.$on("$destroy", setupEventListeners());
             if ($routerState._transition) {

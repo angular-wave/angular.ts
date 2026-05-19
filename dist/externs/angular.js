@@ -294,14 +294,14 @@ ng.AttributesService.prototype.removeClass = function(element, classValue) {};
 ng.AttributesService.prototype.updateClass = function(element, newClasses, oldClasses) {};
 
 /**
- * Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications.
+ * Defines a component's configuration object (a simplified directive definition object).
  * @record
  */
 ng.Component = function() {};
 
 /**
  * Public Component.controller member exposed by the AngularTS namespace contract.
- * @type {(!Array<(function(...?): !ng.Controller|function(...?): (!ng.Controller|undefined))>|function(...?): (!ng.Controller|undefined)|function(new: ng.Controller, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
  */
 ng.Component.prototype.controller;
 
@@ -398,13 +398,13 @@ ng.Directive.prototype.restrict;
 
 /**
  * Compile function for the directive
- * @type {(function(!HTMLElement, !ng.Attributes, (function(...?): ?|undefined)): (!Object|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void|undefined)|undefined)}
+ * @type {(function(!HTMLElement, !ng.Attributes, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void|undefined)|undefined)}
  */
 ng.Directive.prototype.compile;
 
 /**
  * Controller constructor or injectable string name
- * @type {(!Array<(function(...?): !ng.Controller|function(...?): (!ng.Controller|undefined))>|function(...?): (!ng.Controller|undefined)|function(new: ng.Controller, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
  */
 ng.Directive.prototype.controller;
 
@@ -485,6 +485,12 @@ ng.Directive.prototype.transclude;
  * @type {(number|undefined)}
  */
 ng.Directive.prototype.count;
+
+/**
+ * Supported directive matching locations.
+ * @typedef {string}
+ */
+ng.DirectiveRestrict;
 
 /**
  * Directive registration factory that returns either a directive definition object or a link function.
@@ -682,13 +688,22 @@ ng.NgModule.prototype.websocket = function(name, url, protocols, config) {};
 ng.NgModule.prototype.webTransport = function(name, url, config) {};
 
 /**
- * Register a scoped custom element backed by a normal AngularTS child scope. The definition is installed when the module runs. The custom element can be consumed as a native element while its internal model remains part of the AngularTS scope tree.
+ * Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.
  * @template T
  * @param {string} name
- * @param {!ng.WebComponentOptions<T>} options
+ * @param {!ng.AppComponentOptions<T>} options
  * @return {!ng.NgModule}
  */
-ng.NgModule.prototype.webComponent = function(name, options) {};
+ng.NgModule.prototype.appComponent = function(name, options) {};
+
+/**
+ * Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.
+ * @template T
+ * @param {string} name
+ * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @return {!ng.NgModule}
+ */
+ng.NgModule.prototype.webComponent = function(name, elementClass) {};
 
 /**
  * Register a topic-bound event bus facade as an injectable service. Events published through the facade are namespaced as `${topic}:${event}`, keeping raw event-bus topic strings out of application services.
@@ -1018,7 +1033,7 @@ ng.HttpParamSerializerProvider = function() {};
 
 /**
  * Public HttpParamSerializerProvider.$get member exposed by the AngularTS namespace contract.
- * @type {(function(): function((!Object<string, (!Array<?>|boolean|null|number|string|undefined)>|undefined)): string|undefined)}
+ * @type {(function(): function((!Object<string, ?>|undefined)): string|undefined)}
  */
 ng.HttpParamSerializerProvider.prototype.$get;
 
@@ -1138,7 +1153,7 @@ ng.SceDelegateProvider.prototype.imgSrcSanitizationTrustedUrlList = function(reg
 
 /**
  * Public SceDelegateProvider.$get member exposed by the AngularTS namespace contract.
- * @type {!Array<?>}
+ * @type {!Array<string>}
  */
 ng.SceDelegateProvider.prototype.$get;
 
@@ -1489,13 +1504,13 @@ ng.AriaService.prototype.config = function(key) {};
 
 /**
  * Entry point for the `$compile` service.
- * @typedef {function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (?|undefined)): !ng.PublicLinkFn}
+ * @typedef {function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn}
  */
 ng.CompileService;
 
 /**
  * Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function((!Array<(function(...?): !ng.Controller|function(...?): (!ng.Controller|undefined))>|function(...?): (!ng.Controller|undefined)|function(new: ng.Controller, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
+ * @typedef {function((!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
  */
 ng.ControllerService;
 
@@ -1559,7 +1574,7 @@ ng.ExceptionHandlerService;
 
 /**
  * Public AngularTS FilterFn contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(?, ...?): ?}
+ * @typedef {function(...?): ?}
  */
 ng.FilterFn;
 
@@ -1571,7 +1586,7 @@ ng.FilterFactory;
 
 /**
  * Public AngularTS FilterService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(string): function(?, ...?): ?}
+ * @typedef {function(string): function(...?): ?}
  */
 ng.FilterService;
 
@@ -1649,7 +1664,7 @@ ng.RelativeTimeFilterOptions.prototype.locale;
 
 /**
  * Function that serializes query params into a URL-encoded string.
- * @typedef {function((!Object<string, (!Array<?>|boolean|null|number|string|undefined)>|undefined)): string}
+ * @typedef {function((!Object<string, ?>|undefined)): string}
  */
 ng.HttpParamSerializerSerService;
 
@@ -1773,7 +1788,7 @@ ng.InjectorService.prototype.get = function(serviceName) {};
  * Invoke a function with optional context and locals.
  * @param {(!Array<(function(...?): ?|function(new: ?, ...?)|string)>|!Array<function(...?): ?>|function(...?): ?|function(new: ?, ...?)|string)} fn
  * @param {(?|undefined)} self
- * @param {(!Object<string, ?>|string|undefined)} locals
+ * @param {(?|undefined)} locals
  * @param {(string|undefined)} serviceName
  * @return {?}
  */
@@ -1782,7 +1797,7 @@ ng.InjectorService.prototype.invoke = function(fn, self, locals, serviceName) {}
 /**
  * Instantiate a type constructor with optional locals.
  * @param {(!Array<(function(...?): ?|function(new: ?, ...?)|string)>|!Array<function(...?): ?>|function(...?): ?|function(new: ?, ...?))} type
- * @param {(!Object<string, ?>|undefined)} locals
+ * @param {(?|undefined)} locals
  * @param {(string|undefined)} serviceName
  * @return {?}
  */
@@ -2151,7 +2166,7 @@ ng.PubSubService.prototype.publish = function(topic, var_args) {};
 ng.RootElementService;
 
 /**
- * Public AngularTS RootScopeService contract exposed through the global ng namespace for Closure-annotated applications.
+ * Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior.
  * @record
  */
 ng.RootScopeService = function() {};
@@ -2538,35 +2553,35 @@ ng.SceService.prototype.getTrustedMediaUrl = function(value) {};
  * Public SceService.parse member exposed by the AngularTS namespace contract.
  * @param {string} type
  * @param {string} expression
- * @return {function(?, ?): ?}
+ * @return {!Object}
  */
 ng.SceService.prototype.parse = function(type, expression) {};
 
 /**
  * Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.
  * @param {string} expression
- * @return {function(?, ?): ?}
+ * @return {!Object}
  */
 ng.SceService.prototype.parseAsHtml = function(expression) {};
 
 /**
  * Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.
  * @param {string} expression
- * @return {function(?, ?): ?}
+ * @return {!Object}
  */
 ng.SceService.prototype.parseAsResourceUrl = function(expression) {};
 
 /**
  * Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.
  * @param {string} expression
- * @return {function(?, ?): ?}
+ * @return {!Object}
  */
 ng.SceService.prototype.parseAsUrl = function(expression) {};
 
 /**
  * Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.
  * @param {string} expression
- * @return {function(?, ?): ?}
+ * @return {!Object}
  */
 ng.SceService.prototype.parseAsMediaUrl = function(expression) {};
 
@@ -2698,7 +2713,7 @@ ng.SseConfig.prototype.onEvent;
 
 /**
  * Called when an error occurs
- * @type {(function(?): void|undefined)}
+ * @type {(function(!Event): void|undefined)}
  */
 ng.SseConfig.prototype.onError;
 
@@ -2734,7 +2749,7 @@ ng.SseConfig.prototype.heartbeatTimeout;
 
 /**
  * Function to transform incoming messages
- * @type {(function(?): ?|undefined)}
+ * @type {(function(string): ?|undefined)}
  */
 ng.SseConfig.prototype.transformMessage;
 
@@ -3429,8 +3444,8 @@ ng.AngularElementOptions.prototype.ngModule;
 ng.AngularElementOptions.prototype.elementModule;
 
 /**
- * Custom element definition passed to `$webComponent.define`.
- * @type {!ng.WebComponentOptions<T>}
+ * App component definition passed to `$webComponent.defineAppComponent`.
+ * @type {!ng.AppComponentOptions<T>}
  */
 ng.AngularElementOptions.prototype.component;
 
@@ -3454,7 +3469,7 @@ ng.AngularElementOptions.prototype.registerBuiltins;
 
 /**
  * A controller constructor function used in AngularTS.
- * @typedef {(function(...?): (!ng.Controller|undefined)|function(new: ng.Controller, ...?))}
+ * @typedef {(function(...?): (!Object|undefined)|function(new: Object, ...?))}
  */
 ng.ControllerConstructor;
 
@@ -3568,7 +3583,7 @@ ng.HttpProviderDefaults = function() {};
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(?|undefined)}
+ * @type {(!Object|boolean|undefined)}
  */
 ng.HttpProviderDefaults.prototype.cache;
 
@@ -3586,7 +3601,7 @@ ng.HttpProviderDefaults.prototype.transformResponse;
 
 /**
  * Default headers merged into each request.
- * @type {(!Object<string, ?>|undefined)}
+ * @type {(!Object<string, (!Object<string, (boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.HttpProviderDefaults.prototype.headers;
 
@@ -3610,7 +3625,7 @@ ng.HttpProviderDefaults.prototype.withCredentials;
 
 /**
  * Query parameter serializer token or function.
- * @type {(function(?): string|string|undefined)}
+ * @type {(function(!Object<string, ?>): string|string|undefined)}
  */
 ng.HttpProviderDefaults.prototype.paramSerializer;
 
@@ -4140,7 +4155,13 @@ ng.InvocationDetail = function() {};
 ng.InvocationDetail.prototype.expr;
 
 /**
- * Public watcher callback shape. The first argument is the resolved watched value. The second argument is the original target object used when the watcher was registered.
+ * Public InvocationDetail.reply member exposed by the AngularTS namespace contract.
+ * @type {(!Object|undefined)}
+ */
+ng.InvocationDetail.prototype.reply;
+
+/**
+ * Public AngularTS ListenerFn contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function((?|undefined), (?|undefined)): void}
  */
 ng.ListenerFn;
@@ -4401,7 +4422,7 @@ ng.RequestConfig.prototype.uploadEventHandlers;
 
 /**
  * Query parameters appended to the request URL.
- * @type {(?|undefined)}
+ * @type {(!Object<string, ?>|undefined)}
  */
 ng.RequestConfig.prototype.params;
 
@@ -4425,7 +4446,7 @@ ng.RequestConfig.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(?|undefined)}
+ * @type {(!Object|boolean|undefined)}
  */
 ng.RequestConfig.prototype.cache;
 
@@ -4443,7 +4464,7 @@ ng.RequestConfig.prototype.transformResponse;
 
 /**
  * Default headers merged into each request.
- * @type {(!Object<string, ?>|undefined)}
+ * @type {(!Object<string, (!Object<string, (boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.RequestConfig.prototype.headers;
 
@@ -4467,7 +4488,7 @@ ng.RequestConfig.prototype.withCredentials;
 
 /**
  * Query parameter serializer token or function.
- * @type {(function(?): string|string|undefined)}
+ * @type {(function(!Object<string, ?>): string|string|undefined)}
  */
 ng.RequestConfig.prototype.paramSerializer;
 
@@ -4479,7 +4500,7 @@ ng.RequestShortcutConfig = function() {};
 
 /**
  * Query parameters appended to the request URL.
- * @type {(?|undefined)}
+ * @type {(!Object<string, ?>|undefined)}
  */
 ng.RequestShortcutConfig.prototype.params;
 
@@ -4503,7 +4524,7 @@ ng.RequestShortcutConfig.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(?|undefined)}
+ * @type {(!Object|boolean|undefined)}
  */
 ng.RequestShortcutConfig.prototype.cache;
 
@@ -4521,7 +4542,7 @@ ng.RequestShortcutConfig.prototype.transformResponse;
 
 /**
  * Default headers merged into each request.
- * @type {(!Object<string, ?>|undefined)}
+ * @type {(!Object<string, (!Object<string, (boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.RequestShortcutConfig.prototype.headers;
 
@@ -4545,7 +4566,7 @@ ng.RequestShortcutConfig.prototype.withCredentials;
 
 /**
  * Query parameter serializer token or function.
- * @type {(function(?): string|string|undefined)}
+ * @type {(function(!Object<string, ?>): string|string|undefined)}
  */
 ng.RequestShortcutConfig.prototype.paramSerializer;
 
@@ -5023,7 +5044,7 @@ ng.StateDeclaration.prototype.bindings;
 
 /**
  * The view's controller function or name The controller function, or the name of a registered controller. The controller function will be used to control the contents of the [[directives.ngVIew]] directive. See: [[Ng1Controller]] for information about component-level router hooks.
- * @type {(!Array<(function(...?): !ng.Controller|function(...?): (!ng.Controller|undefined))>|function(...?): (!ng.Controller|undefined)|function(new: ng.Controller, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
  */
 ng.StateDeclaration.prototype.controller;
 
@@ -5111,7 +5132,7 @@ ng.ConnectionConfig.prototype.onEvent;
 
 /**
  * Called when an error occurs
- * @type {(function(?): void|undefined)}
+ * @type {(function(!Event): void|undefined)}
  */
 ng.ConnectionConfig.prototype.onError;
 
@@ -5147,7 +5168,7 @@ ng.ConnectionConfig.prototype.heartbeatTimeout;
 
 /**
  * Function to transform incoming messages
- * @type {(function(?): ?|undefined)}
+ * @type {(function(string): ?|undefined)}
  */
 ng.ConnectionConfig.prototype.transformMessage;
 
@@ -5389,6 +5410,171 @@ ng.ElementScopeOptions.prototype.parentScope;
 ng.ElementScopeOptions.prototype.isolate;
 
 /**
+ * Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.AppComponentOptions = function() {};
+
+/**
+ * Template compiled into the host or shadow root.
+ * @type {(string|undefined)}
+ */
+ng.AppComponentOptions.prototype.template;
+
+/**
+ * Enables shadow DOM, or passes ShadowRootInit options.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.AppComponentOptions.prototype.shadow;
+
+/**
+ * Initial scope state, or a factory returning it.
+ * @type {(T|function(): T|undefined)}
+ */
+ng.AppComponentOptions.prototype.scope;
+
+/**
+ * Declared DOM attributes/properties that sync into the scope.
+ * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
+ */
+ng.AppComponentOptions.prototype.inputs;
+
+/**
+ * Use an isolate child scope instead of inheriting parent properties.
+ * @type {(boolean|undefined)}
+ */
+ng.AppComponentOptions.prototype.isolate;
+
+/**
+ * Called after the scope exists and the template has been linked.
+ * @type {(function(!ng.WebComponentContext<T>): (function(): void|undefined)|undefined)}
+ */
+ng.AppComponentOptions.prototype.connected;
+
+/**
+ * Called before the scope is destroyed.
+ * @type {(function(!ng.WebComponentContext<T>): void|undefined)}
+ */
+ng.AppComponentOptions.prototype.disconnected;
+
+/**
+ * Called after an observed input attribute changes.
+ * @type {(function(string, (null|string), (null|string), !ng.WebComponentContext<T>): void|undefined)}
+ */
+ng.AppComponentOptions.prototype.attributeChanged;
+
+/**
+ * Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.ScopeElement = function() {};
+
+/**
+ * Scope owned by this custom element instance.
+ * @type {!ng.Scope}
+ */
+ng.ScopeElement.prototype.scope;
+
+/**
+ * Injector used by the AngularTS app that registered this element.
+ * @type {!ng.InjectorService}
+ */
+ng.ScopeElement.prototype.injector;
+
+/**
+ * Render root used for compiled template content.
+ * @type {(!HTMLElement|!Object)}
+ */
+ng.ScopeElement.prototype.root;
+
+/**
+ * Public ScopeElement.connectedCallback member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.ScopeElement.prototype.connectedCallback = function() {};
+
+/**
+ * Public ScopeElement.disconnectedCallback member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.ScopeElement.prototype.disconnectedCallback = function() {};
+
+/**
+ * Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.
+ * @param {string} attribute
+ * @param {(null|string)} oldValue
+ * @param {(null|string)} newValue
+ * @return {void}
+ */
+ng.ScopeElement.prototype.attributeChangedCallback = function(attribute, oldValue, newValue) {};
+
+/**
+ * Called after the AngularTS scope and template are connected.
+ * @type {(function(): (function(): void|undefined)|undefined)}
+ */
+ng.ScopeElement.prototype.connected;
+
+/**
+ * Called before the AngularTS scope is destroyed.
+ * @type {(function(): void|undefined)}
+ */
+ng.ScopeElement.prototype.disconnected;
+
+/**
+ * Called after an observed input attribute changes.
+ * @type {(function(string, (null|string), (null|string)): void|undefined)}
+ */
+ng.ScopeElement.prototype.attributeChanged;
+
+/**
+ * Dispatch a composed bubbling DOM event from this custom element.
+ * @param {string} type
+ * @param {(?|undefined)} detail
+ * @param {(!Object|undefined)} init
+ * @return {boolean}
+ */
+ng.ScopeElement.prototype.dispatch = function(type, detail, init) {};
+
+/**
+ * Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.ScopeElementConstructor = function() {};
+
+/**
+ * Template compiled into the host or shadow root.
+ * @type {(string|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.template;
+
+/**
+ * Enables shadow DOM, or passes ShadowRootInit options.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.shadow;
+
+/**
+ * Initial scope state, or a factory returning it.
+ * @type {(T|function(): T|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.scope;
+
+/**
+ * Declared DOM attributes/properties that sync into the scope.
+ * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.inputs;
+
+/**
+ * Use an isolate child scope instead of inheriting parent properties.
+ * @type {(boolean|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.isolate;
+
+/**
  * Public AngularTS WebComponentContext contract exposed through the global ng namespace for Closure-annotated applications.
  * @template T
  * @record
@@ -5477,74 +5663,28 @@ ng.WebComponentInputConfig.prototype.default;
 ng.WebComponentInputs = function() {};
 
 /**
- * Public AngularTS WebComponentOptions contract exposed through the global ng namespace for Closure-annotated applications.
- * @template T
- * @record
- */
-ng.WebComponentOptions = function() {};
-
-/**
- * Template compiled into the host or shadow root.
- * @type {(string|undefined)}
- */
-ng.WebComponentOptions.prototype.template;
-
-/**
- * Enables shadow DOM, or passes ShadowRootInit options.
- * @type {(!Object|boolean|undefined)}
- */
-ng.WebComponentOptions.prototype.shadow;
-
-/**
- * Initial scope state, or a factory returning it.
- * @type {(T|function(): T|undefined)}
- */
-ng.WebComponentOptions.prototype.scope;
-
-/**
- * Declared DOM attributes/properties that sync into the scope.
- * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
- */
-ng.WebComponentOptions.prototype.inputs;
-
-/**
- * Use an isolate child scope instead of inheriting parent properties.
- * @type {(boolean|undefined)}
- */
-ng.WebComponentOptions.prototype.isolate;
-
-/**
- * Called after the scope exists and the template has been linked.
- * @type {(function(!ng.WebComponentContext<T>): (function(): void|undefined)|undefined)}
- */
-ng.WebComponentOptions.prototype.connected;
-
-/**
- * Called before the scope is destroyed.
- * @type {(function(!ng.WebComponentContext<T>): void|undefined)}
- */
-ng.WebComponentOptions.prototype.disconnected;
-
-/**
- * Called after an observed input attribute changes.
- * @type {(function(string, (null|string), (null|string), !ng.WebComponentContext<T>): void|undefined)}
- */
-ng.WebComponentOptions.prototype.attributeChanged;
-
-/**
  * Public AngularTS WebComponentService contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
 ng.WebComponentService = function() {};
 
 /**
- * Define a scoped custom element.
+ * Define an options-backed application host custom element.
  * @template T
  * @param {string} name
- * @param {!ng.WebComponentOptions<T>} options
+ * @param {!ng.AppComponentOptions<T>} options
  * @return {function(new: HTMLElement, ...?)}
  */
-ng.WebComponentService.prototype.define = function(name, options) {};
+ng.WebComponentService.prototype.defineAppComponent = function(name, options) {};
+
+/**
+ * Define a native custom element backed by an AngularTS child scope.
+ * @template T
+ * @param {string} name
+ * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @return {function(new: HTMLElement, ...?)}
+ */
+ng.WebComponentService.prototype.defineElement = function(name, elementClass) {};
 
 /**
  * Create and attach a normal AngularTS child scope for a custom element.
@@ -5594,7 +5734,7 @@ ng.WebSocketConfig.prototype.onEvent;
 
 /**
  * Called when an error occurs
- * @type {(function(?): void|undefined)}
+ * @type {(function(!Event): void|undefined)}
  */
 ng.WebSocketConfig.prototype.onError;
 
@@ -5630,7 +5770,7 @@ ng.WebSocketConfig.prototype.heartbeatTimeout;
 
 /**
  * Function to transform incoming messages
- * @type {(function(?): ?|undefined)}
+ * @type {(function(string): ?|undefined)}
  */
 ng.WebSocketConfig.prototype.transformMessage;
 

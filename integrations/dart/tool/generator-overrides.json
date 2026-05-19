@@ -28,6 +28,7 @@
     "HttpService.get": "get",
     "InjectorService.get": "get",
     "NgModule.animation": "rawAnimation",
+    "NgModule.appComponent": "rawAppComponent",
     "NgModule.component": "rawComponent",
     "NgModule.config": "rawConfig",
     "NgModule.constant": "rawConstant",
@@ -61,7 +62,8 @@
     "PubSubService.getCount": "int",
     "TopicService.getCount": "int",
     "WebComponentService.createElementScope": "Scope<TState>",
-    "WebComponentService.define": "CustomElementConstructor"
+    "WebComponentService.defineAppComponent": "CustomElementConstructor",
+    "WebComponentService.defineElement": "CustomElementConstructor"
   },
   "types": {
     "AbortSignal": "AbortSignal",

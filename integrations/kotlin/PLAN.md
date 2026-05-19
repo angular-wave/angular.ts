@@ -326,13 +326,15 @@ Tasks:
 - [x] Implement `ng.bootstrap(root, modules, config)`.
 - [x] Implement `ng.token<T>(name)`.
 - [x] Implement `NgModule.value`, `factory`, `service`, `controller`,
-  `component`, `directive`, and `webComponent` as typed entry points.
+  `component`, `directive`, `appComponent`, and `webComponent` as typed entry
+  points.
   - [x] `value`
   - [x] `factory`
   - [x] `service`
   - [x] `controller`
   - [x] `component`
   - [x] `directive`
+  - [x] `appComponent`
   - [x] `webComponent`
 - [x] Implement `Injector.get<T>(token)`.
 - [x] Implement injection helpers:
@@ -472,7 +474,8 @@ examples/web_components/
 
 Tasks:
 
-- [ ] Implement `WebComponent<TState>` builder.
+- [ ] Implement `AppComponent<TState>` builder and native `webComponent`
+  registration helpers.
 - [ ] Support inputs, input aliases, shadow DOM, lifecycle hooks, and typed custom
   event dispatch.
 - [ ] Implement `AngularElementOptions`, `AngularElementDefinition`, and related

@@ -1,7 +1,7 @@
 import { _http, _compile, _log, _parse, _state, _sse, _injector, _stream, _attributes } from '../../injection-tokens.js';
 import { Http } from '../../services/http/http.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { uppercase, callBackAfterFirst, isDefined, wait, toKeyValue, isString, isInstanceOf, isObject } from '../../shared/utils.js';
+import { uppercase, isDefined, wait, toKeyValue, callBackAfterFirst, isString, isInstanceOf, isObject } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent } from '../realtime/protocol.js';
 export { SwapMode } from '../realtime/protocol.js';
@@ -92,7 +92,12 @@ function createHttpDirective(method, attrName) {
                 const eventName = readAttr("trigger") ?? getEventNameForElement(element);
                 const tag = element.tagName.toLowerCase();
                 if (hasAttr("latch")) {
-                    $attributes.observe(scope, element, "latch", callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))));
+                    const dispatchAfterFirst = callBackAfterFirst(() => {
+                        element.dispatchEvent(new Event(eventName));
+                    });
+                    $attributes.observe(scope, element, "latch", () => {
+                        dispatchAfterFirst();
+                    });
                 }
                 let throttled = false;
                 let intervalId;
@@ -295,9 +300,9 @@ function createHttpDirective(method, attrName) {
                                         if (hasAttr("loading")) {
                                             setAttr("loading", false);
                                         }
-                                        const loadingClass = readAttr("loadingClass");
-                                        if (isDefined(loadingClass))
-                                            $attributes.removeClass(element, loadingClass);
+                                        const sseLoadingClass = readAttr("loadingClass");
+                                        if (isDefined(sseLoadingClass))
+                                            $attributes.removeClass(element, sseLoadingClass);
                                     },
                                     onEvent: ({ data, event: messageEvent, type, }) => {
                                         const source = sourceRef.current;

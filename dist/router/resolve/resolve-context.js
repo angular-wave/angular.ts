@@ -90,18 +90,21 @@ class ResolveContext {
                 nextResolvables.push(existing);
             }
         });
-        resolvables.forEach((resolvable) => nextResolvables.push(resolvable));
+        resolvables.forEach((resolvable) => {
+            nextResolvables.push(resolvable);
+        });
         node.resolvables = nextResolvables;
     }
     /**
      * Resolves the path's resolvables.
      */
-    resolvePath(eagerOnly = false, trans) {
+    async resolvePath(eagerOnly, trans) {
+        const shouldResolveEagerOnly = eagerOnly ?? false;
         const promises = [];
         this._path.forEach((node, index) => {
             const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
             node.resolvables.forEach((resolvable) => {
-                if (!eagerOnly || resolvable.eager) {
+                if (!shouldResolveEagerOnly || resolvable.eager) {
                     promises.push(resolveToken(resolvable, subContext, trans));
                 }
             });

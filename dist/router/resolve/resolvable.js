@@ -3,7 +3,7 @@ import { isInstanceOf, isFunction, assert, isNullOrUndefined, isObject, hasOwn, 
 
 async function resolveResolvable(resolvable, resolveContext, trans) {
     const dependencies = resolveContext.getDependencies(resolvable);
-    const dependencyPromises = dependencies.map((dependency) => dependency.get(resolveContext, trans));
+    const dependencyPromises = dependencies.map(async (dependency) => dependency.get(resolveContext, trans));
     const resolvedDeps = await Promise.all(dependencyPromises);
     const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
     resolvable.data = resolvedValue;
@@ -72,14 +72,14 @@ class Resolvable {
      * Resolves this token by first resolving its dependencies, then invoking
      * the resolve function and caching the resulting value.
      */
-    resolve(resolveContext, trans) {
+    async resolve(resolveContext, trans) {
         this.promise = resolveResolvable(this, resolveContext, trans);
         return this.promise;
     }
     /**
      * Returns the cached promise, resolving the token first if necessary.
      */
-    get(resolveContext, trans) {
+    async get(resolveContext, trans) {
         return this.promise ?? this.resolve(resolveContext, trans);
     }
     /**

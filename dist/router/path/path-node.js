@@ -32,7 +32,9 @@ class PathNode {
             this.paramValues = {};
             this.resolvables = [];
             const resolvables = state.resolvables ?? [];
-            resolvables.forEach((resolvable) => this.resolvables.push(resolvable.clone()));
+            resolvables.forEach((resolvable) => {
+                this.resolvables.push(resolvable.clone());
+            });
         }
     }
     clone() {

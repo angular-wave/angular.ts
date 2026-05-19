@@ -230,12 +230,14 @@ reference example makes one necessary.
 | `AngularElementDefinition` | deferred |
 | `AngularElementModuleOptions` | deferred |
 | `AngularElementOptions` | deferred |
+| `AppComponentOptions` | deferred |
 | `ElementScopeOptions` | deferred |
+| `ScopeElement` | deferred |
+| `ScopeElementConstructor` | deferred |
 | `WebComponentContext` | deferred |
 | `WebComponentInput` | deferred |
 | `WebComponentInputConfig` | deferred |
 | `WebComponentInputs` | deferred |
-| `WebComponentOptions` | deferred |
 
 ## Storage, Workers, And Misc
 

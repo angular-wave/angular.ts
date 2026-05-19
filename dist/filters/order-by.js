@@ -137,9 +137,14 @@ function orderByFilter($parse) {
             case "boolean": /* falls through */
             case "string":
                 return true;
-            default:
+            case "bigint":
+            case "symbol":
+            case "undefined":
+            case "object":
+            case "function":
                 return false;
         }
+        return false;
     }
     /**
      * Converts an object to a primitive value for comparison purposes.

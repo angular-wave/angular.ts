@@ -3,7 +3,7 @@ import angular_ts/directive.{type Directive}
 import angular_ts/injectable.{type Injectable}
 import angular_ts/token.{type Token}
 import angular_ts/unsafe as js
-import angular_ts/web_component.{type WebComponent}
+import angular_ts/web_component.{type AppComponent, type ScopeElementConstructor}
 import gleam/dynamic.{type Dynamic}
 
 pub opaque type NgModule {
@@ -190,16 +190,30 @@ pub fn filter(
   ng_module
 }
 
+pub fn app_component(
+  ng_module: NgModule,
+  name: String,
+  definition: AppComponent(scope),
+) -> NgModule {
+  js.call_method2(
+    ng_module.handle,
+    "appComponent",
+    js.coerce(name),
+    web_component.to_js_object(definition),
+  )
+  ng_module
+}
+
 pub fn web_component(
   ng_module: NgModule,
   name: String,
-  definition: WebComponent(scope),
+  constructor: ScopeElementConstructor(scope),
 ) -> NgModule {
   js.call_method2(
     ng_module.handle,
     "webComponent",
     js.coerce(name),
-    web_component.to_js_object(definition),
+    web_component.scope_element_constructor_handle(constructor),
   )
   ng_module
 }

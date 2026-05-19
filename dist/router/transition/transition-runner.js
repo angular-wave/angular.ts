@@ -1,7 +1,7 @@
 import { TransitionHookPhase, TransitionHook } from './transition-hook.js';
 import { Rejection } from './reject-factory.js';
 
-function resolvedPromise() {
+async function resolvedPromise() {
     return Promise.resolve();
 }
 /**
@@ -27,7 +27,7 @@ const TransitionRunner = {
         }
     },
     /** @internal */
-    _runTransitionHooks(transition) {
+    async _runTransitionHooks(transition) {
         // Wait to build the RUN hook chain until BEFORE hooks have completed.
         // This allows a BEFORE hook to add more RUN hooks dynamically.
         const allRunHooks = transition._getHooksFor(TransitionHookPhase._RUN);

@@ -205,12 +205,21 @@ final class NgModule extends GeneratedNgNgModule {
     return this;
   }
 
-  /// Registers an AngularTS custom element.
+  /// Registers an options-backed application host custom element.
+  NgModule appComponent<TScope>(
+    String name,
+    AppComponent<TScope> options,
+  ) {
+    rawAppComponent(name, options);
+    return this;
+  }
+
+  /// Registers a native custom element backed by an AngularTS scope.
   NgModule webComponent<TScope>(
     String name,
-    WebComponent<TScope> options,
+    ScopeElementConstructor<TScope> elementClass,
   ) {
-    rawWebComponent(name, options);
+    rawWebComponent(name, unsafe.JsValue(elementClass));
     return this;
   }
 

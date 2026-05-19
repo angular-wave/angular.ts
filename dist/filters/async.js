@@ -22,9 +22,12 @@ function asyncFilter($rootScope) {
                 _status: "pending",
                 _value: undefined,
             });
-            Promise.resolve(input).then((value) => {
+            void Promise.resolve(input)
+                .then((value) => {
                 settleAsyncValue($rootScope, promise, value);
-            }, (reason) => {
+                return undefined;
+            })
+                .catch((reason) => {
                 settleAsyncValue($rootScope, promise, reason);
             });
         }

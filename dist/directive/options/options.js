@@ -27,10 +27,10 @@ function ngOptionsDirective($compile, $parse, $attributes) {
                 "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +
                 " but got '{0}'. Element: {1}", optionsExp, startingTag(selectElement));
         }
-        const valueName = match[5] || match[7];
-        const keyName = match[6];
-        const selectAs = match[0].includes(" as ") && match[1];
-        const valueFn = $parse(match[2] ? match[1] : valueName);
+        const [, selectAsExpression, displayExpression, , , valueAlias, keyName, itemAlias,] = match;
+        const valueName = valueAlias || itemAlias;
+        const selectAs = match[0].includes(" as ") && selectAsExpression;
+        const valueFn = $parse(displayExpression ? selectAsExpression : valueName);
         const selectAsFn = selectAs && $parse(selectAs);
         const viewValueFn = selectAsFn || valueFn;
         const displayFn = $parse(match[2] || match[1]);
@@ -97,8 +97,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
     }
     function ngOptionsPostLink(scope, selectElement, attr, ctrls) {
         const selectNode = selectElement;
-        const selectCtrl = ctrls[0];
-        const ngModelCtrl = ctrls[1];
+        const [selectCtrl, ngModelCtrl] = ctrls;
         const multiple = $attributes.has(selectElement, "multiple");
         for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
             if (children[i].value === "") {

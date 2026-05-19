@@ -219,12 +219,14 @@ considered covered just because an unsafe JavaScript escape hatch can reach it.
 | `AngularElementDefinition` | generated |
 | `AngularElementModuleOptions` | generated |
 | `AngularElementOptions` | generated |
+| `AppComponentOptions` | generated |
 | `ElementScopeOptions` | generated |
+| `ScopeElement` | generated |
+| `ScopeElementConstructor` | generated |
 | `WebComponentContext` | generated |
 | `WebComponentInput` | generated |
 | `WebComponentInputConfig` | generated |
 | `WebComponentInputs` | generated |
-| `WebComponentOptions` | generated |
 
 ## Storage, Workers, And Misc
 

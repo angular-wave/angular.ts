@@ -225,7 +225,7 @@ function createInjector(modulesToLoad, strictDi = false) {
                         .concat(moduleFn._runBlocks);
                     const invokeQueue = moduleFn._invokeQueue.concat(moduleFn._configBlocks);
                     invokeQueue.forEach((invokeArgs) => {
-                        const invokeName = invokeArgs[1];
+                        const [, invokeName] = invokeArgs;
                         const providerInstance = providerInjector.get(invokeArgs[0]);
                         callFunction(providerInstance[invokeName], providerInstance, ...invokeArgs[2]);
                     });

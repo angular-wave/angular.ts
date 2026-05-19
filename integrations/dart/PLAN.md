@@ -63,9 +63,8 @@ AngularTS core must expose stable contracts for the Dart package:
 - Generated `.d.ts` declarations that describe the public JavaScript API.
 - Closure externs for public runtime and config shapes, useful for advanced
   compilation ecosystems and as another API contract.
-- A multi-element standalone web component API, for example
-  `defineAngularElements({ webComponents: ... })`, so one runtime can publish
-  many custom elements.
+- A standalone custom element API based on `AppComponentOptions`, with native
+  `ScopeElement` registration for user-authored custom elements.
 - A generated or checked inventory of the public `ng` namespace so Dart parity
   cannot drift silently.
 
@@ -125,7 +124,8 @@ Initial package API:
 - `NgModule.factory<TValue>(Token<TValue> token,
   InjectableFactory<TValue> factory)`
 - `NgModule.value<TValue>(Token<TValue> token, TValue value)`
-- `NgModule.webComponent<TScope>(String name, WebComponent<TScope> options)`
+- `NgModule.appComponent<TScope>(String name, AppComponent<TScope> options)`
+- `NgModule.webComponent<TScope>(String name, ScopeElementConstructor<TScope> elementClass)`
 - `Injector.get<T>(Token<T> token)`
 - `Scope<TState>` wrappers for common scope operations.
 - Explicit unsafe APIs such as `Injector.getUnsafe(String token)` and
@@ -186,7 +186,7 @@ Dart users should also be able to publish AngularTS-backed custom elements:
 ```dart
 final app = ng.module('widgets');
 
-app.webComponent('billing-summary', ng.WebComponent(
+app.appComponent('billing-summary', ng.AppComponent(
   shadow: true,
   inputs: {
     'accountId': ng.inputString(),
@@ -240,7 +240,8 @@ app.webComponent('billing-summary', ng.WebComponent(
 
 ### Phase 5: Web Components
 
-- Implement Dart `WebComponent` config wrappers.
+- Implement Dart `AppComponent` config wrappers and native `webComponent`
+  registration helpers.
 - Support inputs, shadow DOM, connected/disconnected hooks, and DOM event
   dispatch.
 - Add typed web component event payload helpers.

@@ -45,7 +45,7 @@ BOOLEAN_ATTR.forEach((i) => {
         return;
     /** Mirrors the watched scope expression into the underlying boolean attribute. */
     function defaultLinkFn($attributes, scope, element, attr) {
-        scope.$watch(String(attr[normalized] ?? ""), (value) => {
+        scope.$watch(attr[normalized] ?? "", (value) => {
             $attributes.set(element, i, !!value);
         });
     }
@@ -82,7 +82,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                 link(scope, element, attr) {
                     // special case ngPattern when a literal regular expression value
                     // is used as the expression (this way we don't have to watch anything).
-                    const ngPattern = attr.ngPattern;
+                    const { ngPattern } = attr;
                     if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
                         const match = REGEX_STRING_REGEXP.exec(ngPattern);
                         if (match) {
@@ -90,7 +90,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             return;
                         }
                     }
-                    scope.$watch(String(attr[ngAttr] ?? ""), (value) => {
+                    scope.$watch(attr[ngAttr] ?? "", (value) => {
                         $attributes.set(element, ngAttr, value);
                     });
                 },

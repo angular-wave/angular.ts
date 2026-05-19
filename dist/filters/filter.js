@@ -82,9 +82,9 @@ function createPredicateFn(expression, comparator, anyPropertyKey = "$", matchAg
                 // Should not compare primitives against objects, unless they have custom `toString` method
                 return false;
             }
-            actual = String(actual).toLowerCase();
+            const actualString = stringifyComparable(actual).toLowerCase();
             const expectedString = stringifyComparable(expected).toLowerCase();
-            return actual.includes(expectedString);
+            return actualString.includes(expectedString);
         };
     }
     const predicateFn = function (item) {
@@ -107,9 +107,14 @@ function stringifyComparable(value) {
             return String(value);
         case "function":
             return value.toString();
-        default:
+        case "object":
+            if (hasCustomToString(value)) {
+                const customToString = Reflect.get(value, "toString");
+                return customToString.call(value);
+            }
             return "";
     }
+    return "";
 }
 /** Recursively compares actual and expected values for the filter predicate. */
 function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstAnyProp, dontMatchWholeObject = false) {

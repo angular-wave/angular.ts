@@ -150,7 +150,7 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
                 prevTruthyAnswer(trans._options.redirectedFrom ?? null));
         };
         // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-        const wrappedHook = (trans) => {
+        const wrappedHook = async (trans) => {
             let promise;
             const cacheTrans = trans;
             const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});

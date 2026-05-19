@@ -27,7 +27,7 @@ function defineAngularElement(name, options) {
     const elementModuleName = elementModule?.name ?? defaultElementModuleName(name);
     const appModule = angular.module(elementModuleName, elementModule?.requires ?? []);
     elementModule?.configure?.(appModule, angular);
-    appModule.webComponent(name, component);
+    appModule.appComponent(name, component);
     const previousAngular = window.angular;
     window.angular = angular;
     let injector;

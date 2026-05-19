@@ -47,7 +47,7 @@ class AttributesProvider {
                     const pendingValues = state.pendingMutations.get(normalizedName);
                     if (!pendingValues?.length)
                         return false;
-                    const nextValue = pendingValues[0];
+                    const [nextValue] = pendingValues;
                     if (!valuesMatch(nextValue, value))
                         return false;
                     pendingValues.shift();

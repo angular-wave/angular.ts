@@ -96,6 +96,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                     return;
                 current.closed.catch(() => {
                     // Directive-owned sessions may be torn down before the browser finishes connecting.
+                    return undefined;
                 });
                 try {
                     current.close(reason ? { reason } : undefined);
@@ -104,9 +105,11 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                     current.ready
                         .then(() => {
                         current.close(reason ? { reason } : undefined);
+                        return undefined;
                     })
                         .catch(() => {
                         // The browser may reject a connection that is destroyed while opening.
+                        return undefined;
                     });
                 }
             }

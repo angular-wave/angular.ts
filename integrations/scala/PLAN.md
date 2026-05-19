@@ -66,6 +66,7 @@ integrations/
       Runtime.scala
       Scope.scala
       Token.scala
+      AppComponent.scala
       WebComponent.scala
       unsafe/
     src/test/scala/
@@ -144,7 +145,8 @@ Initial package API:
 - `NgModule.service[A](token: Token[A], service: InjectableFactory[A])`
 - `NgModule.factory[A](token: Token[A], factory: InjectableFactory[A])`
 - `NgModule.value[A](token: Token[A], value: A)`
-- `NgModule.webComponent[A](name: String, options: WebComponent[A])`
+- `NgModule.appComponent[A](name: String, options: AppComponent[A])`
+- `NgModule.webComponent[A](name: String, elementClass: ScopeElementConstructor[A])`
 - `Injector.get[A](token: Token[A]): A`
 - `Scope[A]` wrappers for watch/listen/destroy operations.
 - Explicit unsafe APIs such as `Injector.getUnsafe(name: String)` and
@@ -226,7 +228,8 @@ shapes at the boundary:
 
 ### Phase 6: Web Components
 
-- Implement Scala `WebComponent` config wrappers.
+- Implement Scala `AppComponent` config wrappers and native `webComponent`
+  registration helpers.
 - Support inputs, shadow DOM, connected/disconnected hooks, and DOM event
   dispatch.
 - Add typed web component event payload helpers.

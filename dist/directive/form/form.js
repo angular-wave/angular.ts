@@ -350,7 +350,7 @@ class FormController {
             controls = new Set();
             bucket.set(property, controls);
         }
-        if (!this._hasEquivalentControl(controls, controller)) {
+        if (!FormController._hasEquivalentControl(controls, controller)) {
             controls.add(controller);
         }
     }
@@ -364,8 +364,8 @@ class FormController {
             return;
         const resolvedController = this._resolveRegisteredControl(controller);
         controls.forEach((item) => {
-            if (this._isSameControl(item, controller) ||
-                this._isSameControl(item, resolvedController)) {
+            if (FormController._isSameControl(item, controller) ||
+                FormController._isSameControl(item, resolvedController)) {
                 controls.delete(item);
             }
         });
@@ -374,20 +374,20 @@ class FormController {
         }
     }
     /** @internal */
-    _hasEquivalentControl(controls, controller) {
+    static _hasEquivalentControl(controls, controller) {
         for (const item of controls) {
-            if (this._isSameControl(item, controller)) {
+            if (FormController._isSameControl(item, controller)) {
                 return true;
             }
         }
         return false;
     }
     /** @internal */
-    _isSameControl(left, right) {
+    static _isSameControl(left, right) {
         return left === right || deProxy(left) === deProxy(right);
     }
     /** @internal */
-    _publicCustomValidityObject(bucket) {
+    static _publicCustomValidityObject(bucket) {
         const object = {};
         bucket.forEach((controls, property) => {
             object[property] = Array.from(controls);
@@ -396,9 +396,9 @@ class FormController {
     }
     /** @internal */
     _syncPublicCustomValidityObjects() {
-        this.$error = this._publicCustomValidityObject(this._customErrorControls);
+        this.$error = FormController._publicCustomValidityObject(this._customErrorControls);
         this.$pending = this._pendingCustomValidatorControls.size
-            ? this._publicCustomValidityObject(this._pendingCustomValidatorControls)
+            ? FormController._publicCustomValidityObject(this._pendingCustomValidatorControls)
             : undefined;
     }
     /**
@@ -597,7 +597,7 @@ const formDirectiveFactory = function (isNgForm) {
                             : false;
                     return {
                         pre: function ngFormPreLink(scope, formElementParam, attrParam, ctrls) {
-                            const controller = ctrls[0];
+                            const [controller] = ctrls;
                             if (formElementParam instanceof HTMLFormElement) {
                                 const shouldPreventSubmit = !("action" in attrParam);
                                 const handleFormSubmission = function (event) {
@@ -661,7 +661,7 @@ const formDirectiveFactory = function (isNgForm) {
                                     scheduleNativeResetSync();
                                 };
                                 const handleResetClick = function (event) {
-                                    const target = event.target;
+                                    const { target } = event;
                                     if (event.defaultPrevented ||
                                         !(target instanceof HTMLButtonElement ||
                                             target instanceof HTMLInputElement) ||
@@ -697,11 +697,13 @@ const formDirectiveFactory = function (isNgForm) {
                             }
                             const parentFormCtrl = ctrls[1] ?? controller._parentForm;
                             parentFormCtrl.$addControl(controller);
-                            const setter = nameAttr
-                                ? (getSetter(String(controller.$name)) ??
-                                    (() => {
-                                        /* empty */
-                                    }))
+                            const parsedSetter = nameAttr
+                                ? getSetter(String(controller.$name))
+                                : undefined;
+                            const setter = parsedSetter
+                                ? (scopeParam, value) => {
+                                    parsedSetter(scopeParam, value);
+                                }
                                 : () => {
                                     /* empty */
                                 };

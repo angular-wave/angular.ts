@@ -94,7 +94,9 @@ class StateProvider {
         if (!result)
             return;
         const states = isArray(result) ? result : [result];
-        states.forEach((state) => this.state(state));
+        states.forEach((state) => {
+            this.state(state);
+        });
     }
     /** @internal */
     _findLazyState(target) {

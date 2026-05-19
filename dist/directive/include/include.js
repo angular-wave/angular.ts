@@ -84,7 +84,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             if (scope._destroyed)
                                 return;
                             if (thisChangeId !== changeCounter)
-                                return;
+                                return undefined;
                             const newScope = scope.$new();
                             ctrl.template = response;
                             // Note: This will also link all children of ng-include that were contained in the original
@@ -110,15 +110,17 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             currentElement = clone;
                             currentScope.$emit("$includeContentLoaded", src);
                             onloadFn?.(scope);
+                            return undefined;
                         })
                             .catch((err) => {
                             if (scope._destroyed)
-                                return;
+                                return undefined;
                             if (thisChangeId === changeCounter) {
                                 cleanupLastIncludeContent();
                                 scope.$emit("$includeContentError", src);
                             }
                             $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
+                            return undefined;
                         });
                     }
                     else {

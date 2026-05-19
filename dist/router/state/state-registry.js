@@ -200,7 +200,9 @@ class StateRegistryProvider {
         if (!registered.length)
             return;
         const declarations = [];
-        registered.forEach((state) => declarations.push(state.self));
+        registered.forEach((state) => {
+            declarations.push(state.self);
+        });
         this._notifyListeners("registered", declarations);
     }
     /** @internal */

@@ -877,6 +877,51 @@ base class GeneratedNgAnimationResult extends GeneratedNgFacade {
   const GeneratedNgAnimationResult(super.raw);
 }
 
+/// Generated raw facade for ng.AppComponentOptions.
+base class GeneratedNgAppComponentOptions extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.AppComponentOptions.
+  const GeneratedNgAppComponentOptions(super.raw);
+
+  /// Reads the generated template property.
+  String? get template => _toDartString(raw.getProperty('template'.toJS));
+
+  /// Writes the generated template property.
+  set template(String? value) {
+    raw.setProperty('template'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated shadow property.
+  Object? get shadow =>
+      unsafe.jsToDart<Object?>(raw.getProperty('shadow'.toJS));
+
+  /// Reads the generated scope property.
+  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
+
+  /// Reads the generated inputs property.
+  Object? get inputs =>
+      unsafe.jsToDart<Object?>(raw.getProperty('inputs'.toJS));
+
+  /// Reads the generated isolate property.
+  bool? get isolate => _toDartBool(raw.getProperty('isolate'.toJS));
+
+  /// Writes the generated isolate property.
+  set isolate(bool? value) {
+    raw.setProperty('isolate'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated connected property.
+  Object? get connected =>
+      unsafe.jsToDart<Object?>(raw.getProperty('connected'.toJS));
+
+  /// Reads the generated disconnected property.
+  Object? get disconnected =>
+      unsafe.jsToDart<Object?>(raw.getProperty('disconnected'.toJS));
+
+  /// Reads the generated attributeChanged property.
+  Object? get attributeChanged =>
+      unsafe.jsToDart<Object?>(raw.getProperty('attributeChanged'.toJS));
+}
+
 /// Generated raw facade for ng.AriaService.
 base class GeneratedNgAriaService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.AriaService.
@@ -3272,6 +3317,16 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
     return this;
   }
 
+  /// Invokes the generated rawAppComponent member.
+  GeneratedNgNgModule rawAppComponent(String arg0, Object? arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    raw.callMethodVarArgs('appComponent'.toJS, args);
+    return this;
+  }
+
   /// Invokes the generated rawWebComponent member.
   GeneratedNgNgModule rawWebComponent(String arg0, Object? arg1) {
     final args = <JSAny?>[];
@@ -4666,6 +4721,111 @@ base class GeneratedNgScope extends GeneratedNgFacade {
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$searchByName'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.ScopeElement.
+base class GeneratedNgScopeElement extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ScopeElement.
+  const GeneratedNgScopeElement(super.raw);
+
+  /// Reads the generated scope property.
+  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
+
+  /// Reads the generated injector property.
+  Object? get injector =>
+      unsafe.jsToDart<Object?>(raw.getProperty('injector'.toJS));
+
+  /// Reads the generated root property.
+  Object? get root => unsafe.jsToDart<Object?>(raw.getProperty('root'.toJS));
+
+  /// Invokes the generated connectedCallback member.
+  void connectedCallback() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('connectedCallback'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated disconnectedCallback member.
+  void disconnectedCallback() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('disconnectedCallback'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated attributeChangedCallback member.
+  void attributeChangedCallback(String arg0, String? arg1, String? arg2) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('attributeChangedCallback'.toJS, args));
+  }
+
+  /// Invokes the generated connected member.
+  Object? connected() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('connected'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated disconnected member.
+  void disconnected() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('disconnected'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated attributeChanged member.
+  void attributeChanged(String arg0, String? arg1, String? arg2) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('attributeChanged'.toJS, args));
+  }
+
+  /// Invokes the generated dispatch member.
+  bool dispatch(String arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return _toDartBool(raw.callMethodVarArgs('dispatch'.toJS, args))!;
+  }
+}
+
+/// Generated raw facade for ng.ScopeElementConstructor.
+base class GeneratedNgScopeElementConstructor extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ScopeElementConstructor.
+  const GeneratedNgScopeElementConstructor(super.raw);
+
+  /// Reads the generated template property.
+  String? get template => _toDartString(raw.getProperty('template'.toJS));
+
+  /// Writes the generated template property.
+  set template(String? value) {
+    raw.setProperty('template'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated shadow property.
+  Object? get shadow =>
+      unsafe.jsToDart<Object?>(raw.getProperty('shadow'.toJS));
+
+  /// Reads the generated scope property.
+  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
+
+  /// Reads the generated inputs property.
+  Object? get inputs =>
+      unsafe.jsToDart<Object?>(raw.getProperty('inputs'.toJS));
+
+  /// Reads the generated isolate property.
+  bool? get isolate => _toDartBool(raw.getProperty('isolate'.toJS));
+
+  /// Writes the generated isolate property.
+  set isolate(bool? value) {
+    raw.setProperty('isolate'.toJS, unsafe.dartToJs(value));
   }
 }
 
@@ -6286,64 +6446,29 @@ base class GeneratedNgWebComponentInputConfig extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('default'.toJS));
 }
 
-/// Generated raw facade for ng.WebComponentOptions.
-base class GeneratedNgWebComponentOptions extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.WebComponentOptions.
-  const GeneratedNgWebComponentOptions(super.raw);
-
-  /// Reads the generated template property.
-  String? get template => _toDartString(raw.getProperty('template'.toJS));
-
-  /// Writes the generated template property.
-  set template(String? value) {
-    raw.setProperty('template'.toJS, unsafe.dartToJs(value));
-  }
-
-  /// Reads the generated shadow property.
-  Object? get shadow =>
-      unsafe.jsToDart<Object?>(raw.getProperty('shadow'.toJS));
-
-  /// Reads the generated scope property.
-  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
-
-  /// Reads the generated inputs property.
-  Object? get inputs =>
-      unsafe.jsToDart<Object?>(raw.getProperty('inputs'.toJS));
-
-  /// Reads the generated isolate property.
-  bool? get isolate => _toDartBool(raw.getProperty('isolate'.toJS));
-
-  /// Writes the generated isolate property.
-  set isolate(bool? value) {
-    raw.setProperty('isolate'.toJS, unsafe.dartToJs(value));
-  }
-
-  /// Reads the generated connected property.
-  Object? get connected =>
-      unsafe.jsToDart<Object?>(raw.getProperty('connected'.toJS));
-
-  /// Reads the generated disconnected property.
-  Object? get disconnected =>
-      unsafe.jsToDart<Object?>(raw.getProperty('disconnected'.toJS));
-
-  /// Reads the generated attributeChanged property.
-  Object? get attributeChanged =>
-      unsafe.jsToDart<Object?>(raw.getProperty('attributeChanged'.toJS));
-}
-
 /// Generated raw facade for ng.WebComponentService.
 base class GeneratedNgWebComponentService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.WebComponentService.
   const GeneratedNgWebComponentService(super.raw);
 
-  /// Invokes the generated define member.
-  CustomElementConstructor define(String arg0, Object? arg1) {
+  /// Invokes the generated defineAppComponent member.
+  CustomElementConstructor defineAppComponent(String arg0, Object? arg1) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     args.add(unsafe.dartToJs(arg1));
 
     return unsafe.jsToDart<CustomElementConstructor>(
-        raw.callMethodVarArgs('define'.toJS, args));
+        raw.callMethodVarArgs('defineAppComponent'.toJS, args));
+  }
+
+  /// Invokes the generated defineElement member.
+  CustomElementConstructor defineElement(String arg0, Object? arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<CustomElementConstructor>(
+        raw.callMethodVarArgs('defineElement'.toJS, args));
   }
 
   /// Invokes the generated createElementScope member.

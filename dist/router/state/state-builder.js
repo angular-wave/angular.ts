@@ -269,7 +269,7 @@ class StateBuilder {
     /** @internal */
     _build(state) {
         const { _matcher: matcher, _routerState: routerState } = this;
-        const parent = this._parentName(state);
+        const parent = StateBuilder._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
         }
@@ -306,7 +306,7 @@ class StateBuilder {
      * @returns {string}
      */
     /** @internal */
-    _parentName(state) {
+    static _parentName(state) {
         const rawName = state.self.name || state.name || "";
         const name = rawName;
         const segments = name.split(".");
@@ -323,7 +323,7 @@ class StateBuilder {
         return isString(state.parent) ? state.parent : state.parent.name;
     }
     /** @internal */
-    _name(state) {
+    static _name(state) {
         const name = state.self.name || state.name;
         if (name.includes(".") || !state.parent)
             return name;

@@ -80,7 +80,7 @@ function arrayDifference(tokens1, tokens2) {
     if (!tokens2?.length)
         return tokens1;
     if (tokens2.length === 1) {
-        const token = tokens2[0];
+        const [token] = tokens2;
         const out = [];
         for (let i = 0; i < tokens1.length; i++) {
             const x = tokens1[i];
@@ -90,7 +90,7 @@ function arrayDifference(tokens1, tokens2) {
         return out;
     }
     if (tokens1.length === 1) {
-        const token = tokens1[0];
+        const [token] = tokens1;
         for (let i = 0; i < tokens2.length; i++) {
             if (tokens2[i] === token)
                 return [];
@@ -166,9 +166,11 @@ function stringifyClassPrimitive(value) {
             return String(value);
         case "function":
             return value.toString();
-        default:
+        case "undefined":
+        case "object":
             return "";
     }
+    return "";
 }
 
 export { arrayDifference, classDirective, split, toClassString };

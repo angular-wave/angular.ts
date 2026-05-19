@@ -253,6 +253,12 @@ pub type Validator
 
 pub type ElementScopeOptions
 
+pub type AppComponentOptions(a)
+
+pub type ScopeElement(a)
+
+pub type ScopeElementConstructor(a)
+
 pub type WebComponentContext(a)
 
 pub type WebComponentInput
@@ -260,8 +266,6 @@ pub type WebComponentInput
 pub type WebComponentInputConfig
 
 pub type WebComponentInputs
-
-pub type WebComponentOptions(a)
 
 pub type WebComponentService
 

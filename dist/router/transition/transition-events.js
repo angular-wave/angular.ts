@@ -25,7 +25,7 @@ function defineCoreTransitionEvents(transitionService) {
         TransitionHook._logRejectedResult(hook, result);
     }, (hook, error) => TransitionHook._logError(hook, error), SYNCHRONOUS);
 }
-function defineTransitionEvent(transitionService, name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, resultHandler = (hook, result) => TransitionHook._handleResult(hook, result), errorHandler = (hook, error) => TransitionHook._rejectError(hook, error), synchronous = false) {
+function defineTransitionEvent(transitionService, name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, resultHandler = async (hook, result) => TransitionHook._handleResult(hook, result), errorHandler = async (hook, error) => TransitionHook._rejectError(hook, error), synchronous = false) {
     const eventType = new TransitionEventType(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort, resultHandler, errorHandler, synchronous);
     transitionService._eventTypes.push(eventType);
     makeEvent(transitionService, transitionService, eventType);

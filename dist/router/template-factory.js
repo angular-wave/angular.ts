@@ -6,10 +6,10 @@ import { kebobString } from '../shared/strings.js';
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
-function asTemplate(result) {
+async function asTemplate(result) {
     return Promise.resolve(result).then(toTemplateResult);
 }
-function asComponent(result) {
+async function asComponent(result) {
     return Promise.resolve(result).then(toComponentResult);
 }
 function toTemplateResult(str) {
@@ -45,10 +45,10 @@ class TemplateFactoryProvider {
      * Resolves a state's view config into either concrete template HTML or a component name.
      */
     /** @internal */
-    _fromConfig(config, params) {
+    async _fromConfig(config, params) {
         const { template, templateUrl, component } = config;
         if (isDefined(template)) {
-            return asTemplate(this._fromString(template, params));
+            return asTemplate(TemplateFactoryProvider._fromString(template, params));
         }
         if (isDefined(templateUrl)) {
             return asTemplate(this._fromUrl(templateUrl, params));
@@ -62,7 +62,7 @@ class TemplateFactoryProvider {
      * Resolves a literal template string or template factory function.
      */
     /** @internal */
-    _fromString(template, params) {
+    static _fromString(template, params) {
         return isFunction(template) ? template(params) : template;
     }
     /**

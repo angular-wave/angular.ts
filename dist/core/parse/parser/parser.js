@@ -26,9 +26,25 @@ function isLiteral(ast) {
         case ASTType._ArrayExpression:
         case ASTType._ObjectExpression:
             return true;
-        default:
+        case undefined:
+        case ASTType._Program:
+        case ASTType._ExpressionStatement:
+        case ASTType._AssignmentExpression:
+        case ASTType._ConditionalExpression:
+        case ASTType._LogicalExpression:
+        case ASTType._BinaryExpression:
+        case ASTType._UnaryExpression:
+        case ASTType._CallExpression:
+        case ASTType._MemberExpression:
+        case ASTType._Identifier:
+        case ASTType._LocalsExpression:
+        case ASTType._Property:
+        case ASTType._ThisExpression:
+        case ASTType._NGValueParameter:
+        case ASTType._UpdateExpression:
             return false;
     }
+    return false;
 }
 
 export { Parser };

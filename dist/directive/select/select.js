@@ -29,8 +29,7 @@ function selectDirective($attributes) {
     };
     function selectPreLink(_scope, element, attr, ctrls) {
         const selectElement = element;
-        const selectCtrl = ctrls[0];
-        const ngModelCtrl = ctrls[1];
+        const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl) {
             selectCtrl._registerOption = () => {
                 /* empty */
@@ -90,10 +89,9 @@ function selectDirective($attributes) {
         }
     }
     function selectPostLink(_scope, element, _attrs, ctrls) {
-        const ngModelCtrl = ctrls[1];
+        const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl)
             return;
-        const selectCtrl = ctrls[0];
         const selectElement = element;
         const syncNativeValidity = () => {
             ngModelCtrl.$setNativeValidity(!selectElement.willValidate || selectElement.validity.valid);

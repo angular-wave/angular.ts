@@ -32,7 +32,9 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attribu
                     if (!parent)
                         return false;
                     const frag = createDocumentFragment();
-                    nodes.forEach((x) => frag.appendChild(x));
+                    nodes.forEach((x) => {
+                        frag.appendChild(x);
+                    });
                     if (!animationEnabled) {
                         parent.replaceChild(frag, target);
                         break;

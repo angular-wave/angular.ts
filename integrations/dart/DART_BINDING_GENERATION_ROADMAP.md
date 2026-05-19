@@ -188,7 +188,7 @@ Do not replace yet:
 - `Token<T>` and DI helpers
 - `StateDeclaration`
 - `RequestConfig`
-- `WebComponent`
+- `AppComponent`
 - any builder that converts Dart objects into AngularTS runtime shape
 
 Acceptance criteria for each migrated group:
@@ -286,10 +286,12 @@ Manual `NgModule` registration methods now route injectable factories, option
 maps, and value-object options through the same `unsafe.dartToJs()` boundary
 used by generated methods.
 Web component value objects also convert themselves at generated boundaries, so
-`WebComponentService.define()` is generated with a `CustomElementConstructor`
-return override. The generator can also attach a Dart method type parameter and
-wrap raw facade returns, so `WebComponentService.createElementScope<TState>()`
-is generated while still returning `Scope<TState>`.
+`WebComponentService.defineAppComponent()` and
+`WebComponentService.defineElement()` are generated with
+`CustomElementConstructor` return overrides. The generator can also attach a Dart
+method type parameter and wrap raw facade returns, so
+`WebComponentService.createElementScope<TState>()` is generated while still
+returning `Scope<TState>`.
 
 ## Phase 5: Typed Overrides
 
