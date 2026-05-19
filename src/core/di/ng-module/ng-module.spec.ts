@@ -3,6 +3,7 @@
 import { NgModule } from "./ng-module.js";
 import { Angular } from "../../../angular.ts";
 import { createInjector } from "../injector.ts";
+import { ScopeElement } from "../../../services/web-component/web-component.ts";
 import {
   _animateProvider,
   _compileProvider,
@@ -233,12 +234,21 @@ describe("NgModule", () => {
     ]);
   });
 
-  it("stores web component definitions as run blocks", () => {
+  it("stores app component definitions as run blocks", () => {
     const options = {
       template: "<span>{{title}}</span>",
     };
 
-    ngModule.webComponent("x-test-card", options);
+    ngModule.appComponent("x-test-card", options);
+
+    expect(ngModule._runBlocks.length).toBe(1);
+    expect(ngModule._runBlocks[0][0]).toBe(_webComponent);
+  });
+
+  it("stores ScopeElement web component definitions as run blocks", () => {
+    class TestCard extends ScopeElement {}
+
+    ngModule.webComponent("x-native-test-card", TestCard);
 
     expect(ngModule._runBlocks.length).toBe(1);
     expect(ngModule._runBlocks[0][0]).toBe(_webComponent);

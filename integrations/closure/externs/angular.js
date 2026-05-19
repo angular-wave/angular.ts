@@ -688,13 +688,22 @@ ng.NgModule.prototype.websocket = function(name, url, protocols, config) {};
 ng.NgModule.prototype.webTransport = function(name, url, config) {};
 
 /**
- * Register a scoped custom element backed by a normal AngularTS child scope. The definition is installed when the module runs. The custom element can be consumed as a native element while its internal model remains part of the AngularTS scope tree.
+ * Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.
  * @template T
  * @param {string} name
- * @param {!ng.WebComponentOptions<T>} options
+ * @param {!ng.AppComponentOptions<T>} options
  * @return {!ng.NgModule}
  */
-ng.NgModule.prototype.webComponent = function(name, options) {};
+ng.NgModule.prototype.appComponent = function(name, options) {};
+
+/**
+ * Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.
+ * @template T
+ * @param {string} name
+ * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @return {!ng.NgModule}
+ */
+ng.NgModule.prototype.webComponent = function(name, elementClass) {};
 
 /**
  * Register a topic-bound event bus facade as an injectable service. Events published through the facade are namespaced as `${topic}:${event}`, keeping raw event-bus topic strings out of application services.
@@ -3435,8 +3444,8 @@ ng.AngularElementOptions.prototype.ngModule;
 ng.AngularElementOptions.prototype.elementModule;
 
 /**
- * Custom element definition passed to `$webComponent.define`.
- * @type {!ng.WebComponentOptions<T>}
+ * App component definition passed to `$webComponent.defineAppComponent`.
+ * @type {!ng.AppComponentOptions<T>}
  */
 ng.AngularElementOptions.prototype.component;
 
@@ -5401,6 +5410,171 @@ ng.ElementScopeOptions.prototype.parentScope;
 ng.ElementScopeOptions.prototype.isolate;
 
 /**
+ * Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.AppComponentOptions = function() {};
+
+/**
+ * Template compiled into the host or shadow root.
+ * @type {(string|undefined)}
+ */
+ng.AppComponentOptions.prototype.template;
+
+/**
+ * Enables shadow DOM, or passes ShadowRootInit options.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.AppComponentOptions.prototype.shadow;
+
+/**
+ * Initial scope state, or a factory returning it.
+ * @type {(T|function(): T|undefined)}
+ */
+ng.AppComponentOptions.prototype.scope;
+
+/**
+ * Declared DOM attributes/properties that sync into the scope.
+ * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
+ */
+ng.AppComponentOptions.prototype.inputs;
+
+/**
+ * Use an isolate child scope instead of inheriting parent properties.
+ * @type {(boolean|undefined)}
+ */
+ng.AppComponentOptions.prototype.isolate;
+
+/**
+ * Called after the scope exists and the template has been linked.
+ * @type {(function(!ng.WebComponentContext<T>): (function(): void|undefined)|undefined)}
+ */
+ng.AppComponentOptions.prototype.connected;
+
+/**
+ * Called before the scope is destroyed.
+ * @type {(function(!ng.WebComponentContext<T>): void|undefined)}
+ */
+ng.AppComponentOptions.prototype.disconnected;
+
+/**
+ * Called after an observed input attribute changes.
+ * @type {(function(string, (null|string), (null|string), !ng.WebComponentContext<T>): void|undefined)}
+ */
+ng.AppComponentOptions.prototype.attributeChanged;
+
+/**
+ * Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.ScopeElement = function() {};
+
+/**
+ * Scope owned by this custom element instance.
+ * @type {!ng.Scope}
+ */
+ng.ScopeElement.prototype.scope;
+
+/**
+ * Injector used by the AngularTS app that registered this element.
+ * @type {!ng.InjectorService}
+ */
+ng.ScopeElement.prototype.injector;
+
+/**
+ * Render root used for compiled template content.
+ * @type {(!HTMLElement|!Object)}
+ */
+ng.ScopeElement.prototype.root;
+
+/**
+ * Public ScopeElement.connectedCallback member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.ScopeElement.prototype.connectedCallback = function() {};
+
+/**
+ * Public ScopeElement.disconnectedCallback member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.ScopeElement.prototype.disconnectedCallback = function() {};
+
+/**
+ * Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.
+ * @param {string} attribute
+ * @param {(null|string)} oldValue
+ * @param {(null|string)} newValue
+ * @return {void}
+ */
+ng.ScopeElement.prototype.attributeChangedCallback = function(attribute, oldValue, newValue) {};
+
+/**
+ * Called after the AngularTS scope and template are connected.
+ * @type {(function(): (function(): void|undefined)|undefined)}
+ */
+ng.ScopeElement.prototype.connected;
+
+/**
+ * Called before the AngularTS scope is destroyed.
+ * @type {(function(): void|undefined)}
+ */
+ng.ScopeElement.prototype.disconnected;
+
+/**
+ * Called after an observed input attribute changes.
+ * @type {(function(string, (null|string), (null|string)): void|undefined)}
+ */
+ng.ScopeElement.prototype.attributeChanged;
+
+/**
+ * Dispatch a composed bubbling DOM event from this custom element.
+ * @param {string} type
+ * @param {(?|undefined)} detail
+ * @param {(!Object|undefined)} init
+ * @return {boolean}
+ */
+ng.ScopeElement.prototype.dispatch = function(type, detail, init) {};
+
+/**
+ * Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template T
+ * @record
+ */
+ng.ScopeElementConstructor = function() {};
+
+/**
+ * Template compiled into the host or shadow root.
+ * @type {(string|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.template;
+
+/**
+ * Enables shadow DOM, or passes ShadowRootInit options.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.shadow;
+
+/**
+ * Initial scope state, or a factory returning it.
+ * @type {(T|function(): T|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.scope;
+
+/**
+ * Declared DOM attributes/properties that sync into the scope.
+ * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.inputs;
+
+/**
+ * Use an isolate child scope instead of inheriting parent properties.
+ * @type {(boolean|undefined)}
+ */
+ng.ScopeElementConstructor.prototype.isolate;
+
+/**
  * Public AngularTS WebComponentContext contract exposed through the global ng namespace for Closure-annotated applications.
  * @template T
  * @record
@@ -5489,74 +5663,28 @@ ng.WebComponentInputConfig.prototype.default;
 ng.WebComponentInputs = function() {};
 
 /**
- * Public AngularTS WebComponentOptions contract exposed through the global ng namespace for Closure-annotated applications.
- * @template T
- * @record
- */
-ng.WebComponentOptions = function() {};
-
-/**
- * Template compiled into the host or shadow root.
- * @type {(string|undefined)}
- */
-ng.WebComponentOptions.prototype.template;
-
-/**
- * Enables shadow DOM, or passes ShadowRootInit options.
- * @type {(!Object|boolean|undefined)}
- */
-ng.WebComponentOptions.prototype.shadow;
-
-/**
- * Initial scope state, or a factory returning it.
- * @type {(T|function(): T|undefined)}
- */
-ng.WebComponentOptions.prototype.scope;
-
-/**
- * Declared DOM attributes/properties that sync into the scope.
- * @type {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}
- */
-ng.WebComponentOptions.prototype.inputs;
-
-/**
- * Use an isolate child scope instead of inheriting parent properties.
- * @type {(boolean|undefined)}
- */
-ng.WebComponentOptions.prototype.isolate;
-
-/**
- * Called after the scope exists and the template has been linked.
- * @type {(function(!ng.WebComponentContext<T>): (function(): void|undefined)|undefined)}
- */
-ng.WebComponentOptions.prototype.connected;
-
-/**
- * Called before the scope is destroyed.
- * @type {(function(!ng.WebComponentContext<T>): void|undefined)}
- */
-ng.WebComponentOptions.prototype.disconnected;
-
-/**
- * Called after an observed input attribute changes.
- * @type {(function(string, (null|string), (null|string), !ng.WebComponentContext<T>): void|undefined)}
- */
-ng.WebComponentOptions.prototype.attributeChanged;
-
-/**
  * Public AngularTS WebComponentService contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
 ng.WebComponentService = function() {};
 
 /**
- * Define a scoped custom element.
+ * Define an options-backed application host custom element.
  * @template T
  * @param {string} name
- * @param {!ng.WebComponentOptions<T>} options
+ * @param {!ng.AppComponentOptions<T>} options
  * @return {function(new: HTMLElement, ...?)}
  */
-ng.WebComponentService.prototype.define = function(name, options) {};
+ng.WebComponentService.prototype.defineAppComponent = function(name, options) {};
+
+/**
+ * Define a native custom element backed by an AngularTS child scope.
+ * @template T
+ * @param {string} name
+ * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @return {function(new: HTMLElement, ...?)}
+ */
+ng.WebComponentService.prototype.defineElement = function(name, elementClass) {};
 
 /**
  * Create and attach a normal AngularTS child scope for a custom element.

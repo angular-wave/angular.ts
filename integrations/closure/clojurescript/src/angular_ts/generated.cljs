@@ -26,6 +26,7 @@
     "js/ng.AnimationResult"
     "js/ng.AnnotatedDirectiveFactory"
     "js/ng.AnnotatedFactory"
+    "js/ng.AppComponentOptions"
     "js/ng.AriaService"
     "js/ng.Attributes"
     "js/ng.AttributesService"
@@ -109,6 +110,8 @@
     "js/ng.SceProvider"
     "js/ng.SceService"
     "js/ng.Scope"
+    "js/ng.ScopeElement"
+    "js/ng.ScopeElementConstructor"
     "js/ng.ScopeEvent"
     "js/ng.ServiceProvider"
     "js/ng.SseConfig"
@@ -149,7 +152,6 @@
     "js/ng.WebComponentInput"
     "js/ng.WebComponentInputConfig"
     "js/ng.WebComponentInputs"
-    "js/ng.WebComponentOptions"
     "js/ng.WebComponentService"
     "js/ng.WebSocketConfig"
     "js/ng.WebSocketConnection"
@@ -190,6 +192,7 @@
      "js/ng.AnimationResult" "Public AngularTS AnimationResult contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AnnotatedDirectiveFactory" "Dependency-annotated directive factory array containing dependency token names followed by a directive factory function."
      "js/ng.AnnotatedFactory" "Dependency-annotated injectable array containing dependency token names followed by the factory or constructor function."
+     "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Attributes" "Public `$attrs` contract passed to directive compile/link/template hooks. The runtime object is an internal compile facade. Public code should treat `$attrs` as a normalized attribute view with observer and class helpers, not as a constructible class."
      "js/ng.AttributesService" "Public AngularTS AttributesService contract exposed through the global ng namespace for Closure-annotated applications."
@@ -273,6 +276,8 @@
      "js/ng.SceProvider" "Public AngularTS SceProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SceService" "Public AngularTS SceService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Scope" "Reactive scope object used by AngularTS templates, directives, event propagation, listener registration, and queued change delivery."
+     "js/ng.ScopeElement" "Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ScopeElementConstructor" "Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeEvent" "Event object passed to `$emit` and `$broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods."
      "js/ng.ServiceProvider" "An object that defines how a service is constructed. It must define a `$get` property that provides the instance of the service, either as a plain factory function or as an {@link AnnotatedFactory}."
      "js/ng.SseConfig" "SSE-specific configuration"
@@ -313,7 +318,6 @@
      "js/ng.WebComponentInput" "Public AngularTS WebComponentInput contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebComponentInputConfig" "Public AngularTS WebComponentInputConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebComponentInputs" "Public AngularTS WebComponentInputs contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.WebComponentOptions" "Public AngularTS WebComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebComponentService" "Public AngularTS WebComponentService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebSocketConfig" "WebSocket-specific configuration"
      "js/ng.WebSocketConnection" "Managed WebSocket connection returned by $websocket."
@@ -420,6 +424,7 @@
     "ng-model-controller-dollarset-validity"
     "ng-model-controller-dollarvalidate"
     "ng-module-animation"
+    "ng-module-app-component"
     "ng-module-component"
     "ng-module-config"
     "ng-module-controller"
@@ -477,6 +482,9 @@
     "scope-dollarnew-isolate"
     "scope-dollarsearch-by-name"
     "scope-dollartranscluded"
+    "scope-element-attribute-changed-callback"
+    "scope-element-connected-callback"
+    "scope-element-disconnected-callback"
     "scope-event-prevent-default"
     "sse-connection-close"
     "sse-connection-connect"
@@ -596,6 +604,9 @@
     "animation-options-from"
     "animation-options-remove-class"
     "animation-options-to"
+    "app-component-options-inputs"
+    "app-component-options-isolate"
+    "app-component-options-template"
     "attributes-dollarattr"
     "cached-rest-backend-options-cache"
     "cached-rest-backend-options-network"
@@ -802,6 +813,11 @@
     "scope-dollarroot"
     "scope-dollarscopename"
     "scope-dollartarget"
+    "scope-element-constructor-inputs"
+    "scope-element-constructor-isolate"
+    "scope-element-constructor-template"
+    "scope-element-injector"
+    "scope-element-scope"
     "scope-event-default-prevented"
     "scope-event-name"
     "scope-event-stopped"
@@ -859,9 +875,6 @@
     "web-component-context-shadow-root"
     "web-component-input-config-attribute"
     "web-component-input-config-reflect"
-    "web-component-options-inputs"
-    "web-component-options-isolate"
-    "web-component-options-template"
     "web-socket-config-event-types"
     "web-socket-config-heartbeat-timeout"
     "web-socket-config-max-retries"
@@ -1373,6 +1386,11 @@
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable animationFactory]
   (.animation target name animationFactory))
 
+(defn ng-module-app-component
+  "Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.\n\nParams:\n- name: {string}\n- options: {!ng.AppComponentOptions<T>}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.AppComponentOptions options]
+  (.appComponent target name options))
+
 (defn ng-module-component
   "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- options: {!ng.Component}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Component options]
@@ -1439,9 +1457,9 @@
   (.wasm target name src imports opts))
 
 (defn ng-module-web-component
-  "Register a scoped custom element backed by a normal AngularTS child scope. The definition is installed when the module runs. The custom element can be consumed as a native element while its internal model remains part of the AngularTS scope tree.\n\nParams:\n- name: {string}\n- options: {!ng.WebComponentOptions<T>}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.WebComponentOptions options]
-  (.webComponent target name options))
+  "Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.\n\nParams:\n- name: {string}\n- elementClass: {!ng.ScopeElementConstructor<T>}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.ScopeElementConstructor elementClass]
+  (.webComponent target name elementClass))
 
 (defn ng-module-web-transport
   "Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!ng.WebTransportConfig|undefined)}\n\nReturns: {!ng.NgModule}"
@@ -1687,6 +1705,21 @@
   "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope parentInstance]
   (.$transcluded target parentInstance))
+
+(defn scope-element-attribute-changed-callback
+  "Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.\n\nParams:\n- attribute: {string}\n- oldValue: {(null|string)}\n- newValue: {(null|string)}\n\nReturns: {void}"
+  [^js/ng.ScopeElement target ^string attribute ^string oldValue ^string newValue]
+  (.attributeChangedCallback target attribute oldValue newValue))
+
+(defn scope-element-connected-callback
+  "Public ScopeElement.connectedCallback member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.ScopeElement target]
+  (.connectedCallback target))
+
+(defn scope-element-disconnected-callback
+  "Public ScopeElement.disconnectedCallback member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.ScopeElement target]
+  (.disconnectedCallback target))
 
 (defn scope-event-prevent-default
   "Public ScopeEvent.preventDefault member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
@@ -2135,8 +2168,8 @@
   (.-attachToWindow target))
 
 (defn angular-element-options-component
-  "Custom element definition passed to `$webComponent.define`.\n\nType: {!ng.WebComponentOptions<T>}"
-  ^js/ng.WebComponentOptions [^js/ng.AngularElementOptions target]
+  "App component definition passed to `$webComponent.defineAppComponent`.\n\nType: {!ng.AppComponentOptions<T>}"
+  ^js/ng.AppComponentOptions [^js/ng.AngularElementOptions target]
   (.-component target))
 
 (defn angular-element-options-element-module
@@ -2273,6 +2306,21 @@
   "Public AnimationOptions.to member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, (number|string)>|undefined)}"
   ^js/Object [^js/ng.AnimationOptions target]
   (.-to target))
+
+(defn app-component-options-inputs
+  "Declared DOM attributes/properties that sync into the scope.\n\nType: {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}"
+  ^js/Object [^js/ng.AppComponentOptions target]
+  (.-inputs target))
+
+(defn app-component-options-isolate
+  "Use an isolate child scope instead of inheriting parent properties.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.AppComponentOptions target]
+  (.-isolate target))
+
+(defn app-component-options-template
+  "Template compiled into the host or shadow root.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.AppComponentOptions target]
+  (.-template target))
 
 (defn attributes-dollarattr
   "Map from normalized attribute names to original DOM attribute names.\n\nType: {!Object<string, string>}"
@@ -3304,6 +3352,31 @@
   ^js/Object [^js/ng.Scope target]
   (.-$target target))
 
+(defn scope-element-constructor-inputs
+  "Declared DOM attributes/properties that sync into the scope.\n\nType: {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}"
+  ^js/Object [^js/ng.ScopeElementConstructor target]
+  (.-inputs target))
+
+(defn scope-element-constructor-isolate
+  "Use an isolate child scope instead of inheriting parent properties.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.ScopeElementConstructor target]
+  (.-isolate target))
+
+(defn scope-element-constructor-template
+  "Template compiled into the host or shadow root.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.ScopeElementConstructor target]
+  (.-template target))
+
+(defn scope-element-injector
+  "Injector used by the AngularTS app that registered this element.\n\nType: {!ng.InjectorService}"
+  ^js/ng.InjectorService [^js/ng.ScopeElement target]
+  (.-injector target))
+
+(defn scope-element-scope
+  "Scope owned by this custom element instance.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeElement target]
+  (.-scope target))
+
 (defn scope-event-default-prevented
   "Public ScopeEvent.defaultPrevented member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.ScopeEvent target]
@@ -3588,21 +3661,6 @@
   "Reflect property writes back to the DOM attribute.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.WebComponentInputConfig target]
   (.-reflect target))
-
-(defn web-component-options-inputs
-  "Declared DOM attributes/properties that sync into the scope.\n\nType: {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}"
-  ^js/Object [^js/ng.WebComponentOptions target]
-  (.-inputs target))
-
-(defn web-component-options-isolate
-  "Use an isolate child scope instead of inheriting parent properties.\n\nType: {(boolean|undefined)}"
-  ^boolean [^js/ng.WebComponentOptions target]
-  (.-isolate target))
-
-(defn web-component-options-template
-  "Template compiled into the host or shadow root.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.WebComponentOptions target]
-  (.-template target))
 
 (defn web-socket-config-event-types
   "Additional EventSource event names to subscribe to\n\nType: {(!Array<string>|undefined)}"

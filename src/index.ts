@@ -9,6 +9,7 @@ import { Angular } from "./angular.ts";
 export const angular = new Angular();
 
 export { HttpRestBackend } from "./services/rest/rest.ts";
+export { ScopeElement } from "./services/web-component/web-component.ts";
 export { WasmScope, WasmScopeAbi } from "./services/wasm/wasm.ts";
 export type {
   CachedRestBackendOptions,

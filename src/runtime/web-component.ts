@@ -6,7 +6,7 @@ import {
 } from "./index.ts";
 import {
   WebComponentProvider,
-  type WebComponentOptions,
+  type AppComponentOptions,
 } from "../services/web-component/web-component.ts";
 
 /** Configuration for the application module that owns the custom element. */
@@ -27,8 +27,8 @@ export interface AngularElementOptions<
   ngModule?: CustomAngularRuntimeOptions["ngModule"];
   /** Application module that registers the custom element. */
   elementModule?: AngularElementModuleOptions;
-  /** Custom element definition passed to `$webComponent.define`. */
-  component: WebComponentOptions<T>;
+  /** App component definition passed to `$webComponent.defineAppComponent`. */
+  component: AppComponentOptions<T>;
 }
 
 /** Runtime metadata returned after defining a standalone custom element. */
@@ -84,7 +84,7 @@ export function defineAngularElement<
   );
 
   elementModule?.configure?.(appModule, angular);
-  appModule.webComponent(name, component);
+  appModule.appComponent(name, component);
 
   const previousAngular = (window as Window & { angular?: ng.Angular }).angular;
 

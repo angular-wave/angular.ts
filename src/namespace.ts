@@ -182,12 +182,14 @@ import type {
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
 import type {
+  AppComponentOptions as TAppComponentOptions,
   ElementScopeOptions as TElementScopeOptions,
+  ScopeElement as TScopeElement,
+  ScopeElementConstructor as TScopeElementConstructor,
   WebComponentContext as TWebComponentContext,
   WebComponentInput as TWebComponentInput,
   WebComponentInputConfig as TWebComponentInputConfig,
   WebComponentInputs as TWebComponentInputs,
-  WebComponentOptions as TWebComponentOptions,
   WebComponentService as TWebComponentService,
 } from "./services/web-component/web-component.ts";
 import type {
@@ -490,6 +492,17 @@ declare global {
 
     export type ElementScopeOptions = TElementScopeOptions;
 
+    export type AppComponentOptions<
+      T extends object = Record<string, unknown>,
+    > = TAppComponentOptions<T>;
+
+    export type ScopeElement<T extends object = Record<string, unknown>> =
+      TScopeElement<T>;
+
+    export type ScopeElementConstructor<
+      T extends object = Record<string, unknown>,
+    > = TScopeElementConstructor<T>;
+
     export type WebComponentContext<
       T extends object = Record<string, unknown>,
     > = TWebComponentContext<T>;
@@ -499,10 +512,6 @@ declare global {
     export type WebComponentInputConfig = TWebComponentInputConfig;
 
     export type WebComponentInputs = TWebComponentInputs;
-
-    export type WebComponentOptions<
-      T extends object = Record<string, unknown>,
-    > = TWebComponentOptions<T>;
 
     export type WebComponentService = TWebComponentService;
 

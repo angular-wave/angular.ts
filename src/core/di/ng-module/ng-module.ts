@@ -55,7 +55,8 @@ import {
   type TopicService,
 } from "../../../services/pubsub/pubsub.ts";
 import type {
-  WebComponentOptions,
+  AppComponentOptions,
+  ScopeElementConstructor,
   WebComponentService,
 } from "../../../services/web-component/web-component.ts";
 
@@ -571,26 +572,50 @@ export class NgModule {
   }
 
   /**
-   * Register a scoped custom element backed by a normal AngularTS child scope.
+   * Register an options-backed application host custom element.
    *
-   * The definition is installed when the module runs. The custom element can be
-   * consumed as a native element while its internal model remains part of the
-   * AngularTS scope tree.
+   * The definition is installed when the module runs. The host element is a
+   * native custom element backed by an AngularTS child scope.
    *
    * @param {string} name - Custom element tag name.
-   * @param {WebComponentOptions} options - Custom element options.
+   * @param {AppComponentOptions} options - App component options.
    * @returns {NgModule}
    */
-  webComponent<T extends object = Record<string, unknown>>(
+  appComponent<T extends object = Record<string, unknown>>(
     name: string,
-    options: WebComponentOptions<T>,
+    options: AppComponentOptions<T>,
   ): this {
     validate(isString, name, "name");
     validate(isObject, options, "options");
     this._runBlocks.push([
       _webComponent,
       ($webComponent: WebComponentService) =>
-        $webComponent.define<T>(name, options),
+        $webComponent.defineAppComponent<T>(name, options),
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a user-authored native custom element backed by an AngularTS scope.
+   *
+   * The element class must extend `ScopeElement`. Its static template, shadow,
+   * scope, inputs, and isolate properties configure the AngularTS wiring.
+   *
+   * @param {string} name - Custom element tag name.
+   * @param {ScopeElementConstructor} elementClass - Custom element class.
+   * @returns {NgModule}
+   */
+  webComponent<T extends object = Record<string, unknown>>(
+    name: string,
+    elementClass: ScopeElementConstructor<T>,
+  ): this {
+    validate(isString, name, "name");
+    validate(isFunction, elementClass, "elementClass");
+    this._runBlocks.push([
+      _webComponent,
+      ($webComponent: WebComponentService) =>
+        $webComponent.defineElement<T>(name, elementClass),
     ]);
 
     return this;

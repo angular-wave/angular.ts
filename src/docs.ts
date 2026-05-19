@@ -173,14 +173,18 @@ export type {
   StorageBackend,
   StorageType,
 } from "./services/storage/storage.ts";
-export { WebComponentProvider } from "./services/web-component/web-component.ts";
+export {
+  ScopeElement,
+  WebComponentProvider,
+} from "./services/web-component/web-component.ts";
 export type {
+  AppComponentOptions,
   ElementScopeOptions,
+  ScopeElementConstructor,
   WebComponentContext,
   WebComponentInput,
   WebComponentInputConfig,
   WebComponentInputs,
-  WebComponentOptions,
   WebComponentService,
 } from "./services/web-component/web-component.ts";
 export { WebSocketProvider } from "./services/websocket/websocket.ts";

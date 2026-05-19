@@ -3,6 +3,7 @@
 import { Angular } from "../../angular.ts";
 import { dealoc, getScope } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ScopeElement } from "./web-component.ts";
 
 let nextId = 0;
 
@@ -27,7 +28,7 @@ describe("$webComponent", () => {
 
     let rootScope;
 
-    angular.module(moduleName, []).webComponent(tagName, {
+    angular.module(moduleName, []).appComponent(tagName, {
       shadow: true,
       scope: {
         local: "ready",
@@ -102,7 +103,7 @@ describe("$webComponent", () => {
 
     const events = [];
 
-    angular.module(moduleName, []).webComponent(tagName, {
+    angular.module(moduleName, []).appComponent(tagName, {
       scope: {
         title: "cleanup",
       },
@@ -151,7 +152,7 @@ describe("$webComponent", () => {
 
     const events = [];
 
-    angular.module(moduleName, []).webComponent(tagName, {
+    angular.module(moduleName, []).appComponent(tagName, {
       shadow: true,
       scope: {
         title: "eventful",
@@ -182,6 +183,194 @@ describe("$webComponent", () => {
     await wait();
 
     expect(events).toEqual(["eventful"]);
+  });
+
+  it("registers user-authored ScopeElement custom elements", async () => {
+    const tagName = nextTagName("scope-element-card");
+
+    const moduleName = nextModuleName();
+
+    const angular = new Angular();
+
+    const events = [];
+
+    class StatusCard extends ScopeElement {
+      static shadow = true;
+      static inputs = {
+        title: String,
+      };
+      static scope = {
+        count: 1,
+      };
+      static template = `
+        <button ng-click="increment()">
+          {{title}}/{{count}}/{{label}}
+        </button>
+      `;
+
+      connected() {
+        this.scope.label = this.injector.get("labelService").value;
+        this.scope.increment = () => {
+          this.scope.count++;
+          this.dispatch("count-change", { count: this.scope.count });
+        };
+      }
+
+      disconnected() {
+        events.push("disconnected");
+      }
+    }
+
+    class LabelService {
+      value = "ready";
+    }
+
+    angular.module(moduleName, []).service("labelService", LabelService)
+      .webComponent(tagName, StatusCard);
+
+    angular.bootstrap(app, [moduleName]);
+
+    const element = document.createElement(tagName);
+
+    element.title = "Native";
+    element.addEventListener("count-change", (event) => {
+      events.push(event.detail.count);
+    });
+    app.appendChild(element);
+
+    await wait();
+    await wait();
+
+    expect(element instanceof StatusCard).toBe(true);
+    expect(element.scope).toBe(getScope(element));
+    expect(element.injector.get("labelService").value).toBe("ready");
+    expect(element.shadowRoot.textContent).toContain("Native/1/ready");
+
+    element.shadowRoot.querySelector("button").click();
+
+    await wait();
+
+    expect(events).toEqual([2]);
+    expect(element.shadowRoot.textContent).toContain("Native/2/ready");
+
+    element.remove();
+
+    await wait(10);
+
+    expect(events).toEqual([2, "disconnected"]);
+  });
+
+  it("lets ScopeElement children inherit parent scopes across shadow DOM", async () => {
+    const parentTagName = nextTagName("scope-parent");
+    const childTagName = nextTagName("scope-child");
+
+    const moduleName = nextModuleName();
+
+    const angular = new Angular();
+
+    class ChildElement extends ScopeElement {
+      static shadow = true;
+      static inputs = {
+        index: Number,
+      };
+      static template = `<span>{{items[index]}}</span>`;
+    }
+
+    class ParentElement extends ScopeElement {
+      static shadow = true;
+      static scope = {
+        items: ["ready"],
+      };
+      static template = `<${childTagName} index="0"></${childTagName}>`;
+    }
+
+    angular
+      .module(moduleName, [])
+      .webComponent(childTagName, ChildElement)
+      .webComponent(parentTagName, ParentElement);
+
+    angular.bootstrap(app, [moduleName]);
+
+    const element = document.createElement(parentTagName);
+
+    app.appendChild(element);
+
+    await wait();
+    await wait();
+
+    const child = element.shadowRoot.querySelector(childTagName);
+
+    expect(child.scope.$parent.$id).toBe(element.scope.$id);
+    expect(child.shadowRoot.textContent).toContain("ready");
+  });
+
+  it("supports declarative property and custom event bindings between ScopeElements", async () => {
+    const parentTagName = nextTagName("binding-parent");
+    const childTagName = nextTagName("binding-child");
+
+    const moduleName = nextModuleName();
+
+    const angular = new Angular();
+
+    class ChildElement extends ScopeElement {
+      static shadow = true;
+      static inputs = {
+        value: String,
+      };
+      static template = `<button ng-click="select()">{{value}}</button>`;
+
+      connected() {
+        this.scope.select = () => {
+          this.dispatch("child-select", {
+            value: `${this.scope.value}!`,
+          });
+        };
+      }
+    }
+
+    class ParentElement extends ScopeElement {
+      static shadow = true;
+      static scope = {
+        value: "ready",
+      };
+      static template = `
+        <${childTagName}
+          ng-prop-value="value"
+          ng-on-child-select="value = $event.detail.value"
+        ></${childTagName}>
+      `;
+    }
+
+    angular
+      .module(moduleName, [])
+      .webComponent(childTagName, ChildElement)
+      .webComponent(parentTagName, ParentElement);
+
+    angular.bootstrap(app, [moduleName]);
+
+    const element = document.createElement(parentTagName);
+
+    app.appendChild(element);
+
+    await wait();
+    await wait();
+
+    const child = element.shadowRoot.querySelector(childTagName);
+
+    expect(child.shadowRoot.textContent).toContain("ready");
+
+    element.scope.value = "updated";
+
+    await wait();
+
+    expect(child.shadowRoot.textContent).toContain("updated");
+
+    child.shadowRoot.querySelector("button").click();
+
+    await wait();
+
+    expect(element.scope.value).toBe("updated!");
+    expect(child.shadowRoot.textContent).toContain("updated!");
   });
 });
 
