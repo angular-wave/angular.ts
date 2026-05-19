@@ -26,7 +26,6 @@ const dartReservedWords = new Set([
   "extends",
   "extension",
   "external",
-  "factory",
   "false",
   "final",
   "finally",
@@ -81,11 +80,12 @@ import 'dart:js_interop_unsafe';
 import 'package:web/web.dart';
 
 import '../facade.dart';
+import '../scope.dart';
 import '../unsafe.dart' as unsafe;
 
 const Object _undefinedArgument = Object();
 
-Object? _callFunction(JSFunction function, List<JSAny?> args) {
+JSAny? _callFunction(JSFunction function, List<JSAny?> args) {
   return switch (args.length) {
     0 => function.callAsFunction(null),
     1 => function.callAsFunction(null, args[0]),
@@ -380,7 +380,7 @@ function renderClass(checker, overrides, typeName, type, properties, callSignatu
     ? []
     : callSignatures.slice(0, 1)) {
     usedNames.add("call");
-    members.push(renderCallSignature(signature));
+    members.push(renderCallSignature(checker, overrides, typeName, signature));
   }
 
   for (const property of properties) {
@@ -400,7 +400,15 @@ function renderClass(checker, overrides, typeName, type, properties, callSignatu
         matches(overrides.callableProperties, `${typeName}.${memberName}`))
     ) {
       members.push(
-        renderMethod(checker, overrides, typeName, memberName, dartName, signatures)
+        renderMethod(
+          checker,
+          overrides,
+          typeName,
+          type,
+          memberName,
+          dartName,
+          signatures
+        )
       );
       continue;
     }
@@ -442,32 +450,77 @@ function isWritableProperty(declaration) {
   );
 }
 
-function renderCallSignature(signature) {
-  return `${renderSignature("Object?", "call", signatureModel(null, {}, [signature]), {
+function renderCallSignature(checker, overrides, typeName, signature) {
+  const model = signatureModel(checker, overrides, [signature]);
+  const returnType = memberReturnType(
+    overrides,
+    typeName,
+    "call",
+    model.returnType
+  );
+
+  return `${renderSignature(returnType, "call", model, {
     callExpression: (argsList) => {
-      return `_callFunction(raw as JSFunction, ${argsList || "const <JSAny?>[]"})`;
+      return convertExpression(
+        returnType,
+        `_callFunction(raw as JSFunction, ${argsList || "const <JSAny?>[]"})`
+      );
     }
   })}`;
 }
 
-function renderMethod(checker, overrides, typeName, jsName, dartName, signatures) {
+function renderMethod(
+  checker,
+  overrides,
+  typeName,
+  ownerType,
+  jsName,
+  dartName,
+  signatures
+) {
   const model = signatureModel(checker, overrides, signatures);
+  const selfReturning = returnsType(checker, typeName, ownerType, signatures);
   const returnType = memberReturnType(
     overrides,
     typeName,
     jsName,
-    model.returnType
+    selfReturning ? `GeneratedNg${typeName}` : model.returnType
   );
+  const typeParameters = methodTypeParameters(overrides, typeName, jsName);
 
   return renderSignature(returnType, dartName, model, {
+    returnsThis: selfReturning,
+    typeParameters,
     callExpression: (argsList) => {
       const args = argsList || "const <JSAny?>[]";
+      if (selfReturning) {
+        return `raw.callMethodVarArgs('${escapeDartString(jsName)}'.toJS, ${args})`;
+      }
+
       return convertExpression(
         returnType,
         `raw.callMethodVarArgs('${escapeDartString(jsName)}'.toJS, ${args})`
       );
     }
   });
+}
+
+function returnsType(checker, typeName, ownerType, signatures) {
+  return (
+    checker &&
+    signatures.length > 0 &&
+    signatures.every((signature) => {
+      const returnType = signature.getReturnType();
+      return (
+        checker.typeToString(returnType) === typeName ||
+        returnType.getSymbol()?.getName() === typeName ||
+        returnType.aliasSymbol?.getName() === typeName ||
+        (ownerType &&
+          checker.isTypeAssignableTo(returnType, ownerType) &&
+          checker.isTypeAssignableTo(ownerType, returnType))
+      );
+    })
+  );
 }
 
 function signatureModel(checker, overrides, signatures) {
@@ -504,11 +557,7 @@ function signatureModel(checker, overrides, signatures) {
       optional,
       type:
         checker && declaration && !optional
-          ? parameterDartType(
-              checker,
-              overrides,
-              checker.getTypeOfSymbolAtLocation(parameter, declaration)
-            )
+          ? mergedParameterDartType(checker, overrides, signatures, index)
           : "Object?"
     };
   });
@@ -516,7 +565,33 @@ function signatureModel(checker, overrides, signatures) {
   return { parameters, returnType };
 }
 
-function renderSignature(returnType, name, model, { callExpression }) {
+function mergedParameterDartType(checker, overrides, signatures, index) {
+  const parameterTypes = signatures
+    .filter((signature) => index < signature.minArgumentCount)
+    .map((signature) => {
+      const parameter = signature.parameters[index];
+      const declaration = parameter?.valueDeclaration ?? parameter?.declarations?.[0];
+
+      return parameter && declaration
+        ? parameterDartType(
+            checker,
+            overrides,
+            checker.getTypeOfSymbolAtLocation(parameter, declaration)
+          )
+        : null;
+    })
+    .filter(Boolean);
+
+  const uniqueTypes = new Set(parameterTypes);
+  return uniqueTypes.size === 1 ? [...uniqueTypes][0] : "Object?";
+}
+
+function renderSignature(
+  returnType,
+  name,
+  model,
+  { callExpression, returnsThis = false, typeParameters = "" }
+) {
   const parameters = model.parameters;
   const required = parameters.filter((parameter) => !parameter.optional);
   const optional = parameters.filter((parameter) => parameter.optional);
@@ -533,10 +608,12 @@ function renderSignature(returnType, name, model, { callExpression }) {
 
   const invocation = callExpression(argsList);
   const returnStatement =
-    returnType === "void" ? `  ${invocation};` : `  return ${invocation};`;
+    returnsThis
+      ? `  ${invocation};\n  return this;`
+      : returnType === "void" ? `  ${invocation};` : `  return ${invocation};`;
 
   return `/// Invokes the generated ${name} member.
-${returnType} ${name}(${declaration}) {
+${returnType} ${name}${typeParameters}(${declaration}) {
 ${argsBuilder}
 ${returnStatement}
 }`;
@@ -561,6 +638,9 @@ function renderArgsBuilder(parameters) {
 }
 
 function parameterDartType(checker, overrides, type) {
+  const parameterOverride = directParameterTypeOverride(checker, overrides, type);
+  if (parameterOverride) return parameterOverride;
+
   if (type.getCallSignatures().length > 0) return "JSFunction";
 
   const direct = directTypeOverride(checker, overrides, type);
@@ -627,6 +707,10 @@ function memberReturnType(overrides, typeName, memberName, inferredType) {
   return overrides.returnTypes?.[`${typeName}.${memberName}`] ?? inferredType;
 }
 
+function methodTypeParameters(overrides, typeName, memberName) {
+  return overrides.methodTypeParameters?.[`${typeName}.${memberName}`] ?? "";
+}
+
 function directTypeOverride(checker, overrides, type) {
   if (!checker) return null;
 
@@ -638,6 +722,21 @@ function directTypeOverride(checker, overrides, type) {
     overrides.types?.[typeName] ??
     overrides.types?.[symbolName] ??
     overrides.types?.[aliasName] ??
+    null
+  );
+}
+
+function directParameterTypeOverride(checker, overrides, type) {
+  if (!checker) return null;
+
+  const typeName = checker.typeToString(type);
+  const symbolName = type.getSymbol()?.getName();
+  const aliasName = type.aliasSymbol?.getName();
+
+  return (
+    overrides.parameterTypes?.[typeName] ??
+    overrides.parameterTypes?.[symbolName] ??
+    overrides.parameterTypes?.[aliasName] ??
     null
   );
 }
@@ -729,6 +828,10 @@ function isNullishType(type) {
 }
 
 function convertExpression(returnType, expression) {
+  if (/^Scope<.+>$/.test(returnType)) {
+    return `${returnType}.unsafe(${expression})`;
+  }
+
   switch (returnType) {
     case "JSPromise<JSAny?>":
       return `${expression} as JSPromise<JSAny?>`;

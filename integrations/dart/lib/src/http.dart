@@ -187,7 +187,7 @@ final class HttpProviderDefaults {
 }
 
 /// Represents request shortcut config.
-final class RequestShortcutConfig {
+final class RequestShortcutConfig implements unsafe.JsConvertible {
   /// Creates a request shortcut config.
   const RequestShortcutConfig({
     this.defaults = const HttpProviderDefaults(),
@@ -260,10 +260,13 @@ final class RequestShortcutConfig {
         if (timeout != null) 'timeout': timeout,
         if (responseType != null) 'responseType': responseType!.value,
       };
+
+  @override
+  JSAny? toJsValue() => unsafe.object(toMap());
 }
 
 /// Represents request config.
-final class RequestConfig {
+final class RequestConfig implements unsafe.JsConvertible {
   /// Creates a request config.
   const RequestConfig({
     required this.method,
@@ -359,6 +362,9 @@ final class RequestConfig {
         'uploadEventHandlers': uploadEventHandlers,
     });
   }
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 }
 
 /// Represents http response.

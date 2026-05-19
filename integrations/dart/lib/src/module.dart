@@ -1,7 +1,6 @@
-import 'dart:js_interop';
-
 import 'component.dart';
 import 'directive.dart';
+import 'generated/ng_facades.dart';
 import 'injectable.dart';
 import 'module_options.dart';
 import 'rest.dart';
@@ -10,37 +9,25 @@ import 'unsafe.dart' as unsafe;
 import 'web_component.dart';
 
 /// Typed wrapper around an AngularTS module.
-final class NgModule {
+final class NgModule extends GeneratedNgNgModule {
   /// Creates a ng module.
-  const NgModule(this.name, this._module);
-
-  /// The name.
-  final String name;
-  final JSObject _module;
+  const NgModule(String _, super.raw);
 
   /// Registers an AngularTS constant.
   NgModule constant<TValue>(Token<TValue> token, TValue value) {
-    unsafe.callMethod(
-      _module,
-      'constant',
-      token.name.toJS,
-      unsafe.dartToJs(value),
-    );
-
+    rawConstant(token.name, value);
     return this;
   }
 
   /// The config.
   NgModule config(ModuleBlock block) {
-    unsafe.callMethod(_module, 'config', block.toAnnotatedArray());
-
+    rawConfig(block);
     return this;
   }
 
   /// The run.
   NgModule run(ModuleBlock block) {
-    unsafe.callMethod(_module, 'run', block.toAnnotatedArray());
-
+    rawRun(block);
     return this;
   }
 
@@ -49,8 +36,7 @@ final class NgModule {
     String name,
     Component<TController> options,
   ) {
-    unsafe.callMethod(_module, 'component', name.toJS, options.toJsObject());
-
+    rawComponent(name, options);
     return this;
   }
 
@@ -59,13 +45,7 @@ final class NgModule {
     String name,
     Directive<TScope, TController> options,
   ) {
-    unsafe.callMethod(
-      _module,
-      'directive',
-      name.toJS,
-      directiveFactory(options).toAnnotatedArray(),
-    );
-
+    rawDirective(name, directiveFactory(options));
     return this;
   }
 
@@ -74,13 +54,7 @@ final class NgModule {
     String name,
     InjectableFactory<TController> controller,
   ) {
-    unsafe.callMethod(
-      _module,
-      'controller',
-      name.toJS,
-      controller.toAnnotatedArray(),
-    );
-
+    rawController(name, controller);
     return this;
   }
 
@@ -89,13 +63,7 @@ final class NgModule {
     Token<TService> token,
     InjectableFactory<TService> service,
   ) {
-    unsafe.callMethod(
-      _module,
-      'service',
-      token.name.toJS,
-      service.toAnnotatedArray(),
-    );
-
+    rawService(token.name, service);
     return this;
   }
 
@@ -104,21 +72,13 @@ final class NgModule {
     Token<TValue> token,
     InjectableFactory<TValue> factory,
   ) {
-    unsafe.callMethod(
-      _module,
-      'factory',
-      token.name.toJS,
-      factory.toAnnotatedArray(),
-    );
-
+    rawFactory(token.name, factory);
     return this;
   }
 
   /// Registers an AngularTS value.
   NgModule value<TValue>(Token<TValue> token, TValue value) {
-    unsafe.callMethod(
-        _module, 'value', token.name.toJS, unsafe.dartToJs(value));
-
+    rawValue(token.name, value);
     return this;
   }
 
@@ -127,13 +87,7 @@ final class NgModule {
     Token<TValue> token,
     ProviderRegistration<TValue> provider,
   ) {
-    unsafe.callMethod(
-      _module,
-      'provider',
-      token.name.toJS,
-      provider.toJsObject(),
-    );
-
+    rawProvider(token.name, provider);
     return this;
   }
 
@@ -142,13 +96,7 @@ final class NgModule {
     Token<TValue> token,
     DecoratorRegistration<TValue> decorator,
   ) {
-    unsafe.callMethod(
-      _module,
-      'decorator',
-      token.name.toJS,
-      decorator.decorator.toAnnotatedArray(),
-    );
-
+    rawDecorator(token.name, decorator);
     return this;
   }
 
@@ -157,13 +105,7 @@ final class NgModule {
     String name,
     AnimationRegistration<TValue> animation,
   ) {
-    unsafe.callMethod(
-      _module,
-      'animation',
-      name.toJS,
-      animation.factory.toAnnotatedArray(),
-    );
-
+    rawAnimation(name, animation);
     return this;
   }
 
@@ -172,20 +114,13 @@ final class NgModule {
     String name,
     FilterRegistration<TValue> filter,
   ) {
-    unsafe.callMethod(
-      _module,
-      'filter',
-      name.toJS,
-      filter.factory.toAnnotatedArray(),
-    );
-
+    rawFilter(name, filter);
     return this;
   }
 
   /// The state.
   NgModule state(StateDeclaration state) {
-    unsafe.callMethod(_module, 'state', state.toJsObject());
-
+    rawState(state);
     return this;
   }
 
@@ -193,15 +128,12 @@ final class NgModule {
   NgModule rest<T>(
     RestDefinition<T> definition,
   ) {
-    unsafe.callMethod(
-      _module,
-      'rest',
-      definition.name.toJS,
-      definition.url.toJS,
-      unsafe.dartToJs(definition.entityClass),
-      unsafe.dartToJs(definition.options.extra),
+    rawRest(
+      definition.name,
+      definition.url,
+      definition.entityClass,
+      definition.options.extra,
     );
-
     return this;
   }
 
@@ -210,15 +142,7 @@ final class NgModule {
     Token<TValue> token,
     WasmRegistration wasm,
   ) {
-    unsafe.callMethod(
-      _module,
-      'wasm',
-      token.name.toJS,
-      wasm.source.toJS,
-      unsafe.object(wasm.imports),
-      wasm.toOptionsObject(),
-    );
-
+    rawWasm(token.name, wasm.source, wasm.imports, wasm);
     return this;
   }
 
@@ -227,14 +151,7 @@ final class NgModule {
     Token<TValue> token,
     WorkerRegistration worker,
   ) {
-    unsafe.callMethod(
-      _module,
-      'worker',
-      token.name.toJS,
-      worker.scriptPath.toJS,
-      unsafe.object(worker.config),
-    );
-
+    rawWorker(token.name, worker.scriptPath, worker.config);
     return this;
   }
 
@@ -243,15 +160,12 @@ final class NgModule {
     Token<TStore> token,
     StoreRegistration<TStore> store,
   ) {
-    unsafe.callMethod(
-      _module,
-      'store',
-      token.name.toJS,
-      store.creator.toAnnotatedArray(),
-      store.type.runtimeName.toJS,
-      unsafe.object(store.config),
+    rawStore(
+      token.name,
+      store.creator,
+      store.type.runtimeName,
+      store.config,
     );
-
     return this;
   }
 
@@ -260,14 +174,7 @@ final class NgModule {
     Token<TConnection> token,
     SseRegistration sse,
   ) {
-    unsafe.callMethod(
-      _module,
-      'sse',
-      token.name.toJS,
-      sse.url.toJS,
-      unsafe.object(sse.config),
-    );
-
+    rawSse(token.name, sse.url, sse.config);
     return this;
   }
 
@@ -276,15 +183,12 @@ final class NgModule {
     Token<TConnection> token,
     WebSocketRegistration websocket,
   ) {
-    unsafe.callMethod(
-      _module,
-      'websocket',
-      token.name.toJS,
-      websocket.url.toJS,
+    rawWebsocket(
+      token.name,
+      websocket.url,
       websocket.protocols.isEmpty ? null : unsafe.strings(websocket.protocols),
-      unsafe.object(websocket.config),
+      websocket.config,
     );
-
     return this;
   }
 
@@ -293,14 +197,11 @@ final class NgModule {
     Token<TConnection> token,
     WebTransportRegistration webTransport,
   ) {
-    unsafe.callMethod(
-      _module,
-      'webTransport',
-      token.name.toJS,
-      webTransport.url.toJS,
-      unsafe.object(webTransport.config),
+    rawWebTransport(
+      token.name,
+      webTransport.url,
+      webTransport.config,
     );
-
     return this;
   }
 
@@ -309,15 +210,13 @@ final class NgModule {
     String name,
     WebComponent<TScope> options,
   ) {
-    unsafe.callMethod(_module, 'webComponent', name.toJS, options.toJsObject());
-
+    rawWebComponent(name, options);
     return this;
   }
 
   /// Registers an AngularTS pub/sub topic.
   NgModule topic<TTopic>(Token<TTopic> token, String topic) {
-    unsafe.callMethod(_module, 'topic', token.name.toJS, topic.toJS);
-
+    rawTopic(token.name, topic);
     return this;
   }
 }

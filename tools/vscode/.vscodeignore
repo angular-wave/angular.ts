@@ -1,0 +1,6 @@
+src/**
+test-fixtures/**
+out/test/**
+*.tsbuildinfo
+node_modules/**
+package-lock.json

@@ -4,7 +4,7 @@ import 'dart:js_interop_unsafe';
 import 'unsafe.dart' as interop;
 
 /// Typed wrapper around an AngularTS scope.
-final class Scope<TState> {
+final class Scope<TState> implements interop.JsConvertible {
   const Scope._(this._scope, this.state);
 
   /// Wraps a raw AngularTS scope value.
@@ -16,6 +16,9 @@ final class Scope<TState> {
 
   /// Raw JavaScript scope value.
   JSAny? get raw => _scope;
+
+  @override
+  JSAny? toJsValue() => raw;
 
   /// Typed state view for authoring code.
   final TState state;

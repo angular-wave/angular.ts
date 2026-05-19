@@ -1,0 +1,187 @@
+{
+  "AngularTS Component": {
+    "prefix": "ngcomponent",
+    "body": [
+      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "  templateUrl: \"${3:my-component.html}\",",
+      "  bindings: {",
+      "    ${4:item}: \"<\"",
+      "  },",
+      "  controller: ${5:MyComponentController}",
+      "});"
+    ],
+    "description": "AngularTS component registration"
+  },
+  "AngularTS TemplateUrl Component": {
+    "prefix": "ngcomponenturl",
+    "body": [
+      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "  templateUrl: \"${3:my-component.html}\",",
+      "  bindings: {",
+      "    ${4:item}: \"<\"",
+      "  },",
+      "  controller: ${5:MyComponentController}",
+      "});"
+    ],
+    "description": "AngularTS component with templateUrl"
+  },
+  "AngularTS Inline Template Component": {
+    "prefix": "ngcomponentinline",
+    "body": [
+      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "  template: `",
+      "    <${3:section}>$0</${3:section}>",
+      "  `,",
+      "  bindings: {",
+      "    ${4:item}: \"<\"",
+      "  },",
+      "  controller: ${5:MyComponentController}",
+      "});"
+    ],
+    "description": "AngularTS component with inline template"
+  },
+  "AngularTS Typed Bindings": {
+    "prefix": "ngbindings",
+    "body": [
+      "bindings: {",
+      "  ${1:value}: \"${2:<}\",",
+      "  ${3:onChange}: \"${4:&?}\"",
+      "}"
+    ],
+    "description": "AngularTS component/directive bindings"
+  },
+  "AngularTS Config": {
+    "prefix": "ngconfig",
+    "body": [
+      "angular.module(\"${1:app}\").config([\"${2:$provide}\", function(${3:$provide}) {",
+      "  $0",
+      "}]);"
+    ],
+    "description": "AngularTS config block"
+  },
+  "AngularTS Constant": {
+    "prefix": "ngconstant",
+    "body": [
+      "angular.module(\"${1:app}\").constant(\"${2:token}\", ${3:value});"
+    ],
+    "description": "AngularTS constant registration"
+  },
+  "AngularTS Controller": {
+    "prefix": "ngcontroller",
+    "body": [
+      "angular.module(\"${1:app}\").controller(\"${2:MyController}\", [\"${3:$scope}\", function(${4:$scope}) {",
+      "  $0",
+      "}]);"
+    ],
+    "description": "AngularTS controller registration"
+  },
+  "AngularTS DI Array": {
+    "prefix": "ngdi",
+    "body": [
+      "[\"${1:$scope}\", function(${2:$scope}) {",
+      "  $0",
+      "}]"
+    ],
+    "description": "AngularTS dependency injection array"
+  },
+  "AngularTS Directive": {
+    "prefix": "ngdirective",
+    "body": [
+      "angular.module(\"${1:app}\").directive(\"${2:myDirective}\", function() {",
+      "  return {",
+      "    restrict: \"${3:A}\",",
+      "    scope: {",
+      "      ${4:value}: \"${5:<}\"",
+      "    },",
+      "    link(scope, element, attrs) {",
+      "      $0",
+      "    }",
+      "  };",
+      "});"
+    ],
+    "description": "AngularTS directive registration"
+  },
+  "AngularTS Factory": {
+    "prefix": "ngfactory",
+    "body": [
+      "angular.module(\"${1:app}\").factory(\"${2:myFactory}\", function() {",
+      "  return {",
+      "    $0",
+      "  };",
+      "});"
+    ],
+    "description": "AngularTS factory registration"
+  },
+  "AngularTS Filter": {
+    "prefix": "ngfilter",
+    "body": [
+      "angular.module(\"${1:app}\").filter(\"${2:myFilter}\", function() {",
+      "  return function(${3:value}) {",
+      "    return ${3:value};",
+      "  };",
+      "});"
+    ],
+    "description": "AngularTS filter registration"
+  },
+  "AngularTS Module": {
+    "prefix": "ngmodule",
+    "body": [
+      "angular.module(\"${1:app}\", [${2}]);"
+    ],
+    "description": "AngularTS module declaration"
+  },
+  "AngularTS Provider": {
+    "prefix": "ngprovider",
+    "body": [
+      "angular.module(\"${1:app}\").provider(\"${2:myProvider}\", function() {",
+      "  this.$get = function() {",
+      "    return {",
+      "      $0",
+      "    };",
+      "  };",
+      "});"
+    ],
+    "description": "AngularTS provider registration"
+  },
+  "AngularTS Run": {
+    "prefix": "ngrun",
+    "body": [
+      "angular.module(\"${1:app}\").run([\"${2:$rootScope}\", function(${3:$rootScope}) {",
+      "  $0",
+      "}]);"
+    ],
+    "description": "AngularTS run block"
+  },
+  "AngularTS Service": {
+    "prefix": "ngservice",
+    "body": [
+      "angular.module(\"${1:app}\").service(\"${2:MyService}\", function() {",
+      "  $0",
+      "});"
+    ],
+    "description": "AngularTS service registration"
+  },
+  "AngularTS $inject": {
+    "prefix": "nginject",
+    "body": [
+      "${1:ControllerName}.$inject = [\"${2:$scope}\"];"
+    ],
+    "description": "AngularTS $inject assignment"
+  },
+  "AngularTS Web Component Wrapper": {
+    "prefix": "ngwebcomponent",
+    "body": [
+      "defineAngularElement(\"${1:my-element}\", {",
+      "  ngModule: {",
+      "    directives: {",
+      "      ${2:myDirective}: ${3:myDirective}",
+      "    }",
+      "  },",
+      "  component: {",
+      "    template: `<${4:section}>$0</${4:section}>`",
+      "  }",
+      "});"
+    ],
+    "description": "AngularTS web component wrapper"
+  }
+}

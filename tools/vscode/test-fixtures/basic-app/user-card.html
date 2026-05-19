@@ -1,0 +1,5 @@
+<article class="user-card" ng-if="$ctrl.user">
+  <button type="button" ng-click="$ctrl.onSelect({ user: $ctrl.user })">
+    {{ $ctrl.user.name }}
+  </button>
+</article>

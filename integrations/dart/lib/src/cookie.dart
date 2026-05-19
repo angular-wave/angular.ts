@@ -1,3 +1,7 @@
+import 'dart:js_interop';
+
+import 'unsafe.dart' as unsafe;
+
 /// Supported same site values.
 enum SameSite {
   /// Invokes lax.
@@ -16,7 +20,7 @@ enum SameSite {
 }
 
 /// Represents cookie options.
-final class CookieOptions {
+final class CookieOptions implements unsafe.JsConvertible {
   /// Creates a cookie options.
   const CookieOptions({
     this.path,
@@ -49,6 +53,9 @@ final class CookieOptions {
         if (secure != null) 'secure': secure,
         if (samesite != null) 'samesite': samesite!.value,
       };
+
+  @override
+  JSAny? toJsValue() => unsafe.object(toMap());
 }
 
 /// Represents cookie store options.

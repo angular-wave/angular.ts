@@ -98,8 +98,16 @@ function hasMember(body, memberName) {
   const method = new RegExp(`(?:^|\\n)\\s*(?:@[\\s\\S]*?\\n\\s*)*[^\\n;{}]*${escaped}(?:<[^\\n;{}]+>)?\\s*\\(`);
   const getter = new RegExp(`(?:^|\\n)\\s*(?:@[\\s\\S]*?\\n\\s*)*[^\\n;{}]+\\s+get\\s+${escaped}\\b`);
   const setter = new RegExp(`(?:^|\\n)\\s*(?:@[\\s\\S]*?\\n\\s*)*set\\s+${escaped}\\s*\\(`);
+  const field = new RegExp(
+    `(?:^|\\n)\\s*(?:@[\\s\\S]*?\\n\\s*)*(?:final|late|var|const)\\s+[^\\n;{}=]+\\s+${escaped}\\s*(?:[=;])`
+  );
 
-  return method.test(body) || getter.test(body) || setter.test(body);
+  return (
+    method.test(body) ||
+    getter.test(body) ||
+    setter.test(body) ||
+    field.test(body)
+  );
 }
 
 function reservedManualAlias(memberName) {

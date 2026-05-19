@@ -1,86 +1,10 @@
 import 'dart:js_interop';
 
-import 'package:web/web.dart';
-
-import 'animation.dart' show AnimationPreset, NativeAnimationOptions;
 import 'cookie.dart';
 import 'facade.dart';
 import 'generated/ng_facades.dart';
 import 'http.dart';
-import 'injectable.dart';
-import 'module_options.dart' show StateDeclaration;
-import 'scope.dart';
 import 'unsafe.dart' as unsafe;
-import 'web_component.dart' show ElementScopeOptions, WebComponent;
-
-const Object _undefinedArgument = Object();
-
-JSAny? _providerArgument(Object? value) {
-  if (value is InjectableFactory<Object?>) return value.toAnnotatedArray();
-  return unsafe.dartToJs(value);
-}
-
-JSAny? _stateArgument(Object? value) {
-  if (value is StateDeclaration) return value.toJsObject();
-  return unsafe.dartToJs(value);
-}
-
-JSAny? _plainOptions(Object? value) {
-  if (value is Map<String, Object?>) return unsafe.object(value);
-  return unsafe.dartToJs(value);
-}
-
-JSAny? _animationOptionsArgument(Object? value) {
-  if (value is AnimationPreset) return _animationPreset(value);
-  if (value is NativeAnimationOptions) return _nativeAnimationOptions(value);
-  return unsafe.dartToJs(value);
-}
-
-JSObject _nativeAnimationOptions(NativeAnimationOptions options) {
-  return unsafe.object({
-    if (options.animation != null) 'animation': options.animation,
-    if (options.keyframes != null)
-      'keyframes': unsafe.JsValue(options.keyframes),
-    if (options.enter != null) 'enter': unsafe.JsValue(options.enter),
-    if (options.leave != null) 'leave': unsafe.JsValue(options.leave),
-    if (options.move != null) 'move': unsafe.JsValue(options.move),
-    if (options.addClass != null) 'addClass': options.addClass,
-    if (options.removeClass != null) 'removeClass': options.removeClass,
-    if (options.from != null) 'from': options.from,
-    if (options.to != null) 'to': options.to,
-    if (options.tempClasses != null) 'tempClasses': options.tempClasses,
-    if (options.composite != null) 'composite': options.composite,
-    if (options.delay != null) 'delay': options.delay,
-    if (options.direction != null) 'direction': options.direction,
-    if (options.duration != null) 'duration': options.duration,
-    if (options.easing != null) 'easing': options.easing,
-    if (options.endDelay != null) 'endDelay': options.endDelay,
-    if (options.fill != null) 'fill': options.fill,
-    if (options.id != null) 'id': options.id,
-    if (options.iterationComposite != null)
-      'iterationComposite': options.iterationComposite,
-    if (options.iterationStart != null)
-      'iterationStart': options.iterationStart,
-    if (options.iterations != null) 'iterations': options.iterations,
-    if (options.playbackRate != null) 'playbackRate': options.playbackRate,
-    if (options.pseudoElement != null) 'pseudoElement': options.pseudoElement,
-    if (options.timeline != null) 'timeline': options.timeline,
-  });
-}
-
-JSObject _animationPreset(AnimationPreset preset) {
-  return unsafe.object({
-    if (preset.enter != null) 'enter': preset.enter,
-    if (preset.leave != null) 'leave': preset.leave,
-    if (preset.move != null) 'move': preset.move,
-    if (preset.addClass != null) 'addClass': preset.addClass,
-    if (preset.removeClass != null) 'removeClass': preset.removeClass,
-    if (preset.setClass != null) 'setClass': preset.setClass,
-    if (preset.animate != null) 'animate': preset.animate,
-    if (preset.options != null)
-      'options': unsafe.JsValue(_nativeAnimationOptions(preset.options!)),
-  });
-}
 
 /// Represents angular service.
 final class AngularService extends GeneratedNgAngularService {
@@ -94,15 +18,17 @@ final class Attributes extends GeneratedNgAttributes {
   const Attributes(super.raw);
 
   /// Observes an attribute value.
-  Object? $observe(String key, Object? Function(Object? value) fn) {
-    return unsafe.callMethod(
-      raw,
-      r'$observe',
-      key.toJS,
+  void Function() $observe(String key, Object? Function(Object? value) fn) {
+    final deregister = rawObserve(
+      key,
       ((JSAny? value) {
         return unsafe.dartToJs(fn(unsafe.jsToDart<Object?>(value)));
       }).toJS,
     );
+
+    return () {
+      deregister.callAsFunction(null);
+    };
   }
 }
 
@@ -126,229 +52,12 @@ final class AnchorScrollService extends GeneratedNgAnchorScrollService {
 final class AnimateProvider extends GeneratedNgAnimateProvider {
   /// Creates a animate provider.
   const AnimateProvider(super.raw);
-
-  /// Registers a named animation preset.
-  void register(String name, Object? preset) {
-    unsafe.callMethod2(raw, 'register', name.toJS, _providerArgument(preset));
-  }
 }
 
 /// Represents animate service.
 final class AnimateService extends GeneratedNgAnimateService {
   /// Creates a animate service.
   const AnimateService(super.raw);
-
-  /// Defines a named animation preset.
-  void define(String name, Object? preset) {
-    unsafe.callMethod2(
-        raw, 'define', name.toJS, _animationOptionsArgument(preset));
-  }
-
-  /// Runs an enter animation.
-  Object? enter(
-    Element element, [
-    Object? parent = _undefinedArgument,
-    Object? after = _undefinedArgument,
-    NativeAnimationOptions? options,
-  ]) {
-    if (parent == _undefinedArgument) {
-      return unsafe.callMethod1(raw, 'enter', unsafe.dartToJs(element));
-    }
-
-    if (after == _undefinedArgument) {
-      return unsafe.callMethod2(
-        raw,
-        'enter',
-        unsafe.dartToJs(element),
-        unsafe.dartToJs(parent),
-      );
-    }
-
-    return options == null
-        ? unsafe.callMethod3(
-            raw,
-            'enter',
-            unsafe.dartToJs(element),
-            unsafe.dartToJs(parent),
-            unsafe.dartToJs(after),
-          )
-        : unsafe.callMethod4(
-            raw,
-            'enter',
-            unsafe.dartToJs(element),
-            unsafe.dartToJs(parent),
-            unsafe.dartToJs(after),
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Runs a move animation.
-  Object? move(
-    Element element,
-    Object? parent, [
-    Object? after = _undefinedArgument,
-    NativeAnimationOptions? options,
-  ]) {
-    if (after == _undefinedArgument) {
-      return unsafe.callMethod2(
-        raw,
-        'move',
-        unsafe.dartToJs(element),
-        unsafe.dartToJs(parent),
-      );
-    }
-
-    return options == null
-        ? unsafe.callMethod3(
-            raw,
-            'move',
-            unsafe.dartToJs(element),
-            unsafe.dartToJs(parent),
-            unsafe.dartToJs(after),
-          )
-        : unsafe.callMethod4(
-            raw,
-            'move',
-            unsafe.dartToJs(element),
-            unsafe.dartToJs(parent),
-            unsafe.dartToJs(after),
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Runs a leave animation.
-  Object? leave(Element element, [NativeAnimationOptions? options]) {
-    return options == null
-        ? unsafe.callMethod1(raw, 'leave', unsafe.dartToJs(element))
-        : unsafe.callMethod2(
-            raw,
-            'leave',
-            unsafe.dartToJs(element),
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Adds a CSS class with animation support.
-  Object? addClass(
-    Element element,
-    String className, [
-    NativeAnimationOptions? options,
-  ]) {
-    return options == null
-        ? unsafe.callMethod2(
-            raw,
-            'addClass',
-            unsafe.dartToJs(element),
-            className.toJS,
-          )
-        : unsafe.callMethod3(
-            raw,
-            'addClass',
-            unsafe.dartToJs(element),
-            className.toJS,
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Removes a CSS class with animation support.
-  Object? removeClass(
-    Element element,
-    String className, [
-    NativeAnimationOptions? options,
-  ]) {
-    return options == null
-        ? unsafe.callMethod2(
-            raw,
-            'removeClass',
-            unsafe.dartToJs(element),
-            className.toJS,
-          )
-        : unsafe.callMethod3(
-            raw,
-            'removeClass',
-            unsafe.dartToJs(element),
-            className.toJS,
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Adds and removes CSS classes with animation support.
-  Object? setClass(
-    Element element,
-    String add,
-    String remove, [
-    NativeAnimationOptions? options,
-  ]) {
-    return options == null
-        ? unsafe.callMethod3(
-            raw,
-            'setClass',
-            unsafe.dartToJs(element),
-            add.toJS,
-            remove.toJS,
-          )
-        : unsafe.callMethod4(
-            raw,
-            'setClass',
-            unsafe.dartToJs(element),
-            add.toJS,
-            remove.toJS,
-            _animationOptionsArgument(options),
-          );
-  }
-
-  /// Runs a low-level style animation.
-  Object? animate(
-    Element element,
-    Object? from, [
-    Object? to = _undefinedArgument,
-    Object? className = _undefinedArgument,
-    NativeAnimationOptions? options,
-  ]) {
-    final fromValue = from is Map<String, Object?>
-        ? unsafe.object(from)
-        : unsafe.dartToJs(from);
-
-    if (to == _undefinedArgument) {
-      return unsafe.callMethod2(
-          raw, 'animate', unsafe.dartToJs(element), fromValue);
-    }
-
-    final toValue =
-        to is Map<String, Object?> ? unsafe.object(to) : unsafe.dartToJs(to);
-
-    if (className == _undefinedArgument) {
-      return unsafe.callMethod3(
-        raw,
-        'animate',
-        unsafe.dartToJs(element),
-        fromValue,
-        toValue,
-      );
-    }
-
-    final classNameValue =
-        className is String ? className.toJS : unsafe.dartToJs(className);
-
-    return options == null
-        ? unsafe.callMethod4(
-            raw,
-            'animate',
-            unsafe.dartToJs(element),
-            fromValue,
-            toValue,
-            classNameValue,
-          )
-        : unsafe.callMethod5(
-            raw,
-            'animate',
-            unsafe.dartToJs(element),
-            fromValue,
-            toValue,
-            classNameValue,
-            _animationOptionsArgument(options),
-          );
-  }
 }
 
 /// Represents angular service provider.
@@ -418,38 +127,6 @@ final class CookieProvider extends AngularTsJsFacade {
 final class CookieService extends GeneratedNgCookieService {
   /// Creates a cookie service.
   const CookieService(super.raw);
-
-  /// Writes a raw cookie value.
-  void put(String key, String value, [CookieOptions? options]) {
-    unsafe.callMethod(
-      raw,
-      'put',
-      key.toJS,
-      value.toJS,
-      options == null ? null : unsafe.object(options.toMap()),
-    );
-  }
-
-  /// Serializes and writes a cookie value.
-  void putObject(String key, Object? value, [CookieOptions? options]) {
-    unsafe.callMethod(
-      raw,
-      'putObject',
-      key.toJS,
-      unsafe.dartToJs(value),
-      options == null ? null : unsafe.object(options.toMap()),
-    );
-  }
-
-  /// Removes a cookie.
-  void remove(String key, [CookieOptions? options]) {
-    unsafe.callMethod(
-      raw,
-      'remove',
-      key.toJS,
-      options == null ? null : unsafe.object(options.toMap()),
-    );
-  }
 }
 
 /// Represents event bus provider.
@@ -479,12 +156,6 @@ final class ExceptionHandlerService extends GeneratedNgExceptionHandlerService {
 final class FilterProvider extends GeneratedNgFilterProvider {
   /// Creates a filter provider.
   const FilterProvider(super.raw);
-
-  /// Registers a named filter factory.
-  FilterProvider register(String name, Object? factory) {
-    unsafe.callMethod2(raw, 'register', name.toJS, _providerArgument(factory));
-    return this;
-  }
 }
 
 /// Represents filter service.
@@ -528,81 +199,6 @@ final class HttpService extends GeneratedNgHttpService {
   /// Sets requests currently in flight.
   set pendingRequests(Object? value) {
     unsafe.setProperty(raw, 'pendingRequests', value);
-  }
-
-  /// Sends a GET request.
-  Object? get(String url, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod1(raw, 'get', url.toJS)
-        : unsafe.callMethod2(
-            raw,
-            'get',
-            url.toJS,
-            unsafe.object(config.toMap()),
-          );
-  }
-
-  /// Sends a DELETE request.
-  Object? delete(String url, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod1(raw, 'delete', url.toJS)
-        : unsafe.callMethod2(
-            raw,
-            'delete',
-            url.toJS,
-            unsafe.object(config.toMap()),
-          );
-  }
-
-  /// Sends a HEAD request.
-  Object? head(String url, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod1(raw, 'head', url.toJS)
-        : unsafe.callMethod2(
-            raw,
-            'head',
-            url.toJS,
-            unsafe.object(config.toMap()),
-          );
-  }
-
-  /// Sends a POST request.
-  Object? post(String url, Object? data, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod2(raw, 'post', url.toJS, unsafe.dartToJs(data))
-        : unsafe.callMethod3(
-            raw,
-            'post',
-            url.toJS,
-            unsafe.dartToJs(data),
-            unsafe.object(config.toMap()),
-          );
-  }
-
-  /// Sends a PUT request.
-  Object? put(String url, Object? data, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod2(raw, 'put', url.toJS, unsafe.dartToJs(data))
-        : unsafe.callMethod3(
-            raw,
-            'put',
-            url.toJS,
-            unsafe.dartToJs(data),
-            unsafe.object(config.toMap()),
-          );
-  }
-
-  /// Sends a PATCH request.
-  Object? patch(String url, Object? data, [RequestShortcutConfig? config]) {
-    return config == null
-        ? unsafe.callMethod2(raw, 'patch', url.toJS, unsafe.dartToJs(data))
-        : unsafe.callMethod3(
-            raw,
-            'patch',
-            url.toJS,
-            unsafe.dartToJs(data),
-            unsafe.object(config.toMap()),
-          );
   }
 }
 
@@ -728,58 +324,6 @@ final class ParseService extends GeneratedNgParseService {
 final class ProvideService extends GeneratedNgProvideService {
   /// Creates a provide service.
   const ProvideService(super.raw);
-
-  /// Registers a provider.
-  ProvideService provider(String name, Object? provider) {
-    unsafe.callMethod2(raw, 'provider', name.toJS, _providerArgument(provider));
-    return this;
-  }
-
-  /// Registers a factory function.
-  ProvideService factory(String name, Object? factoryFn) {
-    unsafe.callMethod2(raw, 'factory', name.toJS, _providerArgument(factoryFn));
-    return this;
-  }
-
-  /// Registers a service constructor.
-  ProvideService service(String name, Object? constructor) {
-    unsafe.callMethod2(
-      raw,
-      'service',
-      name.toJS,
-      _providerArgument(constructor),
-    );
-    return this;
-  }
-
-  /// Registers a fixed value.
-  ProvideService value(String name, Object? value) {
-    unsafe.callMethod2(raw, 'value', name.toJS, unsafe.dartToJs(value));
-    return this;
-  }
-
-  /// Registers a constant value.
-  ProvideService constant(String name, Object? value) {
-    unsafe.callMethod2(raw, 'constant', name.toJS, unsafe.dartToJs(value));
-    return this;
-  }
-
-  /// Registers a decorator function.
-  ProvideService decorator(String name, Object? fn) {
-    unsafe.callMethod2(raw, 'decorator', name.toJS, _providerArgument(fn));
-    return this;
-  }
-
-  /// Registers a directive factory.
-  ProvideService directive(String name, Object? directive) {
-    unsafe.callMethod2(
-      raw,
-      'directive',
-      name.toJS,
-      _providerArgument(directive),
-    );
-    return this;
-  }
 }
 
 /// Represents pub sub provider.
@@ -933,205 +477,6 @@ final class StateRegistryProvider extends AngularTsJsFacade {
 final class StateService extends GeneratedNgStateService {
   /// Creates a state service.
   const StateService(super.raw);
-
-  /// Registers a state declaration.
-  StateService state(Object? nameOrDefinition,
-      [Object? definition = _undefinedArgument]) {
-    if (definition == _undefinedArgument) {
-      unsafe.callMethod1(raw, 'state', _stateArgument(nameOrDefinition));
-    } else {
-      unsafe.callMethod2(
-        raw,
-        'state',
-        unsafe.dartToJs(nameOrDefinition),
-        _stateArgument(definition),
-      );
-    }
-
-    return this;
-  }
-
-  /// Registers a lazy state namespace.
-  StateService lazy(String prefix, Object? loader) {
-    unsafe.callMethod2(raw, 'lazy', prefix.toJS, unsafe.dartToJs(loader));
-
-    return this;
-  }
-
-  /// Reloads the current state or a partial state hierarchy.
-  Object? reload([Object? reloadState = _undefinedArgument]) {
-    return reloadState == _undefinedArgument
-        ? unsafe.callMethod(raw, 'reload')
-        : unsafe.callMethod1(raw, 'reload', _stateArgument(reloadState));
-  }
-
-  /// Transitions to a different state and/or parameters.
-  Object? go(
-    Object? to, [
-    Object? params = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    if (params == _undefinedArgument) {
-      return unsafe.callMethod1(raw, 'go', _stateArgument(to));
-    }
-
-    if (options == _undefinedArgument) {
-      return unsafe.callMethod2(
-          raw, 'go', _stateArgument(to), unsafe.dartToJs(params));
-    }
-
-    return unsafe.callMethod3(raw, 'go', _stateArgument(to),
-        unsafe.dartToJs(params), unsafe.dartToJs(options));
-  }
-
-  /// Creates a target state.
-  Object? target(
-    Object? identifier, [
-    Object? params = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    if (params == _undefinedArgument) {
-      return unsafe.callMethod1(raw, 'target', _stateArgument(identifier));
-    }
-
-    if (options == _undefinedArgument) {
-      return unsafe.callMethod2(
-        raw,
-        'target',
-        _stateArgument(identifier),
-        unsafe.dartToJs(params),
-      );
-    }
-
-    return unsafe.callMethod3(
-      raw,
-      'target',
-      _stateArgument(identifier),
-      unsafe.dartToJs(params),
-      unsafe.dartToJs(options),
-    );
-  }
-
-  /// Low-level transition API.
-  Object? transitionTo(
-    Object? to, [
-    Object? toParams = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    if (toParams == _undefinedArgument) {
-      return unsafe.callMethod1(raw, 'transitionTo', _stateArgument(to));
-    }
-
-    if (options == _undefinedArgument) {
-      return unsafe.callMethod2(
-        raw,
-        'transitionTo',
-        _stateArgument(to),
-        unsafe.dartToJs(toParams),
-      );
-    }
-
-    return unsafe.callMethod3(
-      raw,
-      'transitionTo',
-      _stateArgument(to),
-      unsafe.dartToJs(toParams),
-      unsafe.dartToJs(options),
-    );
-  }
-
-  /// Checks whether the current state exactly matches a state.
-  bool? isState(
-    Object? stateOrName, [
-    Object? params = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    final value = params == _undefinedArgument
-        ? unsafe.callMethod1(raw, 'is', _stateArgument(stateOrName))
-        : options == _undefinedArgument
-            ? unsafe.callMethod2(
-                raw,
-                'is',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-              )
-            : unsafe.callMethod3(
-                raw,
-                'is',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-                unsafe.dartToJs(options),
-              );
-
-    return value == null ? null : (value as JSBoolean).toDart;
-  }
-
-  /// Checks whether the current state includes a state.
-  bool? includes(
-    Object? stateOrName, [
-    Object? params = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    final value = params == _undefinedArgument
-        ? unsafe.callMethod1(raw, 'includes', _stateArgument(stateOrName))
-        : options == _undefinedArgument
-            ? unsafe.callMethod2(
-                raw,
-                'includes',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-              )
-            : unsafe.callMethod3(
-                raw,
-                'includes',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-                unsafe.dartToJs(options),
-              );
-
-    return value == null ? null : (value as JSBoolean).toDart;
-  }
-
-  /// Generates a URL for a state and parameters.
-  String? href(
-    Object? stateOrName, [
-    Object? params = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    final value = params == _undefinedArgument
-        ? unsafe.callMethod1(raw, 'href', _stateArgument(stateOrName))
-        : options == _undefinedArgument
-            ? unsafe.callMethod2(
-                raw,
-                'href',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-              )
-            : unsafe.callMethod3(
-                raw,
-                'href',
-                _stateArgument(stateOrName),
-                unsafe.dartToJs(params),
-                unsafe.dartToJs(options),
-              );
-
-    return value == null ? null : (value as JSString).toDart;
-  }
-
-  /// Gets one state, all states, or a state relative to a base state.
-  Object? get([
-    Object? stateOrName = _undefinedArgument,
-    Object? base = _undefinedArgument,
-  ]) {
-    if (stateOrName == _undefinedArgument) return unsafe.callMethod(raw, 'get');
-
-    if (base == _undefinedArgument) {
-      return unsafe.callMethod1(raw, 'get', _stateArgument(stateOrName));
-    }
-
-    return unsafe.callMethod2(
-        raw, 'get', _stateArgument(stateOrName), _stateArgument(base));
-  }
 }
 
 /// Represents state registry service.
@@ -1272,47 +617,6 @@ final class ViewService extends AngularTsJsFacade {
 final class WebComponentService extends GeneratedNgWebComponentService {
   /// Creates a web component service.
   const WebComponentService(super.raw);
-
-  /// Defines a scoped custom element.
-  CustomElementConstructor define<TScope>(
-    String name,
-    WebComponent<TScope> options,
-  ) {
-    final result = unsafe.callMethod2(
-      raw,
-      'define',
-      name.toJS,
-      options.toJsObject(),
-    );
-
-    return result as CustomElementConstructor;
-  }
-
-  /// Creates and attaches an AngularTS child scope for a custom element.
-  Scope<TState> createElementScope<TState>(
-    HTMLElement host, [
-    Object? initialState = _undefinedArgument,
-    ElementScopeOptions? options,
-  ]) {
-    final result = initialState == _undefinedArgument
-        ? unsafe.callMethod1(raw, 'createElementScope', host)
-        : options == null
-            ? unsafe.callMethod2(
-                raw,
-                'createElementScope',
-                host,
-                unsafe.dartToJs(initialState),
-              )
-            : unsafe.callMethod3(
-                raw,
-                'createElementScope',
-                host,
-                unsafe.dartToJs(initialState),
-                options.toJsObject(),
-              );
-
-    return Scope<TState>.unsafe(result);
-  }
 }
 
 /// Represents web socket provider.
@@ -1361,37 +665,6 @@ final class WasmProvider extends AngularTsJsFacade {
 final class WasmService extends GeneratedNgWasmService {
   /// Creates a wasm service.
   const WasmService(super.raw);
-
-  /// Loads a WebAssembly module and returns either exports or the raw result.
-  Object? call(
-    String src, [
-    Object? imports = _undefinedArgument,
-    Object? options = _undefinedArgument,
-  ]) {
-    final fn = raw as JSFunction;
-
-    if (imports == _undefinedArgument) {
-      return fn.callAsFunction(null, src.toJS);
-    }
-
-    if (options == _undefinedArgument) {
-      return fn.callAsFunction(null, src.toJS, _plainOptions(imports));
-    }
-
-    return fn.callAsFunction(
-      null,
-      src.toJS,
-      _plainOptions(imports),
-      _plainOptions(options),
-    );
-  }
-
-  /// Wraps an AngularTS scope for direct Wasm client access.
-  Object? scope(Scope<Object?> scope, [Object? options = _undefinedArgument]) {
-    return options == _undefinedArgument
-        ? unsafe.callMethod1(raw, 'scope', scope.raw)
-        : unsafe.callMethod2(raw, 'scope', scope.raw, _plainOptions(options));
-  }
 }
 
 /// Creates a typed JavaScript facade from a raw runtime value.

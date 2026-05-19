@@ -145,7 +145,7 @@ Required behavior:
 - Verify each member is generated, manually implemented, or explicitly ignored.
 - Report missing members with type and member name.
 
-Extend override metadata:
+Override metadata uses concrete member names only:
 
 ```json
 {
@@ -153,12 +153,10 @@ Extend override metadata:
     "StateService.is": "isState"
   },
   "manual": [
-    "NgModule.*",
-    "StateDeclaration.*"
+    "SomeType.someErgonomicMember"
   ],
   "unsupported": [
-    "AnimationHandle.catch",
-    "AnimationHandle.finally"
+    "SomeType.unsupportedMember"
   ]
 }
 ```
@@ -216,7 +214,10 @@ signature already matches the public TypeScript surface. Callable-property
 service APIs can be opted into method generation, and rest parameters are
 expanded to a bounded optional argument list; `LogService` now uses this path
 instead of handwritten logging methods. Required primitive parameters are
-inferred for generated methods, which lets small facades such as
+inferred for generated methods, and generated methods can carry explicit Dart
+type parameters plus facade-return wrapping when TypeScript has a generic JS
+object return such as `WebComponentService.createElementScope<TState>()`.
+This lets small facades such as
 `SceDelegateService` inherit generated methods without losing string argument
 typing. Non-null primitive return types are inferred from TypeScript too, so
 facades such as `SceService` can move to generated methods without weakening
@@ -236,15 +237,59 @@ of handwritten raw calls. Optional callable properties are unwrapped when
 collecting call signatures, so members such as `TranscludeFn.isSlotFilled()`
 can also be generated instead of handwritten. Direct string-only attribute
 helpers such as `Attributes.$normalize()`, `$addClass()`, `$removeClass()`, and
-`$updateClass()` now come from generated coverage; only `$observe()` stays
-handwritten because it adapts a Dart callback. Thin object-forwarding helpers
-such as `WasmService.createScopeAbi()` also come from generated coverage.
-Writable scalar properties now get generated setters too, removing handwritten
-setter-only wrappers from provider and location facades. Callback-to-promise
-methods such as `AnimateService.transition()` are generated with stricter
-`JSFunction` and `JSPromise<JSAny?>` types. Simple optional-argument methods
-such as `AnimateService.cancel()` also come from generated coverage when no
-Dart adapter is needed.
+`$updateClass()` now come from generated coverage. `$observe()` has a generated
+raw member and a handwritten public adapter because it turns a Dart callback
+into a JavaScript callback and returns a Dart disposer. Thin object-forwarding
+helpers such as `WasmService.createScopeAbi()` also come from generated
+coverage.
+Generated parameter-type overrides can preserve a stricter Dart input type
+without forcing a handwritten method; `WasmService.scope()` now takes
+`Scope<Object?>` from generated coverage and `dartToJs()` unwraps objects that
+implement `JsConvertible`. Callable facades now infer the same argument and
+promise return types as normal methods, so `WasmService.call()` is generated
+with a required `String` source and `JSPromise<JSAny?>` result. Writable scalar
+properties now get generated setters too, removing handwritten setter-only
+wrappers from provider and location facades. Callback-to-promise methods such
+as `AnimateService.transition()` are generated with stricter `JSFunction` and
+`JSPromise<JSAny?>` types. Simple optional-argument methods such as
+`AnimateService.cancel()` also come from generated coverage when no Dart
+adapter is needed. `InjectableFactory` implements `JsConvertible`, so simple
+provider registration methods such as `AnimateProvider.register()` can use the
+generated raw method without losing annotated-array conversion. Dart value
+objects such as `CookieOptions` can also implement `JsConvertible`, allowing
+`CookieService.put()`, `putObject()`, and `remove()` to come from generated
+coverage while preserving option-object conversion. HTTP request config objects
+use the same hook, so `$http.get()`, `delete()`, `head()`, `post()`, `put()`,
+and `patch()` are generated with `String` URL parameters and
+`JSPromise<JSAny?>` results while still accepting Dart config objects.
+Animation option objects also convert themselves at generated boundaries, so
+all `AnimateService` methods now come from generated coverage without losing
+preset or native-options conversion.
+`StateDeclaration` now uses the same conversion hook, allowing non-chainable
+`StateService` helpers such as `reload()`, `go()`, `target()`,
+`transitionTo()`, `isState()`, `includes()`, `href()`, and `get()` to come from
+generated coverage while keeping state-declaration arguments usable.
+Generated methods that return their own or an assignable TypeScript facade type
+now return `this`, which lets simple fluent wrappers such as
+`FilterProvider.register()` and `$provide` registration methods move out of
+handwritten code. Required parameter inference now merges overloads before
+falling back to `Object?`, so both `StateService.lazy()` and the overloaded
+`StateService.state()` come from generated coverage while preserving the
+`StateDeclaration`-or-`String` first argument.
+`NgModule` now inherits the generated `name` getter and keeps only the typed
+registration methods marked manual, so parity metadata no longer hides the whole
+module behind a wildcard.
+`StateDeclaration` also has generated raw facade member coverage; the
+handwritten Dart value object remains as the public ergonomic constructor and
+conversion layer.
+Manual `NgModule` registration methods now route injectable factories, option
+maps, and value-object options through the same `unsafe.dartToJs()` boundary
+used by generated methods.
+Web component value objects also convert themselves at generated boundaries, so
+`WebComponentService.define()` is generated with a `CustomElementConstructor`
+return override. The generator can also attach a Dart method type parameter and
+wrap raw facade returns, so `WebComponentService.createElementScope<TState>()`
+is generated while still returning `Scope<TState>`.
 
 ## Phase 5: Typed Overrides
 
@@ -271,6 +316,9 @@ Examples:
   "returnTypes": {
     "SceService.isEnabled": "bool",
     "LocationService.getPath": "String"
+  },
+  "parameterTypes": {
+    "Scope": "Scope<Object?>"
   }
 }
 ```
@@ -283,8 +331,9 @@ Acceptance criteria:
 
 Status: started. The generator infers nullable `String`, `bool`, `num`, and
 `JSPromise<JSAny?>` return types for simple TypeScript members, still supports
-explicit member return type overrides, maps configured platform types to
-`package:web`, and rejects stale `returnTypes` and `types` entries in member
+explicit member return type overrides, supports narrow TypeScript type-name to
+Dart parameter-type overrides, maps configured platform types to `package:web`,
+and rejects stale `returnTypes`, `parameterTypes`, and `types` entries in member
 parity checks. Explicit manual overrides are checked by
 `tool/check_manual_overrides.mjs`, so override metadata cannot hide a missing
 handwritten Dart member.
@@ -338,7 +387,8 @@ This must verify:
 Status: implemented through the `generate-check`, `format-check`, `analyze`,
 `test`, `parity`, `generated-base-check`, and `runtime-test` targets. The
 `parity` target includes type parity, member parity, and manual override
-integrity checks.
+integrity checks. Current member parity is fully generated, with no manual or
+unsupported member overrides.
 
 ## Done Definition
 

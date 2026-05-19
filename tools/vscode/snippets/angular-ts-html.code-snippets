@@ -1,0 +1,51 @@
+{
+  "AngularTS repeat": {
+    "prefix": "ngrepeat",
+    "body": [
+      "<${1:li} ng-repeat=\"${2:item} in ${3:items}\">$0</${1:li}>"
+    ],
+    "description": "AngularTS ng-repeat template"
+  },
+  "AngularTS if": {
+    "prefix": "ngif",
+    "body": [
+      "<${1:section} ng-if=\"${2:condition}\">$0</${1:section}>"
+    ],
+    "description": "AngularTS ng-if template"
+  },
+  "AngularTS model": {
+    "prefix": "ngmodel",
+    "body": [
+      "<input ng-model=\"${1:model}\">$0"
+    ],
+    "description": "AngularTS ng-model input"
+  },
+  "AngularTS click": {
+    "prefix": "ngclick",
+    "body": [
+      "<button type=\"button\" ng-click=\"${1:handler}($event)\">$0</button>"
+    ],
+    "description": "AngularTS ng-click button"
+  },
+  "AngularTS HTTP GET": {
+    "prefix": "ngget",
+    "body": [
+      "<${1:button} ng-get=\"${2:/api/items}\" target=\"${3:#target}\">$0</${1:button}>"
+    ],
+    "description": "AngularTS ng-get request"
+  },
+  "AngularTS HTTP POST": {
+    "prefix": "ngpost",
+    "body": [
+      "<${1:form} ng-post=\"${2:/api/items}\">$0</${1:form}>"
+    ],
+    "description": "AngularTS ng-post request"
+  },
+  "AngularTS Wasm": {
+    "prefix": "ngwasm",
+    "body": [
+      "<${1:section} ng-wasm=\"${2:./main.wasm}\">$0</${1:section}>"
+    ],
+    "description": "AngularTS ng-wasm binding"
+  }
+}

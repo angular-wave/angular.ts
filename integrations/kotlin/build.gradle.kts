@@ -26,7 +26,7 @@ kotlin {
     sourceSets {
         val jsMain by getting {
             dependencies {
-                implementation(npm("@angular-wave/angular.ts", "file:../.."))
+                implementation(npm("@angular-wave/angular.ts", "file:../../../../../.."))
             }
         }
 

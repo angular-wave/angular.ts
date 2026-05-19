@@ -1,0 +1,143 @@
+{
+  "name": "angular-ts-vscode",
+  "displayName": "AngularTS",
+  "description": "VS Code language support for AngularTS templates, directives, components, filters, and dependency injection.",
+  "version": "0.0.1",
+  "publisher": "angular-wave",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "angular.ts",
+    "angularts",
+    "angularjs",
+    "templates",
+    "html",
+    "directives"
+  ],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact",
+    "onCommand:angularTs.restartLanguageServer",
+    "onCommand:angularTs.showIndex",
+    "onCommand:angularTs.rebuildIndex"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "angularTs.restartLanguageServer",
+        "title": "AngularTS: Restart Language Server"
+      },
+      {
+        "command": "angularTs.showIndex",
+        "title": "AngularTS: Show Index"
+      },
+      {
+        "command": "angularTs.rebuildIndex",
+        "title": "AngularTS: Rebuild Index"
+      },
+      {
+        "command": "angularTs.findUsage",
+        "title": "AngularTS: Find Usage"
+      },
+      {
+        "command": "angularTs.createComponent",
+        "title": "AngularTS: Create Component"
+      }
+    ],
+    "configuration": {
+      "title": "AngularTS",
+      "properties": {
+        "angularTs.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AngularTS editor support."
+        },
+        "angularTs.inlineTemplates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AngularTS support inside JavaScript and TypeScript inline template strings."
+        },
+        "angularTs.diagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AngularTS template and dependency-injection diagnostics."
+        },
+        "angularTs.projectConfig": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Optional path to an AngularTS project configuration file."
+        },
+        "angularTs.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace AngularTS language-service activity."
+        },
+        "angularTs.includeAngularJsCompatibility": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include compatibility completions for AngularJS-era syntax not documented by AngularTS."
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "typescript",
+        "path": "./snippets/angular-ts.code-snippets"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/angular-ts.code-snippets"
+      },
+      {
+        "language": "html",
+        "path": "./snippets/angular-ts-html.code-snippets"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "angularTs.createComponent",
+          "group": "navigation@90"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "angularTs.createComponent",
+          "group": "navigation@90"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json",
+    "test": "npm run build && node --test out/test/*.test.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.2",
+    "typescript": "^5.8.0"
+  }
+}

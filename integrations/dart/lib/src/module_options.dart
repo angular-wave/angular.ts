@@ -6,7 +6,7 @@ import 'token.dart';
 import 'unsafe.dart' as unsafe;
 
 /// Router state declaration.
-final class StateDeclaration {
+final class StateDeclaration implements unsafe.JsConvertible {
   /// Creates a state declaration.
   const StateDeclaration({
     required this.name,
@@ -83,9 +83,9 @@ final class StateDeclaration {
   /// The resolve.
   final Object? resolve;
 
-  /// The to js object.
-  JSObject toJsObject() {
-    return unsafe.object({
+  /// The to map.
+  Map<String, Object?> toMap() {
+    return {
       'name': name,
       if (abstractState != null) 'abstract': abstractState,
       if (parent != null) 'parent': _stateValueToJs(parent),
@@ -104,8 +104,14 @@ final class StateDeclaration {
       if (controller != null) 'controller': _injectableValueToJs(controller),
       if (templateUrl != null) 'templateUrl': templateUrl,
       if (resolve != null) 'resolve': _resolveToJs(resolve),
-    });
+    };
   }
+
+  /// The to js object.
+  JSObject toJsObject() => unsafe.object(toMap());
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 
   Object? _viewsToJs() {
     return {
@@ -148,7 +154,7 @@ Object? _injectableValueToJs(Object? value) {
 }
 
 /// WebAssembly injectable registration options.
-final class WasmRegistration {
+final class WasmRegistration implements unsafe.JsConvertible {
   /// Creates a wasm registration.
   const WasmRegistration({
     required this.source,
@@ -171,6 +177,9 @@ final class WasmRegistration {
       if (raw) 'raw': raw,
     });
   }
+
+  @override
+  JSAny? toJsValue() => toOptionsObject();
 }
 
 /// Web Worker injectable registration options.
@@ -268,7 +277,7 @@ final class WebTransportRegistration {
 }
 
 /// Provider registration.
-final class ProviderRegistration<TValue> {
+final class ProviderRegistration<TValue> implements unsafe.JsConvertible {
   /// Creates a provider registration.
   const ProviderRegistration(this.get);
 
@@ -279,33 +288,45 @@ final class ProviderRegistration<TValue> {
   JSObject toJsObject() {
     return unsafe.object({'$get': get.toAnnotatedArray()});
   }
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 }
 
 /// Decorator registration.
-final class DecoratorRegistration<TValue> {
+final class DecoratorRegistration<TValue> implements unsafe.JsConvertible {
   /// Creates a decorator registration.
   const DecoratorRegistration(this.decorator);
 
   /// The decorator.
   final InjectableFactory<TValue> decorator;
+
+  @override
+  JSAny? toJsValue() => decorator.toAnnotatedArray();
 }
 
 /// Filter registration.
-final class FilterRegistration<TValue> {
+final class FilterRegistration<TValue> implements unsafe.JsConvertible {
   /// Creates a filter registration.
   const FilterRegistration(this.factory);
 
   /// The factory.
   final InjectableFactory<TValue> factory;
+
+  @override
+  JSAny? toJsValue() => factory.toAnnotatedArray();
 }
 
 /// Animation registration.
-final class AnimationRegistration<TValue> {
+final class AnimationRegistration<TValue> implements unsafe.JsConvertible {
   /// Creates a animation registration.
   const AnimationRegistration(this.factory);
 
   /// The factory.
   final InjectableFactory<TValue> factory;
+
+  @override
+  JSAny? toJsValue() => factory.toAnnotatedArray();
 }
 
 /// Typed module config/run block.

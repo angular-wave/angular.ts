@@ -108,6 +108,19 @@ void main() {
     final ariaServiceRaw = JSObject()
       ..setProperty('config'.toJS, ((JSAny? _) => true.toJS).toJS);
     final ariaService = ng.AriaService(ariaServiceRaw);
+    Object? observedAttribute;
+    var observerRemoved = false;
+    final attributesRaw = JSObject()
+      ..setProperty(
+        r'$observe'.toJS,
+        ((JSAny? _, JSAny? callback) {
+          (callback as JSFunction).callAsFunction(null, 'initial'.toJS);
+          return (() {
+            observerRemoved = true;
+          }).toJS;
+        }).toJS,
+      );
+    final attributes = ng.Attributes(attributesRaw);
     final cookieProviderRaw = JSObject();
     final cookieProvider = ng.CookieProvider(cookieProviderRaw);
     final interpolateProviderRaw = JSObject()
@@ -139,23 +152,23 @@ void main() {
     final httpRaw = JSObject()
       ..setProperty('defaults'.toJS, JSObject())
       ..setProperty('pendingRequests'.toJS, <JSObject>[].toJS)
-      ..setProperty('get'.toJS, ((JSAny? _, [JSAny? __]) => 'get'.toJS).toJS)
+      ..setProperty('get'.toJS, ((JSAny? _, [JSAny? __]) => promise()).toJS)
       ..setProperty(
         'delete'.toJS,
-        ((JSAny? _, [JSAny? __]) => 'delete'.toJS).toJS,
+        ((JSAny? _, [JSAny? __]) => promise()).toJS,
       )
-      ..setProperty('head'.toJS, ((JSAny? _, [JSAny? __]) => 'head'.toJS).toJS)
+      ..setProperty('head'.toJS, ((JSAny? _, [JSAny? __]) => promise()).toJS)
       ..setProperty(
         'post'.toJS,
-        ((JSAny? _, JSAny? __, [JSAny? ___]) => 'post'.toJS).toJS,
+        ((JSAny? _, JSAny? __, [JSAny? ___]) => promise()).toJS,
       )
       ..setProperty(
         'put'.toJS,
-        ((JSAny? _, JSAny? __, [JSAny? ___]) => 'put'.toJS).toJS,
+        ((JSAny? _, JSAny? __, [JSAny? ___]) => promise()).toJS,
       )
       ..setProperty(
         'patch'.toJS,
-        ((JSAny? _, JSAny? __, [JSAny? ___]) => 'patch'.toJS).toJS,
+        ((JSAny? _, JSAny? __, [JSAny? ___]) => promise()).toJS,
       );
     final http = ng.HttpService(httpRaw);
     final provideRaw = JSObject();
@@ -276,7 +289,7 @@ void main() {
         ((JSAny? _, [JSAny? __, JSAny? ___]) => JSObject()).toJS,
       );
     final webComponentService = ng.WebComponentService(webComponentServiceRaw);
-    final wasmRaw = ((JSAny? src, [JSAny? _, JSAny? __]) => src).toJS;
+    final wasmRaw = ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS;
     (wasmRaw as JSObject)
       ..setProperty('scope'.toJS, ((JSAny? scope, [JSAny? _]) => scope).toJS)
       ..setProperty(
@@ -309,9 +322,11 @@ void main() {
       ..setProperty(r'$get'.toJS, <JSAny?>[].toJS)
       ..setProperty('state'.toJS, ((JSAny? _, [JSAny? __]) => null).toJS)
       ..setProperty('lazy'.toJS, ((JSAny? _, JSAny? __) => null).toJS)
-      ..setProperty('reload'.toJS, (([JSAny? _]) => 'reload'.toJS).toJS)
+      ..setProperty('reload'.toJS, (([JSAny? _]) => promise()).toJS)
       ..setProperty(
-          'go'.toJS, ((JSAny? _, [JSAny? __, JSAny? ___]) => 'go'.toJS).toJS)
+        'go'.toJS,
+        ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS,
+      )
       ..setProperty(
         'target'.toJS,
         ((JSAny? _, [JSAny? __, JSAny? ___]) => JSObject()).toJS,
@@ -319,7 +334,7 @@ void main() {
       ..setProperty('getCurrentPath'.toJS, (() => <JSAny?>[].toJS).toJS)
       ..setProperty(
         'transitionTo'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => 'transition'.toJS).toJS,
+        ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS,
       )
       ..setProperty(
           'is'.toJS, ((JSAny? _, [JSAny? __, JSAny? ___]) => true.toJS).toJS)
@@ -518,6 +533,13 @@ void main() {
     anchorService.yOffset = 24;
     expect(anchorService.yOffset, isNotNull);
     expect(ariaService.config('ariaHidden'), isTrue);
+    final removeAttributeObserver = attributes.$observe('title', (value) {
+      observedAttribute = value;
+      return null;
+    });
+    expect(observedAttribute, 'initial');
+    removeAttributeObserver();
+    expect(observerRemoved, isTrue);
     cookieProvider.defaults = const ng.CookieOptions(path: '/app');
     expect(cookieProvider.defaults, isNotNull);
     expect(interpolateProvider.startSymbol, '{{');

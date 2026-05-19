@@ -153,7 +153,7 @@ typedef WebComponentAttributeChanged<TScope> = void Function(
 typedef WebComponentScopeFactory<TScope> = TScope Function();
 
 /// Represents element scope options.
-final class ElementScopeOptions {
+final class ElementScopeOptions implements unsafe.JsConvertible {
   /// Creates a element scope options.
   const ElementScopeOptions({
     this.parentScope,
@@ -173,6 +173,9 @@ final class ElementScopeOptions {
       if (isolate) 'isolate': isolate,
     });
   }
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 }
 
 /// Typed DOM event emitted from an AngularTS-backed custom element.
@@ -232,7 +235,7 @@ final class WebComponentContext<TScope> {
 }
 
 /// AngularTS web component configuration.
-final class WebComponent<TScope> {
+final class WebComponent<TScope> implements unsafe.JsConvertible {
   /// Creates a web component.
   const WebComponent({
     this.template,
@@ -284,6 +287,9 @@ final class WebComponent<TScope> {
         'attributeChanged': unsafe.JsValue(_attributeChangedFunction()),
     });
   }
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 
   Object? _scopeToJs() {
     final scope = this.scope;

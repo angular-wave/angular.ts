@@ -27,17 +27,24 @@ Handwritten ergonomic coverage:
   generated member shape is compatible. Members with stronger Dart signatures
   remain handwritten and are listed in `tool/generator-overrides.json`.
   Platform type mappings, such as DOM and stream objects from `package:web`,
+  and narrow parameter mappings, such as generated `Scope<Object?>` arguments,
   also live in `tool/generator-overrides.json`.
   `tool/check_generated_base_usage.mjs` fails when a handwritten facade bypasses
   an available generated base, and `tool/check_manual_overrides.mjs` fails when
-  an explicit manual member override has no handwritten Dart member.
+  an explicit manual member override has no handwritten Dart member. Current
+  member parity is fully generated, with no manual or unsupported overrides.
 
 Parity checks:
 
 - Type parity: `tool/check_ng_namespace_parity.dart`.
 - Member parity: `tool/check_ng_namespace_members.mjs`.
 - Manual override integrity: `tool/check_manual_overrides.mjs`.
-- Type override integrity: stale `types` entries fail member parity.
+- Manual and unsupported member overrides must be explicit member names; broad
+  `Type.*` entries are rejected by member parity.
+- Override metadata integrity: unknown, incorrectly shaped, malformed,
+  unsorted, invalid rename, and empty sections fail member parity.
+- Type override integrity: stale `types` and `parameterTypes` entries fail
+  member parity.
 - Generated-base inheritance: `tool/check_generated_base_usage.mjs`.
 - Full contract: `make check`.
 
@@ -130,7 +137,6 @@ handwritten ergonomic coverage is still incomplete for several services:
 - Runtime validation for typed `require` relationships.
 - Runtime validation for typed transclusion.
 - Runtime validation for directive compile/pre/post-link shapes.
-- Full attribute helper methods on `Attributes`.
 - Template URL and template request behavior.
 
 ## Missing Integration Quality

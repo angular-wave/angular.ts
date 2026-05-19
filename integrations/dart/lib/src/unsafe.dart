@@ -7,10 +7,11 @@ import 'dart:js_interop_unsafe';
 /// and convert only at the AngularTS runtime boundary.
 JSAny? dartToJs(Object? value) {
   if (value == null) return null;
+  if (value is JsValue) return value.value;
+  if (value is JsConvertible) return value.toJsValue();
   // JS interop values are already valid runtime-boundary values.
   // ignore: invalid_runtime_check_with_js_interop_types
   if (value is JSAny) return value;
-  if (value is JsValue) return value.value;
   if (value is String) return value.toJS;
   if (value is int) return value.toJS;
   if (value is double) return value.toJS;
@@ -22,6 +23,12 @@ JSAny? dartToJs(Object? value) {
   if (value is Map<String, Object?>) return object(value);
 
   return value.toJSBox;
+}
+
+/// Internal hook for Dart wrappers that can expose their raw JavaScript value.
+abstract interface class JsConvertible {
+  /// Converts the wrapper to a JavaScript interop value.
+  JSAny? toJsValue();
 }
 
 /// Represents js value.

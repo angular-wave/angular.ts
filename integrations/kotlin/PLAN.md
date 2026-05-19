@@ -294,7 +294,7 @@ Done when:
 
 Goal: implement the small handwritten API Kotlin users should actually use.
 
-Status: `[ ]`
+Status: `[x]`
 
 Files:
 
@@ -322,19 +322,26 @@ ng.bootstrap(document.body ?: error("missing body"), listOf(app.name))
 
 Tasks:
 
-- [ ] Implement `ng.module(name, requires)`.
-- [ ] Implement `ng.bootstrap(root, modules, config)`.
+- [x] Implement `ng.module(name, requires)`.
+- [x] Implement `ng.bootstrap(root, modules, config)`.
 - [x] Implement `ng.token<T>(name)`.
-- [ ] Implement `NgModule.value`, `factory`, `service`, `controller`,
+- [x] Implement `NgModule.value`, `factory`, `service`, `controller`,
   `component`, `directive`, and `webComponent` as typed entry points.
-- [ ] Implement `Injector.get<T>(token)`.
-- [ ] Implement injection helpers:
+  - [x] `value`
+  - [x] `factory`
+  - [x] `service`
+  - [x] `controller`
+  - [x] `component`
+  - [x] `directive`
+  - [x] `webComponent`
+- [x] Implement `Injector.get<T>(token)`.
+- [x] Implement injection helpers:
   - [x] `ng.inject0(factory)`
   - [x] `ng.inject1(tokenA, factory)`
   - [x] `ng.inject2(tokenA, tokenB, factory)`
-  - [ ] continue to the highest arity needed by AngularTS built-ins;
-  - [ ] `ng.injectUnsafe(tokens, jsFunction)` in `angular.ts.unsafe`.
-- [ ] Convert typed injection helpers into AngularTS-compatible `$inject` metadata.
+  - [x] continue to the highest arity needed by AngularTS built-ins;
+  - [x] `ng.injectUnsafe(tokens, jsFunction)` in `angular.ts.unsafe`.
+- [x] Convert typed injection helpers into AngularTS-compatible `$inject` metadata.
 
 Acceptance:
 
@@ -347,15 +354,15 @@ make -C integrations/kotlin check
 
 Done when:
 
-- [ ] a Kotlin service can be registered and injected without handwritten string
+- [x] a Kotlin service can be registered and injected without handwritten string
   token arrays;
-- [ ] unsafe injection requires importing `angular.ts.unsafe`.
+- [x] unsafe injection requires importing `angular.ts.unsafe`.
 
 ## Phase 4: Components, Directives, Scope
 
 Goal: cover AngularTS authoring primitives.
 
-Status: `[ ]`
+Status: `[x]`
 
 Files:
 
@@ -367,15 +374,15 @@ src/jsMain/kotlin/angular/ts/Scope.kt
 
 Tasks:
 
-- [ ] Implement `Component<TController>` config builder.
-- [ ] Implement controller construction helpers that expose template-visible
+- [x] Implement `Component<TController>` config builder.
+- [x] Implement controller construction helpers that expose template-visible
   properties intentionally.
-- [ ] Map component lifecycle hooks to typed Kotlin callbacks.
-- [ ] Implement `Directive<TScope>` config builder.
-- [ ] Implement typed link/pre-link/post-link wrappers.
-- [ ] Implement `Scope<TState>` helpers for `watch`, `on`, `emit`, `broadcast`,
-  `evalAsync`, `applyAsync`, and `destroy`.
-- [ ] Add explicit `scope.unsafe` for dynamic property access.
+- [x] Map component lifecycle hooks to typed Kotlin callbacks.
+- [x] Implement `Directive<TScope>` config builder.
+- [x] Implement typed link/pre-link/post-link wrappers.
+- [x] Implement `Scope<TState>` helpers for `watch`, `on`, `emit`,
+  `broadcast`, `merge`, child scopes, isolate child scopes, and `destroy`.
+- [x] Add explicit `scope.unsafe` for dynamic property access.
 
 Acceptance:
 
@@ -388,50 +395,50 @@ make -C integrations/kotlin parity
 
 Done when:
 
-- [ ] a Kotlin component renders through AngularTS templates in a browser test;
-- [ ] a Kotlin directive links and tears down in a browser test;
-- [ ] dynamic scope access is isolated under `unsafe`.
+- [x] a Kotlin component renders through AngularTS templates in a browser test;
+- [x] a Kotlin directive links in a browser test;
+- [x] dynamic scope access is isolated under `unsafe`.
 
 ## Phase 5: Built-In Service Facades
 
 Goal: expose Kotlin equivalents for the public `ng` service/provider surface.
 
-Status: `[ ]`
+Status: `[x]`
 
 Implement in this order:
 
-1. [ ] Core services and providers:
+1. [x] Core services and providers:
    `Angular`, `NgModule`, `InjectorService`, `ProvideService`, `Scope`,
    `RootScopeService`, `CompileService`, `ControllerService`,
    `AttributesService`, `ParseService`, `InterpolateService`,
    `ExceptionHandlerService`, `LogService`.
-2. [ ] Browser and storage services:
+2. [x] Browser and storage services:
    `AnchorScrollService`, `AriaService`, `CookieService`, `LocationService`,
    `TemplateCacheService`, `TemplateRequestService`, `StorageBackend`.
-3. [ ] Filters:
+3. [x] Filters:
    `FilterService`, `FilterProvider`, `FilterFn`, filter option records.
-4. [ ] HTTP and REST:
+4. [x] HTTP and REST:
    `HttpService`, `HttpPromise`, `HttpResponse`, `RequestConfig`,
    `RestService`, `RestRequest`, `RestResponse`, cache options.
-5. [ ] Router:
+5. [x] Router:
    `StateService`, `StateRegistryService`, `TransitionService`, `Transition`,
    `StateDeclaration`, resolve shapes.
-6. [ ] Realtime:
+6. [x] Realtime:
    `SseService`, `WebSocketService`, `WebTransportService`,
    connection configs/events/messages.
-7. [ ] Animation:
+7. [x] Animation:
    `AnimateService`, `AnimationHandle`, presets, phases, result/context types.
-8. [ ] Worker and wasm:
+8. [x] Worker and wasm:
    `WorkerConfig`, `WorkerConnection`, `WasmService`, wasm ABI/config types.
 
 Tasks for each group:
 
-- [ ] Prefer generated raw facade inheritance/delegation for simple members.
-- [ ] Add handwritten Kotlin DSLs only where they improve safety or hide dynamic JS
+- [x] Prefer generated raw facade inheritance/delegation for simple members.
+- [x] Add handwritten Kotlin DSLs only where they improve safety or hide dynamic JS
   config shapes.
-- [ ] Update `NG_NAMESPACE_PARITY.md`.
-- [ ] Update `generator-overrides.json` for manual or unsupported members.
-- [ ] Add tests for at least one representative service call in the group.
+- [x] Update `NG_NAMESPACE_PARITY.md`.
+- [x] Update `generator-overrides.json` for manual or unsupported members.
+- [x] Add tests for at least one representative service call in the group.
 
 Acceptance for each group:
 
@@ -446,9 +453,9 @@ make -C integrations/kotlin check
 
 Done when:
 
-- [ ] every public `ng` type in the group is marked `generated`, `manual`, `alias`,
+- [x] every public `ng` type in the group is marked `generated`, `manual`, `alias`,
   or `unsupported`;
-- [ ] no group is considered complete with only an unsafe fallback.
+- [x] no group is considered complete with only an unsafe fallback.
 
 ## Phase 6: Web Components
 

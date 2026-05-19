@@ -97,7 +97,7 @@ final class SlotTransclusion extends ComponentTransclusion {
 }
 
 /// AngularTS component configuration.
-final class Component<TController> {
+final class Component<TController> implements unsafe.JsConvertible {
   /// Creates a component.
   const Component({
     required this.controller,
@@ -142,6 +142,9 @@ final class Component<TController> {
       if (require.isNotEmpty) 'require': require,
     });
   }
+
+  @override
+  JSAny? toJsValue() => toJsObject();
 
   JSObject _bindingsToJs() {
     return unsafe.object({

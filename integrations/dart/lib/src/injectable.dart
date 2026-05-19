@@ -4,7 +4,7 @@ import 'token.dart';
 import 'unsafe.dart' as unsafe;
 
 /// A typed dependency-injected factory.
-final class InjectableFactory<R> {
+final class InjectableFactory<R> implements unsafe.JsConvertible {
   const InjectableFactory._(this.tokens, this._toJsFunction);
 
   /// Dependency tokens required by this factory.
@@ -21,6 +21,9 @@ final class InjectableFactory<R> {
 
     return values.toJS;
   }
+
+  @override
+  JSAny? toJsValue() => toAnnotatedArray();
 }
 
 /// Creates an injectable factory with no dependencies.

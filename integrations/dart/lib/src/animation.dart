@@ -2,6 +2,8 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart';
 
+import 'unsafe.dart' as unsafe;
+
 /// Supported animation phase values.
 enum AnimationPhase {
   /// Invokes enter.
@@ -73,7 +75,7 @@ typedef AnimationLifecycleCallback = void Function(
 );
 
 /// Represents native animation options.
-final class NativeAnimationOptions {
+final class NativeAnimationOptions implements unsafe.JsConvertible {
   /// Creates a native animation options.
   const NativeAnimationOptions({
     this.animation,
@@ -185,6 +187,38 @@ final class NativeAnimationOptions {
 
   /// The animation timeline.
   final Object? timeline;
+
+  /// The to map.
+  Map<String, Object?> toMap() => {
+        if (animation != null) 'animation': animation,
+        if (keyframes != null) 'keyframes': keyframes,
+        if (enter != null) 'enter': enter,
+        if (leave != null) 'leave': leave,
+        if (move != null) 'move': move,
+        if (addClass != null) 'addClass': addClass,
+        if (removeClass != null) 'removeClass': removeClass,
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
+        if (tempClasses != null) 'tempClasses': tempClasses,
+        if (composite != null) 'composite': composite,
+        if (delay != null) 'delay': delay,
+        if (direction != null) 'direction': direction,
+        if (duration != null) 'duration': duration,
+        if (easing != null) 'easing': easing,
+        if (endDelay != null) 'endDelay': endDelay,
+        if (fill != null) 'fill': fill,
+        if (id != null) 'id': id,
+        if (iterationComposite != null)
+          'iterationComposite': iterationComposite,
+        if (iterationStart != null) 'iterationStart': iterationStart,
+        if (iterations != null) 'iterations': iterations,
+        if (playbackRate != null) 'playbackRate': playbackRate,
+        if (pseudoElement != null) 'pseudoElement': pseudoElement,
+        if (timeline != null) 'timeline': timeline,
+      };
+
+  @override
+  JSAny? toJsValue() => unsafe.object(toMap());
 }
 
 /// Signature for animation options.
@@ -201,7 +235,7 @@ typedef AnimationPresetHandler = AnimationResult Function(
 );
 
 /// Represents animation preset.
-final class AnimationPreset {
+final class AnimationPreset implements unsafe.JsConvertible {
   /// Creates a animation preset.
   const AnimationPreset({
     this.enter,
@@ -237,6 +271,21 @@ final class AnimationPreset {
 
   /// The options.
   final NativeAnimationOptions? options;
+
+  /// The to map.
+  Map<String, Object?> toMap() => {
+        if (enter != null) 'enter': enter,
+        if (leave != null) 'leave': leave,
+        if (move != null) 'move': move,
+        if (addClass != null) 'addClass': addClass,
+        if (removeClass != null) 'removeClass': removeClass,
+        if (setClass != null) 'setClass': setClass,
+        if (animate != null) 'animate': animate,
+        if (options != null) 'options': options,
+      };
+
+  @override
+  JSAny? toJsValue() => unsafe.object(toMap());
 }
 
 /// Handle returned by an AngularTS animation operation.
