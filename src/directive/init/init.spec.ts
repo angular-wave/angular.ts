@@ -42,20 +42,15 @@ describe("ngInit", () => {
     const element = document.createElement("div");
 
     element.setAttribute("ng-init", "value = 123");
-
     const link = directive.compile!(element, {} as any) as DirectivePrePost;
 
     const scope = {
       value: undefined,
     };
 
-    link.pre!(
-      scope as any,
+    (link.pre as (scope: unknown, element: Element) => void)(
+      scope,
       document.createElement("div"),
-      {
-        ngInit: "value = 123",
-      } as any,
-      undefined,
     );
 
     expect(parse).toHaveBeenCalledWith("value = 123");

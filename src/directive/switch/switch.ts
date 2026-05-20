@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
@@ -38,7 +39,7 @@ function fallbackWhenEmpty(
 /** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive<NgSwitchController> {
   const getAnimate = createLazyAnimate($injector);
 
@@ -50,7 +51,6 @@ export function ngSwitchDirective(
     link(
       scope: ng.Scope,
       element: Element,
-      _attr: ng.Attributes,
       ngSwitchController: NgSwitchController,
     ): void {
       const ngSwitchExpr = $attributes.read(element, "ngSwitch");
@@ -189,7 +189,7 @@ export function ngSwitchDirective(
 ngSwitchWhenDirective.$inject = [_attributes];
 
 export function ngSwitchWhenDirective(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     transclude: "element",
@@ -199,7 +199,6 @@ export function ngSwitchWhenDirective(
     link(
       scope: ng.Scope,
       element: Element,
-      _attrs: ng.Attributes,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {
@@ -237,7 +236,6 @@ export function ngSwitchDefaultDirective(): ng.Directive {
     link(
       _scope: ng.Scope,
       element: Element,
-      _attr: ng.Attributes,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {

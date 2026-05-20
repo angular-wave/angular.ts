@@ -6,12 +6,12 @@ import type {
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
 } from "./core/compile/compile.ts";
 
-export type Constructor<T = unknown> = new (...args: never[]) => T;
+type Dynamic = ReturnType<typeof JSON.parse>;
+
+export type Constructor<T = unknown> = new (...args: Dynamic[]) => T;
 
 export const PublicInjectionTokens = {
   $angular: "$angular",
-  $attrs: "$attrs",
-  $attributes: "$attributes",
   $scope: "$scope",
   $element: "$element",
   $anchorScroll: "$anchorScroll",
@@ -83,13 +83,13 @@ export const PublicInjectionTokens = {
 } as const;
 
 /**
- * Public `$attrs` contract passed to directive compile/link/template hooks.
+ * Public compile-time attribute contract for directive template APIs.
  *
  * The runtime object is an internal compile facade. Public code should treat
- * `$attrs` as a normalized attribute view with observer and class helpers, not
- * as a constructible class.
+ * directive attributes as a normalized attribute view with observer and class
+ * helpers, not as a constructible class.
  */
-export interface Attributes extends Record<string, unknown> {
+export interface DirectiveAttributes extends Record<string, unknown> {
   /** Map from normalized attribute names to original DOM attribute names. */
   $attr: Record<string, string>;
 
@@ -144,14 +144,15 @@ export type ExpandoStore = Record<string, unknown>;
  * Example:
  * ['dep1', 'dep2', (dep1, dep2) => new MyController(dep1, dep2)]
  */
-export type AnnotatedFactory<TFunction extends (...args: never[]) => unknown> =
-  [...string[], TFunction];
+export type AnnotatedFactory<
+  TFunction extends (...args: Dynamic[]) => unknown,
+> = [...string[], TFunction];
 
 /**
  * A class (constructor function) that can be instantiated.
  */
 export type InjectableClass<TInstance = unknown> = new (
-  ...args: never[]
+  ...args: Dynamic[]
 ) => TInstance;
 
 /**
@@ -163,25 +164,25 @@ export type InjectableClass<TInstance = unknown> = new (
  * Parentheses are required around constructor types when used in unions.
  */
 export type FactoryFunction<T> = T extends abstract new (
-  ...args: never[]
+  ...args: Dynamic[]
 ) => unknown
   ? (...args: ConstructorParameters<T>) => InstanceType<T>
   : T;
 
 export type Injectable<
   T extends
-    | ((...args: never[]) => unknown)
-    | (abstract new (...args: never[]) => unknown),
+    | ((...args: Dynamic[]) => unknown)
+    | (abstract new (...args: Dynamic[]) => unknown),
 > =
   | AnnotatedFactory<FactoryFunction<T>>
-  | (T extends abstract new (...args: never[]) => unknown
+  | (T extends abstract new (...args: Dynamic[]) => unknown
       ? InjectableClass<InstanceType<T>>
       : never)
   | T;
 
-export type ServiceProviderClass = new (...args: never[]) => ServiceProvider;
+export type ServiceProviderClass = new (...args: Dynamic[]) => ServiceProvider;
 
-export type ServiceProviderFactory = (...args: never[]) => ServiceProvider;
+export type ServiceProviderFactory = (...args: Dynamic[]) => ServiceProvider;
 
 /**
  * An object that defines how a service is constructed.
@@ -190,16 +191,16 @@ export type ServiceProviderFactory = (...args: never[]) => ServiceProvider;
  * either as a plain factory function or as an {@link AnnotatedFactory}.
  */
 export interface ServiceProvider {
-  $get: Injectable<(...args: never[]) => unknown>;
+  $get: Injectable<(...args: Dynamic[]) => unknown>;
 }
 
 export interface AngularServiceProvider {
-  $get: (...args: never[]) => ng.AngularService;
+  $get: (...args: Dynamic[]) => ng.AngularService;
 }
 
 export type ProviderDefinition =
   | ServiceProvider
-  | Injectable<(...args: never[]) => unknown>
+  | Injectable<(...args: Dynamic[]) => unknown>
   | Injectable<Constructor>;
 
 /**
@@ -242,7 +243,7 @@ export interface Provider {
    */
   factory(
     name: string,
-    factoryFn: Injectable<(...args: never[]) => unknown>,
+    factoryFn: Injectable<(...args: Dynamic[]) => unknown>,
   ): Provider;
 
   /**
@@ -254,7 +255,7 @@ export interface Provider {
     name: string,
     constructor:
       | Injectable<Constructor>
-      | Injectable<(...args: never[]) => unknown>,
+      | Injectable<(...args: Dynamic[]) => unknown>,
   ): Provider;
 
   /**
@@ -278,7 +279,7 @@ export interface Provider {
    */
   decorator(
     name: string,
-    fn: Injectable<(...args: never[]) => unknown>,
+    fn: Injectable<(...args: Dynamic[]) => unknown>,
   ): Provider;
 }
 
@@ -286,8 +287,8 @@ export interface Provider {
  * A controller constructor function used in AngularTS.
  */
 export type ControllerConstructor =
-  | (new (...args: never[]) => Controller)
-  | ((...args: never[]) => undefined | Controller);
+  | (new (...args: Dynamic[]) => Controller)
+  | ((...args: Dynamic[]) => undefined | Controller);
 
 /**
  * Describes the changes in component bindings during `$onChanges`.
@@ -413,8 +414,6 @@ export interface Component {
    * contents of this component. Empty string by default.
    * If template is a function, then it is injected with the following locals:
    * $element - Current element
-   * $attrs - Current attributes object for the element
-   * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
   template?: string | Injectable<(...args: never[]) => string> | undefined;
@@ -422,8 +421,6 @@ export interface Component {
    * Path or function that returns a path to an html template that should be used as the contents of this component.
    * If templateUrl is a function, then it is injected with the following locals:
    * $element - Current element
-   * $attrs - Current attributes object for the element
-   * $attributes - Element-based normalized attribute service
    * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
    */
   templateUrl?: string | Injectable<(...args: never[]) => string> | undefined;
@@ -469,15 +466,23 @@ export interface DirectivePrePost {
 /**
  * A link function executed during directive linking.
  */
-export type DirectiveLinkFn<T> = {
-  bivarianceHack(
-    scope: ng.Scope,
-    element: HTMLElement,
-    attrs: Attributes,
-    controller: TController<T>,
-    transclude?: ng.TranscludeFn,
-  ): void;
+type BivariantDirectiveLinkFn<TArgs extends unknown[]> = {
+  bivarianceHack(...args: TArgs): void;
 }["bivarianceHack"];
+
+export type DirectiveLinkFn<T> =
+  | BivariantDirectiveLinkFn<[scope: ng.Scope, element: HTMLElement]>
+  | BivariantDirectiveLinkFn<
+      [
+        scope: ng.Scope,
+        element: HTMLElement,
+        controller: TController<T>,
+        transclude?: ng.TranscludeFn,
+      ]
+    >
+  | BivariantDirectiveLinkFn<
+      [scope: ng.Scope, element: HTMLElement, transclude: ng.TranscludeFn]
+    >;
 
 /**
  * A compile function used to prepare directives before linking.
@@ -485,7 +490,7 @@ export type DirectiveLinkFn<T> = {
 export type DirectiveCompileFn = {
   bivarianceHack(
     templateElement: HTMLElement,
-    templateAttributes: Attributes & Record<string, unknown>,
+    templateAttributes: DirectiveAttributes & Record<string, unknown>,
     transclude?: ChildTranscludeOrLinkFn,
   ): undefined | DirectiveLinkFn<unknown> | DirectivePrePost;
 }["bivarianceHack"];
@@ -524,11 +529,15 @@ export interface Directive<TCtrl = unknown> {
   /** Scope configuration (`true`, `false`, or object for isolate scope) */
   scope?: boolean | Record<string, string>;
   /** Inline template */
-  template?: string | ((element: HTMLElement, attrs: Attributes) => string);
+  template?:
+    | string
+    | ((element: HTMLElement, attrs: DirectiveAttributes) => string);
   /** Template namespace (e.g., SVG, HTML) */
   templateNamespace?: string;
   /** Template URL for loading from server */
-  templateUrl?: string | ((element: HTMLElement, attrs: Attributes) => string);
+  templateUrl?:
+    | string
+    | ((element: HTMLElement, attrs: DirectiveAttributes) => string);
   /** Enables transclusion or configures named slots */
   transclude?: boolean | string | Record<string, string>;
   /** Currently only used by view directive */

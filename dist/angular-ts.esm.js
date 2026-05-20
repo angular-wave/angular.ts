@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 20, 2026 00:23:58 */
+/* Version: 0.27.0 - May 21, 2026 01:52:04 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -195,8 +195,7 @@ const UNTOUCHED_CLASS = "ng-untouched";
 const TOUCHED_CLASS = "ng-touched";
 const EMPTY_CLASS = "ng-empty";
 const NOT_EMPTY_CLASS = "ng-not-empty";
-// x prefix is being kept for view-directive.spec lines 1550, 565
-const PREFIX_REGEXP = /^((?:x|data)[-])/i;
+const PREFIX_REGEXP = /^(?:data-)/i;
 const SPECIAL_CHARS_REGEXP = /[-]+(.)/g;
 const ALIASED_ATTR = {
     ngMinlength: "minlength",
@@ -2469,195 +2468,6 @@ function isInjectable(val) {
     return isFunction(val);
 }
 
-let eventBusInstance;
-/**
- * Configurable provider for the application-wide {@link PubSub} event bus.
- *
- * The provider creates the singleton `$eventBus` service and also exposes it on
- * the global Angular service for integrations that publish from outside
- * dependency injection.
- */
-class PubSubProvider {
-    constructor($exceptionHandler, angularProvider) {
-        this.$get = () => this.eventBus;
-        this.eventBus = eventBusInstance =
-            eventBusInstance ?? new PubSub($exceptionHandler.handler);
-        angularProvider.$get().$eventBus = this.eventBus;
-    }
-}
-PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
-/**
- * Creates a small domain-specific facade around the application event bus.
- *
- * `createTopicService(eventBus, "tasks").publish("saved", task)` maps to
- * `$eventBus.publish("tasks:saved", task)`.
- */
-function createTopicService(eventBus, topic) {
-    const eventName = (event) => (event ? `${topic}:${event}` : topic);
-    return {
-        topic,
-        publish(event, ...args) {
-            return eventBus.publish(eventName(event), ...args);
-        },
-        subscribe(event, fn, context) {
-            return eventBus.subscribe(eventName(event), fn, context);
-        },
-        subscribeOnce(event, fn, context) {
-            return eventBus.subscribeOnce(eventName(event), fn, context);
-        },
-        getCount(event) {
-            return eventBus.getCount(eventName(event));
-        },
-    };
-}
-class PubSub {
-    /**
-     * Create a publish/subscribe event bus.
-     *
-     * Applications usually receive the singleton instance by injecting
-     * `$eventBus` instead of constructing this class directly.
-     *
-     * @param $exceptionHandler - Handler invoked when a subscriber throws.
-     */
-    constructor($exceptionHandler) {
-        this._topics = nullObject();
-        this._disposed = false;
-        this._exceptionHandler = $exceptionHandler;
-    }
-    /**
-     * Reset the bus to its initial state without disposing it.
-     *
-     * All topics and listeners are removed, and the instance can be reused.
-     */
-    reset() {
-        this._topics = nullObject();
-        this._disposed = false;
-    }
-    /**
-     * Checks if instance has been disposed.
-     * @returns True if disposed.
-     */
-    isDisposed() {
-        return this._disposed;
-    }
-    /**
-     * Dispose the instance, removing all topics and listeners.
-     */
-    dispose() {
-        if (this._disposed)
-            return;
-        this._disposed = true;
-        this._topics = nullObject();
-    }
-    /**
-     * Subscribe a function to a topic.
-     *
-     * The returned function removes only this listener registration.
-     *
-     * @param topic - The topic to subscribe to.
-     * @param fn - The callback function to invoke when published.
-     * @param [context] - Optional `this` context for the callback.
-     * @returns A function that unsubscribes this listener.
-     */
-    subscribe(topic, fn, context) {
-        if (this._disposed)
-            return () => false;
-        let listeners = this._topics[topic];
-        if (!listeners)
-            this._topics[topic] = listeners = [];
-        const entry = { _fn: fn, _context: context };
-        listeners.push(entry);
-        return () => this.unsubscribe(topic, fn, context);
-    }
-    /**
-     * Subscribe a function to a topic only once.
-     *
-     * Listener is removed before the first invocation.
-     *
-     * @param topic - The topic to subscribe to.
-     * @param fn - The callback function.
-     * @param [context] - Optional `this` context for the callback.
-     * @returns A function that unsubscribes this listener.
-     */
-    subscribeOnce(topic, fn, context) {
-        if (this._disposed)
-            return () => false;
-        let called = false;
-        const wrapper = (...args) => {
-            if (called)
-                return;
-            called = true;
-            unsub(); // unsubscribe before running
-            Reflect.apply(fn, context, args);
-        };
-        const unsub = this.subscribe(topic, wrapper);
-        return unsub;
-    }
-    /**
-     * Unsubscribe a specific function from a topic.
-     * Matches by function reference and optional context.
-     * @param topic - The topic to unsubscribe from.
-     * @param fn - The listener function.
-     * @param [context] - Optional `this` context.
-     * @returns True if the listener was found and removed.
-     */
-    unsubscribe(topic, fn, context) {
-        if (this._disposed)
-            return false;
-        const listeners = this._topics[topic];
-        if (!listeners || listeners.length === 0)
-            return false;
-        for (let i = 0; i < listeners.length; i++) {
-            const l = listeners[i];
-            if (l._fn === fn && l._context === context) {
-                listeners.splice(i, 1);
-                return true;
-            }
-        }
-        return false;
-    }
-    /**
-     * Get the number of subscribers for a topic.
-     *
-     * @param topic - Topic name to inspect.
-     * @returns The number of currently registered listeners.
-     */
-    getCount(topic) {
-        const listeners = this._topics[topic];
-        return listeners ? listeners.length : 0;
-    }
-    /**
-     * Publish a value to a topic asynchronously.
-     *
-     * All listeners are invoked in the order they were added.
-     * Delivery is scheduled with `queueMicrotask`.
-     *
-     * @param topic - The topic to publish.
-     * @param args - Arguments to pass to listeners.
-     * @returns True if any listeners exist for this topic.
-     */
-    publish(topic, ...args) {
-        if (this._disposed)
-            return false;
-        const listeners = this._topics[topic];
-        if (!listeners || listeners.length === 0)
-            return false;
-        // snapshot to prevent modifications during publish from affecting this call
-        const snapshot = listeners.slice();
-        queueMicrotask(() => {
-            for (const { _fn: fn, _context: context } of snapshot) {
-                try {
-                    fn.apply(context, args);
-                }
-                catch (err) {
-                    this._exceptionHandler(err);
-                }
-            }
-        });
-        return true;
-    }
-}
-
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
@@ -3050,32 +2860,6 @@ class NgModule {
         this._runBlocks.push([
             _webComponent,
             ($webComponent) => $webComponent.defineElement(name, elementClass),
-        ]);
-        return this;
-    }
-    /**
-     * Register a topic-bound event bus facade as an injectable service.
-     *
-     * Events published through the facade are namespaced as `${topic}:${event}`,
-     * keeping raw event-bus topic strings out of application services.
-     *
-     * @param {string} name - Injectable name.
-     * @param {string} topic - Base event-bus topic prefix.
-     * @returns {NgModule}
-     */
-    topic(name, topic) {
-        validate(isString, name, "name");
-        validate(isString, topic, "topic");
-        this._invokeQueue.push([
-            _provide,
-            "factory",
-            [
-                name,
-                [
-                    _eventBus,
-                    ($eventBus) => createTopicService($eventBus, topic),
-                ],
-            ],
         ]);
         return this;
     }
@@ -6968,11 +6752,11 @@ function getLazyAnimate($injector) {
     }
     return getAnimate;
 }
-class Attributes {
+class CompileAttributes {
     constructor($injector, $exceptionHandler, node, attributesToCopy) {
         /**
-         * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
-         * `data-`) to its normalized, camelCase form.
+         * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
+         * normalized, camelCase form.
          *
          * Also there is special case for Moz prefix starting with upper case letter.
          *
@@ -7119,7 +6903,7 @@ class Attributes {
                 }
             }
             else {
-                Attributes._setSpecialAttr(elem, attrName, value);
+                CompileAttributes._setSpecialAttr(elem, attrName, value);
             }
         }
         const { _observers } = this;
@@ -7157,7 +6941,7 @@ class Attributes {
         element.attributes.setNamedItem(attribute);
     }
 }
-Attributes.$nonscope = true;
+CompileAttributes.$nonscope = true;
 /**
  * Splits a space-separated class string into normalized tokens.
  *
@@ -7440,21 +7224,13 @@ class CompileProvider {
          *      Empty string by default.
          *
          *      If `template` is a function, then it is {injected} with
-         *      the following locals:
-         *
-         *      - `$element` - Current element
-         *      - `$attrs` - Current attributes object for the element
-         *      - `$attributes` - Element-based normalized attribute service
+         *      the current element local.
          *
          *    - `templateUrl` – `{string=|function()=}` – path or function that returns a path to an html
          *      template that should be used  as the contents of this component.
          *
          *      If `templateUrl` is a function, then it is {injected} with
-         *      the following locals:
-         *
-         *      - `$element` - Current element
-         *      - `$attrs` - Current attributes object for the element
-         *      - `$attributes` - Element-based normalized attribute service
+         *      the current element local.
          *
          *    - `bindings` – `{object=}` – defines bindings between DOM attributes and component properties.
          *      Component properties are always bound to the component controller and not to the scope.
@@ -8084,7 +7860,7 @@ class CompileProvider {
                     }
                 }
                 function createEmptyAttributes() {
-                    return new Attributes($injector, $exceptionHandler);
+                    return new CompileAttributes($injector, $exceptionHandler);
                 }
                 /**
                  * Plans a template node list and returns the executor used during linking.
@@ -8441,14 +8217,20 @@ class CompileProvider {
                     });
                 }
                 /** Invokes a link record with consistent scope selection and argument ordering. */
-                function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, attrs, controllers, transcludeFn) {
+                function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, controllers, transcludeFn) {
+                    const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
+                    const linkTailArgs = linkFnRecord._require
+                        ? [controllers, transcludeFn]
+                        : transcludeFn
+                            ? [transcludeFn]
+                            : [];
                     if (linkFnRecord._linkCtx !== undefined) {
-                        return linkFnRecord._fn(linkFnRecord._linkCtx, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                        return linkFnRecord._fn(linkFnRecord._linkCtx, linkScope, node, ...linkTailArgs);
                     }
                     if (linkFnRecord._thisArg !== undefined) {
-                        return linkFnRecord._fn.call(linkFnRecord._thisArg, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                        return linkFnRecord._fn.call(linkFnRecord._thisArg, linkScope, node, ...linkTailArgs);
                     }
-                    return linkFnRecord._fn(linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                    return linkFnRecord._fn(linkScope, node, ...linkTailArgs);
                 }
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
@@ -8537,7 +8319,8 @@ class CompileProvider {
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
-                function attrInterpolatePreLinkFn(linkState, scope, _element, attr) {
+                function attrInterpolatePreLinkFn(linkState, scope, _element) {
+                    const attr = assertDefined(linkState._attr);
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const attrsAny = attr;
                     const name = linkState._name;
@@ -8594,7 +8377,8 @@ class CompileProvider {
                  * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
                  * but the compile-time getter/sanitizer wiring is now reused.
                  */
-                function propertyDirectivePreLinkFn(linkState, scope, $element, attr) {
+                function propertyDirectivePreLinkFn(linkState, scope, $element) {
+                    const attr = linkState._attr;
                     const attrsAny = attr;
                     const bindingState = {
                         _linkState: linkState,
@@ -8853,7 +8637,7 @@ class CompileProvider {
                     let scopeBindingInfo;
                     const attrs = nodeLinkState._compileNode === linkNode
                         ? nodeLinkState._templateAttrs
-                        : new Attributes($injector, $exceptionHandler, elementNode, nodeLinkState._templateAttrs);
+                        : new CompileAttributes($injector, $exceptionHandler, elementNode, nodeLinkState._templateAttrs);
                     const element = elementNode.nodeType === NodeType._ELEMENT_NODE
                         ? elementNode
                         : undefined;
@@ -8957,7 +8741,7 @@ class CompileProvider {
                         const controllers = preLinkFn._require &&
                             getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
                         try {
-                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -8983,7 +8767,7 @@ class CompileProvider {
                                 deleteCacheData(element, _scope);
                                 setIsolateScope(element, isolateScope);
                             }
-                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -9972,6 +9756,7 @@ class CompileProvider {
                             _propName: compileState._propName,
                             _ngPropGetter: $parse(stringify$1(attr[compileState._attrName] ?? "")),
                             _sanitizer: compileState._sanitizer,
+                            _attr: attr,
                         },
                     };
                 }
@@ -10011,10 +9796,13 @@ class CompileProvider {
                     return true;
                 }
                 /** Shared compile function for synthetic interpolated-attribute directives. */
-                function compileAttrInterpolateDirective() {
+                function compileAttrInterpolateDirective(_element, attr) {
                     return {
                         pre: attrInterpolatePreLinkFn,
-                        _preLinkCtx: this._compileState,
+                        _preLinkCtx: {
+                            ...this._compileState,
+                            _attr: attr,
+                        },
                     };
                 }
                 /** Enforces strict component binding requirements for required attributes. */
@@ -13862,11 +13650,11 @@ function ngModelAriaDirective($aria, $attributes) {
                 return undefined;
             const shape = getShape(compileElement);
             return {
-                post(scope, elem, attrPost, ngModel) {
+                post(scope, elem, ngModel) {
                     const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                     function getRadioReaction() {
                         // Strict comparison would cause a BC
-                        elem.setAttribute("aria-checked", (attrPost.value == ngModel.$viewValue).toString());
+                        elem.setAttribute("aria-checked", ($attributes.read(elem, "value") == ngModel.$viewValue).toString());
                     }
                     function getCheckboxReaction() {
                         elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());
@@ -14014,8 +13802,10 @@ BOOLEAN_ATTR.forEach((i) => {
             return {
                 restrict: "A",
                 priority: 100,
-                link(scope, element, attr) {
-                    linkFn($attributes, scope, element, attr);
+                compile(_element, attr) {
+                    return (scope, element) => {
+                        linkFn($attributes, scope, element, attr);
+                    };
                 },
             };
         },
@@ -14028,20 +13818,22 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         function ($attributes) {
             return {
                 priority: 100,
-                link(scope, element, attr) {
+                compile(_element, attr) {
                     // special case ngPattern when a literal regular expression value
                     // is used as the expression (this way we don't have to watch anything).
                     const { ngPattern } = attr;
                     if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
                         const match = REGEX_STRING_REGEXP.exec(ngPattern);
                         if (match) {
-                            $attributes.set(element, "ngPattern", new RegExp(match[1], match[2]).toString());
+                            $attributes.set(_element, "ngPattern", new RegExp(match[1], match[2]).toString());
                             return;
                         }
                     }
-                    scope.$watch(attr[ngAttr] ?? "", (value) => {
-                        $attributes.set(element, ngAttr, value);
-                    });
+                    return (scope, element) => {
+                        scope.$watch(attr[ngAttr] ?? "", (value) => {
+                            $attributes.set(element, ngAttr, value);
+                        });
+                    };
                 },
             };
         },
@@ -14057,76 +13849,79 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         function ($sce, $attributes) {
             return {
                 priority: 99, // it needs to run after the attributes are interpolated
-                link(scope, element, attr) {
-                    const nodeName = getNodeName$1(element);
-                    if (attrName === "srcset") {
-                        const originalAttrName = attr.$attr[normalized];
-                        if (originalAttrName) {
-                            element.removeAttribute(originalAttrName);
-                        }
-                    }
-                    function sanitize(value) {
-                        if (isNullOrUndefined(value)) {
-                            return value;
-                        }
-                        const stringValue = stringify$1(value);
-                        if (stringValue.startsWith("unsafe:")) {
-                            return stringValue;
-                        }
-                        if (attrName === "src" &&
-                            !["img", "video", "audio", "source", "track"].includes(nodeName)) {
-                            return $sce.getTrustedResourceUrl(stringValue);
-                        }
-                        if (attrName === "href" && nodeName !== "image") {
-                            return $sce.getTrustedUrl(stringValue);
-                        }
-                        return $sce.getTrustedMediaUrl(stringValue);
-                    }
-                    function readAliasValue() {
-                        const elementValue = $attributes.read(element, normalized);
-                        const attrValue = attr[normalized];
-                        if (attrValue &&
-                            (isNullOrUndefined(elementValue) || elementValue.includes("{{"))) {
-                            return attrValue;
-                        }
-                        const value = elementValue ?? attrValue;
-                        return value?.includes("{{") ? undefined : value;
-                    }
-                    function syncAliasValue(value) {
-                        if (!value) {
-                            if (attrName === "href") {
-                                $attributes.set(element, attrName, null);
+                compile(_element, attr) {
+                    return (scope, element) => {
+                        const nodeName = getNodeName$1(element);
+                        if (attrName === "srcset") {
+                            const originalAttrName = attr.$attr[normalized];
+                            if (originalAttrName) {
+                                element.removeAttribute(originalAttrName);
                             }
-                            return;
                         }
-                        if (attrName === "href" ||
-                            (attrName === "src" &&
-                                ["img", "video", "audio", "source", "track"].includes(nodeName))) {
-                            $attributes.set(element, attrName, sanitize(value));
+                        function sanitize(value) {
+                            if (isNullOrUndefined(value)) {
+                                return value;
+                            }
+                            const stringValue = stringify$1(value);
+                            if (stringValue.startsWith("unsafe:")) {
+                                return stringValue;
+                            }
+                            if (attrName === "src" &&
+                                !["img", "video", "audio", "source", "track"].includes(nodeName)) {
+                                return $sce.getTrustedResourceUrl(stringValue);
+                            }
+                            if (attrName === "href" && nodeName !== "image") {
+                                return $sce.getTrustedUrl(stringValue);
+                            }
+                            return $sce.getTrustedMediaUrl(stringValue);
                         }
-                        else if (attrName === "srcset") {
-                            $attributes.set(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                        function readAliasValue() {
+                            const elementValue = $attributes.read(element, normalized);
+                            const attrValue = attr[normalized];
+                            if (attrValue &&
+                                (isNullOrUndefined(elementValue) || elementValue.includes("{{"))) {
+                                return attrValue;
+                            }
+                            const value = elementValue ?? attrValue;
+                            return value?.includes("{{") ? undefined : value;
                         }
-                        else {
-                            $attributes.set(element, attrName, value);
+                        function syncAliasValue(value) {
+                            if (!value) {
+                                if (attrName === "href") {
+                                    $attributes.set(element, attrName, null);
+                                }
+                                return;
+                            }
+                            if (attrName === "href" ||
+                                (attrName === "src" &&
+                                    ["img", "video", "audio", "source", "track"].includes(nodeName))) {
+                                $attributes.set(element, attrName, sanitize(value));
+                            }
+                            else if (attrName === "srcset") {
+                                $attributes.set(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                            }
+                            else {
+                                $attributes.set(element, attrName, value);
+                            }
                         }
-                    }
-                    // We need to sanitize the url at least once, in case it is a constant
-                    // non-interpolated attribute.
-                    const initialValue = attr[normalized];
-                    if (initialValue && !stringify$1(initialValue).includes("{{")) {
-                        $attributes.set(element, normalized, attrName === "srcset"
-                            ? sanitizeSrcset($sce, initialValue, "ng-srcset")
-                            : sanitize(initialValue));
-                    }
-                    let skipInitialInterpolation = Boolean($attributes._isInterpolated(element, normalized) || $attributes.read(element, normalized)?.includes("{{"));
-                    $attributes.observe(scope, element, normalized, () => {
-                        if (skipInitialInterpolation) {
-                            skipInitialInterpolation = false;
-                            return;
+                        // We need to sanitize the url at least once, in case it is a constant
+                        // non-interpolated attribute.
+                        const initialValue = attr[normalized];
+                        if (initialValue && !stringify$1(initialValue).includes("{{")) {
+                            $attributes.set(element, normalized, attrName === "srcset"
+                                ? sanitizeSrcset($sce, initialValue, "ng-srcset")
+                                : sanitize(initialValue));
                         }
-                        syncAliasValue(readAliasValue());
-                    });
+                        let skipInitialInterpolation = Boolean($attributes._isInterpolated(element, normalized) ||
+                            $attributes.read(element, normalized)?.includes("{{"));
+                        $attributes.observe(scope, element, normalized, () => {
+                            if (skipInitialInterpolation) {
+                                skipInitialInterpolation = false;
+                                return;
+                            }
+                            syncAliasValue(readAliasValue());
+                        });
+                    };
                 },
             };
         },
@@ -16422,11 +16217,9 @@ function createHttpDirective(method, attrName) {
         }
         return {
             restrict: "A",
-            link(scope, element, attrs) {
+            link(scope, element) {
                 const readAttr = (name) => {
-                    const value = $attributes.read(element, name);
-                    const attrValue = attrs[name];
-                    return value?.includes("{{") ? attrValue : value;
+                    return $attributes.read(element, name);
                 };
                 const hasAttr = (name) => $attributes.has(element, name);
                 const setAttr = (name, value) => {
@@ -16739,7 +16532,7 @@ function ngIfDirective($injector, $attributes) {
         priority: 600,
         terminal: true,
         restrict: "A",
-        link($scope, $element, _attr, _ctrl, $transclude) {
+        link($scope, $element, $transclude) {
             if (!$transclude) {
                 return;
             }
@@ -16830,7 +16623,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
             const autoScrollExp = $attributes.read(element, "autoscroll");
             const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
             const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
-            return (scope, $element, _$attr, ctrl, $transclude) => {
+            return (scope, $element, ctrl, $transclude) => {
                 if (!$transclude) {
                     return;
                 }
@@ -16943,7 +16736,7 @@ function ngIncludeFillContentDirective($compile) {
     return {
         priority: -400,
         require: "ngInclude",
-        link(scope, $element, _$attr, ctrl) {
+        link(scope, $element, ctrl) {
             $element.innerHTML = ctrl.template ?? "";
             $compile($element.childNodes)(scope);
         },
@@ -16980,20 +16773,16 @@ function unwrapNgModelController(ctrl) {
     }
     return ctrl;
 }
-function readInputAttr(element, attr, normalizedName) {
-    const attrValue = attr
-        ? attr[normalizedName]
-        : undefined;
+function readInputAttr(element, normalizedName) {
     const dashName = normalizedName.replace(/[A-Z]/g, (char) => {
         return `-${char.toLowerCase()}`;
     });
-    return (attrValue ??
-        element.getAttribute(`data-${dashName}`) ??
+    return (element.getAttribute(`data-${dashName}`) ??
         element.getAttribute(dashName) ??
         undefined);
 }
-function inputType(element, attr) {
-    return (readInputAttr(element, attr, "type") ??
+function inputType(element) {
+    return (readInputAttr(element, "type") ??
         (element instanceof HTMLInputElement ? element.type : "textarea")).toLowerCase();
 }
 function defaultValueKind(type) {
@@ -17164,13 +16953,13 @@ function inputDirective() {
         restrict: "E",
         require: ["?ngModel"],
         link: {
-            pre(_scope, element, attr, ctrls) {
+            pre(_scope, element, ctrls) {
                 const [model] = ctrls;
                 if (!model)
                     return;
                 const input = element;
                 const ctrl = unwrapNgModelController(model);
-                const type = inputType(input, attr);
+                const type = inputType(input);
                 const valueKind = defaultValueKind(type);
                 const updateEvent = nativeUpdateEvent(type);
                 const binding = createInputControlBinding(input, ctrl, type, valueKind, updateEvent);
@@ -18484,7 +18273,7 @@ function ngModelDirective($attributes) {
             // Setup initial state of the control
             element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
             return {
-                pre: (scope, preElement, attr, ctrls) => {
+                pre: (scope, preElement, ctrls) => {
                     const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
                     const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
                     if (optionsCtrl) {
@@ -18501,7 +18290,7 @@ function ngModelDirective($attributes) {
                     };
                     const deregisterNameObserver = $attributes
                         ? $attributes.observe(scope, preElement, "name", () => {
-                            handleNameChange(readModelAttr($attributes, preElement, attr, "name"));
+                            handleNameChange(readModelAttr($attributes, preElement, undefined, "name"));
                         })
                         : () => {
                             /* empty */
@@ -18537,7 +18326,7 @@ function ngModelDirective($attributes) {
                         deregisterWatch();
                     });
                 },
-                post: (scope, elementPost, _attr, ctrls) => {
+                post: (scope, elementPost, ctrls) => {
                     const [modelCtrl] = ctrls;
                     const { change } = elementPost.dataset;
                     const changeFn = change ? modelCtrl._parse(change) : undefined;
@@ -18746,7 +18535,7 @@ function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
     return {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
-        link($scope, element, _attrs, ngMessagesCtrl) {
+        link($scope, element, ngMessagesCtrl) {
             const src = $attributes.read(element, "ngMessagesInclude") ??
                 $attributes.read(element, "src") ??
                 "";
@@ -18798,7 +18587,7 @@ function ngMessageDirectiveFactory(isDefault) {
             priority: 1, // must run before ngBind, otherwise the text is set on the comment
             terminal: true,
             require: "^^ngMessages",
-            link: (scope, element, _attrs, ngMessagesCtrl, $transclude) => {
+            link: (scope, element, ngMessagesCtrl, $transclude) => {
                 let commentNode = element;
                 let records = null;
                 let staticExp;
@@ -19006,7 +18795,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
             },
         };
     }
-    function ngOptionsPostLink(scope, selectElement, attr, ctrls) {
+    function ngOptionsPostLink(scope, selectElement, ctrls) {
         const selectNode = selectElement;
         const [selectCtrl, ngModelCtrl] = ctrls;
         const multiple = $attributes.has(selectElement, "multiple");
@@ -19184,7 +18973,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
         terminal: true,
         require: ["select", "ngModel"],
         link: {
-            pre: function ngOptionsPreLink(_scope, _selectElement, _attr, ctrls) {
+            pre: function ngOptionsPreLink(_scope, _selectElement, ctrls) {
                 ctrls[0]._registerOption = () => {
                     /* empty */
                 };
@@ -19204,7 +18993,8 @@ function readOptionElementAttr($attributes, optionElement, optionAttrs, normaliz
     return elementValue ?? attrValue;
 }
 function hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, normalizedName) {
-    return Boolean($attributes._isInterpolated(optionElement, normalizedName) || $attributes.read(optionElement, normalizedName)?.includes("{{"));
+    return Boolean($attributes._isInterpolated(optionElement, normalizedName) ||
+        $attributes.read(optionElement, normalizedName)?.includes("{{"));
 }
 function observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, normalizedName, readValue, callback, skipInitial = false) {
     if (!$attributes) {
@@ -19645,7 +19435,7 @@ function selectDirective($attributes) {
             post: selectPostLink,
         },
     };
-    function selectPreLink(_scope, element, attr, ctrls) {
+    function selectPreLink(_scope, element, ctrls) {
         const selectElement = element;
         const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl) {
@@ -19664,7 +19454,7 @@ function selectDirective($attributes) {
             ngModelCtrl.$setViewValue(viewValue);
             syncNativeValidity();
         });
-        if (hasSelectAttr($attributes, element, attr, "multiple")) {
+        if ($attributes.has(element, "multiple")) {
             selectCtrl._multiple = true;
             selectCtrl._readValue = function () {
                 const array = [];
@@ -19693,7 +19483,7 @@ function selectDirective($attributes) {
             };
             let lastView;
             let lastViewRef = NaN;
-            _scope.$watch(readSelectAttr($attributes, element, attr, "ngModel") ?? "", () => {
+            _scope.$watch($attributes.read(element, "ngModel") ?? "", () => {
                 if (lastViewRef === ngModelCtrl.$viewValue &&
                     !equals(lastView, ngModelCtrl.$viewValue)) {
                     lastView = shallowCopy(ngModelCtrl.$viewValue);
@@ -19706,7 +19496,7 @@ function selectDirective($attributes) {
             };
         }
     }
-    function selectPostLink(_scope, element, _attrs, ctrls) {
+    function selectPostLink(_scope, element, ctrls) {
         const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl)
             return;
@@ -20763,7 +20553,7 @@ function ngSwitchDirective($injector, $attributes) {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
         controller: NgSwitchController,
-        link(scope, element, _attr, ngSwitchController) {
+        link(scope, element, ngSwitchController) {
             const ngSwitchExpr = $attributes.read(element, "ngSwitch");
             const watchExpr = fallbackWhenEmpty(ngSwitchExpr, $attributes.read(element, "on") ?? "");
             let selectedTranscludes;
@@ -20855,7 +20645,7 @@ function ngSwitchWhenDirective($attributes) {
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(scope, element, _attrs, ctrl, $transclude) {
+        link(scope, element, ctrl, $transclude) {
             if (!$transclude) {
                 return;
             }
@@ -20882,7 +20672,7 @@ function ngSwitchDefaultDirective() {
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(_scope, element, _attr, ctrl, $transclude) {
+        link(_scope, element, ctrl, $transclude) {
             var _a;
             if (!$transclude) {
                 return;
@@ -20902,7 +20692,7 @@ function ngTranscludeDirective($compile, $attributes) {
         compile: function ngTranscludeCompile(tElement) {
             const fallbackLinkFn = $compile(tElement.childNodes);
             emptyElement(tElement);
-            function ngTranscludePostLink($scope, $element, _attrs, _controller, $transclude) {
+            function ngTranscludePostLink($scope, $element, $transclude) {
                 if (!$transclude) {
                     throw ngTranscludeError("orphan", "Illegal use of ngTransclude directive in the template! " +
                         "No parent directive that requires a transclusion found. " +
@@ -21008,29 +20798,20 @@ function setNativeCustomValidityIssue(ctrl, key, message) {
     });
     ctrl.$setCustomValidity(selected?.message ?? "");
 }
-function readValidatorAttr($attributes, element, attr, normalizedName) {
-    const elementValue = element instanceof Element
+function readValidatorAttr($attributes, element, normalizedName) {
+    return element instanceof Element
         ? $attributes?.read(element, normalizedName)
         : undefined;
-    const attrValue = attr
-        ? attr[normalizedName]
-        : undefined;
-    if (isDefined(attrValue) &&
-        (isUndefined(elementValue) || elementValue.includes("{{"))) {
-        return attrValue;
-    }
-    return elementValue ?? attrValue;
 }
-function hasValidatorAttr($attributes, element, attr, normalizedName) {
-    return ((element instanceof Element &&
-        Boolean($attributes?.has(element, normalizedName))) ||
-        (attr ? hasOwn(attr, normalizedName) : false));
+function hasValidatorAttr($attributes, element, normalizedName) {
+    return (element instanceof Element &&
+        Boolean($attributes?.has(element, normalizedName)));
 }
-function observeValidatorAttr($attributes, scope, element, attr, normalizedName, callback) {
+function observeValidatorAttr($attributes, scope, element, normalizedName, callback) {
     if (!$attributes || !(element instanceof Element))
         return () => undefined;
     return $attributes.observe(scope, element, normalizedName, (value) => {
-        callback(readValidatorAttr($attributes, element, attr, normalizedName) ?? value);
+        callback(readValidatorAttr($attributes, element, normalizedName) ?? value);
     });
 }
 /**
@@ -21065,15 +20846,15 @@ const requiredDirective = [
         require: "?ngModel",
         link: 
         /** Wires required-state observation into the ngModel validator set. */
-        (scope, elm, attr, ctrl) => {
+        (scope, elm, ctrl) => {
             if (!ctrl)
                 return;
-            const ngRequired = readValidatorAttr($attributes, elm, attr, "ngRequired");
+            const ngRequired = readValidatorAttr($attributes, elm, "ngRequired");
             // For boolean attributes like required, presence means true
             const ngRequiredGetter = ngRequired ? $parse(ngRequired) : undefined;
             let value = ngRequiredGetter
                 ? Boolean(ngRequiredGetter(scope))
-                : hasValidatorAttr($attributes, elm, attr, "required");
+                : hasValidatorAttr($attributes, elm, "required");
             const syncNativeRequired = (required) => {
                 if ($attributes && elm instanceof Element) {
                     $attributes.set(elm, "required", required);
@@ -21085,7 +20866,7 @@ const requiredDirective = [
             if (!ngRequired) {
                 // force truthy in case we are on non input element
                 // (input elements do this automatically for boolean attributes like required)
-                attr.required = "true";
+                $attributes?.set(elm, "required", true);
             }
             syncNativeRequired(Boolean(value));
             ctrl.$validators.required = (_modelValue, viewValue) => {
@@ -21104,7 +20885,7 @@ const requiredDirective = [
                 });
             }
             else {
-                observeValidatorAttr($attributes, scope, elm, attr, "required", (newVal) => {
+                observeValidatorAttr($attributes, scope, elm, "required", (newVal) => {
                     setRequiredValue($attributes && elm instanceof Element
                         ? $attributes.has(elm, "required")
                         : newVal);
@@ -21159,10 +20940,10 @@ const patternDirective = [
     ($parse, $attributes) => ({
         restrict: "A",
         require: "?ngModel",
-        compile: (tElm, tAttr) => {
+        compile: (tElm) => {
             let patternExp = "";
             let parseFn;
-            const templateNgPattern = readValidatorAttr($attributes, tElm, tAttr, "ngPattern");
+            const templateNgPattern = readValidatorAttr($attributes, tElm, "ngPattern");
             if (templateNgPattern) {
                 patternExp = templateNgPattern;
                 const ngPattern = templateNgPattern;
@@ -21178,12 +20959,12 @@ const patternDirective = [
                     parseFn = templateNgPattern ? $parse(templateNgPattern) : undefined;
                 }
             }
-            return function (scope, elm, attr, ctrl) {
+            return function (scope, elm, ctrl) {
                 if (!ctrl)
                     return;
                 const modelCtrl = ctrl;
-                const ngPattern = readValidatorAttr($attributes, elm, attr, "ngPattern");
-                let attrVal = readValidatorAttr($attributes, elm, attr, "pattern");
+                const ngPattern = readValidatorAttr($attributes, elm, "ngPattern");
+                let attrVal = readValidatorAttr($attributes, elm, "pattern");
                 if (ngPattern) {
                     const parsedPattern = parseFn?.(scope);
                     attrVal = parsedPattern;
@@ -21205,7 +20986,7 @@ const patternDirective = [
                         modelCtrl.$validate();
                     }
                 }
-                observeValidatorAttr($attributes, scope, elm, attr, "pattern", refreshRegexp);
+                observeValidatorAttr($attributes, scope, elm, "pattern", refreshRegexp);
                 modelCtrl.$validators.pattern = (_modelValue, viewValue) => {
                     if (ngPattern) {
                         refreshRegexp(undefined, false);
@@ -21260,14 +21041,14 @@ const maxlengthDirective = [
         require: "?ngModel",
         link: 
         /** Watches maxlength changes and keeps the validator in sync. */
-        (scope, elm, attr, ctrl) => {
+        (scope, elm, ctrl) => {
             if (!ctrl)
                 return;
-            const maxlengthAttr = readValidatorAttr($attributes, elm, attr, "maxlength");
-            const ngMaxlength = readValidatorAttr($attributes, elm, attr, "ngMaxlength");
+            const maxlengthAttr = readValidatorAttr($attributes, elm, "maxlength");
+            const ngMaxlength = readValidatorAttr($attributes, elm, "ngMaxlength");
             let maxlength = maxlengthAttr ?? (ngMaxlength && $parse(ngMaxlength)(scope));
             let maxlengthParsed = parseLength(maxlength);
-            observeValidatorAttr($attributes, scope, elm, attr, "maxlength", (newValue) => {
+            observeValidatorAttr($attributes, scope, elm, "maxlength", (newValue) => {
                 if (maxlength !== newValue) {
                     maxlengthParsed = parseLength(newValue);
                     maxlength = newValue;
@@ -21323,14 +21104,14 @@ const minlengthDirective = [
     /** Creates the `minlength` validator directive. */ ($parse, $attributes) => ({
         restrict: "A",
         require: "?ngModel",
-        link(scope, elm, attr, ctrl) {
+        link(scope, elm, ctrl) {
             if (!ctrl)
                 return;
-            const minlengthAttr = readValidatorAttr($attributes, elm, attr, "minlength");
-            const ngMinlength = readValidatorAttr($attributes, elm, attr, "ngMinlength");
+            const minlengthAttr = readValidatorAttr($attributes, elm, "minlength");
+            const ngMinlength = readValidatorAttr($attributes, elm, "ngMinlength");
             let minlength = minlengthAttr ?? (ngMinlength && $parse(ngMinlength)(scope));
             let minlengthParsed = parseLength(minlength) || -1;
-            observeValidatorAttr($attributes, scope, elm, attr, "minlength", (newValue) => {
+            observeValidatorAttr($attributes, scope, elm, "minlength", (newValue) => {
                 if (minlength !== newValue) {
                     minlengthParsed = parseLength(newValue) || -1;
                     minlength = newValue;
@@ -22194,7 +21975,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link: (scope, element, attrs, ngSrefActive) => {
+        link: (scope, element, ngSrefActive) => {
             const type = getTypeInfo(element);
             const active = ngSrefActive[1] ?? ngSrefActive[0];
             let unlinkInfoFn;
@@ -22252,7 +22033,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link(scope, element, attrs, ngSrefActive) {
+        link(scope, element, ngSrefActive) {
             const type = getTypeInfo(element);
             const active = ngSrefActive[1] ?? ngSrefActive[0];
             let unlinkInfoFn;
@@ -22283,9 +22064,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             }
             inputAttrs.forEach((field) => {
                 function readFieldExpression() {
-                    const expr = $attributes.read(element, field);
-                    const attrExpr = attrs[field];
-                    return expr?.includes("{{") ? attrExpr : expr;
+                    return $attributes.read(element, field);
                 }
                 const initialExpr = readFieldExpression();
                 rawDef[rawDefKeyByAttr[field]] =
@@ -25085,7 +24864,7 @@ function withResolvers() {
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
  *
- * ### Attributes
+ * ### Attribute Runtime
  *
  * - `name`: (Optional) A view name.
  *   Named views are targeted from [[StateDeclaration.views]] entries.
@@ -28537,7 +28316,7 @@ const specialAttrHolder = document.createElement("div");
 const observerStates = new WeakMap();
 const interpolatedAttributes = new WeakMap();
 const observerScopes = new WeakMap();
-class AttributesProvider {
+class AttributesServiceProvider {
     constructor() {
         this.$get = [
             _injector,
@@ -30016,6 +29795,171 @@ class LogProvider {
                 };
             })(),
         };
+    }
+}
+
+let eventBusInstance;
+/**
+ * Configurable provider for the application-wide {@link PubSub} event bus.
+ *
+ * The provider creates the singleton `$eventBus` service and also exposes it on
+ * the global Angular service for integrations that publish from outside
+ * dependency injection.
+ */
+class PubSubProvider {
+    constructor($exceptionHandler, angularProvider) {
+        this.$get = () => this.eventBus;
+        this.eventBus = eventBusInstance =
+            eventBusInstance ?? new PubSub($exceptionHandler.handler);
+        angularProvider.$get().$eventBus = this.eventBus;
+    }
+}
+PubSubProvider.$inject = [_exceptionHandlerProvider, _angularProvider];
+class PubSub {
+    /**
+     * Create a publish/subscribe event bus.
+     *
+     * Applications usually receive the singleton instance by injecting
+     * `$eventBus` instead of constructing this class directly.
+     *
+     * @param $exceptionHandler - Handler invoked when a subscriber throws.
+     */
+    constructor($exceptionHandler) {
+        this._topics = nullObject();
+        this._disposed = false;
+        this._exceptionHandler = $exceptionHandler;
+    }
+    /**
+     * Reset the bus to its initial state without disposing it.
+     *
+     * All topics and listeners are removed, and the instance can be reused.
+     */
+    reset() {
+        this._topics = nullObject();
+        this._disposed = false;
+    }
+    /**
+     * Checks if instance has been disposed.
+     * @returns True if disposed.
+     */
+    isDisposed() {
+        return this._disposed;
+    }
+    /**
+     * Dispose the instance, removing all topics and listeners.
+     */
+    dispose() {
+        if (this._disposed)
+            return;
+        this._disposed = true;
+        this._topics = nullObject();
+    }
+    /**
+     * Subscribe a function to a topic.
+     *
+     * The returned function removes only this listener registration.
+     *
+     * @param topic - The topic to subscribe to.
+     * @param fn - The callback function to invoke when published.
+     * @param [context] - Optional `this` context for the callback.
+     * @returns A function that unsubscribes this listener.
+     */
+    subscribe(topic, fn, context) {
+        if (this._disposed)
+            return () => false;
+        let listeners = this._topics[topic];
+        if (!listeners)
+            this._topics[topic] = listeners = [];
+        const entry = { _fn: fn, _context: context };
+        listeners.push(entry);
+        return () => this.unsubscribe(topic, fn, context);
+    }
+    /**
+     * Subscribe a function to a topic only once.
+     *
+     * Listener is removed before the first invocation.
+     *
+     * @param topic - The topic to subscribe to.
+     * @param fn - The callback function.
+     * @param [context] - Optional `this` context for the callback.
+     * @returns A function that unsubscribes this listener.
+     */
+    subscribeOnce(topic, fn, context) {
+        if (this._disposed)
+            return () => false;
+        let called = false;
+        const wrapper = (...args) => {
+            if (called)
+                return;
+            called = true;
+            unsub(); // unsubscribe before running
+            Reflect.apply(fn, context, args);
+        };
+        const unsub = this.subscribe(topic, wrapper);
+        return unsub;
+    }
+    /**
+     * Unsubscribe a specific function from a topic.
+     * Matches by function reference and optional context.
+     * @param topic - The topic to unsubscribe from.
+     * @param fn - The listener function.
+     * @param [context] - Optional `this` context.
+     * @returns True if the listener was found and removed.
+     */
+    unsubscribe(topic, fn, context) {
+        if (this._disposed)
+            return false;
+        const listeners = this._topics[topic];
+        if (!listeners || listeners.length === 0)
+            return false;
+        for (let i = 0; i < listeners.length; i++) {
+            const l = listeners[i];
+            if (l._fn === fn && l._context === context) {
+                listeners.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Get the number of subscribers for a topic.
+     *
+     * @param topic - Topic name to inspect.
+     * @returns The number of currently registered listeners.
+     */
+    getCount(topic) {
+        const listeners = this._topics[topic];
+        return listeners ? listeners.length : 0;
+    }
+    /**
+     * Publish a value to a topic asynchronously.
+     *
+     * All listeners are invoked in the order they were added.
+     * Delivery is scheduled with `queueMicrotask`.
+     *
+     * @param topic - The topic to publish.
+     * @param args - Arguments to pass to listeners.
+     * @returns True if any listeners exist for this topic.
+     */
+    publish(topic, ...args) {
+        if (this._disposed)
+            return false;
+        const listeners = this._topics[topic];
+        if (!listeners || listeners.length === 0)
+            return false;
+        // snapshot to prevent modifications during publish from affecting this call
+        const snapshot = listeners.slice();
+        queueMicrotask(() => {
+            for (const { _fn: fn, _context: context } of snapshot) {
+                try {
+                    fn.apply(context, args);
+                }
+                catch (err) {
+                    this._exceptionHandler(err);
+                }
+            }
+        });
+        return true;
     }
 }
 
@@ -32913,7 +32857,7 @@ function registerBuiltInFilters($filterProvider) {
 }
 /** Providers required by scopes, expressions, controllers, and compile. */
 const ngCoreProviders = {
-    [_attributes]: AttributesProvider,
+    [_attributes]: AttributesServiceProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,
@@ -33175,4 +33119,4 @@ document.addEventListener("DOMContentLoaded", () => {
     once: true,
 });
 
-export { HttpRestBackend, ScopeElement, WasmScope, WasmScopeAbi, angular };
+export { angular };

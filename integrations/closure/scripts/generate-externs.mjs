@@ -25,11 +25,11 @@ const semanticTypedefs = new Map([
   ],
   [
     "AnnotatedDirectiveFactory",
-    "!Array<(string|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void))>",
+    "!Array<(string|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void))>",
   ],
   [
     "DirectiveFactory",
-    "(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void))",
+    "(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void))",
   ],
   [
     "Injectable",
@@ -40,6 +40,21 @@ const semanticTypedefs = new Map([
     "!Promise<!ng.HttpResponse<?>>",
   ],
 ]);
+
+const directiveLinkTypedef =
+  "(function(!ng.Scope, !HTMLElement): void|" +
+  "function(!ng.Scope, !HTMLElement, !ng.TranscludeFn): void|" +
+  "function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void)";
+
+semanticTypedefs.set(
+  "AnnotatedDirectiveFactory",
+  `!Array<(string|function(...?): (!ng.Directive|${directiveLinkTypedef}))>`,
+);
+
+semanticTypedefs.set(
+  "DirectiveFactory",
+  `(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|${directiveLinkTypedef}))`,
+);
 
 const memberTypeOverrides = new Map([
   ["Angular.subapps", "!Array<!ng.AngularService>"],
@@ -184,10 +199,6 @@ const typeDescriptions = new Map([
   [
     "PubSubService",
     "Topic-based publish/subscribe service for decoupled application events.",
-  ],
-  [
-    "TopicService",
-    "Single-topic pub/sub object used to publish values and manage subscriptions.",
   ],
   [
     "AnnotatedFactory",

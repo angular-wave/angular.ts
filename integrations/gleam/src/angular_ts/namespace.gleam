@@ -7,10 +7,6 @@ pub type Angular
 
 pub type AnnotatedDirectiveFactory
 
-pub type Attributes
-
-pub type AttributesService
-
 pub type Component
 
 pub type Controller
@@ -140,8 +136,6 @@ pub type SwapModeType
 pub type TemplateCacheService
 
 pub type TemplateRequestService
-
-pub type TopicService
 
 pub type AngularService
 

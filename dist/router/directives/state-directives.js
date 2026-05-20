@@ -1,6 +1,6 @@
 import { _state, _rootScope, _stateRegistry, _transitions, _parse, _attributes, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { stringify, assertDefined, isObject, keys, isString, isArray, assign, isNullOrUndefined, arrayFrom } from '../../shared/utils.js';
+import { stringify, assertDefined, isObject, keys, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
 import { getInheritedData } from '../../shared/dom.js';
 
 const noopDeregister = () => undefined;
@@ -169,7 +169,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link: (scope, element, attrs, ngSrefActive) => {
+        link: (scope, element, ngSrefActive) => {
             const type = getTypeInfo(element);
             const active = ngSrefActive[1] ?? ngSrefActive[0];
             let unlinkInfoFn;
@@ -227,7 +227,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link(scope, element, attrs, ngSrefActive) {
+        link(scope, element, ngSrefActive) {
             const type = getTypeInfo(element);
             const active = ngSrefActive[1] ?? ngSrefActive[0];
             let unlinkInfoFn;
@@ -258,9 +258,7 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
             }
             inputAttrs.forEach((field) => {
                 function readFieldExpression() {
-                    const expr = $attributes.read(element, field);
-                    const attrExpr = attrs[field];
-                    return expr?.includes("{{") ? attrExpr : expr;
+                    return $attributes.read(element, field);
                 }
                 const initialExpr = readFieldExpression();
                 rawDef[rawDefKeyByAttr[field]] =

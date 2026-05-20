@@ -224,8 +224,8 @@ facades such as `SceService` can move to generated methods without weakening
 boolean return contracts. Callable provider properties such as
 `SceDelegateProvider` can now use generated method facades as well. Callable
 parameters are inferred as `JSFunction`, and targeted integer return overrides
-cover count APIs so `PubSubService` and `TopicService` can inherit generated
-methods while keeping their previous public Dart shape. The same callable
+cover count APIs so `PubSubService` can inherit generated methods while keeping
+its previous public Dart shape. The same callable
 parameter inference lets `TransitionService` expose generated hook registration
 methods with callback parameters typed as `JSFunction`. Explicit renames can
 preserve valid Dart API names that would otherwise be conservatively avoided,
@@ -236,8 +236,7 @@ and `InterpolateService.endSymbol()` now come from the generated base instead
 of handwritten raw calls. Optional callable properties are unwrapped when
 collecting call signatures, so members such as `TranscludeFn.isSlotFilled()`
 can also be generated instead of handwritten. Direct string-only attribute
-helpers such as `Attributes.$normalize()`, `$addClass()`, `$removeClass()`, and
-`$updateClass()` now come from generated coverage. `$observe()` has a generated
+`$observe()` has a generated
 raw member and a handwritten public adapter because it turns a Dart callback
 into a JavaScript callback and returns a Dart disposer. Thin object-forwarding
 helpers such as `WasmService.createScopeAbi()` also come from generated

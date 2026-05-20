@@ -31,8 +31,8 @@ pub use services::{
     RestBackend, RestDefinition, RestFactory, RestOptions, RestRequest, RestResponse, RestService,
     RootScopeService, Service, SseConfig, SseConnection, SseService, StateDeclaration,
     StateRegistryService, StateResolveArray, StateResolveObject, StateService, StorageBackend,
-    StorageType, SwapModeType, TemplateCacheService, TemplateRequestService, TopicService,
-    Transition, WebSocketConfig, WebSocketConnection, WebSocketService,
+    StorageType, SwapModeType, TemplateCacheService, TemplateRequestService, Transition,
+    WebSocketConfig, WebSocketConnection, WebSocketService,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};

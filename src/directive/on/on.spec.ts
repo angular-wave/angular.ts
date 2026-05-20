@@ -150,9 +150,31 @@ describe("ngOn* event binding", () => {
     window.angular.module("test", [
       "ng",
       ($compileProvider) => {
-        $compileProvider.directive("attrExposer", () => ({
-          link($scope, $element, $attrs) {
-            attrs = $attrs;
+        $compileProvider.directive("attrExposer", ($attributes) => ({
+          link($scope, $element) {
+            attrs = {
+              title: $attributes.read($element, "title"),
+              titleAttr: $attributes.originalName($element, "title"),
+              ngOnTitle: $attributes.read($element, "ngOnTitle"),
+              ngOnTitleAttr: $attributes.originalName($element, "ngOnTitle"),
+              superTitle: $attributes.read($element, "superTitle"),
+              superTitleAttr: $attributes.originalName($element, "superTitle"),
+              ngOnSuperTitle: $attributes.read($element, "ngOnSuperTitle"),
+              ngOnSuperTitleAttr: $attributes.originalName(
+                $element,
+                "ngOnSuperTitle",
+              ),
+              myCamelTitle: $attributes.read($element, "myCamelTitle"),
+              myCamelTitleAttr: $attributes.originalName(
+                $element,
+                "myCamelTitle",
+              ),
+              ngOnMyCamelTitle: $attributes.read($element, "ngOnMyCamelTitle"),
+              ngOnMyCamelTitleAttr: $attributes.originalName(
+                $element,
+                "ngOnMyCamelTitle",
+              ),
+            };
           },
         }));
       },
@@ -165,19 +187,19 @@ describe("ngOn* event binding", () => {
     )($rootScope);
 
     expect(attrs.title).toBeUndefined();
-    expect(attrs.$attr.title).toBeUndefined();
+    expect(attrs.titleAttr).toBeUndefined();
     expect(attrs.ngOnTitle).toBe("cb(1)");
-    expect(attrs.$attr.ngOnTitle).toBe("ng-on-title");
+    expect(attrs.ngOnTitleAttr).toBe("ng-on-title");
 
     expect(attrs.superTitle).toBeUndefined();
-    expect(attrs.$attr.superTitle).toBeUndefined();
+    expect(attrs.superTitleAttr).toBeUndefined();
     expect(attrs.ngOnSuperTitle).toBe("cb(2)");
-    expect(attrs.$attr.ngOnSuperTitle).toBe("ng-on-super-title");
+    expect(attrs.ngOnSuperTitleAttr).toBe("ng-on-super-title");
 
     expect(attrs.myCamelTitle).toBeUndefined();
-    expect(attrs.$attr.myCamelTitle).toBeUndefined();
+    expect(attrs.myCamelTitleAttr).toBeUndefined();
     expect(attrs.ngOnMyCamelTitle).toBe("cb(3)");
-    expect(attrs.$attr.ngOnMyCamelTitle).toBe("ng-on-my-camel-title");
+    expect(attrs.ngOnMyCamelTitleAttr).toBe("ng-on-my-camel-title");
   });
 
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
@@ -186,9 +208,13 @@ describe("ngOn* event binding", () => {
     window.angular.module("test", [
       "ng",
       ($compileProvider) => {
-        $compileProvider.directive("attrExposer", () => ({
-          link($scope, $element, $attrs) {
-            attrs = $attrs;
+        $compileProvider.directive("attrExposer", ($attributes) => ({
+          link($scope, $element) {
+            attrs = {
+              title: $attributes.read($element, "title"),
+              titleAttr: $attributes.originalName($element, "title"),
+              ngOnTitleAttr: $attributes.originalName($element, "ngOnTitle"),
+            };
           },
         }));
       },
@@ -201,8 +227,8 @@ describe("ngOn* event binding", () => {
       '<div attr-exposer ng-on-title="42" ng-attr-title="foo" title="bar">',
     )($rootScope);
     expect(attrs.title).toBe("foo");
-    expect(attrs.$attr.title).toBe("title");
-    expect(attrs.$attr.ngOnTitle).toBe("ng-on-title");
+    expect(attrs.titleAttr).toBe("title");
+    expect(attrs.ngOnTitleAttr).toBe("ng-on-title");
   });
 
   it("should correctly bind to kebab-cased event names", () => {

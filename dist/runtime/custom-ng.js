@@ -6,7 +6,7 @@ import { ParseProvider } from '../core/parse/parse.js';
 import { RootScopeProvider } from '../core/scope/scope.js';
 import { ControllerProvider } from '../core/controller/controller.js';
 import { ExceptionHandlerProvider } from '../services/exception/exception.js';
-import { AttributesProvider } from '../services/attributes/attributes.js';
+import { AttributesServiceProvider } from '../services/attributes/attributes.js';
 import { keys } from '../shared/utils.js';
 
 /**
@@ -16,7 +16,7 @@ import { keys } from '../shared/utils.js';
  * custom builds do not pull them in unless explicitly requested.
  */
 const coreProviders = {
-    [_attributes]: AttributesProvider,
+    [_attributes]: AttributesServiceProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,

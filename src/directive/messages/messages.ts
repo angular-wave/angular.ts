@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _compile,
@@ -266,7 +267,7 @@ ngMessagesDirective.$inject = [_injector, _parse, _attributes];
 export function ngMessagesDirective(
   $injector: ng.InjectorService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive<NgMessageCtrl> {
   const getAnimate = createLazyAnimate($injector);
 
@@ -318,17 +319,12 @@ ngMessagesIncludeDirective.$inject = [_templateRequest, _compile, _attributes];
 export function ngMessagesIncludeDirective(
   $templateRequest: ng.TemplateRequestService,
   $compile: ng.CompileService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "AE",
     require: "^^ngMessages", // we only require this for validation sake
-    link(
-      $scope: ng.Scope,
-      element: Element,
-      _attrs: ng.Attributes,
-      ngMessagesCtrl: NgMessageCtrl,
-    ) {
+    link($scope: ng.Scope, element: Element, ngMessagesCtrl: NgMessageCtrl) {
       const src =
         $attributes.read(element, "ngMessagesInclude") ??
         $attributes.read(element, "src") ??
@@ -387,7 +383,7 @@ function ngMessageDirectiveFactory(
 ): (
   $injector: ng.InjectorService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ) => ng.Directive {
   ngMessageDirectiveFn.$inject = [_injector, _parse, _attributes];
   /**
@@ -396,7 +392,7 @@ function ngMessageDirectiveFactory(
   function ngMessageDirectiveFn(
     $injector: ng.InjectorService,
     $parse: ng.ParseService,
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
   ): ng.Directive {
     const getAnimate = createLazyAnimate($injector);
 
@@ -409,7 +405,6 @@ function ngMessageDirectiveFactory(
       link: (
         scope: ng.Scope,
         element: HTMLElement,
-        _attrs: ng.Attributes,
         ngMessagesCtrl: NgMessageCtrl,
         $transclude: ng.TranscludeFn,
       ) => {

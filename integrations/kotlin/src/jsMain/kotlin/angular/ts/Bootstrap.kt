@@ -13,7 +13,7 @@ public fun ng.bootstrap(
 ): Injector =
     Injector(angularRuntime.bootstrap(root, modules.toTypedArray(), config.toJs()))
 
-private fun BootstrapConfig.toJs(): dynamic {
+internal fun BootstrapConfig.toJs(): dynamic {
     val raw = js("{}")
     raw.strictDi = strictDi
     return raw

@@ -22,7 +22,8 @@ func TestGenerateBootstrapUsesManifestRegistrations(t *testing.T) {
 	}
 
 	required := []string{
-		`import { angular, WasmScopeAbi } from "@angular-wave/angular.ts";`,
+		`import { angular } from "@angular-wave/angular.ts";`,
+		`import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";`,
 		`import { GoWasmScopeAbi } from "../go-wasm-scope-abi.js";`,
 		`import "../wasm_exec.js";`,
 		`const requires = [];`,

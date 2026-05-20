@@ -15,11 +15,11 @@ function getLazyAnimate($injector) {
     }
     return getAnimate;
 }
-class Attributes {
+class CompileAttributes {
     constructor($injector, $exceptionHandler, node, attributesToCopy) {
         /**
-         * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
-         * `data-`) to its normalized, camelCase form.
+         * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
+         * normalized, camelCase form.
          *
          * Also there is special case for Moz prefix starting with upper case letter.
          *
@@ -166,7 +166,7 @@ class Attributes {
                 }
             }
             else {
-                Attributes._setSpecialAttr(elem, attrName, value);
+                CompileAttributes._setSpecialAttr(elem, attrName, value);
             }
         }
         const { _observers } = this;
@@ -204,7 +204,7 @@ class Attributes {
         element.attributes.setNamedItem(attribute);
     }
 }
-Attributes.$nonscope = true;
+CompileAttributes.$nonscope = true;
 /**
  * Splits a space-separated class string into normalized tokens.
  *
@@ -243,4 +243,4 @@ function tokenDifference(str1, str2) {
     return difference;
 }
 
-export { Attributes };
+export { CompileAttributes };

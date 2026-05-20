@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _aria, _attributes, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize, extend, stringify } from "../../shared/utils.ts";
 
@@ -29,7 +30,7 @@ interface AriaConfig {
 
 interface AriaProviderInstance {
   config: (newConfig: Partial<AriaConfig>) => void;
-  $get: ng.Injectable<(attributes: ng.AttributesService) => AriaService>;
+  $get: ng.Injectable<(attributes: AttributesService) => AriaService>;
 }
 
 type AriaNgModelController = Omit<
@@ -101,7 +102,7 @@ export function AriaProvider(this: AriaProviderInstance): void {
 
   this.$get = [
     _attributes,
-    function ($attributes: ng.AttributesService): AriaService {
+    function ($attributes: AttributesService): AriaService {
       /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
       function watchExpr(
         attrName: string,
@@ -170,7 +171,7 @@ export function ngShowAriaDirective($aria: AriaService): ng.Directive {
 ngMessagesAriaDirective.$inject = [_attributes];
 /** Adds `aria-live` to `ngMessages` containers when not already present. */
 export function ngMessagesAriaDirective(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -191,7 +192,7 @@ ngClickAriaDirective.$inject = [_aria, _parse, _attributes];
 export function ngClickAriaDirective(
   $aria: AriaService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -317,7 +318,7 @@ ngModelAriaDirective.$inject = [_aria, _attributes];
 /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
 export function ngModelAriaDirective(
   $aria: AriaService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   /** Determines whether an ARIA attribute should be attached to an element. */
   function shouldAttachAttr(
@@ -374,7 +375,6 @@ export function ngModelAriaDirective(
         post(
           scope: ng.Scope,
           elem: HTMLElement,
-          attrPost: ng.Attributes,
           ngModel: AriaNgModelController,
         ) {
           const needsTabIndex = shouldAttachAttr(
@@ -389,7 +389,9 @@ export function ngModelAriaDirective(
             elem.setAttribute(
               "aria-checked",
 
-              (attrPost.value == ngModel.$viewValue).toString(),
+              (
+                $attributes.read(elem, "value") == ngModel.$viewValue
+              ).toString(),
             );
           }
 
@@ -492,7 +494,7 @@ ngDblclickAriaDirective.$inject = [_aria, _attributes];
 /** Adds focusability for `ngDblclick` on non-native interactive controls. */
 export function ngDblclickAriaDirective(
   $aria: AriaService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",

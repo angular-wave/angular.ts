@@ -11,8 +11,8 @@ import {
   trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-import type { Attributes } from "../../interface.ts";
-import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
+import type { DirectiveAttributes } from "../../interface.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
@@ -87,10 +87,10 @@ BOOLEAN_ATTR.forEach((i) => {
 
   /** Mirrors the watched scope expression into the underlying boolean attribute. */
   function defaultLinkFn(
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
     scope: ng.Scope,
     element: Element,
-    attr: Attributes & Record<string, string>,
+    attr: DirectiveAttributes & Record<string, string>,
   ): void {
     scope.$watch(attr[normalized] ?? "", (value) => {
       $attributes.set(element, i, !!value);
@@ -103,10 +103,10 @@ BOOLEAN_ATTR.forEach((i) => {
 
   if (i === "checked") {
     linkFn = function (
-      $attributes: ng.AttributesService,
+      $attributes: AttributesService,
       scope: ng.Scope,
       element: Element,
-      attr: Attributes & Record<string, string>,
+      attr: DirectiveAttributes & Record<string, string>,
     ): void {
       // ensuring ngChecked doesn't interfere with ngModel when both are set on the same input
       if (attr.ngModel !== attr[normalized]) {
@@ -117,16 +117,17 @@ BOOLEAN_ATTR.forEach((i) => {
 
   ngAttributeAliasDirectives[normalized] = [
     _attributes,
-    function ($attributes: ng.AttributesService) {
+    function ($attributes: AttributesService) {
       return {
         restrict: "A",
         priority: 100,
-        link(
-          scope: ng.Scope,
-          element: Element,
-          attr: Attributes & Record<string, string>,
-        ): void {
-          linkFn($attributes, scope, element, attr);
+        compile(
+          _element: Element,
+          attr: DirectiveAttributes & Record<string, string>,
+        ) {
+          return (scope: ng.Scope, element: Element): void => {
+            linkFn($attributes, scope, element, attr);
+          };
         },
       };
     },
@@ -137,14 +138,13 @@ BOOLEAN_ATTR.forEach((i) => {
 entries(ALIASED_ATTR).forEach(([ngAttr]) => {
   ngAttributeAliasDirectives[ngAttr] = [
     _attributes,
-    function ($attributes: ng.AttributesService): ng.Directive {
+    function ($attributes: AttributesService): ng.Directive {
       return {
         priority: 100,
-        link(
-          scope: ng.Scope,
-          element: Element,
-          attr: Attributes & Record<string, string>,
-        ): void {
+        compile(
+          _element: Element,
+          attr: DirectiveAttributes & Record<string, string>,
+        ) {
           // special case ngPattern when a literal regular expression value
           // is used as the expression (this way we don't have to watch anything).
           const { ngPattern } = attr;
@@ -154,7 +154,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
             if (match) {
               $attributes.set(
-                element,
+                _element,
                 "ngPattern",
                 new RegExp(match[1], match[2]).toString(),
               );
@@ -163,13 +163,15 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             }
           }
 
-          scope.$watch(attr[ngAttr] ?? "", (value) => {
-            $attributes.set(
-              element,
-              ngAttr,
-              value as string | boolean | null | undefined,
-            );
-          });
+          return (scope: ng.Scope, element: Element): void => {
+            scope.$watch(attr[ngAttr] ?? "", (value) => {
+              $attributes.set(
+                element,
+                ngAttr,
+                value as string | boolean | null | undefined,
+              );
+            });
+          };
         },
       };
     },
@@ -186,126 +188,127 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
     /** Creates the alias directive for interpolated URL-like attributes. */
     function (
       $sce: ng.SceService,
-      $attributes: ng.AttributesService,
+      $attributes: AttributesService,
     ): ng.Directive {
       return {
         priority: 99, // it needs to run after the attributes are interpolated
-        link(
-          scope: ng.Scope,
-          element: Element,
-          attr: Attributes & Record<string, string>,
-        ): void {
-          const nodeName = getNodeName(element);
+        compile(
+          _element: Element,
+          attr: DirectiveAttributes & Record<string, string>,
+        ) {
+          return (scope: ng.Scope, element: Element): void => {
+            const nodeName = getNodeName(element);
 
-          if (attrName === "srcset") {
-            const originalAttrName = attr.$attr[normalized];
+            if (attrName === "srcset") {
+              const originalAttrName = attr.$attr[normalized];
 
-            if (originalAttrName) {
-              element.removeAttribute(originalAttrName);
-            }
-          }
-
-          function sanitize(value: unknown): unknown {
-            if (isNullOrUndefined(value)) {
-              return value;
+              if (originalAttrName) {
+                element.removeAttribute(originalAttrName);
+              }
             }
 
-            const stringValue = stringify(value);
-
-            if (stringValue.startsWith("unsafe:")) {
-              return stringValue;
-            }
-
-            if (
-              attrName === "src" &&
-              !["img", "video", "audio", "source", "track"].includes(nodeName)
-            ) {
-              return $sce.getTrustedResourceUrl(stringValue);
-            }
-
-            if (attrName === "href" && nodeName !== "image") {
-              return $sce.getTrustedUrl(stringValue);
-            }
-
-            return $sce.getTrustedMediaUrl(stringValue);
-          }
-
-          function readAliasValue(): string | undefined {
-            const elementValue = $attributes.read(element, normalized);
-            const attrValue = attr[normalized] as string | undefined;
-
-            if (
-              attrValue &&
-              (isNullOrUndefined(elementValue) || elementValue.includes("{{"))
-            ) {
-              return attrValue;
-            }
-
-            const value = elementValue ?? attrValue;
-
-            return value?.includes("{{") ? undefined : value;
-          }
-
-          function syncAliasValue(value: string | undefined): void {
-            if (!value) {
-              if (attrName === "href") {
-                $attributes.set(element, attrName, null);
+            function sanitize(value: unknown): unknown {
+              if (isNullOrUndefined(value)) {
+                return value;
               }
 
-              return;
+              const stringValue = stringify(value);
+
+              if (stringValue.startsWith("unsafe:")) {
+                return stringValue;
+              }
+
+              if (
+                attrName === "src" &&
+                !["img", "video", "audio", "source", "track"].includes(nodeName)
+              ) {
+                return $sce.getTrustedResourceUrl(stringValue);
+              }
+
+              if (attrName === "href" && nodeName !== "image") {
+                return $sce.getTrustedUrl(stringValue);
+              }
+
+              return $sce.getTrustedMediaUrl(stringValue);
             }
 
-            if (
-              attrName === "href" ||
-              (attrName === "src" &&
-                ["img", "video", "audio", "source", "track"].includes(nodeName))
-            ) {
-              $attributes.set(element, attrName, sanitize(value) as string);
-            } else if (attrName === "srcset") {
+            function readAliasValue(): string | undefined {
+              const elementValue = $attributes.read(element, normalized);
+              const attrValue = attr[normalized] as string | undefined;
+
+              if (
+                attrValue &&
+                (isNullOrUndefined(elementValue) || elementValue.includes("{{"))
+              ) {
+                return attrValue;
+              }
+
+              const value = elementValue ?? attrValue;
+
+              return value?.includes("{{") ? undefined : value;
+            }
+
+            function syncAliasValue(value: string | undefined): void {
+              if (!value) {
+                if (attrName === "href") {
+                  $attributes.set(element, attrName, null);
+                }
+
+                return;
+              }
+
+              if (
+                attrName === "href" ||
+                (attrName === "src" &&
+                  ["img", "video", "audio", "source", "track"].includes(
+                    nodeName,
+                  ))
+              ) {
+                $attributes.set(element, attrName, sanitize(value) as string);
+              } else if (attrName === "srcset") {
+                $attributes.set(
+                  element,
+                  attrName,
+                  sanitizeSrcset($sce, value, "ng-srcset") as string,
+                );
+              } else {
+                $attributes.set(
+                  element,
+                  attrName,
+                  value as string | boolean | null | undefined,
+                );
+              }
+            }
+
+            // We need to sanitize the url at least once, in case it is a constant
+            // non-interpolated attribute.
+            const initialValue = attr[normalized] as unknown;
+
+            if (initialValue && !stringify(initialValue).includes("{{")) {
               $attributes.set(
                 element,
-                attrName,
-                sanitizeSrcset($sce, value, "ng-srcset") as string,
-              );
-            } else {
-              $attributes.set(
-                element,
-                attrName,
-                value as string | boolean | null | undefined,
+                normalized,
+                attrName === "srcset"
+                  ? (sanitizeSrcset($sce, initialValue, "ng-srcset") as string)
+                  : (sanitize(initialValue) as string),
               );
             }
-          }
 
-          // We need to sanitize the url at least once, in case it is a constant
-          // non-interpolated attribute.
-          const initialValue = attr[normalized] as unknown;
-
-          if (initialValue && !stringify(initialValue).includes("{{")) {
-            $attributes.set(
-              element,
-              normalized,
-              attrName === "srcset"
-                ? (sanitizeSrcset($sce, initialValue, "ng-srcset") as string)
-                : (sanitize(initialValue) as string),
+            let skipInitialInterpolation = Boolean(
+              $attributes._isInterpolated(element, normalized) ||
+              $attributes.read(element, normalized)?.includes("{{"),
             );
-          }
 
-          let skipInitialInterpolation = Boolean(
-            ($attributes as InternalAttributesService)._isInterpolated(
-              element,
-              normalized,
-            ) || $attributes.read(element, normalized)?.includes("{{"),
-          );
+            $attributes.observe(scope, element, normalized, () => {
+              if (skipInitialInterpolation) {
+                skipInitialInterpolation = false;
 
-          $attributes.observe(scope, element, normalized, () => {
-            if (skipInitialInterpolation) {
-              skipInitialInterpolation = false;
+                return;
+              }
 
-              return;
-            }
-
-            syncAliasValue(readAliasValue());
-          });
+              syncAliasValue(readAliasValue());
+            });
+          };
         },
       };
     },

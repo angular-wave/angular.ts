@@ -27,7 +27,7 @@ function selectDirective($attributes) {
             post: selectPostLink,
         },
     };
-    function selectPreLink(_scope, element, attr, ctrls) {
+    function selectPreLink(_scope, element, ctrls) {
         const selectElement = element;
         const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl) {
@@ -46,7 +46,7 @@ function selectDirective($attributes) {
             ngModelCtrl.$setViewValue(viewValue);
             syncNativeValidity();
         });
-        if (hasSelectAttr($attributes, element, attr, "multiple")) {
+        if ($attributes.has(element, "multiple")) {
             selectCtrl._multiple = true;
             selectCtrl._readValue = function () {
                 const array = [];
@@ -75,7 +75,7 @@ function selectDirective($attributes) {
             };
             let lastView;
             let lastViewRef = NaN;
-            _scope.$watch(readSelectAttr($attributes, element, attr, "ngModel") ?? "", () => {
+            _scope.$watch($attributes.read(element, "ngModel") ?? "", () => {
                 if (lastViewRef === ngModelCtrl.$viewValue &&
                     !equals(lastView, ngModelCtrl.$viewValue)) {
                     lastView = shallowCopy(ngModelCtrl.$viewValue);
@@ -88,7 +88,7 @@ function selectDirective($attributes) {
             };
         }
     }
-    function selectPostLink(_scope, element, _attrs, ctrls) {
+    function selectPostLink(_scope, element, ctrls) {
         const [selectCtrl, ngModelCtrl] = ctrls;
         if (!ngModelCtrl)
             return;

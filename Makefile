@@ -74,6 +74,7 @@ check: ensure-deps
 	@$(MAKE) lint-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
+	@$(MAKE) test-types
 	@$(MAKE) docs-examples-check
 
 test-types: ensure-deps
@@ -121,6 +122,7 @@ test: ensure-deps
 test-integrations: ensure-deps
 	@echo $(INFO) "Playwright integration tests"
 	@$(MAKE) -f integrations/closure/Makefile closure-test
+	@$(MAKE) -C integrations/kotlin check
 
 test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"

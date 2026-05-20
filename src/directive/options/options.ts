@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _compile, _parse } from "../../injection-tokens.ts";
 import {
   createDocumentFragment,
@@ -80,7 +81,7 @@ interface NgOptionsDefinition {
 export function ngOptionsDirective(
   $compile: ng.CompileService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   function parseOptionsExpression(
     optionsExp: string,
@@ -214,7 +215,6 @@ export function ngOptionsDirective(
   function ngOptionsPostLink(
     scope: ng.Scope & Record<string, unknown>,
     selectElement: Element,
-    attr: ng.Attributes & Record<string, unknown>,
     ctrls: [SelectController, ng.NgModelController & Record<string, unknown>],
   ) {
     const selectNode = selectElement as HTMLSelectElement;
@@ -478,7 +478,6 @@ export function ngOptionsDirective(
       pre: function ngOptionsPreLink(
         _scope: ng.Scope,
         _selectElement: Element,
-        _attr: ng.Attributes,
         ctrls: [SelectController],
       ) {
         ctrls[0]._registerOption = () => {

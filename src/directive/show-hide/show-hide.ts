@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
@@ -14,7 +15,7 @@ ngShowDirective.$inject = [_injector, _attributes];
  */
 export function ngShowDirective(
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -56,7 +57,7 @@ ngHideDirective.$inject = [_injector, _attributes];
  */
 export function ngHideDirective(
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 

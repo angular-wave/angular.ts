@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _templateCache } from "../../injection-tokens.ts";
 
 scriptDirective.$inject = [_templateCache, _attributes];
@@ -7,7 +8,7 @@ scriptDirective.$inject = [_templateCache, _attributes];
  */
 export function scriptDirective(
   $templateCache: ng.TemplateCacheService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "E",

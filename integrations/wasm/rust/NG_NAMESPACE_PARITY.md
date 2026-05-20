@@ -14,6 +14,10 @@ builder, callback signature, config object, enum, alias, or intentionally
 documented unsupported mapping for each public `ng` type. A type is not
 considered covered just because an unsafe JavaScript escape hatch can reach it.
 
+Directive link callback parity must follow the current attrs-free link shape:
+`(scope, element, controller?, transclude?)`. Compile/template/controller
+`$attrs` and attribute helper services are not part of the Rust public facade.
+
 ## Rust Completion Gate
 
 Rust is the reference implementation for all Wasm targets. Do not switch active
@@ -31,8 +35,7 @@ Required Rust porting entries:
 - HTTP facade: `HttpService`, `RequestConfig`, `RequestShortcutConfig`,
   `HttpMethod`, `HttpResponse`, and `HttpResponseStatus`.
 - Diagnostics and events: `LogService`, `ExceptionHandlerService`,
-  `PubSubService`, `TopicService`, `ListenerFn`, `ScopeEvent`, and
-  `InvocationDetail`.
+  `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
 - Template-file support: `TemplateRequestService` and `TemplateCacheService`.
 - Persistence: `StorageBackend`, `StorageType`, `CookieService`,
   `CookieOptions`, and `CookieStoreOptions`.
@@ -65,7 +68,6 @@ necessary.
 | --- | --- |
 | `Angular` | deferred |
 | `AnnotatedDirectiveFactory` | deferred |
-| `Attributes` | deferred |
 | `Component` | covered |
 | `Controller` | covered |
 | `Directive` | deferred |
@@ -111,7 +113,6 @@ necessary.
 | `AngularService` | deferred |
 | `AnimateService` | deferred |
 | `AriaService` | deferred |
-| `AttributesService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
@@ -136,7 +137,6 @@ necessary.
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
 | `TemplateRequestService` | covered |
-| `TopicService` | covered |
 | `WebComponentService` | deferred |
 | `WebSocketService` | covered |
 | `WebTransportService` | deferred |

@@ -19,6 +19,9 @@ AngularTS builds on AngularJS' decade of production hardening and adds:
 - built-in animations
 - declarative HTTP directives inspired by HTMX
 - injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, streams and WASM modules
+- first class support for Google Closure compiler and its J2CL and ClojureScript compilation targets
+- first class support for JS targets: Scala, Kotlin, Gleam
+- first class support for WASM targets: Rust, Golang, Zig, C, C++ 
 
 The result is a high-performance, buildless, multi-paradigm framework that stays
 close to Web standards while preserving AngularJS' HTML-first model.
@@ -29,6 +32,7 @@ AngularTS is a good fit if you:
 - want a framework that starts simple but still scales to large applications
 - need direct DOM access and predictable runtime behavior
 - care about performance and low tooling overhead
+- want to build parts of your application in another language without 'zero JS' lock-in
 
 ## Getting Started
 
@@ -66,9 +70,11 @@ only the directives, providers, filters and services your application uses.
 For example, an application that only needs `ng-bind` and `ng-repeat` can use:
 
 ```js
-import { createAngularCustom } from "@angular-wave/angular.ts/runtime";
-import { ngBindDirective } from "@angular-wave/angular.ts/directives/bind";
-import { ngRepeatDirective } from "@angular-wave/angular.ts/directives/repeat";
+import {
+  createAngularCustom,
+  ngBindDirective,
+  ngRepeatDirective,
+} from "@angular-wave/angular.ts/runtime";
 
 const angular = createAngularCustom({
   attachToWindow: true,
@@ -88,8 +94,10 @@ Custom runtime can also be published as a micro app, wrapped in a standalone cus
 element (Web Component):
 
 ```js
-import { defineAngularElement } from "@angular-wave/angular.ts/runtime/web-component";
-import { ngClickDirective } from "@angular-wave/angular.ts/directives/events";
+import {
+  defineAngularElement,
+  ngClickDirective,
+} from "@angular-wave/angular.ts/runtime";
 
 defineAngularElement("billing-summary", {
   ngModule: {

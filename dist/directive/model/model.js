@@ -1139,7 +1139,7 @@ function ngModelDirective($attributes) {
             // Setup initial state of the control
             element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
             return {
-                pre: (scope, preElement, attr, ctrls) => {
+                pre: (scope, preElement, ctrls) => {
                     const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
                     const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
                     if (optionsCtrl) {
@@ -1156,7 +1156,7 @@ function ngModelDirective($attributes) {
                     };
                     const deregisterNameObserver = $attributes
                         ? $attributes.observe(scope, preElement, "name", () => {
-                            handleNameChange(readModelAttr($attributes, preElement, attr, "name"));
+                            handleNameChange(readModelAttr($attributes, preElement, undefined, "name"));
                         })
                         : () => {
                             /* empty */
@@ -1192,7 +1192,7 @@ function ngModelDirective($attributes) {
                         deregisterWatch();
                     });
                 },
-                post: (scope, elementPost, _attr, ctrls) => {
+                post: (scope, elementPost, ctrls) => {
                     const [modelCtrl] = ctrls;
                     const { change } = elementPost.dataset;
                     const changeFn = change ? modelCtrl._parse(change) : undefined;

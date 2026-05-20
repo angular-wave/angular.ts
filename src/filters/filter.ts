@@ -15,11 +15,11 @@ import {
 
 const filterError = createErrorFactory("filter");
 
-export type FilterFn = (...args: never[]) => unknown;
+type Dynamic = ReturnType<typeof JSON.parse>;
 
-export type FilterFactory = (...args: never[]) => FilterFn & {
-  $$moduleName: string;
-};
+export type FilterFn = (...args: Dynamic[]) => unknown;
+
+export type FilterFactory = (...args: Dynamic[]) => FilterFn;
 
 export type FilterService = (name: string) => FilterFn;
 

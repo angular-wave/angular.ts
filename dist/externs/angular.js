@@ -165,133 +165,9 @@ ng.Angular.prototype.getScopeByName = function(name) {};
 
 /**
  * Dependency-annotated directive factory array containing dependency token names followed by a directive factory function.
- * @typedef {!Array<(string|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void))>}
+ * @typedef {!Array<(string|function(...?): (!ng.Directive|(function(!ng.Scope, !HTMLElement): void|function(!ng.Scope, !HTMLElement, !ng.TranscludeFn): void|function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void)))>}
  */
 ng.AnnotatedDirectiveFactory;
-
-/**
- * Public `$attrs` contract passed to directive compile/link/template hooks. The runtime object is an internal compile facade. Public code should treat `$attrs` as a normalized attribute view with observer and class helpers, not as a constructible class.
- * @record
- */
-ng.Attributes = function() {};
-
-/**
- * Map from normalized attribute names to original DOM attribute names.
- * @type {!Object<string, string>}
- */
-ng.Attributes.prototype.$attr;
-
-/**
- * Normalize a DOM attribute name using AngularTS directive matching rules.
- * @param {string} name
- * @return {string}
- */
-ng.Attributes.prototype.$normalize = function(name) {};
-
-/**
- * Add one or more classes to the directive element.
- * @param {string} classVal
- * @return {void}
- */
-ng.Attributes.prototype.$addClass = function(classVal) {};
-
-/**
- * Remove one or more classes from the directive element.
- * @param {string} classVal
- * @return {void}
- */
-ng.Attributes.prototype.$removeClass = function(classVal) {};
-
-/**
- * Replace old class tokens with new class tokens on the directive element.
- * @param {string} newClasses
- * @param {string} oldClasses
- * @return {void}
- */
-ng.Attributes.prototype.$updateClass = function(newClasses, oldClasses) {};
-
-/**
- * Observe changes to a normalized attribute value.
- * @param {string} key
- * @param {function((?|undefined)): ?} fn
- * @return {function(): void}
- */
-ng.Attributes.prototype.$observe = function(key, fn) {};
-
-/**
- * Public AngularTS AttributesService contract exposed through the global ng namespace for Closure-annotated applications.
- * @record
- */
-ng.AttributesService = function() {};
-
-/**
- * Public AttributesService.read member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
- * @return {(string|undefined)}
- */
-ng.AttributesService.prototype.read = function(element, normalizedName) {};
-
-/**
- * Public AttributesService.has member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
- * @return {boolean}
- */
-ng.AttributesService.prototype.has = function(element, normalizedName) {};
-
-/**
- * Public AttributesService.originalName member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
- * @return {(string|undefined)}
- */
-ng.AttributesService.prototype.originalName = function(element, normalizedName) {};
-
-/**
- * Public AttributesService.observe member exposed by the AngularTS namespace contract.
- * @param {(!ng.Scope|null|undefined)} scope
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
- * @param {function((string|undefined)): void} callback
- * @return {function(): void}
- */
-ng.AttributesService.prototype.observe = function(scope, element, normalizedName, callback) {};
-
-/**
- * Public AttributesService.set member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
- * @param {(boolean|null|string|undefined)} value
- * @param {(!Object|undefined)} options
- * @return {void}
- */
-ng.AttributesService.prototype.set = function(element, normalizedName, value, options) {};
-
-/**
- * Public AttributesService.addClass member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} classValue
- * @return {void}
- */
-ng.AttributesService.prototype.addClass = function(element, classValue) {};
-
-/**
- * Public AttributesService.removeClass member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} classValue
- * @return {void}
- */
-ng.AttributesService.prototype.removeClass = function(element, classValue) {};
-
-/**
- * Public AttributesService.updateClass member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} newClasses
- * @param {string} oldClasses
- * @return {void}
- */
-ng.AttributesService.prototype.updateClass = function(element, newClasses, oldClasses) {};
 
 /**
  * Defines a component's configuration object (a simplified directive definition object).
@@ -312,13 +188,13 @@ ng.Component.prototype.controller;
 ng.Component.prototype.controllerAs;
 
 /**
- * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * html template as a string or a function that returns an html template as a string which should be used as the contents of this component. Empty string by default. If template is a function, then it is injected with the following locals: $element - Current element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.template;
 
 /**
- * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element $attrs - Current attributes object for the element $attributes - Element-based normalized attribute service Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+ * Path or function that returns a path to an html template that should be used as the contents of this component. If templateUrl is a function, then it is injected with the following locals: $element - Current element Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
  * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
  */
 ng.Component.prototype.templateUrl;
@@ -398,7 +274,7 @@ ng.Directive.prototype.restrict;
 
 /**
  * Compile function for the directive
- * @type {(function(!HTMLElement, !ng.Attributes, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void|undefined)|undefined)}
+ * @type {(function(!HTMLElement, !Object, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
  */
 ng.Directive.prototype.compile;
 
@@ -422,7 +298,7 @@ ng.Directive.prototype.bindToController;
 
 /**
  * Link function(s) executed during linking
- * @type {(!Object|function(!ng.Scope, !HTMLElement, !ng.Attributes, TController, (!ng.TranscludeFn|undefined)): void|undefined)}
+ * @type {(!Object|function(...?): void|undefined)}
  */
 ng.Directive.prototype.link;
 
@@ -458,7 +334,7 @@ ng.Directive.prototype.scope;
 
 /**
  * Inline template
- * @type {(function(!HTMLElement, !ng.Attributes): string|string|undefined)}
+ * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
  */
 ng.Directive.prototype.template;
 
@@ -470,7 +346,7 @@ ng.Directive.prototype.templateNamespace;
 
 /**
  * Template URL for loading from server
- * @type {(function(!HTMLElement, !ng.Attributes): string|string|undefined)}
+ * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
  */
 ng.Directive.prototype.templateUrl;
 
@@ -494,7 +370,7 @@ ng.DirectiveRestrict;
 
 /**
  * Directive registration factory that returns either a directive definition object or a link function.
- * @typedef {(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, !ng.Attributes, ?, (!ng.TranscludeFn|undefined)): void))}
+ * @typedef {(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|(function(!ng.Scope, !HTMLElement): void|function(!ng.Scope, !HTMLElement, !ng.TranscludeFn): void|function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void)))}
  */
 ng.DirectiveFactory;
 
@@ -706,14 +582,6 @@ ng.NgModule.prototype.appComponent = function(name, options) {};
 ng.NgModule.prototype.webComponent = function(name, elementClass) {};
 
 /**
- * Register a topic-bound event bus facade as an injectable service. Events published through the facade are namespaced as `${topic}:${event}`, keeping raw event-bus topic strings out of application services.
- * @param {string} name
- * @param {string} topic
- * @return {!ng.NgModule}
- */
-ng.NgModule.prototype.topic = function(name, topic) {};
-
-/**
  * A function returned by the `$compile` service that links a compiled template to a scope.
  * @record
  */
@@ -915,7 +783,7 @@ ng.Scope.prototype.$getById = function(id) {};
 ng.Scope.prototype.$searchByName = function(name) {};
 
 /**
- * A function passed as the fifth argument to a `PublicLinkFn` link function. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive.
+ * A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive.
  * @record
  */
 ng.TranscludeFn = function() {};
@@ -2930,51 +2798,6 @@ ng.TemplateCacheService;
 ng.TemplateRequestService;
 
 /**
- * Single-topic pub/sub object used to publish values and manage subscriptions.
- * @record
- */
-ng.TopicService = function() {};
-
-/**
- * Base topic prefix used by this facade.
- * @type {string}
- */
-ng.TopicService.prototype.topic;
-
-/**
- * Publish an event under `${topic}:${event}`.
- * @param {string} event
- * @param {...?} var_args
- * @return {boolean}
- */
-ng.TopicService.prototype.publish = function(event, var_args) {};
-
-/**
- * Subscribe to an event under `${topic}:${event}`.
- * @param {string} event
- * @param {function(...?): ?} fn
- * @param {(?|undefined)} context
- * @return {function(): boolean}
- */
-ng.TopicService.prototype.subscribe = function(event, fn, context) {};
-
-/**
- * Subscribe once to an event under `${topic}:${event}`.
- * @param {string} event
- * @param {function(...?): ?} fn
- * @param {(?|undefined)} context
- * @return {function(): boolean}
- */
-ng.TopicService.prototype.subscribeOnce = function(event, fn, context) {};
-
-/**
- * Return subscriber count for an event under `${topic}:${event}`.
- * @param {string} event
- * @return {number}
- */
-ng.TopicService.prototype.getCount = function(event) {};
-
-/**
  * Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
  * @record
  */
@@ -3695,18 +3518,6 @@ ng.InjectionTokens = function() {};
  * @type {string}
  */
 ng.InjectionTokens.prototype.$angular;
-
-/**
- * Public InjectionTokens.$attrs member exposed by the AngularTS namespace contract.
- * @type {string}
- */
-ng.InjectionTokens.prototype.$attrs;
-
-/**
- * Public InjectionTokens.$attributes member exposed by the AngularTS namespace contract.
- * @type {string}
- */
-ng.InjectionTokens.prototype.$attributes;
 
 /**
  * Public InjectionTokens.$scope member exposed by the AngularTS namespace contract.

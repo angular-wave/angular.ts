@@ -80,7 +80,6 @@ func TestHTTPRequestFacadesPreserveOptions(t *testing.T) {
 }
 
 func TestDiagnosticsAndPersistenceFacadesPreserveMetadata(t *testing.T) {
-	topic := NewTopicService("todos")
 	event := ScopeEvent{Name: "save", DefaultPrevented: true}
 	invocation := InvocationDetail{
 		Expression: "save(todo)",
@@ -95,9 +94,6 @@ func TestDiagnosticsAndPersistenceFacadesPreserveMetadata(t *testing.T) {
 	}
 	store := CookieStoreOptions{Cookie: cookie}
 
-	if topic.EventName("saved") != "todos:saved" || topic.EventName("") != "todos" {
-		t.Fatalf("unexpected topic names")
-	}
 	if event.Name != "save" || !event.DefaultPrevented {
 		t.Fatalf("unexpected scope event: %#v", event)
 	}

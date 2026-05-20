@@ -1,8 +1,10 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _compile,
   _http,
   _injector,
+  _interpolate,
   _log,
   _parse,
   _sse,
@@ -17,6 +19,7 @@ import {
   isDefined,
   isInstanceOf,
   isObject,
+  stringify,
   toKeyValue,
   uppercase,
   wait,
@@ -29,6 +32,7 @@ import {
   type RealtimeProtocolMessage,
   type SwapModeType,
 } from "../realtime/protocol.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 
 export {
@@ -75,6 +79,7 @@ function defineDirective(
     _compile,
     _log,
     _parse,
+    _interpolate,
     _state,
     _sse,
     _injector,
@@ -109,11 +114,12 @@ export function createHttpDirective(
     $compile: ng.CompileService,
     $log: ng.LogService,
     $parse: ng.ParseService,
+    $interpolate: ng.InterpolateService,
     $state: ng.StateService,
     $sse: ng.SseService,
     $injector: ng.InjectorService,
     $stream: ng.StreamService,
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
   ): ng.Directive {
     const getAnimate = createLazyAnimate($injector);
 
@@ -178,16 +184,15 @@ export function createHttpDirective(
 
     return {
       restrict: "A",
-      link(
-        scope: ng.Scope,
-        element: HttpDirectiveElement,
-        attrs: ng.Attributes & Record<string, unknown>,
-      ) {
+      link(scope: ng.Scope, element: HttpDirectiveElement) {
         const readAttr = (name: string): string | undefined => {
           const value = $attributes.read(element, name);
-          const attrValue = attrs[name] as string | undefined;
 
-          return value?.includes("{{") ? attrValue : value;
+          if (!value?.includes("{{")) return value;
+
+          const interpolated = $interpolate(value)?.(scope);
+
+          return interpolated == null ? undefined : stringify(interpolated);
         };
 
         const hasAttr = (name: string): boolean =>
@@ -212,9 +217,13 @@ export function createHttpDirective(
             element.dispatchEvent(new Event(eventName));
           });
 
-          $attributes.observe(scope, element, "latch", () => {
-            dispatchAfterFirst();
-          });
+          dispatchAfterFirst();
+          observeNormalizedAttribute(
+            scope,
+            element,
+            "latch",
+            dispatchAfterFirst,
+          );
         }
 
         let throttled = false;

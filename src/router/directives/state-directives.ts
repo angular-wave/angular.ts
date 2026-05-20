@@ -1,3 +1,5 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
+import type { DirectiveAttributes } from "../../interface.ts";
 import {
   _attributes,
   _interpolate,
@@ -295,7 +297,7 @@ export function StateRefDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const $state = $stateService;
 
@@ -305,7 +307,6 @@ export function StateRefDirective(
     link: (
       scope: ng.Scope,
       element: HTMLElement,
-      attrs: ng.Attributes,
       ngSrefActive: ArrayLike<StateRefActiveController | undefined>,
     ) => {
       const type = getTypeInfo(element);
@@ -396,7 +397,7 @@ export function StateRefDynamicDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -404,7 +405,6 @@ export function StateRefDynamicDirective(
     link(
       scope: ng.Scope,
       element: HTMLElement,
-      attrs: ng.Attributes,
       ngSrefActive: ArrayLike<StateRefActiveController | undefined>,
     ) {
       const type = getTypeInfo(element);
@@ -452,16 +452,13 @@ export function StateRefDynamicDirective(
 
       inputAttrs.forEach((field) => {
         function readFieldExpression(): string | undefined {
-          const expr = $attributes.read(element, field);
-          const attrExpr = attrs[field] as string | undefined;
-
-          return expr?.includes("{{") ? attrExpr : expr;
+          return $attributes.read(element, field);
         }
 
         const initialExpr = readFieldExpression();
 
         (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
-          initialExpr
+          initialExpr && !initialExpr.includes("{{")
             ? ($parse(initialExpr)(scope) as TransitionOptions & RawParams)
             : undefined;
 
@@ -470,7 +467,7 @@ export function StateRefDynamicDirective(
 
           watchDeregFns[field]();
 
-          if (!expr) return;
+          if (!expr || expr.includes("{{")) return;
 
           watchDeregFns[field] =
             scope.$watch(expr, (newval) => {
@@ -512,7 +509,7 @@ export function StateRefActiveDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -520,7 +517,7 @@ export function StateRefActiveDirective(
       this: StateRefActiveController,
       $scope: ng.Scope,
       $element: HTMLElement,
-      $attrs: ng.Attributes,
+      $attrs: DirectiveAttributes,
     ): undefined {
       let states: ActiveClassState[] = [];
 

@@ -18,6 +18,12 @@ The ABI contract is documented in:
 integrations/wasm/ABI.md
 ```
 
+Directive link callback parity across every Wasm language target must follow
+the current attrs-free AngularTS shape: `(scope, element)`, `(scope, element,
+transclude)`, or `(scope, element, controller, transclude?)`. Attribute helpers
+remains part of compile/template/controller APIs only; Wasm directive APIs must
+not reintroduce a link-time attributes argument.
+
 ## Design Rules
 
 - `WasmScope` is a scope-boundary wrapper, not a transport protocol.

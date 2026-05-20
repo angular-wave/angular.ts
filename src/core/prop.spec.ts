@@ -194,37 +194,60 @@ describe("ngProp*", () => {
   it("should use the full ng-prop-* attribute name in $attr mappings", async () => {
     let attrs;
 
-    compileProvider.directive("attrExposer", () => ({
-      link($scope, $element, $attrs) {
-        attrs = $attrs;
+    compileProvider.directive("attrExposer", ($attributes) => ({
+      link($scope, $element) {
+        attrs = {
+          title: $attributes.read($element, "title"),
+          titleAttr: $attributes.originalName($element, "title"),
+          ngPropTitle: $attributes.read($element, "ngPropTitle"),
+          ngPropTitleAttr: $attributes.originalName($element, "ngPropTitle"),
+          superTitle: $attributes.read($element, "superTitle"),
+          superTitleAttr: $attributes.originalName($element, "superTitle"),
+          ngPropSuperTitle: $attributes.read($element, "ngPropSuperTitle"),
+          ngPropSuperTitleAttr: $attributes.originalName(
+            $element,
+            "ngPropSuperTitle",
+          ),
+          myCamelTitle: $attributes.read($element, "myCamelTitle"),
+          myCamelTitleAttr: $attributes.originalName($element, "myCamelTitle"),
+          ngPropMyCamelTitle: $attributes.read($element, "ngPropMyCamelTitle"),
+          ngPropMyCamelTitleAttr: $attributes.originalName(
+            $element,
+            "ngPropMyCamelTitle",
+          ),
+        };
       },
     }));
     $compile(
       '<div attr-exposer ng-prop-title="12" ng-prop-super-title="34" ng-prop-my-camel-title="56">',
     )($rootScope);
     await wait();
-    expect(attrs.title).toBeUndefined();
-    expect(attrs.$attr.title).toBeUndefined();
+    expect(attrs.title).toBe("12");
+    expect(attrs.titleAttr).toBe("title");
     expect(attrs.ngPropTitle).toBe("12");
-    expect(attrs.$attr.ngPropTitle).toBe("ng-prop-title");
+    expect(attrs.ngPropTitleAttr).toBe("ng-prop-title");
 
     expect(attrs.superTitle).toBeUndefined();
-    expect(attrs.$attr.superTitle).toBeUndefined();
+    expect(attrs.superTitleAttr).toBeUndefined();
     expect(attrs.ngPropSuperTitle).toBe("34");
-    expect(attrs.$attr.ngPropSuperTitle).toBe("ng-prop-super-title");
+    expect(attrs.ngPropSuperTitleAttr).toBe("ng-prop-super-title");
 
     expect(attrs.myCamelTitle).toBeUndefined();
-    expect(attrs.$attr.myCamelTitle).toBeUndefined();
+    expect(attrs.myCamelTitleAttr).toBeUndefined();
     expect(attrs.ngPropMyCamelTitle).toBe("56");
-    expect(attrs.$attr.ngPropMyCamelTitle).toBe("ng-prop-my-camel-title");
+    expect(attrs.ngPropMyCamelTitleAttr).toBe("ng-prop-my-camel-title");
   });
 
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
     let attrs;
 
-    compileProvider.directive("attrExposer", () => ({
-      link($scope, $element, $attrs) {
-        attrs = $attrs;
+    compileProvider.directive("attrExposer", ($attributes) => ({
+      link($scope, $element) {
+        attrs = {
+          title: $attributes.read($element, "title"),
+          titleAttr: $attributes.originalName($element, "title"),
+          ngPropTitleAttr: $attributes.originalName($element, "ngPropTitle"),
+        };
       },
     }));
 
@@ -232,8 +255,8 @@ describe("ngProp*", () => {
       '<div attr-exposer ng-prop-title="42" ng-attr-title="foo" title="bar">',
     )($rootScope);
     expect(attrs.title).toBe("foo");
-    expect(attrs.$attr.title).toBe("title");
-    expect(attrs.$attr.ngPropTitle).toBe("ng-prop-title");
+    expect(attrs.titleAttr).toBe("title");
+    expect(attrs.ngPropTitleAttr).toBe("ng-prop-title");
   });
 
   it("should disallow property binding to onclick", () => {
@@ -252,11 +275,11 @@ describe("ngProp*", () => {
         logs.push(`compile=${$element.myName}`);
 
         return {
-          pre($scope, $element, $attrs) {
+          pre($scope, $element) {
             logs.push(`preLinkP0=${$element.myName}`);
             $rootScope.name = "pre0";
           },
-          post($scope, $element, $attrs) {
+          post($scope, $element) {
             logs.push(`postLink=${$element.myName}`);
             $rootScope.name = "post0";
           },
@@ -268,7 +291,7 @@ describe("ngProp*", () => {
       priority: 101,
       compile() {
         return {
-          pre($scope, $element, $attrs) {
+          pre($scope, $element) {
             logs.push(`preLinkP101=${$element.myName}`);
             $rootScope.name = "pre101";
           },

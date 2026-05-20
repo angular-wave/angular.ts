@@ -1521,35 +1521,6 @@ pub trait RestBackend {
 /// Listener callback shape used by the `$eventBus` facade.
 pub type EventBusListener<T> = fn(T);
 
-/// Topic-bound event bus facade created by AngularTS module topic registration.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TopicService {
-    topic: String,
-}
-
-impl TopicService {
-    /// Creates a topic-bound event facade for the supplied topic prefix.
-    pub fn new(topic: impl Into<String>) -> Self {
-        Self {
-            topic: topic.into(),
-        }
-    }
-
-    /// Returns the topic prefix used by this facade.
-    pub fn topic(&self) -> &str {
-        &self.topic
-    }
-
-    /// Returns the fully qualified event bus topic for an event name.
-    pub fn event_name(&self, event: &str) -> String {
-        if event.is_empty() {
-            self.topic.clone()
-        } else {
-            format!("{}:{}", self.topic, event)
-        }
-    }
-}
-
 #[cfg(target_arch = "wasm32")]
 fn decode_http_response<T>(
     value: wasm_bindgen::JsValue,
@@ -2487,38 +2458,6 @@ mod browser {
         }
     }
 
-    impl super::TopicService {
-        /// Publishes one value under this topic facade.
-        pub fn publish(&self, event_bus: &EventBusService, event: &str, value: &JsValue) -> bool {
-            event_bus.publish(&self.event_name(event), value)
-        }
-
-        /// Subscribes to one event under this topic facade.
-        pub fn subscribe(
-            &self,
-            event_bus: &EventBusService,
-            event: &str,
-            listener: &Function,
-        ) -> Function {
-            event_bus.subscribe(&self.event_name(event), listener)
-        }
-
-        /// Subscribes once to one event under this topic facade.
-        pub fn subscribe_once(
-            &self,
-            event_bus: &EventBusService,
-            event: &str,
-            listener: &Function,
-        ) -> Function {
-            event_bus.subscribe_once(&self.event_name(event), listener)
-        }
-
-        /// Returns subscriber count for one event under this topic facade.
-        pub fn get_count(&self, event_bus: &EventBusService, event: &str) -> u32 {
-            event_bus.get_count(&self.event_name(event))
-        }
-    }
-
     impl Service for HttpService {
         const TOKEN_NAME: &'static str = "$http";
         const EXPORT_NAME: &'static str = "__ng_service_HttpService";
@@ -2684,15 +2623,6 @@ mod tests {
             HttpResponseStatus::from_angular("timeout"),
             HttpResponseStatus::Timeout
         );
-    }
-
-    #[test]
-    fn topic_service_qualifies_event_names() {
-        let service = TopicService::new("tasks");
-
-        assert_eq!(service.topic(), "tasks");
-        assert_eq!(service.event_name("saved"), "tasks:saved");
-        assert_eq!(service.event_name(""), "tasks");
     }
 
     #[test]

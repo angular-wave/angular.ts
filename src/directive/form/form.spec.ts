@@ -37,7 +37,7 @@ describe("form", () => {
       ($compileProvider) => {
         $compileProvider.directive("storeModelCtrl", () => ({
           require: "ngModel",
-          link(scope, elm, attr, ctrl) {
+          link(scope, elm, ctrl) {
             control = ctrl;
           },
         }));

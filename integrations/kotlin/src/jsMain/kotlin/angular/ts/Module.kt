@@ -2,6 +2,8 @@ package angular.ts
 
 import angular.ts.generated.NgModule as RawNgModule
 
+public typealias FilterFactory = () -> (Any?) -> Any?
+
 public class NgModule internal constructor(
     internal val raw: RawNgModule,
 ) {
@@ -69,6 +71,14 @@ public class NgModule internal constructor(
         elementClass: ScopeElementConstructor<TState>,
     ): NgModule {
         raw.webComponent(name, elementClass.raw)
+        return this
+    }
+
+    public fun filter(
+        name: String,
+        factory: FilterFactory,
+    ): NgModule {
+        raw.filter(name, factory)
         return this
     }
 

@@ -11,14 +11,6 @@ pub fn angular() -> Token(namespace.AngularService) {
   token.new("$angular")
 }
 
-pub fn attrs() -> Token(namespace.Attributes) {
-  token.new("$attrs")
-}
-
-pub fn attributes() -> Token(js.JsValue) {
-  token.new("$attributes")
-}
-
 pub fn scope() -> Token(namespace.Scope) {
   token.new("$scope")
 }

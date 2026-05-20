@@ -1,4 +1,4 @@
-export { angular, HttpRestBackend } from "./index.ts";
+export { angular } from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
 import type {
@@ -13,8 +13,6 @@ import type {
   AnchorScrollProvider as TAnchorScrollProvider,
   AnchorScrollService as TAnchorScrollService,
 } from "./services/anchor-scroll/anchor-scroll.ts";
-import type { AttributesService as TAttributesService } from "./services/attributes/attributes.ts";
-
 import type { ControllerService as TControllerService } from "./core/controller/controller.ts";
 import type {
   ExceptionHandler as TExceptionHandler,
@@ -67,11 +65,9 @@ import type { LogService as TLogService } from "./services/log/log.ts";
 import type {
   PubSubProvider as TPubSubProvider,
   PubSub as TPubSub,
-  TopicService as TTopicService,
 } from "./services/pubsub/pubsub.ts";
 import type {
   AnnotatedFactory as TAnnotatedFactory,
-  Attributes as TAttributes,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
   DirectiveRestrict as TDirectiveRestrict,
@@ -230,10 +226,6 @@ declare global {
 
     export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
 
-    export type Attributes = TAttributes;
-
-    export type AttributesService = TAttributesService;
-
     export type Component = TComponent;
 
     export type Controller = TController;
@@ -371,8 +363,6 @@ declare global {
     export type TemplateCacheService = Map<string, string>;
 
     export type TemplateRequestService = TTemplateRequestService;
-
-    export type TopicService = TTopicService;
 
     // Support types
     export type AngularService = Angular;

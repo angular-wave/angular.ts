@@ -1,3 +1,4 @@
+import type { DirectiveAttributes } from "../../interface.ts";
 import { _element, _scope } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 import { removeElement } from "../../shared/dom.ts";
@@ -12,7 +13,7 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 
 export type SelectScope = ng.Scope &
   Record<string, unknown> & {
@@ -22,12 +23,12 @@ export type SelectScope = ng.Scope &
 
 export type NgModelController = ng.NgModelController & Record<string, unknown>;
 
-export type SelectAttributes = ng.Attributes & Record<string, unknown>;
+export type SelectAttributes = DirectiveAttributes & Record<string, unknown>;
 
 export type InterpolateFn = ((scope: ng.Scope) => unknown) | null | undefined;
 
 function readOptionElementAttr(
-  $attributes: ng.AttributesService | undefined,
+  $attributes: AttributesService | undefined,
   optionElement: HTMLOptionElement,
   optionAttrs: SelectAttributes,
   normalizedName: string,
@@ -46,21 +47,19 @@ function readOptionElementAttr(
 }
 
 function hasInterpolatedOptionAttr(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
   optionElement: HTMLOptionElement,
   optionAttrs: SelectAttributes,
   normalizedName: string,
 ): boolean {
   return Boolean(
-    ($attributes as InternalAttributesService)._isInterpolated(
-      optionElement,
-      normalizedName,
-    ) || $attributes.read(optionElement, normalizedName)?.includes("{{"),
+    $attributes._isInterpolated(optionElement, normalizedName) ||
+    $attributes.read(optionElement, normalizedName)?.includes("{{"),
   );
 }
 
 function observeOptionElementAttr(
-  $attributes: ng.AttributesService | undefined,
+  $attributes: AttributesService | undefined,
   optionScope: SelectScope,
   optionElement: HTMLOptionElement,
   optionAttrs: SelectAttributes,
@@ -98,7 +97,7 @@ function observeOptionElementAttr(
 }
 
 function setOptionElementAttr(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
   optionElement: HTMLOptionElement,
   normalizedName: string,
   value: string,
@@ -474,7 +473,7 @@ export class SelectController {
     optionAttrs: SelectAttributes,
     interpolateValueFn: InterpolateFn,
     interpolateTextFn: InterpolateFn,
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
     initialValue?: string,
     hasNgValue = false,
   ) {

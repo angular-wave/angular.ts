@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform") version "1.9.23"
+    `maven-publish`
 }
 
 group = "dev.angularwave"
@@ -7,6 +8,36 @@ version = "0.27.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+}
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set("AngularTS Kotlin")
+            description.set("Kotlin/JS facade for authoring AngularTS applications.")
+            url.set("https://github.com/angular-wave/angular.ts")
+
+            licenses {
+                license {
+                    name.set("MIT")
+                    url.set("https://opensource.org/licenses/MIT")
+                }
+            }
+
+            developers {
+                developer {
+                    id.set("angular-wave")
+                    name.set("Angular Wave")
+                }
+            }
+
+            scm {
+                connection.set("scm:git:https://github.com/angular-wave/angular.ts.git")
+                developerConnection.set("scm:git:ssh://git@github.com/angular-wave/angular.ts.git")
+                url.set("https://github.com/angular-wave/angular.ts")
+            }
+        }
+    }
 }
 
 kotlin {

@@ -28,8 +28,6 @@
     "js/ng.AnnotatedFactory"
     "js/ng.AppComponentOptions"
     "js/ng.AriaService"
-    "js/ng.Attributes"
-    "js/ng.AttributesService"
     "js/ng.CachedRestBackendOptions"
     "js/ng.CompileService"
     "js/ng.Component"
@@ -130,7 +128,6 @@
     "js/ng.SwapModeType"
     "js/ng.TemplateCacheService"
     "js/ng.TemplateRequestService"
-    "js/ng.TopicService"
     "js/ng.TranscludeFn"
     "js/ng.Transition"
     "js/ng.TransitionService"
@@ -194,8 +191,6 @@
      "js/ng.AnnotatedFactory" "Dependency-annotated injectable array containing dependency token names followed by the factory or constructor function."
      "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.Attributes" "Public `$attrs` contract passed to directive compile/link/template hooks. The runtime object is an internal compile facade. Public code should treat `$attrs` as a normalized attribute view with observer and class helpers, not as a constructible class."
-     "js/ng.AttributesService" "Public AngularTS AttributesService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
      "js/ng.CompileService" "Entry point for the `$compile` service."
      "js/ng.Component" "Defines a component's configuration object (a simplified directive definition object)."
@@ -296,8 +291,7 @@
      "js/ng.SwapModeType" "Public AngularTS SwapModeType contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TemplateCacheService" "Public AngularTS TemplateCacheService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TemplateRequestService" "Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true)."
-     "js/ng.TopicService" "Single-topic pub/sub object used to publish values and manage subscriptions."
-     "js/ng.TranscludeFn" "A function passed as the fifth argument to a `PublicLinkFn` link function. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive."
+     "js/ng.TranscludeFn" "A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive."
      "js/ng.Transition" "Represents a transition between two states. When navigating to a state, we are transitioning **from** the current state **to** the new state. This object contains all contextual information about the to/from states, parameters, resolves. It has information about all states being entered and exited as a result of the transition."
      "js/ng.TransitionService" "This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started."
      "js/ng.Validator" "Public AngularTS Validator contract exposed through the global ng namespace for Closure-annotated applications."
@@ -374,10 +368,6 @@
     "animation-handle-finish"
     "animation-handle-pause"
     "animation-handle-play"
-    "attributes-dollaradd-class"
-    "attributes-dollarnormalize"
-    "attributes-dollarremove-class"
-    "attributes-dollarupdate-class"
     "cookie-service-get"
     "cookie-service-get-all"
     "cookie-service-put"
@@ -436,7 +426,6 @@
     "ng-module-service"
     "ng-module-sse"
     "ng-module-state"
-    "ng-module-topic"
     "ng-module-wasm"
     "ng-module-web-component"
     "ng-module-web-transport"
@@ -501,8 +490,6 @@
     "stream-service-read-json-lines"
     "stream-service-read-lines"
     "stream-service-read-text"
-    "topic-service-get-count"
-    "topic-service-publish"
     "transition-abort"
     "transition-apply-view-configs"
     "transition-dollarfrom"
@@ -607,7 +594,6 @@
     "app-component-options-inputs"
     "app-component-options-isolate"
     "app-component-options-template"
-    "attributes-dollarattr"
     "cached-rest-backend-options-cache"
     "cached-rest-backend-options-network"
     "cached-rest-backend-options-strategy"
@@ -657,8 +643,6 @@
     "injection-tokens-dollaranimate-provider"
     "injection-tokens-dollararia"
     "injection-tokens-dollararia-provider"
-    "injection-tokens-dollarattributes"
-    "injection-tokens-dollarattrs"
     "injection-tokens-dollarcompile"
     "injection-tokens-dollarcompile-provider"
     "injection-tokens-dollarcontroller"
@@ -846,7 +830,6 @@
     "state-service-dollarcurrent"
     "state-service-dollarget"
     "state-service-params"
-    "topic-service-topic"
     "transition-dollarid"
     "transition-promise"
     "transition-success"
@@ -1105,26 +1088,6 @@
   "Public AnimationHandle.play member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
   [^js/ng.AnimationHandle target]
   (.play target))
-
-(defn attributes-dollaradd-class
-  "Add one or more classes to the directive element.\n\nParams:\n- classVal: {string}\n\nReturns: {void}"
-  [^js/ng.Attributes target ^string classVal]
-  (.$addClass target classVal))
-
-(defn attributes-dollarnormalize
-  "Normalize a DOM attribute name using AngularTS directive matching rules.\n\nParams:\n- name: {string}\n\nReturns: {string}"
-  ^string [^js/ng.Attributes target ^string name]
-  (.$normalize target name))
-
-(defn attributes-dollarremove-class
-  "Remove one or more classes from the directive element.\n\nParams:\n- classVal: {string}\n\nReturns: {void}"
-  [^js/ng.Attributes target ^string classVal]
-  (.$removeClass target classVal))
-
-(defn attributes-dollarupdate-class
-  "Replace old class tokens with new class tokens on the directive element.\n\nParams:\n- newClasses: {string}\n- oldClasses: {string}\n\nReturns: {void}"
-  [^js/ng.Attributes target ^string newClasses ^string oldClasses]
-  (.$updateClass target newClasses oldClasses))
 
 (defn cookie-service-get
   "Retrieves a raw cookie value.\n\nParams:\n- key: {string}\n\nReturns: {(null|string)}"
@@ -1445,11 +1408,6 @@
   "Register a router state during module configuration. This is equivalent to calling `$stateProvider.state(...)` in a config block, but keeps route declarations in the same fluent module API used for components, services, directives, and custom elements. Register a named router state during module configuration. The provided `name` is copied onto the state declaration before it is passed to `$stateProvider`.\n\nParams:\n- definition: {!ng.StateDeclaration}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^js/ng.StateDeclaration definition]
   (.state target definition))
-
-(defn ng-module-topic
-  "Register a topic-bound event bus facade as an injectable service. Events published through the facade are namespaced as `${topic}:${event}`, keeping raw event-bus topic strings out of application services.\n\nParams:\n- name: {string}\n- topic: {string}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string topic]
-  (.topic target name topic))
 
 (defn ng-module-wasm
   "Register a named WebAssembly module as an injectable service. The actual loading is delegated to the `$wasm` provider, so custom runtimes can decide whether WebAssembly support is included.\n\nParams:\n- name: {string}\n- src: {string}\n- imports: {(!Object<string, !Object<string, (!Object|number)>>|undefined)}\n- opts: {(!ng.WasmOptions|undefined)}\n\nReturns: {!ng.NgModule}"
@@ -1800,22 +1758,6 @@
   "Decodes a byte stream into text chunks.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<string>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.readText target stream options))
-
-(defn topic-service-get-count
-  "Return subscriber count for an event under `${topic}:${event}`.\n\nParams:\n- event: {string}\n\nReturns: {number}"
-  ^number [^js/ng.TopicService target ^string event]
-  (.getCount target event))
-
-(defn topic-service-publish
-  "Publish an event under `${topic}:${event}`.\n\nParams:\n- event: {string}\n- var_args: {...?}\n\nReturns: {boolean}"
-  (^boolean [^js/ng.TopicService target ^string event]
-   (.publish target event))
-  (^boolean [^js/ng.TopicService target ^string event value]
-   (.publish target event value))
-  (^boolean [^js/ng.TopicService target ^string event value extra]
-   (.publish target event value extra))
-  (^boolean [^js/ng.TopicService target ^string event value extra more]
-   (.publish target event value extra more)))
 
 (defn transition-abort
   "Aborts this transition Imperative API to abort a Transition. This only applies to Transitions that are not yet complete.\n\nReturns: {void}"
@@ -2322,11 +2264,6 @@
   ^string [^js/ng.AppComponentOptions target]
   (.-template target))
 
-(defn attributes-dollarattr
-  "Map from normalized attribute names to original DOM attribute names.\n\nType: {!Object<string, string>}"
-  ^js/Object [^js/ng.Attributes target]
-  (.-$attr target))
-
 (defn cached-rest-backend-options-cache
   "Async cache store, such as IndexedDB, Cache API, or memory.\n\nType: {!ng.RestCacheStore}"
   ^js/ng.RestCacheStore [^js/ng.CachedRestBackendOptions target]
@@ -2571,16 +2508,6 @@
   "Public InjectionTokens.$ariaProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.InjectionTokens target]
   (.-$ariaProvider target))
-
-(defn injection-tokens-dollarattributes
-  "Public InjectionTokens.$attributes member exposed by the AngularTS namespace contract.\n\nType: {string}"
-  ^string [^js/ng.InjectionTokens target]
-  (.-$attributes target))
-
-(defn injection-tokens-dollarattrs
-  "Public InjectionTokens.$attrs member exposed by the AngularTS namespace contract.\n\nType: {string}"
-  ^string [^js/ng.InjectionTokens target]
-  (.-$attrs target))
 
 (defn injection-tokens-dollarcompile
   "Public InjectionTokens.$compile member exposed by the AngularTS namespace contract.\n\nType: {string}"
@@ -3516,11 +3443,6 @@
   "The latest successful state parameters\n\nType: {!Object<string, ?>}"
   ^js/Object [^js/ng.StateService target]
   (.-params target))
-
-(defn topic-service-topic
-  "Base topic prefix used by this facade.\n\nType: {string}"
-  ^string [^js/ng.TopicService target]
-  (.-topic target))
 
 (defn transition-dollarid
   "Public Transition.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"

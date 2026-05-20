@@ -30,7 +30,7 @@ public final class App {
   private static Object createBadgeDirective() {
     JsPropertyMap<Object> directive = JsPropertyMap.of();
     directive.set("restrict", "A");
-    directive.set("link", (LinkFn) (scope, element, attrs) -> element.setTextContent(
+    directive.set("link", (LinkFn) (scope, element) -> element.setTextContent(
         "Application JavaScript compiled from Java with J2CL and AngularTS JsInterop bindings"));
     return directive;
   }
@@ -47,7 +47,7 @@ public final class App {
 
   @JsFunction
   private interface LinkFn {
-    void link(Object scope, TextElement element, Object attrs);
+    void link(Object scope, TextElement element);
   }
 
   @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "HTMLElement")

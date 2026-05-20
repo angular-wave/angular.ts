@@ -23,7 +23,6 @@
     "Scope": "Scope<Object?>"
   },
   "renames": {
-    "Attributes.$observe": "rawObserve",
     "CookieService.get": "get",
     "HttpService.get": "get",
     "InjectorService.get": "get",
@@ -44,7 +43,6 @@
     "NgModule.sse": "rawSse",
     "NgModule.state": "rawState",
     "NgModule.store": "rawStore",
-    "NgModule.topic": "rawTopic",
     "NgModule.value": "rawValue",
     "NgModule.wasm": "rawWasm",
     "NgModule.webComponent": "rawWebComponent",
@@ -58,9 +56,7 @@
     "StateService.is": "isState"
   },
   "returnTypes": {
-    "Attributes.$observe": "JSFunction",
     "PubSubService.getCount": "int",
-    "TopicService.getCount": "int",
     "WebComponentService.createElementScope": "Scope<TState>",
     "WebComponentService.defineAppComponent": "CustomElementConstructor",
     "WebComponentService.defineElement": "CustomElementConstructor"

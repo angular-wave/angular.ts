@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _attrs,
@@ -33,7 +34,11 @@ import {
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
 import type { NgModelController } from "../model/model.ts";
-import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
+import type {
+  DirectiveAttributes,
+  DirectiveCompileFn,
+  DirectiveLinkFn,
+} from "../../interface.ts";
 
 export interface ValidityCssHost {
   /** @internal */
@@ -233,11 +238,11 @@ export class FormController {
    */
   constructor(
     $element: HTMLFormElement,
-    $attrs: ng.Attributes,
+    $attrs: DirectiveAttributes,
     $scope: ng.Scope,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
   ) {
     this._isAnimated = hasAnimate($element);
     this._controls = [];
@@ -874,7 +879,7 @@ const formDirectiveFactory = function (
      */
     function (
       $parse: ng.ParseService,
-      $attributes: ng.AttributesService,
+      $attributes: AttributesService,
     ): ng.Directive {
       return {
         name: "form",
@@ -895,13 +900,15 @@ const formDirectiveFactory = function (
             pre: function ngFormPreLink(
               scope: ng.Scope,
               formElementParam: HTMLFormElement,
-              attrParam: ng.Attributes,
               ctrls: [FormController, ParentFormController | undefined],
             ) {
               const [controller] = ctrls;
 
               if (formElementParam instanceof HTMLFormElement) {
-                const shouldPreventSubmit = !("action" in attrParam);
+                const shouldPreventSubmit = !$attributes.has(
+                  formElementParam,
+                  "action",
+                );
 
                 const handleFormSubmission = function (event: Event) {
                   controller.$commitViewValue();

@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
 
@@ -14,7 +15,7 @@ function fallbackWhenEmpty(
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     scope: false,

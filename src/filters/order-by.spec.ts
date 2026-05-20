@@ -12,7 +12,7 @@ describe("Filter: orderBy", () => {
     window.angular.module("myModule", ["ng"]);
     const injector = createInjector(["myModule"]);
 
-    const $filter = injector.get("$filter");
+    const $filter = injector.get("$filter") as ng.FilterService;
 
     orderBy = orderByFilter = $filter("orderBy") as (...args: any[]) => any;
   });

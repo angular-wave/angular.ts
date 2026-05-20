@@ -77,11 +77,9 @@ function createHttpDirective(method, attrName) {
         }
         return {
             restrict: "A",
-            link(scope, element, attrs) {
+            link(scope, element) {
                 const readAttr = (name) => {
-                    const value = $attributes.read(element, name);
-                    const attrValue = attrs[name];
-                    return value?.includes("{{") ? attrValue : value;
+                    return $attributes.read(element, name);
                 };
                 const hasAttr = (name) => $attributes.has(element, name);
                 const setAttr = (name, value) => {

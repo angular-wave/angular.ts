@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
@@ -7,13 +8,11 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import type { Attributes } from "../../interface.ts";
+import type { DirectiveAttributes } from "../../interface.ts";
 
 ngBindDirective.$inject = [_attributes];
 /** Binds the watched expression as plain text content. */
-export function ngBindDirective(
-  $attributes: ng.AttributesService,
-): ng.Directive {
+export function ngBindDirective($attributes: AttributesService): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
       const expression = $attributes.read(element, "ngBind");
@@ -36,7 +35,7 @@ export function ngBindDirective(
 /** Binds the interpolated template value as plain text content. */
 ngBindTemplateDirective.$inject = [_attributes];
 export function ngBindTemplateDirective(
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
@@ -51,11 +50,11 @@ ngBindHtmlDirective.$inject = [_parse, _attributes];
 /** Binds trusted HTML into the element while still validating the expression. */
 export function ngBindHtmlDirective(
   $parse: ng.ParseService,
-  $attributes?: ng.AttributesService,
+  $attributes?: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
-    compile(tElement: Element, tAttrs: Attributes) {
+    compile(tElement: Element, tAttrs: DirectiveAttributes) {
       const expression: unknown =
         $attributes?.read(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
 

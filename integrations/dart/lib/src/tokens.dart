@@ -19,12 +19,6 @@ final angularToken = token<AngularService>(
   fromJs: (value) => _facade(value, AngularService.new),
 );
 
-/// The attrs token.
-final attrsToken = token<Attributes>(
-  '\$attrs',
-  fromJs: (value) => _facade(value, Attributes.new),
-);
-
 /// The scope token.
 final scopeToken = token<Scope<Object>>(
   '\$scope',

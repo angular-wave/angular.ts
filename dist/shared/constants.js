@@ -6,8 +6,7 @@ const UNTOUCHED_CLASS = "ng-untouched";
 const TOUCHED_CLASS = "ng-touched";
 const EMPTY_CLASS = "ng-empty";
 const NOT_EMPTY_CLASS = "ng-not-empty";
-// x prefix is being kept for view-directive.spec lines 1550, 565
-const PREFIX_REGEXP = /^((?:x|data)[-])/i;
+const PREFIX_REGEXP = /^(?:data-)/i;
 const SPECIAL_CHARS_REGEXP = /[-]+(.)/g;
 const ALIASED_ATTR = {
     ngMinlength: "minlength",

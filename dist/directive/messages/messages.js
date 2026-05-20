@@ -184,7 +184,7 @@ function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
     return {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
-        link($scope, element, _attrs, ngMessagesCtrl) {
+        link($scope, element, ngMessagesCtrl) {
             const src = $attributes.read(element, "ngMessagesInclude") ??
                 $attributes.read(element, "src") ??
                 "";
@@ -236,7 +236,7 @@ function ngMessageDirectiveFactory(isDefault) {
             priority: 1, // must run before ngBind, otherwise the text is set on the comment
             terminal: true,
             require: "^^ngMessages",
-            link: (scope, element, _attrs, ngMessagesCtrl, $transclude) => {
+            link: (scope, element, ngMessagesCtrl, $transclude) => {
                 let commentNode = element;
                 let records = null;
                 let staticExp;

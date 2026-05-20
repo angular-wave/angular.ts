@@ -1432,7 +1432,6 @@ describe("utility functions", () => {
       expect(directiveNormalize("data-ng-some-directive")).toBe(
         "ngSomeDirective",
       );
-      expect(directiveNormalize("x:ng_test")).toBe("x:ng_test");
     });
 
     it("should detect animation attributes only on elements", () => {

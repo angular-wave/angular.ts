@@ -62,27 +62,22 @@ function unwrapNgModelController(
 
 function readInputAttr(
   element: Element,
-  attr: ng.Attributes | undefined,
   normalizedName: string,
 ): string | undefined {
-  const attrValue: string | undefined = attr
-    ? (attr as unknown as Record<string, string | undefined>)[normalizedName]
-    : undefined;
   const dashName = normalizedName.replace(/[A-Z]/g, (char) => {
     return `-${char.toLowerCase()}`;
   });
 
   return (
-    attrValue ??
     element.getAttribute(`data-${dashName}`) ??
     element.getAttribute(dashName) ??
     undefined
   );
 }
 
-function inputType(element: InputElement, attr?: ng.Attributes): string {
+function inputType(element: InputElement): string {
   return (
-    readInputAttr(element, attr, "type") ??
+    readInputAttr(element, "type") ??
     (element instanceof HTMLInputElement ? element.type : "textarea")
   ).toLowerCase();
 }
@@ -296,7 +291,6 @@ export function inputDirective(): ng.Directive {
       pre(
         _scope: ng.Scope,
         element: HTMLElement,
-        attr: ng.Attributes,
         ctrls: [NgModelControllerProxied | undefined],
       ) {
         const [model] = ctrls;
@@ -305,7 +299,7 @@ export function inputDirective(): ng.Directive {
 
         const input = element as InputElement;
         const ctrl = unwrapNgModelController(model);
-        const type = inputType(input, attr);
+        const type = inputType(input);
         const valueKind = defaultValueKind(type);
         const updateEvent = nativeUpdateEvent(type);
         const binding = createInputControlBinding(

@@ -32,7 +32,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
             const autoScrollExp = $attributes.read(element, "autoscroll");
             const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
             const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
-            return (scope, $element, _$attr, ctrl, $transclude) => {
+            return (scope, $element, ctrl, $transclude) => {
                 if (!$transclude) {
                     return;
                 }
@@ -145,7 +145,7 @@ function ngIncludeFillContentDirective($compile) {
     return {
         priority: -400,
         require: "ngInclude",
-        link(scope, $element, _$attr, ctrl) {
+        link(scope, $element, ctrl) {
             $element.innerHTML = ctrl.template ?? "";
             $compile($element.childNodes)(scope);
         },

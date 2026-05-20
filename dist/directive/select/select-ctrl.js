@@ -13,7 +13,8 @@ function readOptionElementAttr($attributes, optionElement, optionAttrs, normaliz
     return elementValue ?? attrValue;
 }
 function hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, normalizedName) {
-    return Boolean($attributes._isInterpolated(optionElement, normalizedName) || $attributes.read(optionElement, normalizedName)?.includes("{{"));
+    return Boolean($attributes._isInterpolated(optionElement, normalizedName) ||
+        $attributes.read(optionElement, normalizedName)?.includes("{{"));
 }
 function observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, normalizedName, readValue, callback, skipInitial = false) {
     if (!$attributes) {

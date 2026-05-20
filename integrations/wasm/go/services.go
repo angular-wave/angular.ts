@@ -174,24 +174,6 @@ type InvocationDetail struct {
 	Arguments  []any
 }
 
-// TopicService qualifies event bus topics with an application prefix.
-type TopicService struct {
-	Topic string
-}
-
-// NewTopicService creates a topic-bound event facade.
-func NewTopicService(topic string) TopicService {
-	return TopicService{Topic: topic}
-}
-
-// EventName returns the fully qualified event bus topic.
-func (s TopicService) EventName(event string) string {
-	if event == "" {
-		return s.Topic
-	}
-	return s.Topic + ":" + event
-}
-
 // TemplateRequestService is the injectable AngularTS $templateRequest facade.
 type TemplateRequestService struct{ value jsValue }
 

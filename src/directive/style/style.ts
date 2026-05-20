@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
 import { keys } from "../../shared/utils.ts";
 
@@ -5,9 +6,7 @@ ngStyleDirective.$inject = [_attributes];
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
  */
-export function ngStyleDirective(
-  $attributes: ng.AttributesService,
-): ng.Directive {
+export function ngStyleDirective($attributes: AttributesService): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement): void {

@@ -936,143 +936,6 @@ base class GeneratedNgAriaService extends GeneratedNgFacade {
   }
 }
 
-/// Generated raw facade for ng.Attributes.
-base class GeneratedNgAttributes extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.Attributes.
-  const GeneratedNgAttributes(super.raw);
-
-  /// Reads the generated $attr property.
-  Object? get $attr => unsafe.jsToDart<Object?>(raw.getProperty('\$attr'.toJS));
-
-  /// Invokes the generated $normalize member.
-  String $normalize(String arg0) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-
-    return _toDartString(raw.callMethodVarArgs('\$normalize'.toJS, args))!;
-  }
-
-  /// Invokes the generated $addClass member.
-  void $addClass(String arg0) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('\$addClass'.toJS, args));
-  }
-
-  /// Invokes the generated $removeClass member.
-  void $removeClass(String arg0) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('\$removeClass'.toJS, args));
-  }
-
-  /// Invokes the generated $updateClass member.
-  void $updateClass(String arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('\$updateClass'.toJS, args));
-  }
-
-  /// Invokes the generated rawObserve member.
-  JSFunction rawObserve(String arg0, JSFunction arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    return unsafe
-        .jsToDart<JSFunction>(raw.callMethodVarArgs('\$observe'.toJS, args));
-  }
-}
-
-/// Generated raw facade for ng.AttributesService.
-base class GeneratedNgAttributesService extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.AttributesService.
-  const GeneratedNgAttributesService(super.raw);
-
-  /// Invokes the generated read member.
-  String? read(Object? arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    return _toDartString(raw.callMethodVarArgs('read'.toJS, args));
-  }
-
-  /// Invokes the generated has member.
-  bool has(Object? arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    return _toDartBool(raw.callMethodVarArgs('has'.toJS, args))!;
-  }
-
-  /// Invokes the generated originalName member.
-  String? originalName(Object? arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    return _toDartString(raw.callMethodVarArgs('originalName'.toJS, args));
-  }
-
-  /// Invokes the generated observe member.
-  Object? observe(Object? arg0, Object? arg1, String arg2, JSFunction arg3) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-    args.add(unsafe.dartToJs(arg2));
-    args.add(unsafe.dartToJs(arg3));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('observe'.toJS, args));
-  }
-
-  /// Invokes the generated setMember member.
-  void setMember(Object? arg0, String arg1, Object? arg2,
-      [Object? arg3 = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-    args.add(unsafe.dartToJs(arg2));
-    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('set'.toJS, args));
-  }
-
-  /// Invokes the generated addClass member.
-  void addClass(Object? arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('addClass'.toJS, args));
-  }
-
-  /// Invokes the generated removeClass member.
-  void removeClass(Object? arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('removeClass'.toJS, args));
-  }
-
-  /// Invokes the generated updateClass member.
-  void updateClass(Object? arg0, String arg1, String arg2) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-    args.add(unsafe.dartToJs(arg2));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('updateClass'.toJS, args));
-  }
-}
-
 /// Generated raw facade for ng.CachedRestBackendOptions.
 base class GeneratedNgCachedRestBackendOptions extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.CachedRestBackendOptions.
@@ -1982,13 +1845,6 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
 
   /// Reads the generated $angular property.
   String get $angular => _toDartString(raw.getProperty('\$angular'.toJS))!;
-
-  /// Reads the generated $attrs property.
-  String get $attrs => _toDartString(raw.getProperty('\$attrs'.toJS))!;
-
-  /// Reads the generated $attributes property.
-  String get $attributes =>
-      _toDartString(raw.getProperty('\$attributes'.toJS))!;
 
   /// Reads the generated $scope property.
   String get $scope => _toDartString(raw.getProperty('\$scope'.toJS))!;
@@ -3334,16 +3190,6 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg1));
 
     raw.callMethodVarArgs('webComponent'.toJS, args);
-    return this;
-  }
-
-  /// Invokes the generated rawTopic member.
-  GeneratedNgNgModule rawTopic(String arg0, String arg1) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-
-    raw.callMethodVarArgs('topic'.toJS, args);
     return this;
   }
 }
@@ -5479,63 +5325,6 @@ base class GeneratedNgTemplateRequestService extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg0));
 
     return _callFunction(raw as JSFunction, args) as JSPromise<JSAny?>;
-  }
-}
-
-/// Generated raw facade for ng.TopicService.
-base class GeneratedNgTopicService extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.TopicService.
-  const GeneratedNgTopicService(super.raw);
-
-  /// Reads the generated topic property.
-  String get topic => _toDartString(raw.getProperty('topic'.toJS))!;
-
-  /// Invokes the generated publish member.
-  bool publish(String arg0,
-      [Object? arg1 = _undefinedArgument,
-      Object? arg2 = _undefinedArgument,
-      Object? arg3 = _undefinedArgument,
-      Object? arg4 = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
-    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
-    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
-    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
-
-    return _toDartBool(raw.callMethodVarArgs('publish'.toJS, args))!;
-  }
-
-  /// Invokes the generated subscribe member.
-  Object? subscribe(String arg0, JSFunction arg1,
-      [Object? arg2 = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('subscribe'.toJS, args));
-  }
-
-  /// Invokes the generated subscribeOnce member.
-  Object? subscribeOnce(String arg0, JSFunction arg1,
-      [Object? arg2 = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-    args.add(unsafe.dartToJs(arg1));
-    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('subscribeOnce'.toJS, args));
-  }
-
-  /// Invokes the generated getCount member.
-  int getCount(String arg0) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(arg0));
-
-    return _toDartInt(raw.callMethodVarArgs('getCount'.toJS, args))!;
   }
 }
 

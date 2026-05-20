@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>AngularTS Kotlin Web Components</title>
+    <script src="/dist/angular-ts.umd.js"></script>
+    <script>
+      window.kotlinReadyEvents = [];
+      document.addEventListener("kotlin-ready", (event) => {
+        window.kotlinReadyEvents.push(event.detail);
+        const host = document.getElementById("kotlin-web-components");
+        if (host) {
+          host.dataset.readyEvents = String(window.kotlinReadyEvents.length);
+          host.dataset.lastReady = String(event.detail);
+        }
+      });
+    </script>
+    <script src="web_components.js" defer></script>
+  </head>
+  <body>
+    <main id="kotlin-web-components"></main>
+  </body>
+</html>

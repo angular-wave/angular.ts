@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
@@ -8,7 +9,7 @@ describe("createRealtimeSwapHandler", () => {
   let app: HTMLElement;
   let $compile: ng.CompileService;
   let $rootScope: ng.Scope;
-  let $attributes: ng.AttributesService;
+  let $attributes: AttributesService;
   let warnSpy: jasmine.Spy;
 
   beforeEach(() => {

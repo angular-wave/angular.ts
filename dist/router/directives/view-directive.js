@@ -54,7 +54,7 @@ function withResolvers() {
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
  *
- * ### Attributes
+ * ### Attribute Runtime
  *
  * - `name`: (Optional) A view name.
  *   Named views are targeted from [[StateDeclaration.views]] entries.

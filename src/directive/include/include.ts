@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _anchorScroll,
   _attributes,
@@ -13,7 +14,6 @@ import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import type { Attributes } from "../../interface.ts";
 
 ngIncludeDirective.$inject = [
   _templateRequest,
@@ -33,7 +33,7 @@ export function ngIncludeDirective(
   $injector: ng.InjectorService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -62,7 +62,6 @@ export function ngIncludeDirective(
       return (
         scope: ng.Scope & Record<string, unknown>,
         $element: Element,
-        _$attr: Attributes,
         ctrl: { template: string | null },
         $transclude?: ng.TranscludeFn,
       ): void => {
@@ -207,7 +206,6 @@ export function ngIncludeFillContentDirective(
     link(
       scope: ng.Scope,
       $element: HTMLElement,
-      _$attr: Attributes,
       ctrl: { template: string | null },
     ): void {
       $element.innerHTML = ctrl.template ?? "";

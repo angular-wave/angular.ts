@@ -146,7 +146,8 @@ fn manifest_bootstrap_js(manifest: &AngularTsManifest) -> Result<String, String>
     };
 
     Ok(format!(
-        r#"import {{ angular, WasmScopeAbi }} from "@angular-wave/angular.ts";
+        r#"import {{ angular }} from "@angular-wave/angular.ts";
+import {{ WasmScopeAbi }} from "@angular-wave/angular.ts/runtime";
 import init, * as app from {package_path};
 
 const scopeAbi = new WasmScopeAbi();
@@ -1302,7 +1303,8 @@ mod tests {
 
         let source = manifest_bootstrap_js(&manifest).unwrap();
 
-        assert!(source.contains("import { angular, WasmScopeAbi }"));
+        assert!(source.contains("import { angular }"));
+        assert!(source.contains("import { WasmScopeAbi }"));
         assert!(source.contains("globalThis.__angularTsWasmScopeAbi = scopeAbi;"));
         assert!(source.contains("const readBridgeMetadata = (registration) =>"));
         assert!(source.contains("app[`${exportName}_bridgeMetadata`]"));

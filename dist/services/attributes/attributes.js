@@ -9,7 +9,7 @@ const specialAttrHolder = document.createElement("div");
 const observerStates = new WeakMap();
 const interpolatedAttributes = new WeakMap();
 const observerScopes = new WeakMap();
-class AttributesProvider {
+class AttributesServiceProvider {
     constructor() {
         this.$get = [
             _injector,
@@ -332,4 +332,4 @@ class AttributesProvider {
     }
 }
 
-export { AttributesProvider };
+export { AttributesServiceProvider };

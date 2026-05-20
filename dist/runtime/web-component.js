@@ -1,5 +1,6 @@
-import { _webComponent, _rootScope } from '../injection-tokens.js';
-import { createAngularCustom } from './index.js';
+import { AngularRuntime } from '../angular-runtime.js';
+import { _rootScope, _webComponent } from '../injection-tokens.js';
+import { registerCustomNgModule } from './custom-ng.js';
 import { WebComponentProvider } from '../services/web-component/web-component.js';
 
 /**
@@ -13,7 +14,7 @@ import { WebComponentProvider } from '../services/web-component/web-component.js
 function defineAngularElement(name, options) {
     const { component, elementModule, ngModule, ...runtimeOptions } = options;
     const ngModuleOptions = ngModule ?? {};
-    const angular = createAngularCustom({
+    const angular = createAngularElementRuntime({
         ...runtimeOptions,
         ngModule: {
             ...ngModuleOptions,
@@ -55,6 +56,15 @@ function defineAngularElement(name, options) {
 }
 /** Alias for callers that prefer factory-style naming. */
 const createAngularElement = defineAngularElement;
+function createAngularElementRuntime(options) {
+    const angular = new AngularRuntime({
+        attachToWindow: false,
+        registerBuiltins: false,
+        ...options,
+    });
+    registerCustomNgModule(angular, options.ngModule);
+    return angular;
+}
 function defaultElementModuleName(name) {
     return `ngElement:${name}`;
 }

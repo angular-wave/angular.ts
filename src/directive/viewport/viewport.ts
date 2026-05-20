@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _parse } from "../../injection-tokens.ts";
 import { arrayFrom } from "../../shared/utils.ts";
 
@@ -6,7 +7,7 @@ ngViewportDirective.$inject = [_parse, _attributes];
 /** Evaluates expressions when an element enters or leaves the viewport. */
 export function ngViewportDirective(
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",

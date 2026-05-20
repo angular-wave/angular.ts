@@ -151,12 +151,18 @@ final class Directive<TScope, TController> {
     return unsafe.object({
       if (name != null) 'name': name,
       'restrict': restrict.symbol,
-      if (compile != null) 'compile': unsafe.JsValue(compileFunction(compile!)),
+      if (compile != null)
+        'compile': unsafe.JsValue(
+          compileFunction(compile!, hasRequire: require != null),
+        ),
       if (controller != null) 'controller': controller!.toAnnotatedArray(),
       if (controllerAs != null) 'controllerAs': controllerAs,
       if (bindToController != null)
         'bindToController': _bindingsToJs(bindToController!),
-      if (link != null) 'link': unsafe.JsValue(linkFunction(link!)),
+      if (link != null)
+        'link': unsafe.JsValue(
+          linkFunction(link!, hasRequire: require != null),
+        ),
       if (priority != null) 'priority': priority,
       if (terminal) 'terminal': terminal,
       if (replace) 'replace': replace,

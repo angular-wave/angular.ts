@@ -108,19 +108,6 @@ void main() {
     final ariaServiceRaw = JSObject()
       ..setProperty('config'.toJS, ((JSAny? _) => true.toJS).toJS);
     final ariaService = ng.AriaService(ariaServiceRaw);
-    Object? observedAttribute;
-    var observerRemoved = false;
-    final attributesRaw = JSObject()
-      ..setProperty(
-        r'$observe'.toJS,
-        ((JSAny? _, JSAny? callback) {
-          (callback as JSFunction).callAsFunction(null, 'initial'.toJS);
-          return (() {
-            observerRemoved = true;
-          }).toJS;
-        }).toJS,
-      );
-    final attributes = ng.Attributes(attributesRaw);
     final cookieProviderRaw = JSObject();
     final cookieProvider = ng.CookieProvider(cookieProviderRaw);
     final interpolateProviderRaw = JSObject()
@@ -538,13 +525,6 @@ void main() {
     anchorService.yOffset = 24;
     expect(anchorService.yOffset, isNotNull);
     expect(ariaService.config('ariaHidden'), isTrue);
-    final removeAttributeObserver = attributes.$observe('title', (value) {
-      observedAttribute = value;
-      return null;
-    });
-    expect(observedAttribute, 'initial');
-    removeAttributeObserver();
-    expect(observerRemoved, isTrue);
     cookieProvider.defaults = const ng.CookieOptions(path: '/app');
     expect(cookieProvider.defaults, isNotNull);
     expect(interpolateProvider.startSymbol, '{{');

@@ -12,26 +12,6 @@ final class AngularService extends GeneratedNgAngularService {
   const AngularService(super.raw);
 }
 
-/// Represents attributes.
-final class Attributes extends GeneratedNgAttributes {
-  /// Creates a attributes.
-  const Attributes(super.raw);
-
-  /// Observes an attribute value.
-  void Function() $observe(String key, Object? Function(Object? value) fn) {
-    final deregister = rawObserve(
-      key,
-      ((JSAny? value) {
-        return unsafe.dartToJs(fn(unsafe.jsToDart<Object?>(value)));
-      }).toJS,
-    );
-
-    return () {
-      deregister.callAsFunction(null);
-    };
-  }
-}
-
 /// Represents anchor scroll provider.
 final class AnchorScrollProvider extends GeneratedNgAnchorScrollProvider {
   /// Creates a anchor scroll provider.
@@ -581,12 +561,6 @@ final class TemplateCacheService extends AngularTsJsFacade {
 final class TemplateRequestService extends GeneratedNgTemplateRequestService {
   /// Creates a template request service.
   const TemplateRequestService(super.raw);
-}
-
-/// Represents topic service.
-final class TopicService extends GeneratedNgTopicService {
-  /// Creates a topic service.
-  const TopicService(super.raw);
 }
 
 /// Represents transition service.

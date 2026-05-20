@@ -18,43 +18,6 @@
     "./runtime": {
       "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
-    },
-    "./runtime/web-component": {
-      "types": "./@types/runtime/web-component.d.ts",
-      "import": "./dist/runtime/web-component.js"
-    },
-    "./runtime/*": {
-      "types": "./@types/runtime/*.d.ts",
-      "import": "./dist/runtime/*.js"
-    },
-    "./services/rest": {
-      "types": "./@types/services/rest/rest.d.ts",
-      "import": "./dist/services/rest/rest.js"
-    },
-    "./services/rest/*": {
-      "types": "./@types/services/rest/*.d.ts",
-      "import": "./dist/services/rest/*.js"
-    },
-    "./services/web-component": {
-      "types": "./@types/services/web-component/web-component.d.ts",
-      "import": "./dist/services/web-component/web-component.js"
-    },
-    "./services/webtransport": {
-      "types": "./@types/services/webtransport/webtransport.d.ts",
-      "import": "./dist/services/webtransport/webtransport.js"
-    },
-    "./directives/webtransport": {
-      "types": "./@types/directive/webtransport/webtransport.d.ts",
-      "import": "./dist/directive/webtransport/webtransport.js"
-    },
-    "./directives/repeat": {
-      "import": "./dist/directive/repeat/repeat.js"
-    },
-    "./directives/*": {
-      "import": "./dist/directive/*/*.js"
-    },
-    "./providers/controller": {
-      "import": "./dist/core/controller/controller.js"
     }
   },
   "files": [

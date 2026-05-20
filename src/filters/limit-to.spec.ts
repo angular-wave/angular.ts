@@ -19,7 +19,7 @@ describe("Filter: limitTo", () => {
     window.angular.module("myModule", ["ng"]);
     const injector = createInjector(["myModule"]);
 
-    const $filter = injector.get("$filter");
+    const $filter = injector.get("$filter") as ng.FilterService;
 
     items = ["a", "b", "c", "d", "e", "f", "g", "h"];
     str = "tuvwxyz";

@@ -1,3 +1,5 @@
+import type { DirectiveAttributes } from "../../interface.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _anchorScroll,
   _attributes,
@@ -129,7 +131,7 @@ function withResolvers<T>(): PromiseResolvers<T> {
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
  *
- * ### Attributes
+ * ### Attribute Runtime
  *
  * - `name`: (Optional) A view name.
  *   Named views are targeted from [[StateDeclaration.views]] entries.
@@ -205,7 +207,7 @@ export function ViewDirective(
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   void $state;
 
@@ -223,7 +225,7 @@ export function ViewDirective(
     transclude: "element",
     compile(
       _tElement: Element,
-      _tAttrs: ng.Attributes,
+      _tAttrs: DirectiveAttributes,
       $transclude?: ng.TranscludeFn,
     ) {
       const transclude = assertDefined($transclude);

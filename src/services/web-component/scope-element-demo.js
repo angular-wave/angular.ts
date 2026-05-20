@@ -1,4 +1,5 @@
-import { angular, ScopeElement } from "../../index.ts";
+import { angular } from "../../index.ts";
+import { ScopeElement } from "./web-component.ts";
 
 class SquareElement extends ScopeElement {
   static shadow = true;

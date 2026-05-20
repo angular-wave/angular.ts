@@ -12,6 +12,12 @@ The source of truth is:
 Gleam parity is checked from the TypeScript namespace declaration. Dart is not a
 source for this inventory.
 
+Directive link callback parity follows the current attrs-free shape:
+`(scope, element)`, `(scope, element, transclude)`, or
+`(scope, element, controller, transclude?)`. Compile/template/controller
+Directive link callbacks no longer receive `$attrs`; attribute helpers are not
+part of the Gleam public facade.
+
 ## Status Legend
 
 - `started`: initial typed Gleam facade or runtime wrapper exists.
@@ -28,8 +34,6 @@ source for this inventory.
 | --- | --- |
 | `Angular` | inventory |
 | `AnnotatedDirectiveFactory` | inventory |
-| `Attributes` | inventory |
-| `AttributesService` | inventory |
 | `Component` | started |
 | `Controller` | inventory |
 | `Directive` | started |
@@ -103,7 +107,6 @@ source for this inventory.
 | `StreamService` | inventory |
 | `TemplateCacheService` | inventory |
 | `TemplateRequestService` | inventory |
-| `TopicService` | inventory |
 | `WindowService` | alias |
 
 ## HTTP And REST

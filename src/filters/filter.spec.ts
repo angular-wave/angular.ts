@@ -14,7 +14,9 @@ describe("Filter: filter", () => {
     window.angular.module("myModule", ["ng"]);
     const injector = createInjector(["myModule"]);
 
-    filter = injector.get("$filter")("filter") as TestFilterFn;
+    filter = (injector.get("$filter") as ng.FilterService)(
+      "filter",
+    ) as TestFilterFn;
   });
 
   it("should filter by string", () => {

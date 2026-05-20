@@ -14,6 +14,12 @@ callback signature, config object, enum, or intentionally documented unsupported
 mapping for each public `ng` type. A type is not considered covered just because
 an unsafe JavaScript escape hatch can reach it.
 
+Directive link callback parity follows the current attrs-free shape:
+`(scope, element)`, `(scope, element, transclude)`, or
+`(scope, element, controller, transclude?)`. Compile/template/controller
+Directive link callbacks no longer receive `$attrs`; attribute helpers are not
+part of the Dart public facade.
+
 ## Status Legend
 
 - `started`: initial Dart equivalent exists.
@@ -28,8 +34,6 @@ an unsafe JavaScript escape hatch can reach it.
 | --- | --- |
 | `Angular` | started |
 | `AnnotatedDirectiveFactory` | started |
-| `Attributes` | started |
-| `AttributesService` | planned |
 | `Component` | started |
 | `Controller` | started |
 | `Directive` | started |
@@ -99,7 +103,6 @@ an unsafe JavaScript escape hatch can reach it.
 | `StreamService` | started |
 | `TemplateCacheService` | started |
 | `TemplateRequestService` | started |
-| `TopicService` | started |
 | `WebComponentService` | started |
 | `WebSocketService` | started |
 | `WebTransportService` | started |

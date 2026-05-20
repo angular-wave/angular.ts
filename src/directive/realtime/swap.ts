@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import type { LazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   createDocumentFragment,
@@ -32,7 +33,7 @@ export interface RealtimeSwapContext {
   /** Scope used when compiling incoming HTML. */
   scope: ng.Scope;
   /** Read-only normalized attribute access for directive defaults. */
-  $attributes: ng.AttributesService;
+  $attributes: AttributesService;
   /** Directive host element used when no target is configured. */
   element: Element;
   /** Prefix used in log messages. */

@@ -16,7 +16,7 @@ import {
   nullObject,
   snakeCase,
 } from "../../shared/utils.ts";
-import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 
 const SIMPLE_ATTR_NAME = /^\w/;
@@ -40,11 +40,11 @@ type ObserverList = ((value?: unknown) => void)[];
 
 type ObserverMap = Partial<Record<string, ObserverList>>;
 
-export class Attributes {
+export class CompileAttributes {
   static $nonscope = true;
 
   /**
-   * Creates an Attributes instance.
+   * Creates an CompileAttributes instance.
    *
    * There are two construction modes:
    *
@@ -54,9 +54,9 @@ export class Attributes {
    *
    * 2. **Clone instance** (`attributesToCopy` provided):
    *    - Used when cloning attributes for directive linking / child scopes.
-   *    - Performs a shallow copy of all properties from the source Attributes object,
+   *    - Performs a shallow copy of all properties from the source CompileAttributes object,
    *      including `$attr` and normalized attribute values.
-   *    - Observer state is intentionally not copied, because link-time `Attributes`
+   *    - Observer state is intentionally not copied, because link-time `CompileAttributes`
    *      instances own their own `$observe(...)` registrations.
    *    - `$attr` is intentionally **not reinitialized** in this case, because the
    *      source object already contains the correct normalized -> DOM attribute mapping.
@@ -67,7 +67,7 @@ export class Attributes {
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
   /** @internal */
-  _attributes: ng.AttributesService | undefined;
+  _attributes: AttributesService | undefined;
   $attr: Record<string, string>;
   /** @internal */
   _node: Node | Element | undefined;
@@ -84,7 +84,7 @@ export class Attributes {
     this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
     try {
-      this._attributes = $injector.get(_attributes) as ng.AttributesService;
+      this._attributes = $injector.get(_attributes) as AttributesService;
     } catch {
       this._attributes = undefined;
     }
@@ -114,8 +114,8 @@ export class Attributes {
   }
 
   /**
-   * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
-   * `data-`) to its normalized, camelCase form.
+   * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
+   * normalized, camelCase form.
    *
    * Also there is special case for Moz prefix starting with upper case letter.
    *
@@ -255,7 +255,7 @@ export class Attributes {
           elem.setAttribute(attrName, value as string);
         }
       } else {
-        Attributes._setSpecialAttr(elem, attrName, value as string);
+        CompileAttributes._setSpecialAttr(elem, attrName, value as string);
       }
     }
 
@@ -281,9 +281,10 @@ export class Attributes {
 
     listeners.push(fn as (value?: unknown) => void);
 
-    const isInterpolated = (
-      this._attributes as InternalAttributesService | undefined
-    )?._isInterpolated(this._element(), key);
+    const isInterpolated = this._attributes?._isInterpolated(
+      this._element(),
+      key,
+    );
 
     if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
       fn(this[key]);

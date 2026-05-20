@@ -223,9 +223,4 @@ final class NgModule extends GeneratedNgNgModule {
     return this;
   }
 
-  /// Registers an AngularTS pub/sub topic.
-  NgModule topic<TTopic>(Token<TTopic> token, String topic) {
-    rawTopic(token.name, topic);
-    return this;
-  }
 }

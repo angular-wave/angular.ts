@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _parse } from "../../injection-tokens.ts";
 import { getController } from "../../shared/dom.ts";
 
@@ -5,7 +6,7 @@ ngInitDirective.$inject = [_parse, _attributes];
 
 export function ngInitDirective(
   $parse: ng.ParseService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     priority: 450,

@@ -13,7 +13,6 @@ const outputPath = path.join(
 const typeMap = new Map(
   Object.entries({
     $angular: "namespace.AngularService",
-    $attrs: "namespace.Attributes",
     $scope: "namespace.Scope",
     $element: "namespace.RootElementService",
     $anchorScroll: "namespace.AnchorScrollService",

@@ -1,6 +1,8 @@
 import type { InjectorService, ProviderInjector } from "./internal-injector.ts";
 
-type ProviderMethod = (...args: never[]) => unknown;
+type Dynamic = ReturnType<typeof JSON.parse>;
+
+type ProviderMethod = (...args: Dynamic[]) => unknown;
 
 export interface StorageLike {
   getItem(key: string): string | null;

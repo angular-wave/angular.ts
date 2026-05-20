@@ -412,7 +412,7 @@ Implement in this order:
 1. [x] Core services and providers:
    `Angular`, `NgModule`, `InjectorService`, `ProvideService`, `Scope`,
    `RootScopeService`, `CompileService`, `ControllerService`,
-   `AttributesService`, `ParseService`, `InterpolateService`,
+   `ParseService`, `InterpolateService`,
    `ExceptionHandlerService`, `LogService`.
 2. [x] Browser and storage services:
    `AnchorScrollService`, `AriaService`, `CookieService`, `LocationService`,
@@ -463,24 +463,27 @@ Done when:
 
 Goal: support AngularTS-backed custom elements from Kotlin.
 
-Status: `[ ]`
+Status: `[x]`
 
 Files:
 
 ```text
-src/jsMain/kotlin/angular/ts/WebComponent.kt
+Makefile
+settings.gradle.kts
 examples/web_components/
+src/jsMain/kotlin/angular/ts/AngularElement.kt
+src/jsMain/kotlin/angular/ts/WebComponent.kt
 ```
 
 Tasks:
 
-- [ ] Implement `AppComponent<TState>` builder and native `webComponent`
+- [x] Implement `AppComponent<TState>` builder and native `webComponent`
   registration helpers.
-- [ ] Support inputs, input aliases, shadow DOM, lifecycle hooks, and typed custom
+- [x] Support inputs, input aliases, shadow DOM, lifecycle hooks, and typed custom
   event dispatch.
-- [ ] Implement `AngularElementOptions`, `AngularElementDefinition`, and related
+- [x] Implement `AngularElementOptions`, `AngularElementDefinition`, and related
   runtime wrappers.
-- [ ] Add an example that publishes at least two custom elements from one runtime.
+- [x] Add an example that publishes at least two custom elements from one runtime.
 
 Acceptance:
 
@@ -493,14 +496,14 @@ make -C integrations/kotlin parity
 
 Done when:
 
-- [ ] browser tests instantiate Kotlin-authored custom elements and verify inputs,
+- [x] browser tests instantiate Kotlin-authored custom elements and verify inputs,
   rendered DOM, and dispatched events.
 
 ## Phase 7: Examples And Runtime Tests
 
 Goal: prove Kotlin apps work against the built AngularTS runtime artifact.
 
-Status: `[ ]`
+Status: `[x]`
 
 Files:
 
@@ -512,11 +515,11 @@ integrations/kotlin/examples/web_components/
 
 Tasks:
 
-- [ ] Add a basic app that registers a service, component, directive, and filter.
-- [ ] Add a web component example.
-- [ ] Compile each example through Kotlin/JS production webpack.
-- [ ] Serve examples through the repository dev server.
-- [ ] Add Playwright tests that load the examples and assert visible AngularTS
+- [x] Add a basic app that registers a service, component, directive, and filter.
+- [x] Add a web component example.
+- [x] Compile each example through Kotlin/JS production webpack.
+- [x] Serve examples through the repository dev server.
+- [x] Add Playwright tests that load the examples and assert visible AngularTS
   behavior.
 
 Acceptance:
@@ -531,27 +534,27 @@ make -C integrations/kotlin check
 
 Done when:
 
-- [ ] runtime tests fail if the root AngularTS `dist` artifact is stale or
+- [x] runtime tests fail if the root AngularTS `dist` artifact is stale or
   incompatible with Kotlin wrappers.
 
 ## Phase 8: CI And Release Readiness
 
 Goal: make Kotlin maintenance part of the normal integration workflow.
 
-Status: `[ ]`
+Status: `[x]`
 
 Tasks:
 
-- [ ] Add Kotlin `check` to the repository integration CI matrix.
-- [ ] Cache Gradle and Kotlin/JS npm dependencies.
-- [ ] Document prerequisites in `integrations/kotlin/README.md`.
-- [ ] Add publishing metadata, but keep publishing manual until parity is green.
-- [ ] Add a release checklist that includes:
-  - [ ] regenerate bindings;
-  - [ ] run Kotlin check;
-  - [ ] run Dart check;
-  - [ ] compare Kotlin and Dart parity files for newly introduced public types;
-  - [ ] run root build.
+- [x] Add Kotlin `check` to the repository integration CI matrix.
+- [x] Cache Gradle and Kotlin/JS npm dependencies.
+- [x] Document prerequisites in `integrations/kotlin/README.md`.
+- [x] Add publishing metadata, but keep publishing manual until parity is green.
+- [x] Add a release checklist that includes:
+  - [x] regenerate bindings;
+  - [x] run Kotlin check;
+  - [x] run Dart check;
+  - [x] compare Kotlin and Dart parity files for newly introduced public types;
+  - [x] run root build.
 
 Acceptance:
 
@@ -564,27 +567,27 @@ make build
 
 Done when:
 
-- [ ] Kotlin is blocked by the same namespace drift failures as Dart;
-- [ ] Kotlin examples are tested against `dist`;
-- [ ] release notes can list Kotlin as supported without caveats beyond explicitly
+- [x] Kotlin is blocked by the same namespace drift failures as Dart;
+- [x] Kotlin examples are tested against `dist`;
+- [x] release notes can list Kotlin as supported without caveats beyond explicitly
   documented unsupported namespace entries.
 
 ## Phase 9: Public Namespace Closure
 
 Goal: close all non-unsupported entries in `NG_NAMESPACE_PARITY.md`.
 
-Status: `[ ]`
+Status: `[x]`
 
 Tasks:
 
-- [ ] Work through the parity file by category.
-- [ ] Do not close a type until member-level coverage is green.
-- [ ] Convert `review` entries into `generated`, `manual`, `alias`, or
+- [x] Work through the parity file by category.
+- [x] Do not close a type until member-level coverage is green.
+- [x] Convert `review` entries into `generated`, `manual`, `alias`, or
   `unsupported`.
-- [ ] For every `unsupported` entry, document:
-  - [ ] why Kotlin cannot model it safely yet;
-  - [ ] the unsafe fallback;
-  - [ ] the issue or follow-up phase that would remove the limitation.
+- [x] For every `unsupported` entry, document:
+  - [x] why Kotlin cannot model it safely yet;
+  - [x] the unsafe fallback;
+  - [x] the issue or follow-up phase that would remove the limitation.
 
 Acceptance:
 
@@ -596,9 +599,9 @@ make -C integrations/kotlin check
 
 Done when:
 
-- [ ] every public `ng` namespace type has an explicit Kotlin decision;
-- [ ] no public type is reachable only through undocumented `dynamic` usage;
-- [ ] Kotlin and Dart parity files both fail on the same upstream namespace drift.
+- [x] every public `ng` namespace type has an explicit Kotlin decision;
+- [x] no public type is reachable only through undocumented `dynamic` usage;
+- [x] Kotlin and Dart parity files both fail on the same upstream namespace drift.
 
 ## Suggested Work Order
 

@@ -15,7 +15,6 @@ describe("FilterProvider", () => {
       .module("myModule", ["ng"])
       .config(($filterProvider: ng.FilterProvider) => {
         filterProvider = $filterProvider;
-        // @ts-expect-error test filter factories do not carry $$moduleName metadata.
         filterProvider.register("test", () => (x: any) => `${x}_test`);
       });
     createInjector(["myModule"]);
@@ -59,7 +58,6 @@ describe("FilterProvider", () => {
     createInjector([
       "ng",
       function ($filterProvider: ng.FilterProvider) {
-        // @ts-expect-error test filter factories do not carry $$moduleName metadata.
         $filterProvider.register("myFilter", () => filter);
       },
     ]).invoke(($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {

@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
 import { instantiateWasm } from "../../shared/utils.ts";
 
@@ -6,9 +7,7 @@ ngWasmDirective.$inject = [_attributes];
 /**
  * Loads a WebAssembly module and exposes its exports on `scope.$target`.
  */
-export function ngWasmDirective(
-  $attributes: ng.AttributesService,
-): ng.Directive {
+export function ngWasmDirective($attributes: AttributesService): ng.Directive {
   return {
     link($scope: ng.Scope, element: Element): void {
       const src = $attributes.read(element, "src");

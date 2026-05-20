@@ -86,7 +86,7 @@ describe("select", () => {
         $compileProvider.directive("spyOnWriteValue", () => ({
           require: "select",
           link: {
-            pre(scope, element, attrs, ctrl) {
+            pre(scope, element, ctrl) {
               selectCtrl = ctrl;
               renderSpy = jasmine.createSpy("renderSpy");
               selectCtrl._ngModelCtrl.$render = renderSpy.and.callFake(
@@ -420,7 +420,7 @@ describe("select", () => {
 
     it("should rename select controls in form when interpolated name changes", async () => {
       scope.nameID = "A";
-      compile('<select ng-model="name" name="name{{nameID}}"></select>');
+      await compile('<select ng-model="name" name="name{{nameID}}"></select>');
       expect(scope.form.nameA.$name).toBe("nameA");
       const oldModel = scope.form.nameA;
 

@@ -310,7 +310,7 @@ describe("ngIf", () => {
         }));
         directive("test", () => ({
           require: "^template",
-          link(scope, el, attr, ctrl) {
+          link(scope, el, ctrl) {
             controller = ctrl;
           },
         }));

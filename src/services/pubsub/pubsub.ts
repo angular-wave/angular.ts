@@ -36,65 +36,6 @@ export class PubSubProvider {
   $get = () => this.eventBus;
 }
 
-/** Topic-bound event bus facade created by `NgModule.topic()`. */
-export interface TopicService {
-  /** Base topic prefix used by this facade. */
-  readonly topic: string;
-  /** Publish an event under `${topic}:${event}`. */
-  publish(event: string, ...args: unknown[]): boolean;
-  /** Subscribe to an event under `${topic}:${event}`. */
-  subscribe(
-    event: string,
-    fn: PubSubListener,
-    context?: unknown,
-  ): () => boolean;
-  /** Subscribe once to an event under `${topic}:${event}`. */
-  subscribeOnce(
-    event: string,
-    fn: PubSubListener,
-    context?: unknown,
-  ): () => boolean;
-  /** Return subscriber count for an event under `${topic}:${event}`. */
-  getCount(event: string): number;
-}
-
-/**
- * Creates a small domain-specific facade around the application event bus.
- *
- * `createTopicService(eventBus, "tasks").publish("saved", task)` maps to
- * `$eventBus.publish("tasks:saved", task)`.
- */
-export function createTopicService(
-  eventBus: PubSub,
-  topic: string,
-): TopicService {
-  const eventName = (event: string) => (event ? `${topic}:${event}` : topic);
-
-  return {
-    topic,
-    publish(event: string, ...args: unknown[]): boolean {
-      return eventBus.publish(eventName(event), ...args);
-    },
-    subscribe(
-      event: string,
-      fn: PubSubListener,
-      context?: unknown,
-    ): () => boolean {
-      return eventBus.subscribe(eventName(event), fn, context);
-    },
-    subscribeOnce(
-      event: string,
-      fn: PubSubListener,
-      context?: unknown,
-    ): () => boolean {
-      return eventBus.subscribeOnce(eventName(event), fn, context);
-    },
-    getCount(event: string): number {
-      return eventBus.getCount(eventName(event));
-    },
-  };
-}
-
 export class PubSub {
   /** @internal */
   private _topics: Partial<Record<string, ListenerEntry[]>>;

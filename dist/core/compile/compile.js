@@ -8,7 +8,7 @@ import { assign, getNodeName, uppercase, hasOwn, isFunction, trim, nullObject, a
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP } from '../../shared/constants.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
-import { Attributes } from './attributes.js';
+import { CompileAttributes } from './attributes.js';
 import { ngObserveDirective } from '../../directive/observe/observe.js';
 
 const EMPTY_DIRECTIVE_MATCHES = [];
@@ -224,21 +224,13 @@ class CompileProvider {
          *      Empty string by default.
          *
          *      If `template` is a function, then it is {injected} with
-         *      the following locals:
-         *
-         *      - `$element` - Current element
-         *      - `$attrs` - Current attributes object for the element
-         *      - `$attributes` - Element-based normalized attribute service
+         *      the current element local.
          *
          *    - `templateUrl` – `{string=|function()=}` – path or function that returns a path to an html
          *      template that should be used  as the contents of this component.
          *
          *      If `templateUrl` is a function, then it is {injected} with
-         *      the following locals:
-         *
-         *      - `$element` - Current element
-         *      - `$attrs` - Current attributes object for the element
-         *      - `$attributes` - Element-based normalized attribute service
+         *      the current element local.
          *
          *    - `bindings` – `{object=}` – defines bindings between DOM attributes and component properties.
          *      Component properties are always bound to the component controller and not to the scope.
@@ -868,7 +860,7 @@ class CompileProvider {
                     }
                 }
                 function createEmptyAttributes() {
-                    return new Attributes($injector, $exceptionHandler);
+                    return new CompileAttributes($injector, $exceptionHandler);
                 }
                 /**
                  * Plans a template node list and returns the executor used during linking.
@@ -1225,14 +1217,20 @@ class CompileProvider {
                     });
                 }
                 /** Invokes a link record with consistent scope selection and argument ordering. */
-                function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, attrs, controllers, transcludeFn) {
+                function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, controllers, transcludeFn) {
+                    const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
+                    const linkTailArgs = linkFnRecord._require
+                        ? [controllers, transcludeFn]
+                        : transcludeFn
+                            ? [transcludeFn]
+                            : [];
                     if (linkFnRecord._linkCtx !== undefined) {
-                        return linkFnRecord._fn(linkFnRecord._linkCtx, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                        return linkFnRecord._fn(linkFnRecord._linkCtx, linkScope, node, ...linkTailArgs);
                     }
                     if (linkFnRecord._thisArg !== undefined) {
-                        return linkFnRecord._fn.call(linkFnRecord._thisArg, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                        return linkFnRecord._fn.call(linkFnRecord._thisArg, linkScope, node, ...linkTailArgs);
                     }
-                    return linkFnRecord._fn(linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                    return linkFnRecord._fn(linkScope, node, ...linkTailArgs);
                 }
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
@@ -1321,7 +1319,8 @@ class CompileProvider {
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
-                function attrInterpolatePreLinkFn(linkState, scope, _element, attr) {
+                function attrInterpolatePreLinkFn(linkState, scope, _element) {
+                    const attr = assertDefined(linkState._attr);
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const attrsAny = attr;
                     const name = linkState._name;
@@ -1378,7 +1377,8 @@ class CompileProvider {
                  * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
                  * but the compile-time getter/sanitizer wiring is now reused.
                  */
-                function propertyDirectivePreLinkFn(linkState, scope, $element, attr) {
+                function propertyDirectivePreLinkFn(linkState, scope, $element) {
+                    const attr = linkState._attr;
                     const attrsAny = attr;
                     const bindingState = {
                         _linkState: linkState,
@@ -1637,7 +1637,7 @@ class CompileProvider {
                     let scopeBindingInfo;
                     const attrs = nodeLinkState._compileNode === linkNode
                         ? nodeLinkState._templateAttrs
-                        : new Attributes($injector, $exceptionHandler, elementNode, nodeLinkState._templateAttrs);
+                        : new CompileAttributes($injector, $exceptionHandler, elementNode, nodeLinkState._templateAttrs);
                     const element = elementNode.nodeType === NodeType._ELEMENT_NODE
                         ? elementNode
                         : undefined;
@@ -1741,7 +1741,7 @@ class CompileProvider {
                         const controllers = preLinkFn._require &&
                             getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
                         try {
-                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -1767,7 +1767,7 @@ class CompileProvider {
                                 deleteCacheData(element, _scope);
                                 setIsolateScope(element, isolateScope);
                             }
-                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -2756,6 +2756,7 @@ class CompileProvider {
                             _propName: compileState._propName,
                             _ngPropGetter: $parse(stringify(attr[compileState._attrName] ?? "")),
                             _sanitizer: compileState._sanitizer,
+                            _attr: attr,
                         },
                     };
                 }
@@ -2795,10 +2796,13 @@ class CompileProvider {
                     return true;
                 }
                 /** Shared compile function for synthetic interpolated-attribute directives. */
-                function compileAttrInterpolateDirective() {
+                function compileAttrInterpolateDirective(_element, attr) {
                     return {
                         pre: attrInterpolatePreLinkFn,
-                        _preLinkCtx: this._compileState,
+                        _preLinkCtx: {
+                            ...this._compileState,
+                            _attr: attr,
+                        },
                     };
                 }
                 /** Enforces strict component binding requirements for required attributes. */

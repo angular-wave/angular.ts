@@ -71,7 +71,7 @@ describe("$logService", () => {
     const $injector = createInjector(["ng", "default2"]);
 
     expect($injector).toBeDefined();
-    $injector.get("$log").log();
+    ($injector.get("$log") as ng.LogService).log();
     expect(called).toBeTrue();
   });
 });

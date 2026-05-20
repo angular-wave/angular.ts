@@ -1,8 +1,7 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
-import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent, _eventBus } from '../../../injection-tokens.js';
+import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent } from '../../../injection-tokens.js';
 import { isInjectable } from '../injectable.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
-import { createTopicService } from '../../../services/pubsub/pubsub.js';
 
 /**
  * Modules are collections of application configuration information for components:
@@ -396,32 +395,6 @@ class NgModule {
         this._runBlocks.push([
             _webComponent,
             ($webComponent) => $webComponent.defineElement(name, elementClass),
-        ]);
-        return this;
-    }
-    /**
-     * Register a topic-bound event bus facade as an injectable service.
-     *
-     * Events published through the facade are namespaced as `${topic}:${event}`,
-     * keeping raw event-bus topic strings out of application services.
-     *
-     * @param {string} name - Injectable name.
-     * @param {string} topic - Base event-bus topic prefix.
-     * @returns {NgModule}
-     */
-    topic(name, topic) {
-        validate(isString, name, "name");
-        validate(isString, topic, "topic");
-        this._invokeQueue.push([
-            _provide,
-            "factory",
-            [
-                name,
-                [
-                    _eventBus,
-                    ($eventBus) => createTopicService($eventBus, topic),
-                ],
-            ],
         ]);
         return this;
     }

@@ -217,17 +217,3 @@ pub fn web_component(
   )
   ng_module
 }
-
-pub fn topic(
-  ng_module: NgModule,
-  token: Token(value),
-  topic: String,
-) -> NgModule {
-  js.call_method2(
-    ng_module.handle,
-    "topic",
-    js.coerce(token.name(token)),
-    js.coerce(topic),
-  )
-  ng_module
-}

@@ -1,3 +1,5 @@
+import type { DirectiveAttributes } from "../../interface.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _attrs,
@@ -67,9 +69,9 @@ export const ngModelError = createErrorFactory("ngModel");
 type ModelAttrFallback = Record<string, string | undefined>;
 
 function readModelAttr(
-  $attributes: ng.AttributesService | undefined,
+  $attributes: AttributesService | undefined,
   element: Element | Node,
-  attr: ng.Attributes | undefined,
+  attr: DirectiveAttributes | undefined,
   normalizedName: string,
 ): string | undefined {
   const elementValue =
@@ -258,7 +260,7 @@ export class NgModelController {
   _scope: ng.Scope;
 
   /** @internal */
-  _attr: ng.Attributes;
+  _attr: DirectiveAttributes;
 
   /** @internal */
   _element: HTMLElement;
@@ -317,12 +319,12 @@ export class NgModelController {
   constructor(
     $scope: ng.Scope,
     $exceptionHandler: ng.ExceptionHandlerService,
-    $attr: ng.Attributes,
+    $attr: DirectiveAttributes,
     $element: HTMLElement,
     $parse: ng.ParseService,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
-    $attributes?: ng.AttributesService,
+    $attributes?: AttributesService,
   ) {
     this._isAnimated = hasAnimate($element);
     this.$viewValue = Number.NaN;
@@ -1574,7 +1576,7 @@ function setupModelWatcher(ctrl: NgModelController): () => void {
  */
 ngModelDirective.$inject = [_attributes];
 export function ngModelDirective(
-  $attributes?: ng.AttributesService,
+  $attributes?: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -1594,7 +1596,6 @@ export function ngModelDirective(
           pre: (
             scope: ng.Scope,
             preElement: HTMLElement,
-            attr: ng.Attributes,
             ctrls: [
               NgModelController,
               ParentFormController | undefined,
@@ -1624,7 +1625,7 @@ export function ngModelDirective(
             const deregisterNameObserver = $attributes
               ? $attributes.observe(scope, preElement, "name", () => {
                   handleNameChange(
-                    readModelAttr($attributes, preElement, attr, "name"),
+                    readModelAttr($attributes, preElement, undefined, "name"),
                   );
                 })
               : () => {
@@ -1675,7 +1676,6 @@ export function ngModelDirective(
           post: (
             scope: ng.Scope,
             elementPost: HTMLElement,
-            _attr: ng.Attributes,
             ctrls: [NgModelController],
           ) => {
             const [modelCtrl] = ctrls;

@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _injector, _log } from "../../injection-tokens.ts";
 
 ngInjectDirective.$inject = [_log, _injector, _attributes];
@@ -8,7 +9,7 @@ ngInjectDirective.$inject = [_log, _injector, _attributes];
 export function ngInjectDirective(
   $log: ng.LogService,
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",

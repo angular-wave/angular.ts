@@ -1,10 +1,12 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { createAngularCustom } from "./index.ts";
-import { defineAngularElement } from "./web-component.ts";
-import { ngBindDirective } from "../directive/bind/bind.ts";
-import { ngClickDirective } from "../directive/events/events.ts";
-import { ngRepeatDirective } from "../directive/repeat/repeat.ts";
+import {
+  createAngularCustom,
+  defineAngularElement,
+  ngBindDirective,
+  ngClickDirective,
+  ngRepeatDirective,
+} from "./index.ts";
 import { createElementFromHTML, dealoc, getScope } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
 

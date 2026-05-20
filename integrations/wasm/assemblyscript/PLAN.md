@@ -39,6 +39,11 @@ buffer_len
 buffer_free
 ```
 
+Future directive bindings must use attrs-free link callbacks:
+`(scope, element)`, `(scope, element, transclude)`, or
+`(scope, element, controller, transclude?)`; attribute helper facades are not part of the public integration API.
+compile/template/controller APIs when namespace parity reaches directives.
+
 and export:
 
 ```text

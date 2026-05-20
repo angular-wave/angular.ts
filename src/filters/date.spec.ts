@@ -7,7 +7,7 @@ import { wait } from "../shared/test-utils.ts";
 describe("date filter", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService;
+  let $rootScope: ng.RootScopeService & { createdAt: Date };
 
   let filter: ng.FilterService;
 
@@ -19,7 +19,7 @@ describe("date filter", () => {
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
-        _$rootScope_: ng.RootScopeService,
+        _$rootScope_: ng.RootScopeService & { createdAt: Date },
       ) => {
         $compile = _$compile_;
         filter = _$filter_;

@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _element,
@@ -44,7 +45,7 @@ class NgModelOptionsController {
   /** @internal */
   _element: Element;
   /** @internal */
-  _attributes: ng.AttributesService;
+  _attributes: AttributesService;
   /** @internal */
   _scope: ng.Scope;
   /** @internal */
@@ -54,7 +55,7 @@ class NgModelOptionsController {
 
   constructor(
     $element: Element,
-    $attributes: ng.AttributesService,
+    $attributes: AttributesService,
     $scope: ng.Scope,
     $parse: ng.ParseService,
   ) {

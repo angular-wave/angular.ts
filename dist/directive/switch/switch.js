@@ -21,7 +21,7 @@ function ngSwitchDirective($injector, $attributes) {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
         controller: NgSwitchController,
-        link(scope, element, _attr, ngSwitchController) {
+        link(scope, element, ngSwitchController) {
             const ngSwitchExpr = $attributes.read(element, "ngSwitch");
             const watchExpr = fallbackWhenEmpty(ngSwitchExpr, $attributes.read(element, "on") ?? "");
             let selectedTranscludes;
@@ -113,7 +113,7 @@ function ngSwitchWhenDirective($attributes) {
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(scope, element, _attrs, ctrl, $transclude) {
+        link(scope, element, ctrl, $transclude) {
             if (!$transclude) {
                 return;
             }
@@ -140,7 +140,7 @@ function ngSwitchDefaultDirective() {
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(_scope, element, _attr, ctrl, $transclude) {
+        link(_scope, element, ctrl, $transclude) {
             var _a;
             if (!$transclude) {
                 return;

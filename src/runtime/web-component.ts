@@ -1,13 +1,20 @@
-import type { AngularRuntimeOptions } from "../angular-runtime.ts";
+import {
+  AngularRuntime,
+  type AngularRuntimeOptions,
+} from "../angular-runtime.ts";
 import { _rootScope, _webComponent } from "../injection-tokens.ts";
 import {
-  createAngularCustom,
-  type CustomAngularRuntimeOptions,
-} from "./index.ts";
+  registerCustomNgModule,
+  type CustomNgModuleOptions,
+} from "./custom-ng.ts";
 import {
   WebComponentProvider,
   type AppComponentOptions,
 } from "../services/web-component/web-component.ts";
+
+interface CustomAngularRuntimeOptions extends AngularRuntimeOptions {
+  ngModule?: CustomNgModuleOptions;
+}
 
 /** Configuration for the application module that owns the custom element. */
 export interface AngularElementModuleOptions {
@@ -62,7 +69,7 @@ export function defineAngularElement<
 
   const ngModuleOptions = ngModule ?? {};
 
-  const angular = createAngularCustom({
+  const angular = createAngularElementRuntime({
     ...runtimeOptions,
     ngModule: {
       ...ngModuleOptions,
@@ -122,6 +129,20 @@ export function defineAngularElement<
 
 /** Alias for callers that prefer factory-style naming. */
 export const createAngularElement = defineAngularElement;
+
+function createAngularElementRuntime(
+  options: CustomAngularRuntimeOptions,
+): AngularRuntime {
+  const angular = new AngularRuntime({
+    attachToWindow: false,
+    registerBuiltins: false,
+    ...options,
+  });
+
+  registerCustomNgModule(angular as unknown as ng.Angular, options.ngModule);
+
+  return angular;
+}
 
 function defaultElementModuleName(name: string): string {
   return `ngElement:${name}`;

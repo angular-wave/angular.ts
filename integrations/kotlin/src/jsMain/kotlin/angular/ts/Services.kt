@@ -1,8 +1,6 @@
 package angular.ts
 
 import angular.ts.generated.Angular as RawAngular
-import angular.ts.generated.Attributes as RawAttributes
-import angular.ts.generated.AttributesService as RawAttributesService
 import angular.ts.generated.AnchorScrollService as RawAnchorScrollService
 import angular.ts.generated.AriaService as RawAriaService
 import angular.ts.generated.CompileService as RawCompileService
@@ -343,52 +341,6 @@ public class AngularService internal constructor(
 ) {
     public val version: String
         get() = raw.version
-}
-
-public class Attributes internal constructor(
-    internal val raw: RawAttributes,
-) {
-    public fun addClass(className: String) {
-        raw.`$addClass`(className)
-    }
-
-    public fun removeClass(className: String) {
-        raw.`$removeClass`(className)
-    }
-
-    public fun updateClass(
-        newClasses: String,
-        oldClasses: String,
-    ) {
-        raw.`$updateClass`(newClasses, oldClasses)
-    }
-
-    public fun normalize(name: String): String =
-        raw.`$normalize`(name)
-}
-
-public class AttributesService internal constructor(
-    internal val raw: RawAttributesService,
-) {
-    public fun has(
-        element: Element,
-        name: String,
-    ): Boolean =
-        raw.has(element, name)
-
-    public fun read(
-        element: Element,
-        name: String,
-    ): String =
-        raw.read(element, name)
-
-    public fun set(
-        element: Element,
-        name: String,
-        value: Any?,
-    ) {
-        raw.set(element, name, value)
-    }
 }
 
 public class AnchorScrollService internal constructor(

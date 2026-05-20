@@ -32,30 +32,6 @@ interface AttributeObserverState {
   pendingMutations: Map<string, AttributeSetValue[]>;
 }
 
-export interface InternalAttributesService extends AttributesService {
-  /** @internal */
-  _markInterpolated(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): void;
-  /** @internal */
-  _isInterpolated(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): boolean;
-  /** @internal */
-  _setObserverScope(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-    scope: ng.Scope,
-  ): void;
-  /** @internal */
-  _getObserverScope(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): ng.Scope | undefined;
-}
-
 export interface AttributesSetOptions {
   writeAttr?: boolean;
   attrName?: string;
@@ -103,9 +79,30 @@ export interface AttributesService {
     newClasses: string,
     oldClasses: string,
   ): void;
+  /** @internal */
+  _markInterpolated(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+  ): void;
+  /** @internal */
+  _isInterpolated(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+  ): boolean;
+  /** @internal */
+  _setObserverScope(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+    scope: ng.Scope,
+  ): void;
+  /** @internal */
+  _getObserverScope(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+  ): ng.Scope | undefined;
 }
 
-export class AttributesProvider {
+export class AttributesServiceProvider {
   $get = [
     _injector,
     _exceptionHandler,
@@ -523,7 +520,7 @@ export class AttributesProvider {
             .get(targetElement)
             ?.get(directiveNormalize(normalizedName));
         },
-      } as InternalAttributesService;
+      };
     },
   ];
 }

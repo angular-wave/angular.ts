@@ -225,7 +225,9 @@ describe("$webComponent", () => {
       value = "ready";
     }
 
-    angular.module(moduleName, []).service("labelService", LabelService)
+    angular
+      .module(moduleName, [])
+      .service("labelService", LabelService)
       .webComponent(tagName, StatusCard);
 
     angular.bootstrap(app, [moduleName]);

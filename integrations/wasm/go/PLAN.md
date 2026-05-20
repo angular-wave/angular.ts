@@ -145,17 +145,16 @@ same required surface:
 - HTTP facade: `HttpService`, `RequestConfig`, `RequestShortcutConfig`,
   `HttpMethod`, `HttpResponse`, and `HttpResponseStatus`.
 - Diagnostics and events: `LogService`, `ExceptionHandlerService`,
-  `PubSubService`, `TopicService`, `ListenerFn`, `ScopeEvent`, and
-  `InvocationDetail`.
+  `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
 - Template-file support: `TemplateRequestService` and `TemplateCacheService`.
 - Persistence: `StorageBackend`, `StorageType`, `CookieService`,
   `CookieOptions`, and `CookieStoreOptions`.
 
 Deferred Go parity follows the Rust deferred list: providers, compile/link
-directive internals, transclusion, browser object escape hatches, animation,
-workers, web components, parse/interpolate/filter/SCE/location, forms, REST
-cache/revalidation helpers, and WebTransport unless a Go reference example
-needs them.
+directive internals with attrs-free directive link callbacks, transclusion,
+browser object escape hatches, animation, workers, web components,
+parse/interpolate/filter/SCE/location, forms, REST cache/revalidation helpers,
+and WebTransport unless a Go reference example needs them.
 
 ## Code Generation Direction
 
@@ -245,8 +244,7 @@ metadata, scope refresh, and scope watch routing.
 - [x] Add typed `$http` request/response helpers matching Rust coverage.
 - [x] Add `$log`, `$exceptionHandler`, `$rootScope`, `$scope`, and `$eventBus`
       facades.
-- [x] Add `TopicService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`
-      coverage.
+- [x] Add `ListenerFn`, `ScopeEvent`, and `InvocationDetail` coverage.
 - [x] Add `$templateRequest` and `$templateCache` facades.
 - [x] Add storage and cookie facades.
 - [x] Add router/state facades for `StateService`, `StateRegistryService`,

@@ -1,3 +1,4 @@
+import type { AttributesService } from "./attributes.ts";
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
@@ -7,7 +8,7 @@ import { wait } from "../../shared/test-utils.ts";
 describe("$attributes", () => {
   let angular: Angular;
   let app: HTMLElement;
-  let $attributes: ng.AttributesService;
+  let $attributes: AttributesService;
   let $rootScope: ng.Scope;
   let errors: string[];
 
@@ -66,7 +67,9 @@ describe("$attributes", () => {
 
     expect($attributes.read(element, "ngOnTest")).toBe("data handler");
     expect(hasOwn.call($attributes, "ngOnTest")).toBeFalse();
-    expect(($attributes as Record<string, unknown>).ngOnTest).toBeUndefined();
+    expect(
+      ($attributes as unknown as Record<string, unknown>).ngOnTest,
+    ).toBeUndefined();
 
     $attributes.set(element, "ngOnTest", "updated");
     expect(element.getAttribute("ng-on-test")).toBe("updated");
@@ -79,7 +82,9 @@ describe("$attributes", () => {
     await wait();
 
     expect(hasOwn.call($attributes, "ngOnTest")).toBeFalse();
-    expect(($attributes as Record<string, unknown>).ngOnTest).toBeUndefined();
+    expect(
+      ($attributes as unknown as Record<string, unknown>).ngOnTest,
+    ).toBeUndefined();
   });
 
   it("reads later DOM attribute updates without cached attrs properties", () => {

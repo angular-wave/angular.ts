@@ -19,6 +19,8 @@ type BootstrapConfig struct {
 	Manifest *NgModule
 	// AngularImport is the JavaScript module specifier for AngularTS exports.
 	AngularImport string
+	// WasmScopeAbiImport is the JavaScript module specifier for AngularTS Wasm scope ABI exports.
+	WasmScopeAbiImport string
 	// GoWasmScopeAbiImport is the JavaScript module specifier for GoWasmScopeAbi.
 	GoWasmScopeAbiImport string
 	// WasmExecImport is the JavaScript module specifier for wasm_exec.js.
@@ -53,8 +55,11 @@ func GenerateBootstrap(config BootstrapConfig) (string, error) {
 	}
 
 	var out strings.Builder
-	out.WriteString("import { angular, WasmScopeAbi } from ")
+	out.WriteString("import { angular } from ")
 	out.WriteString(jsString(config.AngularImport))
+	out.WriteString(";\n")
+	out.WriteString("import { WasmScopeAbi } from ")
+	out.WriteString(jsString(config.WasmScopeAbiImport))
 	out.WriteString(";\n")
 	out.WriteString("import { GoWasmScopeAbi } from ")
 	out.WriteString(jsString(config.GoWasmScopeAbiImport))
@@ -216,6 +221,9 @@ func (c BootstrapConfig) Validate() error {
 	if c.AngularImport == "" {
 		return fmt.Errorf("angular.ts wasm: AngularTS import path is required")
 	}
+	if c.WasmScopeAbiImport == "" {
+		return fmt.Errorf("angular.ts wasm: WasmScopeAbi import path is required")
+	}
 	if c.GoWasmScopeAbiImport == "" {
 		return fmt.Errorf("angular.ts wasm: GoWasmScopeAbi import path is required")
 	}
@@ -238,6 +246,9 @@ func normalizeBootstrapConfig(config BootstrapConfig) BootstrapConfig {
 	}
 	if config.AngularImport == "" {
 		config.AngularImport = "@angular-wave/angular.ts"
+	}
+	if config.WasmScopeAbiImport == "" {
+		config.WasmScopeAbiImport = "@angular-wave/angular.ts/runtime"
 	}
 	if config.GoWasmScopeAbiImport == "" {
 		config.GoWasmScopeAbiImport = "./go-wasm-scope-abi.js"

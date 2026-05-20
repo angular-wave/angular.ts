@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
 import { arrayFrom, deleteProperty, isString } from "../../shared/utils.ts";
 
@@ -5,7 +6,7 @@ ngElDirective.$inject = [_attributes];
 /**
  * Exposes the current element on `scope.$target` under the provided key.
  */
-export function ngElDirective($attributes: ng.AttributesService): ng.Directive {
+export function ngElDirective($attributes: AttributesService): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement): void {

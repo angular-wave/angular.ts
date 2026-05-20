@@ -10,7 +10,7 @@ function ngTranscludeDirective($compile, $attributes) {
         compile: function ngTranscludeCompile(tElement) {
             const fallbackLinkFn = $compile(tElement.childNodes);
             emptyElement(tElement);
-            function ngTranscludePostLink($scope, $element, _attrs, _controller, $transclude) {
+            function ngTranscludePostLink($scope, $element, $transclude) {
                 if (!$transclude) {
                     throw ngTranscludeError("orphan", "Illegal use of ngTransclude directive in the template! " +
                         "No parent directive that requires a transclusion found. " +

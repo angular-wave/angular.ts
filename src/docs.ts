@@ -6,7 +6,6 @@ export type {
   AnnotatedFactory,
   AngularBootstrapConfig,
   AngularServiceProvider,
-  Attributes,
   ChangesObject,
   Component,
   Controller,
@@ -84,8 +83,6 @@ export type {
 
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 export type { AnchorScrollService } from "./services/anchor-scroll/anchor-scroll.ts";
-export { AttributesProvider } from "./services/attributes/attributes.ts";
-export type { AttributesService } from "./services/attributes/attributes.ts";
 export { CookieProvider, CookieService } from "./services/cookie/cookie.ts";
 export type {
   CookieOptions,
@@ -121,12 +118,7 @@ export type {
 } from "./services/location/location.ts";
 export type { LogService } from "./services/log/log.ts";
 export { LogProvider } from "./services/log/log.ts";
-export {
-  createTopicService,
-  PubSub,
-  PubSubProvider,
-} from "./services/pubsub/pubsub.ts";
-export type { TopicService } from "./services/pubsub/pubsub.ts";
+export { PubSub, PubSubProvider } from "./services/pubsub/pubsub.ts";
 export {
   CachedRestBackend,
   HttpRestBackend,

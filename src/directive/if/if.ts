@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
@@ -9,7 +10,7 @@ ngIfDirective.$inject = [_injector, _attributes];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
 export function ngIfDirective(
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -21,8 +22,6 @@ export function ngIfDirective(
     link(
       $scope: ng.Scope,
       $element: Element,
-      _attr: ng.Attributes,
-      _ctrl: unknown,
       $transclude?: ng.TranscludeFn,
     ): void {
       if (!$transclude) {

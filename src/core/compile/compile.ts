@@ -63,14 +63,18 @@ import {
   createEventDirective,
   createWindowEventDirective,
 } from "../../directive/events/events.ts";
-import { Attributes } from "./attributes.ts";
+import { CompileAttributes } from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
-import type { Component, DirectiveRestrict } from "../../interface.ts";
+import type {
+  Component,
+  DirectiveRestrict,
+  DirectiveAttributes,
+} from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
-import type { InternalAttributesService } from "../../services/attributes/attributes.ts";
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 
-type InterpolatedAttributeValue = Parameters<Attributes["_setValue"]>[1];
+type InterpolatedAttributeValue = Parameters<CompileAttributes["_setValue"]>[1];
 
 type RuntimeCallback = {
   bivarianceHack(...args: unknown[]): unknown;
@@ -105,7 +109,7 @@ export interface TemplateLinkingFunctionOptions {
 }
 
 /**
- * A function passed as the fifth argument to a `PublicLinkFn` link function.
+ * A function passed to directive link functions for transcluded content.
  * It behaves like a linking function, with the `scope` argument automatically created
  * as a new child of the transcluded parent scope.
  *
@@ -593,8 +597,8 @@ export interface OneWayBindingState {
 export interface CompileControllerLocals {
   $scope: Scope;
   $element: Node;
-  $attrs: Attributes;
-  $attributes: ng.AttributesService;
+  $attrs: CompileAttributes;
+  $attributes: AttributesService;
   $transclude: ng.TranscludeFn;
 }
 
@@ -644,6 +648,8 @@ export interface AttrInterpolateLinkState {
   _isNgAttr: boolean;
   /** @internal */
   _interpolateFn?: InterpolationFunction;
+  /** @internal */
+  _attr?: CompileAttributes;
 }
 
 export interface PropertyDirectiveLinkState {
@@ -655,6 +661,8 @@ export interface PropertyDirectiveLinkState {
   _ngPropGetter: CompiledExpression;
   /** @internal */
   _sanitizer: (value: unknown) => unknown;
+  /** @internal */
+  _attr: CompileAttributes;
 }
 
 export interface PropertyDirectiveCompileState {
@@ -672,7 +680,7 @@ export interface AttrInterpolationBindingState {
   /** @internal */
   _scope: Scope;
   /** @internal */
-  _attr: Attributes;
+  _attr: CompileAttributes;
   /** @internal */
   _lastValue?: unknown;
 }
@@ -685,7 +693,7 @@ export interface PropertyDirectiveBindingState {
   /** @internal */
   _element: UnknownRecord;
   /** @internal */
-  _attr: Attributes;
+  _attr: CompileAttributes;
 }
 
 export interface ExpressionBindingState {
@@ -754,6 +762,11 @@ export interface LinkFnRecord {
   /** @internal */
   _thisArg?: unknown;
 }
+
+type LinkContextWithAttributes = {
+  /** @internal */
+  _attr: CompileAttributes;
+};
 
 const EMPTY_LINK_FN_RECORDS = Object.freeze([]) as unknown as LinkFnRecord[];
 
@@ -831,7 +844,7 @@ export interface NodeLinkState {
   /** @internal */
   _compileNode: Node | Element;
   /** @internal */
-  _templateAttrs: Attributes;
+  _templateAttrs: CompileAttributes;
   /** @internal */
   _transcludeFn: NodeLinkTranscludeFn;
   /** @internal */
@@ -852,7 +865,7 @@ export interface DelayedTemplateReplacementState {
   /** @internal */
   _templateNodes: Element[];
   /** @internal */
-  _templateAttrs: Attributes;
+  _templateAttrs: CompileAttributes;
 }
 
 export type PendingTemplateLinkOperation = [
@@ -898,7 +911,7 @@ export interface DelayedTemplateLinkState {
   /** @internal */
   _previousCompileContext: PreviousCompileContext;
   /** @internal */
-  _tAttrs: Attributes;
+  _tAttrs: CompileAttributes;
   /** @internal */
   _templateUrl: string;
   /** @internal */
@@ -1268,21 +1281,13 @@ export class CompileProvider {
      *      Empty string by default.
      *
      *      If `template` is a function, then it is {injected} with
-     *      the following locals:
-     *
-     *      - `$element` - Current element
-     *      - `$attrs` - Current attributes object for the element
-     *      - `$attributes` - Element-based normalized attribute service
+     *      the current element local.
      *
      *    - `templateUrl` – `{string=|function()=}` – path or function that returns a path to an html
      *      template that should be used  as the contents of this component.
      *
      *      If `templateUrl` is a function, then it is {injected} with
-     *      the following locals:
-     *
-     *      - `$element` - Current element
-     *      - `$attrs` - Current attributes object for the element
-     *      - `$attributes` - Element-based normalized attribute service
+     *      the current element local.
      *
      *    - `bindings` – `{object=}` – defines bindings between DOM attributes and component properties.
      *      Component properties are always bound to the component controller and not to the scope.
@@ -1323,9 +1328,7 @@ export class CompileProvider {
 
       /** Creates the component-backed directive definition factory. */
       function factory($injector: ng.InjectorService) {
-        const $attributes = $injector.get(
-          _attributes,
-        ) as InternalAttributesService;
+        const $attributes = $injector.get(_attributes);
 
         /** Wraps injectable component options so compile-local services are available. */
         const makeInjectable = (
@@ -1336,10 +1339,10 @@ export class CompileProvider {
             | undefined,
         ):
           | string
-          | ((element: HTMLElement, attrs: ng.Attributes) => string)
+          | ((element: HTMLElement, attrs: DirectiveAttributes) => string)
           | undefined => {
           if (isFunction(fn) || Array.isArray(fn)) {
-            return (tElement: HTMLElement, tAttrs: ng.Attributes) => {
+            return (tElement: HTMLElement, tAttrs: DirectiveAttributes) => {
               return $injector.invoke(fn, null, {
                 $element: tElement,
                 $attrs: tAttrs,
@@ -1554,10 +1557,10 @@ export class CompileProvider {
         $exceptionHandler: ng.ExceptionHandlerService,
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
-        $attributes: ng.AttributesService,
+        $attributes: AttributesService,
       ) => {
         const security = getSecurityAdapter($injector);
-        const internalAttributes = $attributes as InternalAttributesService;
+        const internalAttributes = $attributes;
 
         let lazyTemplateRequest: ng.TemplateRequestService | null | undefined;
 
@@ -2321,8 +2324,8 @@ export class CompileProvider {
           }
         }
 
-        function createEmptyAttributes(): Attributes {
-          return new Attributes($injector, $exceptionHandler);
+        function createEmptyAttributes(): CompileAttributes {
+          return new CompileAttributes($injector, $exceptionHandler);
         }
 
         /**
@@ -2366,7 +2369,7 @@ export class CompileProvider {
               i,
             );
 
-            let attrs: Attributes | undefined;
+            let attrs: CompileAttributes | undefined;
 
             let directives: DirectiveMatchList;
 
@@ -2659,7 +2662,7 @@ export class CompileProvider {
          */
         function collectDirectiveMatches(
           node: TemplatePlanNode,
-          attrs: Attributes | undefined,
+          attrs: CompileAttributes | undefined,
           maxPriority?: number,
           ignoreDirective?: string,
         ): DirectiveMatchList {
@@ -2715,11 +2718,11 @@ export class CompileProvider {
 
         function collectElementDirectiveMatches(
           node: Element,
-          attrs: Attributes | undefined,
+          attrs: CompileAttributes | undefined,
           directives: DirectiveMatchList,
           maxPriority?: number,
           ignoreDirective?: string,
-        ): Attributes | undefined {
+        ): CompileAttributes | undefined {
           const nodeName = getNodeName(node);
 
           const normalizedNodeName = normalizeDirectiveName(nodeName);
@@ -2760,12 +2763,12 @@ export class CompileProvider {
 
         function collectAttributeDirectiveMatches(
           node: Element,
-          attrs: Attributes | undefined,
+          attrs: CompileAttributes | undefined,
           directives: DirectiveMatchList,
           nodeAttributes: NamedNodeMap,
           maxPriority?: number,
           ignoreDirective?: string,
-        ): Attributes | undefined {
+        ): CompileAttributes | undefined {
           for (
             let j = 0, nodeAttributesLength = nodeAttributes.length;
             j < nodeAttributesLength;
@@ -2788,14 +2791,14 @@ export class CompileProvider {
 
         function collectAttributeDirectiveMatch(
           node: Element,
-          attrs: Attributes | undefined,
+          attrs: CompileAttributes | undefined,
           directives: DirectiveMatchList,
           attr: Attr,
           nodeAttributes: NamedNodeMap,
           attrIndex: number,
           maxPriority?: number,
           ignoreDirective?: string,
-        ): Attributes | undefined {
+        ): CompileAttributes | undefined {
           let { name } = attr;
 
           const { value } = attr;
@@ -2908,7 +2911,7 @@ export class CompileProvider {
           node: Element,
           nodeAttributes: NamedNodeMap,
           attrIndex: number,
-        ): Attributes {
+        ): CompileAttributes {
           const attrs = createEmptyAttributes();
 
           for (let i = 0; i < attrIndex; i++) {
@@ -2920,7 +2923,7 @@ export class CompileProvider {
 
         function recordExistingAttributeValue(
           node: Element,
-          attrs: Attributes,
+          attrs: CompileAttributes,
           attr: Attr,
         ): void {
           let { name } = attr;
@@ -2972,7 +2975,7 @@ export class CompileProvider {
 
         function recordNormalizedAttributeValue(
           node: Element,
-          attrs: Attributes,
+          attrs: CompileAttributes,
           normalizedName: string,
           name: string,
           value: string,
@@ -3147,39 +3150,41 @@ export class CompileProvider {
           isolateScope: Scope | undefined,
           scope: Scope,
           node: Node,
-          attrs: Attributes,
+          attrs: CompileAttributes,
           controllers: unknown,
           transcludeFn: unknown,
         ) {
+          const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
+          const linkTailArgs = linkFnRecord._require
+            ? [controllers, transcludeFn]
+            : transcludeFn
+              ? [transcludeFn]
+              : [];
+
           if (linkFnRecord._linkCtx !== undefined) {
-            return linkFnRecord._fn(
-              linkFnRecord._linkCtx,
-              linkFnRecord._isolateScope ? isolateScope : scope,
-              node,
-              attrs,
-              controllers,
-              transcludeFn,
-            );
+            const linkCtx =
+              typeof linkFnRecord._linkCtx === "object" &&
+              linkFnRecord._linkCtx !== null &&
+              "_attr" in linkFnRecord._linkCtx
+                ? ({
+                    ...linkFnRecord._linkCtx,
+                    _attr: attrs,
+                  } as LinkContextWithAttributes)
+                : linkFnRecord._linkCtx;
+
+            return linkFnRecord._fn(linkCtx, linkScope, node, ...linkTailArgs);
           }
 
           if (linkFnRecord._thisArg !== undefined) {
             return linkFnRecord._fn.call(
               linkFnRecord._thisArg,
-              linkFnRecord._isolateScope ? isolateScope : scope,
+              linkScope,
               node,
-              attrs,
-              controllers,
-              transcludeFn,
+              ...linkTailArgs,
             );
           }
 
-          return linkFnRecord._fn(
-            linkFnRecord._isolateScope ? isolateScope : scope,
-            node,
-            attrs,
-            controllers,
-            transcludeFn,
-          );
+          return linkFnRecord._fn(linkScope, node, ...linkTailArgs);
         }
 
         /** Shared post-link executor for text interpolation directives. */
@@ -3260,7 +3265,7 @@ export class CompileProvider {
 
         function applyInterpolatedAttrValue(
           linkState: AttrInterpolateLinkState,
-          attr: Attributes,
+          attr: CompileAttributes,
           value: unknown,
         ) {
           if (linkState._name === "class") {
@@ -3336,9 +3341,9 @@ export class CompileProvider {
         function attrInterpolatePreLinkFn(
           linkState: AttrInterpolateLinkState,
           scope: Scope,
-          _element: Node,
-          attr: Attributes,
         ) {
+          const attr = assertDefined(linkState._attr);
+
           // Recompute interpolation if another compile step rewrote the attribute value.
           const attrsAny = attr as Record<string, unknown>;
 
@@ -3434,8 +3439,8 @@ export class CompileProvider {
           linkState: PropertyDirectiveLinkState,
           scope: Scope,
           $element: UnknownRecord,
-          attr: Attributes,
         ) {
+          const attr = linkState._attr;
           const attrsAny = attr as UnknownRecord;
 
           const bindingState = {
@@ -3747,7 +3752,7 @@ export class CompileProvider {
 
             replacementState = {
               _templateNodes: templateNodes,
-              _templateAttrs: { $attr: {} } as Attributes,
+              _templateAttrs: { $attr: {} } as CompileAttributes,
             };
 
             const oldCompileNode = assertDefined(delayedState._compileNode);
@@ -3996,7 +4001,7 @@ export class CompileProvider {
           const attrs =
             nodeLinkState._compileNode === linkNode
               ? nodeLinkState._templateAttrs
-              : new Attributes(
+              : new CompileAttributes(
                   $injector,
                   $exceptionHandler,
                   elementNode,
@@ -4291,7 +4296,7 @@ export class CompileProvider {
         function applyDirectivesToNode(
           directives: InternalDirective[],
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           transcludeFn?: ChildTranscludeOrLinkFn,
           originalReplaceDirective?: InternalDirective | null,
           preLinkFns?: LinkFnRecord[],
@@ -4540,7 +4545,7 @@ export class CompileProvider {
           directiveName: string,
           directiveValue: unknown,
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           contextNodeList: TrackedTemplateNodeList | undefined,
           index: number | undefined,
           transcludeFn: ChildTranscludeOrLinkFn | undefined,
@@ -4606,7 +4611,7 @@ export class CompileProvider {
           directive: InternalDirective,
           directiveName: string,
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           directives: InternalDirective[],
           directiveIndex: number,
           parentNodeList: TrackedTemplateNodeList | undefined,
@@ -4677,7 +4682,7 @@ export class CompileProvider {
         function applyTemplateReplacementDirective(
           oldCompileNode: Node | Element,
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           directives: InternalDirective[],
           directiveIndex: number,
           parentNodeList: TrackedTemplateNodeList | undefined,
@@ -4692,7 +4697,7 @@ export class CompileProvider {
             setTrackedNodeAt(parentNodeList, index, compileNode);
           }
 
-          const newTemplateAttrs = { $attr: {} } as Attributes;
+          const newTemplateAttrs = { $attr: {} } as CompileAttributes;
 
           const templateDirectives = collectDirectiveMatches(
             compileNode as Element,
@@ -4748,7 +4753,7 @@ export class CompileProvider {
           directives: InternalDirective[],
           directiveIndex: number,
           directive: InternalDirective,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           compileNode: Node | Element,
           hasTranscludeDirective: boolean,
           childTranscludeFn: ChildTranscludeOrLinkFn | undefined,
@@ -4814,7 +4819,7 @@ export class CompileProvider {
 
         function createStoredNodeLinkState(
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           transcludeFn: NodeLinkTranscludeFn,
           controllerDirectives:
             | Record<string, InternalDirective>
@@ -4876,7 +4881,7 @@ export class CompileProvider {
 
         function applyElementTransclusionDirective(
           templateNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           contextNodeList: TrackedTemplateNodeList | undefined,
           index: number | undefined,
           transcludeFn: ChildTranscludeOrLinkFn | undefined,
@@ -4956,7 +4961,7 @@ export class CompileProvider {
         function resolveDirectiveTemplateValue(
           directive: InternalDirective,
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
         ): string {
           const template = isFunction(directive.template)
             ? directive.template(compileNode as HTMLElement, templateAttrs)
@@ -5381,7 +5386,7 @@ export class CompileProvider {
           directive: InternalDirective,
           directiveName: string,
           compileNode: Node | Element,
-          templateAttrs: Attributes,
+          templateAttrs: CompileAttributes,
           childTranscludeFn: ChildTranscludeOrLinkFn | undefined,
           preLinkFns: LinkFnRecord[],
           postLinkFns: LinkFnRecord[],
@@ -5577,7 +5582,7 @@ export class CompileProvider {
         /** Instantiates and stores directive controllers for the current node. */
         function setupControllers(
           node: Node | Element,
-          attrs: Attributes,
+          attrs: CompileAttributes,
           transcludeFn: ng.TranscludeFn,
           _controllerDirectives: Record<string, InternalDirective>,
           isolateScope: ng.Scope,
@@ -5809,8 +5814,8 @@ export class CompileProvider {
          * @param src - Source attributes (from the directive template).
          */
         function mergeTemplateAttributes(
-          dst: Attributes,
-          src: Attributes,
+          dst: CompileAttributes,
+          src: CompileAttributes,
         ): void {
           const dstAny = dst as Record<string, unknown>;
 
@@ -5872,7 +5877,7 @@ export class CompileProvider {
         function compileTemplateUrl(
           directives: InternalDirective[],
           compileNode: Element,
-          tAttrs: Attributes,
+          tAttrs: CompileAttributes,
           childTranscludeFn: ChildTranscludeOrLinkFn | undefined,
           preLinkFns: LinkFnRecord[],
           postLinkFns: LinkFnRecord[],
@@ -5893,7 +5898,7 @@ export class CompileProvider {
             templateUrl = (
               origAsyncDirective.templateUrl as (
                 element: HTMLElement,
-                tAttrs: ng.Attributes,
+                tAttrs: DirectiveAttributes,
               ) => string
             ).call(origAsyncDirective, compileNode as HTMLElement, tAttrs);
           } else {
@@ -6210,7 +6215,7 @@ export class CompileProvider {
         function compilePropertyDirective(
           this: { _compileState: PropertyDirectiveCompileState },
           _: HTMLElement,
-          attr: Attributes & UnknownRecord,
+          attr: CompileAttributes & UnknownRecord,
         ) {
           const compileState = this._compileState;
 
@@ -6223,6 +6228,7 @@ export class CompileProvider {
                 stringify(attr[compileState._attrName] ?? ""),
               ),
               _sanitizer: compileState._sanitizer,
+              _attr: attr,
             },
           } as unknown as ContextualDirectivePrePost<PropertyDirectiveLinkState>;
         }
@@ -6293,12 +6299,19 @@ export class CompileProvider {
         }
 
         /** Shared compile function for synthetic interpolated-attribute directives. */
-        function compileAttrInterpolateDirective(this: {
-          _compileState: AttrInterpolateLinkState;
-        }) {
+        function compileAttrInterpolateDirective(
+          this: {
+            _compileState: AttrInterpolateLinkState;
+          },
+          _element: HTMLElement,
+          attr: CompileAttributes,
+        ) {
           return {
             pre: attrInterpolatePreLinkFn,
-            _preLinkCtx: this._compileState,
+            _preLinkCtx: {
+              ...this._compileState,
+              _attr: attr,
+            },
           } as unknown as ContextualDirectivePrePost<AttrInterpolateLinkState>;
         }
 
@@ -6322,7 +6335,7 @@ export class CompileProvider {
          */
         function initializeDirectiveBindings(
           scope: Scope,
-          attrs: Attributes,
+          attrs: CompileAttributes,
           destination: Scope,
           bindings: IsolateBindingMap | null | undefined,
           directive: InternalDirective,

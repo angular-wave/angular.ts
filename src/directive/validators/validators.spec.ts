@@ -37,11 +37,15 @@ describe("validators", () => {
     it("should compile inline regex patterns without parsing them as expressions", () => {
       const parse = jasmine.createSpy("$parse");
 
-      const directive = patternDirective[2](parse);
+      const attributes = {
+        read(_element, name) {
+          return name === "ngPattern" ? "/^\\d+$/" : undefined;
+        },
+      };
 
-      const link = directive.compile(document.createElement("input"), {
-        ngPattern: "/^\\d+$/",
-      });
+      const directive = patternDirective[2](parse, attributes);
+
+      const link = directive.compile(document.createElement("input"));
 
       expect(parse).not.toHaveBeenCalled();
       expect(link).toEqual(jasmine.any(Function));
@@ -50,11 +54,15 @@ describe("validators", () => {
     it("should parse expression patterns during compile", () => {
       const parse = jasmine.createSpy("$parse").and.returnValue(() => /^\d+$/);
 
-      const directive = patternDirective[2](parse);
+      const attributes = {
+        read(_element, name) {
+          return name === "ngPattern" ? "pattern" : undefined;
+        },
+      };
 
-      const link = directive.compile(document.createElement("input"), {
-        ngPattern: "pattern",
-      });
+      const directive = patternDirective[2](parse, attributes);
+
+      const link = directive.compile(document.createElement("input"));
 
       expect(parse).toHaveBeenCalledWith("pattern");
       expect(link).toEqual(jasmine.any(Function));
@@ -485,7 +493,7 @@ describe("validators", () => {
       expect(ctrl.$isEmpty).toHaveBeenCalledWith("12345");
     });
 
-    it("should validate on non-input elements", () => {
+    it("should validate on non-input elements", async () => {
       $rootScope.min = 3;
       const elm = $compile(
         '<span ng-model="value" minlength="{{min}}"></span>',
@@ -498,12 +506,14 @@ describe("validators", () => {
       const ctrl = getController(elm, "ngModel");
 
       const ctrlNg = getController(elmNg, "ngModel");
+      await wait();
 
       expect(ctrl.$error.minlength).not.toBe(true);
       expect(ctrlNg.$error.minlength).not.toBe(true);
 
       ctrl.$setViewValue("12");
       ctrlNg.$setViewValue("12");
+      await wait();
 
       expect(ctrl.$error.minlength).toBe(true);
       expect(ctrlNg.$error.minlength).toBe(true);
@@ -724,7 +734,7 @@ describe("validators", () => {
       expect(ctrl.$isEmpty).toHaveBeenCalledWith("12345");
     });
 
-    it("should validate on non-input elements", () => {
+    it("should validate on non-input elements", async () => {
       $rootScope.max = 3;
       const elm = $compile(
         '<span ng-model="value" maxlength="{{max}}"></span>',
@@ -737,12 +747,14 @@ describe("validators", () => {
       const ctrl = getController(elm, "ngModel");
 
       const ctrlNg = getController(elmNg, "ngModel");
+      await wait();
 
       expect(ctrl.$error.maxlength).not.toBe(true);
       expect(ctrlNg.$error.maxlength).not.toBe(true);
 
       ctrl.$setViewValue("1234");
       ctrlNg.$setViewValue("1234");
+      await wait();
 
       expect(ctrl.$error.maxlength).toBe(true);
       expect(ctrlNg.$error.maxlength).toBe(true);

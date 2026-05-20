@@ -95,7 +95,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
             },
         };
     }
-    function ngOptionsPostLink(scope, selectElement, attr, ctrls) {
+    function ngOptionsPostLink(scope, selectElement, ctrls) {
         const selectNode = selectElement;
         const [selectCtrl, ngModelCtrl] = ctrls;
         const multiple = $attributes.has(selectElement, "multiple");
@@ -273,7 +273,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
         terminal: true,
         require: ["select", "ngModel"],
         link: {
-            pre: function ngOptionsPreLink(_scope, _selectElement, _attr, ctrls) {
+            pre: function ngOptionsPreLink(_scope, _selectElement, ctrls) {
                 ctrls[0]._registerOption = () => {
                     /* empty */
                 };

@@ -9,7 +9,9 @@ import angular.ts.generated.WebSocketConnection as RawWebSocketConnection
 import angular.ts.generated.WebTransportConnection as RawWebTransportConnection
 import angular.ts.generated.WasmScope as RawWasmScope
 import angular.ts.generated.WasmService as RawWasmService
+import angular.ts.generated.WebComponentService as RawWebComponentService
 import angular.ts.generated.WorkerConnection as RawWorkerConnection
+import angular.ts.unsafe.UnsafeInterop
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 import kotlin.test.Test
@@ -597,6 +599,124 @@ class AngularTsTest {
     }
 
     @Test
+    fun exposesDocumentedUnsafeInterop() {
+        val raw = UnsafeInterop.objectLiteral()
+
+        UnsafeInterop.set(raw, "message", "ready")
+        raw.upper = { value: String -> value.uppercase() }
+
+        assertEquals("ready", UnsafeInterop.get(raw, "message"))
+        assertEquals("READY", UnsafeInterop.call(raw, "upper", "ready"))
+        assertEquals("ready", UnsafeInterop.cast<dynamic>(raw).message)
+    }
+
+    @Test
+    fun wrapsAppComponentAndWebComponentServices() {
+        val host = js("document.createElement('kotlin-card')").unsafeCast<HTMLElement>()
+        val rawScope = js("({message:'ready'})")
+        val rawContext = js("({host:host,injector:{},root:host,shadowRoot:null,dispatched:null,dispatch:function(name,detail,init){this.dispatched={name:name,detail:detail,init:init};return true}})")
+        rawContext.scope = rawScope
+        var connectedMessage: String? = null
+        var disconnected = false
+        var changedName: String? = null
+        var cleanupCalled = false
+        val component = AppComponent<Any>(
+            template = "<span>{{ message }}</span>",
+            shadow = true,
+            scope = { js("({message:'ready'})").unsafeCast<Any>() },
+            isolate = true,
+            inputs = mapOf(
+                "message" to inputString(attribute = "message", defaultValue = "ready", reflect = true),
+                "count" to inputNumber(defaultValue = 1),
+                "enabled" to inputBoolean(defaultValue = true),
+                "custom" to inputCustom({ value -> "custom:$value" }),
+            ),
+            connected = { context ->
+                connectedMessage = context.scope.unsafe.message.unsafeCast<String>()
+                context.dispatch(WebComponentEvent("ready", connectedMessage))
+                val cleanup = { cleanupCalled = true }
+                cleanup
+            },
+            disconnected = {
+                disconnected = true
+            },
+            attributeChanged = { name, _, _, _ ->
+                changedName = name
+            },
+        )
+        val rawOptions = component.toJs()
+        val cleanup = callJsFunction(rawOptions.connected, null, arrayOf(rawContext)).unsafeCast<() -> Unit>()
+
+        callJsFunction(rawOptions.attributeChanged, null, arrayOf("message", "old", "new", rawContext))
+        callJsFunction(rawOptions.disconnected, null, arrayOf(rawContext))
+        cleanup()
+
+        assertEquals(true, rawOptions.shadow)
+        assertEquals(true, rawOptions.isolate)
+        assertEquals("message", rawOptions.inputs.message.attribute)
+        assertEquals("ready", rawOptions.inputs.message.default)
+        assertEquals(true, rawOptions.inputs.message.reflect)
+        assertEquals("ready", connectedMessage)
+        assertEquals("ready", rawContext.dispatched.detail)
+        assertEquals("message", changedName)
+        assertEquals(true, disconnected)
+        assertEquals(true, cleanupCalled)
+
+        val rawConstructor = js("(function KotlinElement(){})")
+        val rawService = js("({definedApp:null,definedElement:null,created:null,defineAppComponent:function(name,options){this.definedApp={name:name,options:options};return rawConstructor},defineElement:function(name,elementClass){this.definedElement={name:name,elementClass:elementClass};return elementClass},createElementScope:function(host,state,options){this.created={host:host,state:state,options:options};return state}})")
+        val service = WebComponentService(rawService.unsafeCast<RawWebComponentService>())
+        val constructor = service.defineAppComponent("kotlin-card", component)
+        val definedElement = service.defineElement("kotlin-native-card", constructor)
+        val initialState = js("({message:'created'})").unsafeCast<Any>()
+        val createdScope = service.createElementScope(host, initialState, ElementScopeOptions(isolate = true))
+
+        assertEquals("kotlin-card", rawService.definedApp.name)
+        assertEquals("kotlin-native-card", rawService.definedElement.name)
+        assertEquals(rawConstructor, definedElement.raw)
+        assertEquals("created", createdScope.unsafe.message)
+        assertEquals(true, rawService.created.options.isolate)
+
+        var configuredModuleName: String? = null
+        var configuredVersion: String? = null
+        val elementModule = AngularElementModuleOptions(
+            name = "kotlinElementModule",
+            requires = listOf("dep"),
+            configure = { module, angular ->
+                configuredModuleName = module.name
+                configuredVersion = angular.version
+            },
+        )
+        val rawElementModule = elementModule.toJs()
+
+        callJsFunction(rawElementModule.configure, null, arrayOf(js("({name:'kotlinElementModule'})"), js("({version:'0.27.0'})")))
+
+        val elementOptions = AngularElementOptions(
+            component = component,
+            ngModule = js("({name:'kotlinNg'})"),
+            elementModule = elementModule,
+            bootstrap = BootstrapConfig(strictDi = true),
+            subapp = true,
+            attachToWindow = false,
+            registerBuiltins = false,
+            extra = mapOf("mode" to "test"),
+        )
+        val rawElementOptions = elementOptions.toJs()
+        val rawDefinition = js("({angular:{version:'0.27.0'},ngModule:{name:'kotlinNg'},elementModule:{name:'kotlinElementModule'},injector:{has:function(name){return name === '\$webComponent'},get:function(name){return name}},element:rawConstructor,name:'kotlin-card'})")
+        val definition = AngularElementDefinition.unsafe(rawDefinition)
+
+        assertEquals("kotlinElementModule", configuredModuleName)
+        assertEquals("0.27.0", configuredVersion)
+        assertEquals("dep", rawElementModule.requires[0])
+        assertEquals("test", rawElementOptions.mode)
+        assertEquals("kotlinNg", rawElementOptions.ngModule.name)
+        assertEquals(true, rawElementOptions.config.strictDi)
+        assertEquals(false, rawElementOptions.attachToWindow)
+        assertEquals("kotlin-card", definition.name)
+        assertEquals("kotlinElementModule", definition.elementModule.name)
+        assertEquals(true, definition.injector.has(webComponentToken))
+    }
+
+    @Test
     fun wrapsScopeOperations() {
         var destroyed = false
         var watchedExpression = ""
@@ -676,7 +796,7 @@ class AngularTsTest {
                 Directive<Unit>(
                     template = "<span>badge</span>",
                     restrict = DirectiveRestrict.Element,
-                    postLink = { scope, _, _, _, _ ->
+                    postLink = { scope, _, _, _ ->
                         scope.unsafe.linked = true
                     },
                 ),
@@ -718,7 +838,7 @@ class AngularTsTest {
                 "kotlinLinked",
                 Directive<Unit>(
                     restrict = DirectiveRestrict.Attribute,
-                    postLink = { _, element, _, _, _ ->
+                    postLink = { _, element, _, _ ->
                         element.setAttribute("data-linked", "yes")
                     },
                 ),

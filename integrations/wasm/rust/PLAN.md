@@ -88,8 +88,7 @@ Required before the Rust feature-complete gate:
   `RequestShortcutConfig`, `HttpMethod`, `HttpResponse<T>`, and
   `HttpResponseStatus`;
 - diagnostics and event support for `LogService`, `ExceptionHandlerService`,
-  `PubSubService`, `TopicService`, `ListenerFn`, `ScopeEvent`, and
-  `InvocationDetail`;
+  `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`;
 - template loading support for `TemplateRequestService` and
   `TemplateCacheService` when Rust-authored components use template files;
 - persistence facades for `StorageBackend`, `StorageType`, `CookieService`,
@@ -121,7 +120,8 @@ Deferred from the Rust feature-complete gate:
   `AngularServiceProvider`;
 - compile/link/transclusion directive internals such as `CompileService`,
   `Directive`, `DirectiveFactory`, `AnnotatedDirectiveFactory`,
-  `PublicLinkFn`, `TranscludeFn`, and `Attributes`;
+  `PublicLinkFn`/`DirectiveLinkFn` with attrs-free link callbacks,
+  `TranscludeFn` for compile/template/controller APIs;
 - browser object aliases such as `DocumentService`, `WindowService`, and
   `RootElementService`, except as explicit unsafe host handles;
 - animation, worker, web component, parse/interpolate/filter/SCE/location
@@ -208,7 +208,7 @@ pub fn app(module: &mut NgModule) {
 Generated output registers equivalent AngularTS module code:
 
 ```typescript
-import angular from "@angular-wave/angular.ts";
+import { angular } from "@angular-wave/angular.ts";
 import init, * as app from "./pkg/demo.js";
 
 await init();
@@ -745,8 +745,8 @@ Initial docs should explain:
       `WasmScopeBindingOptions`, and `WasmScopeReference` facade coverage.
 - [x] Add `RequestShortcutConfig` coverage and tests for `$http` shortcut
       calls.
-- [x] Add typed diagnostics and event facade coverage for `TopicService`,
-      `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
+- [x] Add typed diagnostics and event facade coverage for `ListenerFn`,
+      `ScopeEvent`, and `InvocationDetail`.
 - [x] Add template request/cache facades used by Rust-authored template-file
       components.
 - [x] Add storage and cookie facades for persisted Rust app state.

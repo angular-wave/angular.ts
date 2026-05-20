@@ -1,4 +1,5 @@
-import { angular, WasmScopeAbi } from "@angular-wave/angular.ts";
+import { angular } from "@angular-wave/angular.ts";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
 import init, * as app from "../pkg/angular_ts_rust_scope_bridge.js";
 
 const scopeAbi = new WasmScopeAbi();

@@ -1,4 +1,5 @@
-import { angular, WasmScopeAbi } from "@angular-wave/angular.ts";
+import { angular } from "@angular-wave/angular.ts";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
 
 const moduleName = "cppWasmTodo";
 const scopeName = "cppTodo:main";

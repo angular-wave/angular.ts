@@ -24,6 +24,7 @@ import { ngCloakDirective } from './directive/cloak/cloak.js';
 import { ngControllerDirective } from './directive/controller/controller.js';
 import { ngElDirective } from './directive/el/el.js';
 import { ngEventDirectives } from './directive/events/events.js';
+export { createEventDirective, createWindowEventDirective, ngClickDirective } from './directive/events/events.js';
 import { ngFormDirective, formDirective } from './directive/form/form.js';
 import { ngSseDirective, ngPutDirective, ngPostDirective, ngGetDirective, ngDeleteDirective } from './directive/http/http.js';
 import { ngIfDirective } from './directive/if/if.js';
@@ -61,7 +62,7 @@ import { TemplateFactoryProvider } from './router/template-factory.js';
 import { TransitionProvider } from './router/transition/transition-service.js';
 import { ViewService } from './router/view/view.js';
 import { AnchorScrollProvider } from './services/anchor-scroll/anchor-scroll.js';
-import { AttributesProvider } from './services/attributes/attributes.js';
+import { AttributesServiceProvider } from './services/attributes/attributes.js';
 import { CookieProvider } from './services/cookie/cookie.js';
 import { ExceptionHandlerProvider } from './services/exception/exception.js';
 import { HttpParamSerializerProvider, HttpProvider } from './services/http/http.js';
@@ -104,7 +105,7 @@ function registerBuiltInFilters($filterProvider) {
 }
 /** Providers required by scopes, expressions, controllers, and compile. */
 const ngCoreProviders = {
-    [_attributes]: AttributesProvider,
+    [_attributes]: AttributesServiceProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,
@@ -341,4 +342,4 @@ function registerRouterAliases(ngModule) {
     ]);
 }
 
-export { ngAnimationProviders, ngAriaDirectives, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngCoreProviders, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngElementDirectives, ngFillDirectives, ngFilterProviders, ngFormDirectives, ngIntegrationDirectives, ngIntegrationProviders, ngRouterDirectives, ngRouterProviders, ngSecurityProviders, ngTemplateDirectives, registerNgModule, registerRouterAliases };
+export { AnchorScrollProvider, AnimateProvider, AriaProvider, AttributesServiceProvider, CompileProvider, ControllerProvider, CookieProvider, ExceptionHandlerProvider, FilterProvider, HttpParamSerializerProvider, HttpProvider, InterpolateProvider, LocationProvider, LogProvider, ParseProvider, PubSubProvider, RestProvider, RootScopeProvider, RouterProvider, SceDelegateProvider, SceProvider, SseProvider, StateProvider, StateRefActiveDirective, StateRefDirective, StateRefDynamicDirective, StateRegistryProvider, StreamProvider, TemplateCacheProvider, TemplateFactoryProvider, TemplateRequestProvider, TransitionProvider, ViewDirective, ViewDirectiveFill, ViewService, WasmProvider, WebComponentProvider, WebSocketProvider, WebTransportProvider, WorkerProvider, asyncFilter, classDirective, currencyFilter, dateFilter, entriesFilter, filterFilter, formDirective, inputDirective, jsonFilter, keysFilter, limitToFilter, maxlengthDirective, minlengthDirective, ngAnimationProviders, ngAriaDirectives, ngAttributeAliasDirectives, ngBindDirective, ngBindHtmlDirective, ngBindTemplateDirective, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngChannelDirective, ngCheckedAriaDirective, ngClickAriaDirective, ngCloakDirective, ngControllerDirective, ngCoreProviders, ngDblclickAriaDirective, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngDeleteDirective, ngDisabledAriaDirective, ngElDirective, ngElementDirectives, ngEventDirectives, ngFillDirectives, ngFilterProviders, ngFormDirective, ngFormDirectives, ngGetDirective, ngHideAriaDirective, ngHideDirective, ngIfDirective, ngIncludeDirective, ngIncludeFillContentDirective, ngInitDirective, ngInjectDirective, ngIntegrationDirectives, ngIntegrationProviders, ngListenerDirective, ngMessageDefaultDirective, ngMessageDirective, ngMessageExpDirective, ngMessagesAriaDirective, ngMessagesDirective, ngMessagesIncludeDirective, ngModelAriaDirective, ngModelDirective, ngModelOptionsDirective, ngNonBindableDirective, ngOptionsDirective, ngPostDirective, ngPutDirective, ngReadonlyAriaDirective, ngRefDirective, ngRepeatDirective, ngRequiredAriaDirective, ngRouterDirectives, ngRouterProviders, ngScopeDirective, ngSecurityProviders, ngSetterDirective, ngShowAriaDirective, ngShowDirective, ngSseDirective, ngStyleDirective, ngSwitchDefaultDirective, ngSwitchDirective, ngSwitchWhenDirective, ngTemplateDirectives, ngTranscludeDirective, ngValueAriaDirective, ngViewportDirective, ngWasmDirective, ngWebTransportDirective, ngWorkerDirective, numberFilter, optionDirective, orderByFilter, patternDirective, percentFilter, registerNgModule, registerRouterAliases, relativeTimeFilter, requiredDirective, scriptDirective, selectDirective, valuesFilter };

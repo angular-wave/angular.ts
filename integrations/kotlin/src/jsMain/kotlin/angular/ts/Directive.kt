@@ -15,7 +15,6 @@ public enum class DirectiveRestrict(
 public typealias DirectiveLink<TController> = (
     scope: Scope<Any>,
     element: HTMLElement,
-    attrs: dynamic,
     controller: TController?,
     transclude: dynamic,
 ) -> Unit
@@ -28,6 +27,7 @@ public data class Directive<TController> public constructor(
     public val restrict: DirectiveRestrict = DirectiveRestrict.ElementAttribute,
     public val scope: Boolean = false,
     public val bindToController: Boolean = false,
+    public val require: Any? = null,
     public val link: DirectiveLink<TController>? = null,
     public val preLink: DirectiveLink<TController>? = null,
     public val postLink: DirectiveLink<TController>? = null,
@@ -44,18 +44,23 @@ internal fun Directive<*>.toJs(): dynamic {
     if (templateUrl != null) raw.templateUrl = templateUrl
     if (controller != null) raw.controller = controller.toJs()
     if (controllerAs != null) raw.controllerAs = controllerAs
-    if (link != null) raw.link = link.toJs()
-    if (preLink != null || postLink != null) raw.link = prePostLinksToJs(preLink, postLink)
+    if (require != null) raw.require = require
+    if (link != null) raw.link = link.toJs(require != null)
+    if (preLink != null || postLink != null) {
+        raw.link = prePostLinksToJs(preLink, postLink, require != null)
+    }
 
     return raw
 }
 
-private fun <TController> DirectiveLink<TController>.toJs(): dynamic =
-    { scope: dynamic, element: dynamic, attrs: dynamic, controller: dynamic, transclude: dynamic ->
+private fun <TController> DirectiveLink<TController>.toJs(hasRequire: Boolean): dynamic =
+    { scope: dynamic, element: dynamic, third: dynamic, fourth: dynamic ->
+        val controller = if (hasRequire) third else null
+        val transclude = if (hasRequire) fourth else third
+
         this(
             Scope(scope.unsafeCast<RawScope>()),
             element.unsafeCast<HTMLElement>(),
-            attrs,
             controller.unsafeCast<TController?>(),
             transclude,
         )
@@ -64,11 +69,12 @@ private fun <TController> DirectiveLink<TController>.toJs(): dynamic =
 private fun <TController> prePostLinksToJs(
     preLink: DirectiveLink<TController>?,
     postLink: DirectiveLink<TController>?,
+    hasRequire: Boolean,
 ): dynamic {
     val raw = js("{}")
 
-    if (preLink != null) raw.pre = preLink.toJs()
-    if (postLink != null) raw.post = postLink.toJs()
+    if (preLink != null) raw.pre = preLink.toJs(hasRequire)
+    if (postLink != null) raw.post = postLink.toJs(hasRequire)
 
     return raw
 }

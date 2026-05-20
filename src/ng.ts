@@ -133,7 +133,7 @@ import { TemplateFactoryProvider } from "./router/template-factory.ts";
 import { TransitionProvider } from "./router/transition/transition-service.ts";
 import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
-import { AttributesProvider } from "./services/attributes/attributes.ts";
+import { AttributesServiceProvider } from "./services/attributes/attributes.ts";
 import { CookieProvider } from "./services/cookie/cookie.ts";
 import { ExceptionHandlerProvider } from "./services/exception/exception.ts";
 import {
@@ -154,15 +154,171 @@ import { WebTransportProvider } from "./services/webtransport/webtransport.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
+
+export { AnimateProvider } from "./animations/animate.ts";
+export { CompileProvider } from "./core/compile/compile.ts";
+export { ControllerProvider } from "./core/controller/controller.ts";
+export { FilterProvider } from "./core/filter/filter.ts";
+export { InterpolateProvider } from "./core/interpolate/interpolate.ts";
+export { ParseProvider } from "./core/parse/parse.ts";
+export { RootScopeProvider } from "./core/scope/scope.ts";
+export {
+  entriesFilter,
+  keysFilter,
+  valuesFilter,
+} from "./filters/collection.ts";
+export { asyncFilter } from "./filters/async.ts";
+export { dateFilter } from "./filters/date.ts";
+export { filterFilter } from "./filters/filter.ts";
+export type { FilterFactory, FilterFn } from "./filters/filter.ts";
+export { jsonFilter } from "./filters/json.ts";
+export { limitToFilter } from "./filters/limit-to.ts";
+export {
+  currencyFilter,
+  numberFilter,
+  percentFilter,
+} from "./filters/number.ts";
+export { orderByFilter } from "./filters/order-by.ts";
+export { relativeTimeFilter } from "./filters/relative-time.ts";
+export {
+  AriaProvider,
+  ngCheckedAriaDirective,
+  ngClickAriaDirective,
+  ngDblclickAriaDirective,
+  ngDisabledAriaDirective,
+  ngHideAriaDirective,
+  ngMessagesAriaDirective,
+  ngModelAriaDirective,
+  ngReadonlyAriaDirective,
+  ngRequiredAriaDirective,
+  ngShowAriaDirective,
+  ngValueAriaDirective,
+} from "./directive/aria/aria.ts";
+export { ngAttributeAliasDirectives } from "./directive/attrs/attrs.ts";
+export {
+  ngBindDirective,
+  ngBindHtmlDirective,
+  ngBindTemplateDirective,
+} from "./directive/bind/bind.ts";
+export { ngChannelDirective } from "./directive/channel/channel.ts";
+export { classDirective } from "./directive/class/class.ts";
+export { ngCloakDirective } from "./directive/cloak/cloak.ts";
+export { ngControllerDirective } from "./directive/controller/controller.ts";
+export { ngElDirective } from "./directive/el/el.ts";
+export {
+  createEventDirective,
+  createWindowEventDirective,
+  ngClickDirective,
+  ngEventDirectives,
+} from "./directive/events/events.ts";
+export type {
+  NgEventDirectiveName,
+  NgEventName,
+} from "./directive/events/events.ts";
+export { formDirective, ngFormDirective } from "./directive/form/form.ts";
+export {
+  ngDeleteDirective,
+  ngGetDirective,
+  ngPostDirective,
+  ngPutDirective,
+  ngSseDirective,
+} from "./directive/http/http.ts";
+export { ngIfDirective } from "./directive/if/if.ts";
+export {
+  ngIncludeDirective,
+  ngIncludeFillContentDirective,
+} from "./directive/include/include.ts";
+export { inputDirective } from "./directive/input/input.ts";
+export { ngInitDirective } from "./directive/init/init.ts";
+export { ngInjectDirective } from "./directive/inject/inject.ts";
+export { ngListenerDirective } from "./directive/listener/listener.ts";
+export { ngModelDirective } from "./directive/model/model.ts";
+export { ngModelOptionsDirective } from "./directive/model-options/model-options.ts";
+export {
+  ngMessageDefaultDirective,
+  ngMessageDirective,
+  ngMessageExpDirective,
+  ngMessagesDirective,
+  ngMessagesIncludeDirective,
+} from "./directive/messages/messages.ts";
+export { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.ts";
+export { ngOptionsDirective } from "./directive/options/options.ts";
+export { optionDirective, selectDirective } from "./directive/select/select.ts";
+export { ngRefDirective } from "./directive/ref/ref.ts";
+export { ngRepeatDirective } from "./directive/repeat/repeat.ts";
+export { ngScopeDirective } from "./directive/scope/scope.ts";
+export { scriptDirective } from "./directive/script/script.ts";
+export { ngSetterDirective } from "./directive/setter/setter.ts";
+export {
+  ngHideDirective,
+  ngShowDirective,
+} from "./directive/show-hide/show-hide.ts";
+export { ngStyleDirective } from "./directive/style/style.ts";
+export {
+  ngSwitchDefaultDirective,
+  ngSwitchDirective,
+  ngSwitchWhenDirective,
+} from "./directive/switch/switch.ts";
+export { ngTranscludeDirective } from "./directive/transclude/transclude.ts";
+export {
+  maxlengthDirective,
+  minlengthDirective,
+  patternDirective,
+  requiredDirective,
+} from "./directive/validators/validators.ts";
+export { ngViewportDirective } from "./directive/viewport/viewport.ts";
+export { ngWasmDirective } from "./directive/wasm/wasm.ts";
+export { ngWebTransportDirective } from "./directive/webtransport/webtransport.ts";
+export { ngWorkerDirective } from "./directive/worker/worker.ts";
+export {
+  StateRefActiveDirective,
+  StateRefDirective,
+  StateRefDynamicDirective,
+} from "./router/directives/state-directives.ts";
+export {
+  ViewDirective,
+  ViewDirectiveFill,
+} from "./router/directives/view-directive.ts";
+export { RouterProvider } from "./router/router.ts";
+export { StateProvider } from "./router/state/state-service.ts";
+export { StateRegistryProvider } from "./router/state/state-registry.ts";
+export { TemplateFactoryProvider } from "./router/template-factory.ts";
+export { TransitionProvider } from "./router/transition/transition-service.ts";
+export { ViewService } from "./router/view/view.ts";
+export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
+export { AttributesServiceProvider } from "./services/attributes/attributes.ts";
+export { CookieProvider } from "./services/cookie/cookie.ts";
+export { ExceptionHandlerProvider } from "./services/exception/exception.ts";
+export {
+  HttpParamSerializerProvider,
+  HttpProvider,
+} from "./services/http/http.ts";
+export { LocationProvider } from "./services/location/location.ts";
+export { LogProvider } from "./services/log/log.ts";
+export { PubSubProvider } from "./services/pubsub/pubsub.ts";
+export { RestProvider } from "./services/rest/rest.ts";
+export { SceDelegateProvider, SceProvider } from "./services/sce/sce.ts";
+export { SseProvider } from "./services/sse/sse.ts";
+export { StreamProvider } from "./services/stream/readable-stream.ts";
+export { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
+export { TemplateRequestProvider } from "./services/template-request/template-request.ts";
+export { WebComponentProvider } from "./services/web-component/web-component.ts";
+export { WebTransportProvider } from "./services/webtransport/webtransport.ts";
+export { WebSocketProvider } from "./services/websocket/websocket.ts";
+export { WorkerProvider } from "./services/worker/worker.ts";
+export { WasmProvider } from "./services/wasm/wasm.ts";
+
+type Dynamic = ReturnType<typeof JSON.parse>;
+
 type ProviderFactory =
-  | (new (...args: never[]) => unknown)
-  | ((this: never, ...args: never[]) => unknown);
+  | (new (...args: Dynamic[]) => unknown)
+  | ((this: never, ...args: Dynamic[]) => unknown);
 
 type ProviderGroup = Record<string, ProviderFactory>;
 
 type DirectiveGroup = Record<string, ng.DirectiveFactory>;
 
-type BuiltInFilterFactory = (...args: never[]) => FilterFn;
+type BuiltInFilterFactory = (...args: Dynamic[]) => FilterFn;
 
 type FilterGroup = Record<string, BuiltInFilterFactory>;
 
@@ -200,7 +356,7 @@ function registerBuiltInFilters($filterProvider: FilterProvider): void {
 
 /** Providers required by scopes, expressions, controllers, and compile. */
 export const ngCoreProviders = {
-  [_attributes]: AttributesProvider,
+  [_attributes]: AttributesServiceProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,

@@ -9,7 +9,6 @@ import {
   _animateProvider,
   _compileProvider,
   _controllerProvider,
-  _eventBus,
   _filterProvider,
   _injector,
   _provide,
@@ -49,11 +48,6 @@ import type {
   WorkerConfig,
   WorkerService,
 } from "../../../services/worker/worker.ts";
-import {
-  createTopicService,
-  type PubSub,
-  type TopicService,
-} from "../../../services/pubsub/pubsub.ts";
 import type {
   AppComponentOptions,
   ScopeElementConstructor,
@@ -616,35 +610,6 @@ export class NgModule {
       _webComponent,
       ($webComponent: WebComponentService) =>
         $webComponent.defineElement<T>(name, elementClass),
-    ]);
-
-    return this;
-  }
-
-  /**
-   * Register a topic-bound event bus facade as an injectable service.
-   *
-   * Events published through the facade are namespaced as `${topic}:${event}`,
-   * keeping raw event-bus topic strings out of application services.
-   *
-   * @param {string} name - Injectable name.
-   * @param {string} topic - Base event-bus topic prefix.
-   * @returns {NgModule}
-   */
-  topic(name: string, topic: string): this {
-    validate(isString, name, "name");
-    validate(isString, topic, "topic");
-    this._invokeQueue.push([
-      _provide,
-      "factory",
-      [
-        name,
-        [
-          _eventBus,
-          ($eventBus: PubSub): TopicService =>
-            createTopicService($eventBus, topic),
-        ],
-      ],
     ]);
 
     return this;

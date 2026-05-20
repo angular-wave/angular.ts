@@ -4,8 +4,6 @@ import angular.ts.generated.Angular as RawAngular
 import angular.ts.generated.AnchorScrollService as RawAnchorScrollService
 import angular.ts.generated.AnimateService as RawAnimateService
 import angular.ts.generated.AriaService as RawAriaService
-import angular.ts.generated.Attributes as RawAttributes
-import angular.ts.generated.AttributesService as RawAttributesService
 import angular.ts.generated.CompileService as RawCompileService
 import angular.ts.generated.ControllerService as RawControllerService
 import angular.ts.generated.CookieService as RawCookieService
@@ -30,18 +28,13 @@ import angular.ts.generated.TemplateCacheService as RawTemplateCacheService
 import angular.ts.generated.TemplateRequestService as RawTemplateRequestService
 import angular.ts.generated.TransitionService as RawTransitionService
 import angular.ts.generated.WasmService as RawWasmService
+import angular.ts.generated.WebComponentService as RawWebComponentService
 import angular.ts.generated.WebSocketService as RawWebSocketService
 import angular.ts.generated.WebTransportService as RawWebTransportService
 import org.w3c.dom.Element
 
 public val angularToken: Token<AngularService> =
     Token("\$angular") { value -> AngularService(value.unsafeCast<RawAngular>()) }
-
-public val attrsToken: Token<Attributes> =
-    Token("\$attrs") { value -> Attributes(value.unsafeCast<RawAttributes>()) }
-
-public val attributesToken: Token<AttributesService> =
-    Token("\$attributes") { value -> AttributesService(value.unsafeCast<RawAttributesService>()) }
 
 public val anchorScrollToken: Token<AnchorScrollService> =
     Token("\$anchorScroll") { value -> AnchorScrollService(value.unsafeCast<RawAnchorScrollService>()) }
@@ -129,6 +122,9 @@ public val websocketToken: Token<WebSocketService> =
 public val webTransportToken: Token<WebTransportService> =
     Token("\$webTransport") { value -> WebTransportService(value.unsafeCast<RawWebTransportService>()) }
 
+public val webComponentToken: Token<WebComponentService> =
+    Token("\$webComponent") { value -> WebComponentService(value.unsafeCast<RawWebComponentService>()) }
+
 public val workerToken: Token<WorkerService> =
     Token("\$worker") { value -> WorkerService(value) }
 
@@ -169,6 +165,9 @@ public val websocketProviderToken: Token<WebSocketProvider> =
 
 public val webTransportProviderToken: Token<WebTransportProvider> =
     Token("\$webTransportProvider") { value -> WebTransportProvider(value) }
+
+public val webComponentProviderToken: Token<WebComponentProvider> =
+    Token("\$webComponentProvider") { value -> WebComponentProvider(value) }
 
 public val workerProviderToken: Token<WorkerProvider> =
     Token("\$workerProvider") { value -> WorkerProvider(value) }

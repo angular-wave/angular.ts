@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
 import { getCacheData, setCacheData } from "../../shared/dom.ts";
 import {
@@ -10,9 +11,7 @@ import {
 
 classDirective.$inject = [_attributes];
 /** Creates the `ngClass` directive. */
-export function classDirective(
-  $attributes: ng.AttributesService,
-): ng.Directive {
+export function classDirective($attributes: AttributesService): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
       let classCounts = getCacheData(element, "$classCounts") as

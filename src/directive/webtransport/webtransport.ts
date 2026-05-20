@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _compile,
@@ -57,7 +58,7 @@ export function ngWebTransportDirective(
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const decoder = new TextDecoder();
 

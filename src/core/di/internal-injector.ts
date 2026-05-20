@@ -18,7 +18,9 @@ const $injectorError = createErrorFactory(_injector);
 
 export const providerSuffix = "Provider";
 
-type Callable = (...args: never[]) => unknown;
+type Dynamic = ReturnType<typeof JSON.parse>;
+
+type Callable = (...args: Dynamic[]) => unknown;
 
 type InjectableFn =
   | Callable

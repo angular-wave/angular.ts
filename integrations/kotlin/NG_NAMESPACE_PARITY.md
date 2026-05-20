@@ -14,6 +14,12 @@ token, callback signature, config object, enum, DSL builder, or intentionally
 documented unsupported mapping for each public `ng` type. A type is not
 considered covered just because an unsafe JavaScript escape hatch can reach it.
 
+Directive link callback parity follows the current attrs-free shape:
+`(scope, element)`, `(scope, element, transclude)`, or
+`(scope, element, controller, transclude?)`. Compile/template/controller
+Directive link callbacks no longer receive `$attrs`; attribute helpers are not
+part of the Kotlin public facade.
+
 ## Status Legend
 
 - `planned`: required for parity but not implemented yet.
@@ -31,8 +37,6 @@ considered covered just because an unsafe JavaScript escape hatch can reach it.
 | --- | --- |
 | `Angular` | generated |
 | `AnnotatedDirectiveFactory` | generated |
-| `Attributes` | generated |
-| `AttributesService` | generated |
 | `Component` | generated |
 | `Controller` | generated |
 | `Directive` | generated |
@@ -102,7 +106,6 @@ considered covered just because an unsafe JavaScript escape hatch can reach it.
 | `StreamService` | generated |
 | `TemplateCacheService` | generated |
 | `TemplateRequestService` | generated |
-| `TopicService` | generated |
 | `WebComponentService` | generated |
 | `WebSocketService` | generated |
 | `WebTransportService` | generated |

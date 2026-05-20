@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _compile } from "../../injection-tokens.ts";
 import {
   arrayFrom,
@@ -20,7 +21,7 @@ ngTranscludeDirective.$inject = [_compile, _attributes];
 
 export function ngTranscludeDirective(
   $compile: ng.CompileService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     compile: function ngTranscludeCompile(tElement: Element) {
@@ -31,8 +32,6 @@ export function ngTranscludeDirective(
       function ngTranscludePostLink(
         $scope: ng.Scope,
         $element: Element,
-        _attrs: ng.Attributes,
-        _controller: unknown,
         $transclude?: TranscludeFn,
       ) {
         if (!$transclude) {

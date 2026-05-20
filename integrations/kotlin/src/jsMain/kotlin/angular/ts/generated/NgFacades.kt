@@ -33,26 +33,6 @@ public external interface Angular {
 
 public external interface AnnotatedDirectiveFactory
 
-public external interface Attributes {
-    public fun `$addClass`(p0: String = definedExternally): Unit
-    public var `$attr`: dynamic
-    public fun `$normalize`(p0: String = definedExternally): String
-    public fun `$observe`(p0: String = definedExternally, p1: Function<*> = definedExternally): Function<*>
-    public fun `$removeClass`(p0: String = definedExternally): Unit
-    public fun `$updateClass`(p0: String = definedExternally, p1: String = definedExternally): Unit
-}
-
-public external interface AttributesService {
-    public fun addClass(p0: dynamic = definedExternally, p1: String = definedExternally): Unit
-    public fun has(p0: dynamic = definedExternally, p1: String = definedExternally): Boolean
-    public fun observe(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: String = definedExternally, p3: Function<*> = definedExternally): Function<*>
-    public fun originalName(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun read(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun removeClass(p0: dynamic = definedExternally, p1: String = definedExternally): Unit
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Unit
-    public fun updateClass(p0: dynamic = definedExternally, p1: String = definedExternally, p2: String = definedExternally): Unit
-}
-
 public external interface Component {
     public var bindings: dynamic
     public var controller: dynamic
@@ -114,7 +94,6 @@ public external interface NgModule {
     public fun sse(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun state(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun store(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun topic(p0: String = definedExternally, p1: String = definedExternally): dynamic
     public fun value(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun wasm(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
     public fun webComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
@@ -576,14 +555,6 @@ public external interface TemplateRequestService {
     public operator fun invoke(p0: String = definedExternally): dynamic
 }
 
-public external interface TopicService {
-    public fun getCount(p0: String = definedExternally): Double
-    public fun publish(p0: String = definedExternally, vararg p1: Array<dynamic>): Boolean
-    public fun subscribe(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
-    public fun subscribeOnce(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
-    public var topic: String
-}
-
 public external interface AngularService {
     public var `$eventBus`: dynamic
     public var `$injector`: dynamic
@@ -746,8 +717,6 @@ public external interface InjectionTokens {
     public var `$animateProvider`: String
     public var `$aria`: String
     public var `$ariaProvider`: String
-    public var `$attributes`: String
-    public var `$attrs`: String
     public var `$compile`: String
     public var `$compileProvider`: String
     public var `$controller`: String

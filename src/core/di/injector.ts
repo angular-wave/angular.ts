@@ -35,7 +35,9 @@ import type {
 } from "./interface.ts";
 const $injectorError = createErrorFactory(_injector);
 
-type InjectableFunction = (...args: never[]) => unknown;
+type Dynamic = ReturnType<typeof JSON.parse>;
+
+type InjectableFunction = (...args: Dynamic[]) => unknown;
 
 type RunBlock = Injectable<InjectableFunction>;
 

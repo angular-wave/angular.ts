@@ -1701,7 +1701,7 @@ describe("ngModel", () => {
         .module("myModule", [])
         .directive("customFormat", () => ({
           require: "ngModel",
-          link(scope, element, attrs, ngModelCtrl) {
+          link(scope, element, ngModelCtrl) {
             ngModelCtrl.$formatters.push((value) => value.part);
             ngModelCtrl.$parsers.push((value) => ({ part: value }));
           },

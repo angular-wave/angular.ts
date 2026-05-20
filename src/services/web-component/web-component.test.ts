@@ -92,8 +92,8 @@ test("ScopeElement demo exposes a user-authored custom element", async ({
   await expectAngularCard(game, "Winner: X");
 
   await game.evaluate((element) => {
-    element.shadowRoot!
-      .querySelectorAll("ol button")[2]
+    element
+      .shadowRoot!.querySelectorAll("ol button")[2]
       .dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
 
@@ -111,9 +111,8 @@ test("ScopeElement demo exposes a user-authored custom element", async ({
 
 async function clickSquare(card: any, index: number) {
   await card.evaluate((element: any, squareIndex: number) => {
-    const square = element.shadowRoot!.querySelectorAll("tic-square")[
-      squareIndex
-    ];
+    const square =
+      element.shadowRoot!.querySelectorAll("tic-square")[squareIndex];
 
     square.shadowRoot.querySelector("button").click();
   }, index);
@@ -123,9 +122,8 @@ async function expectSquare(card: any, index: number, text: string) {
   await expect
     .poll(() =>
       card.evaluate((element: any, squareIndex: number) => {
-        const square = element.shadowRoot!.querySelectorAll("tic-square")[
-          squareIndex
-        ];
+        const square =
+          element.shadowRoot!.querySelectorAll("tic-square")[squareIndex];
 
         return square.shadowRoot.querySelector("button").textContent.trim();
       }, index),

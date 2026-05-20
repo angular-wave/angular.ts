@@ -22,7 +22,7 @@ describe("filter", function () {
       },
     ]);
 
-    const $filter = injector.get("$filter");
+    const $filter = injector.get("$filter") as ng.FilterService;
 
     expect($filter("my")).toBe(myFilter);
   });
@@ -49,7 +49,7 @@ describe("filter", function () {
       },
     ]);
 
-    const $filter = injector.get("$filter");
+    const $filter = injector.get("$filter") as ng.FilterService;
 
     expect($filter("my")).toBe(myFilter);
     expect($filter("myOther")).toBe(myOtherFilter);

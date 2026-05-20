@@ -11,7 +11,7 @@ function ngIfDirective($injector, $attributes) {
         priority: 600,
         terminal: true,
         restrict: "A",
-        link($scope, $element, _attr, _ctrl, $transclude) {
+        link($scope, $element, $transclude) {
             if (!$transclude) {
                 return;
             }

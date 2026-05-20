@@ -14,6 +14,10 @@ builder, callback signature, config object, enum, alias, or intentionally
 documented unsupported mapping for each public `ng` type. A type is not
 considered covered just because raw `syscall/js` can reach it.
 
+Directive link callback parity must follow the current attrs-free link shape:
+`(scope, element, controller?, transclude?)`. Compile/template/controller
+`$attrs` and attribute helper services are not part of the Go public facade.
+
 ## Go Completion Gate
 
 Go targets feature parity with the completed Rust/Wasm app-authoring surface.
@@ -42,7 +46,6 @@ reference example makes one necessary.
 | --- | --- |
 | `Angular` | deferred |
 | `AnnotatedDirectiveFactory` | deferred |
-| `Attributes` | deferred |
 | `Component` | covered |
 | `Controller` | covered |
 | `Directive` | deferred |
@@ -88,7 +91,6 @@ reference example makes one necessary.
 | `AngularService` | deferred |
 | `AnimateService` | deferred |
 | `AriaService` | deferred |
-| `AttributesService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
@@ -113,7 +115,6 @@ reference example makes one necessary.
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
 | `TemplateRequestService` | covered |
-| `TopicService` | covered |
 | `WebComponentService` | deferred |
 | `WebSocketService` | covered |
 | `WebTransportService` | deferred |

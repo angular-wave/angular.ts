@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _eventBus } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
 
@@ -11,7 +12,7 @@ ngChannelDirective.$inject = [_eventBus, _attributes];
  */
 export function ngChannelDirective(
   $eventBus: ng.PubSubService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     scope: false,

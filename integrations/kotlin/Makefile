@@ -1,6 +1,6 @@
-.PHONY: all deps format format-check test generate generate-check parity check runtime-build example-build runtime-test demo clean
+.PHONY: all deps format format-check test generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
 
-GRADLE ?= gradle
+GRADLE ?= ./gradlew
 NODE ?= node
 PLAYWRIGHT ?= ../../node_modules/.bin/playwright
 
@@ -33,15 +33,25 @@ runtime-build:
 	$(MAKE) -C ../.. build
 
 example-build:
-	@echo "Kotlin examples start in Phase 7."
+	$(GRADLE) :examples:basic_app:jsBrowserProductionWebpack
+	$(GRADLE) :examples:web_components:jsBrowserProductionWebpack
 
-runtime-test:
-	@echo "Kotlin runtime browser tests start in Phase 7."
+runtime-test: runtime-build example-build
+	$(PLAYWRIGHT) test --config playwright.config.ts
 
 check: generate-check format-check test parity runtime-test
 
+release-check: check
+	$(MAKE) -C ../dart check
+	$(MAKE) -C ../.. build
+
+publish-local:
+	$(GRADLE) publishToMavenLocal
+
 demo:
-	@echo "Kotlin demos start in Phase 7."
+	$(GRADLE) :examples:basic_app:jsBrowserDevelopmentRun
 
 clean:
 	$(GRADLE) clean
+	rm -rf .gradle build kotlin-js-store playwright-report test-results
+	rm -rf examples/basic_app/build examples/web_components/build

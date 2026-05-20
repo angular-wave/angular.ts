@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _attributes,
   _exceptionHandler,
@@ -10,6 +11,7 @@ import {
   type WorkerConfig,
   type WorkerConnection,
 } from "../../services/worker/worker.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
 
 ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler, _attributes];
@@ -21,7 +23,7 @@ export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -52,9 +54,8 @@ export function ngWorkerDirective(
           element.dispatchEvent(new Event(eventName));
         });
 
-        $attributes.observe(scope, element, "latch", () => {
-          dispatchAfterFirst();
-        });
+        dispatchAfterFirst();
+        observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
       }
 
       if ($attributes.has(element, "interval")) {

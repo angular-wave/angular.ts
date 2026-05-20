@@ -233,11 +233,11 @@ function ngModelAriaDirective($aria, $attributes) {
                 return undefined;
             const shape = getShape(compileElement);
             return {
-                post(scope, elem, attrPost, ngModel) {
+                post(scope, elem, ngModel) {
                     const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                     function getRadioReaction() {
                         // Strict comparison would cause a BC
-                        elem.setAttribute("aria-checked", (attrPost.value == ngModel.$viewValue).toString());
+                        elem.setAttribute("aria-checked", ($attributes.read(elem, "value") == ngModel.$viewValue).toString());
                     }
                     function getCheckboxReaction() {
                         elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());

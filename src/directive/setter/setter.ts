@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _log, _parse } from "../../injection-tokens.ts";
 
 ngSetterDirective.$inject = [_parse, _log, _attributes];
@@ -8,7 +9,7 @@ ngSetterDirective.$inject = [_parse, _log, _attributes];
 export function ngSetterDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",

@@ -1,3 +1,4 @@
+import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes, _injector } from "../../injection-tokens.ts";
 import {
   callBackOnce,
@@ -58,7 +59,7 @@ type RepeatBlockMap = Partial<Record<string, RepeatBlock>>;
 
 export function ngRepeatDirective(
   $injector: ng.InjectorService,
-  $attributes: ng.AttributesService,
+  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -596,8 +597,6 @@ export function ngRepeatDirective(
       function ngRepeatLink(
         $scope: RepeatScope,
         repeatElement: Node,
-        attr: ng.Attributes,
-        _ctrl: unknown,
         $transclude?: ng.TranscludeFn,
       ) {
         let previousNode: Node;

@@ -13,10 +13,13 @@ describe("index", () => {
     expect(angular._bootsrappedModules[0]).toEqual("ng");
   });
 
-  it("does not export REST cache implementation details", () => {
+  it("keeps the root runtime API narrow", () => {
     expect(exports.CachedRestBackend).toBeUndefined();
-    expect(publicApi.HttpRestBackend).toBeDefined();
+    expect(exports.HttpRestBackend).toBeUndefined();
     expect(exports.MemoryRestCacheStore).toBeUndefined();
+    expect(exports.ScopeElement).toBeUndefined();
+    expect(exports.WasmScope).toBeUndefined();
+    expect(exports.WasmScopeAbi).toBeUndefined();
     expect(exports.createRestCacheKey).toBeUndefined();
   });
 });

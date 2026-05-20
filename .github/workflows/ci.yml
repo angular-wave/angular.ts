@@ -76,6 +76,8 @@ jobs:
             deps-${{ runner.os }}-
       - name: Run TypeScript check
         run: npx tsc
+      - name: Run test TypeScript check
+        run: npx tsc --project tsconfig.test.json
 
   package:
     needs: typescript
@@ -121,4 +123,51 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 3
+
+  kotlin:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Restore node_modules and Playwright cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - name: Cache Gradle and Kotlin/JS
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            integrations/kotlin/.gradle
+            integrations/kotlin/kotlin-js-store
+          key: kotlin-${{ runner.os }}-${{ hashFiles('integrations/kotlin/**/*.gradle.kts', 'integrations/kotlin/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json') }}
+          restore-keys: |
+            kotlin-${{ runner.os }}-
+
+      - name: Run Kotlin integration check
+        run: make -C integrations/kotlin check
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kotlin-playwright-report
+          path: integrations/kotlin/playwright-report/
           retention-days: 3

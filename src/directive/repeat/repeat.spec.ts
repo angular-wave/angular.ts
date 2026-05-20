@@ -1450,7 +1450,7 @@ describe("ngRepeat", () => {
         }))
         .directive("test", () => ({
           require: "^template",
-          link(_scope, _el, _attr, ctrl) {
+          link(_scope, _el, ctrl) {
             controller = ctrl;
           },
         }));
