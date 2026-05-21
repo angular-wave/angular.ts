@@ -1,26 +1,27 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _injector } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
 import {
   callBackOnce,
-  callFunction,
   arrayFrom,
+  assertDefined,
+  callFunction,
+  createErrorFactory,
   deleteProperty,
   hasOwn,
   hashKey,
-  setHashKey,
   isArray,
   isArrayLike,
   isDefined,
   isFunction,
   isInstanceOf,
   isProxy,
-  createErrorFactory,
   nullObject,
-  assertDefined,
+  setHashKey,
 } from "../../shared/utils.ts";
 import {
   createDocumentFragment,
   getBlockNodes,
+  getNormalizedAttr,
+  hasNormalizedAttr,
   removeElement,
   removeElementData,
 } from "../../shared/dom.ts";
@@ -30,6 +31,7 @@ import {
 } from "../../core/scope/scope.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import { NodeType } from "../../shared/node.ts";
+import type { DirectiveAttributes } from "../../interface.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 
@@ -38,7 +40,7 @@ const ngRepeatError = createErrorFactory("ngRepeat");
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
-ngRepeatDirective.$inject = [_injector, _attributes];
+ngRepeatDirective.$inject = [_injector];
 
 type RepeatScope = ng.Scope &
   Record<string, unknown> & {
@@ -57,10 +59,7 @@ interface RepeatBlock {
 
 type RepeatBlockMap = Partial<Record<string, RepeatBlock>>;
 
-export function ngRepeatDirective(
-  $injector: ng.InjectorService,
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
   const repeatPositionLocalKeys = [
@@ -530,17 +529,24 @@ export function ngRepeatDirective(
     transclude: "element",
     priority: 1000,
     terminal: true,
-    compile($element: Element) {
-      const expression = $attributes.read($element, "ngRepeat") ?? "";
+    compile($element: Element, tAttrs: DirectiveAttributes) {
+      const expression =
+        getNormalizedAttr($element, "ngRepeat") ??
+        (tAttrs.ngRepeat as string | undefined) ??
+        "";
 
-      const hasAnimate = $attributes.has($element, "animate");
+      const hasAnimate =
+        hasNormalizedAttr($element, "animate") || isDefined(tAttrs.animate);
 
       const indexProperty =
-        $attributes.read($element, "index") ??
-        $attributes.read($element, "dataIndex") ??
+        getNormalizedAttr($element, "index") ??
+        getNormalizedAttr($element, "dataIndex") ??
+        (tAttrs.index as string | undefined) ??
+        (tAttrs.dataIndex as string | undefined) ??
         undefined;
 
-      const hasLazy = $attributes.has($element, "lazy");
+      const hasLazy =
+        hasNormalizedAttr($element, "lazy") || isDefined(tAttrs.lazy);
 
       let match =
         /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(
@@ -585,7 +591,9 @@ export function ngRepeatDirective(
       }
 
       const swap = callBackOnce(() => {
-        const targetSelector = $attributes.read($element, "swap");
+        const targetSelector =
+          getNormalizedAttr($element, "swap") ??
+          (tAttrs.swap as string | undefined);
 
         if (hasLazy && targetSelector) {
           document.querySelectorAll(targetSelector).forEach((x) => {

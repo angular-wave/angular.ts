@@ -1,8 +1,8 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import type { LazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   createDocumentFragment,
   emptyElement,
+  getNormalizedAttr,
   removeElement,
 } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
@@ -32,8 +32,6 @@ export interface RealtimeSwapContext {
   getAnimate: LazyAnimate;
   /** Scope used when compiling incoming HTML. */
   scope: ng.Scope;
-  /** Read-only normalized attribute access for directive defaults. */
-  $attributes: AttributesService;
   /** Directive host element used when no target is configured. */
   element: Element;
   /** Prefix used in log messages. */
@@ -59,7 +57,6 @@ export function createRealtimeSwapHandler({
   $log,
   getAnimate,
   scope,
-  $attributes,
   element,
   logPrefix,
 }: RealtimeSwapContext): RealtimeSwapHandler {
@@ -70,7 +67,7 @@ export function createRealtimeSwapHandler({
     swap: SwapModeType,
     options: RealtimeSwapOptions = {},
   ): boolean => {
-    const animationEnabled = !!$attributes.read(element, "animate");
+    const animationEnabled = !!getNormalizedAttr(element, "animate");
 
     const animate = animationEnabled ? getAnimate() : undefined;
 
@@ -89,7 +86,7 @@ export function createRealtimeSwapHandler({
     }
 
     const targetSelector =
-      options.targetSelector ?? $attributes.read(element, "target");
+      options.targetSelector ?? getNormalizedAttr(element, "target");
 
     const target: Element | null = targetSelector
       ? document.querySelector(targetSelector)
@@ -289,7 +286,7 @@ export function createRealtimeSwapHandler({
 
     if (
       shouldUseViewTransition(
-        $attributes.read(element, "viewTransition"),
+        getNormalizedAttr(element, "viewTransition"),
         target,
         animationEnabled,
       )

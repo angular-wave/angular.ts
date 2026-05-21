@@ -39,6 +39,7 @@ import type {
   DirectiveCompileFn,
   DirectiveLinkFn,
 } from "../../interface.ts";
+import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
 
 export interface ValidityCssHost {
   /** @internal */
@@ -182,7 +183,6 @@ export class FormController {
     _scope,
     _injector,
     _interpolate,
-    _attributes,
   ];
 
   /** @internal */
@@ -242,14 +242,13 @@ export class FormController {
     $scope: ng.Scope,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
-    $attributes: AttributesService,
   ) {
     this._isAnimated = hasAnimate($element);
     this._controls = [];
 
     const interpolatedName: unknown = $interpolate(
-      $attributes.read($element, "name") ??
-        $attributes.read($element, "ngForm") ??
+      getNormalizedAttr($element, "name") ??
+        getNormalizedAttr($element, "ngForm") ??
         "",
     )?.($scope);
 
@@ -887,9 +886,9 @@ const formDirectiveFactory = function (
           // Setup initial state of the control
           formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
 
-          const nameAttr = $attributes.has(formElement, "name")
+          const nameAttr = hasNormalizedAttr(formElement, "name")
             ? "name"
-            : isNgForm && $attributes.has(formElement, "ngForm")
+            : isNgForm && hasNormalizedAttr(formElement, "ngForm")
               ? "ngForm"
               : false;
 
@@ -902,7 +901,7 @@ const formDirectiveFactory = function (
               const [controller] = ctrls;
 
               if (formElementParam instanceof HTMLFormElement) {
-                const shouldPreventSubmit = !$attributes.has(
+                const shouldPreventSubmit = !hasNormalizedAttr(
                   formElementParam,
                   "action",
                 );

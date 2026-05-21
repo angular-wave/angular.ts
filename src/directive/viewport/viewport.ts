@@ -1,20 +1,17 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _parse } from "../../injection-tokens.ts";
+import { _parse } from "../../injection-tokens.ts";
 import { arrayFrom } from "../../shared/utils.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
-ngViewportDirective.$inject = [_parse, _attributes];
+ngViewportDirective.$inject = [_parse];
 
 /** Evaluates expressions when an element enters or leaves the viewport. */
-export function ngViewportDirective(
-  $parse: ng.ParseService,
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngViewportDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement): void {
-      const enterExpr = $attributes.read(element, "onEnter");
+      const enterExpr = getNormalizedAttr(element, "onEnter");
 
-      const leaveExpr = $attributes.read(element, "onLeave");
+      const leaveExpr = getNormalizedAttr(element, "onLeave");
 
       const enterFn = enterExpr ? $parse(enterExpr) : undefined;
 

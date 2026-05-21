@@ -2,12 +2,16 @@ import type { AttributesService } from "../../services/attributes/attributes.ts"
 import { _attributes, _parse } from "../../injection-tokens.ts";
 import {
   isNumberNaN,
-  isUndefined,
   createErrorFactory,
   isString,
+  isUndefined,
 } from "../../shared/utils.ts";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
-import { startingTag } from "../../shared/dom.ts";
+import {
+  getNormalizedAttr,
+  hasNormalizedAttr,
+  startingTag,
+} from "../../shared/dom.ts";
 
 const ngPatternError = createErrorFactory("ngPattern");
 
@@ -75,7 +79,7 @@ function readValidatorAttr(
   normalizedName: string,
 ): string | undefined {
   return element instanceof Element
-    ? $attributes?.read(element, normalizedName)
+    ? getNormalizedAttr(element, normalizedName)
     : undefined;
 }
 
@@ -85,8 +89,7 @@ function hasValidatorAttr(
   normalizedName: string,
 ): boolean {
   return (
-    element instanceof Element &&
-    Boolean($attributes?.has(element, normalizedName))
+    element instanceof Element && hasNormalizedAttr(element, normalizedName)
   );
 }
 
@@ -200,7 +203,7 @@ export const requiredDirective: [
             (newVal?: string) => {
               setRequiredValue(
                 $attributes && elm instanceof Element
-                  ? $attributes.has(elm, "required")
+                  ? hasNormalizedAttr(elm, "required")
                   : newVal,
               );
             },

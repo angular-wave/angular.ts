@@ -15,8 +15,6 @@ describe("ngInit", () => {
 
   let $templateCache: any;
 
-  let $attributes: any;
-
   let injector;
 
   beforeEach(() => {
@@ -25,7 +23,6 @@ describe("ngInit", () => {
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
     $templateCache = injector.get("$templateCache");
-    $attributes = injector.get("$attributes");
   });
 
   afterEach(() => {
@@ -37,7 +34,7 @@ describe("ngInit", () => {
       .createSpy("$parse")
       .and.returnValue(jasmine.createSpy("initFn"));
 
-    const directive = ngInitDirective(parse, $attributes);
+    const directive = ngInitDirective(parse);
 
     const element = document.createElement("div");
 
@@ -62,7 +59,7 @@ describe("ngInit", () => {
       .createSpy("$parse")
       .and.returnValue(jasmine.createSpy("initFn"));
 
-    const directive = ngInitDirective(parse, $attributes);
+    const directive = ngInitDirective(parse);
 
     const element = document.createElement("div");
 
@@ -78,7 +75,7 @@ describe("ngInit", () => {
       .createSpy("$parse")
       .and.returnValue(jasmine.createSpy("initFn"));
 
-    const directive = ngInitDirective(parse, $attributes);
+    const directive = ngInitDirective(parse);
 
     directive.compile!(document.createElement("div"), {} as any);
 

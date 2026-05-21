@@ -124,6 +124,18 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
   Object? get getScope =>
       unsafe.jsToDart<Object?>(raw.getProperty('getScope'.toJS));
 
+  /// Reads the generated getNormalizedAttr property.
+  Object? get getNormalizedAttr =>
+      unsafe.jsToDart<Object?>(raw.getProperty('getNormalizedAttr'.toJS));
+
+  /// Reads the generated getNormalizedAttrName property.
+  Object? get getNormalizedAttrName =>
+      unsafe.jsToDart<Object?>(raw.getProperty('getNormalizedAttrName'.toJS));
+
+  /// Reads the generated hasNormalizedAttr property.
+  Object? get hasNormalizedAttr =>
+      unsafe.jsToDart<Object?>(raw.getProperty('hasNormalizedAttr'.toJS));
+
   /// Reads the generated errorHandlingConfig property.
   Object? get errorHandlingConfig =>
       unsafe.jsToDart<Object?>(raw.getProperty('errorHandlingConfig'.toJS));
@@ -352,6 +364,18 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
   /// Reads the generated getScope property.
   Object? get getScope =>
       unsafe.jsToDart<Object?>(raw.getProperty('getScope'.toJS));
+
+  /// Reads the generated getNormalizedAttr property.
+  Object? get getNormalizedAttr =>
+      unsafe.jsToDart<Object?>(raw.getProperty('getNormalizedAttr'.toJS));
+
+  /// Reads the generated getNormalizedAttrName property.
+  Object? get getNormalizedAttrName =>
+      unsafe.jsToDart<Object?>(raw.getProperty('getNormalizedAttrName'.toJS));
+
+  /// Reads the generated hasNormalizedAttr property.
+  Object? get hasNormalizedAttr =>
+      unsafe.jsToDart<Object?>(raw.getProperty('hasNormalizedAttr'.toJS));
 
   /// Reads the generated errorHandlingConfig property.
   Object? get errorHandlingConfig =>

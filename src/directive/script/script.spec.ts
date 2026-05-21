@@ -12,28 +12,20 @@ describe("scriptDirective", () => {
 
   let $templateCache: any;
 
-  let $attributes: any;
-
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.module("myModule", ["ng"]);
     createInjector(["myModule"]).invoke(
-      (
-        _$rootScope_: any,
-        _$compile_: any,
-        _$templateCache_: any,
-        _$attributes_: any,
-      ) => {
+      (_$rootScope_: any, _$compile_: any, _$templateCache_: any) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
         $templateCache = _$templateCache_;
-        $attributes = _$attributes_;
       },
     );
   });
 
   it("should cache ng-template contents during compile", () => {
-    const directive = scriptDirective($templateCache, $attributes);
+    const directive = scriptDirective($templateCache);
 
     const element = document.createElement("script");
 
@@ -46,7 +38,7 @@ describe("scriptDirective", () => {
   });
 
   it("should read data-type and data-id from the host element", () => {
-    const directive = scriptDirective($templateCache, $attributes);
+    const directive = scriptDirective($templateCache);
 
     const element = document.createElement("script");
 
@@ -61,7 +53,7 @@ describe("scriptDirective", () => {
   });
 
   it("should ignore non-template scripts during compile", () => {
-    const directive = scriptDirective($templateCache, $attributes);
+    const directive = scriptDirective($templateCache);
 
     const element = document.createElement("script");
 
@@ -74,7 +66,7 @@ describe("scriptDirective", () => {
   });
 
   it("should not cache a template script when id is missing", () => {
-    const directive = scriptDirective($templateCache, $attributes);
+    const directive = scriptDirective($templateCache);
 
     const element = document.createElement("script");
 

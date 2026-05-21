@@ -2,7 +2,11 @@
 /// <reference types="jasmine" />
 import { Angular } from "../angular.ts";
 import { createInjector } from "./di/injector.ts";
-import { dealoc } from "../shared/dom.ts";
+import {
+  dealoc,
+  getNormalizedAttr,
+  getNormalizedAttrName,
+} from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
 
 describe("ngProp*", () => {
@@ -194,24 +198,24 @@ describe("ngProp*", () => {
   it("should use the full ng-prop-* attribute name in $attr mappings", async () => {
     let attrs;
 
-    compileProvider.directive("attrExposer", ($attributes) => ({
+    compileProvider.directive("attrExposer", () => ({
       link($scope, $element) {
         attrs = {
-          title: $attributes.read($element, "title"),
-          titleAttr: $attributes.originalName($element, "title"),
-          ngPropTitle: $attributes.read($element, "ngPropTitle"),
-          ngPropTitleAttr: $attributes.originalName($element, "ngPropTitle"),
-          superTitle: $attributes.read($element, "superTitle"),
-          superTitleAttr: $attributes.originalName($element, "superTitle"),
-          ngPropSuperTitle: $attributes.read($element, "ngPropSuperTitle"),
-          ngPropSuperTitleAttr: $attributes.originalName(
+          title: getNormalizedAttr($element, "title"),
+          titleAttr: getNormalizedAttrName($element, "title"),
+          ngPropTitle: getNormalizedAttr($element, "ngPropTitle"),
+          ngPropTitleAttr: getNormalizedAttrName($element, "ngPropTitle"),
+          superTitle: getNormalizedAttr($element, "superTitle"),
+          superTitleAttr: getNormalizedAttrName($element, "superTitle"),
+          ngPropSuperTitle: getNormalizedAttr($element, "ngPropSuperTitle"),
+          ngPropSuperTitleAttr: getNormalizedAttrName(
             $element,
             "ngPropSuperTitle",
           ),
-          myCamelTitle: $attributes.read($element, "myCamelTitle"),
-          myCamelTitleAttr: $attributes.originalName($element, "myCamelTitle"),
-          ngPropMyCamelTitle: $attributes.read($element, "ngPropMyCamelTitle"),
-          ngPropMyCamelTitleAttr: $attributes.originalName(
+          myCamelTitle: getNormalizedAttr($element, "myCamelTitle"),
+          myCamelTitleAttr: getNormalizedAttrName($element, "myCamelTitle"),
+          ngPropMyCamelTitle: getNormalizedAttr($element, "ngPropMyCamelTitle"),
+          ngPropMyCamelTitleAttr: getNormalizedAttrName(
             $element,
             "ngPropMyCamelTitle",
           ),
@@ -241,12 +245,12 @@ describe("ngProp*", () => {
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
     let attrs;
 
-    compileProvider.directive("attrExposer", ($attributes) => ({
+    compileProvider.directive("attrExposer", () => ({
       link($scope, $element) {
         attrs = {
-          title: $attributes.read($element, "title"),
-          titleAttr: $attributes.originalName($element, "title"),
-          ngPropTitleAttr: $attributes.originalName($element, "ngPropTitle"),
+          title: getNormalizedAttr($element, "title"),
+          titleAttr: getNormalizedAttrName($element, "title"),
+          ngPropTitleAttr: getNormalizedAttrName($element, "ngPropTitle"),
         };
       },
     }));

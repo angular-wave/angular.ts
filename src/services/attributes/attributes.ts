@@ -7,8 +7,6 @@ import {
   getDirectiveHostElement,
   getBooleanAttrName,
   getNormalizedAttr,
-  getNormalizedAttrName,
-  hasNormalizedAttr,
 } from "../../shared/dom.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import {
@@ -42,18 +40,6 @@ const interpolatedAttributes = new WeakMap<Element, Set<string>>();
 const observerScopes = new WeakMap<Element, Map<string, ng.Scope>>();
 
 export interface AttributesService {
-  read(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): string | undefined;
-  has(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): boolean;
-  originalName(
-    element: Element | Node | null | undefined,
-    normalizedName: string,
-  ): string | undefined;
   observe(
     scope: ng.Scope | null | undefined,
     element: Element | Node | null | undefined,
@@ -293,15 +279,6 @@ export class AttributesServiceProvider {
       }
 
       return {
-        read(element, normalizedName) {
-          return getNormalizedAttr(getElement(element), normalizedName);
-        },
-        has(element, normalizedName) {
-          return hasNormalizedAttr(getElement(element), normalizedName);
-        },
-        originalName(element, normalizedName) {
-          return getNormalizedAttrName(getElement(element), normalizedName);
-        },
         observe(scope, element, normalizedName, callback) {
           const targetElement = getElement(element);
 

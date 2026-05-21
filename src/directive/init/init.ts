@@ -1,17 +1,13 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _parse } from "../../injection-tokens.ts";
-import { getController } from "../../shared/dom.ts";
+import { _parse } from "../../injection-tokens.ts";
+import { getController, getNormalizedAttr } from "../../shared/dom.ts";
 
-ngInitDirective.$inject = [_parse, _attributes];
+ngInitDirective.$inject = [_parse];
 
-export function ngInitDirective(
-  $parse: ng.ParseService,
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngInitDirective($parse: ng.ParseService): ng.Directive {
   return {
     priority: 450,
     compile(element: Element) {
-      const initFn = $parse($attributes.read(element, "ngInit") ?? "");
+      const initFn = $parse(getNormalizedAttr(element, "ngInit") ?? "");
 
       return {
         pre(scope: ng.Scope, linkElement: Element) {

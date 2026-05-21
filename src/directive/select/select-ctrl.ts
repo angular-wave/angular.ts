@@ -1,7 +1,7 @@
 import type { DirectiveAttributes } from "../../interface.ts";
 import { _element, _scope } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
-import { removeElement } from "../../shared/dom.ts";
+import { removeElement, getNormalizedAttr } from "../../shared/dom.ts";
 import {
   assertNotHasOwnProperty,
   deProxy,
@@ -33,7 +33,7 @@ function readOptionElementAttr(
   optionAttrs: SelectAttributes,
   normalizedName: string,
 ): unknown {
-  const elementValue = $attributes?.read(optionElement, normalizedName);
+  const elementValue = getNormalizedAttr(optionElement, normalizedName);
   const attrValue: unknown = optionAttrs[normalizedName];
 
   if (
@@ -54,7 +54,7 @@ function hasInterpolatedOptionAttr(
 ): boolean {
   return Boolean(
     $attributes._isInterpolated(optionElement, normalizedName) ||
-    $attributes.read(optionElement, normalizedName)?.includes("{{"),
+    getNormalizedAttr(optionElement, normalizedName)?.includes("{{"),
   );
 }
 

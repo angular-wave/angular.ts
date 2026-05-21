@@ -1,7 +1,5 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _anchorScroll,
-  _attributes,
   _compile,
   _exceptionHandler,
   _injector,
@@ -9,11 +7,12 @@ import {
   _templateRequest,
 } from "../../injection-tokens.ts";
 import { isDefined, isInstanceOf } from "../../shared/utils.ts";
-import { removeElement } from "../../shared/dom.ts";
+import { getNormalizedAttr, removeElement } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
+import type { DirectiveAttributes } from "../../interface.ts";
 
 ngIncludeDirective.$inject = [
   _templateRequest,
@@ -21,7 +20,6 @@ ngIncludeDirective.$inject = [
   _injector,
   _exceptionHandler,
   _parse,
-  _attributes,
 ];
 
 /**
@@ -33,7 +31,6 @@ export function ngIncludeDirective(
   $injector: ng.InjectorService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $parse: ng.ParseService,
-  $attributes: AttributesService,
 ): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
 
@@ -45,15 +42,22 @@ export function ngIncludeDirective(
       /* empty */
       return undefined;
     },
-    compile(element: Element) {
+    compile(element: Element, tAttrs: DirectiveAttributes) {
       const srcExp =
-        $attributes.read(element, "ngInclude") ??
-        $attributes.read(element, "src") ??
+        getNormalizedAttr(element, "ngInclude") ??
+        getNormalizedAttr(element, "src") ??
+        (tAttrs.ngInclude as string | undefined) ??
+        (tAttrs.src as string | undefined) ??
         "";
 
-      const onloadExp = $attributes.read(element, "onload") ?? "";
+      const onloadExp =
+        getNormalizedAttr(element, "onload") ??
+        (tAttrs.onload as string | undefined) ??
+        "";
 
-      const autoScrollExp = $attributes.read(element, "autoscroll");
+      const autoScrollExp =
+        getNormalizedAttr(element, "autoscroll") ??
+        (tAttrs.autoscroll as string | undefined);
 
       const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 

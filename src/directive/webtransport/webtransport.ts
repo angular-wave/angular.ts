@@ -1,6 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
-  _attributes,
   _compile,
   _exceptionHandler,
   _injector,
@@ -24,6 +22,7 @@ import {
   type SwapModeType,
 } from "../realtime/protocol.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
 type WebTransportDirectiveMode = "datagram" | "stream" | "unidirectional";
 
@@ -44,7 +43,6 @@ ngWebTransportDirective.$inject = [
   _log,
   _exceptionHandler,
   _injector,
-  _attributes,
 ];
 
 /**
@@ -58,7 +56,6 @@ export function ngWebTransportDirective(
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
   $injector: ng.InjectorService,
-  $attributes: AttributesService,
 ): ng.Directive {
   const decoder = new TextDecoder();
 
@@ -68,7 +65,7 @@ export function ngWebTransportDirective(
     restrict: "A",
     link(scope: ng.Scope, element: HTMLElement) {
       const attr = (name: string): string | undefined =>
-        $attributes.read(element, name);
+        getNormalizedAttr(element, name);
 
       const eventName = attr("trigger") ?? "load";
 
@@ -230,7 +227,6 @@ export function ngWebTransportDirective(
         $log,
         getAnimate,
         scope,
-        $attributes,
         element,
         logPrefix: "ngWebTransport",
       });

@@ -1,22 +1,21 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _templateCache } from "../../injection-tokens.ts";
+import { _templateCache } from "../../injection-tokens.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
-scriptDirective.$inject = [_templateCache, _attributes];
+scriptDirective.$inject = [_templateCache];
 
 /**
  * Captures inline `text/ng-template` script contents into `$templateCache`.
  */
 export function scriptDirective(
   $templateCache: ng.TemplateCacheService,
-  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "E",
     terminal: true,
     compile(element: HTMLElement): undefined {
-      const type = $attributes.read(element, "type");
+      const type = getNormalizedAttr(element, "type");
 
-      const templateId = $attributes.read(element, "id");
+      const templateId = getNormalizedAttr(element, "id");
 
       if (type === "text/ng-template" && typeof templateId === "string") {
         $templateCache.set(templateId, element.innerText);

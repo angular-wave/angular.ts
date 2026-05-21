@@ -11,16 +11,17 @@ import {
   _templateRequest,
 } from "../../injection-tokens.ts";
 import {
+  FUTURE_PARENT_ELEMENT_KEY,
+  cloneTranscludedHostElements,
   createDocumentFragment,
   createElementFromHTML,
   createNodelistFromHTML,
-  cloneTranscludedHostElements,
   deleteCacheData,
   emptyElement,
-  FUTURE_PARENT_ELEMENT_KEY,
   getBooleanAttrName,
   getCacheData,
   getInheritedData,
+  hasNormalizedAttr,
   isTextNode,
   removeElementData,
   setCacheData,
@@ -6507,7 +6508,7 @@ export class CompileProvider {
                     skipNextElementObserve = true;
                     handleStringBindingObserve(stringBindingState, value);
                   };
-                  let skipInitialElementObserve = $attributes.has(
+                  let skipInitialElementObserve = hasNormalizedAttr(
                     element,
                     attrName,
                   );

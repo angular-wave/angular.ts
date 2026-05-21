@@ -12,6 +12,7 @@ import {
   isString,
   keys,
 } from "../../shared/utils.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
@@ -73,7 +74,7 @@ class NgModelOptionsController {
       : defaultModelOptions;
 
     const modelOptionsDefinition = this._parse(
-      this._attributes.read(this._element, "ngModelOptions") ?? "",
+      getNormalizedAttr(this._element, "ngModelOptions") ?? "",
     )(this._scope) as ModelOptionsConfig;
 
     this.$options = parentOptions.createChild(modelOptionsDefinition);

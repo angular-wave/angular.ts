@@ -22,6 +22,7 @@ import {
 } from "../../shared/constants.ts";
 import {
   callFunction,
+  createErrorFactory,
   deProxy,
   entries,
   hasAnimate,
@@ -35,31 +36,30 @@ import {
   isString,
   isUndefined,
   keys,
-  createErrorFactory,
   snakeCase,
   values,
 } from "../../shared/utils.ts";
+import { getNormalizedAttr, startingTag } from "../../shared/dom.ts";
+import {
+  createLazyAnimate,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
 import {
   cachedToggleClass,
+  nullFormCtrl,
+  PENDING_CLASS,
   type ControlName,
   type CustomValidationState,
   type FormControlTarget,
   type ParentFormController,
   type PublicValidationState,
   type ValidityCssHost,
-  nullFormCtrl,
-  PENDING_CLASS,
 } from "../form/form.ts";
 import {
   defaultModelOptions,
   type ModelOptions,
   type ModelOptionsConfig,
 } from "../model-options/model-options.ts";
-import { startingTag } from "../../shared/dom.ts";
-import {
-  createLazyAnimate,
-  type LazyAnimate,
-} from "../../animations/lazy-animate.ts";
 import type { CompiledExpression } from "../../core/parse/parse.ts";
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
@@ -76,7 +76,7 @@ function readModelAttr(
 ): string | undefined {
   const elementValue =
     element instanceof Element
-      ? $attributes?.read(element, normalizedName)
+      ? getNormalizedAttr(element, normalizedName)
       : undefined;
 
   const attrValue: string | undefined = attr

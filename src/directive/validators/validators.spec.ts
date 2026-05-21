@@ -36,16 +36,13 @@ describe("validators", () => {
   describe("pattern", () => {
     it("should compile inline regex patterns without parsing them as expressions", () => {
       const parse = jasmine.createSpy("$parse");
+      const element = document.createElement("input");
 
-      const attributes = {
-        read(_element, name) {
-          return name === "ngPattern" ? "/^\\d+$/" : undefined;
-        },
-      };
+      element.setAttribute("ng-pattern", "/^\\d+$/");
 
-      const directive = patternDirective[2](parse, attributes);
+      const directive = patternDirective[2](parse);
 
-      const link = directive.compile(document.createElement("input"));
+      const link = directive.compile(element);
 
       expect(parse).not.toHaveBeenCalled();
       expect(link).toEqual(jasmine.any(Function));
@@ -53,16 +50,13 @@ describe("validators", () => {
 
     it("should parse expression patterns during compile", () => {
       const parse = jasmine.createSpy("$parse").and.returnValue(() => /^\d+$/);
+      const element = document.createElement("input");
 
-      const attributes = {
-        read(_element, name) {
-          return name === "ngPattern" ? "pattern" : undefined;
-        },
-      };
+      element.setAttribute("ng-pattern", "pattern");
 
-      const directive = patternDirective[2](parse, attributes);
+      const directive = patternDirective[2](parse);
 
-      const link = directive.compile(document.createElement("input"));
+      const link = directive.compile(element);
 
       expect(parse).toHaveBeenCalledWith("pattern");
       expect(link).toEqual(jasmine.any(Function));

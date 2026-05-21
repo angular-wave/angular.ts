@@ -14,15 +14,15 @@ import { removeFrom } from "../../shared/common.ts";
 import {
   assign,
   arrayFrom,
+  assertDefined,
   isArray,
   isNullOrUndefined,
   isObject,
   isString,
   keys,
-  assertDefined,
   stringify,
 } from "../../shared/utils.ts";
-import { getInheritedData } from "../../shared/dom.ts";
+import { getInheritedData, getNormalizedAttr } from "../../shared/dom.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -317,9 +317,9 @@ export function StateRefDirective(
 
       const rawDef: StateRefDefinition = {};
 
-      const ref = parseStateRef($attributes.read(element, "ngSref") ?? "");
+      const ref = parseStateRef(getNormalizedAttr(element, "ngSref") ?? "");
 
-      const ngSrefOpts = $attributes.read(element, "ngSrefOpts");
+      const ngSrefOpts = getNormalizedAttr(element, "ngSrefOpts");
 
       const ngStateOptsFn = ngSrefOpts ? $parse(ngSrefOpts) : undefined;
 
@@ -452,7 +452,7 @@ export function StateRefDynamicDirective(
 
       inputAttrs.forEach((field) => {
         function readFieldExpression(): string | undefined {
-          return $attributes.read(element, field);
+          return getNormalizedAttr(element, field);
         }
 
         const initialExpr = readFieldExpression();
@@ -496,7 +496,6 @@ StateRefActiveDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
-  _attributes,
 ];
 
 /**
@@ -509,7 +508,6 @@ export function StateRefActiveDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -526,7 +524,7 @@ export function StateRefActiveDirective(
       // There probably isn't much point in $observing this
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
-      const activeEqRead = $attributes.read($element, "ngSrefActiveEq");
+      const activeEqRead = getNormalizedAttr($element, "ngSrefActiveEq");
 
       const activeEqExpr = activeEqRead?.includes("{{")
         ? String($attrs.ngSrefActiveEq as string | number | boolean | bigint)
@@ -536,7 +534,7 @@ export function StateRefActiveDirective(
         assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
       );
 
-      const activeRead = $attributes.read($element, "ngSrefActive");
+      const activeRead = getNormalizedAttr($element, "ngSrefActive");
 
       const activeExpr = activeRead?.includes("{{")
         ? String($attrs.ngSrefActive as string | number | boolean | bigint)

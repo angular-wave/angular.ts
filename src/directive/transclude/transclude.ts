@@ -1,13 +1,17 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _compile } from "../../injection-tokens.ts";
+import { _compile } from "../../injection-tokens.ts";
 import {
   arrayFrom,
+  createErrorFactory,
   isArray,
   isFunction,
   isInstanceOf,
-  createErrorFactory,
 } from "../../shared/utils.ts";
-import { emptyElement, startingTag } from "../../shared/dom.ts";
+import {
+  emptyElement,
+  getNormalizedAttr,
+  getNormalizedAttrName,
+  startingTag,
+} from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import type {
   CloneAttachFn,
@@ -17,11 +21,10 @@ import type {
 
 const ngTranscludeError = createErrorFactory("ngTransclude");
 
-ngTranscludeDirective.$inject = [_compile, _attributes];
+ngTranscludeDirective.$inject = [_compile];
 
 export function ngTranscludeDirective(
   $compile: ng.CompileService,
-  $attributes: AttributesService,
 ): ng.Directive {
   return {
     compile: function ngTranscludeCompile(tElement: Element) {
@@ -44,12 +47,12 @@ export function ngTranscludeDirective(
           );
         }
 
-        let transcludeName = $attributes.read($element, "ngTransclude");
+        let transcludeName = getNormalizedAttr($element, "ngTransclude");
 
-        const transcludeSlot = $attributes.read($element, "ngTranscludeSlot");
+        const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
 
         if (
-          transcludeName === $attributes.originalName($element, "ngTransclude")
+          transcludeName === getNormalizedAttrName($element, "ngTransclude")
         ) {
           transcludeName = "";
         }

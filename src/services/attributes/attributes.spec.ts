@@ -2,7 +2,12 @@ import type { AttributesService } from "./attributes.ts";
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
-import { dealoc, setTranscludedHostElement } from "../../shared/dom.ts";
+import {
+  dealoc,
+  getNormalizedAttr,
+  getNormalizedAttrName,
+  hasNormalizedAttr,
+} from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("$attributes", () => {
@@ -42,12 +47,12 @@ describe("$attributes", () => {
     const element = document.createElement("div");
 
     element.setAttribute("data-ng-on-test", "data handler");
-    expect($attributes.read(element, "ngOnTest")).toBe("data handler");
-    expect($attributes.has(element, "ngOnTest")).toBeTrue();
+    expect(getNormalizedAttr(element, "ngOnTest")).toBe("data handler");
+    expect(hasNormalizedAttr(element, "ngOnTest")).toBeTrue();
 
     element.removeAttribute("data-ng-on-test");
     element.setAttribute("ng-on-test", "handler");
-    expect($attributes.read(element, "ngOnTest")).toBe("handler");
+    expect(getNormalizedAttr(element, "ngOnTest")).toBe("handler");
   });
 
   it("reads custom data attributes without decorated object properties", () => {
@@ -55,7 +60,7 @@ describe("$attributes", () => {
 
     element.setAttribute("data-config", "transportConfig");
 
-    expect($attributes.read(element, "config")).toBe("transportConfig");
+    expect(getNormalizedAttr(element, "config")).toBe("transportConfig");
     expect("config" in {}).toBeFalse();
   });
 
@@ -65,7 +70,7 @@ describe("$attributes", () => {
 
     element.setAttribute("data-ng-on-test", "data handler");
 
-    expect($attributes.read(element, "ngOnTest")).toBe("data handler");
+    expect(getNormalizedAttr(element, "ngOnTest")).toBe("data handler");
     expect(hasOwn.call($attributes, "ngOnTest")).toBeFalse();
     expect(
       ($attributes as unknown as Record<string, unknown>).ngOnTest,
@@ -91,24 +96,22 @@ describe("$attributes", () => {
     const element = document.createElement("div");
 
     element.setAttribute("data-config", "first");
-    expect($attributes.read(element, "config")).toBe("first");
+    expect(getNormalizedAttr(element, "config")).toBe("first");
 
     element.removeAttribute("data-config");
     element.setAttribute("config", "second");
-    expect($attributes.read(element, "config")).toBe("second");
+    expect(getNormalizedAttr(element, "config")).toBe("second");
   });
 
-  it("reads attributes from the host element for transclusion anchors", () => {
+  it("does not read attributes from transclusion anchor comments", () => {
     const host = document.createElement("div");
 
     host.setAttribute("data-ng-if", "visible");
 
     const anchor = document.createComment("ngIf");
 
-    setTranscludedHostElement(anchor, host);
-
-    expect($attributes.read(anchor, "ngIf")).toBe("visible");
-    expect($attributes.has(anchor, "ngIf")).toBeTrue();
+    expect(getNormalizedAttr(anchor, "ngIf")).toBeUndefined();
+    expect(hasNormalizedAttr(anchor, "ngIf")).toBeFalse();
   });
 
   it("observes initial and later normalized attribute values", async () => {
@@ -264,7 +267,7 @@ describe("$attributes", () => {
 
     element.setAttribute("data-ng-transclude", "data-ng-transclude");
 
-    expect($attributes.originalName(element, "ngTransclude")).toBe(
+    expect(getNormalizedAttrName(element, "ngTransclude")).toBe(
       "data-ng-transclude",
     );
   });
@@ -272,8 +275,8 @@ describe("$attributes", () => {
   it("returns undefined and false for missing attributes", () => {
     const element = document.createElement("div");
 
-    expect($attributes.read(element, "ngIf")).toBeUndefined();
-    expect($attributes.has(element, "ngIf")).toBeFalse();
-    expect($attributes.originalName(element, "ngIf")).toBeUndefined();
+    expect(getNormalizedAttr(element, "ngIf")).toBeUndefined();
+    expect(hasNormalizedAttr(element, "ngIf")).toBeFalse();
+    expect(getNormalizedAttrName(element, "ngIf")).toBeUndefined();
   });
 });

@@ -22,7 +22,10 @@ import {
   getController,
   getInheritedData,
   getInjector,
+  getNormalizedAttr,
+  getNormalizedAttrName,
   getScope,
+  hasNormalizedAttr,
   setCacheData,
 } from "./shared/dom.ts";
 import type { AngularBootstrapConfig, InvocationDetail } from "./interface.ts";
@@ -126,6 +129,12 @@ export class AngularRuntime extends EventTarget {
   public getInjector = getInjector;
   /** Retrieve the scope cached on a compiled DOM element. */
   public getScope = getScope;
+  /** Read an element attribute by normalized directive-style name. */
+  public getNormalizedAttr = getNormalizedAttr;
+  /** Return the actual DOM attribute name for a normalized directive-style name. */
+  public getNormalizedAttrName = getNormalizedAttrName;
+  /** Return whether an element has an attribute matching a normalized name. */
+  public hasNormalizedAttr = hasNormalizedAttr;
   /** Global framework error-handling configuration. */
   public errorHandlingConfig = errorHandlingConfig;
   /** Public injection token names keyed by token value. */

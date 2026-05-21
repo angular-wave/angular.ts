@@ -1,8 +1,6 @@
 import type { DirectiveAttributes } from "../../interface.ts";
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
   _anchorScroll,
-  _attributes,
   _interpolate,
   _parse,
   _state,
@@ -10,16 +8,17 @@ import {
 } from "../../injection-tokens.ts";
 import {
   arrayFrom,
+  assertDefined,
   isArray,
   isDefined,
   isInstanceOf,
   isString,
-  assertDefined,
 } from "../../shared/utils.ts";
 import {
   dealoc,
   getCacheData,
   getInheritedData,
+  getNormalizedAttr,
   removeElement,
   setCacheData,
 } from "../../shared/dom.ts";
@@ -167,14 +166,7 @@ function withResolvers<T>(): PromiseResolvers<T> {
  * ```
  */
 
-ViewDirective.$inject = [
-  _view,
-  _state,
-  _anchorScroll,
-  _interpolate,
-  _parse,
-  _attributes,
-];
+ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
 
 /**
  * Renders and updates the currently active view configuration.
@@ -185,7 +177,6 @@ export function ViewDirective(
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
   $parse: ng.ParseService,
-  $attributes: AttributesService,
 ): ng.Directive {
   void $state;
 
@@ -202,26 +193,31 @@ export function ViewDirective(
     priority: 400,
     transclude: "element",
     compile(
-      _tElement: Element,
-      _tAttrs: DirectiveAttributes,
+      tElement: Element,
+      tAttrs: DirectiveAttributes,
       $transclude?: ng.TranscludeFn,
     ) {
       const transclude = assertDefined($transclude);
+      const onloadExp =
+        getNormalizedAttr(tElement, "onload") ??
+        (tAttrs.onload as string | undefined) ??
+        "";
+      const autoScrollExp =
+        getNormalizedAttr(tElement, "autoscroll") ??
+        (tAttrs.autoscroll as string | undefined);
+      const viewNameExp =
+        getNormalizedAttr(tElement, "ngView") ??
+        getNormalizedAttr(tElement, "name") ??
+        (tAttrs.ngView as string | undefined) ??
+        (tAttrs.name as string | undefined) ??
+        "";
 
       return function (scope: ng.Scope, $element: HTMLElement) {
-        const onloadExp = $attributes.read($element, "onload") ?? "",
-          autoScrollExp = $attributes.read($element, "autoscroll"),
-          inherited =
+        const inherited =
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
               | undefined) ?? rootData,
-          rawName: unknown = assertDefined(
-            $interpolate(
-              $attributes.read($element, "ngView") ??
-                $attributes.read($element, "name") ??
-                "",
-            ),
-          )(scope),
+          rawName: unknown = assertDefined($interpolate(viewNameExp))(scope),
           name = isString(rawName) && rawName ? rawName : "$default";
 
         const onloadFn = onloadExp ? $parse(onloadExp) : undefined;

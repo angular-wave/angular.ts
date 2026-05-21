@@ -294,6 +294,11 @@ export { TransitionProvider } from "./router/transition/transition-service.ts";
 export { ViewService } from "./router/view/view.ts";
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 export { AttributesServiceProvider } from "./services/attributes/attributes.ts";
+export {
+  getNormalizedAttr,
+  getNormalizedAttrName,
+  hasNormalizedAttr,
+} from "./shared/dom.ts";
 export { CookieProvider } from "./services/cookie/cookie.ts";
 export { ExceptionHandlerProvider } from "./services/exception/exception.ts";
 export {

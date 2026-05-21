@@ -3,6 +3,7 @@
 import { Angular } from "../../angular.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { createInjector } from "../../core/di/injector.ts";
+import { getNormalizedAttr, getNormalizedAttrName } from "../../shared/dom.ts";
 
 describe("ngOn* event binding", () => {
   let $rootScope, module, injector, $compile;
@@ -150,27 +151,24 @@ describe("ngOn* event binding", () => {
     window.angular.module("test", [
       "ng",
       ($compileProvider) => {
-        $compileProvider.directive("attrExposer", ($attributes) => ({
+        $compileProvider.directive("attrExposer", () => ({
           link($scope, $element) {
             attrs = {
-              title: $attributes.read($element, "title"),
-              titleAttr: $attributes.originalName($element, "title"),
-              ngOnTitle: $attributes.read($element, "ngOnTitle"),
-              ngOnTitleAttr: $attributes.originalName($element, "ngOnTitle"),
-              superTitle: $attributes.read($element, "superTitle"),
-              superTitleAttr: $attributes.originalName($element, "superTitle"),
-              ngOnSuperTitle: $attributes.read($element, "ngOnSuperTitle"),
-              ngOnSuperTitleAttr: $attributes.originalName(
+              title: getNormalizedAttr($element, "title"),
+              titleAttr: getNormalizedAttrName($element, "title"),
+              ngOnTitle: getNormalizedAttr($element, "ngOnTitle"),
+              ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
+              superTitle: getNormalizedAttr($element, "superTitle"),
+              superTitleAttr: getNormalizedAttrName($element, "superTitle"),
+              ngOnSuperTitle: getNormalizedAttr($element, "ngOnSuperTitle"),
+              ngOnSuperTitleAttr: getNormalizedAttrName(
                 $element,
                 "ngOnSuperTitle",
               ),
-              myCamelTitle: $attributes.read($element, "myCamelTitle"),
-              myCamelTitleAttr: $attributes.originalName(
-                $element,
-                "myCamelTitle",
-              ),
-              ngOnMyCamelTitle: $attributes.read($element, "ngOnMyCamelTitle"),
-              ngOnMyCamelTitleAttr: $attributes.originalName(
+              myCamelTitle: getNormalizedAttr($element, "myCamelTitle"),
+              myCamelTitleAttr: getNormalizedAttrName($element, "myCamelTitle"),
+              ngOnMyCamelTitle: getNormalizedAttr($element, "ngOnMyCamelTitle"),
+              ngOnMyCamelTitleAttr: getNormalizedAttrName(
                 $element,
                 "ngOnMyCamelTitle",
               ),
@@ -208,12 +206,12 @@ describe("ngOn* event binding", () => {
     window.angular.module("test", [
       "ng",
       ($compileProvider) => {
-        $compileProvider.directive("attrExposer", ($attributes) => ({
+        $compileProvider.directive("attrExposer", () => ({
           link($scope, $element) {
             attrs = {
-              title: $attributes.read($element, "title"),
-              titleAttr: $attributes.originalName($element, "title"),
-              ngOnTitleAttr: $attributes.originalName($element, "ngOnTitle"),
+              title: getNormalizedAttr($element, "title"),
+              titleAttr: getNormalizedAttrName($element, "title"),
+              ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
             };
           },
         }));

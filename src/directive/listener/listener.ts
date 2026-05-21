@@ -1,8 +1,5 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes } from "../../injection-tokens.ts";
 import { isObject, isString } from "../../shared/utils.ts";
-
-ngListenerDirective.$inject = [_attributes];
+import { getNormalizedAttr } from "../../shared/dom.ts";
 
 function fallbackWhenEmpty(
   value: string | null | undefined,
@@ -14,13 +11,11 @@ function fallbackWhenEmpty(
 }
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
-export function ngListenerDirective(
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,
     link: (scope: ng.Scope, element: HTMLElement): void => {
-      const configuredChannel = $attributes.read(element, "ngListener");
+      const configuredChannel = getNormalizedAttr(element, "ngListener");
 
       const channel = fallbackWhenEmpty(configuredChannel, element.id);
 

@@ -10,6 +10,7 @@ import {
   setCacheData,
   createElementFromHTML as $,
   getController,
+  getNormalizedAttr,
   getScope,
 } from "../../shared/dom.ts";
 import {
@@ -2530,7 +2531,8 @@ describe("$compile", () => {
       expect(gotScope).toBe($rootScope);
       expect(gotAttrs).toBeDefined();
       expect(gotAttrs.anAttr).toEqual("abc");
-      expect(gotAttributes.read(el, "anAttr")).toEqual("abc");
+      expect(gotAttributes).toBeDefined();
+      expect(getNormalizedAttr(el, "anAttr")).toEqual("abc");
     });
 
     it("can be attached on the scope", () => {
@@ -4962,7 +4964,7 @@ describe("$compile", () => {
           return $attributes.set(
             $element,
             "copiedAttr",
-            $attributes.read($element, "myAttr") || $attrs.myAttr,
+            getNormalizedAttr($element, "myAttr") || $attrs.myAttr,
           );
         },
       });
@@ -4974,10 +4976,10 @@ describe("$compile", () => {
       expect(el.getAttribute("copied-attr")).toEqual("42");
     });
 
-    it("may inject $attributes to templateUrl function", async () => {
+    it("may read normalized attrs in a templateUrl function", async () => {
       myModule.component("myComponent", {
-        templateUrl($element, $attributes) {
-          return $attributes.read($element, "templatePath");
+        templateUrl($element) {
+          return getNormalizedAttr($element, "templatePath");
         },
       });
       $templateCache.set("/template-from-attributes.html", "{{ 1 + 2 }}");
@@ -8374,9 +8376,9 @@ describe("$compile", () => {
       });
 
       it("should support link function on directive object", async () => {
-        module.directive("abc", ($attributes) => ({
+        module.directive("abc", () => ({
           link(scope, element) {
-            element.innerText = $attributes.read(element, "abc");
+            element.innerText = getNormalizedAttr(element, "abc");
           },
         }));
 

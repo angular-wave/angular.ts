@@ -9,13 +9,13 @@ import {
   stringify,
 } from "../../shared/utils.ts";
 import type { DirectiveAttributes } from "../../interface.ts";
+import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
 
-ngBindDirective.$inject = [_attributes];
 /** Binds the watched expression as plain text content. */
-export function ngBindDirective($attributes: AttributesService): ng.Directive {
+export function ngBindDirective(): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
-      const expression = $attributes.read(element, "ngBind");
+      const expression = getNormalizedAttr(element, "ngBind");
 
       if (!isString(expression)) return;
 
@@ -26,7 +26,7 @@ export function ngBindDirective($attributes: AttributesService): ng.Directive {
 
           element.textContent = isString(text) ? text : "";
         },
-        $attributes.has(element, "lazy"),
+        hasNormalizedAttr(element, "lazy"),
       );
     },
   };
@@ -46,17 +46,14 @@ export function ngBindTemplateDirective(
   };
 }
 
-ngBindHtmlDirective.$inject = [_parse, _attributes];
+ngBindHtmlDirective.$inject = [_parse];
 /** Binds trusted HTML into the element while still validating the expression. */
-export function ngBindHtmlDirective(
-  $parse: ng.ParseService,
-  $attributes?: AttributesService,
-): ng.Directive {
+export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
     compile(tElement: Element, tAttrs: DirectiveAttributes) {
       const expression: unknown =
-        $attributes?.read(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
+        getNormalizedAttr(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
 
       if (!isString(expression)) return () => undefined;
 

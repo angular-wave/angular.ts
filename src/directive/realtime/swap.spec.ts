@@ -1,4 +1,3 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
@@ -9,7 +8,6 @@ describe("createRealtimeSwapHandler", () => {
   let app: HTMLElement;
   let $compile: ng.CompileService;
   let $rootScope: ng.Scope;
-  let $attributes: AttributesService;
   let warnSpy: jasmine.Spy;
 
   beforeEach(() => {
@@ -19,14 +17,11 @@ describe("createRealtimeSwapHandler", () => {
 
     const angular = new Angular();
 
-    angular
-      .bootstrap(app, [])
-      .invoke((_$compile_, _$rootScope_, _$attributes_, _$log_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-        $attributes = _$attributes_;
-        warnSpy = spyOn(_$log_, "warn");
-      });
+    angular.bootstrap(app, []).invoke((_$compile_, _$rootScope_, _$log_) => {
+      $compile = _$compile_;
+      $rootScope = _$rootScope_;
+      warnSpy = spyOn(_$log_, "warn");
+    });
   });
 
   afterEach(() => {
@@ -44,7 +39,6 @@ describe("createRealtimeSwapHandler", () => {
       $log: { warn: warnSpy } as any,
       getAnimate: jasmine.createSpy("getAnimate"),
       scope: $rootScope,
-      $attributes,
       element: host,
       logPrefix: "test",
     });
@@ -69,7 +63,6 @@ describe("createRealtimeSwapHandler", () => {
       $log: { warn: warnSpy } as any,
       getAnimate: jasmine.createSpy("getAnimate"),
       scope: $rootScope,
-      $attributes,
       element: host,
       logPrefix: "test",
     });

@@ -4,6 +4,8 @@ import {
   FUTURE_PARENT_ELEMENT_KEY,
   getCacheData,
   getInheritedData,
+  getNormalizedAttr,
+  hasNormalizedAttr,
 } from "../../shared/dom.ts";
 import {
   arrayFrom,
@@ -20,15 +22,12 @@ import {
   type SelectScope,
 } from "./select-ctrl.ts";
 
-selectDirective.$inject = [_attributes];
-
 function readSelectAttr(
-  $attributes: AttributesService | undefined,
   element: Element,
   attr: SelectAttributes,
   normalizedName: keyof SelectAttributes & string,
 ): string | undefined {
-  const value = $attributes?.read(element, normalizedName);
+  const value = getNormalizedAttr(element, normalizedName);
 
   return isDefined(value)
     ? value
@@ -36,13 +35,13 @@ function readSelectAttr(
 }
 
 function hasSelectAttr(
-  $attributes: AttributesService | undefined,
   element: Element,
   attr: SelectAttributes,
   normalizedName: keyof SelectAttributes & string,
 ): boolean {
   return (
-    $attributes?.has(element, normalizedName) ?? isDefined(attr[normalizedName])
+    hasNormalizedAttr(element, normalizedName) ||
+    isDefined(attr[normalizedName])
   );
 }
 
@@ -55,7 +54,7 @@ function setSelectAttr(
   $attributes.set(element, normalizedName, value);
 }
 
-export function selectDirective($attributes: AttributesService): ng.Directive {
+export function selectDirective(): ng.Directive {
   return {
     restrict: "E",
     require: ["select", "?ngModel"],
@@ -99,7 +98,7 @@ export function selectDirective($attributes: AttributesService): ng.Directive {
       syncNativeValidity();
     });
 
-    if ($attributes.has(element, "multiple")) {
+    if (hasNormalizedAttr(element, "multiple")) {
       selectCtrl._multiple = true;
 
       selectCtrl._readValue = function () {
@@ -143,7 +142,7 @@ export function selectDirective($attributes: AttributesService): ng.Directive {
 
       let lastViewRef: unknown = NaN;
 
-      _scope.$watch($attributes.read(element, "ngModel") ?? "", () => {
+      _scope.$watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
         if (
           lastViewRef === ngModelCtrl.$viewValue &&
           !equals(lastView, ngModelCtrl.$viewValue)
@@ -199,9 +198,9 @@ export function optionDirective(
     compile(element: Element, attr: SelectAttributes) {
       const optionElement = element as HTMLOptionElement;
 
-      const hasNgValue = hasSelectAttr($attributes, element, attr, "ngValue");
+      const hasNgValue = hasSelectAttr(element, attr, "ngValue");
 
-      let initialValue = readSelectAttr($attributes, element, attr, "value");
+      let initialValue = readSelectAttr(element, attr, "value");
 
       let interpolateValueFn: InterpolateFn;
 
@@ -229,19 +228,9 @@ export function optionDirective(
         const optionElementParam = elemParam as HTMLOptionElement;
         const linkAttrs = {
           $attr: {},
-          disabled: readSelectAttr(
-            $attributes,
-            optionElementParam,
-            attr,
-            "disabled",
-          ),
-          ngValue: readSelectAttr(
-            $attributes,
-            optionElementParam,
-            attr,
-            "ngValue",
-          ),
-          value: readSelectAttr($attributes, optionElementParam, attr, "value"),
+          disabled: readSelectAttr(optionElementParam, attr, "disabled"),
+          ngValue: readSelectAttr(optionElementParam, attr, "ngValue"),
+          value: readSelectAttr(optionElementParam, attr, "value"),
         } as unknown as SelectAttributes;
 
         const selectCtrlName = "$selectController";

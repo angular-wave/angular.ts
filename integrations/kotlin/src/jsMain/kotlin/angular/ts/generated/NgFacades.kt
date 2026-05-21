@@ -21,8 +21,11 @@ public external interface Angular {
     public fun errorHandlingConfig(p0: dynamic = definedExternally): dynamic
     public fun getController(p0: dynamic = definedExternally, p1: String = definedExternally): dynamic
     public fun getInjector(p0: dynamic = definedExternally): dynamic
+    public fun getNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): String
+    public fun getNormalizedAttrName(p0: dynamic = definedExternally, p1: String = definedExternally): String
     public fun getScope(p0: dynamic = definedExternally): dynamic
     public fun getScopeByName(p0: String = definedExternally): dynamic
+    public fun hasNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): Boolean
     public fun init(p0: dynamic = definedExternally): Unit
     public fun injector(p0: Array<dynamic> = definedExternally, p1: Boolean = definedExternally): dynamic
     public fun module(p0: String = definedExternally, p1: Array<dynamic> = definedExternally, p2: dynamic = definedExternally): dynamic
@@ -558,8 +561,11 @@ public external interface AngularService {
     public fun errorHandlingConfig(p0: dynamic = definedExternally): dynamic
     public fun getController(p0: dynamic = definedExternally, p1: String = definedExternally): dynamic
     public fun getInjector(p0: dynamic = definedExternally): dynamic
+    public fun getNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): String
+    public fun getNormalizedAttrName(p0: dynamic = definedExternally, p1: String = definedExternally): String
     public fun getScope(p0: dynamic = definedExternally): dynamic
     public fun getScopeByName(p0: String = definedExternally): dynamic
+    public fun hasNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): Boolean
     public fun init(p0: dynamic = definedExternally): Unit
     public fun injector(p0: Array<dynamic> = definedExternally, p1: Boolean = definedExternally): dynamic
     public fun module(p0: String = definedExternally, p1: Array<dynamic> = definedExternally, p2: dynamic = definedExternally): dynamic

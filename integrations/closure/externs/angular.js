@@ -84,6 +84,30 @@ ng.Angular.prototype.getInjector = function(element) {};
 ng.Angular.prototype.getScope = function(element) {};
 
 /**
+ * Read an element attribute by normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.Angular.prototype.getNormalizedAttr = function(element, normalizedName) {};
+
+/**
+ * Return the actual DOM attribute name for a normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.Angular.prototype.getNormalizedAttrName = function(element, normalizedName) {};
+
+/**
+ * Return whether an element has an attribute matching a normalized name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.Angular.prototype.hasNormalizedAttr = function(element, normalizedName) {};
+
+/**
  * Global framework error-handling configuration.
  * @param {(!ng.ErrorHandlingConfig|undefined)} config
  * @return {!ng.ErrorHandlingConfig}
@@ -2830,6 +2854,30 @@ ng.AngularService.prototype.getInjector = function(element) {};
  * @return {!ng.Scope}
  */
 ng.AngularService.prototype.getScope = function(element) {};
+
+/**
+ * Read an element attribute by normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AngularService.prototype.getNormalizedAttr = function(element, normalizedName) {};
+
+/**
+ * Return the actual DOM attribute name for a normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AngularService.prototype.getNormalizedAttrName = function(element, normalizedName) {};
+
+/**
+ * Return whether an element has an attribute matching a normalized name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.AngularService.prototype.hasNormalizedAttr = function(element, normalizedName) {};
 
 /**
  * Global framework error-handling configuration.

@@ -1,6 +1,10 @@
 import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { _attributes } from "../../injection-tokens.ts";
-import { getCacheData, setCacheData } from "../../shared/dom.ts";
+import {
+  getCacheData,
+  getNormalizedAttr,
+  setCacheData,
+} from "../../shared/dom.ts";
 import {
   hasOwn,
   isArray,
@@ -28,7 +32,7 @@ export function classDirective($attributes: AttributesService): ng.Directive {
 
       const counts = classCounts;
 
-      const expression = $attributes.read(element, "ngClass");
+      const expression = getNormalizedAttr(element, "ngClass");
 
       if (expression === undefined) {
         return;

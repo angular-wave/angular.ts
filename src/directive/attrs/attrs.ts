@@ -1,5 +1,5 @@
 import { _attributes, _sce } from "../../injection-tokens.ts";
-import { BOOLEAN_ATTR } from "../../shared/dom.ts";
+import { BOOLEAN_ATTR, getNormalizedAttr } from "../../shared/dom.ts";
 import {
   directiveNormalize,
   entries,
@@ -233,7 +233,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             }
 
             function readAliasValue(): string | undefined {
-              const elementValue = $attributes.read(element, normalized);
+              const elementValue = getNormalizedAttr(element, normalized);
               const attrValue = attr[normalized] as string | undefined;
 
               if (
@@ -296,7 +296,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
             let skipInitialInterpolation = Boolean(
               $attributes._isInterpolated(element, normalized) ||
-              $attributes.read(element, normalized)?.includes("{{"),
+              getNormalizedAttr(element, normalized)?.includes("{{"),
             );
 
             $attributes.observe(scope, element, normalized, () => {

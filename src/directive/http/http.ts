@@ -34,6 +34,11 @@ import {
 } from "../realtime/protocol.ts";
 import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
+import {
+  getNormalizedAttr,
+  getNormalizedAttrName,
+  hasNormalizedAttr,
+} from "../../shared/dom.ts";
 
 export {
   SwapMode,
@@ -186,7 +191,7 @@ export function createHttpDirective(
       restrict: "A",
       link(scope: ng.Scope, element: HttpDirectiveElement) {
         const readAttr = (name: string): string | undefined => {
-          const value = $attributes.read(element, name);
+          const value = getNormalizedAttr(element, name);
 
           if (!value?.includes("{{")) return value;
 
@@ -196,14 +201,14 @@ export function createHttpDirective(
         };
 
         const hasAttr = (name: string): boolean =>
-          $attributes.has(element, name);
+          hasNormalizedAttr(element, name);
 
         const setAttr = (
           name: string,
           value: string | boolean | null | undefined,
         ): void => {
           $attributes.set(element, name, value, {
-            attrName: $attributes.originalName(element, name),
+            attrName: getNormalizedAttrName(element, name),
           });
         };
 
@@ -261,7 +266,6 @@ export function createHttpDirective(
           $log,
           getAnimate,
           scope,
-          $attributes,
           element,
           logPrefix: attrName,
         });
