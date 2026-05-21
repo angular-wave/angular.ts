@@ -4721,6 +4721,56 @@ describe("$compile", () => {
       expect(el).toBe(componentElement);
     });
 
+    it("emits controller lifecycle records", () => {
+      const created = [];
+      const destroyed = [];
+
+      myModule.component("myComponent", {
+        controller() {
+          this.label = "created";
+        },
+        controllerAs: "$ctrl",
+        template: "<span>{{$ctrl.label}}</span>",
+      });
+
+      reloadModules();
+
+      const $compileLifecycle = injector.get("$compileLifecycle");
+
+      const deregisterCreated = $compileLifecycle.onControllerCreated(
+        (record) => {
+          created.push(record);
+        },
+      );
+
+      const deregisterDestroyed = $compileLifecycle.onControllerDestroyed(
+        (record) => {
+          destroyed.push(record);
+        },
+      );
+
+      const scope = $rootScope.$new();
+      const el = $("<my-component></my-component>");
+
+      $compile(el)(scope);
+
+      expect(created.length).toBe(1);
+      expect(created[0].element).toBe(el);
+      expect(created[0].scope.$id).toBeDefined();
+      expect(created[0].controller.label).toBe("created");
+      expect(created[0].directiveName).toBe("myComponent");
+      expect(created[0].controllerAs).toBe("$ctrl");
+
+      created[0].scope.$destroy();
+
+      expect(destroyed.length).toBe(1);
+      expect(destroyed[0]).toBe(created[0]);
+
+      deregisterCreated();
+      deregisterDestroyed();
+      scope.$destroy();
+    });
+
     it("cannot be applied to an attribute", async () => {
       let controllerInstantiated = false;
 

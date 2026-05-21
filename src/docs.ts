@@ -55,7 +55,7 @@ export type {
   FilterService,
 } from "./filters/filter.ts";
 export type { EntryFilterItem } from "./filters/collection.ts";
-export type { DateFilterFormat, DateFilterOptions } from "./filters/date.ts";
+export type { DateFilterOptions } from "./filters/date.ts";
 export type {
   CurrencyFilterOptions,
   NumberFilterOptions,

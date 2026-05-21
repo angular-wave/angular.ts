@@ -39,10 +39,7 @@ import type {
   FilterFn as TFilterFn,
 } from "./filters/filter.ts";
 import type { EntryFilterItem as TEntryFilterItem } from "./filters/collection.ts";
-import type {
-  DateFilterFormat as TDateFilterFormat,
-  DateFilterOptions as TDateFilterOptions,
-} from "./filters/date.ts";
+import type { DateFilterOptions as TDateFilterOptions } from "./filters/date.ts";
 import type {
   CurrencyFilterOptions as TCurrencyFilterOptions,
   NumberFilterOptions as TNumberFilterOptions,
@@ -299,8 +296,6 @@ declare global {
     export type FilterService = TFilterService;
 
     export type EntryFilterItem = TEntryFilterItem;
-
-    export type DateFilterFormat = TDateFilterFormat;
 
     export type DateFilterOptions = TDateFilterOptions;
 

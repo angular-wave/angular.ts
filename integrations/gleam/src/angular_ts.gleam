@@ -48,9 +48,6 @@ pub type StorageBackend =
 pub type StorageType =
   storage.StorageType
 
-pub type DateFilterFormat =
-  filters.DateFilterFormat
-
 pub type DateFilterOptions =
   filters.DateFilterOptions
 

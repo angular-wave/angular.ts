@@ -1,23 +1,24 @@
-import { _injector, _templateRequest } from "../injection-tokens.ts";
+import { _injector, _templateRequest } from "../../injection-tokens.ts";
 import {
   isArray,
   isDefined,
   isFunction,
   isNullOrUndefined,
   isObject,
+  isString,
   keys,
-} from "../shared/utils.ts";
-import { annotate } from "../core/di/di.ts";
-import { DirectiveSuffix } from "../core/compile/compile.ts";
-import { kebobString } from "../shared/strings.ts";
-import type { ResolveContext } from "./resolve/resolve-context.ts";
-import type { RawParams } from "./params/interface.ts";
+} from "../../shared/utils.ts";
+import { annotate } from "../../core/di/di.ts";
+import { DirectiveSuffix } from "../../core/compile/compile.ts";
+import { kebobString } from "../../shared/strings.ts";
+import type { ResolveContext } from "../resolve/resolve-context.ts";
+import type { RawParams } from "../params/interface.ts";
 import type {
   RouterInjectable,
   TemplateFactory,
   TemplateUrlFactory,
   ViewDeclarationCommon,
-} from "./state/interface.ts";
+} from "../state/interface.ts";
 
 interface BindingTuple {
   name: string;
@@ -104,8 +105,14 @@ export class TemplateFactoryProvider {
       return asTemplate(this._fromUrl(templateUrl, params));
     }
 
-    if (isDefined(component)) {
+    if (isString(component)) {
       return asComponent(component);
+    }
+
+    if (isDefined(component)) {
+      throw new Error(
+        "Inline route components must be normalized before loading",
+      );
     }
 
     return asTemplate(DEFAULT_TEMPLATE);

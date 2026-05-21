@@ -140,7 +140,6 @@ part of the Kotlin public facade.
 | ng type | Kotlin status |
 | --- | --- |
 | `CurrencyFilterOptions` | generated |
-| `DateFilterFormat` | generated |
 | `DateFilterOptions` | generated |
 | `EntryFilterItem` | generated |
 | `FilterFactory` | generated |

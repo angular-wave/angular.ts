@@ -77,6 +77,8 @@ export type StateResolveArray = ResolvableLiteral[];
 
 export type RawViewConfig = ViewDeclaration | string;
 
+export type RoutedComponent = string | ng.Component;
+
 /**
  * Public view options shared by state-level view shorthand and named view declarations.
  */
@@ -103,7 +105,7 @@ export interface ViewDeclarationCommon {
    *
    * Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.
    */
-  component?: string;
+  component?: RoutedComponent;
 
   /**
    * An object which maps `resolve`s to [[component]] `bindings`.

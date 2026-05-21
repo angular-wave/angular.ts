@@ -7,11 +7,24 @@ import { wait } from "../shared/test-utils.ts";
 describe("date filter", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService & { createdAt: Date };
+  let $rootScope: ng.RootScopeService & {
+    createdAt: Date;
+    dateLocale?: Intl.LocalesArgument;
+    dateOptions: Intl.DateTimeFormatOptions;
+  };
 
   let filter: ng.FilterService;
 
   const date = new Date(Date.UTC(2020, 0, 2, 15, 4, 5));
+
+  function formatDefaultLocale(
+    value: Date | number | string,
+    options: Intl.DateTimeFormatOptions,
+  ): string {
+    const dateValue = value instanceof Date ? value : new Date(value);
+
+    return new Intl.DateTimeFormat(undefined, options).format(dateValue);
+  }
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -19,7 +32,11 @@ describe("date filter", () => {
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
-        _$rootScope_: ng.RootScopeService & { createdAt: Date },
+        _$rootScope_: ng.RootScopeService & {
+          createdAt: Date;
+          dateLocale?: Intl.LocalesArgument;
+          dateOptions: Intl.DateTimeFormatOptions;
+        },
       ) => {
         $compile = _$compile_;
         filter = _$filter_;
@@ -28,30 +45,88 @@ describe("date filter", () => {
     );
   });
 
-  it("should format dates with the default mediumDate format", () => {
-    expect(filter("date")(date, undefined, "UTC")).toEqual("Jan 2, 2020");
+  it("should format dates with the runtime default format", () => {
+    expect(filter("date")(date)).toEqual(formatDefaultLocale(date, {}));
   });
 
   it("should format timestamps and ISO strings", () => {
-    expect(filter("date")(date.getTime(), "shortDate", "UTC")).toEqual(
-      "1/2/20",
+    expect(
+      filter("date")(date.getTime(), undefined, {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+    ).toEqual(
+      formatDefaultLocale(date.getTime(), {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
     );
-    expect(filter("date")(date.toISOString(), "mediumTime", "UTC")).toEqual(
-      "3:04:05 PM",
+    expect(
+      filter("date")(date.toISOString(), undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "UTC",
+      }),
+    ).toEqual(
+      formatDefaultLocale(date.toISOString(), {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "UTC",
+      }),
     );
   });
 
-  it("should support named date and time formats", () => {
-    expect(filter("date")(date, "fullDate", "UTC")).toEqual(
-      "Thursday, January 2, 2020",
+  it("should support Intl.DateTimeFormat options", () => {
+    expect(
+      filter("date")(date, undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+    ).toEqual(
+      formatDefaultLocale(date, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
     );
-    expect(filter("date")(date, "short", "UTC")).toEqual("1/2/20, 3:04 PM");
+    expect(
+      filter("date")(date, undefined, {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      }),
+    ).toEqual(
+      formatDefaultLocale(date, {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      }),
+    );
   });
 
   it("should support locale and timezone options", () => {
     expect(
-      filter("date")(date, "mediumDate", {
-        locale: "en-GB",
+      filter("date")(date, "en-GB", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
         timeZone: "UTC",
       }),
     ).toEqual("2 Jan 2020");
@@ -67,9 +142,23 @@ describe("date filter", () => {
     createInjector(["ng"]).invoke(
       ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
         $rootScope.createdAt = date;
+        $rootScope.dateLocale = undefined;
+        $rootScope.dateOptions = {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC",
+        };
 
-        expect($parse("createdAt | date:'mediumDate':'UTC'")($rootScope)).toBe(
-          "Jan 2, 2020",
+        expect(
+          $parse("createdAt | date:dateLocale:dateOptions")($rootScope),
+        ).toBe(
+          formatDefaultLocale(date, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            timeZone: "UTC",
+          }),
         );
       },
     );
@@ -80,24 +169,59 @@ describe("date filter", () => {
       createdAt: date,
     });
 
-    expect(filter("date")(scope.createdAt, "mediumDate", "UTC")).toBe(
-      "Jan 2, 2020",
+    expect(
+      filter("date")(scope.createdAt, undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+    ).toBe(
+      formatDefaultLocale(date, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
     );
   });
 
   it("should update interpolation when a proxied Date is mutated", async () => {
+    $rootScope.dateOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    };
+
+    $rootScope.dateLocale = undefined;
+
     const element = $compile(
-      "<div>{{ createdAt | date:'mediumDate':'UTC' }}</div>",
+      "<div>{{ createdAt | date:dateLocale:dateOptions }}</div>",
     )($rootScope) as HTMLElement;
 
     $rootScope.createdAt = new Date(Date.UTC(2020, 0, 2));
     await wait();
 
-    expect(element.textContent).toBe("Jan 2, 2020");
+    expect(element.textContent).toBe(
+      formatDefaultLocale($rootScope.createdAt, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+    );
 
     $rootScope.createdAt.setUTCFullYear(2021);
     await wait();
 
-    expect(element.textContent).toBe("Jan 2, 2021");
+    expect(element.textContent).toBe(
+      formatDefaultLocale($rootScope.createdAt, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+    );
   });
 });

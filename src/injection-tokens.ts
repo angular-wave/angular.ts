@@ -21,6 +21,7 @@ export const _animate = "$animate" as const;
 export const _animateCss = "$animateCss" as const;
 export const _aria = "$aria" as const;
 export const _compile = "$compile" as const;
+export const _compileLifecycle = "$compileLifecycle" as const;
 export const _cookie = "$cookie" as const;
 export const _controller = "$controller" as const;
 export const _document = "$document" as const;
@@ -61,6 +62,7 @@ export const _anchorScrollProvider = "$anchorScrollProvider" as const;
 export const _animateCssProvider = "$animateCssProvider" as const;
 export const _ariaProvider = "$ariaProvider" as const;
 export const _compileProvider = "$compileProvider" as const;
+export const _compileLifecycleProvider = "$compileLifecycleProvider" as const;
 export const _animateProvider = "$animateProvider" as const;
 export const _cookieProvider = "$cookieProvider" as const;
 export const _eventBusProvider = "$eventBusProvider" as const;
@@ -115,6 +117,7 @@ export const $injectTokens = {
   _animateCss,
   _aria,
   _compile,
+  _compileLifecycle,
   _cookie,
   _controller,
   _document,
@@ -155,6 +158,7 @@ export const $injectTokens = {
   _animateCssProvider,
   _ariaProvider,
   _compileProvider,
+  _compileLifecycleProvider,
   _animateProvider,
   _cookieProvider,
   _eventBusProvider,

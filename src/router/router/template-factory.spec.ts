@@ -1,7 +1,7 @@
 /// <reference types="jasmine" />
-import { dealoc } from "../shared/dom.ts";
-import { Angular } from "../angular.ts";
-import { waitUntil } from "../shared/test-utils.ts";
+import { dealoc } from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
+import { waitUntil } from "../../shared/test-utils.ts";
 
 describe("templateFactory", () => {
   let $injector: any,

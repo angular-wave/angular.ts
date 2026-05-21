@@ -148,14 +148,23 @@ export function createRealtimeSwapHandler({
 
         case "textContent":
           if (animationEnabled) {
+            const parent = target.parentNode;
+
+            if (!parent) return false;
+
+            const placeholder = document.createComment("ng-text-swap");
+
+            parent.insertBefore(placeholder, target);
+
             assertDefined(animate)
               .leave(target)
               .done(() => {
                 target.textContent = stringify(html);
-                assertDefined(animate).enter(
-                  target,
-                  target.parentNode as Element,
-                );
+                assertDefined(animate)
+                  .enter(target, parent, placeholder)
+                  .done(() => {
+                    placeholder.remove();
+                  });
               });
           } else {
             target.textContent = stringify(html);

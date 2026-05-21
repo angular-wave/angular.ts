@@ -662,8 +662,7 @@ export class NgModelController {
       const animate = this._getAnimateIfEnabled();
 
       if (animate) {
-        animate.removeClass(this._element, NOT_EMPTY_CLASS);
-        animate.addClass(this._element, EMPTY_CLASS);
+        animate.setClass(this._element, EMPTY_CLASS, NOT_EMPTY_CLASS);
       } else {
         this._element.classList.remove(NOT_EMPTY_CLASS);
         this._element.classList.add(EMPTY_CLASS);
@@ -672,8 +671,7 @@ export class NgModelController {
       const animate = this._getAnimateIfEnabled();
 
       if (animate) {
-        animate.removeClass(this._element, EMPTY_CLASS);
-        animate.addClass(this._element, NOT_EMPTY_CLASS);
+        animate.setClass(this._element, NOT_EMPTY_CLASS, EMPTY_CLASS);
       } else {
         this._element.classList.remove(EMPTY_CLASS);
         this._element.classList.add(NOT_EMPTY_CLASS);
@@ -697,8 +695,7 @@ export class NgModelController {
     const animate = this._getAnimateIfEnabled();
 
     if (animate) {
-      animate.removeClass(this._element, EMPTY_CLASS);
-      animate.addClass(this._element, PRISTINE_CLASS);
+      animate.setClass(this._element, PRISTINE_CLASS, EMPTY_CLASS);
     } else {
       this._element.classList.remove(EMPTY_CLASS);
       this._element.classList.add(PRISTINE_CLASS);
@@ -723,8 +720,7 @@ export class NgModelController {
     const animate = this._getAnimateIfEnabled();
 
     if (animate) {
-      animate.removeClass(this._element, PRISTINE_CLASS);
-      animate.addClass(this._element, DIRTY_CLASS);
+      animate.setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
     } else {
       this._element.classList.remove(PRISTINE_CLASS);
       this._element.classList.add(DIRTY_CLASS);

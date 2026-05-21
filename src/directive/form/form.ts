@@ -443,10 +443,7 @@ export class FormController {
    */
   $setDirty(): void {
     if (this._isAnimated) {
-      const animate = this._getAnimate();
-
-      animate.removeClass(this._element, PRISTINE_CLASS);
-      animate.addClass(this._element, DIRTY_CLASS);
+      this._getAnimate().setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
     } else {
       // Fallback for non-animated environments
       this._element.classList.remove(PRISTINE_CLASS);

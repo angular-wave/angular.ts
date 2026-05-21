@@ -155,8 +155,14 @@ class AngularTsTest {
         val entry = EntryFilterItem("name", "AngularTS")
         assertEquals("name", entry.key)
         assertEquals("AngularTS", entry.value)
-        assertEquals("en-US", NumberFilterOptions(locale = "en-US").locale)
-        assertEquals("mediumDate", DateFilterFormat.MediumDate.raw)
+        assertEquals(
+            "meter",
+            NumberFilterOptions(intl = mapOf("unit" to "meter")).intl["unit"],
+        )
+        assertEquals(
+            "UTC",
+            DateFilterOptions(intl = mapOf("timeZone" to "UTC")).intl["timeZone"],
+        )
     }
 
     @Test

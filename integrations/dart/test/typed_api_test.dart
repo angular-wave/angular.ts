@@ -33,23 +33,20 @@ void main() {
 
   test('public ng namespace parity types are exported', () {
     const date = ng.DateFilterOptions(
-      locale: 'en-US',
       dateStyle: 'medium',
       timeZone: 'UTC',
     );
     const number = ng.NumberFilterOptions(
-      locale: 'en-US',
       style: 'unit',
       unit: 'meter',
       maximumFractionDigits: 2,
     );
     const currency = ng.CurrencyFilterOptions(
-      locale: 'en-US',
+      currency: 'USD',
       currencyDisplay: 'symbol',
       minimumFractionDigits: 2,
     );
     const relativeTime = ng.RelativeTimeFilterOptions(
-      locale: 'en-US',
       numeric: 'auto',
       style: 'short',
     );
@@ -471,14 +468,10 @@ void main() {
         LifecycleController.new;
     final element = document.createElement('div') as HTMLElement;
 
-    expect(ng.DateFilterFormat.medium.value, 'medium');
-    expect(date.toMap()['locale'], 'en-US');
     expect(date.toMap()['dateStyle'], 'medium');
-    expect(number.toMap()['locale'], 'en-US');
     expect(number.toMap()['unit'], 'meter');
-    expect(currency.toMap()['locale'], 'en-US');
+    expect(currency.toMap()['currency'], 'USD');
     expect(currency.toMap()['currencyDisplay'], 'symbol');
-    expect(relativeTime.toMap()['locale'], 'en-US');
     expect(relativeTime.toMap()['numeric'], 'auto');
     expect(animation.duration, 250);
     expect(animation.fill, 'both');

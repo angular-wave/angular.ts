@@ -1,8 +1,13 @@
-import { _injector, _routerProvider } from "../../injection-tokens.ts";
+import {
+  _compileProvider,
+  _injector,
+  _routerProvider,
+} from "../../injection-tokens.ts";
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
+import type { CompileProvider } from "../../core/compile/compile.ts";
 import type { ResolveContext } from "../resolve/resolve-context.ts";
 import {
   assertDefined,
@@ -33,7 +38,7 @@ function stateOrNameToString(stateOrName: StateOrName): string {
  *
  */
 export class StateRegistryProvider {
-  /* @ignore */ static $inject = [_routerProvider];
+  /* @ignore */ static $inject = [_routerProvider, _compileProvider];
 
   /** @internal */
   _states: StateStore;
@@ -52,7 +57,7 @@ export class StateRegistryProvider {
   /** @internal */
   _root!: StateObject;
 
-  constructor(routerState: RouterProvider) {
+  constructor(routerState: RouterProvider, compileProvider: CompileProvider) {
     this._states = {};
 
     this._routerState = routerState;
@@ -63,7 +68,11 @@ export class StateRegistryProvider {
 
     this._matcher = new StateMatcher(this._states);
 
-    this._builder = new StateBuilder(this._matcher, routerState);
+    this._builder = new StateBuilder(
+      this._matcher,
+      routerState,
+      compileProvider,
+    );
 
     this._queue = [];
 

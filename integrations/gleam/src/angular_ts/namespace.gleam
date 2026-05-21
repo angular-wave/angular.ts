@@ -77,8 +77,6 @@ pub type FilterService
 
 pub type EntryFilterItem
 
-pub type DateFilterFormat
-
 pub type DateFilterOptions
 
 pub type NumberFilterOptions

@@ -2,6 +2,7 @@ import {
   _angular,
   _attributes,
   _compile,
+  _compileLifecycle,
   _document,
   _filter,
   _provide,
@@ -9,7 +10,10 @@ import {
   _window,
 } from "./injection-tokens.ts";
 import { AnimateProvider } from "./animations/animate.ts";
-import { CompileProvider } from "./core/compile/compile.ts";
+import {
+  CompileLifecycleProvider,
+  CompileProvider,
+} from "./core/compile/compile.ts";
 import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
@@ -123,13 +127,13 @@ import {
   StateRefDynamicDirective,
 } from "./router/directives/state-directives.ts";
 import {
-  ViewDirectiveFill,
   ViewDirective,
+  ViewDirectiveContentGuard,
 } from "./router/directives/view-directive.ts";
 import { RouterProvider } from "./router/router.ts";
 import { StateProvider } from "./router/state/state-service.ts";
 import { StateRegistryProvider } from "./router/state/state-registry.ts";
-import { TemplateFactoryProvider } from "./router/template-factory.ts";
+import { TemplateFactoryProvider } from "./router/router/template-factory.ts";
 import { TransitionProvider } from "./router/transition/transition-service.ts";
 import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
@@ -156,7 +160,10 @@ import { WorkerProvider } from "./services/worker/worker.ts";
 import { WasmProvider } from "./services/wasm/wasm.ts";
 
 export { AnimateProvider } from "./animations/animate.ts";
-export { CompileProvider } from "./core/compile/compile.ts";
+export {
+  CompileLifecycleProvider,
+  CompileProvider,
+} from "./core/compile/compile.ts";
 export { ControllerProvider } from "./core/controller/controller.ts";
 export { FilterProvider } from "./core/filter/filter.ts";
 export { InterpolateProvider } from "./core/interpolate/interpolate.ts";
@@ -277,12 +284,12 @@ export {
 } from "./router/directives/state-directives.ts";
 export {
   ViewDirective,
-  ViewDirectiveFill,
+  ViewDirectiveContentGuard,
 } from "./router/directives/view-directive.ts";
 export { RouterProvider } from "./router/router.ts";
 export { StateProvider } from "./router/state/state-service.ts";
 export { StateRegistryProvider } from "./router/state/state-registry.ts";
-export { TemplateFactoryProvider } from "./router/template-factory.ts";
+export { TemplateFactoryProvider } from "./router/router/template-factory.ts";
 export { TransitionProvider } from "./router/transition/transition-service.ts";
 export { ViewService } from "./router/view/view.ts";
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
@@ -357,6 +364,7 @@ function registerBuiltInFilters($filterProvider: FilterProvider): void {
 /** Providers required by scopes, expressions, controllers, and compile. */
 export const ngCoreProviders = {
   [_attributes]: AttributesServiceProvider,
+  [_compileLifecycle]: CompileLifecycleProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
@@ -537,7 +545,7 @@ export const ngRouterDirectives = {
 /** Fill/transclusion directives that intentionally register after their base directive. */
 export const ngFillDirectives = {
   ngInclude: ngIncludeFillContentDirective,
-  ngView: ViewDirectiveFill,
+  ngView: ViewDirectiveContentGuard,
 } satisfies DirectiveGroup;
 
 /** Provider groups included by the default full `ng` runtime. */

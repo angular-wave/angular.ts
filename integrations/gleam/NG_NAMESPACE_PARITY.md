@@ -138,7 +138,6 @@ part of the Gleam public facade.
 | ng type | Gleam status |
 | --- | --- |
 | `CurrencyFilterOptions` | started |
-| `DateFilterFormat` | started |
 | `DateFilterOptions` | started |
 | `EntryFilterItem` | started |
 | `NumberFilterOptions` | started |

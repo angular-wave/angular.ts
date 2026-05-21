@@ -37,6 +37,7 @@ public external interface Component {
     public var bindings: dynamic
     public var controller: dynamic
     public var controllerAs: String
+    public var replace: Boolean
     public var require: dynamic
     public var template: dynamic
     public var templateUrl: dynamic
@@ -301,23 +302,13 @@ public external interface EntryFilterItem {
     public var value: dynamic
 }
 
-public external interface DateFilterFormat
+public external interface DateFilterOptions
 
-public external interface DateFilterOptions {
-    public var locale: String
-}
+public external interface NumberFilterOptions
 
-public external interface NumberFilterOptions {
-    public var locale: String
-}
+public external interface CurrencyFilterOptions
 
-public external interface CurrencyFilterOptions {
-    public var locale: String
-}
-
-public external interface RelativeTimeFilterOptions {
-    public var locale: String
-}
+public external interface RelativeTimeFilterOptions
 
 public external interface HttpParamSerializerSerService {
     public operator fun invoke(p0: dynamic = definedExternally): String
@@ -718,6 +709,7 @@ public external interface InjectionTokens {
     public var `$aria`: String
     public var `$ariaProvider`: String
     public var `$compile`: String
+    public var `$compileLifecycle`: String
     public var `$compileProvider`: String
     public var `$controller`: String
     public var `$controllerProvider`: String
@@ -955,7 +947,7 @@ public external interface ServiceProvider {
 public external interface StateDeclaration {
     public var abstract: Boolean
     public var bindings: dynamic
-    public var component: String
+    public var component: dynamic
     public var controller: dynamic
     public var data: dynamic
     public var dynamic: Boolean

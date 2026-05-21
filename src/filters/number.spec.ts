@@ -11,14 +11,15 @@ describe("number filters", () => {
   });
 
   describe("number", () => {
-    it("should format numbers with the default locale", () => {
-      expect(filter("number")(1234.5)).toEqual("1,234.5");
+    it("should format numbers with the runtime default locale", () => {
+      expect(filter("number")(1234.5)).toEqual(
+        new Intl.NumberFormat(undefined).format(1234.5),
+      );
     });
 
     it("should support Intl.NumberFormat options and locale", () => {
       expect(
-        filter("number")(1234.5, {
-          locale: "de-DE",
+        filter("number")(1234.5, "de-DE", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         }),
@@ -26,7 +27,9 @@ describe("number filters", () => {
     });
 
     it("should format numeric strings", () => {
-      expect(filter("number")("1234.5")).toEqual("1,234.5");
+      expect(filter("number")("1234.5")).toEqual(
+        new Intl.NumberFormat(undefined).format(1234.5),
+      );
     });
 
     it("should return an empty string for nullish or invalid values", () => {
@@ -38,13 +41,18 @@ describe("number filters", () => {
 
   describe("currency", () => {
     it("should format currency with USD by default", () => {
-      expect(filter("currency")(1234.5)).toEqual("$1,234.50");
+      expect(filter("currency")(1234.5)).toEqual(
+        new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: "USD",
+        }).format(1234.5),
+      );
     });
 
     it("should support currency, Intl.NumberFormat options and locale", () => {
       expect(
-        filter("currency")(1234.5, "EUR", {
-          locale: "de-DE",
+        filter("currency")(1234.5, "de-DE", {
+          currency: "EUR",
           currencyDisplay: "code",
         }),
       ).toEqual("1.234,50 EUR");
@@ -58,14 +66,15 @@ describe("number filters", () => {
   });
 
   describe("percent", () => {
-    it("should format percentages with the default locale", () => {
-      expect(filter("percent")(0.1234)).toEqual("12%");
+    it("should format percentages with the runtime default locale", () => {
+      expect(filter("percent")(0.1234)).toEqual(
+        new Intl.NumberFormat(undefined, { style: "percent" }).format(0.1234),
+      );
     });
 
     it("should support Intl.NumberFormat options and locale", () => {
       expect(
-        filter("percent")(0.1234, {
-          locale: "de-DE",
+        filter("percent")(0.1234, "de-DE", {
           minimumFractionDigits: 1,
           maximumFractionDigits: 1,
         }),
@@ -83,7 +92,9 @@ describe("number filters", () => {
         ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
           $rootScope.ratio = 0.25;
 
-          expect($parse("ratio | percent")($rootScope)).toBe("25%");
+          expect($parse("ratio | percent")($rootScope)).toBe(
+            new Intl.NumberFormat(undefined, { style: "percent" }).format(0.25),
+          );
         },
       );
     });

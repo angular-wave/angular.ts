@@ -137,7 +137,6 @@ part of the Dart public facade.
 | ng type | Dart status |
 | --- | --- |
 | `CurrencyFilterOptions` | started |
-| `DateFilterFormat` | started |
 | `DateFilterOptions` | started |
 | `EntryFilterItem` | started |
 | `FilterFactory` | started |

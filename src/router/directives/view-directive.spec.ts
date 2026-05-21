@@ -1085,7 +1085,7 @@ describe("angular 1.5+ style .component()", () => {
       .component("dynamicComponent", {
         template: "dynamicComponent {{ $ctrl.param }}",
         controller: function () {
-          this.ngOnParamsChanged = function (params) {
+          this.$onParamsChanged = function (params) {
             this.param = params.param;
           };
         },
@@ -1282,6 +1282,27 @@ describe("angular 1.5+ style .component()", () => {
       expect(el.textContent).toBe("-DATA!-");
     });
 
+    it("should route directly to an inline component definition", async () => {
+      $stateProvider.state({
+        name: "route2inlinecmp",
+        url: "/route2inlinecmp",
+        component: {
+          bindings: { data: "<" },
+          template: "<span>inline {{ $ctrl.data }}</span>",
+        },
+        resolve: {
+          data: () => "DATA!",
+        },
+      });
+
+      await svcs.$state.transitionTo("route2inlinecmp");
+      await waitForText("inline DATA!");
+
+      expect(svcs.$state.current.name).toBe("route2inlinecmp");
+      expect(el.textContent).toBe("inline DATA!");
+      expect(el.querySelector("ng-view").innerHTML).not.toContain("ng-route");
+    });
+
     it("should support string component shorthand in named views", async () => {
       $stateProvider.state({
         name: "namedComponentView",
@@ -1300,6 +1321,32 @@ describe("angular 1.5+ style .component()", () => {
       await waitForText("#ready#");
 
       expect(el.textContent).toBe("#ready#");
+    });
+
+    it("should route named views directly to inline component definitions", async () => {
+      $stateProvider.state({
+        name: "namedInlineComponentView",
+        views: {
+          header: {
+            component: {
+              bindings: { status: "<" },
+              template: "<span>inline #{{ $ctrl.status }}#</span>",
+            },
+          },
+        },
+        resolve: {
+          status: () => "ready",
+        },
+      });
+
+      el.innerHTML = '<div><ng-view name="header"></ng-view></div>';
+      svcs.$compile(el)(scope);
+
+      await svcs.$state.transitionTo("namedInlineComponentView");
+      await waitForText("inline #ready#");
+
+      expect(el.textContent).toBe("inline #ready#");
+      expect(el.querySelector("ng-view").innerHTML).not.toContain("ng-route");
     });
 
     it("should clear ng-view when routing to a component whose templateUrl was already fetched elsewhere", async () => {
@@ -1654,7 +1701,7 @@ describe("angular 1.5+ style .component()", () => {
     });
   });
 
-  describe("ngOnParamsChanged()", () => {
+  describe("$onParamsChanged()", () => {
     let param;
 
     beforeEach(() => {
@@ -1664,6 +1711,19 @@ describe("angular 1.5+ style .component()", () => {
         name: "dynamic",
         url: "/dynamic/:param",
         component: "dynamicComponent",
+        params: { param: { dynamic: true } },
+      });
+      $stateProvider.state({
+        name: "dynamicInline",
+        url: "/dynamic-inline/:param",
+        component: {
+          template: "<span>dynamicInline {{ $ctrl.param }}</span>",
+          controller: function () {
+            this.$onParamsChanged = function (params) {
+              this.param = params.param;
+            };
+          },
+        },
         params: { param: { dynamic: true } },
       });
     });
@@ -1685,6 +1745,18 @@ describe("angular 1.5+ style .component()", () => {
       await waitForText("dynamicComponent def");
 
       expect(el.textContent.trim()).toBe("dynamicComponent def");
+    });
+
+    it("should be called when dynamic parameters change on an inline component", async () => {
+      const { $state } = svcs;
+
+      $state.go("dynamicInline", { param: "abc" });
+      await waitForText("dynamicInline");
+      $state.go("dynamicInline", { param: "def" });
+      await waitForText("dynamicInline def");
+
+      expect(el.textContent.trim()).toBe("dynamicInline def");
+      expect(el.querySelector("ng-view").innerHTML).not.toContain("ng-route");
     });
   });
 });

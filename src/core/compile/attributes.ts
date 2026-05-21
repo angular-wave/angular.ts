@@ -179,20 +179,21 @@ export class CompileAttributes {
 
     const toAdd = tokenDifference(newClasses, oldClasses);
 
+    const toRemove = tokenDifference(oldClasses, newClasses);
+
+    if (animate && (toAdd.length || toRemove.length)) {
+      animate.setClass(element, toAdd.join(" "), toRemove.join(" "));
+      return;
+    }
+
     if (toAdd.length) {
-      if (animate) {
-        animate.addClass(element, toAdd.join(" "));
-      } else {
+      if (!animate) {
         element.classList.add(...toAdd);
       }
     }
 
-    const toRemove = tokenDifference(oldClasses, newClasses);
-
     if (toRemove.length) {
-      if (animate) {
-        animate.removeClass(element, toRemove.join(" "));
-      } else {
+      if (!animate) {
         element.classList.remove(...toRemove);
       }
     }

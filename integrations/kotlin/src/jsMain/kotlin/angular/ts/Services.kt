@@ -48,23 +48,6 @@ public enum class StorageType(
     Custom("custom"),
 }
 
-public enum class DateFilterFormat(
-    public val raw: String,
-) {
-    Short("short"),
-    Medium("medium"),
-    Long("long"),
-    Full("full"),
-    ShortDate("shortDate"),
-    MediumDate("mediumDate"),
-    LongDate("longDate"),
-    FullDate("fullDate"),
-    ShortTime("shortTime"),
-    MediumTime("mediumTime"),
-    LongTime("longTime"),
-    FullTime("fullTime"),
-}
-
 public enum class HttpMethod(
     public val raw: String,
 ) {
@@ -113,22 +96,18 @@ public enum class RestResponseSource(
 }
 
 public data class DateFilterOptions public constructor(
-    public val locale: String? = null,
     public val intl: Map<String, Any?> = emptyMap(),
 )
 
 public data class NumberFilterOptions public constructor(
-    public val locale: String? = null,
     public val intl: Map<String, Any?> = emptyMap(),
 )
 
 public data class CurrencyFilterOptions public constructor(
-    public val locale: String? = null,
     public val intl: Map<String, Any?> = emptyMap(),
 )
 
 public data class RelativeTimeFilterOptions public constructor(
-    public val locale: String? = null,
     public val intl: Map<String, Any?> = emptyMap(),
 )
 
@@ -443,73 +422,58 @@ public class FilterService internal constructor(
 
     public fun number(
         input: Any?,
+        locales: Any? = null,
         options: NumberFilterOptions? = null,
-        locale: String? = null,
     ): String {
         val number = invoke("number")
 
         return when {
-            options == null && locale == null -> number(input)
-            locale == null -> number(input, options?.toJs())
-            else -> number(input, options?.toJs(), locale)
+            locales == null && options == null -> number(input)
+            options == null -> number(input, locales)
+            else -> number(input, locales, options.toJs())
         }.unsafeCast<String>()
     }
 
     public fun currency(
         input: Any?,
-        currency: String = "USD",
+        locales: Any? = null,
         options: CurrencyFilterOptions? = null,
-        locale: String? = null,
     ): String {
         val currencyFilter = invoke("currency")
 
         return when {
-            options == null && locale == null -> currencyFilter(input, currency)
-            locale == null -> currencyFilter(input, currency, options?.toJs())
-            else -> currencyFilter(input, currency, options?.toJs(), locale)
+            locales == null && options == null -> currencyFilter(input)
+            options == null -> currencyFilter(input, locales)
+            else -> currencyFilter(input, locales, options.toJs())
         }.unsafeCast<String>()
     }
 
     public fun date(
         input: Any?,
-        format: DateFilterFormat? = null,
-        timezone: Any? = null,
+        locales: Any? = null,
+        options: DateFilterOptions? = null,
     ): String {
         val date = invoke("date")
 
         return when {
-            format == null && timezone == null -> date(input)
-            timezone == null -> date(input, format?.raw)
-            else -> date(input, format?.raw, timezone)
-        }.unsafeCast<String>()
-    }
-
-    public fun date(
-        input: Any?,
-        options: DateFilterOptions,
-        timezone: Any? = null,
-    ): String {
-        val date = invoke("date")
-
-        return if (timezone == null) {
-            date(input, options.toJs())
-        } else {
-            date(input, options.toJs(), timezone)
+            locales == null && options == null -> date(input)
+            options == null -> date(input, locales)
+            else -> date(input, locales, options.toJs())
         }.unsafeCast<String>()
     }
 
     public fun relativeTime(
         input: Any?,
         unit: String = "day",
+        locales: Any? = null,
         options: RelativeTimeFilterOptions? = null,
-        locale: String? = null,
     ): String {
         val relativeTime = invoke("relativeTime")
 
         return when {
-            options == null && locale == null -> relativeTime(input, unit)
-            locale == null -> relativeTime(input, unit, options?.toJs())
-            else -> relativeTime(input, unit, options?.toJs(), locale)
+            locales == null && options == null -> relativeTime(input, unit)
+            options == null -> relativeTime(input, unit, locales)
+            else -> relativeTime(input, unit, locales, options.toJs())
         }.unsafeCast<String>()
     }
 }
@@ -1000,27 +964,16 @@ private fun RestCacheStore.toJs(): dynamic {
 }
 
 private fun DateFilterOptions.toJs(): dynamic =
-    optionRecord(intl, locale)
+    intl.toJsRecord()
 
 private fun NumberFilterOptions.toJs(): dynamic =
-    optionRecord(intl, locale)
+    intl.toJsRecord()
 
 private fun CurrencyFilterOptions.toJs(): dynamic =
-    optionRecord(intl, locale)
+    intl.toJsRecord()
 
 private fun RelativeTimeFilterOptions.toJs(): dynamic =
-    optionRecord(intl, locale)
-
-private fun optionRecord(
-    values: Map<String, Any?>,
-    locale: String?,
-): dynamic {
-    val raw = values.toJsRecord()
-
-    if (locale != null) raw.locale = locale
-
-    return raw
-}
+    intl.toJsRecord()
 
 private fun httpMethod(value: Any?): HttpMethod {
     val raw = value.unsafeCast<String?>()

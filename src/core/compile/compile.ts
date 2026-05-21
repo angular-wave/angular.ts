@@ -1,5 +1,6 @@
 import {
   _attributes,
+  _compileLifecycle,
   _controller,
   _exceptionHandler,
   _injector,
@@ -279,13 +280,6 @@ export interface NodeLinkPlan {
   _newScope: boolean;
 }
 
-export type NodeLinkFnCtx = NodeLinkPlan;
-
-/**
- * Function that applies directives to a node and returns a node link executor.
- */
-export type ApplyDirectivesToNodeFn = () => NodeLinkExecutor;
-
 /**
  * Function that aggregates all linking functions for a compilation root (nodeList).
  */
@@ -488,10 +482,6 @@ export type DirectiveDefinitionCache = Partial<
 
 export type DirectiveMatchList = InternalDirective[];
 
-export type DirectiveRegistry = DirectiveFactoryRegistry;
-
-export type DirectiveLookupCache = DirectiveDefinitionCache;
-
 export type DirectiveMatchLocation = "E" | "A";
 
 export type RegisterDirectiveFn = (
@@ -610,6 +600,88 @@ export type ControllerInstanceRef = (() => unknown) & {
 };
 
 export type ElementControllers = Partial<Record<string, ControllerInstanceRef>>;
+
+/**
+ * Describes a controller instance created by `$compile`.
+ *
+ * Consumers can use this record to attach integration-specific lifecycle
+ * behavior without requiring `$compile` to know about routers, views, or other
+ * higher-level services.
+ */
+export interface CompileControllerLifecycleRecord {
+  /** The element the controller was attached to after template replacement. */
+  element: Element;
+  /** The scope used to link the controller. */
+  scope: ng.Scope;
+  /** The controller instance produced by the directive/component factory. */
+  controller: object;
+  /** The normalized directive/component name that produced the controller. */
+  directiveName: string;
+  /** The controller alias when one was declared. */
+  controllerAs?: string;
+}
+
+/**
+ * Receives `$compile` controller lifecycle records.
+ */
+export type CompileControllerLifecycleListener = (
+  record: CompileControllerLifecycleRecord,
+) => void;
+
+/**
+ * Publishes controller creation/destruction events from `$compile`.
+ */
+export class CompileLifecycleProvider {
+  private readonly createdListeners: CompileControllerLifecycleListener[] = [];
+  private readonly destroyedListeners: CompileControllerLifecycleListener[] =
+    [];
+
+  $get = (): this => this;
+
+  /**
+   * Registers a listener that runs after `$compile` creates a controller.
+   *
+   * Returns a deregistration function.
+   */
+  onControllerCreated(
+    listener: CompileControllerLifecycleListener,
+  ): () => void {
+    this.createdListeners.push(listener);
+
+    return () => {
+      arrayRemove(this.createdListeners, listener);
+    };
+  }
+
+  /**
+   * Registers a listener that runs when a compiled controller scope is destroyed.
+   *
+   * Returns a deregistration function.
+   */
+  onControllerDestroyed(
+    listener: CompileControllerLifecycleListener,
+  ): () => void {
+    this.destroyedListeners.push(listener);
+
+    return () => {
+      arrayRemove(this.destroyedListeners, listener);
+    };
+  }
+
+  /** @internal */
+  _emitControllerCreated(record: CompileControllerLifecycleRecord): void {
+    this.createdListeners.slice().forEach((listener) => {
+      listener(record);
+    });
+  }
+
+  /** @internal */
+  _emitControllerDestroyed(record: CompileControllerLifecycleRecord): void {
+    this.destroyedListeners.slice().forEach((listener) => {
+      listener(record);
+    });
+  }
+}
 
 export type NodeLinkTranscludeFn =
   | ChildTranscludeOrLinkFn
@@ -1371,6 +1443,7 @@ export class CompileProvider {
           scope: {},
           bindToController: componentOptions.bindings ?? {},
           restrict: "E",
+          replace: componentOptions.replace,
           require: componentOptions.require,
         };
 
@@ -1550,6 +1623,7 @@ export class CompileProvider {
       _parse,
       _controller,
       _attributes,
+      _compileLifecycle,
       /** Creates the runtime `$compile` service and its shared helper closures. */
       (
         $injector: ng.InjectorService,
@@ -1558,6 +1632,7 @@ export class CompileProvider {
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
         $attributes: AttributesService,
+        $compileLifecycle: CompileLifecycleProvider,
       ) => {
         const security = getSecurityAdapter($injector);
         const internalAttributes = $attributes;
@@ -4136,6 +4211,7 @@ export class CompileProvider {
           }
 
           for (const name in elementControllers) {
+            const controllerDirective = controllerDirectives[name];
             const controller = assertDefined(elementControllers[name]);
 
             const controllerInstance = controller._instance;
@@ -4166,6 +4242,21 @@ export class CompileProvider {
               }
             }
 
+            const lifecycleRecord =
+              elementNode.nodeType === NodeType._ELEMENT_NODE
+                ? {
+                    element: elementNode as Element,
+                    scope: controllerScope,
+                    controller: controllerInstance,
+                    directiveName: controllerDirective.name,
+                    controllerAs: controllerDirective.controllerAs,
+                  }
+                : undefined;
+
+            if (lifecycleRecord) {
+              $compileLifecycle._emitControllerCreated(lifecycleRecord);
+            }
+
             if (isFunction(controllerInstance.$onDestroy)) {
               controllerScope.$on("$destroy", () => {
                 callFunction(
@@ -4182,6 +4273,10 @@ export class CompileProvider {
 
               if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
                 callFunction(controllerInstance.$destroy, controllerInstance);
+              }
+
+              if (lifecycleRecord) {
+                $compileLifecycle._emitControllerDestroyed(lifecycleRecord);
               }
             });
           }

@@ -156,6 +156,22 @@ describe("ng-get", () => {
     expect(el.textContent).toBe("Hello");
   });
 
+  it("should animate textContent swaps without losing the target parent", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML =
+      '<button ng-get="/mock/hello" animate="true" data-swap="textContent">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await waitForAnimateEvents(["leave", "enter"]);
+
+    expect(animateSpy.calls.map((call) => call.event)).toEqual([
+      "leave",
+      "enter",
+    ]);
+    expect(el.querySelector("button").textContent).toBe("Hello");
+  });
+
   it("should replace innerHTML (default) on click", async () => {
     const scope = $rootScope.$new();
 

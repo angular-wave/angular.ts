@@ -1,5 +1,4 @@
-import { assertDefined, isFunction, uppercase } from "../../shared/utils.ts";
-import { getCacheData, getInheritedData } from "../../shared/dom.ts";
+import { assertDefined, isFunction } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { PathNode } from "../path/path-node.ts";
@@ -7,15 +6,15 @@ import type { ViewConfig } from "../view/view.ts";
 
 export type ViewControllerInstance = Record<string, unknown> & {
   $onInit?: () => void;
-  ngOnParamsChanged?: (
+  $onParamsChanged?: (
     params: Record<string, unknown>,
     trans: ng.Transition,
   ) => void;
-  ngCanExit?: (trans: ng.Transition) => unknown;
+  $canExit?: (trans: ng.Transition) => unknown;
 };
 
-type NgCanExitTransition = ng.Transition & {
-  _ngCanExitIds?: Record<number, boolean>;
+type CanExitTransition = ng.Transition & {
+  _$canExitIds?: Record<number, boolean>;
 };
 
 interface ParamSchemaEntry {
@@ -46,65 +45,8 @@ function appendParamSchema(
   }
 }
 
-function controllerKeyData(
-  element: Element,
-  key: string,
-): ViewControllerInstance | undefined {
-  return (
-    (getCacheData(element, key) as ViewControllerInstance | undefined) ??
-    (getInheritedData(element, key) as ViewControllerInstance | undefined)
-  );
-}
-
-/** @internal */
-export function getComponentController(
-  element: HTMLElement,
-  componentName: string,
-  tagRegexp: RegExp,
-): ViewControllerInstance | undefined {
-  const candidates = element.querySelectorAll("*");
-
-  let directiveEl: Element | undefined;
-
-  for (let i = 0; i < candidates.length; i++) {
-    const candidate = candidates[i];
-
-    if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
-      directiveEl = candidate;
-      break;
-    }
-  }
-
-  if (!directiveEl) return undefined;
-
-  const camelNameFromTag = directiveEl.tagName
-    .toLowerCase()
-    .replace(/-([a-z])/g, (_all, letter: string) => uppercase(letter));
-
-  const scopeWithCtrl =
-    (getCacheData(directiveEl, "$isolateScope") as
-      | Record<string, ViewControllerInstance>
-      | undefined) ??
-    (getInheritedData(directiveEl, "$isolateScope") as
-      | Record<string, ViewControllerInstance>
-      | undefined) ??
-    (getCacheData(directiveEl, "$scope") as
-      | Record<string, ViewControllerInstance>
-      | undefined) ??
-    (getInheritedData(directiveEl, "$scope") as
-      | Record<string, ViewControllerInstance>
-      | undefined);
-
-  return (
-    controllerKeyData(directiveEl, `$${componentName}Controller`) ??
-    controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ??
-    controllerKeyData(directiveEl, "$ngControllerController") ??
-    scopeWithCtrl?.$ctrl
-  );
-}
-
 /** @ignore incrementing id */
-let _ngCanExitId = 0;
+let canExitId = 0;
 
 /**
  * Registers component/controller transition lifecycle callbacks for an active view.
@@ -141,9 +83,9 @@ export function registerViewControllerCallbacks(
 
   const hookOptions = { bind: controllerInstance };
 
-  // Add component-level hook for ngOnParamsChanged
-  if (isFunction(controllerInstance.ngOnParamsChanged)) {
-    const onParamsChanged = controllerInstance.ngOnParamsChanged as (
+  // Add component/controller-level hook for $onParamsChanged
+  if (isFunction(controllerInstance.$onParamsChanged)) {
+    const onParamsChanged = controllerInstance.$onParamsChanged as (
       params: Record<string, unknown>,
       trans: ng.Transition,
     ) => void;
@@ -266,13 +208,13 @@ export function registerViewControllerCallbacks(
     });
   }
 
-  // Add component-level hook for ngCanExit
-  if (isFunction(controllerInstance.ngCanExit)) {
-    const ngCanExit = controllerInstance.ngCanExit as (
+  // Add component/controller-level hook for $canExit
+  if (isFunction(controllerInstance.$canExit)) {
+    const canExit = controllerInstance.$canExit as (
       trans: ng.Transition,
     ) => boolean | undefined | TargetState;
 
-    const id = _ngCanExitId++;
+    const id = canExitId++;
 
     /**
      * Returns true if any transition in the redirect chain already answered truthy.
@@ -280,7 +222,7 @@ export function registerViewControllerCallbacks(
     const prevTruthyAnswer = (trans: ng.Transition | null): boolean => {
       if (!trans) return false;
 
-      const cache = (trans as NgCanExitTransition)._ngCanExitIds;
+      const cache = (trans as CanExitTransition)._$canExitIds;
 
       return (
         cache?.[id] === true ||
@@ -292,12 +234,12 @@ export function registerViewControllerCallbacks(
     const wrappedHook = async (trans: ng.Transition) => {
       let promise: Promise<boolean | undefined | TargetState> | undefined;
 
-      const cacheTrans = trans as NgCanExitTransition;
+      const cacheTrans = trans as CanExitTransition;
 
-      const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});
+      const ids = (cacheTrans._$canExitIds = cacheTrans._$canExitIds ?? {});
 
       if (!prevTruthyAnswer(trans)) {
-        promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
+        promise = Promise.resolve(canExit.call(controllerInstance, trans));
         void promise.then((val) => (ids[id] = val !== false));
       }
 

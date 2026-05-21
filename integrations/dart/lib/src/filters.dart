@@ -4,55 +4,10 @@ typedef FilterFn = Object? Function(Object? input, [List<Object?> args]);
 /// Factory that creates an AngularTS filter implementation.
 typedef FilterFactory = FilterFn Function();
 
-/// Built-in date filter format names.
-enum DateFilterFormat {
-  /// Invokes short.
-  short('short'),
-
-  /// Invokes medium.
-  medium('medium'),
-
-  /// Invokes long.
-  long('long'),
-
-  /// Invokes full.
-  full('full'),
-
-  /// Invokes short date.
-  shortDate('shortDate'),
-
-  /// Invokes medium date.
-  mediumDate('mediumDate'),
-
-  /// Invokes long date.
-  longDate('longDate'),
-
-  /// Invokes full date.
-  fullDate('fullDate'),
-
-  /// Invokes short time.
-  shortTime('shortTime'),
-
-  /// Invokes medium time.
-  mediumTime('mediumTime'),
-
-  /// Invokes long time.
-  longTime('longTime'),
-
-  /// Invokes full time.
-  fullTime('fullTime');
-
-  const DateFilterFormat(this.value);
-
-  /// Registers an AngularTS value.
-  final String value;
-}
-
 /// Options passed to the date filter.
 final class DateFilterOptions {
   /// Creates a date filter options.
   const DateFilterOptions({
-    this.locale,
     this.calendar,
     this.dateStyle,
     this.day,
@@ -75,9 +30,6 @@ final class DateFilterOptions {
     this.year,
     this.intl = const {},
   });
-
-  /// The locale.
-  final String? locale;
 
   /// The calendar.
   final String? calendar;
@@ -145,7 +97,6 @@ final class DateFilterOptions {
   /// The to map.
   Map<String, Object?> toMap() => {
         ...intl,
-        if (locale != null) 'locale': locale,
         if (calendar != null) 'calendar': calendar,
         if (dateStyle != null) 'dateStyle': dateStyle,
         if (day != null) 'day': day,
@@ -174,7 +125,6 @@ final class DateFilterOptions {
 final class NumberFilterOptions {
   /// Creates a number filter options.
   const NumberFilterOptions({
-    this.locale,
     this.compactDisplay,
     this.currency,
     this.currencyDisplay,
@@ -198,9 +148,6 @@ final class NumberFilterOptions {
     this.useGrouping,
     this.intl = const {},
   });
-
-  /// The locale.
-  final String? locale;
 
   /// The compact display.
   final String? compactDisplay;
@@ -271,7 +218,6 @@ final class NumberFilterOptions {
   /// The to map.
   Map<String, Object?> toMap() => {
         ...intl,
-        if (locale != null) 'locale': locale,
         if (compactDisplay != null) 'compactDisplay': compactDisplay,
         if (currency != null) 'currency': currency,
         if (currencyDisplay != null) 'currencyDisplay': currencyDisplay,
@@ -306,8 +252,8 @@ final class NumberFilterOptions {
 final class CurrencyFilterOptions {
   /// Creates a currency filter options.
   const CurrencyFilterOptions({
-    this.locale,
     this.compactDisplay,
+    this.currency,
     this.currencyDisplay,
     this.currencySign,
     this.localeMatcher,
@@ -329,11 +275,11 @@ final class CurrencyFilterOptions {
     this.intl = const {},
   });
 
-  /// The locale.
-  final String? locale;
-
   /// The compact display.
   final String? compactDisplay;
+
+  /// The currency.
+  final String? currency;
 
   /// The currency display.
   final String? currencyDisplay;
@@ -389,14 +335,14 @@ final class CurrencyFilterOptions {
   /// The use grouping.
   final Object? useGrouping;
 
-  /// Raw `Intl.NumberFormatOptions` values except `currency` and `style`.
+  /// Raw `Intl.NumberFormatOptions` values except `style`.
   final Map<String, Object?> intl;
 
   /// The to map.
   Map<String, Object?> toMap() => {
         ...intl,
-        if (locale != null) 'locale': locale,
         if (compactDisplay != null) 'compactDisplay': compactDisplay,
+        if (currency != null) 'currency': currency,
         if (currencyDisplay != null) 'currencyDisplay': currencyDisplay,
         if (currencySign != null) 'currencySign': currencySign,
         if (localeMatcher != null) 'localeMatcher': localeMatcher,
@@ -428,15 +374,11 @@ final class CurrencyFilterOptions {
 final class RelativeTimeFilterOptions {
   /// Creates a relative time filter options.
   const RelativeTimeFilterOptions({
-    this.locale,
     this.localeMatcher,
     this.numeric,
     this.style,
     this.intl = const {},
   });
-
-  /// The locale.
-  final String? locale;
 
   /// The locale matcher.
   final String? localeMatcher;
@@ -453,7 +395,6 @@ final class RelativeTimeFilterOptions {
   /// The to map.
   Map<String, Object?> toMap() => {
         ...intl,
-        if (locale != null) 'locale': locale,
         if (localeMatcher != null) 'localeMatcher': localeMatcher,
         if (numeric != null) 'numeric': numeric,
         if (style != null) 'style': style,

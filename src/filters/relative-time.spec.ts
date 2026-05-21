@@ -10,22 +10,29 @@ describe("relativeTime filter", () => {
     filter = createInjector(["ng"]).get("$filter") as ng.FilterService;
   });
 
-  it("should format relative time with the default locale", () => {
-    expect(filter("relativeTime")(-1, "day")).toEqual("1 day ago");
-    expect(filter("relativeTime")(2, "week")).toEqual("in 2 weeks");
+  it("should format relative time with the runtime default locale", () => {
+    const formatter = new Intl.RelativeTimeFormat(undefined);
+
+    expect(filter("relativeTime")(-1, "day")).toEqual(
+      formatter.format(-1, "day"),
+    );
+    expect(filter("relativeTime")(2, "week")).toEqual(
+      formatter.format(2, "week"),
+    );
   });
 
   it("should support Intl.RelativeTimeFormat options and locale", () => {
     expect(
-      filter("relativeTime")(-1, "day", {
-        locale: "en-US",
+      filter("relativeTime")(-1, "day", "en-US", {
         numeric: "auto",
       }),
     ).toEqual("yesterday");
   });
 
   it("should format numeric strings", () => {
-    expect(filter("relativeTime")("-3", "month")).toEqual("3 months ago");
+    expect(filter("relativeTime")("-3", "month")).toEqual(
+      new Intl.RelativeTimeFormat(undefined).format(-3, "month"),
+    );
   });
 
   it("should return an empty string for nullish or invalid values", () => {
@@ -41,7 +48,7 @@ describe("relativeTime filter", () => {
 
         expect(
           $parse("daysUntilRelease | relativeTime:'day'")($rootScope),
-        ).toBe("in 3 days");
+        ).toBe(new Intl.RelativeTimeFormat(undefined).format(3, "day"));
       },
     );
   });

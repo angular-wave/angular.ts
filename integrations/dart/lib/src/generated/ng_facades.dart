@@ -1303,34 +1303,12 @@ base class GeneratedNgCookieStoreOptions extends GeneratedNgFacade {
 base class GeneratedNgCurrencyFilterOptions extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.CurrencyFilterOptions.
   const GeneratedNgCurrencyFilterOptions(super.raw);
-
-  /// Reads the generated locale property.
-  String? get locale => _toDartString(raw.getProperty('locale'.toJS));
-
-  /// Writes the generated locale property.
-  set locale(String? value) {
-    raw.setProperty('locale'.toJS, unsafe.dartToJs(value));
-  }
-}
-
-/// Generated raw facade for ng.DateFilterFormat.
-base class GeneratedNgDateFilterFormat extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.DateFilterFormat.
-  const GeneratedNgDateFilterFormat(super.raw);
 }
 
 /// Generated raw facade for ng.DateFilterOptions.
 base class GeneratedNgDateFilterOptions extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.DateFilterOptions.
   const GeneratedNgDateFilterOptions(super.raw);
-
-  /// Reads the generated locale property.
-  String? get locale => _toDartString(raw.getProperty('locale'.toJS));
-
-  /// Writes the generated locale property.
-  set locale(String? value) {
-    raw.setProperty('locale'.toJS, unsafe.dartToJs(value));
-  }
 }
 
 /// Generated raw facade for ng.Directive.
@@ -3198,14 +3176,6 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
 base class GeneratedNgNumberFilterOptions extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.NumberFilterOptions.
   const GeneratedNgNumberFilterOptions(super.raw);
-
-  /// Reads the generated locale property.
-  String? get locale => _toDartString(raw.getProperty('locale'.toJS));
-
-  /// Writes the generated locale property.
-  set locale(String? value) {
-    raw.setProperty('locale'.toJS, unsafe.dartToJs(value));
-  }
 }
 
 /// Generated raw facade for ng.ParseService.
@@ -3479,14 +3449,6 @@ base class GeneratedNgRealtimeProtocolMessage extends GeneratedNgFacade {
 base class GeneratedNgRelativeTimeFilterOptions extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.RelativeTimeFilterOptions.
   const GeneratedNgRelativeTimeFilterOptions(super.raw);
-
-  /// Reads the generated locale property.
-  String? get locale => _toDartString(raw.getProperty('locale'.toJS));
-
-  /// Writes the generated locale property.
-  set locale(String? value) {
-    raw.setProperty('locale'.toJS, unsafe.dartToJs(value));
-  }
 }
 
 /// Generated raw facade for ng.RequestConfig.

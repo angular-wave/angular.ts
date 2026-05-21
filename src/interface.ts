@@ -18,6 +18,7 @@ export const PublicInjectionTokens = {
   $animate: "$animate",
   $aria: "$aria",
   $compile: "$compile",
+  $compileLifecycle: "$compileLifecycle",
   $cookie: "$cookie",
   $controller: "$controller",
   $document: "$document",
@@ -429,6 +430,10 @@ export interface Component {
    * controller and not to the scope.
    */
   bindings?: Record<string, string> | undefined;
+  /**
+   * Replaces the generated component host element with the component template.
+   */
+  replace?: boolean | undefined;
   /**
    * Whether transclusion is enabled. Disabled by default.
    */

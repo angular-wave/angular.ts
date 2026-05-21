@@ -66,6 +66,38 @@ describe("StateBuilder", function () {
     expect(built._views.sidebar._ngViewName).toBe("sidebar");
   });
 
+  it("should normalize inline route components to generated component names", function () {
+    const inlineComponent = { template: "inline" };
+    const built = builder._build({
+      name: "foo",
+      self: {},
+      parent,
+      component: inlineComponent,
+    });
+
+    expect(typeof built._views.$default.component).toBe("string");
+    expect(built._views.$default.component).toMatch(
+      /^ngRouteFooDefaultComponent/,
+    );
+    expect(built._views.$default.component).not.toBe(inlineComponent);
+  });
+
+  it("should normalize inline route components in named views", function () {
+    const built = builder._build({
+      name: "foo",
+      self: {},
+      parent,
+      views: {
+        sidebar: { component: { template: "inline" } },
+      },
+    });
+
+    expect(typeof built._views.sidebar.component).toBe("string");
+    expect(built._views.sidebar.component).toMatch(
+      /^ngRouteFooSidebarComponent/,
+    );
+  });
+
   it("should copy state-level view fields into the default view", function () {
     const built = builder._build({
       name: "foo",

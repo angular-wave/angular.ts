@@ -1,33 +1,21 @@
 import { isNullOrUndefined } from "../shared/utils.ts";
 
-export type NumberFilterOptions = Intl.NumberFormatOptions & {
-  locale?: string;
-};
+export type NumberFilterOptions = Intl.NumberFormatOptions;
 
-export type CurrencyFilterOptions = Omit<
-  Intl.NumberFormatOptions,
-  "currency" | "style"
-> & {
-  locale?: string;
-};
-
-const DEFAULT_LOCALE = "en-US";
+export type CurrencyFilterOptions = Omit<Intl.NumberFormatOptions, "style">;
 
 /** Creates a locale-aware number formatting filter backed by Intl.NumberFormat. */
 export function numberFilter() {
   return function (
     input: number | string | null | undefined,
+    locales?: Intl.LocalesArgument,
     options?: NumberFilterOptions,
-    locale = DEFAULT_LOCALE,
   ): string {
     const value = parseNumberInput(input);
 
     if (isNullOrUndefined(value)) return "";
 
-    return new Intl.NumberFormat(
-      options?.locale ?? locale,
-      stripLocale(options),
-    ).format(value);
+    return new Intl.NumberFormat(locales, options).format(value);
   };
 }
 
@@ -35,18 +23,17 @@ export function numberFilter() {
 export function currencyFilter() {
   return function (
     input: number | string | null | undefined,
-    currency = "USD",
+    locales?: Intl.LocalesArgument,
     options?: CurrencyFilterOptions,
-    locale = DEFAULT_LOCALE,
   ): string {
     const value = parseNumberInput(input);
 
     if (isNullOrUndefined(value)) return "";
 
-    return new Intl.NumberFormat(options?.locale ?? locale, {
-      ...stripLocale(options),
+    return new Intl.NumberFormat(locales, {
+      ...options,
       style: "currency",
-      currency,
+      currency: options?.currency ?? "USD",
     }).format(value);
   };
 }
@@ -55,15 +42,15 @@ export function currencyFilter() {
 export function percentFilter() {
   return function (
     input: number | string | null | undefined,
+    locales?: Intl.LocalesArgument,
     options?: NumberFilterOptions,
-    locale = DEFAULT_LOCALE,
   ): string {
     const value = parseNumberInput(input);
 
     if (isNullOrUndefined(value)) return "";
 
-    return new Intl.NumberFormat(options?.locale ?? locale, {
-      ...stripLocale(options),
+    return new Intl.NumberFormat(locales, {
+      ...options,
       style: "percent",
     }).format(value);
   };
@@ -77,16 +64,4 @@ function parseNumberInput(
   const value = Number(input);
 
   return Number.isFinite(value) ? value : undefined;
-}
-
-function stripLocale<T extends { locale?: string }>(
-  options: T | undefined,
-): Omit<T, "locale"> | undefined {
-  if (!options) return undefined;
-
-  const numberFormatOptions = { ...options };
-
-  delete numberFormatOptions.locale;
-
-  return numberFormatOptions as Omit<T, "locale">;
 }

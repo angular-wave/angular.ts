@@ -1,13 +1,32 @@
-import { _router, _templateFactory } from "../../injection-tokens.ts";
+import {
+  _compile,
+  _compileLifecycle,
+  _controller,
+  _injector,
+  _router,
+  _templateFactory,
+  _transitions,
+} from "../../injection-tokens.ts";
+import { setCacheData } from "../../shared/dom.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { assign, assertDefined, isString } from "../../shared/utils.ts";
-import type { ResolveContext } from "../resolve/resolve-context.ts";
+import type {
+  CompileControllerLifecycleRecord,
+  CompileLifecycleProvider,
+} from "../../core/compile/compile.ts";
+import {
+  registerViewControllerCallbacks,
+  type ViewControllerInstance,
+} from "../directives/view-controller-hooks.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
+import { kebobString } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { TemplateFactoryProvider } from "../template-factory.ts";
+import type { TemplateFactoryProvider } from "../router/template-factory.ts";
 import type { RouterProvider } from "../router.ts";
+import { getLocals } from "../state/state-registry.ts";
 
 /** @internal */
 export interface ViewContext {
@@ -43,11 +62,93 @@ export interface ViewConfig {
   _template: string | undefined;
   _loaded: boolean;
   _controller: ViewDeclaration["controller"] | undefined;
+  _fillPlan: ViewFillPlan;
+  _targetKey: string;
+  _depth: number;
+}
+
+/** @internal */
+export interface ViewFillPlan {
+  _kind: "component" | "template";
+  _componentName: string | undefined;
+  _componentElementName: string | undefined;
+  _hasController: boolean;
+  _needsResolveContext: boolean;
+}
+
+/** @internal */
+export interface NgViewAnimData {
+  $animEnter: Promise<void>;
+  $animLeave: Promise<void>;
+  $$animLeave: { resolve: (value: undefined) => void };
+}
+
+/** @internal */
+export interface NgViewData {
+  $cfg?: ViewConfig;
+  $ngView: ActiveNgView;
+  $filled?: boolean;
+  $initial?: string;
+}
+
+interface ViewFillOptions {
+  host: HTMLElement;
+  rootNodes: Node[];
+  scope: ng.Scope;
+  config?: ViewConfig;
+  initial: string;
+  activeNgView: ActiveNgView;
+  animation: NgViewAnimData;
 }
 
 const FQN_MULTIPLIER = 10_000;
 
+const COMPONENT_CONTEXT_ATTR = "data-ng-view-component-context";
+
 let nextViewId = 0;
+
+interface ComponentViewContext {
+  componentName: string;
+  config: ViewConfig;
+  scope: ng.Scope;
+}
+
+function createViewFillPlan(
+  viewDecl: ViewDeclaration,
+  componentName: string | undefined,
+): ViewFillPlan {
+  const resolvedComponentName = componentName ?? viewDecl.component;
+  const component = isString(resolvedComponentName)
+    ? resolvedComponentName
+    : undefined;
+
+  return {
+    _kind: component ? "component" : "template",
+    _componentName: component,
+    _componentElementName: component ? kebobString(component) : undefined,
+    _hasController: !!viewDecl.controller,
+    _needsResolveContext: true,
+  };
+}
+
+function viewDeclTargetKey(viewDecl: ViewDeclaration): string {
+  const viewName = viewDecl._ngViewName ?? "$default";
+  const viewContext = viewDecl._ngViewContextAnchor ?? "";
+
+  return viewContext ? `${viewContext}.${viewName}` : viewName;
+}
+
+function viewDeclDepth(viewDecl: ViewDeclaration): number {
+  let context = assertDefined(viewDecl._context);
+
+  let count = 0;
+
+  while (++count && context.parent) {
+    context = context.parent;
+  }
+
+  return count;
+}
 
 /** @internal */
 export function createViewConfig(
@@ -64,6 +165,9 @@ export function createViewConfig(
     _template: undefined,
     _loaded: false,
     _controller: undefined,
+    _fillPlan: createViewFillPlan(viewDecl, undefined),
+    _targetKey: viewDeclTargetKey(viewDecl),
+    _depth: viewDeclDepth(viewDecl),
   };
 }
 
@@ -73,11 +177,13 @@ export function getViewTemplate(
   ngView: Element,
   context: ResolveContext,
 ): string | undefined {
-  return config._component
+  const plan = config._fillPlan;
+
+  return plan._kind === "component" && plan._componentName
     ? config._factory._makeComponentTemplate(
         ngView,
         context,
-        config._component,
+        plan._componentName,
         config._viewDecl.bindings,
       )
     : config._template;
@@ -98,6 +204,7 @@ export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
 
   config._controller = config._viewDecl.controller;
   assign(config, viewResult);
+  config._fillPlan = createViewFillPlan(config._viewDecl, config._component);
 
   return config;
 }
@@ -189,27 +296,6 @@ function ngViewDepth(
   return computed;
 }
 
-function viewConfigDepth(
-  cache: Map<ViewConfig, number>,
-  config: ViewConfig,
-): number {
-  const cached = cache.get(config);
-
-  if (cached !== undefined) return cached;
-
-  let context = assertDefined(config._viewDecl._context);
-
-  let count = 0;
-
-  while (++count && context.parent) {
-    context = context.parent;
-  }
-
-  cache.set(config, count);
-
-  return count;
-}
-
 /**
  * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
@@ -220,9 +306,27 @@ export class ViewService {
   /** @internal */
   _viewConfigs: ViewConfig[];
   /** @internal */
+  _viewConfigsByTarget: Map<string, ViewConfig[]>;
+  /** @internal */
   _templateFactory: TemplateFactoryProvider | undefined;
   /** @internal */
+  _compile: ng.CompileService | undefined;
+  /** @internal */
+  _controller: ng.ControllerService | undefined;
+  /** @internal */
+  _injector: ng.InjectorService | undefined;
+  /** @internal */
   _rootContext: StateObject | null | undefined;
+  /** @internal */
+  _transitions: ng.TransitionService | undefined;
+  /** @internal */
+  _componentContexts: Map<string, ComponentViewContext>;
+  /** @internal */
+  _nextComponentContextId: number;
+  /** @internal */
+  _filledHosts: WeakSet<HTMLElement>;
+  /** @internal */
+  _deregisterCompileLifecycle: (() => void) | undefined;
 
   /**
    * Creates an empty view registry ready to track active `ng-view` instances.
@@ -230,8 +334,17 @@ export class ViewService {
   constructor() {
     this._ngViews = [];
     this._viewConfigs = [];
+    this._viewConfigsByTarget = new Map();
     this._templateFactory = undefined;
+    this._compile = undefined;
+    this._controller = undefined;
+    this._injector = undefined;
     this._rootContext = undefined;
+    this._transitions = undefined;
+    this._componentContexts = new Map();
+    this._nextComponentContextId = 0;
+    this._filledHosts = new WeakSet();
+    this._deregisterCompileLifecycle = undefined;
   }
 
   /**
@@ -240,16 +353,174 @@ export class ViewService {
   $get = [
     _templateFactory,
     _router,
+    _compileLifecycle,
+    _transitions,
+    _compile,
+    _controller,
+    _injector,
     (
       $templateFactory: TemplateFactoryProvider,
       $routerState: RouterProvider,
+      $compileLifecycle: CompileLifecycleProvider,
+      $transitions: ng.TransitionService,
+      $compile: ng.CompileService,
+      $controller: ng.ControllerService,
+      $injector: ng.InjectorService,
     ): ViewService => {
       this._templateFactory = $templateFactory;
+      this._compile = $compile;
+      this._controller = $controller;
+      this._injector = $injector;
       this._rootViewContext($routerState._currentState ?? null);
+      this._transitions = $transitions;
+      this._deregisterCompileLifecycle?.();
+      this._deregisterCompileLifecycle = $compileLifecycle.onControllerCreated(
+        (record) => {
+          this._componentControllerCreated(record);
+        },
+      );
 
       return this;
     },
   ];
+
+  /** @internal */
+  _fillView(options: ViewFillOptions): void {
+    const { host, rootNodes, scope, config, initial, activeNgView, animation } =
+      options;
+
+    const $compile = assertDefined(this._compile);
+
+    const viewData: NgViewData = {
+      $cfg: config,
+      $ngView: activeNgView,
+      $filled: true,
+    };
+
+    for (let i = 0; i < rootNodes.length; i++) {
+      const node = rootNodes[i];
+
+      setCacheData(node, "$ngViewAnim", animation);
+      setCacheData(node, "$ngView", viewData);
+    }
+
+    const plan = config?._fillPlan;
+
+    const resolveContext =
+      config && plan?._needsResolveContext
+        ? new ResolveContext(config._path, assertDefined(this._injector))
+        : undefined;
+
+    if (host.childNodes.length || this._filledHosts.has(host)) {
+      scope.$broadcast("$destroy");
+    } else {
+      this._filledHosts.add(host);
+    }
+
+    host.innerHTML = config
+      ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
+        initial)
+      : initial;
+
+    if (config && plan?._kind === "component") {
+      this._markComponentView(host, config, scope);
+    }
+
+    const link = $compile(
+      (host as HTMLIFrameElement).contentDocument ?? host.childNodes,
+    );
+
+    const locals = resolveContext ? getLocals(resolveContext) : undefined;
+
+    const targetScope = scope.$target as Record<string, unknown>;
+
+    targetScope.$resolve = locals;
+
+    const controller = plan?._hasController ? config?._controller : undefined;
+
+    if (controller) {
+      const controllerConfig = assertDefined(config);
+      const controllerInstance = assertDefined(this._controller)(
+        controller,
+        assign({}, locals, { $scope: scope, $element: host }),
+      ) as ViewControllerInstance;
+
+      setCacheData(host, "$ngControllerController", controllerInstance);
+      const { children } = host;
+
+      for (let i = 0; i < children.length; i++) {
+        setCacheData(
+          children[i],
+          "$ngControllerController",
+          controllerInstance,
+        );
+      }
+
+      registerViewControllerCallbacks(
+        assertDefined(this._transitions),
+        controllerInstance,
+        scope,
+        controllerConfig,
+      );
+    }
+
+    link(scope);
+
+    if (scope.$handler._destroyed) {
+      scope.$broadcast("$destroy");
+    }
+  }
+
+  /** @internal */
+  _markComponentView(
+    host: HTMLElement,
+    config: ViewConfig,
+    scope: ng.Scope,
+  ): void {
+    const { _componentElementName, _componentName } = config._fillPlan;
+
+    if (!_componentElementName || !_componentName) return;
+
+    const componentHost = host.querySelector(_componentElementName);
+
+    if (!componentHost) return;
+
+    const id = `${String(config._id)}:${String(this._nextComponentContextId++)}`;
+
+    componentHost.setAttribute(COMPONENT_CONTEXT_ATTR, id);
+    this._componentContexts.set(id, {
+      componentName: _componentName,
+      config,
+      scope,
+    });
+
+    scope.$on("$destroy", () => {
+      this._componentContexts.delete(id);
+    });
+  }
+
+  /** @internal */
+  _componentControllerCreated(record: CompileControllerLifecycleRecord): void {
+    const id = record.element.getAttribute(COMPONENT_CONTEXT_ATTR);
+
+    if (!id) return;
+
+    const context = this._componentContexts.get(id);
+
+    if (record.directiveName !== context?.componentName) return;
+
+    record.element.removeAttribute(COMPONENT_CONTEXT_ATTR);
+    this._componentContexts.delete(id);
+
+    if (!this._transitions) return;
+
+    registerViewControllerCallbacks(
+      this._transitions,
+      record.controller as Record<string, unknown>,
+      context.scope,
+      context.config,
+    );
+  }
 
   /**
    * Gets or sets the root view context used for relative `ng-view` targeting.
@@ -267,6 +538,16 @@ export class ViewService {
   /** @internal */
   _deactivateViewConfig(viewConfig: ViewConfig): void {
     removeFrom(this._viewConfigs, viewConfig);
+
+    const targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+
+    if (!targetConfigs) return;
+
+    removeFrom(targetConfigs, viewConfig);
+
+    if (!targetConfigs.length) {
+      this._viewConfigsByTarget.delete(viewConfig._targetKey);
+    }
   }
 
   /**
@@ -275,6 +556,15 @@ export class ViewService {
   /** @internal */
   _activateViewConfig(viewConfig: ViewConfig): void {
     this._viewConfigs.push(viewConfig);
+
+    let targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+
+    if (!targetConfigs) {
+      targetConfigs = [];
+      this._viewConfigsByTarget.set(viewConfig._targetKey, targetConfigs);
+    }
+
+    targetConfigs.push(viewConfig);
   }
 
   /**
@@ -291,8 +581,6 @@ export class ViewService {
 
     const ngViewDepthCache = new Map<ActiveNgView, number>();
 
-    const viewConfigDepthCache = new Map<ViewConfig, number>();
-
     this._ngViews.sort(
       (left, right) =>
         ngViewDepth(ngViewDepthCache, left) -
@@ -300,24 +588,28 @@ export class ViewService {
     );
 
     this._ngViews.forEach((ngView) => {
-      let selectedViewConfig: ViewConfig | undefined = undefined;
+      let selectedViewConfig: ViewConfig | null = null;
 
       let bestDepth = Number.NEGATIVE_INFINITY;
 
-      this._viewConfigs.forEach((candidate) => {
-        if (!ViewService._matches(ngViewsByFqn, ngView, candidate)) return;
+      const targetConfigs = this._viewConfigsByTarget.get(ngView._fqn) ?? [];
 
-        const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
+      for (let i = 0; i < targetConfigs.length; i++) {
+        const candidate = targetConfigs[i];
 
-        if (!selectedViewConfig || candidateDepth > bestDepth) {
+        if (!ViewService._matches(ngViewsByFqn, ngView, candidate)) continue;
+        if (selectedViewConfig === null || candidate._depth > bestDepth) {
           selectedViewConfig = candidate;
-          bestDepth = candidateDepth;
+          bestDepth = candidate._depth;
         }
-      });
-
-      if (this._ngViews.includes(ngView)) {
-        ngView._configUpdated(selectedViewConfig);
       }
+
+      if (!this._ngViews.includes(ngView)) return;
+
+      if (ngView._config === selectedViewConfig) return;
+
+      ngView._config = selectedViewConfig;
+      ngView._configUpdated(selectedViewConfig ?? undefined);
     });
   }
 
@@ -351,11 +643,8 @@ export class ViewService {
 
     const viewDecl = viewConfig._viewDecl;
 
-    const vcName = viewDecl._ngViewName ?? "$default";
-
+    const normalizedTarget = viewConfig._targetKey;
     const vcContext = viewDecl._ngViewContextAnchor ?? "";
-
-    const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
     if (normalizedTarget !== ngView._fqn) return false;
 

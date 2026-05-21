@@ -473,7 +473,7 @@ describe("$state", () => {
           },
           template: "dyn state. <div ng-view></div>",
           controller: function () {
-            this.ngOnParamsChanged = function (updatedParams) {
+            this.$onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -495,7 +495,7 @@ describe("$state", () => {
           },
           template: "dyn.child state",
           controller: function () {
-            this.ngOnParamsChanged = function (updatedParams) {
+            this.$onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -513,7 +513,7 @@ describe("$state", () => {
           url: "/noparams",
           template: "dyn.noparams state",
           controller: function () {
-            this.ngOnParamsChanged = function (updatedParams) {
+            this.$onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -791,7 +791,7 @@ describe("$state", () => {
         // in this runtime, even though the global `$stateParams` object itself is updated.
       });
 
-      describe("[ ngOnParamsChanged ]", function () {
+      describe("[ $onParamsChanged ]", function () {
         beforeEach(() => (dynlog = ""));
         it("should be called when dynamic parameter values change", async () => {
           await $state.go(".", { searchDyn: "sd2" });
@@ -823,7 +823,7 @@ describe("$state", () => {
           expect(paramsChangedLog).toBe("config,configDyn;");
         });
 
-        it("should be called, when reactivating the ngOnParamsChanged state, if a dynamic parameter changed", async () => {
+        it("should be called, when reactivating the $onParamsChanged state, if a dynamic parameter changed", async () => {
           await initStateTo(childNoParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -837,7 +837,7 @@ describe("$state", () => {
           expect(paramsChangedLog).toBe("pathDyn;");
         });
 
-        it('should not be called, when reactivating the ngOnParamsChanged state "dyn", if any of dyns non-dynamic parameters changed', async () => {
+        it('should not be called, when reactivating the $onParamsChanged state "dyn", if any of dyns non-dynamic parameters changed', async () => {
           await initStateTo(childNoParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -865,7 +865,7 @@ describe("$state", () => {
           );
         });
 
-        it("should be called on all active controllers that have a ngOnParamsChanged", async () => {
+        it("should be called on all active controllers that have a $onParamsChanged", async () => {
           await initStateTo(childWithParam, {
             path: "p1",
             pathDyn: "pd1",

@@ -15,6 +15,7 @@ import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import { normalizeNgViewTarget } from "../view/view.ts";
+import type { CompileProvider } from "../../core/compile/compile.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
 import type {
@@ -43,6 +44,10 @@ type StateLifecyclePathName = "to" | "from";
 
 interface StateLifecycleHookContext {
   _$injector: ng.InjectorService | undefined;
+}
+
+interface RouteComponentRegistrar {
+  register(viewName: string, component: ng.Component): string;
 }
 
 const TEMPLATE_VIEW_KEYS: ViewDeclarationKey[] = ["templateUrl", "template"];
@@ -169,8 +174,49 @@ function assertNoRemovedViewKeys(
   }
 }
 
+function routeComponentHash(value: string): string {
+  let hash = 5381;
+
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 33) ^ value.charCodeAt(i);
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+function routeComponentName(stateName: string, viewName: string): string {
+  const raw = `${stateName} ${viewName}`;
+  const words = raw.match(/[A-Za-z0-9]+/g) ?? ["default"];
+  const readable = words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
+
+  return `ngRoute${readable}Component${routeComponentHash(raw)}`;
+}
+
+function normalizeComponentDeclaration(
+  registrar: RouteComponentRegistrar | undefined,
+  viewName: string,
+  config: ViewDeclaration,
+): void {
+  const component = config.component;
+
+  if (!isDefined(component) || isString(component)) {
+    return;
+  }
+
+  if (!registrar) {
+    throw new Error(
+      `State view '${viewName}' uses an inline component before the compile provider is available`,
+    );
+  }
+
+  config.component = registrar.register(viewName, component);
+}
+
 function viewsBuilder(
   state: StateObject & StateDeclaration,
+  registrar?: RouteComponentRegistrar,
 ): Record<string, ViewDeclaration> {
   if (!state.parent) {
     return {};
@@ -216,6 +262,8 @@ function viewsBuilder(
     }
 
     config = assign({}, config);
+
+    normalizeComponentDeclaration(registrar, name, config);
 
     assertNoRemovedViewKeys(
       REMOVED_VIEW_KEYS,
@@ -432,16 +480,51 @@ export class StateBuilder {
   _paramFactory: ParamFactory;
   /** @internal */
   _routerState: RouterProvider;
+  /** @internal */
+  _compileProvider: CompileProvider | undefined;
+  /** @internal */
+  _registeredRouteComponents: Set<string>;
 
   /**
    * @param {StateMatcher} matcher
    * @param {RouterProvider} routerState
    */
-  constructor(matcher: StateMatcher, routerState: RouterProvider) {
+  constructor(
+    matcher: StateMatcher,
+    routerState: RouterProvider,
+    compileProvider?: CompileProvider,
+  ) {
     this._matcher = matcher;
     this._$injector = undefined;
     this._paramFactory = routerState._paramFactory;
     this._routerState = routerState;
+    this._compileProvider = compileProvider;
+    this._registeredRouteComponents = new Set();
+  }
+
+  /** @internal */
+  _registerRouteComponent(
+    stateName: string,
+    viewName: string,
+    component: ng.Component,
+  ): string {
+    const name = routeComponentName(stateName, viewName);
+
+    if (!this._registeredRouteComponents.has(name)) {
+      if (!this._compileProvider) {
+        throw new Error(
+          `State '${stateName}' cannot register inline component '${viewName}' before the compile provider is available`,
+        );
+      }
+
+      this._compileProvider.component(
+        name,
+        assign({}, component, { replace: true }),
+      );
+      this._registeredRouteComponents.add(name);
+    }
+
+    return name;
   }
 
   /** @internal */
@@ -516,7 +599,10 @@ export class StateBuilder {
       : [state];
     state.includes = state.parent ? assign({}, state.parent.includes) : {};
     state.includes[state.name] = true;
-    state._views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
+    state._views = viewsBuilder(state as StateObject & BuiltStateDeclaration, {
+      register: (viewName, component) =>
+        this._registerRouteComponent(state.name, viewName, component),
+    });
 
     return state;
   }
