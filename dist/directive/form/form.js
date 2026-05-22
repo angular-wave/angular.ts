@@ -1,9 +1,8 @@
 import { _parse, _element, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, isString, isFunction, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, extend, isUndefined } from '../../shared/utils.js';
+import { hasAnimate, isString, isFunction, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, directiveNormalize, extend, isUndefined } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, DIRTY_CLASS, PRISTINE_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
 const nullFormCtrl = {
     $nonscope: true,
@@ -701,20 +700,35 @@ const formDirectiveFactory = function (isNgForm) {
                                 };
                             if (nameAttr) {
                                 setter(scope, controller);
-                                observeNormalizedAttribute(scope, formElementParam, nameAttr, () => {
-                                    const newValue = getNormalizedAttr(formElementParam, nameAttr);
-                                    const nextName = newValue ?? "";
-                                    if (controller.$name === nextName)
-                                        return;
-                                    scope.$target[String(controller.$name)] = undefined;
-                                    controller._parentForm._renameControl(controller, nextName);
-                                    if (scope.$target !== controller._parentForm &&
-                                        controller._parentForm !== nullFormCtrl) ;
-                                    else {
-                                        scope.$target[nextName] =
-                                            controller;
+                                const observerName = directiveNormalize(nameAttr);
+                                const observer = new MutationObserver((mutations) => {
+                                    for (let i = 0; i < mutations.length; i++) {
+                                        const attributeName = mutations[i].attributeName;
+                                        if (!attributeName ||
+                                            directiveNormalize(attributeName) !== observerName) {
+                                            continue;
+                                        }
+                                        const newValue = getNormalizedAttr(formElementParam, nameAttr);
+                                        const nextName = newValue ?? "";
+                                        if (controller.$name === nextName)
+                                            return;
+                                        scope.$target[String(controller.$name)] = undefined;
+                                        controller._parentForm._renameControl(controller, nextName);
+                                        if (scope.$target !== controller._parentForm &&
+                                            controller._parentForm !== nullFormCtrl) ;
+                                        else {
+                                            scope.$target[nextName] =
+                                                controller;
+                                        }
                                     }
                                 });
+                                observer.observe(formElementParam, { attributes: true });
+                                let deregisterDestroy = scope.$on("$destroy", deregister);
+                                function deregister() {
+                                    observer.disconnect();
+                                    deregisterDestroy?.();
+                                    deregisterDestroy = undefined;
+                                }
                             }
                             formElementParam.addEventListener("$destroy", () => {
                                 const parentForm = controller.$target._parentForm;

@@ -1,7 +1,6 @@
 import { _parse, _log, _exceptionHandler } from '../../injection-tokens.js';
-import { isDefined, wait, callBackAfterFirst } from '../../shared/utils.js';
+import { directiveNormalize, isDefined, wait, callBackAfterFirst } from '../../shared/utils.js';
 import { createWorkerConnection } from '../../services/worker/worker.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { hasNormalizedAttr, setNormalizedAttr, getNormalizedAttr } from '../../shared/dom.js';
 
@@ -29,7 +28,23 @@ function ngWorkerDirective($parse, $log, $exceptionHandler) {
                     element.dispatchEvent(new Event(eventName));
                 });
                 dispatchAfterFirst();
-                observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
+                const observerName = directiveNormalize("latch");
+                const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                        const attributeName = mutations[i].attributeName;
+                        if (attributeName &&
+                            directiveNormalize(attributeName) === observerName) {
+                            dispatchAfterFirst();
+                        }
+                    }
+                });
+                observer.observe(element, { attributes: true });
+                let deregisterDestroy = scope.$on("$destroy", deregister);
+                function deregister() {
+                    observer.disconnect();
+                    deregisterDestroy?.();
+                    deregisterDestroy = undefined;
+                }
             }
             if (hasNormalizedAttr(element, "interval")) {
                 element.dispatchEvent(new Event(eventName));

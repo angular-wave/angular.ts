@@ -1,7 +1,6 @@
 import { _parse } from '../../injection-tokens.js';
-import { isString, stringify, deProxy, isUndefined, isNull, isNullOrUndefined } from '../../shared/utils.js';
+import { isString, stringify, deProxy, isUndefined, isNull, directiveNormalize, isNullOrUndefined } from '../../shared/utils.js';
 import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
 /** Binds the watched expression as plain text content. */
 function ngBindDirective() {
@@ -26,7 +25,23 @@ function ngBindTemplateDirective() {
                 element.textContent = isNullOrUndefined(value) ? "" : value;
             };
             syncTemplate();
-            observeNormalizedAttribute(scope, element, "ngBindTemplate", syncTemplate);
+            const observerName = directiveNormalize("ngBindTemplate");
+            const observer = new MutationObserver((mutations) => {
+                for (let i = 0; i < mutations.length; i++) {
+                    const attributeName = mutations[i].attributeName;
+                    if (attributeName &&
+                        directiveNormalize(attributeName) === observerName) {
+                        syncTemplate();
+                    }
+                }
+            });
+            observer.observe(element, { attributes: true });
+            let deregisterDestroy = scope.$on("$destroy", deregister);
+            function deregister() {
+                observer.disconnect();
+                deregisterDestroy?.();
+                deregisterDestroy = undefined;
+            }
         },
     };
 }

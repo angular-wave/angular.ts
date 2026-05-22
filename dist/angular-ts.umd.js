@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 22, 2026 23:46:44 */
+/* Version: 0.27.0 - May 23, 2026 01:18:20 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -6706,6 +6706,103 @@
         _RESOURCE_URL: "resourceUrl",
     };
 
+    /**
+     * Creates a resolver that instantiates `$animate` only when animation-aware code
+     * actually needs it.
+     */
+    function createLazyAnimate($injector) {
+        let $animate;
+        return () => ($animate ?? ($animate = $injector.get(_animate)));
+    }
+    /**
+     * Returns `$animate` only for nodes that opt into animation handling.
+     */
+    function getAnimateForNode(getAnimate, node) {
+        return hasAnimate(node) ? getAnimate() : undefined;
+    }
+
+    function tokenizeClassString(value) {
+        const trimmed = value.trim();
+        return trimmed ? trimmed.split(/\s+/) : [];
+    }
+    function tokenDifference(str1, str2) {
+        if (str1 === str2) {
+            return [];
+        }
+        const tokens1 = tokenizeClassString(str1);
+        if (tokens1.length === 0) {
+            return [];
+        }
+        const excludedTokens = new Set(tokenizeClassString(str2));
+        const seenTokens = new Set();
+        const difference = [];
+        for (let i = 0; i < tokens1.length; i++) {
+            const token = tokens1[i];
+            if (!excludedTokens.has(token) && !seenTokens.has(token)) {
+                seenTokens.add(token);
+                difference.push(token);
+            }
+        }
+        return difference;
+    }
+    function setClass(element, addClasses, removeClasses, getAnimate) {
+        if (!addClasses && !removeClasses)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.setClass(targetElement, addClasses, removeClasses);
+            return;
+        }
+        const toAdd = tokenizeClassString(addClasses);
+        const toRemove = tokenizeClassString(removeClasses);
+        if (toAdd.length) {
+            targetElement.classList.add(...toAdd);
+        }
+        if (toRemove.length) {
+            targetElement.classList.remove(...toRemove);
+        }
+    }
+    function addClass(element, classValue, getAnimate) {
+        if (!classValue)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.addClass(targetElement, classValue);
+            return;
+        }
+        const tokens = tokenizeClassString(classValue);
+        if (tokens.length) {
+            targetElement.classList.add(...tokens);
+        }
+    }
+    function removeClass(element, classValue, getAnimate) {
+        if (!classValue)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.removeClass(targetElement, classValue);
+            return;
+        }
+        const tokens = tokenizeClassString(classValue);
+        if (tokens.length) {
+            targetElement.classList.remove(...tokens);
+        }
+    }
+    function updateClass(element, newClasses, oldClasses, getAnimate) {
+        if (newClasses === oldClasses)
+            return;
+        setClass(element, tokenDifference(newClasses, oldClasses).join(" "), tokenDifference(oldClasses, newClasses).join(" "), getAnimate);
+    }
+
     /*
      * A collection of directives that allows creation of custom event handlers that are defined as
      * AngularTS expressions and are compiled and executed within the current scope.
@@ -6815,385 +6912,6 @@
     }
 
     /**
-     * Creates a resolver that instantiates `$animate` only when animation-aware code
-     * actually needs it.
-     */
-    function createLazyAnimate($injector) {
-        let $animate;
-        return () => ($animate ?? ($animate = $injector.get(_animate)));
-    }
-    /**
-     * Returns `$animate` only for nodes that opt into animation handling.
-     */
-    function getAnimateForNode(getAnimate, node) {
-        return hasAnimate(node) ? getAnimate() : undefined;
-    }
-
-    function tokenizeClassString(value) {
-        const trimmed = value.trim();
-        return trimmed ? trimmed.split(/\s+/) : [];
-    }
-    function tokenDifference(str1, str2) {
-        if (str1 === str2) {
-            return [];
-        }
-        const tokens1 = tokenizeClassString(str1);
-        if (tokens1.length === 0) {
-            return [];
-        }
-        const excludedTokens = new Set(tokenizeClassString(str2));
-        const seenTokens = new Set();
-        const difference = [];
-        for (let i = 0; i < tokens1.length; i++) {
-            const token = tokens1[i];
-            if (!excludedTokens.has(token) && !seenTokens.has(token)) {
-                seenTokens.add(token);
-                difference.push(token);
-            }
-        }
-        return difference;
-    }
-    function setClass(element, addClasses, removeClasses, getAnimate) {
-        if (!addClasses && !removeClasses)
-            return;
-        const targetElement = getDirectiveHostElement(element);
-        if (!targetElement)
-            return;
-        const animate = getAnimateForNode(getAnimate, targetElement);
-        if (animate) {
-            animate.setClass(targetElement, addClasses, removeClasses);
-            return;
-        }
-        const toAdd = tokenizeClassString(addClasses);
-        const toRemove = tokenizeClassString(removeClasses);
-        if (toAdd.length) {
-            targetElement.classList.add(...toAdd);
-        }
-        if (toRemove.length) {
-            targetElement.classList.remove(...toRemove);
-        }
-    }
-    function addClass(element, classValue, getAnimate) {
-        if (!classValue)
-            return;
-        const targetElement = getDirectiveHostElement(element);
-        if (!targetElement)
-            return;
-        const animate = getAnimateForNode(getAnimate, targetElement);
-        if (animate) {
-            animate.addClass(targetElement, classValue);
-            return;
-        }
-        const tokens = tokenizeClassString(classValue);
-        if (tokens.length) {
-            targetElement.classList.add(...tokens);
-        }
-    }
-    function removeClass(element, classValue, getAnimate) {
-        if (!classValue)
-            return;
-        const targetElement = getDirectiveHostElement(element);
-        if (!targetElement)
-            return;
-        const animate = getAnimateForNode(getAnimate, targetElement);
-        if (animate) {
-            animate.removeClass(targetElement, classValue);
-            return;
-        }
-        const tokens = tokenizeClassString(classValue);
-        if (tokens.length) {
-            targetElement.classList.remove(...tokens);
-        }
-    }
-    function updateClass(element, newClasses, oldClasses, getAnimate) {
-        if (newClasses === oldClasses)
-            return;
-        setClass(element, tokenDifference(newClasses, oldClasses).join(" "), tokenDifference(oldClasses, newClasses).join(" "), getAnimate);
-    }
-
-    const observerStates = new WeakMap();
-    const interpolatedAttributes = new WeakMap();
-    const observerScopes = new WeakMap();
-    function getElement(element) {
-        return getDirectiveHostElement(element);
-    }
-    function notifyCallbacks(state, normalizedName, value) {
-        const callbacks = state.callbacks.get(normalizedName);
-        if (!callbacks?.size)
-            return;
-        Array.from(callbacks).forEach((entry) => {
-            entry.callback(value);
-        });
-    }
-    function valuesMatch(left, right) {
-        return (Object.is(left, right) ||
-            (typeof left === "boolean" && right === String(left)) ||
-            (left === null && right === undefined));
-    }
-    function consumePendingMutation(state, normalizedName, value) {
-        const pendingValues = state.pendingMutations.get(normalizedName);
-        if (!pendingValues?.length)
-            return false;
-        const [nextValue] = pendingValues;
-        if (!valuesMatch(nextValue, value))
-            return false;
-        pendingValues.shift();
-        if (pendingValues.length === 0) {
-            state.pendingMutations.delete(normalizedName);
-        }
-        return true;
-    }
-    function getObserverState(element) {
-        const state = observerStates.get(element);
-        if (state)
-            return state;
-        const newState = {
-            callbacks: new Map(),
-            pendingMutations: new Map(),
-            observer: undefined,
-        };
-        newState.observer = new MutationObserver((mutations) => {
-            for (let i = 0; i < mutations.length; i++) {
-                const { attributeName } = mutations[i];
-                if (!attributeName)
-                    continue;
-                const normalizedName = directiveNormalize(attributeName);
-                const value = getNormalizedAttr(element, normalizedName);
-                if (!consumePendingMutation(newState, normalizedName, value)) {
-                    notifyCallbacks(newState, normalizedName, value);
-                }
-                const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
-                    ? ALIASED_ATTR[normalizedName]
-                    : undefined;
-                if (aliasedName &&
-                    !consumePendingMutation(newState, aliasedName, value)) {
-                    notifyCallbacks(newState, aliasedName, value);
-                }
-            }
-        });
-        newState.observer.observe(element, { attributes: true });
-        observerStates.set(element, newState);
-        return newState;
-    }
-    function rememberPendingMutation(element, normalizedName, value) {
-        const state = observerStates.get(element);
-        if (!state)
-            return;
-        let pendingValues = state.pendingMutations.get(normalizedName);
-        if (!pendingValues) {
-            pendingValues = [];
-            state.pendingMutations.set(normalizedName, pendingValues);
-        }
-        pendingValues.push(value);
-    }
-    /** @internal */
-    function observeInternalAttribute(scope, element, normalizedName, callback) {
-        const targetElement = getElement(element);
-        if (!targetElement)
-            return () => undefined;
-        const observedElement = targetElement;
-        const normalized = directiveNormalize(normalizedName);
-        const state = getObserverState(observedElement);
-        let callbacks = state.callbacks.get(normalized);
-        if (!callbacks) {
-            callbacks = new Set();
-            state.callbacks.set(normalized, callbacks);
-        }
-        const entry = { callback };
-        callbacks.add(entry);
-        const initialValue = getNormalizedAttr(observedElement, normalized);
-        if (initialValue !== undefined) {
-            callback(initialValue);
-        }
-        let deregisterDestroy;
-        if (scope) {
-            deregisterDestroy = scope.$on("$destroy", () => {
-                deregister();
-            });
-        }
-        function deregister() {
-            callbacks?.delete(entry);
-            if (callbacks?.size === 0) {
-                state.callbacks.delete(normalized);
-            }
-            if (state.callbacks.size === 0) {
-                state.observer.disconnect();
-                observerStates.delete(observedElement);
-            }
-            deregisterDestroy?.();
-            deregisterDestroy = undefined;
-        }
-        return deregister;
-    }
-    /** @internal */
-    function setInternalAttribute(element, normalizedName, value, options) {
-        const result = setNormalizedAttr(element, normalizedName, value, options);
-        if (!result)
-            return;
-        if (options?.writeAttr !== false && result.attrName) {
-            rememberPendingMutation(result.element, result.observerName, value);
-        }
-        const state = observerStates.get(result.element);
-        if (state) {
-            notifyCallbacks(state, result.observerName, result.observedValue);
-        }
-    }
-    /** @internal */
-    function markInternalAttributeInterpolated(element, normalizedName) {
-        const targetElement = getElement(element);
-        if (!targetElement)
-            return;
-        const normalized = directiveNormalize(normalizedName);
-        let interpolated = interpolatedAttributes.get(targetElement);
-        if (!interpolated) {
-            interpolated = new Set();
-            interpolatedAttributes.set(targetElement, interpolated);
-        }
-        interpolated.add(normalized);
-    }
-    /** @internal */
-    function isInternalAttributeInterpolated(element, normalizedName) {
-        const targetElement = getElement(element);
-        if (!targetElement)
-            return false;
-        return (interpolatedAttributes
-            .get(targetElement)
-            ?.has(directiveNormalize(normalizedName)) ?? false);
-    }
-    /** @internal */
-    function setInternalAttributeObserverScope(element, normalizedName, scope) {
-        const targetElement = getElement(element);
-        if (!targetElement)
-            return;
-        const normalized = directiveNormalize(normalizedName);
-        let scopes = observerScopes.get(targetElement);
-        if (!scopes) {
-            scopes = new Map();
-            observerScopes.set(targetElement, scopes);
-        }
-        scopes.set(normalized, scope);
-    }
-    /** @internal */
-    function getInternalAttributeObserverScope(element, normalizedName) {
-        const targetElement = getElement(element);
-        if (!targetElement)
-            return undefined;
-        return observerScopes
-            .get(targetElement)
-            ?.get(directiveNormalize(normalizedName));
-    }
-
-    const lazyAnimateByInjector = new WeakMap();
-    function getLazyAnimate($injector) {
-        let getAnimate = lazyAnimateByInjector.get($injector);
-        if (!getAnimate) {
-            getAnimate = createLazyAnimate($injector);
-            lazyAnimateByInjector.set($injector, getAnimate);
-        }
-        return getAnimate;
-    }
-    /** @internal */
-    class CompileAttributeState {
-        constructor($injector, $exceptionHandler, stateToCopy) {
-            /**
-             * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
-             * normalized, camelCase form.
-             *
-             * Also there is special case for Moz prefix starting with upper case letter.
-             *
-             * Normalization follows the directive matching rules used by `$compile`.
-             *
-             * @param name Name to normalize
-             */
-            this.$normalize = directiveNormalize;
-            this._getAnimate = getLazyAnimate($injector);
-            this._exceptionHandler = $exceptionHandler;
-            this._attributeNames = {};
-            this._originalAttributeNames = nullObject();
-            if (stateToCopy) {
-                const attrKeys = keys(stateToCopy._attributeNames);
-                for (let i = 0, l = attrKeys.length; i < l; i++) {
-                    const key = attrKeys[i];
-                    this._attributeNames[key] = stateToCopy._attributeNames[key];
-                }
-                const sourceKeys = keys(stateToCopy._originalAttributeNames);
-                for (let i = 0, l = sourceKeys.length; i < l; i++) {
-                    const key = sourceKeys[i];
-                    this._originalAttributeNames[key] =
-                        stateToCopy._originalAttributeNames[key];
-                }
-            }
-        }
-    }
-    CompileAttributeState.$nonscope = true;
-    /** @internal */
-    function updateCompileAttributeClass(attrs, node, newClasses, oldClasses) {
-        if (newClasses === oldClasses) {
-            return;
-        }
-        updateClass(node, newClasses, oldClasses, attrs._getAnimate);
-    }
-    /** @internal */
-    function setCompileAttributeValue(attrs, node, key, value, writeAttr, attrName) {
-        const booleanKey = getBooleanAttrName(node, key);
-        const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
-        let observer = key;
-        if (booleanKey) {
-            node[key] = value;
-            attrName = booleanKey;
-        }
-        else if (aliasedKey) {
-            recordCompileAttribute(attrs, aliasedKey, aliasedKey);
-            observer = aliasedKey;
-        }
-        if (attrName) {
-            attrs._attributeNames[key] = attrName;
-        }
-        else {
-            attrName = attrs._attributeNames[key];
-            if (!attrName) {
-                attrs._attributeNames[key] = attrName = snakeCase(key, "-");
-            }
-        }
-        recordCompileAttribute(attrs, key, attrName);
-        setInternalAttribute(node, observer, value, {
-            writeAttr,
-            attrName,
-        });
-    }
-    /** @internal */
-    function recordCompileAttribute(attrs, key, attrName, sourceAttrName = attrName, overwrite = true) {
-        if (overwrite || !hasOwn(attrs._attributeNames, key)) {
-            attrs._attributeNames[key] = attrName;
-            attrs._originalAttributeNames[key] = sourceAttrName;
-        }
-    }
-    /** @internal */
-    function hasCompileAttribute(attrs, node, key) {
-        if (hasOwn(attrs._attributeNames, key) ||
-            hasOwn(attrs._originalAttributeNames, key)) {
-            return true;
-        }
-        return hasNormalizedAttr(node, key);
-    }
-    /** @internal */
-    function listCompileAttributes(attrs) {
-        const names = new Set(keys(attrs._attributeNames));
-        keys(attrs._originalAttributeNames).forEach((key) => {
-            names.add(key);
-        });
-        return Array.from(names);
-    }
-    /** @internal */
-    function getCompileAttributeName(attrs, key) {
-        return attrs._attributeNames[key];
-    }
-    /** @internal */
-    function getCompileOriginalAttributeName(attrs, key) {
-        return attrs._originalAttributeNames[key];
-    }
-
-    /**
      * Creates an attribute observer directive that mirrors attribute changes onto scope.
      *
      * @param source - The name of the attribute to be observed.
@@ -7224,6 +6942,274 @@
         };
     }
 
+    const compileAttributeObserverScopes = new WeakMap();
+    const lazyAnimateByInjector = new WeakMap();
+    const observerStates = new WeakMap();
+    const interpolatedAttributes = new WeakMap();
+    function getLazyAnimate($injector) {
+        let getAnimate = lazyAnimateByInjector.get($injector);
+        if (!getAnimate) {
+            getAnimate = createLazyAnimate($injector);
+            lazyAnimateByInjector.set($injector, getAnimate);
+        }
+        return getAnimate;
+    }
+    function notifyAttributeObserverCallbacks(state, normalizedName, value) {
+        const callbacks = state.callbacks.get(normalizedName);
+        if (!callbacks?.size)
+            return;
+        arrayFrom(callbacks).forEach((callback) => {
+            callback(value);
+        });
+    }
+    function attributeObserverValuesMatch(left, right) {
+        return (Object.is(left, right) ||
+            (typeof left === "boolean" && right === String(left)) ||
+            (left === null && right === undefined));
+    }
+    function consumePendingAttributeMutation(state, normalizedName, value) {
+        const pendingValues = state.pendingMutations.get(normalizedName);
+        if (!pendingValues?.length)
+            return false;
+        const [nextValue] = pendingValues;
+        if (!attributeObserverValuesMatch(nextValue, value))
+            return false;
+        pendingValues.shift();
+        if (pendingValues.length === 0) {
+            state.pendingMutations.delete(normalizedName);
+        }
+        return true;
+    }
+    function getCompileAttributeObserverState(element) {
+        const state = observerStates.get(element);
+        if (state)
+            return state;
+        const newState = {
+            callbacks: new Map(),
+            pendingMutations: new Map(),
+            observer: undefined,
+        };
+        newState.observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const { attributeName } = mutations[i];
+                if (!attributeName)
+                    continue;
+                const normalizedName = directiveNormalize(attributeName);
+                const value = getNormalizedAttr(element, normalizedName);
+                if (!consumePendingAttributeMutation(newState, normalizedName, value)) {
+                    notifyAttributeObserverCallbacks(newState, normalizedName, value);
+                }
+                const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
+                    ? ALIASED_ATTR[normalizedName]
+                    : undefined;
+                if (aliasedName &&
+                    !consumePendingAttributeMutation(newState, aliasedName, value)) {
+                    notifyAttributeObserverCallbacks(newState, aliasedName, value);
+                }
+            }
+        });
+        newState.observer.observe(element, { attributes: true });
+        observerStates.set(element, newState);
+        return newState;
+    }
+    function rememberPendingAttributeMutation(element, normalizedName, value) {
+        const state = observerStates.get(element);
+        if (!state)
+            return;
+        let pendingValues = state.pendingMutations.get(normalizedName);
+        if (!pendingValues) {
+            pendingValues = [];
+            state.pendingMutations.set(normalizedName, pendingValues);
+        }
+        pendingValues.push(value);
+    }
+    /** @internal */
+    class CompileAttributeState {
+        constructor($injector, $exceptionHandler, stateToCopy) {
+            this.$normalize = directiveNormalize;
+            this._getAnimate = getLazyAnimate($injector);
+            this._exceptionHandler = $exceptionHandler;
+            this._attributeNames = {};
+            this._originalAttributeNames = nullObject();
+            if (stateToCopy) {
+                const attrKeys = keys(stateToCopy._attributeNames);
+                for (let i = 0, l = attrKeys.length; i < l; i++) {
+                    const key = attrKeys[i];
+                    this._attributeNames[key] = stateToCopy._attributeNames[key];
+                }
+                const sourceKeys = keys(stateToCopy._originalAttributeNames);
+                for (let i = 0, l = sourceKeys.length; i < l; i++) {
+                    const key = sourceKeys[i];
+                    this._originalAttributeNames[key] =
+                        stateToCopy._originalAttributeNames[key];
+                }
+            }
+        }
+        updateClass(node, newClasses, oldClasses) {
+            if (newClasses === oldClasses) {
+                return;
+            }
+            updateClass(node, newClasses, oldClasses, this._getAnimate);
+        }
+        setValue(node, key, value, writeAttr, attrName) {
+            setCompileAttributeValue(this, node, key, value, writeAttr, attrName);
+        }
+        record(key, attrName, sourceAttrName = attrName, overwrite = true) {
+            recordCompileAttribute(this, key, attrName, sourceAttrName, overwrite);
+        }
+        has(node, key) {
+            if (hasOwn(this._attributeNames, key) ||
+                hasOwn(this._originalAttributeNames, key)) {
+                return true;
+            }
+            return hasNormalizedAttr(node, key);
+        }
+        list() {
+            const names = new Set(keys(this._attributeNames));
+            keys(this._originalAttributeNames).forEach((key) => {
+                names.add(key);
+            });
+            return arrayFrom(names);
+        }
+        getName(key) {
+            return this._attributeNames[key];
+        }
+        getOriginalName(key) {
+            return this._originalAttributeNames[key];
+        }
+        static observeElementAttribute(scope, element, normalizedName, callback) {
+            return observeElementAttribute(scope, element, normalizedName, callback);
+        }
+        static markElementAttributeInterpolated(element, normalizedName) {
+            markElementAttributeInterpolated(element, normalizedName);
+        }
+        static isElementAttributeInterpolated(element, normalizedName) {
+            return isElementAttributeInterpolated(element, normalizedName);
+        }
+    }
+    CompileAttributeState.$nonscope = true;
+    function observeElementAttribute(scope, element, normalizedName, callback) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return () => undefined;
+        const observedElement = targetElement;
+        const normalized = directiveNormalize(normalizedName);
+        const state = getCompileAttributeObserverState(observedElement);
+        let callbacks = state.callbacks.get(normalized);
+        if (!callbacks) {
+            callbacks = new Set();
+            state.callbacks.set(normalized, callbacks);
+        }
+        callbacks.add(callback);
+        const initialValue = getNormalizedAttr(observedElement, normalized);
+        if (initialValue !== undefined) {
+            callback(initialValue);
+        }
+        let deregisterDestroy;
+        if (scope) {
+            deregisterDestroy = scope.$on("$destroy", () => {
+                deregister();
+            });
+        }
+        function deregister() {
+            callbacks?.delete(callback);
+            if (callbacks?.size === 0) {
+                state.callbacks.delete(normalized);
+            }
+            if (state.callbacks.size === 0) {
+                state.observer.disconnect();
+                observerStates.delete(observedElement);
+            }
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
+    }
+    function setObservedElementAttribute(element, normalizedName, value, options) {
+        const result = setNormalizedAttr(element, normalizedName, value, options);
+        if (!result)
+            return;
+        if (options?.writeAttr !== false && result.attrName) {
+            rememberPendingAttributeMutation(result.element, result.observerName, value);
+        }
+        const state = observerStates.get(result.element);
+        if (state) {
+            notifyAttributeObserverCallbacks(state, result.observerName, result.observedValue);
+        }
+    }
+    function markElementAttributeInterpolated(element, normalizedName) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const normalized = directiveNormalize(normalizedName);
+        let interpolated = interpolatedAttributes.get(targetElement);
+        if (!interpolated) {
+            interpolated = new Set();
+            interpolatedAttributes.set(targetElement, interpolated);
+        }
+        interpolated.add(normalized);
+    }
+    function isElementAttributeInterpolated(element, normalizedName) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return false;
+        return (interpolatedAttributes
+            .get(targetElement)
+            ?.has(directiveNormalize(normalizedName)) ?? false);
+    }
+    function setCompileAttributeValue(attrs, node, key, value, writeAttr, attrName) {
+        const booleanKey = getBooleanAttrName(node, key);
+        const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+        let observer = key;
+        if (booleanKey) {
+            node[key] = value;
+            attrName = booleanKey;
+        }
+        else if (aliasedKey) {
+            recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+            observer = aliasedKey;
+        }
+        if (attrName) {
+            attrs._attributeNames[key] = attrName;
+        }
+        else {
+            attrName = attrs._attributeNames[key];
+            if (!attrName) {
+                attrs._attributeNames[key] = attrName = snakeCase(key, "-");
+            }
+        }
+        recordCompileAttribute(attrs, key, attrName);
+        setObservedElementAttribute(node, observer, value, {
+            writeAttr,
+            attrName,
+        });
+    }
+    function recordCompileAttribute(attrs, key, attrName, sourceAttrName = attrName, overwrite = true) {
+        if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+            attrs._attributeNames[key] = attrName;
+            attrs._originalAttributeNames[key] = sourceAttrName;
+        }
+    }
+    function setCompileAttributeObserverScope(element, normalizedName, scope) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const normalized = directiveNormalize(normalizedName);
+        let scopes = compileAttributeObserverScopes.get(targetElement);
+        if (!scopes) {
+            scopes = new Map();
+            compileAttributeObserverScopes.set(targetElement, scopes);
+        }
+        scopes.set(normalized, scope);
+    }
+    function getCompileAttributeObserverScope(element, normalizedName) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return undefined;
+        return compileAttributeObserverScopes
+            .get(targetElement)
+            ?.get(directiveNormalize(normalizedName));
+    }
     const EMPTY_DIRECTIVE_MATCHES = [];
     const EMPTY_DIRECTIVE_DEFINITIONS = [];
     function isNonNullDirectiveObject(value) {
@@ -7291,7 +7277,7 @@
     function readSourceElementAttribute(attrs, element, normalizedName) {
         const hostElement = getDirectiveHostElement(element);
         const attrElement = hostElement ?? element;
-        const sourceName = getCompileOriginalAttributeName(attrs, normalizedName);
+        const sourceName = attrs.getOriginalName(normalizedName);
         if (sourceName && attrElement instanceof Element) {
             return attrElement.getAttribute(sourceName) ?? undefined;
         }
@@ -8359,7 +8345,7 @@
                                 attrs =
                                     attrs ??
                                         createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
-                                recordCompileAttribute(attrs, nName, attr.name);
+                                attrs.record(nName, attr.name);
                                 addSpecialAttributeDirective(node, directives, nName, name, prefix);
                                 return attrs;
                             }
@@ -8417,7 +8403,7 @@
                         recordNormalizedAttributeValue(node, attrs, normalizedName, name, attr.name, isNgAttr);
                     }
                     function recordNormalizedAttributeValue(node, attrs, normalizedName, name, sourceName, isNgAttr) {
-                        recordCompileAttribute(attrs, normalizedName, name, sourceName, isNgAttr || !hasCompileAttribute(attrs, node, normalizedName));
+                        attrs.record(normalizedName, name, sourceName, isNgAttr || !attrs.has(node, normalizedName));
                     }
                     function addSpecialAttributeDirective(node, directives, normalizedName, propertyName, prefix) {
                         if (prefix === "Prop") {
@@ -8559,11 +8545,11 @@
                         if (linkState._name === "class") {
                             const element = getDirectiveHostElement(node);
                             const attributeValue = toInterpolatedAttributeValue(value);
-                            updateCompileAttributeClass(attr, node, String(attributeValue ?? ""), element?.classList.value ?? "");
+                            attr.updateClass(node, String(attributeValue ?? ""), element?.classList.value ?? "");
                             return;
                         }
                         if (linkState._name === "srcset") {
-                            setCompileAttributeValue(attr, node, linkState._name, linkState._isNgAttr
+                            attr.setValue(node, linkState._name, linkState._isNgAttr
                                 ? toInterpolatedAttributeValue(value)
                                 : toInterpolatedAttributeValue(sanitizeSrcset(security.valueOf(value), "srcset")));
                             return;
@@ -8573,7 +8559,7 @@
                             !(typeof value === "string" && value.startsWith("unsafe:"))) {
                             value = toInterpolatedAttributeValue(security.getTrusted(linkState._trustedContext, value));
                         }
-                        setCompileAttributeValue(attr, node, linkState._name, toInterpolatedAttributeValue(value));
+                        attr.setValue(node, linkState._name, toInterpolatedAttributeValue(value));
                     }
                     /** Re-applies the current interpolated attribute value from explicit per-link state. */
                     function handleAttrInterpolationWatch(bindingState) {
@@ -8611,7 +8597,7 @@
                         }
                         const interpolateFn = linkState._interpolateFn;
                         const { expressions } = interpolateFn;
-                        markInternalAttributeInterpolated(node, name);
+                        CompileAttributeState.markElementAttributeInterpolated(node, name);
                         const bindingState = {
                             _linkState: linkState,
                             _scope: scope,
@@ -8619,7 +8605,7 @@
                             _attr: attr,
                         };
                         if (expressions.length > 0) {
-                            const targetScope = getInternalAttributeObserverScope(node, name) ?? scope;
+                            const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
                             const watchExpression = buildInterpolationWatchExpression(expressions);
                             targetScope.$watch(watchExpression, () => {
                                 handleAttrInterpolationWatch(bindingState);
@@ -9783,7 +9769,7 @@
                      */
                     function mergeTemplateAttributeState(dst, src, oldNode, newNode) {
                         // reapply the old attributes to the new element
-                        const dstKeys = listCompileAttributes(dst);
+                        const dstKeys = dst.list();
                         for (let i = 0, l = dstKeys.length; i < l; i++) {
                             const key = dstKeys[i];
                             let value = readNormalizedElementAttribute(oldNode, key);
@@ -9796,22 +9782,22 @@
                                     value = srcValue;
                                 }
                             }
-                            setCompileAttributeValue(dst, newNode, key, value, true, getCompileAttributeName(src, key));
+                            dst.setValue(newNode, key, value, true, src.getName(key));
                         }
                         // Copy the replacement template attributes onto the original internal state.
-                        const srcKeys = listCompileAttributes(src);
+                        const srcKeys = src.list();
                         for (let i = 0, l = srcKeys.length; i < l; i++) {
                             const key = srcKeys[i];
                             // Check if we already set this attribute in the loop above.
                             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
                             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
                             // have an attribute like "has-own-property" or "data-has-own-property", etc.
-                            if (!hasCompileAttribute(dst, oldNode, key)) {
-                                const srcAttrName = getCompileAttributeName(src, key);
+                            if (!dst.has(oldNode, key)) {
+                                const srcAttrName = src.getName(key);
                                 if (!srcAttrName) {
                                     continue;
                                 }
-                                recordCompileAttribute(dst, key, srcAttrName);
+                                dst.record(key, srcAttrName);
                             }
                         }
                     }
@@ -10120,7 +10106,7 @@
                                 let parentSet;
                                 let compare;
                                 let removeWatch;
-                                const hasBindingAttribute = hasCompileAttribute(attrs, element, attrName);
+                                const hasBindingAttribute = attrs.has(element, attrName);
                                 const readBindingAttribute = () => readNormalizedElementAttribute(element, attrName);
                                 switch (mode) {
                                     case "@": {
@@ -10142,8 +10128,8 @@
                                             handleStringBindingObserve(stringBindingState, value);
                                         };
                                         let skipInitialElementObserve = hasNormalizedAttr(element, attrName);
-                                        setInternalAttributeObserverScope(element, attrName, scope);
-                                        const removeElementObserve = observeInternalAttribute(scope, element, attrName, (value) => {
+                                        setCompileAttributeObserverScope(element, attrName, scope);
+                                        const removeElementObserve = CompileAttributeState.observeElementAttribute(scope, element, attrName, (value) => {
                                             if (skipInitialElementObserve) {
                                                 skipInitialElementObserve = false;
                                                 return;
@@ -10163,7 +10149,7 @@
                                         removeWatch = () => {
                                             removeElementObserve();
                                         };
-                                        if (!isInternalAttributeInterpolated(element, attrName) &&
+                                        if (!CompileAttributeState.isElementAttributeInterpolated(element, attrName) &&
                                             hasBindingAttribute) {
                                             const attrValue = readBindingAttribute();
                                             if (attrValue !== undefined) {
@@ -13587,30 +13573,6 @@
         return Number.isFinite(value) ? value : undefined;
     }
 
-    /**
-     * Observes one normalized attribute name on one element without using the
-     * framework-wide internal attribute observer registry.
-     */
-    function observeNormalizedAttribute(scope, element, normalizedName, callback) {
-        const expectedName = directiveNormalize(normalizedName);
-        const observer = new MutationObserver((mutations) => {
-            for (let i = 0; i < mutations.length; i++) {
-                const attributeName = mutations[i].attributeName;
-                if (attributeName && directiveNormalize(attributeName) === expectedName) {
-                    callback();
-                }
-            }
-        });
-        observer.observe(element, { attributes: true });
-        let deregisterDestroy = scope.$on("$destroy", deregister);
-        function deregister() {
-            observer.disconnect();
-            deregisterDestroy?.();
-            deregisterDestroy = undefined;
-        }
-        return deregister;
-    }
-
     const ARIA_DISABLE_ATTR = "ngAriaDisable";
     /**
      * Internal Utilities
@@ -13832,6 +13794,25 @@
                         ? "range"
                         : "";
         }
+        function observeAriaAttribute(scope, elem, normalizedName, callback) {
+            const observerName = directiveNormalize(normalizedName);
+            const observer = new MutationObserver((mutations) => {
+                for (let i = 0; i < mutations.length; i++) {
+                    const attributeName = mutations[i].attributeName;
+                    if (attributeName &&
+                        directiveNormalize(attributeName) === observerName) {
+                        callback();
+                    }
+                }
+            });
+            observer.observe(elem, { attributes: true });
+            let deregisterDestroy = scope.$on("$destroy", deregister);
+            function deregister() {
+                observer.disconnect();
+                deregisterDestroy?.();
+                deregisterDestroy = undefined;
+            }
+        }
         return {
             restrict: "A",
             require: "ngModel",
@@ -13881,8 +13862,8 @@
                                                 getNormalizedAttr(elem, "ngMin")));
                                         };
                                         updateAriaMin();
-                                        observeNormalizedAttribute(scope, elem, "min", updateAriaMin);
-                                        observeNormalizedAttribute(scope, elem, "ngMin", updateAriaMin);
+                                        observeAriaAttribute(scope, elem, "min", updateAriaMin);
+                                        observeAriaAttribute(scope, elem, "ngMin", updateAriaMin);
                                     }
                                     if (needsAriaValuemax) {
                                         const updateAriaMax = () => {
@@ -13890,8 +13871,8 @@
                                                 getNormalizedAttr(elem, "ngMax")));
                                         };
                                         updateAriaMax();
-                                        observeNormalizedAttribute(scope, elem, "max", updateAriaMax);
-                                        observeNormalizedAttribute(scope, elem, "ngMax", updateAriaMax);
+                                        observeAriaAttribute(scope, elem, "max", updateAriaMax);
+                                        observeAriaAttribute(scope, elem, "ngMax", updateAriaMax);
                                     }
                                     if (needsAriaValuenow) {
                                         ngModel.$watch("$modelValue", (newVal) => {
@@ -13912,7 +13893,7 @@
                                 elem.setAttribute("aria-required", hasNormalizedAttr(elem, "required").toString());
                             };
                             updateAriaRequired();
-                            observeNormalizedAttribute(scope, elem, "required", updateAriaRequired);
+                            observeAriaAttribute(scope, elem, "required", updateAriaRequired);
                         }
                         if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
                             ngModel.$watch("$invalid", (newVal) => {
@@ -14106,9 +14087,8 @@
                                     ? sanitizeSrcset($sce, initialValue, "ng-srcset")
                                     : sanitize(initialValue));
                             }
-                            let skipInitialInterpolation = Boolean(isInternalAttributeInterpolated(element, normalized) ||
-                                getNormalizedAttr(element, normalized)?.includes("{{"));
-                            observeInternalAttribute(scope, element, normalized, () => {
+                            let skipInitialInterpolation = Boolean(getNormalizedAttr(element, normalized)?.includes("{{"));
+                            const syncObservedAliasValue = () => {
                                 const value = readAliasValue();
                                 if (skipInitialInterpolation) {
                                     skipInitialInterpolation = false;
@@ -14116,7 +14096,25 @@
                                         return;
                                 }
                                 syncAliasValue(value);
+                            };
+                            syncObservedAliasValue();
+                            const observerName = directiveNormalize(normalized);
+                            const observer = new MutationObserver((mutations) => {
+                                for (let i = 0; i < mutations.length; i++) {
+                                    const attributeName = mutations[i].attributeName;
+                                    if (attributeName &&
+                                        directiveNormalize(attributeName) === observerName) {
+                                        syncObservedAliasValue();
+                                    }
+                                }
                             });
+                            observer.observe(element, { attributes: true });
+                            let deregisterDestroy = scope.$on("$destroy", deregister);
+                            function deregister() {
+                                observer.disconnect();
+                                deregisterDestroy?.();
+                                deregisterDestroy = undefined;
+                            }
                         };
                     },
                 };
@@ -14147,7 +14145,23 @@
                     element.textContent = isNullOrUndefined(value) ? "" : value;
                 };
                 syncTemplate();
-                observeNormalizedAttribute(scope, element, "ngBindTemplate", syncTemplate);
+                const observerName = directiveNormalize("ngBindTemplate");
+                const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                        const attributeName = mutations[i].attributeName;
+                        if (attributeName &&
+                            directiveNormalize(attributeName) === observerName) {
+                            syncTemplate();
+                        }
+                    }
+                });
+                observer.observe(element, { attributes: true });
+                let deregisterDestroy = scope.$on("$destroy", deregister);
+                function deregister() {
+                    observer.disconnect();
+                    deregisterDestroy?.();
+                    deregisterDestroy = undefined;
+                }
             },
         };
     }
@@ -15121,20 +15135,35 @@
                                     };
                                 if (nameAttr) {
                                     setter(scope, controller);
-                                    observeNormalizedAttribute(scope, formElementParam, nameAttr, () => {
-                                        const newValue = getNormalizedAttr(formElementParam, nameAttr);
-                                        const nextName = newValue ?? "";
-                                        if (controller.$name === nextName)
-                                            return;
-                                        scope.$target[String(controller.$name)] = undefined;
-                                        controller._parentForm._renameControl(controller, nextName);
-                                        if (scope.$target !== controller._parentForm &&
-                                            controller._parentForm !== nullFormCtrl) ;
-                                        else {
-                                            scope.$target[nextName] =
-                                                controller;
+                                    const observerName = directiveNormalize(nameAttr);
+                                    const observer = new MutationObserver((mutations) => {
+                                        for (let i = 0; i < mutations.length; i++) {
+                                            const attributeName = mutations[i].attributeName;
+                                            if (!attributeName ||
+                                                directiveNormalize(attributeName) !== observerName) {
+                                                continue;
+                                            }
+                                            const newValue = getNormalizedAttr(formElementParam, nameAttr);
+                                            const nextName = newValue ?? "";
+                                            if (controller.$name === nextName)
+                                                return;
+                                            scope.$target[String(controller.$name)] = undefined;
+                                            controller._parentForm._renameControl(controller, nextName);
+                                            if (scope.$target !== controller._parentForm &&
+                                                controller._parentForm !== nullFormCtrl) ;
+                                            else {
+                                                scope.$target[nextName] =
+                                                    controller;
+                                            }
                                         }
                                     });
+                                    observer.observe(formElementParam, { attributes: true });
+                                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                                    function deregister() {
+                                        observer.disconnect();
+                                        deregisterDestroy?.();
+                                        deregisterDestroy = undefined;
+                                    }
                                 }
                                 formElementParam.addEventListener("$destroy", () => {
                                     const parentForm = controller.$target._parentForm;
@@ -16431,7 +16460,23 @@
                             element.dispatchEvent(new Event(eventName));
                         });
                         dispatchAfterFirst();
-                        observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
+                        const observerName = directiveNormalize("latch");
+                        const observer = new MutationObserver((mutations) => {
+                            for (let i = 0; i < mutations.length; i++) {
+                                const attributeName = mutations[i].attributeName;
+                                if (attributeName &&
+                                    directiveNormalize(attributeName) === observerName) {
+                                    dispatchAfterFirst();
+                                }
+                            }
+                        });
+                        observer.observe(element, { attributes: true });
+                        let deregisterDestroy = scope.$on("$destroy", deregister);
+                        function deregister() {
+                            observer.disconnect();
+                            deregisterDestroy?.();
+                            deregisterDestroy = undefined;
+                        }
                     }
                     let throttled = false;
                     let intervalId;
@@ -17341,6 +17386,25 @@
         return element instanceof Element
             ? getNormalizedAttr(element, normalizedName)
             : undefined;
+    }
+    function observeModelAttr(scope, element, normalizedName, callback) {
+        const observerName = directiveNormalize(normalizedName);
+        const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const attributeName = mutations[i].attributeName;
+                if (attributeName && directiveNormalize(attributeName) === observerName) {
+                    callback(readModelAttr(element, normalizedName));
+                }
+            }
+        });
+        observer.observe(element, { attributes: true });
+        let deregisterDestroy = scope.$on("$destroy", deregister);
+        function deregister() {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
     }
     /**
      * @property $viewValue The actual value from the control's view.
@@ -18466,9 +18530,7 @@
                                 modelCtrl._parentForm._renameControl(modelCtrl, nextName);
                             }
                         };
-                        const deregisterNameObserver = observeNormalizedAttribute(scope, preElement, "name", () => {
-                            handleNameChange(readModelAttr(preElement, "name"));
-                        });
+                        const deregisterNameObserver = observeModelAttr(scope, preElement, "name", handleNameChange);
                         const deregisterWatch = (scope.$watch(modelCtrl._modelExpression, (val) => {
                             const modelValue = deProxy(val);
                             if (modelValue === modelCtrl.$modelValue ||
@@ -19164,13 +19226,13 @@
         return getNormalizedAttr(optionElement, normalizedName);
     }
     function hasInterpolatedOptionAttr(optionElement, normalizedName) {
-        return Boolean(isInternalAttributeInterpolated(optionElement, normalizedName) ||
-            getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
+        return Boolean(getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
     }
     function observeOptionElementAttr(optionScope, optionElement, normalizedName, readValue, callback, skipInitial = false) {
         let lastValue = {};
         let skipNext = skipInitial;
-        return observeInternalAttribute(optionScope, optionElement, normalizedName, (observedValue) => {
+        const expectedName = directiveNormalize(normalizedName);
+        const handleObservedValue = (observedValue) => {
             if (skipNext) {
                 skipNext = false;
                 return;
@@ -19180,7 +19242,29 @@
                 return;
             lastValue = newValue;
             callback(newValue);
+        };
+        const initialValue = getNormalizedAttr(optionElement, normalizedName);
+        if (initialValue !== undefined) {
+            handleObservedValue(initialValue);
+        }
+        const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const { attributeName } = mutations[i];
+                if (!attributeName ||
+                    directiveNormalize(attributeName) !== expectedName) {
+                    continue;
+                }
+                handleObservedValue(getNormalizedAttr(optionElement, normalizedName));
+            }
         });
+        observer.observe(optionElement, { attributes: true });
+        let deregisterDestroy = optionScope.$on("$destroy", deregister);
+        function deregister() {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
     }
     function setOptionElementAttr(optionElement, normalizedName, value) {
         setNormalizedAttr(optionElement, normalizedName, value);
@@ -20973,9 +21057,23 @@
     function observeValidatorAttr(scope, element, normalizedName, callback) {
         if (!(element instanceof Element))
             return () => undefined;
-        return observeNormalizedAttribute(scope, element, normalizedName, () => {
-            callback(readValidatorAttr(element, normalizedName));
+        const observerName = directiveNormalize(normalizedName);
+        const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const attributeName = mutations[i].attributeName;
+                if (attributeName && directiveNormalize(attributeName) === observerName) {
+                    callback(readValidatorAttr(element, normalizedName));
+                }
+            }
         });
+        observer.observe(element, { attributes: true });
+        let deregisterDestroy = scope.$on("$destroy", deregister);
+        function deregister() {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
     }
     /**
      *
@@ -21834,7 +21932,23 @@
                         element.dispatchEvent(new Event(eventName));
                     });
                     dispatchAfterFirst();
-                    observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
+                    const observerName = directiveNormalize("latch");
+                    const observer = new MutationObserver((mutations) => {
+                        for (let i = 0; i < mutations.length; i++) {
+                            const attributeName = mutations[i].attributeName;
+                            if (attributeName &&
+                                directiveNormalize(attributeName) === observerName) {
+                                dispatchAfterFirst();
+                            }
+                        }
+                    });
+                    observer.observe(element, { attributes: true });
+                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                    function deregister() {
+                        observer.disconnect();
+                        deregisterDestroy?.();
+                        deregisterDestroy = undefined;
+                    }
                 }
                 if (hasNormalizedAttr(element, "interval")) {
                     element.dispatchEvent(new Event(eventName));
@@ -22238,7 +22352,23 @@
                             }) ?? noopDeregister;
                     };
                     syncFieldExpression();
-                    observeNormalizedAttribute(scope, element, field, syncFieldExpression);
+                    const observerName = directiveNormalize(field);
+                    const observer = new MutationObserver((mutations) => {
+                        for (let i = 0; i < mutations.length; i++) {
+                            const attributeName = mutations[i].attributeName;
+                            if (attributeName &&
+                                directiveNormalize(attributeName) === observerName) {
+                                syncFieldExpression();
+                            }
+                        }
+                    });
+                    observer.observe(element, { attributes: true });
+                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                    function deregister() {
+                        observer.disconnect();
+                        deregisterDestroy?.();
+                        deregisterDestroy = undefined;
+                    }
                 });
                 update();
                 scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -32806,7 +32936,7 @@
     }
     /** Registers built-in filters against the already-registered `$filter` provider. */
     function registerBuiltInFilters($filterProvider) {
-        const filterEntries = Object.entries(ngBuiltInFilters);
+        const filterEntries = entries(ngBuiltInFilters);
         filterEntries.forEach(([name, factory]) => {
             $filterProvider.register(name, factory);
         });
@@ -33021,7 +33151,7 @@
                 });
                 let $filterProvider;
                 ngDefaultProviderGroups.forEach((providers) => {
-                    Object.entries(providers).forEach(([name, provider]) => {
+                    entries(providers).forEach(([name, provider]) => {
                         const registeredProvider = $provide.provider(name, provider);
                         if (name === _filter) {
                             $filterProvider = registeredProvider;

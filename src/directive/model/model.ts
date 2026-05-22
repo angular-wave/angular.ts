@@ -20,6 +20,7 @@ import {
   callFunction,
   createErrorFactory,
   deProxy,
+  directiveNormalize,
   entries,
   hasAnimate,
   isFunction,
@@ -35,7 +36,6 @@ import {
   values,
 } from "../../shared/utils.ts";
 import { getNormalizedAttr, startingTag } from "../../shared/dom.ts";
-import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import {
   createLazyAnimate,
   type LazyAnimate,
@@ -69,6 +69,38 @@ function readModelAttr(
   return element instanceof Element
     ? getNormalizedAttr(element, normalizedName)
     : undefined;
+}
+
+function observeModelAttr(
+  scope: ng.Scope,
+  element: Element,
+  normalizedName: string,
+  callback: (value?: string) => void,
+): () => void {
+  const observerName = directiveNormalize(normalizedName);
+  const observer = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i++) {
+      const attributeName = mutations[i].attributeName;
+
+      if (attributeName && directiveNormalize(attributeName) === observerName) {
+        callback(readModelAttr(element, normalizedName));
+      }
+    }
+  });
+  observer.observe(element, { attributes: true });
+
+  let deregisterDestroy: (() => void) | undefined = scope.$on(
+    "$destroy",
+    deregister,
+  );
+
+  function deregister(): void {
+    observer.disconnect();
+    deregisterDestroy?.();
+    deregisterDestroy = undefined;
+  }
+
+  return deregister;
 }
 
 export type ModelValidators = Record<
@@ -1584,13 +1616,11 @@ export function ngModelDirective(): ng.Directive {
               }
             };
 
-            const deregisterNameObserver = observeNormalizedAttribute(
+            const deregisterNameObserver = observeModelAttr(
               scope,
               preElement,
               "name",
-              () => {
-                handleNameChange(readModelAttr(preElement, "name"));
-              },
+              handleNameChange,
             );
 
             const deregisterWatch = (scope.$watch(

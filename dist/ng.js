@@ -79,6 +79,7 @@ import { WebTransportProvider } from './services/webtransport/webtransport.js';
 import { WebSocketProvider } from './services/websocket/websocket.js';
 import { WorkerProvider } from './services/worker/worker.js';
 import { WasmProvider } from './services/wasm/wasm.js';
+import { entries } from './shared/utils.js';
 export { getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr } from './shared/dom.js';
 
 /**
@@ -98,7 +99,7 @@ function registerRuntimeHostValues(angular, $provide) {
 }
 /** Registers built-in filters against the already-registered `$filter` provider. */
 function registerBuiltInFilters($filterProvider) {
-    const filterEntries = Object.entries(ngBuiltInFilters);
+    const filterEntries = entries(ngBuiltInFilters);
     filterEntries.forEach(([name, factory]) => {
         $filterProvider.register(name, factory);
     });
@@ -313,7 +314,7 @@ function registerNgModule(angular) {
             });
             let $filterProvider;
             ngDefaultProviderGroups.forEach((providers) => {
-                Object.entries(providers).forEach(([name, provider]) => {
+                entries(providers).forEach(([name, provider]) => {
                     const registeredProvider = $provide.provider(name, provider);
                     if (name === _filter) {
                         $filterProvider = registeredProvider;

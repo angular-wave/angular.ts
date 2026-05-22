@@ -12,6 +12,7 @@ import {
   assign,
   arrayFrom,
   assertDefined,
+  directiveNormalize,
   isArray,
   isNullOrUndefined,
   isObject,
@@ -24,7 +25,6 @@ import {
   getNormalizedAttr,
   setNormalizedAttr,
 } from "../../shared/dom.ts";
-import { observeNormalizedAttribute } from "../../directive/attrs/observe-normalized.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -478,7 +478,31 @@ export function StateRefDynamicDirective(
         };
 
         syncFieldExpression();
-        observeNormalizedAttribute(scope, element, field, syncFieldExpression);
+        const observerName = directiveNormalize(field);
+        const observer = new MutationObserver((mutations) => {
+          for (let i = 0; i < mutations.length; i++) {
+            const attributeName = mutations[i].attributeName;
+
+            if (
+              attributeName &&
+              directiveNormalize(attributeName) === observerName
+            ) {
+              syncFieldExpression();
+            }
+          }
+        });
+        observer.observe(element, { attributes: true });
+
+        let deregisterDestroy: (() => void) | undefined = scope.$on(
+          "$destroy",
+          deregister,
+        );
+
+        function deregister(): void {
+          observer.disconnect();
+          deregisterDestroy?.();
+          deregisterDestroy = undefined;
+        }
       });
       update();
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));

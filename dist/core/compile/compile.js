@@ -1,17 +1,285 @@
 import { _injector, _interpolate, _exceptionHandler, _parse, _controller, _compileLifecycle, _templateRequest, _scope, _provide } from '../../injection-tokens.js';
-import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements } from '../../shared/dom.js';
+import { hasNormalizedAttr, setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, getBooleanAttrName, getDirectiveHostElement, getNormalizedAttr, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, setNormalizedAttr, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
 import { getSecurityAdapter } from '../security/security-adapter.js';
-import { arrayRemove, assign, getNodeName, uppercase, isFunction, trim, nullObject, hasOwn, assertDefined, inherit, stringify, directiveNormalize, assertArg, assertNotHasOwnProperty, deleteProperty, isError, extend, callFunction, createErrorFactory, simpleCompare, isScope, equals } from '../../shared/utils.js';
+import { directiveNormalize, nullObject, keys, hasOwn, arrayFrom, arrayRemove, assign, getNodeName, uppercase, isFunction, trim, assertDefined, inherit, stringify, snakeCase, assertArg, assertNotHasOwnProperty, deleteProperty, isError, extend, callFunction, createErrorFactory, simpleCompare, isScope, equals } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
-import { PREFIX_REGEXP } from '../../shared/constants.js';
+import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
+import { createLazyAnimate } from '../../animations/lazy-animate.js';
+import { updateClass } from '../../animations/class-mutation.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
-import { recordCompileAttribute, hasCompileAttribute, listCompileAttributes, setCompileAttributeValue, getCompileAttributeName, CompileAttributeState, getCompileOriginalAttributeName, updateCompileAttributeClass } from './attributes.js';
 import { ngObserveDirective } from '../../directive/observe/observe.js';
-import { markInternalAttributeInterpolated, getInternalAttributeObserverScope, setInternalAttributeObserverScope, observeInternalAttribute, isInternalAttributeInterpolated } from '../../services/attributes/attributes.js';
 
+const compileAttributeObserverScopes = new WeakMap();
+const lazyAnimateByInjector = new WeakMap();
+const observerStates = new WeakMap();
+const interpolatedAttributes = new WeakMap();
+function getLazyAnimate($injector) {
+    let getAnimate = lazyAnimateByInjector.get($injector);
+    if (!getAnimate) {
+        getAnimate = createLazyAnimate($injector);
+        lazyAnimateByInjector.set($injector, getAnimate);
+    }
+    return getAnimate;
+}
+function notifyAttributeObserverCallbacks(state, normalizedName, value) {
+    const callbacks = state.callbacks.get(normalizedName);
+    if (!callbacks?.size)
+        return;
+    arrayFrom(callbacks).forEach((callback) => {
+        callback(value);
+    });
+}
+function attributeObserverValuesMatch(left, right) {
+    return (Object.is(left, right) ||
+        (typeof left === "boolean" && right === String(left)) ||
+        (left === null && right === undefined));
+}
+function consumePendingAttributeMutation(state, normalizedName, value) {
+    const pendingValues = state.pendingMutations.get(normalizedName);
+    if (!pendingValues?.length)
+        return false;
+    const [nextValue] = pendingValues;
+    if (!attributeObserverValuesMatch(nextValue, value))
+        return false;
+    pendingValues.shift();
+    if (pendingValues.length === 0) {
+        state.pendingMutations.delete(normalizedName);
+    }
+    return true;
+}
+function getCompileAttributeObserverState(element) {
+    const state = observerStates.get(element);
+    if (state)
+        return state;
+    const newState = {
+        callbacks: new Map(),
+        pendingMutations: new Map(),
+        observer: undefined,
+    };
+    newState.observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+            const { attributeName } = mutations[i];
+            if (!attributeName)
+                continue;
+            const normalizedName = directiveNormalize(attributeName);
+            const value = getNormalizedAttr(element, normalizedName);
+            if (!consumePendingAttributeMutation(newState, normalizedName, value)) {
+                notifyAttributeObserverCallbacks(newState, normalizedName, value);
+            }
+            const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
+                ? ALIASED_ATTR[normalizedName]
+                : undefined;
+            if (aliasedName &&
+                !consumePendingAttributeMutation(newState, aliasedName, value)) {
+                notifyAttributeObserverCallbacks(newState, aliasedName, value);
+            }
+        }
+    });
+    newState.observer.observe(element, { attributes: true });
+    observerStates.set(element, newState);
+    return newState;
+}
+function rememberPendingAttributeMutation(element, normalizedName, value) {
+    const state = observerStates.get(element);
+    if (!state)
+        return;
+    let pendingValues = state.pendingMutations.get(normalizedName);
+    if (!pendingValues) {
+        pendingValues = [];
+        state.pendingMutations.set(normalizedName, pendingValues);
+    }
+    pendingValues.push(value);
+}
+/** @internal */
+class CompileAttributeState {
+    constructor($injector, $exceptionHandler, stateToCopy) {
+        this.$normalize = directiveNormalize;
+        this._getAnimate = getLazyAnimate($injector);
+        this._exceptionHandler = $exceptionHandler;
+        this._attributeNames = {};
+        this._originalAttributeNames = nullObject();
+        if (stateToCopy) {
+            const attrKeys = keys(stateToCopy._attributeNames);
+            for (let i = 0, l = attrKeys.length; i < l; i++) {
+                const key = attrKeys[i];
+                this._attributeNames[key] = stateToCopy._attributeNames[key];
+            }
+            const sourceKeys = keys(stateToCopy._originalAttributeNames);
+            for (let i = 0, l = sourceKeys.length; i < l; i++) {
+                const key = sourceKeys[i];
+                this._originalAttributeNames[key] =
+                    stateToCopy._originalAttributeNames[key];
+            }
+        }
+    }
+    updateClass(node, newClasses, oldClasses) {
+        if (newClasses === oldClasses) {
+            return;
+        }
+        updateClass(node, newClasses, oldClasses, this._getAnimate);
+    }
+    setValue(node, key, value, writeAttr, attrName) {
+        setCompileAttributeValue(this, node, key, value, writeAttr, attrName);
+    }
+    record(key, attrName, sourceAttrName = attrName, overwrite = true) {
+        recordCompileAttribute(this, key, attrName, sourceAttrName, overwrite);
+    }
+    has(node, key) {
+        if (hasOwn(this._attributeNames, key) ||
+            hasOwn(this._originalAttributeNames, key)) {
+            return true;
+        }
+        return hasNormalizedAttr(node, key);
+    }
+    list() {
+        const names = new Set(keys(this._attributeNames));
+        keys(this._originalAttributeNames).forEach((key) => {
+            names.add(key);
+        });
+        return arrayFrom(names);
+    }
+    getName(key) {
+        return this._attributeNames[key];
+    }
+    getOriginalName(key) {
+        return this._originalAttributeNames[key];
+    }
+    static observeElementAttribute(scope, element, normalizedName, callback) {
+        return observeElementAttribute(scope, element, normalizedName, callback);
+    }
+    static markElementAttributeInterpolated(element, normalizedName) {
+        markElementAttributeInterpolated(element, normalizedName);
+    }
+    static isElementAttributeInterpolated(element, normalizedName) {
+        return isElementAttributeInterpolated(element, normalizedName);
+    }
+}
+CompileAttributeState.$nonscope = true;
+function observeElementAttribute(scope, element, normalizedName, callback) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return () => undefined;
+    const observedElement = targetElement;
+    const normalized = directiveNormalize(normalizedName);
+    const state = getCompileAttributeObserverState(observedElement);
+    let callbacks = state.callbacks.get(normalized);
+    if (!callbacks) {
+        callbacks = new Set();
+        state.callbacks.set(normalized, callbacks);
+    }
+    callbacks.add(callback);
+    const initialValue = getNormalizedAttr(observedElement, normalized);
+    if (initialValue !== undefined) {
+        callback(initialValue);
+    }
+    let deregisterDestroy;
+    if (scope) {
+        deregisterDestroy = scope.$on("$destroy", () => {
+            deregister();
+        });
+    }
+    function deregister() {
+        callbacks?.delete(callback);
+        if (callbacks?.size === 0) {
+            state.callbacks.delete(normalized);
+        }
+        if (state.callbacks.size === 0) {
+            state.observer.disconnect();
+            observerStates.delete(observedElement);
+        }
+        deregisterDestroy?.();
+        deregisterDestroy = undefined;
+    }
+    return deregister;
+}
+function setObservedElementAttribute(element, normalizedName, value, options) {
+    const result = setNormalizedAttr(element, normalizedName, value, options);
+    if (!result)
+        return;
+    if (options?.writeAttr !== false && result.attrName) {
+        rememberPendingAttributeMutation(result.element, result.observerName, value);
+    }
+    const state = observerStates.get(result.element);
+    if (state) {
+        notifyAttributeObserverCallbacks(state, result.observerName, result.observedValue);
+    }
+}
+function markElementAttributeInterpolated(element, normalizedName) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return;
+    const normalized = directiveNormalize(normalizedName);
+    let interpolated = interpolatedAttributes.get(targetElement);
+    if (!interpolated) {
+        interpolated = new Set();
+        interpolatedAttributes.set(targetElement, interpolated);
+    }
+    interpolated.add(normalized);
+}
+function isElementAttributeInterpolated(element, normalizedName) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return false;
+    return (interpolatedAttributes
+        .get(targetElement)
+        ?.has(directiveNormalize(normalizedName)) ?? false);
+}
+function setCompileAttributeValue(attrs, node, key, value, writeAttr, attrName) {
+    const booleanKey = getBooleanAttrName(node, key);
+    const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+    let observer = key;
+    if (booleanKey) {
+        node[key] = value;
+        attrName = booleanKey;
+    }
+    else if (aliasedKey) {
+        recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+        observer = aliasedKey;
+    }
+    if (attrName) {
+        attrs._attributeNames[key] = attrName;
+    }
+    else {
+        attrName = attrs._attributeNames[key];
+        if (!attrName) {
+            attrs._attributeNames[key] = attrName = snakeCase(key, "-");
+        }
+    }
+    recordCompileAttribute(attrs, key, attrName);
+    setObservedElementAttribute(node, observer, value, {
+        writeAttr,
+        attrName,
+    });
+}
+function recordCompileAttribute(attrs, key, attrName, sourceAttrName = attrName, overwrite = true) {
+    if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+        attrs._attributeNames[key] = attrName;
+        attrs._originalAttributeNames[key] = sourceAttrName;
+    }
+}
+function setCompileAttributeObserverScope(element, normalizedName, scope) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return;
+    const normalized = directiveNormalize(normalizedName);
+    let scopes = compileAttributeObserverScopes.get(targetElement);
+    if (!scopes) {
+        scopes = new Map();
+        compileAttributeObserverScopes.set(targetElement, scopes);
+    }
+    scopes.set(normalized, scope);
+}
+function getCompileAttributeObserverScope(element, normalizedName) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return undefined;
+    return compileAttributeObserverScopes
+        .get(targetElement)
+        ?.get(directiveNormalize(normalizedName));
+}
 const EMPTY_DIRECTIVE_MATCHES = [];
 const EMPTY_DIRECTIVE_DEFINITIONS = [];
 function isNonNullDirectiveObject(value) {
@@ -79,7 +347,7 @@ function readNormalizedElementAttribute(element, normalizedName) {
 function readSourceElementAttribute(attrs, element, normalizedName) {
     const hostElement = getDirectiveHostElement(element);
     const attrElement = hostElement ?? element;
-    const sourceName = getCompileOriginalAttributeName(attrs, normalizedName);
+    const sourceName = attrs.getOriginalName(normalizedName);
     if (sourceName && attrElement instanceof Element) {
         return attrElement.getAttribute(sourceName) ?? undefined;
     }
@@ -1147,7 +1415,7 @@ class CompileProvider {
                             attrs =
                                 attrs ??
                                     createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
-                            recordCompileAttribute(attrs, nName, attr.name);
+                            attrs.record(nName, attr.name);
                             addSpecialAttributeDirective(node, directives, nName, name, prefix);
                             return attrs;
                         }
@@ -1205,7 +1473,7 @@ class CompileProvider {
                     recordNormalizedAttributeValue(node, attrs, normalizedName, name, attr.name, isNgAttr);
                 }
                 function recordNormalizedAttributeValue(node, attrs, normalizedName, name, sourceName, isNgAttr) {
-                    recordCompileAttribute(attrs, normalizedName, name, sourceName, isNgAttr || !hasCompileAttribute(attrs, node, normalizedName));
+                    attrs.record(normalizedName, name, sourceName, isNgAttr || !attrs.has(node, normalizedName));
                 }
                 function addSpecialAttributeDirective(node, directives, normalizedName, propertyName, prefix) {
                     if (prefix === "Prop") {
@@ -1347,11 +1615,11 @@ class CompileProvider {
                     if (linkState._name === "class") {
                         const element = getDirectiveHostElement(node);
                         const attributeValue = toInterpolatedAttributeValue(value);
-                        updateCompileAttributeClass(attr, node, String(attributeValue ?? ""), element?.classList.value ?? "");
+                        attr.updateClass(node, String(attributeValue ?? ""), element?.classList.value ?? "");
                         return;
                     }
                     if (linkState._name === "srcset") {
-                        setCompileAttributeValue(attr, node, linkState._name, linkState._isNgAttr
+                        attr.setValue(node, linkState._name, linkState._isNgAttr
                             ? toInterpolatedAttributeValue(value)
                             : toInterpolatedAttributeValue(sanitizeSrcset(security.valueOf(value), "srcset")));
                         return;
@@ -1361,7 +1629,7 @@ class CompileProvider {
                         !(typeof value === "string" && value.startsWith("unsafe:"))) {
                         value = toInterpolatedAttributeValue(security.getTrusted(linkState._trustedContext, value));
                     }
-                    setCompileAttributeValue(attr, node, linkState._name, toInterpolatedAttributeValue(value));
+                    attr.setValue(node, linkState._name, toInterpolatedAttributeValue(value));
                 }
                 /** Re-applies the current interpolated attribute value from explicit per-link state. */
                 function handleAttrInterpolationWatch(bindingState) {
@@ -1399,7 +1667,7 @@ class CompileProvider {
                     }
                     const interpolateFn = linkState._interpolateFn;
                     const { expressions } = interpolateFn;
-                    markInternalAttributeInterpolated(node, name);
+                    CompileAttributeState.markElementAttributeInterpolated(node, name);
                     const bindingState = {
                         _linkState: linkState,
                         _scope: scope,
@@ -1407,7 +1675,7 @@ class CompileProvider {
                         _attr: attr,
                     };
                     if (expressions.length > 0) {
-                        const targetScope = getInternalAttributeObserverScope(node, name) ?? scope;
+                        const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
                         const watchExpression = buildInterpolationWatchExpression(expressions);
                         targetScope.$watch(watchExpression, () => {
                             handleAttrInterpolationWatch(bindingState);
@@ -2571,7 +2839,7 @@ class CompileProvider {
                  */
                 function mergeTemplateAttributeState(dst, src, oldNode, newNode) {
                     // reapply the old attributes to the new element
-                    const dstKeys = listCompileAttributes(dst);
+                    const dstKeys = dst.list();
                     for (let i = 0, l = dstKeys.length; i < l; i++) {
                         const key = dstKeys[i];
                         let value = readNormalizedElementAttribute(oldNode, key);
@@ -2584,22 +2852,22 @@ class CompileProvider {
                                 value = srcValue;
                             }
                         }
-                        setCompileAttributeValue(dst, newNode, key, value, true, getCompileAttributeName(src, key));
+                        dst.setValue(newNode, key, value, true, src.getName(key));
                     }
                     // Copy the replacement template attributes onto the original internal state.
-                    const srcKeys = listCompileAttributes(src);
+                    const srcKeys = src.list();
                     for (let i = 0, l = srcKeys.length; i < l; i++) {
                         const key = srcKeys[i];
                         // Check if we already set this attribute in the loop above.
                         // `dst` will never contain hasOwnProperty as DOM parser won't let it.
                         // You will get an "InvalidCharacterError: DOM Exception 5" error if you
                         // have an attribute like "has-own-property" or "data-has-own-property", etc.
-                        if (!hasCompileAttribute(dst, oldNode, key)) {
-                            const srcAttrName = getCompileAttributeName(src, key);
+                        if (!dst.has(oldNode, key)) {
+                            const srcAttrName = src.getName(key);
                             if (!srcAttrName) {
                                 continue;
                             }
-                            recordCompileAttribute(dst, key, srcAttrName);
+                            dst.record(key, srcAttrName);
                         }
                     }
                 }
@@ -2908,7 +3176,7 @@ class CompileProvider {
                             let parentSet;
                             let compare;
                             let removeWatch;
-                            const hasBindingAttribute = hasCompileAttribute(attrs, element, attrName);
+                            const hasBindingAttribute = attrs.has(element, attrName);
                             const readBindingAttribute = () => readNormalizedElementAttribute(element, attrName);
                             switch (mode) {
                                 case "@": {
@@ -2930,8 +3198,8 @@ class CompileProvider {
                                         handleStringBindingObserve(stringBindingState, value);
                                     };
                                     let skipInitialElementObserve = hasNormalizedAttr(element, attrName);
-                                    setInternalAttributeObserverScope(element, attrName, scope);
-                                    const removeElementObserve = observeInternalAttribute(scope, element, attrName, (value) => {
+                                    setCompileAttributeObserverScope(element, attrName, scope);
+                                    const removeElementObserve = CompileAttributeState.observeElementAttribute(scope, element, attrName, (value) => {
                                         if (skipInitialElementObserve) {
                                             skipInitialElementObserve = false;
                                             return;
@@ -2951,7 +3219,7 @@ class CompileProvider {
                                     removeWatch = () => {
                                         removeElementObserve();
                                     };
-                                    if (!isInternalAttributeInterpolated(element, attrName) &&
+                                    if (!CompileAttributeState.isElementAttributeInterpolated(element, attrName) &&
                                         hasBindingAttribute) {
                                         const attrValue = readBindingAttribute();
                                         if (attrValue !== undefined) {
@@ -3263,4 +3531,4 @@ function replaceWith(oldNode, newNode, index) {
     fragment.appendChild(oldNode);
 }
 
-export { CompileLifecycleProvider, CompileProvider, DirectiveSuffix, applyTextInterpolationValue, buildInterpolationWatchExpression, buildStableNodeList, byPriority, detectNamespaceForChildElements, getDirectiveRequire, getDirectiveRestrict, replaceWith, wrapTemplate };
+export { CompileAttributeState, CompileLifecycleProvider, CompileProvider, DirectiveSuffix, replaceWith, wrapTemplate };

@@ -16,10 +16,6 @@ import {
   trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-import {
-  isInternalAttributeInterpolated,
-  observeInternalAttribute,
-} from "../../services/attributes/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
@@ -288,11 +284,10 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             }
 
             let skipInitialInterpolation = Boolean(
-              isInternalAttributeInterpolated(element, normalized) ||
               getNormalizedAttr(element, normalized)?.includes("{{"),
             );
 
-            observeInternalAttribute(scope, element, normalized, () => {
+            const syncObservedAliasValue = () => {
               const value = readAliasValue();
 
               if (skipInitialInterpolation) {
@@ -302,7 +297,34 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
               }
 
               syncAliasValue(value);
+            };
+
+            syncObservedAliasValue();
+            const observerName = directiveNormalize(normalized);
+            const observer = new MutationObserver((mutations) => {
+              for (let i = 0; i < mutations.length; i++) {
+                const attributeName = mutations[i].attributeName;
+
+                if (
+                  attributeName &&
+                  directiveNormalize(attributeName) === observerName
+                ) {
+                  syncObservedAliasValue();
+                }
+              }
             });
+            observer.observe(element, { attributes: true });
+
+            let deregisterDestroy: (() => void) | undefined = scope.$on(
+              "$destroy",
+              deregister,
+            );
+
+            function deregister(): void {
+              observer.disconnect();
+              deregisterDestroy?.();
+              deregisterDestroy = undefined;
+            }
           };
         },
       };

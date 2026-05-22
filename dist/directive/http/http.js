@@ -2,11 +2,10 @@ import { _http, _compile, _log, _parse, _interpolate, _state, _sse, _injector, _
 import { Http } from '../../services/http/http.js';
 import { addClass, removeClass } from '../../animations/class-mutation.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { uppercase, isDefined, wait, toKeyValue, stringify, callBackAfterFirst, isString, isInstanceOf, isObject } from '../../shared/utils.js';
+import { uppercase, directiveNormalize, isDefined, wait, toKeyValue, stringify, callBackAfterFirst, isString, isInstanceOf, isObject } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent } from '../realtime/protocol.js';
 export { SwapMode } from '../realtime/protocol.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 import { createRealtimeSwapHandler } from '../realtime/swap.js';
 import { getNormalizedAttr, hasNormalizedAttr, setNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
 
@@ -101,7 +100,23 @@ function createHttpDirective(method, attrName) {
                         element.dispatchEvent(new Event(eventName));
                     });
                     dispatchAfterFirst();
-                    observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
+                    const observerName = directiveNormalize("latch");
+                    const observer = new MutationObserver((mutations) => {
+                        for (let i = 0; i < mutations.length; i++) {
+                            const attributeName = mutations[i].attributeName;
+                            if (attributeName &&
+                                directiveNormalize(attributeName) === observerName) {
+                                dispatchAfterFirst();
+                            }
+                        }
+                    });
+                    observer.observe(element, { attributes: true });
+                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                    function deregister() {
+                        observer.disconnect();
+                        deregisterDestroy?.();
+                        deregisterDestroy = undefined;
+                    }
                 }
                 let throttled = false;
                 let intervalId;

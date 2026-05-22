@@ -27,9 +27,12 @@ import {
   removeElementData,
   setCacheData,
   setIsolateScope,
+  setNormalizedAttr,
   setScope,
   setTranscludedHostElement,
   startingTag,
+  type NormalizedAttributeSetValue,
+  type SetNormalizedAttrOptions,
 } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import { identifierForController } from "../controller/controller.ts";
@@ -37,6 +40,7 @@ import { createScope, type Scope } from "../scope/scope.ts";
 import { getSecurityAdapter } from "../security/security-adapter.ts";
 import {
   assign,
+  arrayFrom,
   arrayRemove,
   assertArg,
   assertNotHasOwnProperty,
@@ -49,11 +53,14 @@ import {
   hasOwn,
   inherit,
   isError,
+  isArray,
   isFunction,
   isScope,
   createErrorFactory,
+  keys,
   nullObject,
   simpleCompare,
+  snakeCase,
   stringify,
   trim,
   uppercase,
@@ -61,35 +68,495 @@ import {
   type RuntimeFunction,
 } from "../../shared/utils.ts";
 import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
-import { PREFIX_REGEXP } from "../../shared/constants.ts";
+import { ALIASED_ATTR, PREFIX_REGEXP } from "../../shared/constants.ts";
+import {
+  createLazyAnimate,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
+import { updateClass as updateAnimatedClass } from "../../animations/class-mutation.ts";
 import {
   createEventDirective,
   createWindowEventDirective,
 } from "../../directive/events/events.ts";
-import {
-  getCompileAttributeName,
-  getCompileOriginalAttributeName,
-  hasCompileAttribute,
-  type CompileAttributeValue,
-  CompileAttributeState,
-  listCompileAttributes,
-  recordCompileAttribute,
-  setCompileAttributeValue,
-  updateCompileAttributeClass,
-} from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
 import type { Component, DirectiveRestrict } from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
-import {
-  getInternalAttributeObserverScope,
-  isInternalAttributeInterpolated,
-  markInternalAttributeInterpolated,
-  observeInternalAttribute,
-  setInternalAttributeObserverScope,
-} from "../../services/attributes/attributes.ts";
+
+type CompileAttributeValue = string | boolean | null | undefined;
 
 type InterpolatedAttributeValue = CompileAttributeValue;
+
+const compileAttributeObserverScopes = new WeakMap<
+  Element,
+  Map<string, ng.Scope>
+>();
+const lazyAnimateByInjector = new WeakMap<ng.InjectorService, LazyAnimate>();
+const observerStates = new WeakMap<Element, AttributeObserverState>();
+const interpolatedAttributes = new WeakMap<Element, Set<string>>();
+
+type AttributeSetValue = NormalizedAttributeSetValue;
+
+type AttributeObserverCallback = (value?: string) => void;
+
+interface AttributeObserverState {
+  _observer: MutationObserver;
+  _callbacks: Map<string, Set<AttributeObserverCallback>>;
+  _pendingMutations: Map<string, AttributeSetValue[]>;
+}
+
+function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
+  let getAnimate = lazyAnimateByInjector.get($injector);
+
+  if (!getAnimate) {
+    getAnimate = createLazyAnimate($injector);
+    lazyAnimateByInjector.set($injector, getAnimate);
+  }
+
+  return getAnimate;
+}
+
+function notifyAttributeObserverCallbacks(
+  state: AttributeObserverState,
+  normalizedName: string,
+  value?: string,
+): void {
+  const callbacks = state._callbacks.get(normalizedName);
+
+  if (!callbacks?.size) return;
+
+  arrayFrom(callbacks).forEach((callback) => {
+    callback(value);
+  });
+}
+
+function attributeObserverValuesMatch(
+  left: AttributeSetValue,
+  right: AttributeSetValue,
+): boolean {
+  return (
+    Object.is(left, right) ||
+    (typeof left === "boolean" && right === String(left)) ||
+    (left === null && right === undefined)
+  );
+}
+
+function consumePendingAttributeMutation(
+  state: AttributeObserverState,
+  normalizedName: string,
+  value: AttributeSetValue,
+): boolean {
+  const pendingValues = state._pendingMutations.get(normalizedName);
+
+  if (!pendingValues?.length) return false;
+
+  const [nextValue] = pendingValues;
+
+  if (!attributeObserverValuesMatch(nextValue, value)) return false;
+
+  pendingValues.shift();
+
+  if (pendingValues.length === 0) {
+    state._pendingMutations.delete(normalizedName);
+  }
+
+  return true;
+}
+
+function getCompileAttributeObserverState(
+  element: Element,
+): AttributeObserverState {
+  const state = observerStates.get(element);
+
+  if (state) return state;
+
+  const newState: AttributeObserverState = {
+    _callbacks: new Map<string, Set<AttributeObserverCallback>>(),
+    _pendingMutations: new Map<string, AttributeSetValue[]>(),
+    _observer: undefined as unknown as MutationObserver,
+  };
+
+  newState._observer = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i++) {
+      const { attributeName } = mutations[i];
+
+      if (!attributeName) continue;
+
+      const normalizedName = directiveNormalize(attributeName);
+      const value = getNormalizedAttr(element, normalizedName);
+
+      if (!consumePendingAttributeMutation(newState, normalizedName, value)) {
+        notifyAttributeObserverCallbacks(newState, normalizedName, value);
+      }
+
+      const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
+        ? ALIASED_ATTR[normalizedName]
+        : undefined;
+
+      if (
+        aliasedName &&
+        !consumePendingAttributeMutation(newState, aliasedName, value)
+      ) {
+        notifyAttributeObserverCallbacks(newState, aliasedName, value);
+      }
+    }
+  });
+
+  newState._observer.observe(element, { attributes: true });
+  observerStates.set(element, newState);
+
+  return newState;
+}
+
+function rememberPendingAttributeMutation(
+  element: Element,
+  normalizedName: string,
+  value: AttributeSetValue,
+): void {
+  const state = observerStates.get(element);
+
+  if (!state) return;
+
+  let pendingValues = state._pendingMutations.get(normalizedName);
+
+  if (!pendingValues) {
+    pendingValues = [];
+    state._pendingMutations.set(normalizedName, pendingValues);
+  }
+
+  pendingValues.push(value);
+}
+
+class CompileAttributeState {
+  static $nonscope = true;
+
+  /** @internal */
+  _getAnimate: LazyAnimate;
+  /** @internal */
+  _exceptionHandler: ng.ExceptionHandlerService;
+  _attributeNames: Record<string, string>;
+  /** @internal */
+  _originalAttributeNames: Record<string, string>;
+
+  constructor(
+    $injector: ng.InjectorService,
+    $exceptionHandler: ng.ExceptionHandlerService,
+    stateToCopy?: CompileAttributeState,
+  ) {
+    this._getAnimate = getLazyAnimate($injector);
+    this._exceptionHandler = $exceptionHandler;
+    this._attributeNames = {};
+    this._originalAttributeNames = nullObject();
+
+    if (stateToCopy) {
+      const attrKeys = keys(stateToCopy._attributeNames);
+
+      for (let i = 0, l = attrKeys.length; i < l; i++) {
+        const key = attrKeys[i];
+
+        this._attributeNames[key] = stateToCopy._attributeNames[key];
+      }
+
+      const sourceKeys = keys(stateToCopy._originalAttributeNames);
+
+      for (let i = 0, l = sourceKeys.length; i < l; i++) {
+        const key = sourceKeys[i];
+
+        this._originalAttributeNames[key] =
+          stateToCopy._originalAttributeNames[key];
+      }
+    }
+  }
+
+  $normalize = directiveNormalize;
+
+  updateClass(
+    node: Node | Element,
+    newClasses: string,
+    oldClasses: string,
+  ): void {
+    if (newClasses === oldClasses) {
+      return;
+    }
+
+    updateAnimatedClass(node, newClasses, oldClasses, this._getAnimate);
+  }
+
+  setValue(
+    node: Node | Element,
+    key: string,
+    value: CompileAttributeValue,
+    writeAttr?: boolean,
+    attrName?: string,
+  ): void {
+    setCompileAttributeValue(this, node, key, value, writeAttr, attrName);
+  }
+
+  record(
+    key: string,
+    attrName: string,
+    sourceAttrName = attrName,
+    overwrite = true,
+  ): void {
+    recordCompileAttribute(this, key, attrName, sourceAttrName, overwrite);
+  }
+
+  has(node: Node | Element | null | undefined, key: string): boolean {
+    if (
+      hasOwn(this._attributeNames, key) ||
+      hasOwn(this._originalAttributeNames, key)
+    ) {
+      return true;
+    }
+
+    return hasNormalizedAttr(node, key);
+  }
+
+  list(): string[] {
+    const names = new Set<string>(keys(this._attributeNames));
+
+    keys(this._originalAttributeNames).forEach((key) => {
+      names.add(key);
+    });
+
+    return arrayFrom(names);
+  }
+
+  getName(key: string): string | undefined {
+    return this._attributeNames[key];
+  }
+
+  getOriginalName(key: string): string | undefined {
+    return this._originalAttributeNames[key];
+  }
+
+  static observeElementAttribute(
+    scope: ng.Scope | null | undefined,
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+    callback: AttributeObserverCallback,
+  ): () => void {
+    return observeElementAttribute(scope, element, normalizedName, callback);
+  }
+
+  static markElementAttributeInterpolated(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+  ): void {
+    markElementAttributeInterpolated(element, normalizedName);
+  }
+
+  static isElementAttributeInterpolated(
+    element: Element | Node | null | undefined,
+    normalizedName: string,
+  ): boolean {
+    return isElementAttributeInterpolated(element, normalizedName);
+  }
+}
+
+function observeElementAttribute(
+  scope: ng.Scope | null | undefined,
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+  callback: AttributeObserverCallback,
+): () => void {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return () => undefined;
+
+  const observedElement = targetElement;
+  const normalized = directiveNormalize(normalizedName);
+  const state = getCompileAttributeObserverState(observedElement);
+  let callbacks = state._callbacks.get(normalized);
+
+  if (!callbacks) {
+    callbacks = new Set<AttributeObserverCallback>();
+    state._callbacks.set(normalized, callbacks);
+  }
+
+  callbacks.add(callback);
+
+  const initialValue = getNormalizedAttr(observedElement, normalized);
+
+  if (initialValue !== undefined) {
+    callback(initialValue);
+  }
+
+  let deregisterDestroy: (() => void) | undefined;
+
+  if (scope) {
+    deregisterDestroy = scope.$on("$destroy", () => {
+      deregister();
+    });
+  }
+
+  function deregister(): void {
+    callbacks?.delete(callback);
+
+    if (callbacks?.size === 0) {
+      state._callbacks.delete(normalized);
+    }
+
+    if (state._callbacks.size === 0) {
+      state._observer.disconnect();
+      observerStates.delete(observedElement);
+    }
+
+    deregisterDestroy?.();
+    deregisterDestroy = undefined;
+  }
+
+  return deregister;
+}
+
+function setObservedElementAttribute(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+  value: AttributeSetValue,
+  options?: SetNormalizedAttrOptions,
+): void {
+  const result = setNormalizedAttr(element, normalizedName, value, options);
+
+  if (!result) return;
+
+  if (options?.writeAttr !== false && result.attrName) {
+    rememberPendingAttributeMutation(
+      result.element,
+      result.observerName,
+      value,
+    );
+  }
+
+  const state = observerStates.get(result.element);
+
+  if (state) {
+    notifyAttributeObserverCallbacks(
+      state,
+      result.observerName,
+      result.observedValue,
+    );
+  }
+}
+
+function markElementAttributeInterpolated(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): void {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return;
+
+  const normalized = directiveNormalize(normalizedName);
+  let interpolated = interpolatedAttributes.get(targetElement);
+
+  if (!interpolated) {
+    interpolated = new Set<string>();
+    interpolatedAttributes.set(targetElement, interpolated);
+  }
+
+  interpolated.add(normalized);
+}
+
+function isElementAttributeInterpolated(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): boolean {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return false;
+
+  return (
+    interpolatedAttributes
+      .get(targetElement)
+      ?.has(directiveNormalize(normalizedName)) ?? false
+  );
+}
+
+function setCompileAttributeValue(
+  attrs: CompileAttributeState,
+  node: Node | Element,
+  key: string,
+  value: CompileAttributeValue,
+  writeAttr?: boolean,
+  attrName?: string,
+): void {
+  const booleanKey = getBooleanAttrName(node as Element, key);
+
+  const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+
+  let observer = key;
+
+  if (booleanKey) {
+    (node as unknown as Record<string, unknown>)[key] = value;
+    attrName = booleanKey;
+  } else if (aliasedKey) {
+    recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+    observer = aliasedKey;
+  }
+
+  if (attrName) {
+    attrs._attributeNames[key] = attrName;
+  } else {
+    attrName = attrs._attributeNames[key];
+
+    if (!attrName) {
+      attrs._attributeNames[key] = attrName = snakeCase(key, "-");
+    }
+  }
+
+  recordCompileAttribute(attrs, key, attrName);
+
+  setObservedElementAttribute(node, observer, value, {
+    writeAttr,
+    attrName,
+  });
+}
+
+function recordCompileAttribute(
+  attrs: CompileAttributeState,
+  key: string,
+  attrName: string,
+  sourceAttrName = attrName,
+  overwrite = true,
+): void {
+  if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+    attrs._attributeNames[key] = attrName;
+    attrs._originalAttributeNames[key] = sourceAttrName;
+  }
+}
+
+function setCompileAttributeObserverScope(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+  scope: ng.Scope,
+): void {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return;
+
+  const normalized = directiveNormalize(normalizedName);
+  let scopes = compileAttributeObserverScopes.get(targetElement);
+
+  if (!scopes) {
+    scopes = new Map<string, ng.Scope>();
+    compileAttributeObserverScopes.set(targetElement, scopes);
+  }
+
+  scopes.set(normalized, scope);
+}
+
+function getCompileAttributeObserverScope(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+): ng.Scope | undefined {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return undefined;
+
+  return compileAttributeObserverScopes
+    .get(targetElement)
+    ?.get(directiveNormalize(normalizedName));
+}
 
 type RuntimeCallback = {
   bivarianceHack(...args: unknown[]): unknown;
@@ -647,8 +1114,8 @@ export type CompileControllerLifecycleListener = (
  * Publishes controller creation/destruction events from `$compile`.
  */
 export class CompileLifecycleProvider {
-  private readonly createdListeners: CompileControllerLifecycleListener[] = [];
-  private readonly destroyedListeners: CompileControllerLifecycleListener[] =
+  private readonly _createdListeners: CompileControllerLifecycleListener[] = [];
+  private readonly _destroyedListeners: CompileControllerLifecycleListener[] =
     [];
 
   $get = (): this => this;
@@ -661,10 +1128,10 @@ export class CompileLifecycleProvider {
   onControllerCreated(
     listener: CompileControllerLifecycleListener,
   ): () => void {
-    this.createdListeners.push(listener);
+    this._createdListeners.push(listener);
 
     return () => {
-      arrayRemove(this.createdListeners, listener);
+      arrayRemove(this._createdListeners, listener);
     };
   }
 
@@ -676,23 +1143,23 @@ export class CompileLifecycleProvider {
   onControllerDestroyed(
     listener: CompileControllerLifecycleListener,
   ): () => void {
-    this.destroyedListeners.push(listener);
+    this._destroyedListeners.push(listener);
 
     return () => {
-      arrayRemove(this.destroyedListeners, listener);
+      arrayRemove(this._destroyedListeners, listener);
     };
   }
 
   /** @internal */
   _emitControllerCreated(record: CompileControllerLifecycleRecord): void {
-    this.createdListeners.slice().forEach((listener) => {
+    this._createdListeners.slice().forEach((listener) => {
       listener(record);
     });
   }
 
   /** @internal */
   _emitControllerDestroyed(record: CompileControllerLifecycleRecord): void {
-    this.destroyedListeners.slice().forEach((listener) => {
+    this._destroyedListeners.slice().forEach((listener) => {
       listener(record);
     });
   }
@@ -879,7 +1346,7 @@ function readSourceElementAttribute(
 ): string | boolean | undefined {
   const hostElement = getDirectiveHostElement(element);
   const attrElement = hostElement ?? element;
-  const sourceName = getCompileOriginalAttributeName(attrs, normalizedName);
+  const sourceName = attrs.getOriginalName(normalizedName);
 
   if (sourceName && attrElement instanceof Element) {
     return attrElement.getAttribute(sourceName) ?? undefined;
@@ -1448,17 +1915,17 @@ export class CompileProvider {
       function factory($injector: ng.InjectorService) {
         /** Wraps injectable component options so compile-local services are available. */
         const makeInjectable = (
-          fn:
-            | string
-            | ((...args: never[]) => string)
-            | ng.AnnotatedFactory<(...args: never[]) => string>
-            | undefined,
+          fn: Component["template"],
         ): string | ((element: HTMLElement) => string) | undefined => {
-          if (isFunction(fn) || Array.isArray(fn)) {
+          if (isFunction(fn) || isArray(fn)) {
             return (tElement: HTMLElement) => {
-              return $injector.invoke(fn, null, {
-                $element: tElement,
-              }) as string;
+              return $injector.invoke(
+                fn as ng.Injectable<(...args: never[]) => string>,
+                null,
+                {
+                  $element: tElement,
+                },
+              ) as string;
             };
           }
 
@@ -1969,7 +2436,7 @@ export class CompileProvider {
         ): unknown[] | undefined {
           const inputs = state._parentGet?._inputs;
 
-          if (!Array.isArray(inputs)) {
+          if (!isArray(inputs)) {
             return undefined;
           }
 
@@ -2941,7 +3408,7 @@ export class CompileProvider {
                   nodeAttributes,
                   attrIndex,
                 );
-              recordCompileAttribute(attrs, nName, attr.name);
+              attrs.record(nName, attr.name);
 
               addSpecialAttributeDirective(
                 node,
@@ -3085,12 +3552,11 @@ export class CompileProvider {
           sourceName: string,
           isNgAttr: boolean,
         ): void {
-          recordCompileAttribute(
-            attrs,
+          attrs.record(
             normalizedName,
             name,
             sourceName,
-            isNgAttr || !hasCompileAttribute(attrs, node, normalizedName),
+            isNgAttr || !attrs.has(node, normalizedName),
           );
         }
 
@@ -3379,8 +3845,7 @@ export class CompileProvider {
             const element = getDirectiveHostElement(node);
             const attributeValue = toInterpolatedAttributeValue(value);
 
-            updateCompileAttributeClass(
-              attr,
+            attr.updateClass(
               node,
               String(attributeValue ?? ""),
               element?.classList.value ?? "",
@@ -3390,8 +3855,7 @@ export class CompileProvider {
           }
 
           if (linkState._name === "srcset") {
-            setCompileAttributeValue(
-              attr,
+            attr.setValue(
               node,
               linkState._name,
               linkState._isNgAttr
@@ -3414,8 +3878,7 @@ export class CompileProvider {
             );
           }
 
-          setCompileAttributeValue(
-            attr,
+          attr.setValue(
             node,
             linkState._name,
             toInterpolatedAttributeValue(value),
@@ -3488,7 +3951,7 @@ export class CompileProvider {
 
           const { expressions } = interpolateFn;
 
-          markInternalAttributeInterpolated(node, name);
+          CompileAttributeState.markElementAttributeInterpolated(node, name);
 
           const bindingState = {
             _linkState: linkState,
@@ -3499,7 +3962,7 @@ export class CompileProvider {
 
           if (expressions.length > 0) {
             const targetScope =
-              getInternalAttributeObserverScope(node, name) ?? scope;
+              getCompileAttributeObserverScope(node, name) ?? scope;
 
             const watchExpression =
               buildInterpolationWatchExpression(expressions);
@@ -4232,7 +4695,7 @@ export class CompileProvider {
 
               if (
                 controllerDirective.bindToController &&
-                !Array.isArray(require) &&
+                !isArray(require) &&
                 require &&
                 typeof require === "object"
               ) {
@@ -5686,7 +6149,7 @@ export class CompileProvider {
                 directiveName,
               );
             }
-          } else if (Array.isArray(require)) {
+          } else if (isArray(require)) {
             value = [];
 
             for (let i = 0, ii = require.length; i < ii; i++) {
@@ -5961,7 +6424,7 @@ export class CompileProvider {
           newNode: Node | Element,
         ): void {
           // reapply the old attributes to the new element
-          const dstKeys = listCompileAttributes(dst);
+          const dstKeys = dst.list();
 
           for (let i = 0, l = dstKeys.length; i < l; i++) {
             const key = dstKeys[i];
@@ -5979,18 +6442,17 @@ export class CompileProvider {
                 value = srcValue;
               }
             }
-            setCompileAttributeValue(
-              dst,
+            dst.setValue(
               newNode,
               key,
               value as CompileAttributeValue,
               true,
-              getCompileAttributeName(src, key),
+              src.getName(key),
             );
           }
 
           // Copy the replacement template attributes onto the original internal state.
-          const srcKeys = listCompileAttributes(src);
+          const srcKeys = src.list();
 
           for (let i = 0, l = srcKeys.length; i < l; i++) {
             const key = srcKeys[i];
@@ -5999,14 +6461,14 @@ export class CompileProvider {
             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
             // have an attribute like "has-own-property" or "data-has-own-property", etc.
-            if (!hasCompileAttribute(dst, oldNode, key)) {
-              const srcAttrName = getCompileAttributeName(src, key);
+            if (!dst.has(oldNode, key)) {
+              const srcAttrName = src.getName(key);
 
               if (!srcAttrName) {
                 continue;
               }
 
-              recordCompileAttribute(dst, key, srcAttrName);
+              dst.record(key, srcAttrName);
             }
           }
         }
@@ -6521,11 +6983,7 @@ export class CompileProvider {
 
               let removeWatch: (() => void) | undefined;
 
-              const hasBindingAttribute = hasCompileAttribute(
-                attrs,
-                element,
-                attrName,
-              );
+              const hasBindingAttribute = attrs.has(element, attrName);
 
               const readBindingAttribute = () =>
                 readNormalizedElementAttribute(element, attrName);
@@ -6556,41 +7014,45 @@ export class CompileProvider {
                     attrName,
                   );
 
-                  setInternalAttributeObserverScope(element, attrName, scope);
+                  setCompileAttributeObserverScope(element, attrName, scope);
 
-                  const removeElementObserve = observeInternalAttribute(
-                    scope,
-                    element,
-                    attrName,
-                    (value) => {
-                      if (skipInitialElementObserve) {
-                        skipInitialElementObserve = false;
-                        return;
-                      }
+                  const removeElementObserve =
+                    CompileAttributeState.observeElementAttribute(
+                      scope,
+                      element,
+                      attrName,
+                      (value) => {
+                        if (skipInitialElementObserve) {
+                          skipInitialElementObserve = false;
+                          return;
+                        }
 
-                      const sameObservedValue =
-                        Object.is(value, lastValue) ||
-                        (typeof lastValue === "boolean" &&
-                          value === String(lastValue));
-                      if (skipNextElementObserve && sameObservedValue) {
+                        const sameObservedValue =
+                          Object.is(value, lastValue) ||
+                          (typeof lastValue === "boolean" &&
+                            value === String(lastValue));
+                        if (skipNextElementObserve && sameObservedValue) {
+                          skipNextElementObserve = false;
+                          return;
+                        }
+
                         skipNextElementObserve = false;
-                        return;
-                      }
 
-                      skipNextElementObserve = false;
+                        if (sameObservedValue) return;
 
-                      if (sameObservedValue) return;
-
-                      handleObservedStringBinding(value);
-                    },
-                  );
+                        handleObservedStringBinding(value);
+                      },
+                    );
 
                   removeWatch = () => {
                     removeElementObserve();
                   };
 
                   if (
-                    !isInternalAttributeInterpolated(element, attrName) &&
+                    !CompileAttributeState.isElementAttributeInterpolated(
+                      element,
+                      attrName,
+                    ) &&
                     hasBindingAttribute
                   ) {
                     const attrValue = readBindingAttribute();
@@ -6661,7 +7123,7 @@ export class CompileProvider {
                     ? callFunction(parentGet, undefined, scopeTarget)
                     : undefined;
 
-                  lastValue = destinationTarget[scopeName] = Array.isArray(
+                  lastValue = destinationTarget[scopeName] = isArray(
                     initialValue,
                   )
                     ? createScope(initialValue, destination.$handler)
@@ -6851,12 +7313,12 @@ function assertValidDirectiveName(name: string): void {
  * Object-form requires inherit their own key when the value omits the directive name
  * (e.g. `{ foo: "^^" }` becomes `{ foo: "^^foo" }`).
  */
-export function getDirectiveRequire(
+function getDirectiveRequire(
   directive: ng.Directive,
 ): string | string[] | Record<string, string> | undefined {
   const require = directive.require ?? (directive.controller && directive.name);
 
-  if (!Array.isArray(require) && require && typeof require === "object") {
+  if (!isArray(require) && require && typeof require === "object") {
     for (const key in require) {
       if (!hasOwn(require, key)) {
         continue;
@@ -6882,7 +7344,7 @@ export function getDirectiveRequire(
 /**
  * Validates and normalizes a directive `restrict` value.
  */
-export function getDirectiveRestrict(
+function getDirectiveRestrict(
   restrict: unknown,
   name: string,
 ): DirectiveRestrict {
@@ -6905,7 +7367,7 @@ export function getDirectiveRestrict(
  * Detects the namespace used when compiling child nodes beneath a parent element.
  * This is primarily used to decide whether template wrapping should happen in HTML or SVG mode.
  */
-export function detectNamespaceForChildElements(
+function detectNamespaceForChildElements(
   parentElement: Element | Node | null | undefined,
 ): "html" | "svg" {
   const node = parentElement;
@@ -6924,7 +7386,7 @@ export function detectNamespaceForChildElements(
 /**
  * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
  */
-export function buildStableNodeList(
+function buildStableNodeList(
   plan: TemplateLinkPlan,
   nodeList: TemplatePlanNodeList,
 ): Node[] {
@@ -6945,9 +7407,7 @@ export function buildStableNodeList(
  * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
  * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
  */
-export function buildInterpolationWatchExpression(
-  expressions: string[],
-): string {
+function buildInterpolationWatchExpression(expressions: string[]): string {
   return expressions.length === 1
     ? expressions[0]
     : `[${expressions.join(",")}]`;
@@ -6956,7 +7416,7 @@ export function buildInterpolationWatchExpression(
 /**
  * Writes the interpolated text result to either an element node or a text node.
  */
-export function applyTextInterpolationValue(node: Node, value: string): void {
+function applyTextInterpolationValue(node: Node, value: string): void {
   switch (node.nodeType) {
     case NodeType._ELEMENT_NODE:
       (node as Element).innerHTML = value;
@@ -6970,7 +7430,7 @@ export function applyTextInterpolationValue(node: Node, value: string): void {
  * Sorts directives by priority, then name, then registration index.
  * This matches the compiler's directive application order.
  */
-export function byPriority(a: InternalDirective, b: InternalDirective): number {
+function byPriority(a: InternalDirective, b: InternalDirective): number {
   const diff = (b.priority || 0) - (a.priority || 0);
 
   if (diff !== 0) {
@@ -6987,7 +7447,7 @@ export function byPriority(a: InternalDirective, b: InternalDirective): number {
 /**
  * Wraps non-HTML templates in a temporary namespace container so the browser parses SVG/MathML correctly.
  */
-export function wrapTemplate(
+function wrapTemplate(
   type: string | undefined,
   template: string,
 ): string | NodeListOf<ChildNode> {
@@ -7011,7 +7471,7 @@ export function wrapTemplate(
  * Replaces the node currently represented by `elementsToRemove` while preserving the removed nodes
  * in a fragment so traversal and later queries continue to work during compilation.
  */
-export function replaceWith(
+function replaceWith(
   oldNode: Node | Element | ChildNode,
   newNode: Node | Element | ChildNode,
   index?: number,

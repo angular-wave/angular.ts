@@ -6,13 +6,10 @@ import {
   setNormalizedAttr,
 } from "../../shared/dom.ts";
 import {
-  isInternalAttributeInterpolated,
-  observeInternalAttribute,
-} from "../../services/attributes/attributes.ts";
-import {
   assertNotHasOwnProperty,
   deProxy,
   deleteProperty,
+  directiveNormalize,
   hashKey,
   isArray,
   isDefined,
@@ -48,7 +45,6 @@ function hasInterpolatedOptionAttr(
   normalizedName: string,
 ): boolean {
   return Boolean(
-    isInternalAttributeInterpolated(optionElement, normalizedName) ||
     getNormalizedAttr(optionElement, normalizedName)?.includes("{{"),
   );
 }
@@ -63,26 +59,58 @@ function observeOptionElementAttr(
 ): () => void {
   let lastValue: unknown = {};
   let skipNext = skipInitial;
+  const expectedName = directiveNormalize(normalizedName);
 
-  return observeInternalAttribute(
-    optionScope,
-    optionElement,
-    normalizedName,
-    (observedValue) => {
-      if (skipNext) {
-        skipNext = false;
+  const handleObservedValue = (observedValue?: string): void => {
+    if (skipNext) {
+      skipNext = false;
 
-        return;
+      return;
+    }
+
+    const newValue = readValue(observedValue);
+
+    if (Object.is(newValue, lastValue)) return;
+
+    lastValue = newValue;
+    callback(newValue);
+  };
+
+  const initialValue = getNormalizedAttr(optionElement, normalizedName);
+
+  if (initialValue !== undefined) {
+    handleObservedValue(initialValue);
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i++) {
+      const { attributeName } = mutations[i];
+
+      if (
+        !attributeName ||
+        directiveNormalize(attributeName) !== expectedName
+      ) {
+        continue;
       }
 
-      const newValue = readValue(observedValue);
+      handleObservedValue(getNormalizedAttr(optionElement, normalizedName));
+    }
+  });
 
-      if (Object.is(newValue, lastValue)) return;
+  observer.observe(optionElement, { attributes: true });
 
-      lastValue = newValue;
-      callback(newValue);
-    },
+  let deregisterDestroy: (() => void) | undefined = optionScope.$on(
+    "$destroy",
+    deregister,
   );
+
+  function deregister(): void {
+    observer.disconnect();
+    deregisterDestroy?.();
+    deregisterDestroy = undefined;
+  }
+
+  return deregister;
 }
 
 function setOptionElementAttr(

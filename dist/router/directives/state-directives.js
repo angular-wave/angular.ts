@@ -1,8 +1,7 @@
 import { _state, _rootScope, _stateRegistry, _transitions, _parse, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { stringify, assertDefined, isObject, keys, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
+import { stringify, assertDefined, isObject, keys, isString, isArray, assign, directiveNormalize, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
 import { getNormalizedAttr, getInheritedData, setNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../../directive/attrs/observe-normalized.js';
 
 const noopDeregister = () => undefined;
 const uniqueStrings = (classes) => arrayFrom(new Set(classes));
@@ -278,7 +277,23 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
                         }) ?? noopDeregister;
                 };
                 syncFieldExpression();
-                observeNormalizedAttribute(scope, element, field, syncFieldExpression);
+                const observerName = directiveNormalize(field);
+                const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                        const attributeName = mutations[i].attributeName;
+                        if (attributeName &&
+                            directiveNormalize(attributeName) === observerName) {
+                            syncFieldExpression();
+                        }
+                    }
+                });
+                observer.observe(element, { attributes: true });
+                let deregisterDestroy = scope.$on("$destroy", deregister);
+                function deregister() {
+                    observer.disconnect();
+                    deregisterDestroy?.();
+                    deregisterDestroy = undefined;
+                }
             });
             update();
             scope.$on("$destroy", $stateRegistry.onStatesChanged(update));

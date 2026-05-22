@@ -2,7 +2,6 @@ import { _sce } from '../../injection-tokens.js';
 import { BOOLEAN_ATTR, getNormalizedAttr, setNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
 import { directiveNormalize, entries, getNodeName, isString, stringify, trim, isNullOrUndefined, createErrorFactory } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
-import { isInternalAttributeInterpolated, observeInternalAttribute } from '../../services/attributes/attributes.js';
 
 const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 const $compileError = createErrorFactory("$compile");
@@ -169,9 +168,8 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                                 ? sanitizeSrcset($sce, initialValue, "ng-srcset")
                                 : sanitize(initialValue));
                         }
-                        let skipInitialInterpolation = Boolean(isInternalAttributeInterpolated(element, normalized) ||
-                            getNormalizedAttr(element, normalized)?.includes("{{"));
-                        observeInternalAttribute(scope, element, normalized, () => {
+                        let skipInitialInterpolation = Boolean(getNormalizedAttr(element, normalized)?.includes("{{"));
+                        const syncObservedAliasValue = () => {
                             const value = readAliasValue();
                             if (skipInitialInterpolation) {
                                 skipInitialInterpolation = false;
@@ -179,7 +177,25 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                                     return;
                             }
                             syncAliasValue(value);
+                        };
+                        syncObservedAliasValue();
+                        const observerName = directiveNormalize(normalized);
+                        const observer = new MutationObserver((mutations) => {
+                            for (let i = 0; i < mutations.length; i++) {
+                                const attributeName = mutations[i].attributeName;
+                                if (attributeName &&
+                                    directiveNormalize(attributeName) === observerName) {
+                                    syncObservedAliasValue();
+                                }
+                            }
                         });
+                        observer.observe(element, { attributes: true });
+                        let deregisterDestroy = scope.$on("$destroy", deregister);
+                        function deregister() {
+                            observer.disconnect();
+                            deregisterDestroy?.();
+                            deregisterDestroy = undefined;
+                        }
                     };
                 },
             };

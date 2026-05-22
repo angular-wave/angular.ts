@@ -11,6 +11,7 @@ import {
   callFunction,
   deProxy,
   deleteProperty,
+  directiveNormalize,
   extend,
   hasAnimate,
   isFunction,
@@ -33,7 +34,6 @@ import {
 import type { NgModelController } from "../model/model.ts";
 import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
-import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 export interface ValidityCssHost {
   /** @internal */
@@ -1054,11 +1054,18 @@ const formDirectiveFactory = function (
 
               if (nameAttr) {
                 setter(scope, controller);
-                observeNormalizedAttribute(
-                  scope,
-                  formElementParam,
-                  nameAttr,
-                  () => {
+                const observerName = directiveNormalize(nameAttr);
+                const observer = new MutationObserver((mutations) => {
+                  for (let i = 0; i < mutations.length; i++) {
+                    const attributeName = mutations[i].attributeName;
+
+                    if (
+                      !attributeName ||
+                      directiveNormalize(attributeName) !== observerName
+                    ) {
+                      continue;
+                    }
+
                     const newValue = getNormalizedAttr(
                       formElementParam,
                       nameAttr,
@@ -1081,8 +1088,20 @@ const formDirectiveFactory = function (
                       (scope.$target as Record<string, unknown>)[nextName] =
                         controller;
                     }
-                  },
+                  }
+                });
+                observer.observe(formElementParam, { attributes: true });
+
+                let deregisterDestroy: (() => void) | undefined = scope.$on(
+                  "$destroy",
+                  deregister,
                 );
+
+                function deregister(): void {
+                  observer.disconnect();
+                  deregisterDestroy?.();
+                  deregisterDestroy = undefined;
+                }
               }
               formElementParam.addEventListener("$destroy", () => {
                 const parentForm: ParentFormController =

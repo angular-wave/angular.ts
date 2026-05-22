@@ -75,11 +75,11 @@ export interface AnimationPreset {
 export class AnimationHandle implements PromiseLike<undefined> {
   readonly controller: AbortController;
   readonly finished: Promise<undefined>;
-  private readonly animations: Animation[];
-  private readonly cleanup?: (ok: boolean) => void;
-  private doneCallbacks: ((ok: boolean) => void)[] = [];
-  private settled = false;
-  private status = true;
+  private readonly _animations: Animation[];
+  private readonly _cleanup?: (ok: boolean) => void;
+  private _doneCallbacks: ((ok: boolean) => void)[] = [];
+  private _settled = false;
+  private _status = true;
 
   constructor(
     result: AnimationResult | AnimationResult[],
@@ -87,10 +87,10 @@ export class AnimationHandle implements PromiseLike<undefined> {
     cleanup?: (ok: boolean) => void,
   ) {
     this.controller = controller;
-    this.cleanup = cleanup;
+    this._cleanup = cleanup;
     const results = Array.isArray(result) ? result : [result];
 
-    this.animations = results.filter(
+    this._animations = results.filter(
       (item): item is Animation => !!item && "finished" in item,
     );
 
@@ -139,18 +139,18 @@ export class AnimationHandle implements PromiseLike<undefined> {
   }
 
   done(callback: (ok: boolean) => void): void {
-    if (this.settled) {
-      callback(this.status);
+    if (this._settled) {
+      callback(this._status);
 
       return;
     }
 
-    this.doneCallbacks.push(callback);
+    this._doneCallbacks.push(callback);
   }
 
   cancel(): void {
-    this.status = false;
-    this.animations.forEach((animation) => {
+    this._status = false;
+    this._animations.forEach((animation) => {
       animation.cancel();
     });
     this.controller.abort();
@@ -158,34 +158,34 @@ export class AnimationHandle implements PromiseLike<undefined> {
   }
 
   finish(): void {
-    this.animations.forEach((animation) => {
+    this._animations.forEach((animation) => {
       animation.finish();
     });
     this.complete(true);
   }
 
   pause(): void {
-    this.animations.forEach((animation) => {
+    this._animations.forEach((animation) => {
       animation.pause();
     });
   }
 
   play(): void {
-    this.animations.forEach((animation) => {
+    this._animations.forEach((animation) => {
       animation.play();
     });
   }
 
   complete(status = true): void {
-    if (this.settled) return;
+    if (this._settled) return;
 
-    this.settled = true;
-    this.status = status;
-    this.cleanup?.(status);
+    this._settled = true;
+    this._status = status;
+    this._cleanup?.(status);
 
-    const callbacks = this.doneCallbacks;
+    const callbacks = this._doneCallbacks;
 
-    this.doneCallbacks = [];
+    this._doneCallbacks = [];
     callbacks.forEach((callback) => {
       callback(status);
     });

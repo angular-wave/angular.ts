@@ -15,6 +15,7 @@ import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import type { ConnectionEvent } from "../../services/connection/connection-manager.ts";
 import {
   callBackAfterFirst,
+  directiveNormalize,
   isDefined,
   isInstanceOf,
   isObject,
@@ -31,7 +32,6 @@ import {
   type RealtimeProtocolMessage,
   type SwapModeType,
 } from "../realtime/protocol.ts";
-import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 import {
   getNormalizedAttr,
@@ -221,12 +221,31 @@ export function createHttpDirective(
           });
 
           dispatchAfterFirst();
-          observeNormalizedAttribute(
-            scope,
-            element,
-            "latch",
-            dispatchAfterFirst,
+          const observerName = directiveNormalize("latch");
+          const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+              const attributeName = mutations[i].attributeName;
+
+              if (
+                attributeName &&
+                directiveNormalize(attributeName) === observerName
+              ) {
+                dispatchAfterFirst();
+              }
+            }
+          });
+          observer.observe(element, { attributes: true });
+
+          let deregisterDestroy: (() => void) | undefined = scope.$on(
+            "$destroy",
+            deregister,
           );
+
+          function deregister(): void {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+          }
         }
 
         let throttled = false;

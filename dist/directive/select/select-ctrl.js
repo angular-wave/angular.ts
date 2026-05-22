@@ -1,8 +1,7 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
-import { observeInternalAttribute, isInternalAttributeInterpolated } from '../../services/attributes/attributes.js';
-import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty, directiveNormalize } from '../../shared/utils.js';
 
 function readOptionElementAttr(optionElement, normalizedName, observedValue) {
     if (isDefined(observedValue)) {
@@ -11,13 +10,13 @@ function readOptionElementAttr(optionElement, normalizedName, observedValue) {
     return getNormalizedAttr(optionElement, normalizedName);
 }
 function hasInterpolatedOptionAttr(optionElement, normalizedName) {
-    return Boolean(isInternalAttributeInterpolated(optionElement, normalizedName) ||
-        getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
+    return Boolean(getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
 }
 function observeOptionElementAttr(optionScope, optionElement, normalizedName, readValue, callback, skipInitial = false) {
     let lastValue = {};
     let skipNext = skipInitial;
-    return observeInternalAttribute(optionScope, optionElement, normalizedName, (observedValue) => {
+    const expectedName = directiveNormalize(normalizedName);
+    const handleObservedValue = (observedValue) => {
         if (skipNext) {
             skipNext = false;
             return;
@@ -27,7 +26,29 @@ function observeOptionElementAttr(optionScope, optionElement, normalizedName, re
             return;
         lastValue = newValue;
         callback(newValue);
+    };
+    const initialValue = getNormalizedAttr(optionElement, normalizedName);
+    if (initialValue !== undefined) {
+        handleObservedValue(initialValue);
+    }
+    const observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+            const { attributeName } = mutations[i];
+            if (!attributeName ||
+                directiveNormalize(attributeName) !== expectedName) {
+                continue;
+            }
+            handleObservedValue(getNormalizedAttr(optionElement, normalizedName));
+        }
     });
+    observer.observe(optionElement, { attributes: true });
+    let deregisterDestroy = optionScope.$on("$destroy", deregister);
+    function deregister() {
+        observer.disconnect();
+        deregisterDestroy?.();
+        deregisterDestroy = undefined;
+    }
+    return deregister;
 }
 function setOptionElementAttr(optionElement, normalizedName, value) {
     setNormalizedAttr(optionElement, normalizedName, value);

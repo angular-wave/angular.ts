@@ -1,7 +1,6 @@
 import { _aria, _parse } from '../../injection-tokens.js';
 import { extend, directiveNormalize, stringify } from '../../shared/utils.js';
 import { hasNormalizedAttr, getNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
 const ARIA_DISABLE_ATTR = "ngAriaDisable";
 /**
@@ -224,6 +223,25 @@ function ngModelAriaDirective($aria) {
                     ? "range"
                     : "";
     }
+    function observeAriaAttribute(scope, elem, normalizedName, callback) {
+        const observerName = directiveNormalize(normalizedName);
+        const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const attributeName = mutations[i].attributeName;
+                if (attributeName &&
+                    directiveNormalize(attributeName) === observerName) {
+                    callback();
+                }
+            }
+        });
+        observer.observe(elem, { attributes: true });
+        let deregisterDestroy = scope.$on("$destroy", deregister);
+        function deregister() {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+    }
     return {
         restrict: "A",
         require: "ngModel",
@@ -273,8 +291,8 @@ function ngModelAriaDirective($aria) {
                                             getNormalizedAttr(elem, "ngMin")));
                                     };
                                     updateAriaMin();
-                                    observeNormalizedAttribute(scope, elem, "min", updateAriaMin);
-                                    observeNormalizedAttribute(scope, elem, "ngMin", updateAriaMin);
+                                    observeAriaAttribute(scope, elem, "min", updateAriaMin);
+                                    observeAriaAttribute(scope, elem, "ngMin", updateAriaMin);
                                 }
                                 if (needsAriaValuemax) {
                                     const updateAriaMax = () => {
@@ -282,8 +300,8 @@ function ngModelAriaDirective($aria) {
                                             getNormalizedAttr(elem, "ngMax")));
                                     };
                                     updateAriaMax();
-                                    observeNormalizedAttribute(scope, elem, "max", updateAriaMax);
-                                    observeNormalizedAttribute(scope, elem, "ngMax", updateAriaMax);
+                                    observeAriaAttribute(scope, elem, "max", updateAriaMax);
+                                    observeAriaAttribute(scope, elem, "ngMax", updateAriaMax);
                                 }
                                 if (needsAriaValuenow) {
                                     ngModel.$watch("$modelValue", (newVal) => {
@@ -304,7 +322,7 @@ function ngModelAriaDirective($aria) {
                             elem.setAttribute("aria-required", hasNormalizedAttr(elem, "required").toString());
                         };
                         updateAriaRequired();
-                        observeNormalizedAttribute(scope, elem, "required", updateAriaRequired);
+                        observeAriaAttribute(scope, elem, "required", updateAriaRequired);
                     }
                     if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
                         ngModel.$watch("$invalid", (newVal) => {

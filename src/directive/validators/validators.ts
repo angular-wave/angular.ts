@@ -1,5 +1,6 @@
 import { _parse } from "../../injection-tokens.ts";
 import {
+  directiveNormalize,
   isNumberNaN,
   createErrorFactory,
   isString,
@@ -12,7 +13,6 @@ import {
   setNormalizedAttr,
   startingTag,
 } from "../../shared/dom.ts";
-import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 const ngPatternError = createErrorFactory("ngPattern");
 
@@ -100,9 +100,30 @@ function observeValidatorAttr(
 ): () => void {
   if (!(element instanceof Element)) return () => undefined;
 
-  return observeNormalizedAttribute(scope, element, normalizedName, () => {
-    callback(readValidatorAttr(element, normalizedName));
+  const observerName = directiveNormalize(normalizedName);
+  const observer = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i++) {
+      const attributeName = mutations[i].attributeName;
+
+      if (attributeName && directiveNormalize(attributeName) === observerName) {
+        callback(readValidatorAttr(element, normalizedName));
+      }
+    }
   });
+  observer.observe(element, { attributes: true });
+
+  let deregisterDestroy: (() => void) | undefined = scope.$on(
+    "$destroy",
+    deregister,
+  );
+
+  function deregister(): void {
+    observer.disconnect();
+    deregisterDestroy?.();
+    deregisterDestroy = undefined;
+  }
+
+  return deregister;
 }
 
 /**

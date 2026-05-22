@@ -107,7 +107,7 @@ export class StateObject {
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
   is(ref: StateObject | StateDeclaration | string): boolean {
-    return this === ref || this.self === ref || this.pathName() === ref;
+    return this === ref || this.self === ref || this._pathName() === ref;
   }
 
   /**
@@ -115,10 +115,10 @@ export class StateObject {
    * @returns {string} Returns a dot-separated name of the state.
    */
   fqn(): string {
-    return this.pathName();
+    return this._pathName();
   }
 
-  private pathName(): string {
+  private _pathName(): string {
     return (this.path ?? [])
       .map((state) => state.name)
       .filter(Boolean)
@@ -197,7 +197,7 @@ export class StateObject {
   }
 
   toString(): string {
-    return this.pathName();
+    return this._pathName();
   }
 }
 

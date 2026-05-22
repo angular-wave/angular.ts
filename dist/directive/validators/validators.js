@@ -1,8 +1,7 @@
 import { _parse } from '../../injection-tokens.js';
-import { isString, isUndefined, isNumberNaN, createErrorFactory } from '../../shared/utils.js';
+import { isString, isUndefined, directiveNormalize, isNumberNaN, createErrorFactory } from '../../shared/utils.js';
 import { REGEX_STRING_REGEXP } from '../attrs/attrs.js';
 import { setNormalizedAttr, getNormalizedAttr, startingTag, hasNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
 const ngPatternError = createErrorFactory("ngPattern");
 const nativeCustomValidityIssues = new WeakMap();
@@ -46,9 +45,23 @@ function hasValidatorAttr(element, normalizedName) {
 function observeValidatorAttr(scope, element, normalizedName, callback) {
     if (!(element instanceof Element))
         return () => undefined;
-    return observeNormalizedAttribute(scope, element, normalizedName, () => {
-        callback(readValidatorAttr(element, normalizedName));
+    const observerName = directiveNormalize(normalizedName);
+    const observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+            const attributeName = mutations[i].attributeName;
+            if (attributeName && directiveNormalize(attributeName) === observerName) {
+                callback(readValidatorAttr(element, normalizedName));
+            }
+        }
     });
+    observer.observe(element, { attributes: true });
+    let deregisterDestroy = scope.$on("$destroy", deregister);
+    function deregister() {
+        observer.disconnect();
+        deregisterDestroy?.();
+        deregisterDestroy = undefined;
+    }
+    return deregister;
 }
 /**
  *

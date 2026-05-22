@@ -1,8 +1,7 @@
 import { _scope, _exceptionHandler, _element, _parse, _injector, _interpolate } from '../../injection-tokens.js';
 import { VALID_CLASS, INVALID_CLASS, EMPTY_CLASS, NOT_EMPTY_CLASS, PRISTINE_CLASS, DIRTY_CLASS, UNTOUCHED_CLASS, TOUCHED_CLASS } from '../../shared/constants.js';
-import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isFunction, callFunction, isNull, isNumberNaN, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike } from '../../shared/utils.js';
+import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isFunction, callFunction, isNull, isNumberNaN, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike, directiveNormalize } from '../../shared/utils.js';
 import { startingTag, getNormalizedAttr } from '../../shared/dom.js';
-import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { nullFormCtrl, cachedToggleClass, PENDING_CLASS } from '../form/form.js';
 import { defaultModelOptions } from '../model-options/model-options.js';
@@ -13,6 +12,25 @@ function readModelAttr(element, normalizedName) {
     return element instanceof Element
         ? getNormalizedAttr(element, normalizedName)
         : undefined;
+}
+function observeModelAttr(scope, element, normalizedName, callback) {
+    const observerName = directiveNormalize(normalizedName);
+    const observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+            const attributeName = mutations[i].attributeName;
+            if (attributeName && directiveNormalize(attributeName) === observerName) {
+                callback(readModelAttr(element, normalizedName));
+            }
+        }
+    });
+    observer.observe(element, { attributes: true });
+    let deregisterDestroy = scope.$on("$destroy", deregister);
+    function deregister() {
+        observer.disconnect();
+        deregisterDestroy?.();
+        deregisterDestroy = undefined;
+    }
+    return deregister;
 }
 /**
  * @property $viewValue The actual value from the control's view.
@@ -1138,9 +1156,7 @@ function ngModelDirective() {
                             modelCtrl._parentForm._renameControl(modelCtrl, nextName);
                         }
                     };
-                    const deregisterNameObserver = observeNormalizedAttribute(scope, preElement, "name", () => {
-                        handleNameChange(readModelAttr(preElement, "name"));
-                    });
+                    const deregisterNameObserver = observeModelAttr(scope, preElement, "name", handleNameChange);
                     const deregisterWatch = (scope.$watch(modelCtrl._modelExpression, (val) => {
                         const modelValue = deProxy(val);
                         if (modelValue === modelCtrl.$modelValue ||

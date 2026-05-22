@@ -9,10 +9,6 @@ import {
 import { hashKey, equals, isNumberNaN, toJson } from "../../shared/utils.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { optionDirective } from "./select.ts";
-import {
-  observeInternalAttribute,
-  setInternalAttribute,
-} from "../../services/attributes/attributes.ts";
 
 describe("select", () => {
   let scope;
@@ -1683,9 +1679,7 @@ describe("select", () => {
           ).toBeTrue();
         });
       });
-      it("should interact with internal attribute observe and set calls", async () => {
-        const log = [];
-
+      it("should update ngValue option registration when the value attribute changes", async () => {
         compile(
           '<select ng-model="selected">' +
             '<option ng-value="option">{{option}}</option>' +
@@ -1694,18 +1688,18 @@ describe("select", () => {
         await wait();
 
         const option = element.querySelectorAll("option")[1];
-
-        observeInternalAttribute(scope, option, "value", (newVal) => {
-          log.push(newVal);
-        });
+        const selectController = getController(element, "select");
 
         scope.option = "init";
         await wait();
         expect(option.value).toBe("string:init");
 
-        setInternalAttribute(option, "value", "update");
+        spyOn(selectController, "_removeOption").and.callThrough();
+
+        option.setAttribute("value", "update");
         await wait();
-        expect(log).toContain("update");
+
+        expect(selectController._removeOption).toHaveBeenCalledWith("init");
         expect(option.value).toBe("string:update");
       });
 

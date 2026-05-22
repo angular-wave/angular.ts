@@ -5,10 +5,10 @@ import {
   isNullOrUndefined,
   isString,
   isUndefined,
+  directiveNormalize,
   stringify,
 } from "../../shared/utils.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
-import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 /** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {
@@ -42,12 +42,31 @@ export function ngBindTemplateDirective(): ng.Directive {
       };
 
       syncTemplate();
-      observeNormalizedAttribute(
-        scope,
-        element,
-        "ngBindTemplate",
-        syncTemplate,
+      const observerName = directiveNormalize("ngBindTemplate");
+      const observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+          const attributeName = mutations[i].attributeName;
+
+          if (
+            attributeName &&
+            directiveNormalize(attributeName) === observerName
+          ) {
+            syncTemplate();
+          }
+        }
+      });
+      observer.observe(element, { attributes: true });
+
+      let deregisterDestroy: (() => void) | undefined = scope.$on(
+        "$destroy",
+        deregister,
       );
+
+      function deregister(): void {
+        observer.disconnect();
+        deregisterDestroy?.();
+        deregisterDestroy = undefined;
+      }
     },
   };
 }
