@@ -1,6 +1,6 @@
 import { _parse, _rootElement, _rootScope, _compile, _injector, _scope } from './injection-tokens.js';
 import { errorHandlingConfig, values, assertNotHasOwnProperty, hasOwn, isString, isInstanceOf, isArray, ngAttrPrefixes, createErrorFactory, isObject } from './shared/utils.js';
-import { getController, getInjector, getScope, getInheritedData, setCacheData } from './shared/dom.js';
+import { getController, getInjector, getScope, getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr, getInheritedData, setCacheData } from './shared/dom.js';
 import { createInjector } from './core/di/injector.js';
 import { NgModule } from './core/di/ng-module/ng-module.js';
 import { validateIsString } from './shared/validate.js';
@@ -49,6 +49,12 @@ class AngularRuntime extends EventTarget {
         this.getInjector = getInjector;
         /** Retrieve the scope cached on a compiled DOM element. */
         this.getScope = getScope;
+        /** Read an element attribute by normalized directive-style name. */
+        this.getNormalizedAttr = getNormalizedAttr;
+        /** Return the actual DOM attribute name for a normalized directive-style name. */
+        this.getNormalizedAttrName = getNormalizedAttrName;
+        /** Return whether an element has an attribute matching a normalized name. */
+        this.hasNormalizedAttr = hasNormalizedAttr;
         /** Global framework error-handling configuration. */
         this.errorHandlingConfig = errorHandlingConfig;
         /** Public injection token names keyed by token value. */

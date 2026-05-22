@@ -1,11 +1,11 @@
-import { _compile, _attributes } from '../../injection-tokens.js';
+import { _compile } from '../../injection-tokens.js';
 import { isFunction, isInstanceOf, arrayFrom, isArray, createErrorFactory } from '../../shared/utils.js';
-import { emptyElement, startingTag } from '../../shared/dom.js';
+import { emptyElement, startingTag, getNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 
 const ngTranscludeError = createErrorFactory("ngTransclude");
-ngTranscludeDirective.$inject = [_compile, _attributes];
-function ngTranscludeDirective($compile, $attributes) {
+ngTranscludeDirective.$inject = [_compile];
+function ngTranscludeDirective($compile) {
     return {
         compile: function ngTranscludeCompile(tElement) {
             const fallbackLinkFn = $compile(tElement.childNodes);
@@ -16,9 +16,9 @@ function ngTranscludeDirective($compile, $attributes) {
                         "No parent directive that requires a transclusion found. " +
                         "Element: {0}", startingTag($element));
                 }
-                let transcludeName = $attributes.read($element, "ngTransclude");
-                const transcludeSlot = $attributes.read($element, "ngTranscludeSlot");
-                if (transcludeName === $attributes.originalName($element, "ngTransclude")) {
+                let transcludeName = getNormalizedAttr($element, "ngTransclude");
+                const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
+                if (transcludeName === getNormalizedAttrName($element, "ngTransclude")) {
                     transcludeName = "";
                 }
                 const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0

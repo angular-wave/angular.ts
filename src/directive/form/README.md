@@ -100,7 +100,7 @@ so later child destruction does not keep propagating through a destroyed form.
 - Validity updates propagate immediately from child to parent.
 - CSS class changes run synchronously, but may delegate to `$animate` when
   animation support is present.
-- Name interpolation is observed through `$attributes.observe()` and renames
+- Name interpolation is observed through internal attribute helpers and renames
   the form/controller when the observed value changes.
 
 ## Data Structures
@@ -130,8 +130,8 @@ so later child destruction does not keep propagating through a destroyed form.
 - Parent `FormController`: receives child registration, child validity, dirty
   state, submitted state, and removal.
 - `$parse`: creates scope assignment functions for named forms.
-- `$attributes`: reads and observes normalized `name` and `ngForm`
-  attributes.
+- DOM attribute helpers: read and observe normalized `name` and `ngForm`
+  attributes directly from the element.
 - `$interpolate`: resolves the initial form name.
 - `$animate`: optionally applies form state classes.
 - Native `<form>` submission: commits model values, marks submitted, and

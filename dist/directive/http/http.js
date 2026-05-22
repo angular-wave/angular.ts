@@ -1,11 +1,14 @@
-import { _http, _compile, _log, _parse, _state, _sse, _injector, _stream, _attributes } from '../../injection-tokens.js';
+import { _http, _compile, _log, _parse, _interpolate, _state, _sse, _injector, _stream } from '../../injection-tokens.js';
 import { Http } from '../../services/http/http.js';
+import { addClass, removeClass } from '../../animations/class-mutation.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
-import { uppercase, isDefined, wait, toKeyValue, callBackAfterFirst, isString, isInstanceOf, isObject } from '../../shared/utils.js';
+import { uppercase, isDefined, wait, toKeyValue, stringify, callBackAfterFirst, isString, isInstanceOf, isObject } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent } from '../realtime/protocol.js';
 export { SwapMode } from '../realtime/protocol.js';
+import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 import { createRealtimeSwapHandler } from '../realtime/swap.js';
+import { getNormalizedAttr, hasNormalizedAttr, setNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
 
 /** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(method, attrOverride) {
@@ -16,11 +19,11 @@ function defineDirective(method, attrOverride) {
         _compile,
         _log,
         _parse,
+        _interpolate,
         _state,
         _sse,
         _injector,
         _stream,
-        _attributes,
     ];
     return directive;
 }
@@ -32,7 +35,7 @@ const ngSseDirective = defineDirective("get", "ngSse");
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
 function createHttpDirective(method, attrName) {
     /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-    return function ($http, $compile, $log, $parse, $state, $sse, $injector, $stream, $attributes) {
+    return function ($http, $compile, $log, $parse, $interpolate, $state, $sse, $injector, $stream) {
         const getAnimate = createLazyAnimate($injector);
         /** Collects form data from the element or its associated form. */
         function collectFormData(element) {
@@ -79,12 +82,16 @@ function createHttpDirective(method, attrName) {
             restrict: "A",
             link(scope, element) {
                 const readAttr = (name) => {
-                    return $attributes.read(element, name);
+                    const value = getNormalizedAttr(element, name);
+                    if (!value?.includes("{{"))
+                        return value;
+                    const interpolated = $interpolate(value)?.(scope);
+                    return interpolated == null ? undefined : stringify(interpolated);
                 };
-                const hasAttr = (name) => $attributes.has(element, name);
+                const hasAttr = (name) => hasNormalizedAttr(element, name);
                 const setAttr = (name, value) => {
-                    $attributes.set(element, name, value, {
-                        attrName: $attributes.originalName(element, name),
+                    setNormalizedAttr(element, name, value, {
+                        attrName: getNormalizedAttrName(element, name),
                     });
                 };
                 const eventName = readAttr("trigger") ?? getEventNameForElement(element);
@@ -93,9 +100,8 @@ function createHttpDirective(method, attrName) {
                     const dispatchAfterFirst = callBackAfterFirst(() => {
                         element.dispatchEvent(new Event(eventName));
                     });
-                    $attributes.observe(scope, element, "latch", () => {
-                        dispatchAfterFirst();
-                    });
+                    dispatchAfterFirst();
+                    observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
                 }
                 let throttled = false;
                 let intervalId;
@@ -121,7 +127,6 @@ function createHttpDirective(method, attrName) {
                     $log,
                     getAnimate,
                     scope,
-                    $attributes,
                     element,
                     logPrefix: attrName,
                 });
@@ -196,7 +201,7 @@ function createHttpDirective(method, attrName) {
                             }
                             const loadingClass = readAttr("loadingClass");
                             if (isDefined(loadingClass)) {
-                                $attributes.removeClass(element, loadingClass);
+                                removeClass(element, loadingClass, getAnimate);
                             }
                             const html = res.data;
                             if (Http._OK <= res.status &&
@@ -261,7 +266,7 @@ function createHttpDirective(method, attrName) {
                         }
                         const loadingClass = readAttr("loadingClass");
                         if (isDefined(loadingClass)) {
-                            $attributes.addClass(element, loadingClass);
+                            addClass(element, loadingClass, getAnimate);
                         }
                         if (method === "post" || method === "put") {
                             let data;
@@ -300,7 +305,7 @@ function createHttpDirective(method, attrName) {
                                         }
                                         const sseLoadingClass = readAttr("loadingClass");
                                         if (isDefined(sseLoadingClass))
-                                            $attributes.removeClass(element, sseLoadingClass);
+                                            removeClass(element, sseLoadingClass, getAnimate);
                                     },
                                     onEvent: ({ data, event: messageEvent, type, }) => {
                                         const source = sourceRef.current;

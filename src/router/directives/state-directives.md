@@ -200,7 +200,7 @@
 - A directive which links to a state (and optionally, parameters).
 - When clicked, this directive activates the linked state with the supplied parameter values.
 -
-- **This directive is very similar to [[ngSref]], but it `$observe`s and `$watch`es/evaluates all its inputs.**
+- **This directive is very similar to [[ngSref]], but it observes attributes and watches/evaluates all its inputs.**
 -
 - A directive which links to a state (and optionally, parameters).
 - When clicked, this directive activates the linked state with the supplied parameter values.

@@ -1,6 +1,6 @@
 import { _exceptionHandler, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize, isString } from "../../shared/utils.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
@@ -94,8 +94,8 @@ export function createEventDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    compile(_element: Element, attr: DirectiveAttributes) {
-      const expression: unknown = attr[directiveName];
+    compile(element: Element) {
+      const expression: unknown = getNormalizedAttr(element, directiveName);
 
       if (!isString(expression)) return () => undefined;
 
@@ -132,8 +132,8 @@ export function createWindowEventDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    compile(_element: Element, attr: DirectiveAttributes) {
-      const expression: unknown = attr[directiveName];
+    compile(element: Element) {
+      const expression: unknown = getNormalizedAttr(element, directiveName);
 
       if (!isString(expression)) return () => undefined;
 

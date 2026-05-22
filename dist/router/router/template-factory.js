@@ -1,8 +1,8 @@
-import { _templateRequest, _injector } from '../injection-tokens.js';
-import { isDefined, isFunction, isNullOrUndefined, isArray, isObject, keys } from '../shared/utils.js';
-import { annotate } from '../core/di/di.js';
-import { DirectiveSuffix } from '../core/compile/compile.js';
-import { kebobString } from '../shared/strings.js';
+import { _templateRequest, _injector } from '../../injection-tokens.js';
+import { isDefined, isString, isFunction, isNullOrUndefined, isArray, isObject, keys } from '../../shared/utils.js';
+import { annotate } from '../../core/di/di.js';
+import { DirectiveSuffix } from '../../core/compile/compile.js';
+import { kebobString } from '../../shared/strings.js';
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
 const BINDING_MATCH = /^([=<@&])[?]?(.*)/;
@@ -53,8 +53,11 @@ class TemplateFactoryProvider {
         if (isDefined(templateUrl)) {
             return asTemplate(this._fromUrl(templateUrl, params));
         }
-        if (isDefined(component)) {
+        if (isString(component)) {
             return asComponent(component);
+        }
+        if (isDefined(component)) {
+            throw new Error("Inline route components must be normalized before loading");
         }
         return asTemplate(DEFAULT_TEMPLATE);
     }

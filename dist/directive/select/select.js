@@ -1,22 +1,18 @@
-import { _attributes, _interpolate } from '../../injection-tokens.js';
-import { getInheritedData, getCacheData, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
+import { _interpolate } from '../../injection-tokens.js';
+import { getInheritedData, getCacheData, hasNormalizedAttr, getNormalizedAttr, setNormalizedAttr, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
 import { isDefined, arrayFrom, includes, equals, shallowCopy } from '../../shared/utils.js';
 import { SelectController } from './select-ctrl.js';
 
-selectDirective.$inject = [_attributes];
-function readSelectAttr($attributes, element, attr, normalizedName) {
-    const value = $attributes?.read(element, normalizedName);
-    return isDefined(value)
-        ? value
-        : attr[normalizedName];
+function readSelectAttr(element, normalizedName) {
+    return getNormalizedAttr(element, normalizedName);
 }
-function hasSelectAttr($attributes, element, attr, normalizedName) {
-    return ($attributes?.has(element, normalizedName) ?? isDefined(attr[normalizedName]));
+function hasSelectAttr(element, normalizedName) {
+    return hasNormalizedAttr(element, normalizedName);
 }
-function setSelectAttr($attributes, element, normalizedName, value) {
-    $attributes.set(element, normalizedName, value);
+function setSelectAttr(element, normalizedName, value) {
+    setNormalizedAttr(element, normalizedName, value);
 }
-function selectDirective($attributes) {
+function selectDirective() {
     return {
         restrict: "E",
         require: ["select", "?ngModel"],
@@ -46,7 +42,7 @@ function selectDirective($attributes) {
             ngModelCtrl.$setViewValue(viewValue);
             syncNativeValidity();
         });
-        if ($attributes.has(element, "multiple")) {
+        if (hasNormalizedAttr(element, "multiple")) {
             selectCtrl._multiple = true;
             selectCtrl._readValue = function () {
                 const array = [];
@@ -75,7 +71,7 @@ function selectDirective($attributes) {
             };
             let lastView;
             let lastViewRef = NaN;
-            _scope.$watch($attributes.read(element, "ngModel") ?? "", () => {
+            _scope.$watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
                 if (lastViewRef === ngModelCtrl.$viewValue &&
                     !equals(lastView, ngModelCtrl.$viewValue)) {
                     lastView = shallowCopy(ngModelCtrl.$viewValue);
@@ -104,15 +100,15 @@ function selectDirective($attributes) {
         selectCtrl._scheduleRender();
     }
 }
-optionDirective.$inject = [_attributes, _interpolate];
-function optionDirective($attributes, $interpolate) {
+optionDirective.$inject = [_interpolate];
+function optionDirective($interpolate) {
     return {
         restrict: "E",
         priority: 100,
-        compile(element, attr) {
+        compile(element) {
             const optionElement = element;
-            const hasNgValue = hasSelectAttr($attributes, element, attr, "ngValue");
-            let initialValue = readSelectAttr($attributes, element, attr, "value");
+            const hasNgValue = hasSelectAttr(element, "ngValue");
+            let initialValue = readSelectAttr(element, "value");
             let interpolateValueFn;
             let interpolateTextFn;
             if (hasNgValue) ;
@@ -122,12 +118,13 @@ function optionDirective($attributes, $interpolate) {
             else {
                 interpolateTextFn = $interpolate(optionElement.textContent, true);
                 if (!interpolateTextFn) {
-                    setSelectAttr($attributes, optionElement, "value", optionElement.textContent);
+                    setSelectAttr(optionElement, "value", optionElement.textContent);
                     initialValue = optionElement.textContent || undefined;
                 }
             }
-            return function (scope, elemParam, attrParam) {
+            return function (scope, elemParam) {
                 const optionElementParam = elemParam;
+                const ngValueExpression = readSelectAttr(optionElementParam, "ngValue");
                 const selectCtrlName = "$selectController";
                 const parent = optionElementParam.parentElement;
                 const futureParent = getInheritedData(optionElementParam, FUTURE_PARENT_ELEMENT_KEY);
@@ -141,7 +138,7 @@ function optionDirective($attributes, $interpolate) {
                         ? getInheritedData(futureParent, selectCtrlName)
                         : null));
                 if (selectCtrl) {
-                    selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn, $attributes, initialValue, hasNgValue);
+                    selectCtrl._registerOption(scope, optionElementParam, interpolateValueFn, interpolateTextFn, ngValueExpression, initialValue, hasNgValue);
                 }
             };
         },

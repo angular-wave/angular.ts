@@ -1,27 +1,18 @@
-import { getBooleanAttrName } from "../../shared/dom.ts";
-import { _attributes } from "../../injection-tokens.ts";
+import { getBooleanAttrName, hasNormalizedAttr } from "../../shared/dom.ts";
 import {
   createLazyAnimate,
-  getAnimateForNode,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
+import { updateClass as updateAnimatedClass } from "../../animations/class-mutation.ts";
+import { setInternalAttribute } from "../../services/attributes/attributes.ts";
 import {
-  arrayRemove,
-  assertDefined,
   directiveNormalize,
   hasOwn,
-  isNullOrUndefined,
-  isUndefined,
   keys,
   nullObject,
   snakeCase,
 } from "../../shared/utils.ts";
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
-
-const SIMPLE_ATTR_NAME = /^\w/;
-
-const specialAttrHolder = document.createElement("div");
 
 const lazyAnimateByInjector = new WeakMap<ng.InjectorService, LazyAnimate>();
 
@@ -36,81 +27,63 @@ function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   return getAnimate;
 }
 
-type ObserverList = ((value?: unknown) => void)[];
+/** @internal */
+export type CompileAttributeValue = string | boolean | null | undefined;
 
-type ObserverMap = Partial<Record<string, ObserverList>>;
-
-export class CompileAttributes {
+/** @internal */
+export class CompileAttributeState {
   static $nonscope = true;
 
   /**
-   * Creates an CompileAttributes instance.
+   * Creates compiler-owned attribute metadata.
    *
    * There are two construction modes:
    *
-   * 1. **Fresh instance** (no `attributesToCopy`):
+   * 1. **Fresh instance** (no `stateToCopy`):
    *    - Used when compiling a DOM element for the first time.
-   *    - Initializes a new `$attr` map to track normalized -> DOM attribute names.
+   *    - Initializes a map from normalized names to DOM attribute names.
    *
-   * 2. **Clone instance** (`attributesToCopy` provided):
-   *    - Used when cloning attributes for directive linking / child scopes.
-   *    - Performs a shallow copy of all properties from the source CompileAttributes object,
-   *      including `$attr` and normalized attribute values.
-   *    - Observer state is intentionally not copied, because link-time `CompileAttributes`
-   *      instances own their own `$observe(...)` registrations.
-   *    - `$attr` is intentionally **not reinitialized** in this case, because the
-   *      source object already contains the correct normalized -> DOM attribute mapping.
+   * 2. **Clone instance** (`stateToCopy` provided):
+   *    - Used when cloning compile metadata for directive linking / child scopes.
+   *    - Performs a shallow copy of normalized -> DOM name metadata.
    */
 
   /** @internal */
   _getAnimate: LazyAnimate;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
+  _attributeNames: Record<string, string>;
   /** @internal */
-  _attributes: AttributesService | undefined;
-  $attr: Record<string, string>;
-  /** @internal */
-  _node: Node | Element | undefined;
-  /** @internal */
-  _observers: ObserverMap | undefined;
-  [key: string]: unknown;
+  _originalAttributeNames: Record<string, string>;
 
   constructor(
     $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
-    node?: Node | Element,
-    attributesToCopy?: Record<string, unknown>,
+    stateToCopy?: CompileAttributeState,
   ) {
     this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
-    try {
-      this._attributes = $injector.get(_attributes) as AttributesService;
-    } catch {
-      this._attributes = undefined;
-    }
-    this.$attr = {};
+    this._attributeNames = {};
+    this._originalAttributeNames = nullObject();
 
-    if (attributesToCopy) {
-      const attributeKeys = keys(attributesToCopy);
+    if (stateToCopy) {
+      const attrKeys = keys(stateToCopy._attributeNames);
 
-      for (let i = 0, l = attributeKeys.length; i < l; i++) {
-        const key = attributeKeys[i];
+      for (let i = 0, l = attrKeys.length; i < l; i++) {
+        const key = attrKeys[i];
 
-        if (key === "_observers") {
-          continue;
-        }
+        this._attributeNames[key] = stateToCopy._attributeNames[key];
+      }
 
-        this[key] = attributesToCopy[key];
+      const sourceKeys = keys(stateToCopy._originalAttributeNames);
+
+      for (let i = 0, l = sourceKeys.length; i < l; i++) {
+        const key = sourceKeys[i];
+
+        this._originalAttributeNames[key] =
+          stateToCopy._originalAttributeNames[key];
       }
     }
-
-    this._node = node;
-  }
-
-  /** @ignore Internal element accessor used by legacy attribute helpers. */
-  /** @internal */
-  _element(): Node | Element {
-    return assertDefined(this._node);
   }
 
   /**
@@ -124,239 +97,116 @@ export class CompileAttributes {
    * @param name Name to normalize
    */
   $normalize = directiveNormalize;
+}
 
-  $addClass(classVal: string): void {
-    if (classVal && classVal.length > 0) {
-      const element = this._element() as Element;
+/** @internal */
+export function updateCompileAttributeClass(
+  attrs: CompileAttributeState,
+  node: Node | Element,
+  newClasses: string,
+  oldClasses: string,
+): void {
+  if (newClasses === oldClasses) {
+    return;
+  }
 
-      if (this._attributes) {
-        this._attributes.addClass(element, classVal);
-        return;
-      }
+  updateAnimatedClass(node, newClasses, oldClasses, attrs._getAnimate);
+}
 
-      const animate = getAnimateForNode(this._getAnimate, element);
+/** @internal */
+export function setCompileAttributeValue(
+  attrs: CompileAttributeState,
+  node: Node | Element,
+  key: string,
+  value: CompileAttributeValue,
+  writeAttr?: boolean,
+  attrName?: string,
+): void {
+  const booleanKey = getBooleanAttrName(node as Element, key);
 
-      if (animate) {
-        animate.addClass(element, classVal);
-      } else {
-        element.classList.add(classVal);
-      }
+  const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+
+  let observer = key;
+
+  if (booleanKey) {
+    (node as unknown as Record<string, unknown>)[key] = value;
+    attrName = booleanKey;
+  } else if (aliasedKey) {
+    recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+    observer = aliasedKey;
+  }
+
+  if (attrName) {
+    attrs._attributeNames[key] = attrName;
+  } else {
+    attrName = attrs._attributeNames[key];
+
+    if (!attrName) {
+      attrs._attributeNames[key] = attrName = snakeCase(key, "-");
     }
   }
 
-  $removeClass(classVal: string): void {
-    if (classVal && classVal.length > 0) {
-      const element = this._element() as Element;
+  recordCompileAttribute(attrs, key, attrName);
 
-      if (this._attributes) {
-        this._attributes.removeClass(element, classVal);
-        return;
-      }
+  setInternalAttribute(node, observer, value, {
+    writeAttr,
+    attrName,
+  });
+}
 
-      const animate = getAnimateForNode(this._getAnimate, element);
-
-      if (animate) {
-        animate.removeClass(element, classVal);
-      } else {
-        element.classList.remove(classVal);
-      }
-    }
-  }
-
-  $updateClass(newClasses: string, oldClasses: string): void {
-    if (newClasses === oldClasses) {
-      return;
-    }
-
-    const element = this._element() as Element;
-
-    if (this._attributes) {
-      this._attributes.updateClass(element, newClasses, oldClasses);
-      return;
-    }
-
-    const animate = getAnimateForNode(this._getAnimate, element);
-
-    const toAdd = tokenDifference(newClasses, oldClasses);
-
-    const toRemove = tokenDifference(oldClasses, newClasses);
-
-    if (animate && (toAdd.length || toRemove.length)) {
-      animate.setClass(element, toAdd.join(" "), toRemove.join(" "));
-      return;
-    }
-
-    if (toAdd.length) {
-      if (!animate) {
-        element.classList.add(...toAdd);
-      }
-    }
-
-    if (toRemove.length) {
-      if (!animate) {
-        element.classList.remove(...toRemove);
-      }
-    }
-  }
-
-  /** @internal */
-  _setValue(
-    key: string,
-    value: string | boolean | null | undefined,
-    writeAttr?: boolean,
-    attrName?: string,
-  ): void {
-    const node = this._element();
-
-    const booleanKey = getBooleanAttrName(node as Element, key);
-
-    const aliasedKey = hasOwn(ALIASED_ATTR, key)
-      ? ALIASED_ATTR[key]
-      : undefined;
-
-    let observer = key;
-
-    if (booleanKey) {
-      (this._element() as unknown as Record<string, unknown>)[key] = value;
-      attrName = booleanKey;
-    } else if (aliasedKey) {
-      this[aliasedKey] = value;
-      observer = aliasedKey;
-    }
-
-    this[key] = value;
-
-    if (attrName) {
-      this.$attr[key] = attrName;
-    } else {
-      attrName = this.$attr[key];
-
-      if (!attrName) {
-        this.$attr[key] = attrName = snakeCase(key, "-");
-      }
-    }
-
-    if (this._attributes) {
-      this._attributes.set(node, observer, value, {
-        writeAttr,
-        attrName,
-      });
-    } else if (writeAttr !== false) {
-      if (!attrName) return;
-      const elem = this._element() as Element;
-
-      if (isNullOrUndefined(value)) {
-        elem.removeAttribute(attrName);
-      } else if (SIMPLE_ATTR_NAME.test(attrName)) {
-        if (booleanKey && value === false) {
-          elem.removeAttribute(attrName);
-        } else if (booleanKey) {
-          elem.toggleAttribute(attrName, value as boolean);
-        } else {
-          elem.setAttribute(attrName, value as string);
-        }
-      } else {
-        CompileAttributes._setSpecialAttr(elem, attrName, value as string);
-      }
-    }
-
-    const { _observers } = this;
-
-    const observerListeners = _observers?.[observer];
-
-    if (observerListeners) {
-      for (let i = 0, l = observerListeners.length; i < l; i++) {
-        try {
-          observerListeners[i](value);
-        } catch (err) {
-          this._exceptionHandler(err);
-        }
-      }
-    }
-  }
-
-  $observe(key: string, fn: (value?: unknown) => unknown): () => void {
-    const _observers = this._observers ?? (this._observers = nullObject());
-
-    const listeners = _observers[key] ?? (_observers[key] = [] as ObserverList);
-
-    listeners.push(fn as (value?: unknown) => void);
-
-    const isInterpolated = this._attributes?._isInterpolated(
-      this._element(),
-      key,
-    );
-
-    if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
-      fn(this[key]);
-    }
-
-    return function () {
-      arrayRemove(listeners, fn as (value?: unknown) => void);
-    };
-  }
-
-  /** @internal */
-  static _setSpecialAttr(
-    element: Element,
-    attrName: string,
-    value: string | null,
-  ): void {
-    specialAttrHolder.innerHTML = `<span ${attrName}>`;
-    const { attributes } = specialAttrHolder.firstChild as Element;
-
-    const attribute = attributes[0];
-
-    attributes.removeNamedItem(attribute.name);
-    attribute.value = value ?? "";
-    element.attributes.setNamedItem(attribute);
+/** @internal */
+export function recordCompileAttribute(
+  attrs: CompileAttributeState,
+  key: string,
+  attrName: string,
+  sourceAttrName = attrName,
+  overwrite = true,
+): void {
+  if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+    attrs._attributeNames[key] = attrName;
+    attrs._originalAttributeNames[key] = sourceAttrName;
   }
 }
 
-/**
- * Splits a space-separated class string into normalized tokens.
- *
- * @param value - The class string to split.
- * @returns The normalized class tokens.
- */
-function tokenizeClassString(value: string): string[] {
-  const trimmed = value.trim();
+/** @internal */
+export function hasCompileAttribute(
+  attrs: CompileAttributeState,
+  node: Node | Element | null | undefined,
+  key: string,
+): boolean {
+  if (
+    hasOwn(attrs._attributeNames, key) ||
+    hasOwn(attrs._originalAttributeNames, key)
+  ) {
+    return true;
+  }
 
-  return trimmed ? trimmed.split(/\s+/) : [];
+  return hasNormalizedAttr(node, key);
 }
 
-/**
- * Computes the difference between two space-separated token strings.
- *
- * @param str1 - The first string containing space-separated tokens.
- * @param str2 - The second string containing space-separated tokens.
- * @returns Tokens that are present in `str1` but not in `str2`.
- */
-function tokenDifference(str1: string, str2: string): string[] {
-  if (str1 === str2) {
-    return [];
-  }
+/** @internal */
+export function listCompileAttributes(attrs: CompileAttributeState): string[] {
+  const names = new Set<string>(keys(attrs._attributeNames));
 
-  const tokens1 = tokenizeClassString(str1);
+  keys(attrs._originalAttributeNames).forEach((key) => {
+    names.add(key);
+  });
 
-  if (tokens1.length === 0) {
-    return [];
-  }
+  return Array.from(names);
+}
 
-  const excludedTokens = new Set(tokenizeClassString(str2));
+/** @internal */
+export function getCompileAttributeName(
+  attrs: CompileAttributeState,
+  key: string,
+): string | undefined {
+  return attrs._attributeNames[key];
+}
 
-  const seenTokens = new Set<string>();
-
-  const difference: string[] = [];
-
-  for (let i = 0; i < tokens1.length; i++) {
-    const token = tokens1[i];
-
-    if (!excludedTokens.has(token) && !seenTokens.has(token)) {
-      seenTokens.add(token);
-      difference.push(token);
-    }
-  }
-
-  return difference;
+/** @internal */
+export function getCompileOriginalAttributeName(
+  attrs: CompileAttributeState,
+  key: string,
+): string | undefined {
+  return attrs._originalAttributeNames[key];
 }

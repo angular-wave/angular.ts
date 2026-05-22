@@ -1,74 +1,76 @@
-import { _injector, _attributes } from '../../injection-tokens.js';
+import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { removeElement } from '../../shared/dom.js';
+import { getNormalizedAttr, removeElement } from '../../shared/dom.js';
 
-ngIfDirective.$inject = [_injector, _attributes];
+ngIfDirective.$inject = [_injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
-function ngIfDirective($injector, $attributes) {
+function ngIfDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         transclude: "element",
         priority: 600,
         terminal: true,
         restrict: "A",
-        link($scope, $element, $transclude) {
-            if (!$transclude) {
-                return;
-            }
-            let block;
-            let childScope;
-            let previousElements;
-            const expression = $attributes.read($element, "ngIf");
+        compile(tElement) {
+            const expression = getNormalizedAttr(tElement, "ngIf");
             if (typeof expression !== "string") {
-                return;
+                return () => undefined;
             }
-            $scope.$watch(expression, (value) => {
-                if (value) {
-                    if (!childScope) {
-                        $transclude((clone, newScope) => {
-                            childScope = newScope;
-                            // Note: We only need the first/last node of the cloned nodes.
-                            // However, we need to keep the reference to the dom wrapper as it might be changed later
-                            // by a directive with templateUrl when its template arrives.
-                            block = clone;
-                            const animate = getAnimateForNode(getAnimate, clone);
-                            if (animate) {
-                                animate.enter(clone, $element.parentElement, $element);
-                            }
-                            else {
-                                $element.after(clone);
-                            }
-                        });
-                    }
+            return function ngIfLink($scope, $element, $transclude) {
+                if (!$transclude) {
+                    return;
                 }
-                else {
-                    if (previousElements) {
-                        removeElement(previousElements);
-                        previousElements = null;
-                    }
-                    if (childScope) {
-                        childScope.$destroy();
-                        childScope = null;
-                    }
-                    if (block) {
-                        previousElements = block;
-                        const animate = getAnimateForNode(getAnimate, previousElements);
-                        if (animate) {
-                            animate.leave(previousElements).done((response) => {
-                                if (response)
-                                    previousElements = null;
+                let block;
+                let childScope;
+                let previousElements;
+                $scope.$watch(expression, (value) => {
+                    if (value) {
+                        if (!childScope) {
+                            $transclude((clone, newScope) => {
+                                childScope = newScope;
+                                // Note: We only need the first/last node of the cloned nodes.
+                                // However, we need to keep the reference to the dom wrapper as it might be changed later
+                                // by a directive with templateUrl when its template arrives.
+                                block = clone;
+                                const animate = getAnimateForNode(getAnimate, clone);
+                                if (animate) {
+                                    animate.enter(clone, $element.parentElement, $element);
+                                }
+                                else {
+                                    $element.after(clone);
+                                }
                             });
                         }
-                        else {
-                            const currentElement = $element.nextElementSibling;
-                            if (currentElement) {
-                                removeElement(currentElement);
-                            }
-                        }
-                        block = null;
                     }
-                }
-            });
+                    else {
+                        if (previousElements) {
+                            removeElement(previousElements);
+                            previousElements = null;
+                        }
+                        if (childScope) {
+                            childScope.$destroy();
+                            childScope = null;
+                        }
+                        if (block) {
+                            previousElements = block;
+                            const animate = getAnimateForNode(getAnimate, previousElements);
+                            if (animate) {
+                                animate.leave(previousElements).done((response) => {
+                                    if (response)
+                                        previousElements = null;
+                                });
+                            }
+                            else {
+                                const currentElement = $element.nextElementSibling;
+                                if (currentElement) {
+                                    removeElement(currentElement);
+                                }
+                            }
+                            block = null;
+                        }
+                    }
+                });
+            };
         },
     };
 }

@@ -12,7 +12,6 @@ import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 
 ngIncludeDirective.$inject = [
   _templateRequest,
@@ -42,22 +41,16 @@ export function ngIncludeDirective(
       /* empty */
       return undefined;
     },
-    compile(element: Element, tAttrs: DirectiveAttributes) {
+    require: "ngInclude",
+    compile(element: Element) {
       const srcExp =
         getNormalizedAttr(element, "ngInclude") ??
         getNormalizedAttr(element, "src") ??
-        (tAttrs.ngInclude as string | undefined) ??
-        (tAttrs.src as string | undefined) ??
         "";
 
-      const onloadExp =
-        getNormalizedAttr(element, "onload") ??
-        (tAttrs.onload as string | undefined) ??
-        "";
+      const onloadExp = getNormalizedAttr(element, "onload") ?? "";
 
-      const autoScrollExp =
-        getNormalizedAttr(element, "autoscroll") ??
-        (tAttrs.autoscroll as string | undefined);
+      const autoScrollExp = getNormalizedAttr(element, "autoscroll");
 
       const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
 

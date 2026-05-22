@@ -24,7 +24,6 @@ import {
   getNormalizedAttr,
   removeElement,
 } from "../../shared/dom.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 
 const ACTIVE_CLASS = "ng-active";
 
@@ -398,20 +397,16 @@ function ngMessageDirectiveFactory(
       priority: 1, // must run before ngBind, otherwise the text is set on the comment
       terminal: true,
       require: "^^ngMessages",
-      compile(tElement: Element, tAttrs: DirectiveAttributes) {
+      compile(tElement: Element) {
         const staticExp = isDefault
           ? undefined
           : (getNormalizedAttr(tElement, "ngMessage") ??
-            getNormalizedAttr(tElement, "when") ??
-            (tAttrs.ngMessage as string | undefined) ??
-            (tAttrs.when as string | undefined));
+            getNormalizedAttr(tElement, "when"));
 
         const dynamicExp = isDefault
           ? undefined
           : (getNormalizedAttr(tElement, "ngMessageExp") ??
-            getNormalizedAttr(tElement, "whenExp") ??
-            (tAttrs.ngMessageExp as string | undefined) ??
-            (tAttrs.whenExp as string | undefined));
+            getNormalizedAttr(tElement, "whenExp"));
 
         return (
           scope: ng.Scope,

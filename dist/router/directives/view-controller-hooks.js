@@ -1,5 +1,4 @@
-import { uppercase, isFunction, assertDefined } from '../../shared/utils.js';
-import { getCacheData, getInheritedData } from '../../shared/dom.js';
+import { isFunction, assertDefined } from '../../shared/utils.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 
 const controllerRegisteredScopes = new WeakMap();
@@ -12,37 +11,8 @@ function appendParamSchema(nodes, schema) {
         }
     }
 }
-function controllerKeyData(element, key) {
-    return (getCacheData(element, key) ??
-        getInheritedData(element, key));
-}
-/** @internal */
-function getComponentController(element, componentName, tagRegexp) {
-    const candidates = element.querySelectorAll("*");
-    let directiveEl;
-    for (let i = 0; i < candidates.length; i++) {
-        const candidate = candidates[i];
-        if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
-            directiveEl = candidate;
-            break;
-        }
-    }
-    if (!directiveEl)
-        return undefined;
-    const camelNameFromTag = directiveEl.tagName
-        .toLowerCase()
-        .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
-    const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ??
-        getInheritedData(directiveEl, "$isolateScope") ??
-        getCacheData(directiveEl, "$scope") ??
-        getInheritedData(directiveEl, "$scope");
-    return (controllerKeyData(directiveEl, `$${componentName}Controller`) ??
-        controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ??
-        controllerKeyData(directiveEl, "$ngControllerController") ??
-        scopeWithCtrl?.$ctrl);
-}
 /** @ignore incrementing id */
-let _ngCanExitId = 0;
+let canExitId = 0;
 /**
  * Registers component/controller transition lifecycle callbacks for an active view.
  *
@@ -65,9 +35,9 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
     }
     const viewState = cfg._path[cfg._path.length - 1].state.self;
     const hookOptions = { bind: controllerInstance };
-    // Add component-level hook for ngOnParamsChanged
-    if (isFunction(controllerInstance.ngOnParamsChanged)) {
-        const onParamsChanged = controllerInstance.ngOnParamsChanged;
+    // Add component/controller-level hook for $onParamsChanged
+    if (isFunction(controllerInstance.$onParamsChanged)) {
+        const onParamsChanged = controllerInstance.$onParamsChanged;
         const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
         const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
         // Fire callback on any successful transition
@@ -135,17 +105,17 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
             deregisterParamsHook();
         });
     }
-    // Add component-level hook for ngCanExit
-    if (isFunction(controllerInstance.ngCanExit)) {
-        const ngCanExit = controllerInstance.ngCanExit;
-        const id = _ngCanExitId++;
+    // Add component/controller-level hook for $canExit
+    if (isFunction(controllerInstance.$canExit)) {
+        const canExit = controllerInstance.$canExit;
+        const id = canExitId++;
         /**
          * Returns true if any transition in the redirect chain already answered truthy.
          */
         const prevTruthyAnswer = (trans) => {
             if (!trans)
                 return false;
-            const cache = trans._ngCanExitIds;
+            const cache = trans._$canExitIds;
             return (cache?.[id] === true ||
                 prevTruthyAnswer(trans._options.redirectedFrom ?? null));
         };
@@ -153,9 +123,9 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
         const wrappedHook = async (trans) => {
             let promise;
             const cacheTrans = trans;
-            const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});
+            const ids = (cacheTrans._$canExitIds = cacheTrans._$canExitIds ?? {});
             if (!prevTruthyAnswer(trans)) {
-                promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
+                promise = Promise.resolve(canExit.call(controllerInstance, trans));
                 void promise.then((val) => (ids[id] = val !== false));
             }
             return promise;
@@ -165,4 +135,4 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
     }
 }
 
-export { getComponentController, registerViewControllerCallbacks };
+export { registerViewControllerCallbacks };

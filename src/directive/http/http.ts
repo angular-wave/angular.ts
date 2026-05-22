@@ -1,6 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
-  _attributes,
   _compile,
   _http,
   _injector,
@@ -12,6 +10,7 @@ import {
   _stream,
 } from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
+import { addClass, removeClass } from "../../animations/class-mutation.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import type { ConnectionEvent } from "../../services/connection/connection-manager.ts";
 import {
@@ -38,6 +37,7 @@ import {
   getNormalizedAttr,
   getNormalizedAttrName,
   hasNormalizedAttr,
+  setNormalizedAttr,
 } from "../../shared/dom.ts";
 
 export {
@@ -89,7 +89,6 @@ function defineDirective(
     _sse,
     _injector,
     _stream,
-    _attributes,
   ];
 
   return directive;
@@ -124,7 +123,6 @@ export function createHttpDirective(
     $sse: ng.SseService,
     $injector: ng.InjectorService,
     $stream: ng.StreamService,
-    $attributes: AttributesService,
   ): ng.Directive {
     const getAnimate = createLazyAnimate($injector);
 
@@ -207,7 +205,7 @@ export function createHttpDirective(
           name: string,
           value: string | boolean | null | undefined,
         ): void => {
-          $attributes.set(element, name, value, {
+          setNormalizedAttr(element, name, value, {
             attrName: getNormalizedAttrName(element, name),
           });
         };
@@ -376,7 +374,7 @@ export function createHttpDirective(
               const loadingClass = readAttr("loadingClass");
 
               if (isDefined(loadingClass)) {
-                $attributes.removeClass(element, loadingClass);
+                removeClass(element, loadingClass, getAnimate);
               }
 
               const html: unknown = res.data;
@@ -458,7 +456,7 @@ export function createHttpDirective(
             const loadingClass = readAttr("loadingClass");
 
             if (isDefined(loadingClass)) {
-              $attributes.addClass(element, loadingClass);
+              addClass(element, loadingClass, getAnimate);
             }
 
             if (method === "post" || method === "put") {
@@ -506,7 +504,7 @@ export function createHttpDirective(
                     const sseLoadingClass = readAttr("loadingClass");
 
                     if (isDefined(sseLoadingClass))
-                      $attributes.removeClass(element, sseLoadingClass);
+                      removeClass(element, sseLoadingClass, getAnimate);
                   },
                   onEvent: ({
                     data,

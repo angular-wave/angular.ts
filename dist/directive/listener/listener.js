@@ -1,18 +1,17 @@
-import { _attributes } from '../../injection-tokens.js';
 import { isObject, isString } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngListenerDirective.$inject = [_attributes];
 function fallbackWhenEmpty(value, fallback) {
     if (value)
         return value;
     return fallback;
 }
 /** Listens for DOM custom events and projects their payload into the element or scope. */
-function ngListenerDirective($attributes) {
+function ngListenerDirective() {
     return {
         scope: false,
         link: (scope, element) => {
-            const configuredChannel = $attributes.read(element, "ngListener");
+            const configuredChannel = getNormalizedAttr(element, "ngListener");
             const channel = fallbackWhenEmpty(configuredChannel, element.id);
             const hasTemplateContent = element.childNodes.length > 0;
             const fn = (event) => {

@@ -25,15 +25,11 @@ describe("ngCloak", () => {
     dealoc(element);
   });
 
-  it("should remove the cloak attribute through $attributes", () => {
-    const $attributes = injector.get("$attributes");
-    const ngCloak = ngCloakDirective($attributes);
-
-    spyOn($attributes, "set").and.callThrough();
+  it("should remove the cloak attribute directly from the element", () => {
+    const ngCloak = ngCloakDirective();
 
     ngCloak.compile!(element, undefined as any);
 
-    expect($attributes.set).toHaveBeenCalledWith(element, "ngCloak", null);
     expect(element.getAttribute("ng-cloak")).toBeNull();
   });
 

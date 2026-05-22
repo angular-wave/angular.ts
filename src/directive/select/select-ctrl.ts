@@ -1,7 +1,14 @@
-import type { DirectiveAttributes } from "../../interface.ts";
 import { _element, _scope } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
-import { removeElement, getNormalizedAttr } from "../../shared/dom.ts";
+import {
+  getNormalizedAttr,
+  removeElement,
+  setNormalizedAttr,
+} from "../../shared/dom.ts";
+import {
+  isInternalAttributeInterpolated,
+  observeInternalAttribute,
+} from "../../services/attributes/attributes.ts";
 import {
   assertNotHasOwnProperty,
   deProxy,
@@ -13,7 +20,6 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 
 export type SelectScope = ng.Scope &
   Record<string, unknown> & {
@@ -23,59 +29,42 @@ export type SelectScope = ng.Scope &
 
 export type NgModelController = ng.NgModelController & Record<string, unknown>;
 
-export type SelectAttributes = DirectiveAttributes & Record<string, unknown>;
-
 export type InterpolateFn = ((scope: ng.Scope) => unknown) | null | undefined;
 
 function readOptionElementAttr(
-  $attributes: AttributesService | undefined,
   optionElement: HTMLOptionElement,
-  optionAttrs: SelectAttributes,
   normalizedName: string,
+  observedValue?: unknown,
 ): unknown {
-  const elementValue = getNormalizedAttr(optionElement, normalizedName);
-  const attrValue: unknown = optionAttrs[normalizedName];
-
-  if (
-    isDefined(attrValue) &&
-    (isUndefined(elementValue) || elementValue.includes("{{"))
-  ) {
-    return attrValue;
+  if (isDefined(observedValue)) {
+    return observedValue;
   }
 
-  return elementValue ?? attrValue;
+  return getNormalizedAttr(optionElement, normalizedName);
 }
 
 function hasInterpolatedOptionAttr(
-  $attributes: AttributesService,
   optionElement: HTMLOptionElement,
-  optionAttrs: SelectAttributes,
   normalizedName: string,
 ): boolean {
   return Boolean(
-    $attributes._isInterpolated(optionElement, normalizedName) ||
+    isInternalAttributeInterpolated(optionElement, normalizedName) ||
     getNormalizedAttr(optionElement, normalizedName)?.includes("{{"),
   );
 }
 
 function observeOptionElementAttr(
-  $attributes: AttributesService | undefined,
   optionScope: SelectScope,
   optionElement: HTMLOptionElement,
-  optionAttrs: SelectAttributes,
   normalizedName: string,
   readValue: (observedValue?: unknown) => unknown,
   callback: (value: unknown) => void,
   skipInitial = false,
 ): () => void {
-  if (!$attributes) {
-    return () => undefined;
-  }
-
   let lastValue: unknown = {};
   let skipNext = skipInitial;
 
-  return $attributes.observe(
+  return observeInternalAttribute(
     optionScope,
     optionElement,
     normalizedName,
@@ -97,12 +86,11 @@ function observeOptionElementAttr(
 }
 
 function setOptionElementAttr(
-  $attributes: AttributesService,
   optionElement: HTMLOptionElement,
   normalizedName: string,
   value: string,
 ): void {
-  $attributes.set(optionElement, normalizedName, value);
+  setNormalizedAttr(optionElement, normalizedName, value);
 }
 
 /**
@@ -470,10 +458,9 @@ export class SelectController {
   _registerOption(
     optionScope: SelectScope,
     optionElement: HTMLOptionElement,
-    optionAttrs: SelectAttributes,
     interpolateValueFn: InterpolateFn,
     interpolateTextFn: InterpolateFn,
-    $attributes: AttributesService,
+    ngValueExpression?: string,
     initialValue?: string,
     hasNgValue = false,
   ) {
@@ -516,12 +503,10 @@ export class SelectController {
       };
 
       syncNgValue(undefined);
-      optionScope.$watch(stringify(optionAttrs.ngValue ?? ""), syncNgValue);
+      optionScope.$watch(stringify(ngValueExpression ?? ""), syncNgValue);
       observeOptionElementAttr(
-        $attributes,
         optionScope,
         optionElement,
-        optionAttrs,
         "value",
         (observedValue) => {
           if (observedValue !== optionElement.getAttribute("value")) {
@@ -539,18 +524,11 @@ export class SelectController {
       );
     } else if (interpolateValueFn) {
       observeOptionElementAttr(
-        $attributes,
         optionScope,
         optionElement,
-        optionAttrs,
         "value",
-        () =>
-          readOptionElementAttr(
-            $attributes,
-            optionElement,
-            optionAttrs,
-            "value",
-          ),
+        (observedValue) =>
+          readOptionElementAttr(optionElement, "value", observedValue),
         (newVal: unknown) => {
           this._readValue();
           let removal;
@@ -569,12 +547,7 @@ export class SelectController {
             this._scheduleViewValueUpdate();
           }
         },
-        hasInterpolatedOptionAttr(
-          $attributes,
-          optionElement,
-          optionAttrs,
-          "value",
-        ),
+        hasInterpolatedOptionAttr(optionElement, "value"),
       );
     } else if (interpolateTextFn) {
       const initialTextValue: unknown = interpolateTextFn(optionScope);
@@ -582,12 +555,7 @@ export class SelectController {
       optionScope.value = initialTextValue;
 
       if (!registeredValue) {
-        setOptionElementAttr(
-          $attributes,
-          optionElement,
-          "value",
-          String(optionScope.value),
-        );
+        setOptionElementAttr(optionElement, "value", String(optionScope.value));
         registeredValue = initialTextValue;
         this._addOption(String(initialTextValue), optionElement);
       }
@@ -596,12 +564,7 @@ export class SelectController {
         const newVal: unknown = interpolateTextFn(optionScope);
 
         if (!registeredValue) {
-          setOptionElementAttr(
-            $attributes,
-            optionElement,
-            "value",
-            String(newVal),
-          );
+          setOptionElementAttr(optionElement, "value", String(newVal));
         }
         const previouslySelected = optionElement.selected;
 
@@ -621,18 +584,11 @@ export class SelectController {
     }
 
     observeOptionElementAttr(
-      $attributes,
       optionScope,
       optionElement,
-      optionAttrs,
       "disabled",
-      () =>
-        readOptionElementAttr(
-          $attributes,
-          optionElement,
-          optionAttrs,
-          "disabled",
-        ),
+      (observedValue) =>
+        readOptionElementAttr(optionElement, "disabled", observedValue),
       (newVal: unknown) => {
         if (newVal === "true" || (newVal && optionElement.selected)) {
           if (this._multiple) {

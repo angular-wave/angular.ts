@@ -129,8 +129,8 @@ Removed event behavior:
 - `NgModelController`: receives `$render`, `$isEmpty`, live native validity
   getters, native validity propagation, custom validity message updates, and
   DOM cleanup callbacks.
-- `DirectiveAttributes`: carries compile-time normalized attribute data, with direct DOM
-  reads as a fallback for `data-*` forms.
+- Normalized DOM attribute helpers: read directive attributes directly from the
+  element, including supported `data-*` forms.
 - Browser constraint validation: provides `validity`, `validationMessage`,
   `checkValidity()`, `reportValidity()`, and `setCustomValidity()`.
 

@@ -18,9 +18,9 @@ watches a message collection and coordinates transcluded `ngMessage`,
 
 ## Public Surface
 
-- `ngMessagesDirective($injector, $parse, $attributes)`: builds the root
+- `ngMessagesDirective($injector, $parse)`: builds the root
   `ngMessages` directive and controller.
-- `ngMessagesIncludeDirective($templateRequest, $compile, $attributes)`: loads
+- `ngMessagesIncludeDirective($templateRequest, $compile)`: loads
   and compiles external message templates into an existing `ngMessages`
   container.
 - `ngMessageDirective`: registers a static `ng-message` / `when` message.
@@ -106,8 +106,8 @@ destroy listener still deregisters it from the controller.
 
 - `$parse`: compiles dynamic message key expressions and truthy `multiple`
   expressions.
-- `$attributes`: reads normalized attributes such as `data-ng-messages`,
-  `data-ng-message`, `for`, `when`, and `src`.
+- DOM attribute helpers: read normalized attributes such as
+  `data-ng-messages`, `data-ng-message`, `for`, `when`, and `src`.
 - `$templateRequest`: fetches included message templates and uses the template
   cache when available.
 - `$compile`: compiles included template content into the current messages

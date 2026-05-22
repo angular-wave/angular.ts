@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 21, 2026 01:52:01 */
+/* Version: 0.27.0 - May 22, 2026 23:46:44 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -13,8 +13,6 @@
      * aligned around one source of truth for both service and provider names.
      */
     const _angular = "$angular";
-    const _attrs = "$attrs";
-    const _attributes = "$attributes";
     const _scope = "$scope";
     const _element = "$element";
     const _animateCssDriver = "$$animateCssDriver";
@@ -28,6 +26,7 @@
     const _animateCss = "$animateCss";
     const _aria = "$aria";
     const _compile = "$compile";
+    const _compileLifecycle = "$compileLifecycle";
     const _cookie = "$cookie";
     const _controller = "$controller";
     const _document = "$document";
@@ -68,6 +67,7 @@
     const _animateCssProvider = "$animateCssProvider";
     const _ariaProvider = "$ariaProvider";
     const _compileProvider = "$compileProvider";
+    const _compileLifecycleProvider = "$compileLifecycleProvider";
     const _animateProvider = "$animateProvider";
     const _cookieProvider = "$cookieProvider";
     const _eventBusProvider = "$eventBusProvider";
@@ -105,8 +105,6 @@
      */
     const $injectTokens = {
         _angular,
-        _attrs,
-        _attributes,
         _scope,
         _element,
         _animateCssDriver,
@@ -120,6 +118,7 @@
         _animateCss,
         _aria,
         _compile,
+        _compileLifecycle,
         _cookie,
         _controller,
         _document,
@@ -160,6 +159,7 @@
         _animateCssProvider,
         _ariaProvider,
         _compileProvider,
+        _compileLifecycleProvider,
         _animateProvider,
         _cookieProvider,
         _eventBusProvider,
@@ -1337,6 +1337,8 @@
     const SCOPE_KEY = _scope;
     const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
     const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
+    const SIMPLE_ATTR_NAME = /^\w/;
+    const specialAttrHolder = document.createElement("div");
     /**
      * HTML attributes whose presence alone represents a truthy value.
      */
@@ -1538,6 +1540,10 @@
     /** Stores the original element that was replaced by an element-transclusion anchor. */
     function setTranscludedHostElement(anchor, hostElement) {
         transcludedHostElements.set(anchor, hostElement);
+    }
+    /** Returns the original element replaced by an element-transclusion anchor. */
+    function getTranscludedHostElement(anchor) {
+        return transcludedHostElements.get(anchor);
     }
     /** Copies element-transclusion host metadata from an original node tree to its clone. */
     function cloneTranscludedHostElements(source, clone) {
@@ -1751,11 +1757,16 @@
      * so callers see attribute aliases such as `data-*` and later DOM updates.
      */
     function getNormalizedAttr(element, normalizedName) {
-        if (!(element instanceof Element))
+        const attrElement = element instanceof Element
+            ? element
+            : element
+                ? getTranscludedHostElement(element)
+                : undefined;
+        if (!(attrElement instanceof Element))
             return undefined;
         const expected = directiveNormalize(normalizedName);
-        for (let index = 0; index < element.attributes.length; index += 1) {
-            const attr = element.attributes[index];
+        for (let index = 0; index < attrElement.attributes.length; index += 1) {
+            const attr = attrElement.attributes[index];
             if (directiveNormalize(attr.name) === expected) {
                 return attr.value;
             }
@@ -1764,11 +1775,16 @@
     }
     /** Returns the actual DOM attribute name for a normalized directive-style name. */
     function getNormalizedAttrName(element, normalizedName) {
-        if (!(element instanceof Element))
+        const attrElement = element instanceof Element
+            ? element
+            : element
+                ? getTranscludedHostElement(element)
+                : undefined;
+        if (!(attrElement instanceof Element))
             return undefined;
         const expected = directiveNormalize(normalizedName);
-        for (let index = 0; index < element.attributes.length; index += 1) {
-            const attr = element.attributes[index];
+        for (let index = 0; index < attrElement.attributes.length; index += 1) {
+            const attr = attrElement.attributes[index];
             if (directiveNormalize(attr.name) === expected) {
                 return attr.name;
             }
@@ -1778,6 +1794,66 @@
     /** Returns whether an element has an attribute matching a normalized name. */
     function hasNormalizedAttr(element, normalizedName) {
         return getNormalizedAttr(element, normalizedName) !== undefined;
+    }
+    function setSpecialAttr(element, attrName, value) {
+        specialAttrHolder.innerHTML = `<span ${attrName}>`;
+        const { attributes } = specialAttrHolder.firstChild;
+        const attribute = attributes[0];
+        attributes.removeNamedItem(attribute.name);
+        attribute.value = value ?? "";
+        element.setAttributeNode(attribute);
+    }
+    /** Writes an element attribute by normalized directive-style name. */
+    function setNormalizedAttr(element, normalizedName, value, options) {
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return undefined;
+        const normalized = directiveNormalize(normalizedName);
+        const observerName = hasOwn(ALIASED_ATTR, normalized)
+            ? ALIASED_ATTR[normalized]
+            : normalized;
+        const booleanName = getBooleanAttrName(targetElement, observerName);
+        let attrName = options?.attrName;
+        if (booleanName) {
+            targetElement[observerName] = value;
+            attrName = booleanName;
+        }
+        else {
+            attrName ?? (attrName = snakeCase(normalized, "-"));
+        }
+        if (options?.writeAttr === false || !attrName) {
+            return {
+                element: targetElement,
+                normalizedName: normalized,
+                observerName,
+                attrName,
+                observedValue: isNullOrUndefined(value) ? undefined : String(value),
+            };
+        }
+        if (isNullOrUndefined(value)) {
+            targetElement.removeAttribute(attrName);
+        }
+        else if (SIMPLE_ATTR_NAME.test(attrName)) {
+            if (booleanName && value === false) {
+                targetElement.removeAttribute(attrName);
+            }
+            else if (booleanName) {
+                targetElement.toggleAttribute(attrName, value);
+            }
+            else {
+                targetElement.setAttribute(attrName, value);
+            }
+        }
+        else {
+            setSpecialAttr(targetElement, attrName, value);
+        }
+        return {
+            element: targetElement,
+            normalizedName: normalized,
+            observerName,
+            attrName,
+            observedValue: targetElement.getAttribute(attrName) ?? undefined,
+        };
     }
     function cleanSingleElementData(node) {
         if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
@@ -2928,6 +3004,12 @@
             this.getInjector = getInjector;
             /** Retrieve the scope cached on a compiled DOM element. */
             this.getScope = getScope;
+            /** Read an element attribute by normalized directive-style name. */
+            this.getNormalizedAttr = getNormalizedAttr;
+            /** Return the actual DOM attribute name for a normalized directive-style name. */
+            this.getNormalizedAttrName = getNormalizedAttrName;
+            /** Return whether an element has an attribute matching a normalized name. */
+            this.hasNormalizedAttr = hasNormalizedAttr;
             /** Global framework error-handling configuration. */
             this.errorHandlingConfig = errorHandlingConfig;
             /** Public injection token names keyed by token value. */
@@ -6681,8 +6763,8 @@
     function createEventDirective($parse, $exceptionHandler, directiveName, eventName) {
         return {
             restrict: "A",
-            compile(_element, attr) {
-                const expression = attr[directiveName];
+            compile(element) {
+                const expression = getNormalizedAttr(element, directiveName);
                 if (!isString(expression))
                     return () => undefined;
                 const fn = $parse(expression);
@@ -6709,8 +6791,8 @@
     function createWindowEventDirective($parse, $exceptionHandler, $window, directiveName, eventName) {
         return {
             restrict: "A",
-            compile(_element, attr) {
-                const expression = attr[directiveName];
+            compile(element) {
+                const expression = getNormalizedAttr(element, directiveName);
                 if (!isString(expression))
                     return () => undefined;
                 const fn = $parse(expression);
@@ -6747,224 +6829,10 @@
         return hasAnimate(node) ? getAnimate() : undefined;
     }
 
-    const SIMPLE_ATTR_NAME$1 = /^\w/;
-    const specialAttrHolder$1 = document.createElement("div");
-    const lazyAnimateByInjector = new WeakMap();
-    function getLazyAnimate($injector) {
-        let getAnimate = lazyAnimateByInjector.get($injector);
-        if (!getAnimate) {
-            getAnimate = createLazyAnimate($injector);
-            lazyAnimateByInjector.set($injector, getAnimate);
-        }
-        return getAnimate;
-    }
-    class CompileAttributes {
-        constructor($injector, $exceptionHandler, node, attributesToCopy) {
-            /**
-             * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
-             * normalized, camelCase form.
-             *
-             * Also there is special case for Moz prefix starting with upper case letter.
-             *
-             * Normalization follows the directive matching rules used by `$compile`.
-             *
-             * @param name Name to normalize
-             */
-            this.$normalize = directiveNormalize;
-            this._getAnimate = getLazyAnimate($injector);
-            this._exceptionHandler = $exceptionHandler;
-            try {
-                this._attributes = $injector.get(_attributes);
-            }
-            catch {
-                this._attributes = undefined;
-            }
-            this.$attr = {};
-            if (attributesToCopy) {
-                const attributeKeys = keys(attributesToCopy);
-                for (let i = 0, l = attributeKeys.length; i < l; i++) {
-                    const key = attributeKeys[i];
-                    if (key === "_observers") {
-                        continue;
-                    }
-                    this[key] = attributesToCopy[key];
-                }
-            }
-            this._node = node;
-        }
-        /** @ignore Internal element accessor used by legacy attribute helpers. */
-        /** @internal */
-        _element() {
-            return assertDefined(this._node);
-        }
-        $addClass(classVal) {
-            if (classVal && classVal.length > 0) {
-                const element = this._element();
-                if (this._attributes) {
-                    this._attributes.addClass(element, classVal);
-                    return;
-                }
-                const animate = getAnimateForNode(this._getAnimate, element);
-                if (animate) {
-                    animate.addClass(element, classVal);
-                }
-                else {
-                    element.classList.add(classVal);
-                }
-            }
-        }
-        $removeClass(classVal) {
-            if (classVal && classVal.length > 0) {
-                const element = this._element();
-                if (this._attributes) {
-                    this._attributes.removeClass(element, classVal);
-                    return;
-                }
-                const animate = getAnimateForNode(this._getAnimate, element);
-                if (animate) {
-                    animate.removeClass(element, classVal);
-                }
-                else {
-                    element.classList.remove(classVal);
-                }
-            }
-        }
-        $updateClass(newClasses, oldClasses) {
-            if (newClasses === oldClasses) {
-                return;
-            }
-            const element = this._element();
-            if (this._attributes) {
-                this._attributes.updateClass(element, newClasses, oldClasses);
-                return;
-            }
-            const animate = getAnimateForNode(this._getAnimate, element);
-            const toAdd = tokenDifference(newClasses, oldClasses);
-            if (toAdd.length) {
-                if (animate) {
-                    animate.addClass(element, toAdd.join(" "));
-                }
-                else {
-                    element.classList.add(...toAdd);
-                }
-            }
-            const toRemove = tokenDifference(oldClasses, newClasses);
-            if (toRemove.length) {
-                if (animate) {
-                    animate.removeClass(element, toRemove.join(" "));
-                }
-                else {
-                    element.classList.remove(...toRemove);
-                }
-            }
-        }
-        /** @internal */
-        _setValue(key, value, writeAttr, attrName) {
-            const node = this._element();
-            const booleanKey = getBooleanAttrName(node, key);
-            const aliasedKey = hasOwn(ALIASED_ATTR, key)
-                ? ALIASED_ATTR[key]
-                : undefined;
-            let observer = key;
-            if (booleanKey) {
-                this._element()[key] = value;
-                attrName = booleanKey;
-            }
-            else if (aliasedKey) {
-                this[aliasedKey] = value;
-                observer = aliasedKey;
-            }
-            this[key] = value;
-            if (attrName) {
-                this.$attr[key] = attrName;
-            }
-            else {
-                attrName = this.$attr[key];
-                if (!attrName) {
-                    this.$attr[key] = attrName = snakeCase(key, "-");
-                }
-            }
-            if (this._attributes) {
-                this._attributes.set(node, observer, value, {
-                    writeAttr,
-                    attrName,
-                });
-            }
-            else if (writeAttr !== false) {
-                if (!attrName)
-                    return;
-                const elem = this._element();
-                if (isNullOrUndefined(value)) {
-                    elem.removeAttribute(attrName);
-                }
-                else if (SIMPLE_ATTR_NAME$1.test(attrName)) {
-                    if (booleanKey && value === false) {
-                        elem.removeAttribute(attrName);
-                    }
-                    else if (booleanKey) {
-                        elem.toggleAttribute(attrName, value);
-                    }
-                    else {
-                        elem.setAttribute(attrName, value);
-                    }
-                }
-                else {
-                    CompileAttributes._setSpecialAttr(elem, attrName, value);
-                }
-            }
-            const { _observers } = this;
-            const observerListeners = _observers?.[observer];
-            if (observerListeners) {
-                for (let i = 0, l = observerListeners.length; i < l; i++) {
-                    try {
-                        observerListeners[i](value);
-                    }
-                    catch (err) {
-                        this._exceptionHandler(err);
-                    }
-                }
-            }
-        }
-        $observe(key, fn) {
-            const _observers = this._observers ?? (this._observers = nullObject());
-            const listeners = _observers[key] ?? (_observers[key] = []);
-            listeners.push(fn);
-            const isInterpolated = this._attributes?._isInterpolated(this._element(), key);
-            if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
-                fn(this[key]);
-            }
-            return function () {
-                arrayRemove(listeners, fn);
-            };
-        }
-        /** @internal */
-        static _setSpecialAttr(element, attrName, value) {
-            specialAttrHolder$1.innerHTML = `<span ${attrName}>`;
-            const { attributes } = specialAttrHolder$1.firstChild;
-            const attribute = attributes[0];
-            attributes.removeNamedItem(attribute.name);
-            attribute.value = value ?? "";
-            element.attributes.setNamedItem(attribute);
-        }
-    }
-    CompileAttributes.$nonscope = true;
-    /**
-     * Splits a space-separated class string into normalized tokens.
-     *
-     * @param value - The class string to split.
-     * @returns The normalized class tokens.
-     */
     function tokenizeClassString(value) {
         const trimmed = value.trim();
         return trimmed ? trimmed.split(/\s+/) : [];
     }
-    /**
-     * Computes the difference between two space-separated token strings.
-     *
-     * @param str1 - The first string containing space-separated tokens.
-     * @param str2 - The second string containing space-separated tokens.
-     * @returns Tokens that are present in `str1` but not in `str2`.
-     */
     function tokenDifference(str1, str2) {
         if (str1 === str2) {
             return [];
@@ -6984,6 +6852,345 @@
             }
         }
         return difference;
+    }
+    function setClass(element, addClasses, removeClasses, getAnimate) {
+        if (!addClasses && !removeClasses)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.setClass(targetElement, addClasses, removeClasses);
+            return;
+        }
+        const toAdd = tokenizeClassString(addClasses);
+        const toRemove = tokenizeClassString(removeClasses);
+        if (toAdd.length) {
+            targetElement.classList.add(...toAdd);
+        }
+        if (toRemove.length) {
+            targetElement.classList.remove(...toRemove);
+        }
+    }
+    function addClass(element, classValue, getAnimate) {
+        if (!classValue)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.addClass(targetElement, classValue);
+            return;
+        }
+        const tokens = tokenizeClassString(classValue);
+        if (tokens.length) {
+            targetElement.classList.add(...tokens);
+        }
+    }
+    function removeClass(element, classValue, getAnimate) {
+        if (!classValue)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.removeClass(targetElement, classValue);
+            return;
+        }
+        const tokens = tokenizeClassString(classValue);
+        if (tokens.length) {
+            targetElement.classList.remove(...tokens);
+        }
+    }
+    function updateClass(element, newClasses, oldClasses, getAnimate) {
+        if (newClasses === oldClasses)
+            return;
+        setClass(element, tokenDifference(newClasses, oldClasses).join(" "), tokenDifference(oldClasses, newClasses).join(" "), getAnimate);
+    }
+
+    const observerStates = new WeakMap();
+    const interpolatedAttributes = new WeakMap();
+    const observerScopes = new WeakMap();
+    function getElement(element) {
+        return getDirectiveHostElement(element);
+    }
+    function notifyCallbacks(state, normalizedName, value) {
+        const callbacks = state.callbacks.get(normalizedName);
+        if (!callbacks?.size)
+            return;
+        Array.from(callbacks).forEach((entry) => {
+            entry.callback(value);
+        });
+    }
+    function valuesMatch(left, right) {
+        return (Object.is(left, right) ||
+            (typeof left === "boolean" && right === String(left)) ||
+            (left === null && right === undefined));
+    }
+    function consumePendingMutation(state, normalizedName, value) {
+        const pendingValues = state.pendingMutations.get(normalizedName);
+        if (!pendingValues?.length)
+            return false;
+        const [nextValue] = pendingValues;
+        if (!valuesMatch(nextValue, value))
+            return false;
+        pendingValues.shift();
+        if (pendingValues.length === 0) {
+            state.pendingMutations.delete(normalizedName);
+        }
+        return true;
+    }
+    function getObserverState(element) {
+        const state = observerStates.get(element);
+        if (state)
+            return state;
+        const newState = {
+            callbacks: new Map(),
+            pendingMutations: new Map(),
+            observer: undefined,
+        };
+        newState.observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const { attributeName } = mutations[i];
+                if (!attributeName)
+                    continue;
+                const normalizedName = directiveNormalize(attributeName);
+                const value = getNormalizedAttr(element, normalizedName);
+                if (!consumePendingMutation(newState, normalizedName, value)) {
+                    notifyCallbacks(newState, normalizedName, value);
+                }
+                const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
+                    ? ALIASED_ATTR[normalizedName]
+                    : undefined;
+                if (aliasedName &&
+                    !consumePendingMutation(newState, aliasedName, value)) {
+                    notifyCallbacks(newState, aliasedName, value);
+                }
+            }
+        });
+        newState.observer.observe(element, { attributes: true });
+        observerStates.set(element, newState);
+        return newState;
+    }
+    function rememberPendingMutation(element, normalizedName, value) {
+        const state = observerStates.get(element);
+        if (!state)
+            return;
+        let pendingValues = state.pendingMutations.get(normalizedName);
+        if (!pendingValues) {
+            pendingValues = [];
+            state.pendingMutations.set(normalizedName, pendingValues);
+        }
+        pendingValues.push(value);
+    }
+    /** @internal */
+    function observeInternalAttribute(scope, element, normalizedName, callback) {
+        const targetElement = getElement(element);
+        if (!targetElement)
+            return () => undefined;
+        const observedElement = targetElement;
+        const normalized = directiveNormalize(normalizedName);
+        const state = getObserverState(observedElement);
+        let callbacks = state.callbacks.get(normalized);
+        if (!callbacks) {
+            callbacks = new Set();
+            state.callbacks.set(normalized, callbacks);
+        }
+        const entry = { callback };
+        callbacks.add(entry);
+        const initialValue = getNormalizedAttr(observedElement, normalized);
+        if (initialValue !== undefined) {
+            callback(initialValue);
+        }
+        let deregisterDestroy;
+        if (scope) {
+            deregisterDestroy = scope.$on("$destroy", () => {
+                deregister();
+            });
+        }
+        function deregister() {
+            callbacks?.delete(entry);
+            if (callbacks?.size === 0) {
+                state.callbacks.delete(normalized);
+            }
+            if (state.callbacks.size === 0) {
+                state.observer.disconnect();
+                observerStates.delete(observedElement);
+            }
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
+    }
+    /** @internal */
+    function setInternalAttribute(element, normalizedName, value, options) {
+        const result = setNormalizedAttr(element, normalizedName, value, options);
+        if (!result)
+            return;
+        if (options?.writeAttr !== false && result.attrName) {
+            rememberPendingMutation(result.element, result.observerName, value);
+        }
+        const state = observerStates.get(result.element);
+        if (state) {
+            notifyCallbacks(state, result.observerName, result.observedValue);
+        }
+    }
+    /** @internal */
+    function markInternalAttributeInterpolated(element, normalizedName) {
+        const targetElement = getElement(element);
+        if (!targetElement)
+            return;
+        const normalized = directiveNormalize(normalizedName);
+        let interpolated = interpolatedAttributes.get(targetElement);
+        if (!interpolated) {
+            interpolated = new Set();
+            interpolatedAttributes.set(targetElement, interpolated);
+        }
+        interpolated.add(normalized);
+    }
+    /** @internal */
+    function isInternalAttributeInterpolated(element, normalizedName) {
+        const targetElement = getElement(element);
+        if (!targetElement)
+            return false;
+        return (interpolatedAttributes
+            .get(targetElement)
+            ?.has(directiveNormalize(normalizedName)) ?? false);
+    }
+    /** @internal */
+    function setInternalAttributeObserverScope(element, normalizedName, scope) {
+        const targetElement = getElement(element);
+        if (!targetElement)
+            return;
+        const normalized = directiveNormalize(normalizedName);
+        let scopes = observerScopes.get(targetElement);
+        if (!scopes) {
+            scopes = new Map();
+            observerScopes.set(targetElement, scopes);
+        }
+        scopes.set(normalized, scope);
+    }
+    /** @internal */
+    function getInternalAttributeObserverScope(element, normalizedName) {
+        const targetElement = getElement(element);
+        if (!targetElement)
+            return undefined;
+        return observerScopes
+            .get(targetElement)
+            ?.get(directiveNormalize(normalizedName));
+    }
+
+    const lazyAnimateByInjector = new WeakMap();
+    function getLazyAnimate($injector) {
+        let getAnimate = lazyAnimateByInjector.get($injector);
+        if (!getAnimate) {
+            getAnimate = createLazyAnimate($injector);
+            lazyAnimateByInjector.set($injector, getAnimate);
+        }
+        return getAnimate;
+    }
+    /** @internal */
+    class CompileAttributeState {
+        constructor($injector, $exceptionHandler, stateToCopy) {
+            /**
+             * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
+             * normalized, camelCase form.
+             *
+             * Also there is special case for Moz prefix starting with upper case letter.
+             *
+             * Normalization follows the directive matching rules used by `$compile`.
+             *
+             * @param name Name to normalize
+             */
+            this.$normalize = directiveNormalize;
+            this._getAnimate = getLazyAnimate($injector);
+            this._exceptionHandler = $exceptionHandler;
+            this._attributeNames = {};
+            this._originalAttributeNames = nullObject();
+            if (stateToCopy) {
+                const attrKeys = keys(stateToCopy._attributeNames);
+                for (let i = 0, l = attrKeys.length; i < l; i++) {
+                    const key = attrKeys[i];
+                    this._attributeNames[key] = stateToCopy._attributeNames[key];
+                }
+                const sourceKeys = keys(stateToCopy._originalAttributeNames);
+                for (let i = 0, l = sourceKeys.length; i < l; i++) {
+                    const key = sourceKeys[i];
+                    this._originalAttributeNames[key] =
+                        stateToCopy._originalAttributeNames[key];
+                }
+            }
+        }
+    }
+    CompileAttributeState.$nonscope = true;
+    /** @internal */
+    function updateCompileAttributeClass(attrs, node, newClasses, oldClasses) {
+        if (newClasses === oldClasses) {
+            return;
+        }
+        updateClass(node, newClasses, oldClasses, attrs._getAnimate);
+    }
+    /** @internal */
+    function setCompileAttributeValue(attrs, node, key, value, writeAttr, attrName) {
+        const booleanKey = getBooleanAttrName(node, key);
+        const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+        let observer = key;
+        if (booleanKey) {
+            node[key] = value;
+            attrName = booleanKey;
+        }
+        else if (aliasedKey) {
+            recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+            observer = aliasedKey;
+        }
+        if (attrName) {
+            attrs._attributeNames[key] = attrName;
+        }
+        else {
+            attrName = attrs._attributeNames[key];
+            if (!attrName) {
+                attrs._attributeNames[key] = attrName = snakeCase(key, "-");
+            }
+        }
+        recordCompileAttribute(attrs, key, attrName);
+        setInternalAttribute(node, observer, value, {
+            writeAttr,
+            attrName,
+        });
+    }
+    /** @internal */
+    function recordCompileAttribute(attrs, key, attrName, sourceAttrName = attrName, overwrite = true) {
+        if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+            attrs._attributeNames[key] = attrName;
+            attrs._originalAttributeNames[key] = sourceAttrName;
+        }
+    }
+    /** @internal */
+    function hasCompileAttribute(attrs, node, key) {
+        if (hasOwn(attrs._attributeNames, key) ||
+            hasOwn(attrs._originalAttributeNames, key)) {
+            return true;
+        }
+        return hasNormalizedAttr(node, key);
+    }
+    /** @internal */
+    function listCompileAttributes(attrs) {
+        const names = new Set(keys(attrs._attributeNames));
+        keys(attrs._originalAttributeNames).forEach((key) => {
+            names.add(key);
+        });
+        return Array.from(names);
+    }
+    /** @internal */
+    function getCompileAttributeName(attrs, key) {
+        return attrs._attributeNames[key];
+    }
+    /** @internal */
+    function getCompileOriginalAttributeName(attrs, key) {
+        return attrs._originalAttributeNames[key];
     }
 
     /**
@@ -7026,7 +7233,70 @@
         _isolateScope: null,
         _bindToController: null,
     });
+    /**
+     * Publishes controller creation/destruction events from `$compile`.
+     */
+    class CompileLifecycleProvider {
+        constructor() {
+            this.createdListeners = [];
+            this.destroyedListeners = [];
+            this.$get = () => this;
+        }
+        /**
+         * Registers a listener that runs after `$compile` creates a controller.
+         *
+         * Returns a deregistration function.
+         */
+        onControllerCreated(listener) {
+            this.createdListeners.push(listener);
+            return () => {
+                arrayRemove(this.createdListeners, listener);
+            };
+        }
+        /**
+         * Registers a listener that runs when a compiled controller scope is destroyed.
+         *
+         * Returns a deregistration function.
+         */
+        onControllerDestroyed(listener) {
+            this.destroyedListeners.push(listener);
+            return () => {
+                arrayRemove(this.destroyedListeners, listener);
+            };
+        }
+        /** @internal */
+        _emitControllerCreated(record) {
+            this.createdListeners.slice().forEach((listener) => {
+                listener(record);
+            });
+        }
+        /** @internal */
+        _emitControllerDestroyed(record) {
+            this.destroyedListeners.slice().forEach((listener) => {
+                listener(record);
+            });
+        }
+    }
     const EMPTY_LINK_FN_RECORDS = Object.freeze([]);
+    function readNormalizedElementAttribute(element, normalizedName) {
+        const hostElement = getDirectiveHostElement(element);
+        const attrElement = hostElement ?? element;
+        const value = getNormalizedAttr(attrElement, normalizedName);
+        if (value === undefined)
+            return undefined;
+        return hostElement && getBooleanAttrName(hostElement, normalizedName)
+            ? true
+            : value;
+    }
+    function readSourceElementAttribute(attrs, element, normalizedName) {
+        const hostElement = getDirectiveHostElement(element);
+        const attrElement = hostElement ?? element;
+        const sourceName = getCompileOriginalAttributeName(attrs, normalizedName);
+        if (sourceName && attrElement instanceof Element) {
+            return attrElement.getAttribute(sourceName) ?? undefined;
+        }
+        return readNormalizedElementAttribute(element, normalizedName);
+    }
     function releaseControllersBoundTranscludeState(transcludeState) {
         if (transcludeState._destroyed) {
             return;
@@ -7268,15 +7538,12 @@
                     };
                 /** Creates the component-backed directive definition factory. */
                 function factory($injector) {
-                    const $attributes = $injector.get(_attributes);
                     /** Wraps injectable component options so compile-local services are available. */
                     const makeInjectable = (fn) => {
                         if (isFunction(fn) || Array.isArray(fn)) {
-                            return (tElement, tAttrs) => {
+                            return (tElement) => {
                                 return $injector.invoke(fn, null, {
                                     $element: tElement,
-                                    $attrs: tAttrs,
-                                    $attributes,
                                 });
                             };
                         }
@@ -7296,6 +7563,7 @@
                         scope: {},
                         bindToController: componentOptions.bindings ?? {},
                         restrict: "E",
+                        replace: componentOptions.replace,
                         require: componentOptions.require,
                     };
                     // Copy annotations (starting with $) over to the DDO
@@ -7440,11 +7708,10 @@
                 _exceptionHandler,
                 _parse,
                 _controller,
-                _attributes,
+                _compileLifecycle,
                 /** Creates the runtime `$compile` service and its shared helper closures. */
-                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $attributes) => {
+                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $compileLifecycle) => {
                     const security = getSecurityAdapter($injector);
-                    const internalAttributes = $attributes;
                     let lazyTemplateRequest;
                     async function requestTemplate(templateUrl) {
                         if (lazyTemplateRequest === undefined) {
@@ -7532,7 +7799,7 @@
                         }
                     }
                     function throwNonassignBindingError(state) {
-                        throw $compileError$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", String(state._attrsAny[state._attrName]), state._attrName, state._directiveName);
+                        throw $compileError$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", String(state._attrExpression), state._attrName, state._directiveName);
                     }
                     function syncTwoWayParentValue(state, parentValue) {
                         const destValue = state._destAny[state._scopeName];
@@ -7552,15 +7819,13 @@
                         syncParentValue(state._scope);
                     }
                     function handleTwoWayDestinationChange(state, val) {
-                        if (val === state._lastValue &&
-                            state._attrsAny[state._attrName] !== undefined) {
+                        if (val === state._lastValue && state._attrExpression !== undefined) {
                             return;
                         }
                         if ((state._parentGet &&
                             !!state._parentGet._inputs &&
                             !state._parentGet._literal) ||
-                            (state._attrsAny[state._attrName] === undefined &&
-                                val !== undefined)) {
+                            (state._attrExpression === undefined && val !== undefined)) {
                             state._destinationTarget[state._scopeName] = state._lastValue;
                             throwNonassignBindingError(state);
                         }
@@ -7575,7 +7840,7 @@
                             return;
                         }
                         callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
-                        const attributeWatchers = state._scope.$handler._watchers.get(String(state._attrsAny[state._attrName]));
+                        const attributeWatchers = state._scope.$handler._watchers.get(String(state._attrExpression));
                         if (attributeWatchers) {
                             for (let i = 0, l = attributeWatchers.length; i < l; i++) {
                                 attributeWatchers[i]._listenerFn(val, state._scope.$target);
@@ -7865,8 +8130,8 @@
                             }
                         }
                     }
-                    function createEmptyAttributes() {
-                        return new CompileAttributes($injector, $exceptionHandler);
+                    function createEmptyCompileAttributeState() {
+                        return new CompileAttributeState($injector, $exceptionHandler);
                     }
                     /**
                      * Plans a template node list and returns the executor used during linking.
@@ -7894,7 +8159,7 @@
                             }
                             let nodeLinkPlan = null;
                             if (directives.length) {
-                                attrs = attrs ?? createEmptyAttributes();
+                                attrs = attrs ?? createEmptyCompileAttributeState();
                                 if (directivesNeedNodeListTracking(directives)) {
                                     trackedNodeList =
                                         trackedNodeList ?? ensureTrackedNodeList(nodeList);
@@ -8015,7 +8280,7 @@
                      * sorted.
                      *
                      * @param node - Node to search.
-                     * @param attrs - The shared attrs object which is used to populate the normalized attributes.
+                     * @param attrs - Internal normalized attribute state populated while matching directives.
                      * @param maxPriority - Max directive priority.
                      * @returns An array to which the directives are added. This array is sorted before the function returns.
                      */
@@ -8057,7 +8322,7 @@
                         const nodeAttributes = node.attributes;
                         if (nodeAttributes.length) {
                             if (attrs || directives.length) {
-                                attrs = attrs ?? createEmptyAttributes();
+                                attrs = attrs ?? createEmptyCompileAttributeState();
                             }
                             attrs = collectAttributeDirectiveMatches(node, attrs, directives, nodeAttributes, maxPriority, ignoreDirective);
                         }
@@ -8093,10 +8358,8 @@
                             if (prefix === "Prop" || prefix === "On" || prefix === "Window") {
                                 attrs =
                                     attrs ??
-                                        createAttributesWithPrecedingAttributeValues(node, nodeAttributes, attrIndex);
-                                const attrsMap = attrs.$attr;
-                                attrs[nName] = value;
-                                attrsMap[nName] = attr.name;
+                                        createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
+                                recordCompileAttribute(attrs, nName, attr.name);
                                 addSpecialAttributeDirective(node, directives, nName, name, prefix);
                                 return attrs;
                             }
@@ -8108,20 +8371,20 @@
                             nName = normalizeDirectiveName(name.toLowerCase());
                         }
                         if (attrs) {
-                            recordNormalizedAttributeValue(node, attrs, nName, name, value, isNgAttr);
+                            recordNormalizedAttributeValue(node, attrs, nName, name, attr.name, isNgAttr);
                         }
                         const addedInterpolationDirective = addAttrInterpolateDirective(node, directives, value, nName, isNgAttr);
                         const addedAttributeDirective = nName !== ignoreDirective &&
                             !!appendDirectivesForName(directives, nName, "A", maxPriority);
                         if (!attrs &&
                             (addedInterpolationDirective || addedAttributeDirective)) {
-                            attrs = createAttributesWithPrecedingAttributeValues(node, nodeAttributes, attrIndex);
-                            recordNormalizedAttributeValue(node, attrs, nName, name, value, isNgAttr);
+                            attrs = createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
+                            recordNormalizedAttributeValue(node, attrs, nName, name, attr.name, isNgAttr);
                         }
                         return attrs;
                     }
-                    function createAttributesWithPrecedingAttributeValues(node, nodeAttributes, attrIndex) {
-                        const attrs = createEmptyAttributes();
+                    function createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex) {
+                        const attrs = createEmptyCompileAttributeState();
                         for (let i = 0; i < attrIndex; i++) {
                             recordExistingAttributeValue(node, attrs, nodeAttributes[i]);
                         }
@@ -8151,15 +8414,10 @@
                             }
                             normalizedName = normalizeDirectiveName(name.toLowerCase());
                         }
-                        recordNormalizedAttributeValue(node, attrs, normalizedName, name, attr.value, isNgAttr);
+                        recordNormalizedAttributeValue(node, attrs, normalizedName, name, attr.name, isNgAttr);
                     }
-                    function recordNormalizedAttributeValue(node, attrs, normalizedName, name, value, isNgAttr) {
-                        attrs.$attr[normalizedName] = name;
-                        if (isNgAttr || !hasOwn(attrs, normalizedName)) {
-                            attrs[normalizedName] = getBooleanAttrName(node, normalizedName)
-                                ? true
-                                : value;
-                        }
+                    function recordNormalizedAttributeValue(node, attrs, normalizedName, name, sourceName, isNgAttr) {
+                        recordCompileAttribute(attrs, normalizedName, name, sourceName, isNgAttr || !hasCompileAttribute(attrs, node, normalizedName));
                     }
                     function addSpecialAttributeDirective(node, directives, normalizedName, propertyName, prefix) {
                         if (prefix === "Prop") {
@@ -8223,15 +8481,25 @@
                         });
                     }
                     /** Invokes a link record with consistent scope selection and argument ordering. */
-                    function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, controllers, transcludeFn) {
+                    function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, attrs, controllers, transcludeFn) {
                         const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
                         const linkTailArgs = linkFnRecord._require
-                            ? [controllers, transcludeFn]
+                            ? transcludeFn
+                                ? [controllers, transcludeFn]
+                                : [controllers]
                             : transcludeFn
                                 ? [transcludeFn]
                                 : [];
                         if (linkFnRecord._linkCtx !== undefined) {
-                            return linkFnRecord._fn(linkFnRecord._linkCtx, linkScope, node, ...linkTailArgs);
+                            const linkCtx = typeof linkFnRecord._linkCtx === "object" &&
+                                linkFnRecord._linkCtx !== null &&
+                                "_attr" in linkFnRecord._linkCtx
+                                ? {
+                                    ...linkFnRecord._linkCtx,
+                                    _attr: attrs,
+                                }
+                                : linkFnRecord._linkCtx;
+                            return linkFnRecord._fn(linkCtx, linkScope, node, ...linkTailArgs);
                         }
                         if (linkFnRecord._thisArg !== undefined) {
                             return linkFnRecord._fn.call(linkFnRecord._thisArg, linkScope, node, ...linkTailArgs);
@@ -8287,15 +8555,15 @@
                         }
                         return stringify$1(value);
                     }
-                    function applyInterpolatedAttrValue(linkState, attr, value) {
+                    function applyInterpolatedAttrValue(linkState, attr, node, value) {
                         if (linkState._name === "class") {
-                            const element = attr._element();
+                            const element = getDirectiveHostElement(node);
                             const attributeValue = toInterpolatedAttributeValue(value);
-                            $attributes.updateClass(element, String(attributeValue ?? ""), element.classList.value);
+                            updateCompileAttributeClass(attr, node, String(attributeValue ?? ""), element?.classList.value ?? "");
                             return;
                         }
                         if (linkState._name === "srcset") {
-                            attr._setValue(linkState._name, linkState._isNgAttr
+                            setCompileAttributeValue(attr, node, linkState._name, linkState._isNgAttr
                                 ? toInterpolatedAttributeValue(value)
                                 : toInterpolatedAttributeValue(sanitizeSrcset(security.valueOf(value), "srcset")));
                             return;
@@ -8305,7 +8573,7 @@
                             !(typeof value === "string" && value.startsWith("unsafe:"))) {
                             value = toInterpolatedAttributeValue(security.getTrusted(linkState._trustedContext, value));
                         }
-                        attr._setValue(linkState._name, toInterpolatedAttributeValue(value));
+                        setCompileAttributeValue(attr, node, linkState._name, toInterpolatedAttributeValue(value));
                     }
                     /** Re-applies the current interpolated attribute value from explicit per-link state. */
                     function handleAttrInterpolationWatch(bindingState) {
@@ -8319,18 +8587,19 @@
                             return;
                         }
                         bindingState._lastValue = value;
-                        applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, value);
+                        applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, bindingState._node, value);
                     }
                     /**
                      * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
                      * current interpolation function in sync if an earlier compile step rewrites the attribute.
                      */
-                    function attrInterpolatePreLinkFn(linkState, scope, _element) {
+                    function attrInterpolatePreLinkFn(linkState, scope, node) {
                         const attr = assertDefined(linkState._attr);
                         // Recompute interpolation if another compile step rewrote the attribute value.
-                        const attrsAny = attr;
                         const name = linkState._name;
-                        const newValue = attrsAny[name];
+                        const newValue = linkState._isNgAttr
+                            ? readSourceElementAttribute(attr, node, name)
+                            : readNormalizedElementAttribute(node, name);
                         if (newValue !== linkState._value) {
                             linkState._interpolateFn = newValue
                                 ? $interpolate(stringify$1(newValue), true, linkState._trustedContext, linkState._allOrNothing)
@@ -8342,16 +8611,15 @@
                         }
                         const interpolateFn = linkState._interpolateFn;
                         const { expressions } = interpolateFn;
-                        attrsAny[name] = interpolateFn(scope);
-                        internalAttributes._markInterpolated(attr._element(), name);
+                        markInternalAttributeInterpolated(node, name);
                         const bindingState = {
                             _linkState: linkState,
                             _scope: scope,
+                            _node: node,
                             _attr: attr,
                         };
                         if (expressions.length > 0) {
-                            const targetScope = internalAttributes._getObserverScope(attr._element(), name) ??
-                                scope;
+                            const targetScope = getInternalAttributeObserverScope(node, name) ?? scope;
                             const watchExpression = buildInterpolationWatchExpression(expressions);
                             targetScope.$watch(watchExpression, () => {
                                 handleAttrInterpolationWatch(bindingState);
@@ -8384,17 +8652,16 @@
                      * but the compile-time getter/sanitizer wiring is now reused.
                      */
                     function propertyDirectivePreLinkFn(linkState, scope, $element) {
-                        const attr = linkState._attr;
-                        const attrsAny = attr;
                         const bindingState = {
                             _linkState: linkState,
                             _scope: scope,
-                            _element: $element};
+                            _element: $element,
+                        };
                         updatePropertyDirectiveValue(bindingState);
                         scope.$watch(linkState._propName, () => {
                             handlePropertyDirectiveValueWatch(bindingState);
                         });
-                        scope.$watch(stringify$1(attrsAny[linkState._attrName] ?? ""), (val) => {
+                        scope.$watch(linkState._attrExpression, (val) => {
                             handlePropertyDirectiveAttrWatch(bindingState, val);
                         });
                     }
@@ -8535,7 +8802,7 @@
                             }
                             replacementState = {
                                 _templateNodes: templateNodes,
-                                _templateAttrs: { $attr: {} },
+                                _templateAttrs: createEmptyCompileAttributeState(),
                             };
                             const oldCompileNode = assertDefined(delayedState._compileNode);
                             replaceWith(oldCompileNode, compileNode, delayedState._previousCompileContext._index);
@@ -8543,13 +8810,12 @@
                                 setTrackedNodeAt(delayedState._previousCompileContext._parentNodeList, delayedState._previousCompileContext._index, compileNode);
                             }
                             delayedState._compileNode = compileNode;
-                            delayedState._tAttrs._node = compileNode;
                             const templateDirectives = collectDirectiveMatches(compileNode, replacementState._templateAttrs);
                             if (isNonNullDirectiveObject(delayedState._origAsyncDirective.scope)) {
                                 markDirectiveScope(templateDirectives, true);
                             }
                             delayedState._directives = templateDirectives.concat(delayedState._directives);
-                            mergeTemplateAttributes(delayedState._tAttrs, replacementState._templateAttrs);
+                            mergeTemplateAttributeState(delayedState._tAttrs, replacementState._templateAttrs, oldCompileNode, compileNode);
                         }
                         else {
                             compileNode = assertDefined(delayedState._compileNode);
@@ -8643,7 +8909,7 @@
                         let scopeBindingInfo;
                         const attrs = nodeLinkState._compileNode === linkNode
                             ? nodeLinkState._templateAttrs
-                            : new CompileAttributes($injector, $exceptionHandler, elementNode, nodeLinkState._templateAttrs);
+                            : new CompileAttributeState($injector, $exceptionHandler, nodeLinkState._templateAttrs);
                         const element = elementNode.nodeType === NodeType._ELEMENT_NODE
                             ? elementNode
                             : undefined;
@@ -8710,6 +8976,7 @@
                             }
                         }
                         for (const name in elementControllers) {
+                            const controllerDirective = controllerDirectives[name];
                             const controller = assertDefined(elementControllers[name]);
                             const controllerInstance = controller._instance;
                             if (isFunction(controllerInstance.$onChanges)) {
@@ -8729,6 +8996,18 @@
                                     $exceptionHandler(err);
                                 }
                             }
+                            const lifecycleRecord = elementNode.nodeType === NodeType._ELEMENT_NODE
+                                ? {
+                                    element: elementNode,
+                                    scope: controllerScope,
+                                    controller: controllerInstance,
+                                    directiveName: controllerDirective.name,
+                                    controllerAs: controllerDirective.controllerAs,
+                                }
+                                : undefined;
+                            if (lifecycleRecord) {
+                                $compileLifecycle._emitControllerCreated(lifecycleRecord);
+                            }
                             if (isFunction(controllerInstance.$onDestroy)) {
                                 controllerScope.$on("$destroy", () => {
                                     callFunction(assertDefined(controllerInstance.$onDestroy), controllerInstance);
@@ -8740,6 +9019,9 @@
                                 if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
                                     callFunction(controllerInstance.$destroy, controllerInstance);
                                 }
+                                if (lifecycleRecord) {
+                                    $compileLifecycle._emitControllerDestroyed(lifecycleRecord);
+                                }
                             });
                         }
                         for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
@@ -8747,7 +9029,7 @@
                             const controllers = preLinkFn._require &&
                                 getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
                             try {
-                                invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
+                                invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -8773,7 +9055,7 @@
                                     deleteCacheData(element, _scope);
                                     setIsolateScope(element, isolateScope);
                                 }
-                                invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, controllers, transcludeFn);
+                                invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -8804,7 +9086,6 @@
                         let hasTranscludeDirective = false;
                         let hasTemplate = false;
                         const { _index } = previousCompileContext;
-                        templateAttrs._node = compileNode;
                         let directive;
                         let directiveName;
                         let replaceDirective = originalReplaceDirective;
@@ -8852,7 +9133,6 @@
                                     _replaceDirective: replaceDirective,
                                     _templateDirective,
                                 } = inlineTemplate);
-                                templateAttrs._node = compileNode;
                             }
                             if (directive.templateUrl) {
                                 hasTemplate = true;
@@ -8913,7 +9193,7 @@
                     }
                     function applyInlineTemplateDirective(directive, directiveName, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective, templateDirective, replaceDirective) {
                         assertNoDuplicate("template", templateDirective, directive, compileNode);
-                        const directiveValue = resolveDirectiveTemplateValue(directive, compileNode, templateAttrs);
+                        const directiveValue = resolveDirectiveTemplateValue(directive, compileNode);
                         if (!directive.replace) {
                             if (compileNode.nodeType === NodeType._ELEMENT_NODE) {
                                 compileNode.innerHTML = directiveValue;
@@ -8939,18 +9219,17 @@
                     }
                     function applyTemplateReplacementDirective(oldCompileNode, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective) {
                         replaceWith(oldCompileNode, compileNode);
-                        templateAttrs._node = compileNode;
                         if (parentNodeList) {
                             setTrackedNodeAt(parentNodeList, index, compileNode);
                         }
-                        const newTemplateAttrs = { $attr: {} };
+                        const newTemplateAttrs = createEmptyCompileAttributeState();
                         const templateDirectives = collectDirectiveMatches(compileNode, newTemplateAttrs);
                         const unprocessedDirectives = directives.splice(directiveIndex + 1, directives.length - (directiveIndex + 1));
                         if (newIsolateScopeDirective || newScopeDirective) {
                             markDirectiveScope(templateDirectives, newIsolateScopeDirective, newScopeDirective);
                         }
                         const mergedDirectives = mergeDirectiveLists(directives, templateDirectives, unprocessedDirectives);
-                        mergeTemplateAttributes(templateAttrs, newTemplateAttrs);
+                        mergeTemplateAttributeState(templateAttrs, newTemplateAttrs, oldCompileNode, compileNode);
                         return {
                             _directives: mergedDirectives,
                             _directiveCount: mergedDirectives.length,
@@ -9024,7 +9303,6 @@
                     function applyElementTransclusionDirective(templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
                         const transcludedTemplateElement = templateNode;
                         const compileNode = document.createComment("");
-                        templateAttrs._node = compileNode;
                         setTranscludedHostElement(compileNode, transcludedTemplateElement);
                         if (contextNodeList) {
                             setTrackedNodeAt(contextNodeList, index, compileNode);
@@ -9050,9 +9328,9 @@
                             transclusionContentPlan._slots;
                         return childTranscludeFn;
                     }
-                    function resolveDirectiveTemplateValue(directive, compileNode, templateAttrs) {
+                    function resolveDirectiveTemplateValue(directive, compileNode) {
                         const template = isFunction(directive.template)
-                            ? directive.template(compileNode, templateAttrs)
+                            ? directive.template(compileNode)
                             : directive.template;
                         return denormalizeTemplate(template ?? "");
                     }
@@ -9258,7 +9536,15 @@
                     function collectDirectiveLinkFns(directive, directiveName, compileNode, templateAttrs, childTranscludeFn, preLinkFns, postLinkFns, newIsolateScopeDirective) {
                         try {
                             const compileDirective = assertDefined(directive.compile);
-                            const linkFn = compileDirective.call(directive, compileNode, templateAttrs, childTranscludeFn);
+                            const linkFn = directive._needsCompileAttributeState
+                                ? compileDirective.call(directive, ...[
+                                    compileNode,
+                                    templateAttrs,
+                                    childTranscludeFn,
+                                ])
+                                : childTranscludeFn === undefined
+                                    ? compileDirective.call(directive, compileNode)
+                                    : compileDirective.call(directive, compileNode, childTranscludeFn);
                             appendDirectiveLinkResult(linkFn, directive, directiveName, preLinkFns, postLinkFns, newIsolateScopeDirective);
                         }
                         catch (err) {
@@ -9362,13 +9648,11 @@
                                     ? isolateScope
                                     : scope,
                                 $element: node,
-                                $attrs: attrs,
-                                $attributes,
                                 $transclude: transcludeFn,
                             };
                             let { controller } = directive;
                             if (controller === "@") {
-                                controller = attrs[directive.name];
+                                controller = readNormalizedElementAttribute(node, directive.name);
                             }
                             const controllerInstance = $controller(assertDefined(controller), locals, true, directive.controllerAs);
                             // For directives with element transclusion the element is a comment.
@@ -9497,47 +9781,37 @@
                      * @param dst - Destination attributes (original DOM).
                      * @param src - Source attributes (from the directive template).
                      */
-                    function mergeTemplateAttributes(dst, src) {
-                        const dstAny = dst;
-                        const srcAny = src;
-                        const srcAttr = src.$attr;
-                        const dstAttr = dst.$attr;
+                    function mergeTemplateAttributeState(dst, src, oldNode, newNode) {
                         // reapply the old attributes to the new element
-                        for (const key in dstAny) {
-                            if (!hasOwn(dstAny, key)) {
-                                continue;
-                            }
-                            let value = dstAny[key];
-                            if (!key.startsWith("$") && !key.startsWith("_")) {
-                                if (srcAny[key] && srcAny[key] !== value) {
-                                    if (typeof value === "string" && value.length) {
-                                        const srcValue = srcAny[key];
-                                        value += `${key === "style" ? ";" : " "}${typeof srcValue === "string"
-                                        ? srcValue
-                                        : stringify$1(srcValue)}`;
-                                    }
-                                    else {
-                                        value = srcAny[key];
-                                    }
+                        const dstKeys = listCompileAttributes(dst);
+                        for (let i = 0, l = dstKeys.length; i < l; i++) {
+                            const key = dstKeys[i];
+                            let value = readNormalizedElementAttribute(oldNode, key);
+                            const srcValue = readNormalizedElementAttribute(newNode, key);
+                            if (srcValue && srcValue !== value) {
+                                if (typeof value === "string" && value.length) {
+                                    value += `${key === "style" ? ";" : " "}${typeof srcValue === "string" ? srcValue : stringify$1(srcValue)}`;
                                 }
-                                dst._setValue(key, value, true, srcAttr[key]);
+                                else {
+                                    value = srcValue;
+                                }
                             }
+                            setCompileAttributeValue(dst, newNode, key, value, true, getCompileAttributeName(src, key));
                         }
-                        // copy the new attributes on the old attrs object
-                        for (const key in srcAny) {
-                            if (!hasOwn(srcAny, key)) {
-                                continue;
-                            }
-                            const value = srcAny[key];
+                        // Copy the replacement template attributes onto the original internal state.
+                        const srcKeys = listCompileAttributes(src);
+                        for (let i = 0, l = srcKeys.length; i < l; i++) {
+                            const key = srcKeys[i];
                             // Check if we already set this attribute in the loop above.
                             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
                             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
                             // have an attribute like "has-own-property" or "data-has-own-property", etc.
-                            if (!hasOwn(dst, key) && !key.startsWith("$")) {
-                                dstAny[key] = value;
-                                if (key !== "class" && key !== "style") {
-                                    dstAttr[key] = srcAttr[key];
+                            if (!hasCompileAttribute(dst, oldNode, key)) {
+                                const srcAttrName = getCompileAttributeName(src, key);
+                                if (!srcAttrName) {
+                                    continue;
                                 }
+                                recordCompileAttribute(dst, key, srcAttrName);
                             }
                         }
                     }
@@ -9552,7 +9826,7 @@
                         });
                         let templateUrl;
                         if (isFunction(origAsyncDirective.templateUrl)) {
-                            templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, compileNode, tAttrs);
+                            templateUrl = origAsyncDirective.templateUrl.call(origAsyncDirective, compileNode);
                         }
                         else {
                             ({ templateUrl } = origAsyncDirective);
@@ -9744,6 +10018,7 @@
                         const directive = {
                             priority: 100,
                             compile: compilePropertyDirective,
+                            _needsCompileAttributeState: true,
                             _compileState: {
                                 _attrName: attrName,
                                 _propName: propName,
@@ -9753,16 +10028,18 @@
                         directives.push(directive);
                     }
                     /** Shared compile function for synthetic `ng-prop-*` directives. */
-                    function compilePropertyDirective(_, attr) {
+                    function compilePropertyDirective(element) {
                         const compileState = this._compileState;
+                        const attrExpression = stringify$1(readNormalizedElementAttribute(element, compileState._attrName) ??
+                            "");
                         return {
                             pre: propertyDirectivePreLinkFn,
                             _preLinkCtx: {
                                 _attrName: compileState._attrName,
+                                _attrExpression: attrExpression,
                                 _propName: compileState._propName,
-                                _ngPropGetter: $parse(stringify$1(attr[compileState._attrName] ?? "")),
+                                _ngPropGetter: $parse(attrExpression),
                                 _sanitizer: compileState._sanitizer,
-                                _attr: attr,
                             },
                         };
                     }
@@ -9789,6 +10066,7 @@
                         const directive = {
                             priority: 100,
                             compile: compileAttrInterpolateDirective,
+                            _needsCompileAttributeState: true,
                             _compileState: {
                                 _name: name,
                                 _value: value,
@@ -9817,17 +10095,13 @@
                             throw $compileError$1("missingattr", "Attribute '{0}' of '{1}' is non-optional and must be set!", attrName, directiveName);
                         }
                     }
-                    /**
-                     * Sets up `$watch` and `$observe` wiring for isolate-scope and controller bindings.
-                     */
+                    /** Sets up watch and element-attribute observer wiring for directive bindings. */
                     function initializeDirectiveBindings(scope, attrs, destination, bindings, directive, element) {
                         const removeWatchCollection = [];
                         const initialChanges = {};
-                        const attrsAny = attrs;
                         const destAny = destination;
                         const scopeTarget = scope.$target;
                         const destinationTarget = assertDefined(destAny.$target);
-                        const attrsObservers = attrs._observers ?? (attrs._observers = nullObject());
                         const bindingChangeState = {
                             _destAny: destAny,
                             _onChangesQueue: onChangesQueueState,
@@ -9846,11 +10120,13 @@
                                 let parentSet;
                                 let compare;
                                 let removeWatch;
+                                const hasBindingAttribute = hasCompileAttribute(attrs, element, attrName);
+                                const readBindingAttribute = () => readNormalizedElementAttribute(element, attrName);
                                 switch (mode) {
                                     case "@": {
-                                        if (!optional && !hasOwn(attrs, attrName)) {
+                                        if (!optional && !hasBindingAttribute) {
                                             strictBindingsCheck(attrName, directive.name);
-                                            destAny[scopeName] = attrsAny[attrName] = undefined;
+                                            destAny[scopeName] = undefined;
                                         }
                                         const stringBindingState = {
                                             _bindingChangeState: bindingChangeState,
@@ -9859,17 +10135,15 @@
                                             _firstChange: true,
                                             _scopeName: scopeName,
                                         };
-                                        const observer = attrsObservers[attrName] ?? (attrsObservers[attrName] = []);
                                         let skipNextElementObserve = false;
                                         const handleObservedStringBinding = (value) => {
                                             lastValue = value;
                                             skipNextElementObserve = true;
                                             handleStringBindingObserve(stringBindingState, value);
                                         };
-                                        let skipInitialElementObserve = $attributes.has(element, attrName);
-                                        internalAttributes._setObserverScope(element, attrName, scope);
-                                        observer.push(handleObservedStringBinding);
-                                        const removeElementObserve = $attributes.observe(scope, element, attrName, (value) => {
+                                        let skipInitialElementObserve = hasNormalizedAttr(element, attrName);
+                                        setInternalAttributeObserverScope(element, attrName, scope);
+                                        const removeElementObserve = observeInternalAttribute(scope, element, attrName, (value) => {
                                             if (skipInitialElementObserve) {
                                                 skipInitialElementObserve = false;
                                                 return;
@@ -9877,13 +10151,6 @@
                                             const sameObservedValue = Object.is(value, lastValue) ||
                                                 (typeof lastValue === "boolean" &&
                                                     value === String(lastValue));
-                                            const attrsValue = attrsAny[attrName];
-                                            const sameAttrsValue = Object.is(value, attrsValue) ||
-                                                (typeof attrsValue === "boolean" &&
-                                                    value === String(attrsValue));
-                                            if (sameAttrsValue) {
-                                                return;
-                                            }
                                             if (skipNextElementObserve && sameObservedValue) {
                                                 skipNextElementObserve = false;
                                                 return;
@@ -9894,15 +10161,16 @@
                                             handleObservedStringBinding(value);
                                         });
                                         removeWatch = () => {
-                                            arrayRemove(observer, handleObservedStringBinding);
                                             removeElementObserve();
                                         };
-                                        if (!internalAttributes._isInterpolated(element, attrName) &&
-                                            hasOwn(attrs, attrName) &&
-                                            attrsAny[attrName] !== undefined) {
-                                            handleObservedStringBinding(attrsAny[attrName]);
+                                        if (!isInternalAttributeInterpolated(element, attrName) &&
+                                            hasBindingAttribute) {
+                                            const attrValue = readBindingAttribute();
+                                            if (attrValue !== undefined) {
+                                                handleObservedStringBinding(attrValue);
+                                            }
                                         }
-                                        lastValue = attrsAny[attrName];
+                                        lastValue = readBindingAttribute();
                                         if (typeof lastValue === "string") {
                                             // If the attribute has been provided then we trigger an interpolation to ensure
                                             // the value is there for use in the link fn
@@ -9921,17 +10189,16 @@
                                         break;
                                     }
                                     case "=": {
-                                        if (!hasOwn(attrs, attrName)) {
+                                        if (!hasBindingAttribute) {
                                             if (optional) {
                                                 break;
                                             }
                                             strictBindingsCheck(attrName, directive.name);
-                                            attrsAny[attrName] = undefined;
                                         }
-                                        if (optional && !attrsAny[attrName]) {
+                                        const attr = readBindingAttribute();
+                                        if (optional && !attr) {
                                             break;
                                         }
-                                        const attr = attrsAny[attrName];
                                         parentGet =
                                             typeof attr === "string" ? $parse(attr) : undefined;
                                         if (parentGet?._literal) {
@@ -9943,7 +10210,7 @@
                                         parentSet =
                                             parentGet?._assign ??
                                                 function () {
-                                                    throw $compileError$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", String(attrsAny[attrName]), attrName, directive.name);
+                                                    throw $compileError$1("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", String(attr), attrName, directive.name);
                                                 };
                                         // store the value that the parent scope had after the last check:
                                         const initialValue = parentGet
@@ -9953,8 +10220,8 @@
                                             ? createScope(initialValue, destination.$handler)
                                             : initialValue;
                                         const twoWayBindingState = {
+                                            _attrExpression: attr,
                                             _attrName: attrName,
-                                            _attrsAny: attrsAny,
                                             _compare: compare,
                                             _destAny: destAny,
                                             _destinationTarget: destinationTarget,
@@ -9966,7 +10233,7 @@
                                             _scopeName: scopeName,
                                             _scopeTarget: scopeTarget,
                                         };
-                                        const twoWayAttrExpression = attrsAny[attrName];
+                                        const twoWayAttrExpression = attr;
                                         if (typeof twoWayAttrExpression === "string") {
                                             const syncParentValue = $parse(twoWayAttrExpression, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                             // make it lazy as we dont want to trigger the two way data binding at this point
@@ -9981,19 +10248,19 @@
                                         break;
                                     }
                                     case "<": {
-                                        if (!hasOwn(attrs, attrName)) {
+                                        if (!hasBindingAttribute) {
                                             if (optional) {
                                                 break;
                                             }
                                             strictBindingsCheck(attrName, directive.name);
-                                            attrsAny[attrName] = undefined;
                                         }
-                                        if (optional && !attrsAny[attrName]) {
+                                        const oneWayAttrExpression = readBindingAttribute();
+                                        if (optional && !oneWayAttrExpression) {
                                             break;
                                         }
                                         parentGet =
-                                            typeof attrsAny[attrName] === "string"
-                                                ? $parse(attrsAny[attrName])
+                                            typeof oneWayAttrExpression === "string"
+                                                ? $parse(oneWayAttrExpression)
                                                 : undefined;
                                         const initialOneWayValue = parentGet
                                             ? callFunction(parentGet, undefined, scopeTarget)
@@ -10019,8 +10286,6 @@
                                             currentValue: assertDefined(destAny.$target)[scopeName],
                                             firstChange: oneWayBindingState._firstChange,
                                         };
-                                        scope.$target.attrs = attrs;
-                                        const oneWayAttrExpression = attrsAny[attrName];
                                         if (typeof oneWayAttrExpression === "string") {
                                             removeWatch = scope.$watch(oneWayAttrExpression, (val) => {
                                                 handleOneWayBindingChange(oneWayBindingState, val);
@@ -10030,12 +10295,12 @@
                                         break;
                                     }
                                     case "&": {
-                                        if (!optional && !hasOwn(attrs, attrName)) {
+                                        if (!optional && !hasBindingAttribute) {
                                             strictBindingsCheck(attrName, directive.name);
                                         }
                                         // Don't assign Object.prototype method to scope
-                                        parentGet = hasOwn(attrs, attrName)
-                                            ? $parse(String(attrsAny[attrName]))
+                                        parentGet = hasBindingAttribute
+                                            ? $parse(String(readBindingAttribute()))
                                             : undefined;
                                         // Don't assign noop to destination if expression is not valid
                                         if (!parentGet && optional) {
@@ -12755,102 +13020,16 @@
         handler._scheduleWatchKeys(["async"]);
     }
 
-    const DEFAULT_LOCALE$2 = "en-US";
-    const DATE_FORMATS = {
-        short: {
-            year: "2-digit",
-            month: "numeric",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-        },
-        medium: {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-        },
-        long: {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "short",
-        },
-        full: {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "long",
-        },
-        shortDate: {
-            year: "2-digit",
-            month: "numeric",
-            day: "numeric",
-        },
-        mediumDate: {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        },
-        longDate: {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        },
-        fullDate: {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        },
-        shortTime: {
-            hour: "numeric",
-            minute: "2-digit",
-        },
-        mediumTime: {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-        },
-        longTime: {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "short",
-        },
-        fullTime: {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "long",
-        },
-    };
     /** Creates a locale-aware date formatting filter backed by Intl.DateTimeFormat. */
     function dateFilter() {
-        return function (input, format = "mediumDate", timeZoneOrOptions, locale = DEFAULT_LOCALE$2) {
+        return function (input, locales, options) {
             if (isNullOrUndefined(input))
                 return "";
             const rawInput = deProxy(input);
             const date = isDate(rawInput) ? rawInput : new Date(rawInput);
             if (Number.isNaN(date.getTime()))
                 return "";
-            const baseOptions = DATE_FORMATS[format];
-            const options = typeof timeZoneOrOptions === "string"
-                ? { ...baseOptions, timeZone: timeZoneOrOptions }
-                : { ...baseOptions, ...timeZoneOrOptions };
-            const resolvedLocale = typeof timeZoneOrOptions === "object" && timeZoneOrOptions.locale
-                ? timeZoneOrOptions.locale
-                : locale;
-            return new Intl.DateTimeFormat(resolvedLocale, options).format(date);
+            return new Intl.DateTimeFormat(locales, options).format(date);
         };
     }
 
@@ -13099,37 +13278,36 @@
         return Array.prototype.slice.call(input, begin, end);
     }
 
-    const DEFAULT_LOCALE$1 = "en-US";
     /** Creates a locale-aware number formatting filter backed by Intl.NumberFormat. */
     function numberFilter() {
-        return function (input, options, locale = DEFAULT_LOCALE$1) {
+        return function (input, locales, options) {
             const value = parseNumberInput(input);
             if (isNullOrUndefined(value))
                 return "";
-            return new Intl.NumberFormat(options?.locale ?? locale, stripLocale$1(options)).format(value);
+            return new Intl.NumberFormat(locales, options).format(value);
         };
     }
     /** Creates a locale-aware currency formatting filter backed by Intl.NumberFormat. */
     function currencyFilter() {
-        return function (input, currency = "USD", options, locale = DEFAULT_LOCALE$1) {
+        return function (input, locales, options) {
             const value = parseNumberInput(input);
             if (isNullOrUndefined(value))
                 return "";
-            return new Intl.NumberFormat(options?.locale ?? locale, {
-                ...stripLocale$1(options),
+            return new Intl.NumberFormat(locales, {
+                ...options,
                 style: "currency",
-                currency,
+                currency: options?.currency ?? "USD",
             }).format(value);
         };
     }
     /** Creates a locale-aware percentage formatting filter backed by Intl.NumberFormat. */
     function percentFilter() {
-        return function (input, options, locale = DEFAULT_LOCALE$1) {
+        return function (input, locales, options) {
             const value = parseNumberInput(input);
             if (isNullOrUndefined(value))
                 return "";
-            return new Intl.NumberFormat(options?.locale ?? locale, {
-                ...stripLocale$1(options),
+            return new Intl.NumberFormat(locales, {
+                ...options,
                 style: "percent",
             }).format(value);
         };
@@ -13139,13 +13317,6 @@
             return undefined;
         const value = Number(input);
         return Number.isFinite(value) ? value : undefined;
-    }
-    function stripLocale$1(options) {
-        if (!options)
-            return undefined;
-        const numberFormatOptions = { ...options };
-        delete numberFormatOptions.locale;
-        return numberFormatOptions;
     }
 
     const orderByError = createErrorFactory("orderBy");
@@ -13400,14 +13571,13 @@
         }
     }
 
-    const DEFAULT_LOCALE = "en-US";
     /** Creates a locale-aware relative time filter backed by Intl.RelativeTimeFormat. */
     function relativeTimeFilter() {
-        return function (input, unit = "day", options, locale = DEFAULT_LOCALE) {
+        return function (input, unit = "day", locales, options) {
             const value = parseRelativeTimeInput(input);
             if (isNullOrUndefined(value))
                 return "";
-            return new Intl.RelativeTimeFormat(options?.locale ?? locale, stripLocale(options)).format(value, unit);
+            return new Intl.RelativeTimeFormat(locales, options).format(value, unit);
         };
     }
     function parseRelativeTimeInput(input) {
@@ -13416,12 +13586,29 @@
         const value = Number(input);
         return Number.isFinite(value) ? value : undefined;
     }
-    function stripLocale(options) {
-        if (!options)
-            return undefined;
-        const relativeTimeFormatOptions = { ...options };
-        delete relativeTimeFormatOptions.locale;
-        return relativeTimeFormatOptions;
+
+    /**
+     * Observes one normalized attribute name on one element without using the
+     * framework-wide internal attribute observer registry.
+     */
+    function observeNormalizedAttribute(scope, element, normalizedName, callback) {
+        const expectedName = directiveNormalize(normalizedName);
+        const observer = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i++) {
+                const attributeName = mutations[i].attributeName;
+                if (attributeName && directiveNormalize(attributeName) === expectedName) {
+                    callback();
+                }
+            }
+        });
+        observer.observe(element, { attributes: true });
+        let deregisterDestroy = scope.$on("$destroy", deregister);
+        function deregister() {
+            observer.disconnect();
+            deregisterDestroy?.();
+            deregisterDestroy = undefined;
+        }
+        return deregister;
     }
 
     const ARIA_DISABLE_ATTR = "ngAriaDisable";
@@ -13473,18 +13660,17 @@
             config = extend(config, newConfig);
         };
         this.$get = [
-            _attributes,
-            function ($attributes) {
+            function () {
                 /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
                 function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
                     return function (scope, elem) {
-                        if ($attributes.has(elem, ARIA_DISABLE_ATTR))
+                        if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                             return;
                         const ariaCamelName = directiveNormalize(ariaAttr);
                         if (config[ariaCamelName] &&
                             !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
-                            !$attributes.has(elem, ariaCamelName)) {
-                            scope.$watch($attributes.read(elem, attrName) ?? "", (boolVal) => {
+                            !hasNormalizedAttr(elem, ariaCamelName)) {
+                            scope.$watch(getNormalizedAttr(elem, attrName) ?? "", (boolVal) => {
                                 // ensure boolean value
                                 boolVal = negate ? !boolVal : !!boolVal;
                                 elem.setAttribute(ariaAttr, String(boolVal));
@@ -13518,14 +13704,13 @@
             link: $aria._watchExpr("ngShow", "aria-hidden", [], true),
         };
     }
-    ngMessagesAriaDirective.$inject = [_attributes];
     /** Adds `aria-live` to `ngMessages` containers when not already present. */
-    function ngMessagesAriaDirective($attributes) {
+    function ngMessagesAriaDirective() {
         return {
             restrict: "A",
             require: "?ngMessages",
             link(_scope, elem) {
-                if ($attributes.has(elem, ARIA_DISABLE_ATTR))
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return;
                 if (!elem.hasAttribute("aria-live")) {
                     elem.setAttribute("aria-live", "assertive");
@@ -13533,15 +13718,15 @@
             },
         };
     }
-    ngClickAriaDirective.$inject = [_aria, _parse, _attributes];
+    ngClickAriaDirective.$inject = [_aria, _parse];
     /** Adds keyboard and role accessibility behavior for `ngClick` on non-native controls. */
-    function ngClickAriaDirective($aria, $parse, $attributes) {
+    function ngClickAriaDirective($aria, $parse) {
         return {
             restrict: "A",
             compile(elem) {
-                if ($attributes.has(elem, ARIA_DISABLE_ATTR))
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return undefined;
-                const fn = $parse($attributes.read(elem, "ngClick") ?? "");
+                const fn = $parse(getNormalizedAttr(elem, "ngClick") ?? "");
                 return (scope, linkElem) => {
                     if (!isNodeOneOf(linkElem, nativeAriaNodeNames)) {
                         if ($aria.config("bindRoleForClick") &&
@@ -13552,9 +13737,9 @@
                             linkElem.setAttribute("tabindex", "0");
                         }
                         if ($aria.config("bindKeydown") &&
-                            !$attributes.has(linkElem, "ngKeydown") &&
-                            !$attributes.has(linkElem, "ngKeypress") &&
-                            !$attributes.has(linkElem, "ngKeyup")) {
+                            !hasNormalizedAttr(linkElem, "ngKeydown") &&
+                            !hasNormalizedAttr(linkElem, "ngKeypress") &&
+                            !hasNormalizedAttr(linkElem, "ngKeyup")) {
                             linkElem.addEventListener("keydown", 
                             /** Handles keyboard activation for synthetic button semantics. */
                             (event) => {
@@ -13616,9 +13801,9 @@
             link: $aria._watchExpr("ngReadonly", "aria-readonly", nativeAriaNodeNames, false),
         };
     }
-    ngModelAriaDirective.$inject = [_aria, _attributes];
+    ngModelAriaDirective.$inject = [_aria];
     /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
-    function ngModelAriaDirective($aria, $attributes) {
+    function ngModelAriaDirective($aria) {
         /** Determines whether an ARIA attribute should be attached to an element. */
         function shouldAttachAttr(attr, normalizedAttr, elem, allowNonAriaNodes) {
             return ($aria.config(normalizedAttr) === true &&
@@ -13637,8 +13822,8 @@
         }
         /** Infers the control shape used to decide which ARIA attributes to manage. */
         function getShape(element) {
-            const type = $attributes.read(element, "type");
-            const role = $attributes.read(element, "role");
+            const type = getNormalizedAttr(element, "type");
+            const role = getNormalizedAttr(element, "role");
             return (type ?? role) === "checkbox" || role === "menuitemcheckbox"
                 ? "checkbox"
                 : (type ?? role) === "radio" || role === "menuitemradio"
@@ -13652,7 +13837,7 @@
             require: "ngModel",
             priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
             compile(compileElement) {
-                if ($attributes.has(compileElement, ARIA_DISABLE_ATTR))
+                if (hasNormalizedAttr(compileElement, ARIA_DISABLE_ATTR))
                     return undefined;
                 const shape = getShape(compileElement);
                 return {
@@ -13660,7 +13845,7 @@
                         const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                         function getRadioReaction() {
                             // Strict comparison would cause a BC
-                            elem.setAttribute("aria-checked", ($attributes.read(elem, "value") == ngModel.$viewValue).toString());
+                            elem.setAttribute("aria-checked", (getNormalizedAttr(elem, "value") == ngModel.$viewValue).toString());
                         }
                         function getCheckboxReaction() {
                             elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());
@@ -13684,21 +13869,29 @@
                                 }
                                 if ($aria.config("ariaValue")) {
                                     const needsAriaValuemin = !elem.hasAttribute("aria-valuemin") &&
-                                        ($attributes.has(elem, "min") ||
-                                            $attributes.has(elem, "ngMin"));
+                                        (hasNormalizedAttr(elem, "min") ||
+                                            hasNormalizedAttr(elem, "ngMin"));
                                     const needsAriaValuemax = !elem.hasAttribute("aria-valuemax") &&
-                                        ($attributes.has(elem, "max") ||
-                                            $attributes.has(elem, "ngMax"));
+                                        (hasNormalizedAttr(elem, "max") ||
+                                            hasNormalizedAttr(elem, "ngMax"));
                                     const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
                                     if (needsAriaValuemin) {
-                                        $attributes.observe(scope, elem, "min", (newVal) => {
-                                            elem.setAttribute("aria-valuemin", stringify$1(newVal));
-                                        });
+                                        const updateAriaMin = () => {
+                                            elem.setAttribute("aria-valuemin", stringify$1(getNormalizedAttr(elem, "min") ??
+                                                getNormalizedAttr(elem, "ngMin")));
+                                        };
+                                        updateAriaMin();
+                                        observeNormalizedAttribute(scope, elem, "min", updateAriaMin);
+                                        observeNormalizedAttribute(scope, elem, "ngMin", updateAriaMin);
                                     }
                                     if (needsAriaValuemax) {
-                                        $attributes.observe(scope, elem, "max", (newVal) => {
-                                            elem.setAttribute("aria-valuemax", stringify$1(newVal));
-                                        });
+                                        const updateAriaMax = () => {
+                                            elem.setAttribute("aria-valuemax", stringify$1(getNormalizedAttr(elem, "max") ??
+                                                getNormalizedAttr(elem, "ngMax")));
+                                        };
+                                        updateAriaMax();
+                                        observeNormalizedAttribute(scope, elem, "max", updateAriaMax);
+                                        observeNormalizedAttribute(scope, elem, "ngMax", updateAriaMax);
                                     }
                                     if (needsAriaValuenow) {
                                         ngModel.$watch("$modelValue", (newVal) => {
@@ -13711,13 +13904,15 @@
                                 }
                                 break;
                         }
-                        if (!$attributes.has(elem, "ngRequired") &&
+                        if (!hasNormalizedAttr(elem, "ngRequired") &&
                             ngModel.$validators.required &&
                             shouldAttachAttr("aria-required", "ariaRequired", elem, false)) {
                             // ngModel.$error.required is undefined on custom controls
-                            $attributes.observe(scope, elem, "required", () => {
-                                elem.setAttribute("aria-required", $attributes.has(elem, "required").toString());
-                            });
+                            const updateAriaRequired = () => {
+                                elem.setAttribute("aria-required", hasNormalizedAttr(elem, "required").toString());
+                            };
+                            updateAriaRequired();
+                            observeNormalizedAttribute(scope, elem, "required", updateAriaRequired);
                         }
                         if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
                             ngModel.$watch("$invalid", (newVal) => {
@@ -13729,13 +13924,13 @@
             },
         };
     }
-    ngDblclickAriaDirective.$inject = [_aria, _attributes];
+    ngDblclickAriaDirective.$inject = [_aria];
     /** Adds focusability for `ngDblclick` on non-native interactive controls. */
-    function ngDblclickAriaDirective($aria, $attributes) {
+    function ngDblclickAriaDirective($aria) {
         return {
             restrict: "A",
             link(_scope, elem) {
-                if ($attributes.has(elem, ARIA_DISABLE_ATTR))
+                if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR))
                     return;
                 if ($aria.config("tabindex") &&
                     !elem.hasAttribute("tabindex") &&
@@ -13787,79 +13982,75 @@
         if (i === "multiple")
             return;
         /** Mirrors the watched scope expression into the underlying boolean attribute. */
-        function defaultLinkFn($attributes, scope, element, attr) {
-            scope.$watch(attr[normalized] ?? "", (value) => {
-                $attributes.set(element, i, !!value);
+        const defaultLinkFn = (scope, element, expression) => {
+            scope.$watch(expression, (value) => {
+                setNormalizedAttr(element, i, !!value);
             });
-        }
+        };
         const normalized = directiveNormalize(`ng-${i}`);
         let linkFn = defaultLinkFn;
         if (i === "checked") {
-            linkFn = function ($attributes, scope, element, attr) {
+            linkFn = function (scope, element, expression, modelExpression) {
                 // ensuring ngChecked doesn't interfere with ngModel when both are set on the same input
-                if (attr.ngModel !== attr[normalized]) {
-                    defaultLinkFn($attributes, scope, element, attr);
+                if (modelExpression !== expression) {
+                    defaultLinkFn(scope, element, expression);
                 }
             };
         }
-        ngAttributeAliasDirectives[normalized] = [
-            _attributes,
-            function ($attributes) {
-                return {
-                    restrict: "A",
-                    priority: 100,
-                    compile(_element, attr) {
-                        return (scope, element) => {
-                            linkFn($attributes, scope, element, attr);
-                        };
-                    },
-                };
-            },
-        ];
+        ngAttributeAliasDirectives[normalized] = function () {
+            return {
+                restrict: "A",
+                priority: 100,
+                compile(_element) {
+                    const expression = getNormalizedAttr(_element, normalized) ?? "";
+                    const modelExpression = getNormalizedAttr(_element, "ngModel");
+                    return (scope, element) => {
+                        linkFn(scope, element, expression, modelExpression);
+                    };
+                },
+            };
+        };
     });
     // aliased input attrs are evaluated
     entries(ALIASED_ATTR).forEach(([ngAttr]) => {
-        ngAttributeAliasDirectives[ngAttr] = [
-            _attributes,
-            function ($attributes) {
-                return {
-                    priority: 100,
-                    compile(_element, attr) {
-                        // special case ngPattern when a literal regular expression value
-                        // is used as the expression (this way we don't have to watch anything).
-                        const { ngPattern } = attr;
-                        if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
-                            const match = REGEX_STRING_REGEXP.exec(ngPattern);
-                            if (match) {
-                                $attributes.set(_element, "ngPattern", new RegExp(match[1], match[2]).toString());
-                                return;
-                            }
+        ngAttributeAliasDirectives[ngAttr] = function () {
+            return {
+                priority: 100,
+                compile(_element) {
+                    // special case ngPattern when a literal regular expression value
+                    // is used as the expression (this way we don't have to watch anything).
+                    const expression = getNormalizedAttr(_element, ngAttr) ?? "";
+                    if (ngAttr === "ngPattern" && expression.startsWith("/")) {
+                        const match = REGEX_STRING_REGEXP.exec(expression);
+                        if (match) {
+                            setNormalizedAttr(_element, "ngPattern", new RegExp(match[1], match[2]).toString());
+                            return;
                         }
-                        return (scope, element) => {
-                            scope.$watch(attr[ngAttr] ?? "", (value) => {
-                                $attributes.set(element, ngAttr, value);
-                            });
-                        };
-                    },
-                };
-            },
-        ];
+                    }
+                    return (scope, element) => {
+                        scope.$watch(expression, (value) => {
+                            setNormalizedAttr(element, ngAttr, value);
+                        });
+                    };
+                },
+            };
+        };
     });
     // ng-src, ng-srcset, ng-href are interpolated
     ["src", "srcset", "href"].forEach((attrName) => {
         const normalized = directiveNormalize(`ng-${attrName}`);
         ngAttributeAliasDirectives[normalized] = [
             _sce,
-            _attributes,
             /** Creates the alias directive for interpolated URL-like attributes. */
-            function ($sce, $attributes) {
+            function ($sce) {
                 return {
                     priority: 99, // it needs to run after the attributes are interpolated
-                    compile(_element, attr) {
+                    compile(_element) {
+                        const initialValue = getNormalizedAttr(_element, normalized);
+                        const originalAttrName = getNormalizedAttrName(_element, normalized);
                         return (scope, element) => {
                             const nodeName = getNodeName$1(element);
                             if (attrName === "srcset") {
-                                const originalAttrName = attr.$attr[normalized];
                                 if (originalAttrName) {
                                     element.removeAttribute(originalAttrName);
                                 }
@@ -13882,50 +14073,49 @@
                                 return $sce.getTrustedMediaUrl(stringValue);
                             }
                             function readAliasValue() {
-                                const elementValue = $attributes.read(element, normalized);
-                                const attrValue = attr[normalized];
-                                if (attrValue &&
-                                    (isNullOrUndefined(elementValue) || elementValue.includes("{{"))) {
-                                    return attrValue;
-                                }
-                                const value = elementValue ?? attrValue;
+                                const value = getNormalizedAttr(element, normalized);
                                 return value?.includes("{{") ? undefined : value;
                             }
                             function syncAliasValue(value) {
                                 if (!value) {
                                     if (attrName === "href") {
-                                        $attributes.set(element, attrName, null);
+                                        setNormalizedAttr(element, attrName, null);
                                     }
+                                    return;
+                                }
+                                if (attrName === "srcset" &&
+                                    /^\d+(?:\.\d+)?[xw](?:\s|$)/.test(trim(value))) {
                                     return;
                                 }
                                 if (attrName === "href" ||
                                     (attrName === "src" &&
                                         ["img", "video", "audio", "source", "track"].includes(nodeName))) {
-                                    $attributes.set(element, attrName, sanitize(value));
+                                    setNormalizedAttr(element, attrName, sanitize(value));
                                 }
                                 else if (attrName === "srcset") {
-                                    $attributes.set(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                                    setNormalizedAttr(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
                                 }
                                 else {
-                                    $attributes.set(element, attrName, value);
+                                    setNormalizedAttr(element, attrName, value);
                                 }
                             }
                             // We need to sanitize the url at least once, in case it is a constant
                             // non-interpolated attribute.
-                            const initialValue = attr[normalized];
-                            if (initialValue && !stringify$1(initialValue).includes("{{")) {
-                                $attributes.set(element, normalized, attrName === "srcset"
+                            if (initialValue && !initialValue.includes("{{")) {
+                                setNormalizedAttr(element, attrName, attrName === "srcset"
                                     ? sanitizeSrcset($sce, initialValue, "ng-srcset")
                                     : sanitize(initialValue));
                             }
-                            let skipInitialInterpolation = Boolean($attributes._isInterpolated(element, normalized) ||
-                                $attributes.read(element, normalized)?.includes("{{"));
-                            $attributes.observe(scope, element, normalized, () => {
+                            let skipInitialInterpolation = Boolean(isInternalAttributeInterpolated(element, normalized) ||
+                                getNormalizedAttr(element, normalized)?.includes("{{"));
+                            observeInternalAttribute(scope, element, normalized, () => {
+                                const value = readAliasValue();
                                 if (skipInitialInterpolation) {
                                     skipInitialInterpolation = false;
-                                    return;
+                                    if (!value)
+                                        return;
                                 }
-                                syncAliasValue(readAliasValue());
+                                syncAliasValue(value);
                             });
                         };
                     },
@@ -13934,39 +14124,40 @@
         ];
     });
 
-    ngBindDirective.$inject = [_attributes];
     /** Binds the watched expression as plain text content. */
-    function ngBindDirective($attributes) {
+    function ngBindDirective() {
         return {
             link(scope, element) {
-                const expression = $attributes.read(element, "ngBind");
+                const expression = getNormalizedAttr(element, "ngBind");
                 if (!isString(expression))
                     return;
                 scope.$watch(expression, (value) => {
                     const text = stringify$1(deProxy(value));
                     element.textContent = isString(text) ? text : "";
-                }, $attributes.has(element, "lazy"));
+                }, hasNormalizedAttr(element, "lazy"));
             },
         };
     }
     /** Binds the interpolated template value as plain text content. */
-    ngBindTemplateDirective.$inject = [_attributes];
-    function ngBindTemplateDirective($attributes) {
+    function ngBindTemplateDirective() {
         return {
             link(scope, element) {
-                $attributes.observe(scope, element, "ngBindTemplate", (value) => {
+                const syncTemplate = () => {
+                    const value = getNormalizedAttr(element, "ngBindTemplate");
                     element.textContent = isNullOrUndefined(value) ? "" : value;
-                });
+                };
+                syncTemplate();
+                observeNormalizedAttribute(scope, element, "ngBindTemplate", syncTemplate);
             },
         };
     }
-    ngBindHtmlDirective.$inject = [_parse, _attributes];
+    ngBindHtmlDirective.$inject = [_parse];
     /** Binds trusted HTML into the element while still validating the expression. */
-    function ngBindHtmlDirective($parse, $attributes) {
+    function ngBindHtmlDirective($parse) {
         return {
             restrict: "A",
-            compile(tElement, tAttrs) {
-                const expression = $attributes?.read(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
+            compile(tElement) {
+                const expression = getNormalizedAttr(tElement, "ngBindHtml");
                 if (!isString(expression))
                     return () => undefined;
                 $parse(expression); // checks for interpolation errors
@@ -13982,7 +14173,7 @@
         };
     }
 
-    ngChannelDirective.$inject = [_eventBus, _attributes];
+    ngChannelDirective.$inject = [_eventBus];
     /**
      * Subscribes an element to a pub/sub channel.
      *
@@ -13990,11 +14181,11 @@
      * merged into the current scope. Otherwise, string payloads replace the
      * element's HTML content directly.
      */
-    function ngChannelDirective($eventBus, $attributes) {
+    function ngChannelDirective($eventBus) {
         return {
             scope: false,
             link: (scope, element) => {
-                const channel = $attributes.read(element, "ngChannel");
+                const channel = getNormalizedAttr(element, "ngChannel");
                 if (!channel) {
                     return;
                 }
@@ -14014,9 +14205,10 @@
         };
     }
 
-    classDirective.$inject = [_attributes];
+    classDirective.$inject = [_injector];
     /** Creates the `ngClass` directive. */
-    function classDirective($attributes) {
+    function classDirective($injector) {
+        const getAnimate = createLazyAnimate($injector);
         return {
             link(scope, element) {
                 let classCounts = getCacheData(element, "$classCounts");
@@ -14027,7 +14219,7 @@
                     setCacheData(element, "$classCounts", classCounts);
                 }
                 const counts = classCounts;
-                const expression = $attributes.read(element, "ngClass");
+                const expression = getNormalizedAttr(element, "ngClass");
                 if (expression === undefined) {
                     return;
                 }
@@ -14045,10 +14237,7 @@
                     const toAddArray = arrayDifference(newClassArray, oldClassArray);
                     const toRemove = digestClassCounts(toRemoveArray, -1);
                     const toAdd = digestClassCounts(toAddArray, 1);
-                    if (toAdd.length)
-                        $attributes.addClass(element, toAdd.join(" "));
-                    if (toRemove.length)
-                        $attributes.removeClass(element, toRemove.join(" "));
+                    setClass(element, toAdd.join(" "), toRemove.join(" "), getAnimate);
                 }
                 /**
                  * Updates reference-counts for classes and returns the classes that should be
@@ -14185,12 +14374,11 @@
         return "";
     }
 
-    ngCloakDirective.$inject = [_attributes];
     /** Removes the `ng-cloak` attribute during compilation so cloaked content can render. */
-    function ngCloakDirective($attributes) {
+    function ngCloakDirective() {
         return {
             compile(element) {
-                $attributes.set(element, "ngCloak", null);
+                setNormalizedAttr(element, "ngCloak", null);
                 return undefined;
             },
         };
@@ -14208,16 +14396,15 @@
         };
     }
 
-    ngElDirective.$inject = [_attributes];
     /**
      * Exposes the current element on `scope.$target` under the provided key.
      */
-    function ngElDirective($attributes) {
+    function ngElDirective() {
         return {
             restrict: "A",
             link(scope, element) {
                 const target = scope.$target;
-                const expr = $attributes.read(element, "ngEl");
+                const expr = getNormalizedAttr(element, "ngEl");
                 const key = isString(expr) && expr ? expr : element.id;
                 target[key] = element;
                 const parent = element.parentNode;
@@ -14320,11 +14507,11 @@
         /**
          * Creates a form controller for a specific form element and its scope.
          */
-        constructor($element, $attrs, $scope, $injector, $interpolate, $attributes) {
+        constructor($element, $scope, $injector, $interpolate) {
             this._isAnimated = hasAnimate($element);
             this._controls = [];
-            const interpolatedName = $interpolate($attributes.read($element, "name") ??
-                $attributes.read($element, "ngForm") ??
+            const interpolatedName = $interpolate(getNormalizedAttr($element, "name") ??
+                getNormalizedAttr($element, "ngForm") ??
                 "")?.($scope);
             this.$name = isString(interpolatedName) ? interpolatedName : "";
             /** True if user has already interacted with the form. */
@@ -14487,9 +14674,7 @@
          */
         $setDirty() {
             if (this._isAnimated) {
-                const animate = this._getAnimate();
-                animate.removeClass(this._element, PRISTINE_CLASS);
-                animate.addClass(this._element, DIRTY_CLASS);
+                this._getAnimate().setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
             }
             else {
                 // Fallback for non-animated environments
@@ -14735,14 +14920,7 @@
         }
     }
     FormController.$nonscope = true;
-    /* @ignore */ FormController.$inject = [
-        _element,
-        _attrs,
-        _scope,
-        _injector,
-        _interpolate,
-        _attributes,
-    ];
+    /* @ignore */ FormController.$inject = [_element, _scope, _injector, _interpolate];
     /**
      * Helper directive that makes it possible to create control groups inside a
      * {@link ng.directive:form `form`} directive.
@@ -14812,11 +14990,10 @@
     const formDirectiveFactory = function (isNgForm) {
         return [
             _parse,
-            _attributes,
             /**
              * Builds the form/ngForm directive definition.
              */
-            function ($parse, $attributes) {
+            function ($parse) {
                 return {
                     name: "form",
                     restrict: isNgForm ? "EA" : "E",
@@ -14825,16 +15002,16 @@
                     compile: function ngFormCompile(formElement) {
                         // Setup initial state of the control
                         formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
-                        const nameAttr = $attributes.has(formElement, "name")
+                        const nameAttr = hasNormalizedAttr(formElement, "name")
                             ? "name"
-                            : isNgForm && $attributes.has(formElement, "ngForm")
+                            : isNgForm && hasNormalizedAttr(formElement, "ngForm")
                                 ? "ngForm"
                                 : false;
                         return {
-                            pre: function ngFormPreLink(scope, formElementParam, attrParam, ctrls) {
+                            pre: function ngFormPreLink(scope, formElementParam, ctrls) {
                                 const [controller] = ctrls;
                                 if (formElementParam instanceof HTMLFormElement) {
-                                    const shouldPreventSubmit = !("action" in attrParam);
+                                    const shouldPreventSubmit = !hasNormalizedAttr(formElementParam, "action");
                                     const handleFormSubmission = function (event) {
                                         controller.$commitViewValue();
                                         controller.$setSubmitted();
@@ -14944,7 +15121,8 @@
                                     };
                                 if (nameAttr) {
                                     setter(scope, controller);
-                                    $attributes.observe(scope, formElementParam, nameAttr, (newValue) => {
+                                    observeNormalizedAttribute(scope, formElementParam, nameAttr, () => {
+                                        const newValue = getNormalizedAttr(formElementParam, nameAttr);
                                         const nextName = newValue ?? "";
                                         if (controller.$name === nextName)
                                             return;
@@ -15961,10 +16139,10 @@
     }
 
     /** Creates a per-directive realtime DOM swap handler. */
-    function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attributes, element, logPrefix, }) {
+    function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element, logPrefix, }) {
         let content;
         return (html, swap, options = {}) => {
-            const animationEnabled = !!$attributes.read(element, "animate");
+            const animationEnabled = !!getNormalizedAttr(element, "animate");
             const animate = animationEnabled ? getAnimate() : undefined;
             let nodes = [];
             if (!["textContent", "delete", "none"].includes(swap)) {
@@ -15975,7 +16153,7 @@
                     ? arrayFrom(compiled.childNodes)
                     : [compiled];
             }
-            const targetSelector = options.targetSelector ?? $attributes.read(element, "target");
+            const targetSelector = options.targetSelector ?? getNormalizedAttr(element, "target");
             const target = targetSelector
                 ? document.querySelector(targetSelector)
                 : element;
@@ -16018,11 +16196,20 @@
                     }
                     case "textContent":
                         if (animationEnabled) {
+                            const parent = target.parentNode;
+                            if (!parent)
+                                return false;
+                            const placeholder = document.createComment("ng-text-swap");
+                            parent.insertBefore(placeholder, target);
                             assertDefined(animate)
                                 .leave(target)
                                 .done(() => {
                                 target.textContent = stringify$1(html);
-                                assertDefined(animate).enter(target, target.parentNode);
+                                assertDefined(animate)
+                                    .enter(target, parent, placeholder)
+                                    .done(() => {
+                                    placeholder.remove();
+                                });
                             });
                         }
                         else {
@@ -16127,7 +16314,7 @@
                 }
                 return true;
             };
-            if (shouldUseViewTransition($attributes.read(element, "viewTransition"), target, animationEnabled)) {
+            if (shouldUseViewTransition(getNormalizedAttr(element, "viewTransition"), target, animationEnabled)) {
                 const documentWithTransitions = document;
                 documentWithTransitions.startViewTransition(() => {
                     applySwap();
@@ -16162,11 +16349,11 @@
             _compile,
             _log,
             _parse,
+            _interpolate,
             _state,
             _sse,
             _injector,
             _stream,
-            _attributes,
         ];
         return directive;
     }
@@ -16178,7 +16365,7 @@
     /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
     function createHttpDirective(method, attrName) {
         /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-        return function ($http, $compile, $log, $parse, $state, $sse, $injector, $stream, $attributes) {
+        return function ($http, $compile, $log, $parse, $interpolate, $state, $sse, $injector, $stream) {
             const getAnimate = createLazyAnimate($injector);
             /** Collects form data from the element or its associated form. */
             function collectFormData(element) {
@@ -16225,12 +16412,16 @@
                 restrict: "A",
                 link(scope, element) {
                     const readAttr = (name) => {
-                        return $attributes.read(element, name);
+                        const value = getNormalizedAttr(element, name);
+                        if (!value?.includes("{{"))
+                            return value;
+                        const interpolated = $interpolate(value)?.(scope);
+                        return interpolated == null ? undefined : stringify$1(interpolated);
                     };
-                    const hasAttr = (name) => $attributes.has(element, name);
+                    const hasAttr = (name) => hasNormalizedAttr(element, name);
                     const setAttr = (name, value) => {
-                        $attributes.set(element, name, value, {
-                            attrName: $attributes.originalName(element, name),
+                        setNormalizedAttr(element, name, value, {
+                            attrName: getNormalizedAttrName(element, name),
                         });
                     };
                     const eventName = readAttr("trigger") ?? getEventNameForElement(element);
@@ -16239,9 +16430,8 @@
                         const dispatchAfterFirst = callBackAfterFirst(() => {
                             element.dispatchEvent(new Event(eventName));
                         });
-                        $attributes.observe(scope, element, "latch", () => {
-                            dispatchAfterFirst();
-                        });
+                        dispatchAfterFirst();
+                        observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
                     }
                     let throttled = false;
                     let intervalId;
@@ -16267,7 +16457,6 @@
                         $log,
                         getAnimate,
                         scope,
-                        $attributes,
                         element,
                         logPrefix: attrName,
                     });
@@ -16342,7 +16531,7 @@
                                 }
                                 const loadingClass = readAttr("loadingClass");
                                 if (isDefined(loadingClass)) {
-                                    $attributes.removeClass(element, loadingClass);
+                                    removeClass(element, loadingClass, getAnimate);
                                 }
                                 const html = res.data;
                                 if (Http._OK <= res.status &&
@@ -16407,7 +16596,7 @@
                             }
                             const loadingClass = readAttr("loadingClass");
                             if (isDefined(loadingClass)) {
-                                $attributes.addClass(element, loadingClass);
+                                addClass(element, loadingClass, getAnimate);
                             }
                             if (method === "post" || method === "put") {
                                 let data;
@@ -16446,7 +16635,7 @@
                                             }
                                             const sseLoadingClass = readAttr("loadingClass");
                                             if (isDefined(sseLoadingClass))
-                                                $attributes.removeClass(element, sseLoadingClass);
+                                                removeClass(element, sseLoadingClass, getAnimate);
                                         },
                                         onEvent: ({ data, event: messageEvent, type, }) => {
                                             const source = sourceRef.current;
@@ -16529,73 +16718,75 @@
         };
     }
 
-    ngIfDirective.$inject = [_injector, _attributes];
+    ngIfDirective.$inject = [_injector];
     /** Conditionally includes or removes a transcluded block based on the watched expression. */
-    function ngIfDirective($injector, $attributes) {
+    function ngIfDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         return {
             transclude: "element",
             priority: 600,
             terminal: true,
             restrict: "A",
-            link($scope, $element, $transclude) {
-                if (!$transclude) {
-                    return;
-                }
-                let block;
-                let childScope;
-                let previousElements;
-                const expression = $attributes.read($element, "ngIf");
+            compile(tElement) {
+                const expression = getNormalizedAttr(tElement, "ngIf");
                 if (typeof expression !== "string") {
-                    return;
+                    return () => undefined;
                 }
-                $scope.$watch(expression, (value) => {
-                    if (value) {
-                        if (!childScope) {
-                            $transclude((clone, newScope) => {
-                                childScope = newScope;
-                                // Note: We only need the first/last node of the cloned nodes.
-                                // However, we need to keep the reference to the dom wrapper as it might be changed later
-                                // by a directive with templateUrl when its template arrives.
-                                block = clone;
-                                const animate = getAnimateForNode(getAnimate, clone);
-                                if (animate) {
-                                    animate.enter(clone, $element.parentElement, $element);
-                                }
-                                else {
-                                    $element.after(clone);
-                                }
-                            });
-                        }
+                return function ngIfLink($scope, $element, $transclude) {
+                    if (!$transclude) {
+                        return;
                     }
-                    else {
-                        if (previousElements) {
-                            removeElement(previousElements);
-                            previousElements = null;
-                        }
-                        if (childScope) {
-                            childScope.$destroy();
-                            childScope = null;
-                        }
-                        if (block) {
-                            previousElements = block;
-                            const animate = getAnimateForNode(getAnimate, previousElements);
-                            if (animate) {
-                                animate.leave(previousElements).done((response) => {
-                                    if (response)
-                                        previousElements = null;
+                    let block;
+                    let childScope;
+                    let previousElements;
+                    $scope.$watch(expression, (value) => {
+                        if (value) {
+                            if (!childScope) {
+                                $transclude((clone, newScope) => {
+                                    childScope = newScope;
+                                    // Note: We only need the first/last node of the cloned nodes.
+                                    // However, we need to keep the reference to the dom wrapper as it might be changed later
+                                    // by a directive with templateUrl when its template arrives.
+                                    block = clone;
+                                    const animate = getAnimateForNode(getAnimate, clone);
+                                    if (animate) {
+                                        animate.enter(clone, $element.parentElement, $element);
+                                    }
+                                    else {
+                                        $element.after(clone);
+                                    }
                                 });
                             }
-                            else {
-                                const currentElement = $element.nextElementSibling;
-                                if (currentElement) {
-                                    removeElement(currentElement);
-                                }
-                            }
-                            block = null;
                         }
-                    }
-                });
+                        else {
+                            if (previousElements) {
+                                removeElement(previousElements);
+                                previousElements = null;
+                            }
+                            if (childScope) {
+                                childScope.$destroy();
+                                childScope = null;
+                            }
+                            if (block) {
+                                previousElements = block;
+                                const animate = getAnimateForNode(getAnimate, previousElements);
+                                if (animate) {
+                                    animate.leave(previousElements).done((response) => {
+                                        if (response)
+                                            previousElements = null;
+                                    });
+                                }
+                                else {
+                                    const currentElement = $element.nextElementSibling;
+                                    if (currentElement) {
+                                        removeElement(currentElement);
+                                    }
+                                }
+                                block = null;
+                            }
+                        }
+                    });
+                };
             },
         };
     }
@@ -16606,12 +16797,11 @@
         _injector,
         _exceptionHandler,
         _parse,
-        _attributes,
     ];
     /**
      * Loads external template content, transcludes it, and swaps it into the DOM.
      */
-    function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse, $attributes) {
+    function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             priority: 400,
@@ -16621,12 +16811,13 @@
                 /* empty */
                 return undefined;
             },
+            require: "ngInclude",
             compile(element) {
-                const srcExp = $attributes.read(element, "ngInclude") ??
-                    $attributes.read(element, "src") ??
+                const srcExp = getNormalizedAttr(element, "ngInclude") ??
+                    getNormalizedAttr(element, "src") ??
                     "";
-                const onloadExp = $attributes.read(element, "onload") ?? "";
-                const autoScrollExp = $attributes.read(element, "autoscroll");
+                const onloadExp = getNormalizedAttr(element, "onload") ?? "";
+                const autoScrollExp = getNormalizedAttr(element, "autoscroll");
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 return (scope, $element, ctrl, $transclude) => {
@@ -16975,12 +17166,12 @@
         };
     }
 
-    ngInitDirective.$inject = [_parse, _attributes];
-    function ngInitDirective($parse, $attributes) {
+    ngInitDirective.$inject = [_parse];
+    function ngInitDirective($parse) {
         return {
             priority: 450,
             compile(element) {
-                const initFn = $parse($attributes.read(element, "ngInit") ?? "");
+                const initFn = $parse(getNormalizedAttr(element, "ngInit") ?? "");
                 return {
                     pre(scope, linkElement) {
                         const controller = getController(linkElement);
@@ -16996,15 +17187,15 @@
         };
     }
 
-    ngInjectDirective.$inject = [_log, _injector, _attributes];
+    ngInjectDirective.$inject = [_log, _injector];
     /**
      * Injects named services from `$injector` onto the current scope.
      */
-    function ngInjectDirective($log, $injector, $attributes) {
+    function ngInjectDirective($log, $injector) {
         return {
             restrict: "A",
             link(scope, element) {
-                const expr = $attributes.read(element, "ngInject");
+                const expr = getNormalizedAttr(element, "ngInject");
                 if (!expr)
                     return;
                 const tokens = expr
@@ -17023,18 +17214,17 @@
         };
     }
 
-    ngListenerDirective.$inject = [_attributes];
     function fallbackWhenEmpty$1(value, fallback) {
         if (value)
             return value;
         return fallback;
     }
     /** Listens for DOM custom events and projects their payload into the element or scope. */
-    function ngListenerDirective($attributes) {
+    function ngListenerDirective() {
         return {
             scope: false,
             link: (scope, element) => {
-                const configuredChannel = $attributes.read(element, "ngListener");
+                const configuredChannel = getNormalizedAttr(element, "ngListener");
                 const channel = fallbackWhenEmpty$1(configuredChannel, element.id);
                 const hasTemplateContent = element.childNodes.length > 0;
                 const fn = (event) => {
@@ -17058,9 +17248,8 @@
 
     const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
     class NgModelOptionsController {
-        constructor($element, $attributes, $scope, $parse) {
+        constructor($element, $scope, $parse) {
             this._element = $element;
-            this._attributes = $attributes;
             this._scope = $scope;
             this._parse = $parse;
             this.parentCtrl = null;
@@ -17070,12 +17259,12 @@
             const parentOptions = this.parentCtrl
                 ? this.parentCtrl.$options
                 : defaultModelOptions;
-            const modelOptionsDefinition = this._parse(this._attributes.read(this._element, "ngModelOptions") ?? "")(this._scope);
+            const modelOptionsDefinition = this._parse(getNormalizedAttr(this._element, "ngModelOptions") ?? "")(this._scope);
             this.$options = parentOptions.createChild(modelOptionsDefinition);
         }
     }
     NgModelOptionsController.$nonscope = true;
-    NgModelOptionsController.$inject = [_element, _attributes, _scope, _parse];
+    NgModelOptionsController.$inject = [_element, _scope, _parse];
     /**
      * A container for the options set by the {@link ngModelOptions} directive
      */
@@ -17148,18 +17337,10 @@
 
     const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
     const ngModelError = createErrorFactory("ngModel");
-    function readModelAttr($attributes, element, attr, normalizedName) {
-        const elementValue = element instanceof Element
-            ? $attributes?.read(element, normalizedName)
+    function readModelAttr(element, normalizedName) {
+        return element instanceof Element
+            ? getNormalizedAttr(element, normalizedName)
             : undefined;
-        const attrValue = attr
-            ? attr[normalizedName]
-            : undefined;
-        if (isDefined(attrValue) &&
-            (isUndefined(elementValue) || elementValue.includes("{{"))) {
-            return attrValue;
-        }
-        return elementValue ?? attrValue;
     }
     /**
      * @property $viewValue The actual value from the control's view.
@@ -17200,7 +17381,7 @@
         /**
          * Creates a model controller bound to the element, scope, and ngModel expression.
          */
-        constructor($scope, $exceptionHandler, $attr, $element, $parse, $injector, $interpolate, $attributes) {
+        constructor($scope, $exceptionHandler, $element, $parse, $injector, $interpolate) {
             /**
              * Handles configured update events by committing the staged view value.
              */
@@ -17232,13 +17413,12 @@
             this._customValidationStates = new Map();
             this._validationStates = this._customValidationStates;
             this.$pending = undefined; // keep pending keys here
-            const interpolatedName = $interpolate(readModelAttr($attributes, $element, $attr, "name") ?? "", false)?.($scope);
+            const interpolatedName = $interpolate(readModelAttr($element, "name") ?? "", false)?.($scope);
             this.$name = isString(interpolatedName) ? interpolatedName : "";
             this._parentForm = nullFormCtrl;
             this.$options = defaultModelOptions;
             this._updateEvents = "";
-            this._modelExpression =
-                readModelAttr($attributes, $element, $attr, "ngModel") ?? "";
+            this._modelExpression = readModelAttr($element, "ngModel") ?? "";
             this._parsedNgModel = $parse(this._modelExpression);
             this._parsedNgModelAssign = this._parsedNgModel._assign;
             this._ngModelGet = this._parsedNgModel;
@@ -17248,7 +17428,6 @@
             this._parserName = "parse";
             this._currentValidationRunId = 0;
             this._scope = $scope; // attempt to bind to nearest controller if present
-            this._attr = $attr;
             this._element = $element;
             this._getAnimate = createLazyAnimate($injector);
             this._parse = $parse;
@@ -17473,8 +17652,7 @@
             if (this.$isEmpty(value)) {
                 const animate = this._getAnimateIfEnabled();
                 if (animate) {
-                    animate.removeClass(this._element, NOT_EMPTY_CLASS);
-                    animate.addClass(this._element, EMPTY_CLASS);
+                    animate.setClass(this._element, EMPTY_CLASS, NOT_EMPTY_CLASS);
                 }
                 else {
                     this._element.classList.remove(NOT_EMPTY_CLASS);
@@ -17484,8 +17662,7 @@
             else {
                 const animate = this._getAnimateIfEnabled();
                 if (animate) {
-                    animate.removeClass(this._element, EMPTY_CLASS);
-                    animate.addClass(this._element, NOT_EMPTY_CLASS);
+                    animate.setClass(this._element, NOT_EMPTY_CLASS, EMPTY_CLASS);
                 }
                 else {
                     this._element.classList.remove(EMPTY_CLASS);
@@ -17507,8 +17684,7 @@
                 return;
             const animate = this._getAnimateIfEnabled();
             if (animate) {
-                animate.removeClass(this._element, EMPTY_CLASS);
-                animate.addClass(this._element, PRISTINE_CLASS);
+                animate.setClass(this._element, PRISTINE_CLASS, EMPTY_CLASS);
             }
             else {
                 this._element.classList.remove(EMPTY_CLASS);
@@ -17530,8 +17706,7 @@
             }
             const animate = this._getAnimateIfEnabled();
             if (animate) {
-                animate.removeClass(this._element, PRISTINE_CLASS);
-                animate.addClass(this._element, DIRTY_CLASS);
+                animate.setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
             }
             else {
                 this._element.classList.remove(PRISTINE_CLASS);
@@ -18223,12 +18398,10 @@
     /* @ignore */ NgModelController.$inject = [
         _scope,
         _exceptionHandler,
-        _attrs,
         _element,
         _parse,
         _injector,
         _interpolate,
-        _attributes,
     ];
     /**
      * Watches the bound model expression and refreshes the controller when it changes externally.
@@ -18263,8 +18436,7 @@
     /**
      * Builds the core `ngModel` directive definition.
      */
-    ngModelDirective.$inject = [_attributes];
-    function ngModelDirective($attributes) {
+    function ngModelDirective() {
         return {
             restrict: "A",
             require: ["ngModel", "^?form", "^?ngModelOptions"],
@@ -18294,13 +18466,9 @@
                                 modelCtrl._parentForm._renameControl(modelCtrl, nextName);
                             }
                         };
-                        const deregisterNameObserver = $attributes
-                            ? $attributes.observe(scope, preElement, "name", () => {
-                                handleNameChange(readModelAttr($attributes, preElement, undefined, "name"));
-                            })
-                            : () => {
-                                /* empty */
-                            };
+                        const deregisterNameObserver = observeNormalizedAttribute(scope, preElement, "name", () => {
+                            handleNameChange(readModelAttr(preElement, "name"));
+                        });
                         const deregisterWatch = (scope.$watch(modelCtrl._modelExpression, (val) => {
                             const modelValue = deProxy(val);
                             if (modelValue === modelCtrl.$modelValue ||
@@ -18503,17 +18671,17 @@
             this.reRender();
         }
     }
-    ngMessagesDirective.$inject = [_injector, _parse, _attributes];
+    ngMessagesDirective.$inject = [_injector, _parse];
     /**
      * Builds the root `ngMessages` directive.
      */
-    function ngMessagesDirective($injector, $parse, $attributes) {
+    function ngMessagesDirective($injector, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             require: "ngMessages",
             restrict: "AE",
-            controller: ($element, $scope) => new NgMessageCtrl($element, $scope, $attributes.read($element, "ngMessages") ??
-                $attributes.read($element, "for"), $attributes.read($element, "multiple"), $attributes.read($element, "ngMessagesMultiple"), getAnimate, $parse),
+            controller: ($element, $scope) => new NgMessageCtrl($element, $scope, getNormalizedAttr($element, "ngMessages") ??
+                getNormalizedAttr($element, "for"), getNormalizedAttr($element, "multiple"), getNormalizedAttr($element, "ngMessagesMultiple"), getAnimate, $parse),
         };
     }
     /**
@@ -18533,17 +18701,17 @@
     function truthy(val) {
         return isString(val) ? val.length > 0 : !!val;
     }
-    ngMessagesIncludeDirective.$inject = [_templateRequest, _compile, _attributes];
+    ngMessagesIncludeDirective.$inject = [_templateRequest, _compile];
     /**
      * Builds the directive that inlines external message templates.
      */
-    function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
+    function ngMessagesIncludeDirective($templateRequest, $compile) {
         return {
             restrict: "AE",
             require: "^^ngMessages", // we only require this for validation sake
             link($scope, element, ngMessagesCtrl) {
-                const src = $attributes.read(element, "ngMessagesInclude") ??
-                    $attributes.read(element, "src") ??
+                const src = getNormalizedAttr(element, "ngMessagesInclude") ??
+                    getNormalizedAttr(element, "src") ??
                     "";
                 void $templateRequest(src).then((html) => {
                     if ($scope._destroyed)
@@ -18581,11 +18749,11 @@
      * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
      */
     function ngMessageDirectiveFactory(isDefault) {
-        ngMessageDirectiveFn.$inject = [_injector, _parse, _attributes];
+        ngMessageDirectiveFn.$inject = [_injector, _parse];
         /**
          * Builds a concrete `ngMessage` directive definition.
          */
-        function ngMessageDirectiveFn($injector, $parse, $attributes) {
+        function ngMessageDirectiveFn($injector, $parse) {
             const getAnimate = createLazyAnimate($injector);
             return {
                 restrict: "AE",
@@ -18593,97 +18761,97 @@
                 priority: 1, // must run before ngBind, otherwise the text is set on the comment
                 terminal: true,
                 require: "^^ngMessages",
-                link: (scope, element, ngMessagesCtrl, $transclude) => {
-                    let commentNode = element;
-                    let records = null;
-                    let staticExp;
-                    let dynamicExp;
-                    if (!isDefault) {
-                        commentNode = element;
-                        staticExp =
-                            $attributes.read(element, "ngMessage") ??
-                                $attributes.read(element, "when") ??
-                                undefined;
-                        dynamicExp =
-                            $attributes.read(element, "ngMessageExp") ??
-                                $attributes.read(element, "whenExp") ??
-                                undefined;
-                        const assignRecords = function (items) {
-                            records = items
-                                ? isArray(items)
-                                    ? items
-                                    : items.split(/[\s,]+/)
-                                : null;
-                            ngMessagesCtrl.reRender();
-                        };
-                        if (dynamicExp) {
-                            const dynamicFn = $parse(dynamicExp);
-                            assignRecords(dynamicFn(scope));
-                            scope.$watch(dynamicExp, assignRecords);
+                compile(tElement) {
+                    const staticExp = isDefault
+                        ? undefined
+                        : (getNormalizedAttr(tElement, "ngMessage") ??
+                            getNormalizedAttr(tElement, "when"));
+                    const dynamicExp = isDefault
+                        ? undefined
+                        : (getNormalizedAttr(tElement, "ngMessageExp") ??
+                            getNormalizedAttr(tElement, "whenExp"));
+                    return (scope, element, ngMessagesCtrl, $transclude) => {
+                        let commentNode = element;
+                        let records = null;
+                        if (!isDefault) {
+                            commentNode = element;
+                            const assignRecords = function (items) {
+                                records = items
+                                    ? isArray(items)
+                                        ? items
+                                        : items.split(/[\s,]+/)
+                                    : null;
+                                ngMessagesCtrl.reRender();
+                            };
+                            if (dynamicExp) {
+                                const dynamicFn = $parse(dynamicExp);
+                                assignRecords(dynamicFn(scope));
+                                scope.$watch(dynamicExp, assignRecords);
+                            }
+                            else {
+                                assignRecords(staticExp);
+                            }
                         }
-                        else {
-                            assignRecords(staticExp);
-                        }
-                    }
-                    /** @internal */
-                    let currentElement = null;
-                    let messageCtrl;
-                    ngMessagesCtrl.register(commentNode, (messageCtrl = {
-                        test(name) {
-                            return contains(records, name);
-                        },
-                        attach() {
-                            if (!currentElement) {
-                                $transclude((elm, newScope) => {
-                                    const transcludedElement = elm;
-                                    const animate = getAnimateForNode(getAnimate, transcludedElement);
+                        /** @internal */
+                        let currentElement = null;
+                        let messageCtrl;
+                        ngMessagesCtrl.register(commentNode, (messageCtrl = {
+                            test(name) {
+                                return contains(records, name);
+                            },
+                            attach() {
+                                if (!currentElement) {
+                                    $transclude((elm, newScope) => {
+                                        const transcludedElement = elm;
+                                        const animate = getAnimateForNode(getAnimate, transcludedElement);
+                                        if (animate) {
+                                            animate.enter(transcludedElement, null, element);
+                                        }
+                                        else {
+                                            element.after(transcludedElement);
+                                        }
+                                        currentElement = transcludedElement;
+                                        // Each time we attach this node to a message we get a new id that we can match
+                                        // when we are destroying the node later.
+                                        const attachId = (currentElement._attachId =
+                                            ngMessagesCtrl._getAttachId());
+                                        // in the event that the element or a parent element is destroyed
+                                        // by another structural directive then it's time
+                                        // to deregister the message from the controller
+                                        currentElement.addEventListener("$destroy", () => {
+                                            // If the message element was removed via a call to `detach` then `currentElement` will be null
+                                            // So this handler only handles cases where something else removed the message element.
+                                            if (currentElement?._attachId === attachId) {
+                                                ngMessagesCtrl.deregister(commentNode, isDefault);
+                                                messageCtrl.detach();
+                                            }
+                                            newScope?.$destroy();
+                                        });
+                                    });
+                                }
+                            },
+                            detach() {
+                                if (currentElement) {
+                                    const elm = currentElement;
+                                    currentElement = null;
+                                    const animate = getAnimateForNode(getAnimate, elm);
                                     if (animate) {
-                                        animate.enter(transcludedElement, null, element);
+                                        animate.leave(elm);
                                     }
                                     else {
-                                        element.after(transcludedElement);
+                                        removeElement(elm);
                                     }
-                                    currentElement = transcludedElement;
-                                    // Each time we attach this node to a message we get a new id that we can match
-                                    // when we are destroying the node later.
-                                    const attachId = (currentElement._attachId =
-                                        ngMessagesCtrl._getAttachId());
-                                    // in the event that the element or a parent element is destroyed
-                                    // by another structural directive then it's time
-                                    // to deregister the message from the controller
-                                    currentElement.addEventListener("$destroy", () => {
-                                        // If the message element was removed via a call to `detach` then `currentElement` will be null
-                                        // So this handler only handles cases where something else removed the message element.
-                                        if (currentElement?._attachId === attachId) {
-                                            ngMessagesCtrl.deregister(commentNode, isDefault);
-                                            messageCtrl.detach();
-                                        }
-                                        newScope?.$destroy();
-                                    });
-                                });
-                            }
-                        },
-                        detach() {
-                            if (currentElement) {
-                                const elm = currentElement;
-                                currentElement = null;
-                                const animate = getAnimateForNode(getAnimate, elm);
-                                if (animate) {
-                                    animate.leave(elm);
                                 }
-                                else {
-                                    removeElement(elm);
-                                }
-                            }
-                        },
-                    }), isDefault);
-                    // We need to ensure that this directive deregisters itself when it no longer exists
-                    // Normally this is done when the attached element is destroyed; but if this directive
-                    // gets removed before we attach the message to the DOM there is nothing to watch
-                    // in which case we must deregister when the containing scope is destroyed.
-                    scope.$on("$destroy", () => {
-                        ngMessagesCtrl.deregister(commentNode, isDefault);
-                    });
+                            },
+                        }), isDefault);
+                        // We need to ensure that this directive deregisters itself when it no longer exists
+                        // Normally this is done when the attached element is destroyed; but if this directive
+                        // gets removed before we attach the message to the DOM there is nothing to watch
+                        // in which case we must deregister when the containing scope is destroyed.
+                        scope.$on("$destroy", () => {
+                            ngMessagesCtrl.deregister(commentNode, isDefault);
+                        });
+                    };
                 },
             };
         }
@@ -18724,8 +18892,8 @@
             this._disabled = Boolean(disabled);
         }
     }
-    ngOptionsDirective.$inject = [_compile, _parse, _attributes];
-    function ngOptionsDirective($compile, $parse, $attributes) {
+    ngOptionsDirective.$inject = [_compile, _parse];
+    function ngOptionsDirective($compile, $parse) {
         function parseOptionsExpression(optionsExp, selectElement, scope) {
             const match = NG_OPTIONS_REGEXP.exec(optionsExp);
             if (!match) {
@@ -18804,7 +18972,7 @@
         function ngOptionsPostLink(scope, selectElement, ctrls) {
             const selectNode = selectElement;
             const [selectCtrl, ngModelCtrl] = ctrls;
-            const multiple = $attributes.has(selectElement, "multiple");
+            const multiple = hasNormalizedAttr(selectElement, "multiple");
             for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
                 if (children[i].value === "") {
                     selectCtrl._hasEmptyOption = true;
@@ -18815,7 +18983,7 @@
             emptyElement(selectNode);
             const providedEmptyOption = !!selectCtrl._emptyOption;
             let options;
-            const ngOptions = parseOptionsExpression($attributes.read(selectElement, "ngOptions") ?? "", selectNode, scope);
+            const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope);
             const listFragment = createDocumentFragment();
             selectCtrl._generateUnknownOptionValue = () => "?";
             if (!multiple) {
@@ -18989,26 +19157,20 @@
         };
     }
 
-    function readOptionElementAttr($attributes, optionElement, optionAttrs, normalizedName) {
-        const elementValue = $attributes?.read(optionElement, normalizedName);
-        const attrValue = optionAttrs[normalizedName];
-        if (isDefined(attrValue) &&
-            (isUndefined(elementValue) || elementValue.includes("{{"))) {
-            return attrValue;
+    function readOptionElementAttr(optionElement, normalizedName, observedValue) {
+        if (isDefined(observedValue)) {
+            return observedValue;
         }
-        return elementValue ?? attrValue;
+        return getNormalizedAttr(optionElement, normalizedName);
     }
-    function hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, normalizedName) {
-        return Boolean($attributes._isInterpolated(optionElement, normalizedName) ||
-            $attributes.read(optionElement, normalizedName)?.includes("{{"));
+    function hasInterpolatedOptionAttr(optionElement, normalizedName) {
+        return Boolean(isInternalAttributeInterpolated(optionElement, normalizedName) ||
+            getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
     }
-    function observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, normalizedName, readValue, callback, skipInitial = false) {
-        if (!$attributes) {
-            return () => undefined;
-        }
+    function observeOptionElementAttr(optionScope, optionElement, normalizedName, readValue, callback, skipInitial = false) {
         let lastValue = {};
         let skipNext = skipInitial;
-        return $attributes.observe(optionScope, optionElement, normalizedName, (observedValue) => {
+        return observeInternalAttribute(optionScope, optionElement, normalizedName, (observedValue) => {
             if (skipNext) {
                 skipNext = false;
                 return;
@@ -19020,8 +19182,8 @@
             callback(newValue);
         });
     }
-    function setOptionElementAttr($attributes, optionElement, normalizedName, value) {
-        $attributes.set(optionElement, normalizedName, value);
+    function setOptionElementAttr(optionElement, normalizedName, value) {
+        setNormalizedAttr(optionElement, normalizedName, value);
     }
     /**
      * The controller for the `select` directive.
@@ -19297,7 +19459,7 @@
         }
         /** @ignore */
         /** @internal */
-        _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn, $attributes, initialValue, hasNgValue = false) {
+        _registerOption(optionScope, optionElement, interpolateValueFn, interpolateTextFn, ngValueExpression, initialValue, hasNgValue = false) {
             let oldVal;
             let hashedVal;
             let registeredValue = initialValue;
@@ -19326,8 +19488,8 @@
                     }
                 };
                 syncNgValue(undefined);
-                optionScope.$watch(stringify$1(optionAttrs.ngValue ?? ""), syncNgValue);
-                observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", (observedValue) => {
+                optionScope.$watch(stringify$1(ngValueExpression ?? ""), syncNgValue);
+                observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => {
                     if (observedValue !== optionElement.getAttribute("value")) {
                         return oldVal;
                     }
@@ -19338,7 +19500,7 @@
                 }, syncNgValue, true);
             }
             else if (interpolateValueFn) {
-                observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "value"), (newVal) => {
+                observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => readOptionElementAttr(optionElement, "value", observedValue), (newVal) => {
                     this._readValue();
                     let removal;
                     const previouslySelected = optionElement.selected;
@@ -19352,20 +19514,20 @@
                     if (removal && previouslySelected) {
                         this._scheduleViewValueUpdate();
                     }
-                }, hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, "value"));
+                }, hasInterpolatedOptionAttr(optionElement, "value"));
             }
             else if (interpolateTextFn) {
                 const initialTextValue = interpolateTextFn(optionScope);
                 optionScope.value = initialTextValue;
                 if (!registeredValue) {
-                    setOptionElementAttr($attributes, optionElement, "value", String(optionScope.value));
+                    setOptionElementAttr(optionElement, "value", String(optionScope.value));
                     registeredValue = initialTextValue;
                     this._addOption(String(initialTextValue), optionElement);
                 }
                 optionScope.$watch("value", () => {
                     const newVal = interpolateTextFn(optionScope);
                     if (!registeredValue) {
-                        setOptionElementAttr($attributes, optionElement, "value", String(newVal));
+                        setOptionElementAttr(optionElement, "value", String(newVal));
                     }
                     const previouslySelected = optionElement.selected;
                     if (oldVal !== newVal) {
@@ -19382,7 +19544,7 @@
             else {
                 this._addOption(registeredValue, optionElement);
             }
-            observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "disabled", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "disabled"), (newVal) => {
+            observeOptionElementAttr(optionScope, optionElement, "disabled", (observedValue) => readOptionElementAttr(optionElement, "disabled", observedValue), (newVal) => {
                 if (newVal === "true" || (newVal && optionElement.selected)) {
                     if (this._multiple) {
                         this._scheduleViewValueUpdate(true);
@@ -19417,20 +19579,16 @@
     }
     /* @ignore */ SelectController.$inject = [_element, _scope];
 
-    selectDirective.$inject = [_attributes];
-    function readSelectAttr($attributes, element, attr, normalizedName) {
-        const value = $attributes?.read(element, normalizedName);
-        return isDefined(value)
-            ? value
-            : attr[normalizedName];
+    function readSelectAttr(element, normalizedName) {
+        return getNormalizedAttr(element, normalizedName);
     }
-    function hasSelectAttr($attributes, element, attr, normalizedName) {
-        return ($attributes?.has(element, normalizedName) ?? isDefined(attr[normalizedName]));
+    function hasSelectAttr(element, normalizedName) {
+        return hasNormalizedAttr(element, normalizedName);
     }
-    function setSelectAttr($attributes, element, normalizedName, value) {
-        $attributes.set(element, normalizedName, value);
+    function setSelectAttr(element, normalizedName, value) {
+        setNormalizedAttr(element, normalizedName, value);
     }
-    function selectDirective($attributes) {
+    function selectDirective() {
         return {
             restrict: "E",
             require: ["select", "?ngModel"],
@@ -19460,7 +19618,7 @@
                 ngModelCtrl.$setViewValue(viewValue);
                 syncNativeValidity();
             });
-            if ($attributes.has(element, "multiple")) {
+            if (hasNormalizedAttr(element, "multiple")) {
                 selectCtrl._multiple = true;
                 selectCtrl._readValue = function () {
                     const array = [];
@@ -19489,7 +19647,7 @@
                 };
                 let lastView;
                 let lastViewRef = NaN;
-                _scope.$watch($attributes.read(element, "ngModel") ?? "", () => {
+                _scope.$watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
                     if (lastViewRef === ngModelCtrl.$viewValue &&
                         !equals(lastView, ngModelCtrl.$viewValue)) {
                         lastView = shallowCopy(ngModelCtrl.$viewValue);
@@ -19518,15 +19676,15 @@
             selectCtrl._scheduleRender();
         }
     }
-    optionDirective.$inject = [_attributes, _interpolate];
-    function optionDirective($attributes, $interpolate) {
+    optionDirective.$inject = [_interpolate];
+    function optionDirective($interpolate) {
         return {
             restrict: "E",
             priority: 100,
-            compile(element, attr) {
+            compile(element) {
                 const optionElement = element;
-                const hasNgValue = hasSelectAttr($attributes, element, attr, "ngValue");
-                let initialValue = readSelectAttr($attributes, element, attr, "value");
+                const hasNgValue = hasSelectAttr(element, "ngValue");
+                let initialValue = readSelectAttr(element, "value");
                 let interpolateValueFn;
                 let interpolateTextFn;
                 if (hasNgValue) ;
@@ -19536,12 +19694,13 @@
                 else {
                     interpolateTextFn = $interpolate(optionElement.textContent, true);
                     if (!interpolateTextFn) {
-                        setSelectAttr($attributes, optionElement, "value", optionElement.textContent);
+                        setSelectAttr(optionElement, "value", optionElement.textContent);
                         initialValue = optionElement.textContent || undefined;
                     }
                 }
-                return function (scope, elemParam, attrParam) {
+                return function (scope, elemParam) {
                     const optionElementParam = elemParam;
+                    const ngValueExpression = readSelectAttr(optionElementParam, "ngValue");
                     const selectCtrlName = "$selectController";
                     const parent = optionElementParam.parentElement;
                     const futureParent = getInheritedData(optionElementParam, FUTURE_PARENT_ELEMENT_KEY);
@@ -19555,7 +19714,7 @@
                             ? getInheritedData(futureParent, selectCtrlName)
                             : null));
                     if (selectCtrl) {
-                        selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn, $attributes, initialValue, hasNgValue);
+                        selectCtrl._registerOption(scope, optionElementParam, interpolateValueFn, interpolateTextFn, ngValueExpression, initialValue, hasNgValue);
                     }
                 };
             },
@@ -19563,14 +19722,14 @@
     }
 
     const ngRefError = createErrorFactory("ngRef");
-    ngRefDirective.$inject = [_parse, _attributes];
-    function ngRefDirective($parse, $attributes) {
+    ngRefDirective.$inject = [_parse];
+    function ngRefDirective($parse) {
         return {
             priority: -1,
             restrict: "A",
-            compile(tElement, tAttrs) {
+            compile(tElement) {
                 const controllerName = directiveNormalize(getNodeName$1(tElement));
-                const expression = $attributes?.read(tElement, "ngRef") ?? tAttrs.ngRef;
+                const expression = getNormalizedAttr(tElement, "ngRef");
                 if (!isString(expression))
                     return () => undefined;
                 const getter = $parse(expression);
@@ -19580,8 +19739,8 @@
                     };
                 return (scope, element) => {
                     let refValue;
-                    if ($attributes?.has(element, "ngRefRead")) {
-                        const readTarget = $attributes.read(element, "ngRefRead");
+                    if (hasNormalizedAttr(element, "ngRefRead")) {
+                        const readTarget = getNormalizedAttr(element, "ngRefRead");
                         if (readTarget === "$element") {
                             refValue = element;
                         }
@@ -19618,8 +19777,8 @@
     const NG_REMOVED = "$$NG_REMOVED";
     const ngRepeatError = createErrorFactory("ngRepeat");
     const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
-    ngRepeatDirective.$inject = [_injector, _attributes];
-    function ngRepeatDirective($injector, $attributes) {
+    ngRepeatDirective.$inject = [_injector];
+    function ngRepeatDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         const repeatPositionLocalKeys = [
             "$index",
@@ -19922,12 +20081,12 @@
             priority: 1000,
             terminal: true,
             compile($element) {
-                const expression = $attributes.read($element, "ngRepeat") ?? "";
-                const hasAnimate = $attributes.has($element, "animate");
-                const indexProperty = $attributes.read($element, "index") ??
-                    $attributes.read($element, "dataIndex") ??
+                const expression = getNormalizedAttr($element, "ngRepeat") ?? "";
+                const hasAnimate = hasNormalizedAttr($element, "animate");
+                const indexProperty = getNormalizedAttr($element, "index") ??
+                    getNormalizedAttr($element, "dataIndex") ??
                     undefined;
-                const hasLazy = $attributes.has($element, "lazy");
+                const hasLazy = hasNormalizedAttr($element, "lazy");
                 let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
                 if (!match) {
                     throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -19945,14 +20104,14 @@
                     throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
                 }
                 const swap = callBackOnce(() => {
-                    const targetSelector = $attributes.read($element, "swap");
+                    const targetSelector = getNormalizedAttr($element, "swap");
                     if (hasLazy && targetSelector) {
                         document.querySelectorAll(targetSelector).forEach((x) => {
                             removeElement(x);
                         });
                     }
                 });
-                function ngRepeatLink($scope, repeatElement, attr, _ctrl, $transclude) {
+                function ngRepeatLink($scope, repeatElement, $transclude) {
                     let previousNode;
                     let pendingInsertAnchor;
                     let pendingInsertEnd;
@@ -20352,13 +20511,12 @@
         };
     }
 
-    ngScopeDirective.$inject = [_attributes];
     /** Assigns a stable scope name so the scope can be looked up externally. */
-    function ngScopeDirective($attributes) {
+    function ngScopeDirective() {
         return {
             scope: false,
             link($scope, element) {
-                const scopeName = $attributes.read(element, "ngScope");
+                const scopeName = getNormalizedAttr(element, "ngScope");
                 if (typeof scopeName === "string") {
                     $scope.$scopename = scopeName;
                 }
@@ -20366,17 +20524,17 @@
         };
     }
 
-    scriptDirective.$inject = [_templateCache, _attributes];
+    scriptDirective.$inject = [_templateCache];
     /**
      * Captures inline `text/ng-template` script contents into `$templateCache`.
      */
-    function scriptDirective($templateCache, $attributes) {
+    function scriptDirective($templateCache) {
         return {
             restrict: "E",
             terminal: true,
             compile(element) {
-                const type = $attributes.read(element, "type");
-                const templateId = $attributes.read(element, "id");
+                const type = getNormalizedAttr(element, "type");
+                const templateId = getNormalizedAttr(element, "id");
                 if (type === "text/ng-template" && typeof templateId === "string") {
                     $templateCache.set(templateId, element.innerText);
                 }
@@ -20385,15 +20543,15 @@
         };
     }
 
-    ngSetterDirective.$inject = [_parse, _log, _attributes];
+    ngSetterDirective.$inject = [_parse, _log];
     /**
      * Mirrors an element's HTML content into an assignable scope expression.
      */
-    function ngSetterDirective($parse, $log, $attributes) {
+    function ngSetterDirective($parse, $log) {
         return {
             restrict: "A",
             link(scope, element) {
-                const modelExpression = $attributes.read(element, "ngSetter");
+                const modelExpression = getNormalizedAttr(element, "ngSetter");
                 if (!modelExpression) {
                     $log.warn("ng-setter: expression null");
                     return;
@@ -20434,16 +20592,16 @@
 
     const NG_HIDE_CLASS = "ng-hide";
     const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
-    ngShowDirective.$inject = [_injector, _attributes];
+    ngShowDirective.$inject = [_injector];
     /**
      * Removes the `ng-hide` class when the watched expression becomes truthy.
      */
-    function ngShowDirective($injector, $attributes) {
+    function ngShowDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "A",
             link(scope, element) {
-                const expression = $attributes.read(element, "ngShow");
+                const expression = getNormalizedAttr(element, "ngShow");
                 if (expression === undefined) {
                     return;
                 }
@@ -20470,16 +20628,16 @@
             },
         };
     }
-    ngHideDirective.$inject = [_injector, _attributes];
+    ngHideDirective.$inject = [_injector];
     /**
      * Adds the `ng-hide` class when the watched expression becomes truthy.
      */
-    function ngHideDirective($injector, $attributes) {
+    function ngHideDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "A",
             link(scope, element) {
-                const expression = $attributes.read(element, "ngHide");
+                const expression = getNormalizedAttr(element, "ngHide");
                 if (expression === undefined) {
                     return;
                 }
@@ -20505,15 +20663,14 @@
         };
     }
 
-    ngStyleDirective.$inject = [_attributes];
     /**
      * Watches an expression and applies the resulting CSS properties to the element.
      */
-    function ngStyleDirective($attributes) {
+    function ngStyleDirective() {
         return {
             restrict: "A",
             link(scope, element) {
-                const expression = $attributes.read(element, "ngStyle");
+                const expression = getNormalizedAttr(element, "ngStyle");
                 if (expression === undefined) {
                     return;
                 }
@@ -20546,22 +20703,22 @@
             this._cases = {};
         }
     }
-    ngSwitchDirective.$inject = [_injector, _attributes];
+    ngSwitchDirective.$inject = [_injector];
     function fallbackWhenEmpty(value, fallback) {
         if (value)
             return value;
         return fallback;
     }
     /** Switches between transcluded case blocks and animates block entry/exit. */
-    function ngSwitchDirective($injector, $attributes) {
+    function ngSwitchDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         return {
             require: "ngSwitch",
             // asks for $scope to fool the BC controller module
             controller: NgSwitchController,
             link(scope, element, ngSwitchController) {
-                const ngSwitchExpr = $attributes.read(element, "ngSwitch");
-                const watchExpr = fallbackWhenEmpty(ngSwitchExpr, $attributes.read(element, "on") ?? "");
+                const ngSwitchExpr = getNormalizedAttr(element, "ngSwitch");
+                const watchExpr = fallbackWhenEmpty(ngSwitchExpr, getNormalizedAttr(element, "on") ?? "");
                 let selectedTranscludes;
                 const selectedElements = [];
                 const previousLeaveAnimations = new Set();
@@ -20644,31 +20801,32 @@
             },
         };
     }
-    ngSwitchWhenDirective.$inject = [_attributes];
-    function ngSwitchWhenDirective($attributes) {
+    function ngSwitchWhenDirective() {
         return {
             transclude: "element",
             terminal: true,
             priority: 1200,
             require: "^ngSwitch",
-            link(scope, element, ctrl, $transclude) {
-                if (!$transclude) {
-                    return;
-                }
-                const when = $attributes.read(element, "ngSwitchWhen") ?? "";
-                const separator = $attributes.read(element, "ngSwitchWhenSeparator");
-                (separator !== undefined ? when.split(separator) : [when])
-                    .sort()
-                    .filter(
-                // Filter duplicate cases
-                (elementParam, index, array) => array[index - 1] !== elementParam)
-                    .forEach((whenCase) => {
-                    var _a, _b;
-                    ((_a = ctrl._cases)[_b = `!${whenCase}`] ?? (_a[_b] = [])).push({
-                        transclude: $transclude,
-                        element,
+            compile(tElement) {
+                const when = getNormalizedAttr(tElement, "ngSwitchWhen") ?? "";
+                const separator = getNormalizedAttr(tElement, "ngSwitchWhenSeparator");
+                return function ngSwitchWhenLink(_scope, element, ctrl, $transclude) {
+                    if (!$transclude) {
+                        return;
+                    }
+                    (separator !== undefined ? when.split(separator) : [when])
+                        .sort()
+                        .filter(
+                    // Filter duplicate cases
+                    (elementParam, index, array) => array[index - 1] !== elementParam)
+                        .forEach((whenCase) => {
+                        var _a, _b;
+                        ((_a = ctrl._cases)[_b = `!${whenCase}`] ?? (_a[_b] = [])).push({
+                            transclude: $transclude,
+                            element,
+                        });
                     });
-                });
+                };
             },
         };
     }
@@ -20692,8 +20850,8 @@
     }
 
     const ngTranscludeError = createErrorFactory("ngTransclude");
-    ngTranscludeDirective.$inject = [_compile, _attributes];
-    function ngTranscludeDirective($compile, $attributes) {
+    ngTranscludeDirective.$inject = [_compile];
+    function ngTranscludeDirective($compile) {
         return {
             compile: function ngTranscludeCompile(tElement) {
                 const fallbackLinkFn = $compile(tElement.childNodes);
@@ -20704,9 +20862,9 @@
                             "No parent directive that requires a transclusion found. " +
                             "Element: {0}", startingTag($element));
                     }
-                    let transcludeName = $attributes.read($element, "ngTransclude");
-                    const transcludeSlot = $attributes.read($element, "ngTranscludeSlot");
-                    if (transcludeName === $attributes.originalName($element, "ngTransclude")) {
+                    let transcludeName = getNormalizedAttr($element, "ngTransclude");
+                    const transcludeSlot = getNormalizedAttr($element, "ngTranscludeSlot");
+                    if (transcludeName === getNormalizedAttrName($element, "ngTransclude")) {
                         transcludeName = "";
                     }
                     const slotNameValue = typeof transcludeName === "string" && transcludeName.length > 0
@@ -20804,20 +20962,19 @@
         });
         ctrl.$setCustomValidity(selected?.message ?? "");
     }
-    function readValidatorAttr($attributes, element, normalizedName) {
+    function readValidatorAttr(element, normalizedName) {
         return element instanceof Element
-            ? $attributes?.read(element, normalizedName)
+            ? getNormalizedAttr(element, normalizedName)
             : undefined;
     }
-    function hasValidatorAttr($attributes, element, normalizedName) {
-        return (element instanceof Element &&
-            Boolean($attributes?.has(element, normalizedName)));
+    function hasValidatorAttr(element, normalizedName) {
+        return (element instanceof Element && hasNormalizedAttr(element, normalizedName));
     }
-    function observeValidatorAttr($attributes, scope, element, normalizedName, callback) {
-        if (!$attributes || !(element instanceof Element))
+    function observeValidatorAttr(scope, element, normalizedName, callback) {
+        if (!(element instanceof Element))
             return () => undefined;
-        return $attributes.observe(scope, element, normalizedName, (value) => {
-            callback(readValidatorAttr($attributes, element, normalizedName) ?? value);
+        return observeNormalizedAttribute(scope, element, normalizedName, () => {
+            callback(readValidatorAttr(element, normalizedName));
         });
     }
     /**
@@ -20845,9 +21002,8 @@
      */
     const requiredDirective = [
         _parse,
-        _attributes,
         /** Creates the `required` validator directive. */
-        ($parse, $attributes) => ({
+        ($parse) => ({
             restrict: "A",
             require: "?ngModel",
             link: 
@@ -20855,15 +21011,15 @@
             (scope, elm, ctrl) => {
                 if (!ctrl)
                     return;
-                const ngRequired = readValidatorAttr($attributes, elm, "ngRequired");
+                const ngRequired = readValidatorAttr(elm, "ngRequired");
                 // For boolean attributes like required, presence means true
                 const ngRequiredGetter = ngRequired ? $parse(ngRequired) : undefined;
                 let value = ngRequiredGetter
                     ? Boolean(ngRequiredGetter(scope))
-                    : hasValidatorAttr($attributes, elm, "required");
+                    : hasValidatorAttr(elm, "required");
                 const syncNativeRequired = (required) => {
-                    if ($attributes && elm instanceof Element) {
-                        $attributes.set(elm, "required", required);
+                    if (elm instanceof Element) {
+                        setNormalizedAttr(elm, "required", required);
                     }
                     const nativeControl = elm;
                     ctrl.$setNativeValidity(!nativeControl.willValidate ||
@@ -20872,7 +21028,7 @@
                 if (!ngRequired) {
                     // force truthy in case we are on non input element
                     // (input elements do this automatically for boolean attributes like required)
-                    $attributes?.set(elm, "required", true);
+                    setNormalizedAttr(elm, "required", true);
                 }
                 syncNativeRequired(Boolean(value));
                 ctrl.$validators.required = (_modelValue, viewValue) => {
@@ -20891,9 +21047,9 @@
                     });
                 }
                 else {
-                    observeValidatorAttr($attributes, scope, elm, "required", (newVal) => {
-                        setRequiredValue($attributes && elm instanceof Element
-                            ? $attributes.has(elm, "required")
+                    observeValidatorAttr(scope, elm, "required", (newVal) => {
+                        setRequiredValue(elm instanceof Element
+                            ? hasNormalizedAttr(elm, "required")
                             : newVal);
                     });
                 }
@@ -20941,15 +21097,14 @@
      */
     const patternDirective = [
         _parse,
-        _attributes,
         /** Creates the `pattern` validator directive. */
-        ($parse, $attributes) => ({
+        ($parse) => ({
             restrict: "A",
             require: "?ngModel",
             compile: (tElm) => {
                 let patternExp = "";
                 let parseFn;
-                const templateNgPattern = readValidatorAttr($attributes, tElm, "ngPattern");
+                const templateNgPattern = readValidatorAttr(tElm, "ngPattern");
                 if (templateNgPattern) {
                     patternExp = templateNgPattern;
                     const ngPattern = templateNgPattern;
@@ -20969,8 +21124,8 @@
                     if (!ctrl)
                         return;
                     const modelCtrl = ctrl;
-                    const ngPattern = readValidatorAttr($attributes, elm, "ngPattern");
-                    let attrVal = readValidatorAttr($attributes, elm, "pattern");
+                    const ngPattern = readValidatorAttr(elm, "ngPattern");
+                    let attrVal = readValidatorAttr(elm, "pattern");
                     if (ngPattern) {
                         const parsedPattern = parseFn?.(scope);
                         attrVal = parsedPattern;
@@ -20992,7 +21147,7 @@
                             modelCtrl.$validate();
                         }
                     }
-                    observeValidatorAttr($attributes, scope, elm, "pattern", refreshRegexp);
+                    observeValidatorAttr(scope, elm, "pattern", refreshRegexp);
                     modelCtrl.$validators.pattern = (_modelValue, viewValue) => {
                         if (ngPattern) {
                             refreshRegexp(undefined, false);
@@ -21040,9 +21195,8 @@
      */
     const maxlengthDirective = [
         _parse,
-        _attributes,
         /** Creates the `maxlength` validator directive. */
-        ($parse, $attributes) => ({
+        ($parse) => ({
             restrict: "A",
             require: "?ngModel",
             link: 
@@ -21050,11 +21204,11 @@
             (scope, elm, ctrl) => {
                 if (!ctrl)
                     return;
-                const maxlengthAttr = readValidatorAttr($attributes, elm, "maxlength");
-                const ngMaxlength = readValidatorAttr($attributes, elm, "ngMaxlength");
+                const maxlengthAttr = readValidatorAttr(elm, "maxlength");
+                const ngMaxlength = readValidatorAttr(elm, "ngMaxlength");
                 let maxlength = maxlengthAttr ?? (ngMaxlength && $parse(ngMaxlength)(scope));
                 let maxlengthParsed = parseLength(maxlength);
-                observeValidatorAttr($attributes, scope, elm, "maxlength", (newValue) => {
+                observeValidatorAttr(scope, elm, "maxlength", (newValue) => {
                     if (maxlength !== newValue) {
                         maxlengthParsed = parseLength(newValue);
                         maxlength = newValue;
@@ -21106,18 +21260,17 @@
      */
     const minlengthDirective = [
         _parse,
-        _attributes,
-        /** Creates the `minlength` validator directive. */ ($parse, $attributes) => ({
+        /** Creates the `minlength` validator directive. */ ($parse) => ({
             restrict: "A",
             require: "?ngModel",
             link(scope, elm, ctrl) {
                 if (!ctrl)
                     return;
-                const minlengthAttr = readValidatorAttr($attributes, elm, "minlength");
-                const ngMinlength = readValidatorAttr($attributes, elm, "ngMinlength");
+                const minlengthAttr = readValidatorAttr(elm, "minlength");
+                const ngMinlength = readValidatorAttr(elm, "ngMinlength");
                 let minlength = minlengthAttr ?? (ngMinlength && $parse(ngMinlength)(scope));
                 let minlengthParsed = parseLength(minlength) || -1;
-                observeValidatorAttr($attributes, scope, elm, "minlength", (newValue) => {
+                observeValidatorAttr(scope, elm, "minlength", (newValue) => {
                     if (minlength !== newValue) {
                         minlengthParsed = parseLength(newValue) || -1;
                         minlength = newValue;
@@ -21154,14 +21307,14 @@
         return isNumberNaN(intVal) ? -1 : intVal;
     }
 
-    ngViewportDirective.$inject = [_parse, _attributes];
+    ngViewportDirective.$inject = [_parse];
     /** Evaluates expressions when an element enters or leaves the viewport. */
-    function ngViewportDirective($parse, $attributes) {
+    function ngViewportDirective($parse) {
         return {
             restrict: "A",
             link(scope, element) {
-                const enterExpr = $attributes.read(element, "onEnter");
-                const leaveExpr = $attributes.read(element, "onLeave");
+                const enterExpr = getNormalizedAttr(element, "onEnter");
+                const leaveExpr = getNormalizedAttr(element, "onLeave");
                 const enterFn = enterExpr ? $parse(enterExpr) : undefined;
                 const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
                 const observer = new IntersectionObserver((entries) => {
@@ -21205,15 +21358,14 @@
         };
     }
 
-    ngWasmDirective.$inject = [_attributes];
     /**
      * Loads a WebAssembly module and exposes its exports on `scope.$target`.
      */
-    function ngWasmDirective($attributes) {
+    function ngWasmDirective() {
         return {
             link($scope, element) {
-                const src = $attributes.read(element, "src");
-                const exportName = $attributes.read(element, "as");
+                const src = getNormalizedAttr(element, "src");
+                const exportName = getNormalizedAttr(element, "as");
                 if (typeof src !== "string") {
                     return;
                 }
@@ -21232,19 +21384,18 @@
         _log,
         _exceptionHandler,
         _injector,
-        _attributes,
     ];
     /**
      * Connects an element to a WebTransport endpoint and evaluates template
      * expressions for incoming datagrams or unidirectional streams.
      */
-    function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector, $attributes) {
+    function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector) {
         const decoder = new TextDecoder();
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "A",
             link(scope, element) {
-                const attr = (name) => $attributes.read(element, name);
+                const attr = (name) => getNormalizedAttr(element, name);
                 const eventName = attr("trigger") ?? "load";
                 const mode = parseMode(attr("mode"));
                 const transform = parseTransform(attr("transform"));
@@ -21365,7 +21516,6 @@
                     $log,
                     getAnimate,
                     scope,
-                    $attributes,
                     element,
                     logPrefix: "ngWebTransport",
                 });
@@ -21660,15 +21810,15 @@
         }
     }
 
-    ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler, _attributes];
+    ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
     /**
      * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
      */
-    function ngWorkerDirective($parse, $log, $exceptionHandler, $attributes) {
+    function ngWorkerDirective($parse, $log, $exceptionHandler) {
         return {
             restrict: "A",
             link(scope, element) {
-                const attr = (name) => $attributes.read(element, name);
+                const attr = (name) => getNormalizedAttr(element, name);
                 const workerName = attr("ngWorker");
                 if (!workerName) {
                     $log.warn("ngWorker: missing worker name");
@@ -21679,15 +21829,14 @@
                 const paramsFn = paramsExpr ? $parse(paramsExpr) : undefined;
                 let throttled = false;
                 let intervalId;
-                if ($attributes.has(element, "latch")) {
+                if (hasNormalizedAttr(element, "latch")) {
                     const dispatchAfterFirst = callBackAfterFirst(() => {
                         element.dispatchEvent(new Event(eventName));
                     });
-                    $attributes.observe(scope, element, "latch", () => {
-                        dispatchAfterFirst();
-                    });
+                    dispatchAfterFirst();
+                    observeNormalizedAttribute(scope, element, "latch", dispatchAfterFirst);
                 }
-                if ($attributes.has(element, "interval")) {
+                if (hasNormalizedAttr(element, "interval")) {
                     element.dispatchEvent(new Event(eventName));
                     intervalId = setInterval(() => element.dispatchEvent(new Event(eventName)), parseInt(attr("interval") ?? "", 10) || 1000);
                 }
@@ -21718,16 +21867,16 @@
                     void (async () => {
                         if (element.hasAttribute("disabled"))
                             return;
-                        if ($attributes.has(element, "delay")) {
+                        if (hasNormalizedAttr(element, "delay")) {
                             await wait(parseInt(attr("delay") ?? "", 10) || 0);
                         }
                         if (throttled)
                             return;
-                        if ($attributes.has(element, "throttle")) {
+                        if (hasNormalizedAttr(element, "throttle")) {
                             throttled = true;
-                            $attributes.set(element, "throttled", true);
+                            setNormalizedAttr(element, "throttled", true);
                             setTimeout(() => {
-                                $attributes.set(element, "throttled", false);
+                                setNormalizedAttr(element, "throttled", false);
                                 throttled = false;
                             }, parseInt(attr("throttle") ?? "", 10));
                         }
@@ -21971,12 +22120,11 @@
         _stateRegistry,
         _transitions,
         _parse,
-        _attributes,
     ];
     /**
      * Generates `ng-sref` links and keeps their href/state data in sync.
      */
-    function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse, $attributes) {
+    function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse) {
         const $state = $stateService;
         return {
             restrict: "A",
@@ -21986,8 +22134,8 @@
                 const active = ngSrefActive[1] ?? ngSrefActive[0];
                 let unlinkInfoFn;
                 const rawDef = {};
-                const ref = parseStateRef($attributes.read(element, "ngSref") ?? "");
-                const ngSrefOpts = $attributes.read(element, "ngSrefOpts");
+                const ref = parseStateRef(getNormalizedAttr(element, "ngSref") ?? "");
+                const ngSrefOpts = getNormalizedAttr(element, "ngSrefOpts");
                 const ngStateOptsFn = ngSrefOpts ? $parse(ngSrefOpts) : undefined;
                 const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
                 rawDef._ngState = ref._state;
@@ -22004,7 +22152,7 @@
                         unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
                     }
                     if (!isNullOrUndefined(def._href)) {
-                        $attributes.set(element, type._attr, def._href);
+                        setNormalizedAttr(element, type._attr, def._href);
                     }
                 }
                 if (ref._paramExpr) {
@@ -22030,12 +22178,11 @@
         _stateRegistry,
         _transitions,
         _parse,
-        _attributes,
     ];
     /**
      * Generates dynamic `ui-state` links whose target state is read from an expression.
      */
-    function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse, $attributes) {
+    function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse) {
         return {
             restrict: "A",
             require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
@@ -22065,30 +22212,33 @@
                         unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
                     }
                     if (!isNullOrUndefined(def._href)) {
-                        $attributes.set(element, type._attr, def._href);
+                        setNormalizedAttr(element, type._attr, def._href);
                     }
                 }
                 inputAttrs.forEach((field) => {
                     function readFieldExpression() {
-                        return $attributes.read(element, field);
+                        return getNormalizedAttr(element, field);
                     }
                     const initialExpr = readFieldExpression();
                     rawDef[rawDefKeyByAttr[field]] =
-                        initialExpr
+                        initialExpr && !initialExpr.includes("{{")
                             ? $parse(initialExpr)(scope)
                             : undefined;
-                    $attributes.observe(scope, element, field, () => {
+                    const syncFieldExpression = () => {
                         const expr = readFieldExpression();
                         watchDeregFns[field]();
-                        if (!expr)
+                        if (!expr || expr.includes("{{")) {
                             return;
+                        }
                         watchDeregFns[field] =
                             scope.$watch(expr, (newval) => {
                                 rawDef[rawDefKeyByAttr[field]] =
                                     newval;
                                 update();
                             }) ?? noopDeregister;
-                    });
+                    };
+                    syncFieldExpression();
+                    observeNormalizedAttribute(scope, element, field, syncFieldExpression);
                 });
                 update();
                 scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -22107,29 +22257,24 @@
         _stateRegistry,
         _transitions,
         _parse,
-        _attributes,
     ];
     /**
      * Toggles active CSS classes based on the current router state.
      */
-    function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse, $attributes) {
+    function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse) {
         return {
             restrict: "A",
-            controller($scope, $element, $attrs) {
+            controller($scope, $element) {
                 let states = [];
                 let ngSrefActive;
                 // There probably isn't much point in $observing this
                 // ngSrefActive and ngSrefActiveEq share the same directive object with some
                 // slight difference in logic routing
-                const activeEqRead = $attributes.read($element, "ngSrefActiveEq");
-                const activeEqExpr = activeEqRead?.includes("{{")
-                    ? String($attrs.ngSrefActiveEq)
-                    : (activeEqRead ?? "");
+                const activeEqRead = getNormalizedAttr($element, "ngSrefActiveEq");
+                const activeEqExpr = activeEqRead ?? "";
                 const activeEqClass = stringify$1(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
-                const activeRead = $attributes.read($element, "ngSrefActive");
-                const activeExpr = activeRead?.includes("{{")
-                    ? String($attrs.ngSrefActive)
-                    : activeRead;
+                const activeRead = getNormalizedAttr($element, "ngSrefActive");
+                const activeExpr = activeRead;
                 try {
                     ngSrefActive = activeExpr ? $parse(activeExpr)($scope) : undefined;
                 }
@@ -22260,667 +22405,309 @@
         };
     }
 
-    /**
-     * Functions that manipulate strings
-     */
-    const DOTS = "...";
-    /**
-     * Returns a string shortened to a maximum length
-     *
-     * If the string is already less than the `max` length, return the string.
-     * Else return the string, shortened to `max - 3` and append three dots ("...").
-     *
-     * `max` is the maximum length of the returned string.
-     */
-    function maxLength(max, str) {
-        if (str.length <= max)
-            return str;
-        return `${str.substring(0, max - DOTS.length)}${DOTS}`;
-    }
-    /** Converts a camelCase string into kebab-case. */
-    function kebobString(camelCase) {
-        return camelCase
-            .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
-            .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
-    }
-    const FN_LENGTH = 9;
-    /** Returns a stable string representation for a function. */
-    function functionToString(fn) {
-        const fnStr = fnToString(fn);
-        const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
-        const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
-        const fnName = fn.name || "";
-        if (fnName && /function \(/.exec(toStr)) {
-            return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
+    function getFirstElementFromClone(clone) {
+        if (!clone)
+            return null;
+        if (isInstanceOf(clone, HTMLElement)) {
+            return clone;
         }
-        return toStr;
-    }
-    /** Returns the raw `toString()` value for a function or injectable array. */
-    function fnToString(fn) {
-        const _fn = isArray(fn)
-            ? fn.slice(-1)[0]
-            : fn;
-        return _fn ? _fn.toString() : "undefined";
-    }
-    /** Converts arbitrary values into short readable debug strings. */
-    function stringify(value) {
-        const seen = [];
-        const isRejection = (obj) => {
-            return (isObject(obj) &&
-                "then" in obj &&
-                isFunction(obj.then) &&
-                obj.constructor.name === "Rejection");
-        };
-        const hasToString = (obj) => isObject(obj) &&
-            !isArray(obj) &&
-            obj.constructor !== Object &&
-            isFunction(Reflect.get(obj, "toString"));
-        /** Formats a single item while tracking circular references. */
-        function format(item) {
-            if (isObject(item)) {
-                if (seen.includes(item))
-                    return "[circular ref]";
-                seen.push(item);
-            }
-            if (isUndefined(item))
-                return "undefined";
-            if (isNull(item))
-                return "null";
-            if (isPromiseLike(item))
-                return "[Promise]";
-            if (isRejection(item))
-                return String(item._transitionRejection);
-            if (hasToString(item)) {
-                const toStringFn = Reflect.get(item, "toString");
-                return toStringFn.call(item);
-            }
-            if (isFunction(item))
-                return functionToString(item);
-            return item;
+        if (isInstanceOf(clone, DocumentFragment)) {
+            const firstElement = clone.firstElementChild;
+            return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
         }
-        if (isUndefined(value)) {
-            // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
-            // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
-            // manually stringifying it.
-            return String(format(value));
-        }
-        const json = JSON.stringify(value, (_key, item) => format(item));
-        return isString(json) ? json.replace(/\\"/g, '"') : String(json);
-    }
-    function stripLastPathElement(str) {
-        return str.replace(/\/[^/]*$/, "");
-    }
-
-    async function resolveResolvable(resolvable, resolveContext, trans) {
-        const dependencies = resolveContext.getDependencies(resolvable);
-        const dependencyPromises = dependencies.map(async (dependency) => dependency.get(resolveContext, trans));
-        const resolvedDeps = await Promise.all(dependencyPromises);
-        const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
-        resolvable.data = resolvedValue;
-        resolvable.resolved = true;
-        resolvable.resolveFn = null;
-        return resolvable.data;
-    }
-    /**
-     * # The Resolve subsystem
-     *
-     * This subsystem is an asynchronous, hierarchical Dependency Injection system.
-     *
-     * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
-     */
-    /**
-     * Represents one dependency that can be resolved for a transition.
-     *
-     * A resolvable tracks its token, dependency list, eager timing, cached value,
-     * and in-flight promise so router state resolution stays idempotent.
-     */
-    class Resolvable {
-        /**
-         * @throws Error when a resolve function is provided without a token.
-         */
-        constructor(arg1, resolveFn, deps, eager, data) {
-            this.token = undefined;
-            this.resolveFn = undefined;
-            this.deps = [];
-            this.eager = false;
-            this.data = undefined;
-            this.resolved = false;
-            this.promise = undefined;
-            if (isInstanceOf(arg1, Resolvable)) {
-                this.token = arg1.token;
-                this.resolveFn = arg1.resolveFn;
-                this.deps = arg1.deps;
-                this.eager = arg1.eager;
-                this.data = arg1.data;
-                this.resolved = arg1.resolved;
-                this.promise = arg1.promise;
-            }
-            else if (isFunction(resolveFn)) {
-                assert(!isNullOrUndefined(arg1), "token argument is required");
-                this.token = arg1;
-                this.eager = !!eager;
-                this.resolveFn = resolveFn;
-                this.deps = deps ?? [];
-                this.data = data;
-                this.resolved = data !== undefined;
-                this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
-            }
-            else if (isObject(arg1) &&
-                hasOwn(arg1, "token") &&
-                (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
-                const literal = arg1;
-                this.token = literal.token;
-                this.resolveFn = literal.resolveFn;
-                this.deps = literal.deps ?? [];
-                this.eager = !!literal.eager;
-                this.data = literal.data;
-                this.resolved = literal.data !== undefined;
-                this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
-            }
-        }
-        /**
-         * Resolves this token by first resolving its dependencies, then invoking
-         * the resolve function and caching the resulting value.
-         */
-        async resolve(resolveContext, trans) {
-            this.promise = resolveResolvable(this, resolveContext, trans);
-            return this.promise;
-        }
-        /**
-         * Returns the cached promise, resolving the token first if necessary.
-         */
-        async get(resolveContext, trans) {
-            return this.promise ?? this.resolve(resolveContext, trans);
-        }
-        /**
-         * Returns a readable description of the resolvable and its dependencies.
-         */
-        toString() {
-            const deps = isArray(this.deps) ? this.deps : [this.deps];
-            return `Resolvable(token: ${stringify(this.token)}, requires: [${deps
-            .map(stringify)
-            .join(", ")}])`;
-        }
-        /**
-         * Creates a shallow copy of this resolvable.
-         */
-        clone() {
-            return new Resolvable(this);
-        }
-        /**
-         * Creates a resolvable that is already resolved to `data`.
-         */
-        static fromData(token, data) {
-            return new Resolvable(token, () => data, undefined, undefined, data);
-        }
-    }
-
-    async function resolveToken(resolvable, context, trans) {
-        return {
-            token: resolvable.token,
-            value: await resolvable.get(context, trans),
-        };
-    }
-    /**
-     * Provides resolve lookup and execution helpers for a specific transition path.
-     */
-    class ResolveContext {
-        /**
-         * @param _path path of nodes whose resolvables are visible in this context
-         * @param _injector injector used when dependency tokens are not resolvables in the path
-         */
-        constructor(_path, _injector) {
-            this._path = _path;
-            this._injector = _injector;
-        }
-        /**
-         * Returns the unique tokens available from all resolvables in this path.
-         */
-        getTokens() {
-            const tokenSet = new Set();
-            this._path.forEach(({ resolvables }) => {
-                resolvables.forEach(({ token }) => {
-                    tokenSet.add(token);
-                });
-            });
-            return Array.from(tokenSet);
-        }
-        /**
-         * Returns the most local resolvable registered for the specified token.
-         */
-        getResolvable(token) {
-            for (let i = this._path.length - 1; i >= 0; i--) {
-                const { resolvables } = this._path[i];
-                for (let j = resolvables.length - 1; j >= 0; j--) {
-                    const candidate = resolvables[j];
-                    if (candidate.token === token) {
-                        return candidate;
-                    }
+        if (isInstanceOf(clone, NodeList) || isArray(clone)) {
+            for (let i = 0, l = clone.length; i < l; i++) {
+                const node = clone[i];
+                if (isInstanceOf(node, HTMLElement)) {
+                    return node;
                 }
             }
-            return undefined;
+            return null;
         }
-        /**
-         * Returns a child resolve context scoped to the specified state.
-         */
-        subContext(state) {
-            let contextPath;
-            for (let i = 0; i < this._path.length; i++) {
-                if (this._path[i].state.name === state.name) {
-                    contextPath = this._path.slice(0, i + 1);
-                    break;
-                }
-            }
-            return new ResolveContext(contextPath ?? this._path, this._injector);
-        }
-        /**
-         * Adds or replaces resolvables for a specific state in this path.
-         */
-        addResolvables(newResolvables, state) {
-            let node;
-            for (let i = 0; i < this._path.length; i++) {
-                const candidate = this._path[i];
-                if (candidate.state === state) {
-                    node = candidate;
-                    break;
-                }
-            }
-            if (!node) {
-                throw new Error(`Could not find path node for state: ${state.name}`);
-            }
-            const resolvables = [];
-            const tokens = new Set();
-            newResolvables.forEach((resolvable) => {
-                const normalized = isInstanceOf(resolvable, Resolvable)
-                    ? resolvable
-                    : new Resolvable(resolvable);
-                resolvables.push(normalized);
-                tokens.add(normalized.token);
-            });
-            const nextResolvables = [];
-            node.resolvables.forEach((existing) => {
-                if (!tokens.has(existing.token)) {
-                    nextResolvables.push(existing);
-                }
-            });
-            resolvables.forEach((resolvable) => {
-                nextResolvables.push(resolvable);
-            });
-            node.resolvables = nextResolvables;
-        }
-        /**
-         * Resolves the path's resolvables.
-         */
-        async resolvePath(eagerOnly, trans) {
-            const shouldResolveEagerOnly = eagerOnly ?? false;
-            const promises = [];
-            this._path.forEach((node, index) => {
-                const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
-                node.resolvables.forEach((resolvable) => {
-                    if (!shouldResolveEagerOnly || resolvable.eager) {
-                        promises.push(resolveToken(resolvable, subContext, trans));
-                    }
-                });
-            });
-            return Promise.all(promises);
-        }
-        /**
-         * Finds the path node that owns the provided resolvable.
-         */
-        findNode(resolvable) {
-            const index = this._findNodeIndex(resolvable);
-            return index === -1 ? undefined : this._path[index];
-        }
-        /** @internal */
-        _findNodeIndex(resolvable) {
-            for (let i = 0; i < this._path.length; i++) {
-                const node = this._path[i];
-                for (let j = 0; j < node.resolvables.length; j++) {
-                    if (node.resolvables[j] === resolvable) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        }
-        /**
-         * Resolves the dependency tokens required by a resolvable from either
-         * the current path or the injector fallback.
-         */
-        getDependencies(resolvable) {
-            const nodeIndex = this._findNodeIndex(resolvable);
-            const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
-            const latestByToken = new Map();
-            dependencyPath.forEach(({ resolvables }) => {
-                resolvables.forEach((candidate) => {
-                    if (candidate !== resolvable) {
-                        latestByToken.set(candidate.token, candidate);
-                    }
-                });
-            });
-            const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
-            const dependencies = [];
-            deps.forEach((token) => {
-                const matching = latestByToken.get(token);
-                if (matching) {
-                    dependencies.push(matching);
-                    return;
-                }
-                let fromInjector;
-                if (this._injector && isString(token)) {
-                    try {
-                        fromInjector = this._injector.get(token);
-                    }
-                    catch {
-                        fromInjector = undefined;
-                    }
-                }
-                if (isUndefined(fromInjector)) {
-                    throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
-                }
-                dependencies.push(new Resolvable({ token, data: fromInjector }));
-            });
-            return dependencies;
-        }
+        return isInstanceOf(clone, Element) ? clone : null;
     }
-
-    class StateMatcher {
-        /** @param {StateStore} states */
-        constructor(states) {
-            this._states = states;
+    function getRootNodesFromClone(clone) {
+        if (!clone) {
+            return [];
         }
-        /**
-         * @param {string} stateName
-         */
-        isRelative(stateName) {
-            stateName = stateName || "";
-            return stateName.startsWith(".") || stateName.startsWith("^");
+        if (isInstanceOf(clone, DocumentFragment)) {
+            return arrayFrom(clone.childNodes);
         }
-        /**
-         * @param {StateOrName} stateOrName
-         * @param {StateOrName | undefined} [base]
-         * @returns {StateObject | undefined}
-         */
-        find(stateOrName, base, matchGlob = true) {
-            if (!stateOrName && stateOrName !== "")
-                return undefined;
-            const isStr = isString(stateOrName);
-            let name = isStr ? stateOrName : stateOrName.name;
-            if (this.isRelative(name))
-                name = this.resolvePath(name, base);
-            const state = this._states[name];
-            if (state &&
-                (isStr || state === stateOrName || state.self === stateOrName)) {
-                return state;
-            }
-            else if (isStr && matchGlob) {
-                const stateNames = keys(this._states);
-                let match;
-                let duplicateNames;
-                stateNames.forEach((stateName) => {
-                    const stateObj = this._states[stateName];
-                    if (stateObj._stateObjectCache.nameGlob?.matches(name)) {
-                        if (match) {
-                            duplicateNames = duplicateNames ?? [match.name];
-                            duplicateNames.push(stateObj.name);
-                        }
-                        else {
-                            match = stateObj;
-                        }
-                    }
-                });
-                if (duplicateNames) {
-                    throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames.join(", ")}`);
-                }
-                return match;
-            }
-            return undefined;
-        }
-        /**
-         * `
-         * @param {string} name
-         * @param {StateOrName} base
-         * @returns {string}
-         */
-        resolvePath(name, base) {
-            if (!base)
-                throw new Error(`No reference point given for path '${name}'`);
-            const baseState = this.find(base);
-            const splitName = name.split(".");
-            const pathLength = splitName.length;
-            let i = 0, current = baseState;
-            for (; i < pathLength; i++) {
-                if (splitName[i] === "" && i === 0) {
-                    current = baseState;
-                    continue;
-                }
-                if (splitName[i] === "^") {
-                    if (!current?.parent)
-                        throw new Error(`Path '${name}' not valid for state '${baseState?.name ?? "unknown"}'`);
-                    current = current.parent;
-                    continue;
-                }
-                break;
-            }
-            const relName = splitName.slice(i).join(".");
-            return ((current?.name ?? "") + (current?.name && relName ? "." : "") + relName);
-        }
+        return isInstanceOf(clone, NodeList) || isArray(clone)
+            ? arrayFrom(clone)
+            : [clone];
     }
-
-    const FQN_MULTIPLIER = 10000;
-    let nextViewId = 0;
-    /** @internal */
-    function createViewConfig(path, viewDecl, factory) {
-        return {
-            _id: nextViewId++,
-            _path: path,
-            _viewDecl: viewDecl,
-            _factory: factory,
-            _component: undefined,
-            _template: undefined,
-            _loaded: false,
-            _controller: undefined,
-        };
-    }
-    /** @internal */
-    function getViewTemplate(config, ngView, context) {
-        return config._component
-            ? config._factory._makeComponentTemplate(ngView, context, config._component, config._viewDecl.bindings)
-            : config._template;
-    }
-    /** @internal */
-    async function loadViewConfig(config) {
-        const params = {};
-        config._path.forEach((node) => {
-            assign(params, node.paramValues);
+    function withResolvers() {
+        let resolve;
+        let reject;
+        const promise = new Promise((_resolve, _reject) => {
+            resolve = _resolve;
+            reject = _reject;
         });
-        const viewResult = await config._factory._fromConfig(config._viewDecl, params);
-        config._controller = config._viewDecl.controller;
-        assign(config, viewResult);
-        return config;
-    }
-    /** @internal */
-    function normalizeNgViewTarget(context, rawViewName = "") {
-        const viewAtContext = rawViewName.split("@");
-        const [viewName, viewContextAnchor] = viewAtContext;
-        let ngViewName = viewName || "$default";
-        let ngViewContextAnchor = isString(viewContextAnchor)
-            ? viewContextAnchor
-            : "^";
-        const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
-        if (relativeViewNameSugar) {
-            [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
-        }
-        if (ngViewName.startsWith("!")) {
-            ngViewName = ngViewName.substring(1);
-            ngViewContextAnchor = "";
-        }
-        const relativeMatch = /^(\^(?:\.\^)*)$/;
-        if (relativeMatch.exec(ngViewContextAnchor)) {
-            let anchorState = context;
-            let hops = 0;
-            for (let i = 0; i < ngViewContextAnchor.length; i++) {
-                if (ngViewContextAnchor[i] === "^") {
-                    hops++;
-                }
-            }
-            for (let i = 0; i < hops; i++) {
-                anchorState = anchorState?.parent;
-            }
-            if (!anchorState) {
-                anchorState = context;
-                while (anchorState.parent)
-                    anchorState = anchorState.parent;
-            }
-            ngViewContextAnchor = anchorState.name;
-        }
-        else if (ngViewContextAnchor === ".") {
-            ngViewContextAnchor = context.name;
-        }
-        return { ngViewName, ngViewContextAnchor };
-    }
-    function contextDepth(context) {
-        let cursor = context;
-        let depth = 1;
-        while (cursor.parent) {
-            depth += 1;
-            cursor = cursor.parent;
-        }
-        return depth;
-    }
-    function ngViewDepth(cache, ngView) {
-        const cached = cache.get(ngView);
-        if (cached !== undefined)
-            return cached;
-        const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
-            contextDepth(ngView._creationContext);
-        cache.set(ngView, computed);
-        return computed;
-    }
-    function viewConfigDepth(cache, config) {
-        const cached = cache.get(config);
-        if (cached !== undefined)
-            return cached;
-        let context = assertDefined(config._viewDecl._context);
-        let count = 0;
-        while (++count && context.parent) {
-            context = context.parent;
-        }
-        cache.set(config, count);
-        return count;
+        return {
+            promise,
+            resolve: assertDefined(resolve),
+            reject: assertDefined(reject),
+        };
     }
     /**
-     * Tracks active `ng-view` instances and matches them with registered
-     * view configs produced during state transitions.
+     * `ng-view`: A viewport directive which is filled in by a view from the active state.
+     *
+     * ### Attribute Runtime
+     *
+     * - `name`: (Optional) A view name.
+     *   Named views are targeted from [[StateDeclaration.views]] entries.
+     *
+     * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
+     *   Uses [[$anchorScroll]] to do the scrolling.
+     *
+     * - `onload`: Expression to evaluate whenever the view updates.
+     *
+     * #### Example:
+     * A state can render into the unnamed `$default` view, or target named views.
+     *
+     * ```html
+     * <div ng-view></div>
+     * <div ng-view="messagelist"></div>
+     * ```
+     *
+     * ```js
+     * $stateProvider.state("home", {
+     *   template: "<h1>HELLO!</h1>"
+     * })
+     *
+     * $stateProvider.state("messages", {
+     *   views: {
+     *     messagelist: "messageList"
+     *   }
+     * })
+     * ```
+     *
+     * #### Examples for `autoscroll`:
+     * ```html
+     * <!-- If autoscroll present with no expression,
+     *      then scroll ng-view into view -->
+     * <ng-view autoscroll/>
+     *
+     * <!-- If autoscroll present with valid expression,
+     *      then scroll ng-view into view if expression evaluates to true -->
+     * <ng-view autoscroll='true'/>
+     * <ng-view autoscroll='false'/>
+     * <ng-view autoscroll='scopeVariable'/>
+     * ```
+     *
+     * Resolve data:
+     *
+     * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
+     *
+     * #### Example:
+     * ```js
+     * $stateProvider.state('home', {
+     *   template: '<my-component user="$resolve.user"></my-component>',
+     *   resolve: {
+     *     user: function(UserService) { return UserService.fetchUser(); }
+     *   }
+     * });
+     * ```
      */
-    class ViewService {
-        /**
-         * Creates an empty view registry ready to track active `ng-view` instances.
-         */
-        constructor() {
-            /**
-             * Returns the singleton view service instance.
-             */
-            this.$get = [
-                _templateFactory,
-                _router,
-                ($templateFactory, $routerState) => {
-                    this._templateFactory = $templateFactory;
-                    this._rootViewContext($routerState._currentState ?? null);
-                    return this;
-                },
-            ];
-            this._ngViews = [];
-            this._viewConfigs = [];
-            this._templateFactory = undefined;
-            this._rootContext = undefined;
-        }
-        /**
-         * Gets or sets the root view context used for relative `ng-view` targeting.
-         */
-        /** @internal */
-        _rootViewContext(context) {
-            return (this._rootContext = context ?? this._rootContext);
-        }
-        /**
-         * Removes a view config from the active registry.
-         */
-        /** @internal */
-        _deactivateViewConfig(viewConfig) {
-            removeFrom(this._viewConfigs, viewConfig);
-        }
-        /**
-         * Adds a view config to the active registry.
-         */
-        /** @internal */
-        _activateViewConfig(viewConfig) {
-            this._viewConfigs.push(viewConfig);
-        }
-        /**
-         * Re-matches active `ng-view` instances against currently registered view configs
-         * and notifies each view when its config assignment changes.
-         */
-        /** @internal */
-        _sync() {
-            const ngViewsByFqn = {};
-            this._ngViews.forEach((ngView) => {
-                ngViewsByFqn[ngView._fqn] = ngView;
-            });
-            const ngViewDepthCache = new Map();
-            const viewConfigDepthCache = new Map();
-            this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
-                ngViewDepth(ngViewDepthCache, right));
-            this._ngViews.forEach((ngView) => {
-                let selectedViewConfig = undefined;
-                let bestDepth = Number.NEGATIVE_INFINITY;
-                this._viewConfigs.forEach((candidate) => {
-                    if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
-                        return;
-                    const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
-                    if (!selectedViewConfig || candidateDepth > bestDepth) {
-                        selectedViewConfig = candidate;
-                        bestDepth = candidateDepth;
+    ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
+    /**
+     * Renders and updates the currently active view configuration.
+     */
+    function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
+        const rootContext = $view._rootViewContext();
+        const rootData = {
+            $cfg: { _viewDecl: { _context: rootContext } },
+            $ngView: {},
+        };
+        const directive = {
+            count: 0,
+            terminal: true,
+            priority: 400,
+            transclude: "element",
+            compile(tElement, $transclude) {
+                const transclude = assertDefined($transclude);
+                const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
+                const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
+                const viewNameExp = getNormalizedAttr(tElement, "ngView") ??
+                    getNormalizedAttr(tElement, "name") ??
+                    "";
+                return function (scope, $element) {
+                    const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
+                    const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+                    const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
+                    let currentEl = null;
+                    let currentScope = null;
+                    let viewConfig;
+                    let configUpdateVersion = 0;
+                    let initialTemplate;
+                    const inheritedContext = inherited.$cfg._viewDecl._context;
+                    const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
+                    const activeNgView = {
+                        _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+                        _element: $element,
+                        _name: name, // ng-view name, retained internally for nested view matching
+                        _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
+                        _config: null,
+                        _configUpdated: configUpdatedCallback,
+                        get _creationContext() {
+                            return (inheritedContext ??
+                                inherited.$ngView._creationContext ??
+                                rootContext);
+                        },
+                    };
+                    function configUpdatedCallback(config) {
+                        const updateVersion = ++configUpdateVersion;
+                        if (!config) {
+                            if (!viewConfig)
+                                return;
+                            queueMicrotask(() => {
+                                if (updateVersion !== configUpdateVersion ||
+                                    viewConfig !== undefined) {
+                                    return;
+                                }
+                                activeNgView._config = null;
+                                updateView(undefined);
+                            });
+                            viewConfig = undefined;
+                            activeNgView._config = null;
+                            return;
+                        }
+                        if (viewConfig === config)
+                            return;
+                        activeNgView._config = config;
+                        viewConfig = config;
+                        updateView(config);
                     }
-                });
-                if (this._ngViews.includes(ngView)) {
-                    ngView._configUpdated(selectedViewConfig);
-                }
-            });
-        }
-        /**
-         * Registers one active `ng-view` and returns a deregistration function.
-         */
-        /** @internal */
-        _registerNgView(ngView) {
-            const ngViews = this._ngViews;
-            ngViews.push(ngView);
-            this._sync();
-            return () => {
-                removeFrom(ngViews, ngView);
-                this._sync();
-            };
-        }
-        /**
-         * Builds a predicate that determines whether a view config matches
-         * a specific active `ng-view`.
-         */
-        /** @internal */
-        static _matches(ngViewsByFqn, ngView, viewConfig) {
-            const ngViewContext = ngView._creationContext;
-            const viewDecl = viewConfig._viewDecl;
-            const vcName = viewDecl._ngViewName ?? "$default";
-            const vcContext = viewDecl._ngViewContextAnchor ?? "";
-            const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
-            if (normalizedTarget !== ngView._fqn)
-                return false;
-            const viewContext = assertDefined(viewDecl._context);
-            if (viewContext.name !== ngViewContext.name &&
-                vcContext !== ngViewContext.name) {
-                return false;
-            }
-            const childViewFqn = `${normalizedTarget}.${ngView._name}`;
-            return !ngViewsByFqn[childViewFqn];
-        }
+                    setCacheData($element, "$ngView", { $ngView: activeNgView });
+                    const unregister = $view._registerNgView(activeNgView);
+                    if (!viewConfig) {
+                        updateView();
+                    }
+                    scope.$on("$destroy", function () {
+                        unregister();
+                    });
+                    function cleanupLastView() {
+                        const destroyedScope = currentScope;
+                        if (currentScope) {
+                            currentScope.$destroy();
+                            currentScope = null;
+                        }
+                        if (currentEl) {
+                            const _viewData = getCacheData(currentEl, "$ngViewAnim");
+                            const elementScope = getInheritedData(currentEl, "$scope");
+                            if (destroyedScope &&
+                                elementScope &&
+                                elementScope !== destroyedScope &&
+                                elementScope.$parent === destroyedScope &&
+                                !elementScope.$handler._destroyed) {
+                                elementScope.$destroy();
+                            }
+                            removeElement(currentEl);
+                            _viewData?.$$animLeave.resolve(undefined);
+                            currentEl = null;
+                        }
+                    }
+                    function updateView(config) {
+                        const newScope = scope.$new();
+                        const animEnter = withResolvers();
+                        const animLeave = withResolvers();
+                        const $ngViewAnim = {
+                            $animEnter: animEnter.promise,
+                            $animLeave: animLeave.promise,
+                            $$animLeave: animLeave,
+                        };
+                        /**
+                         * Fired once the view **begins loading**, *before* the DOM is rendered.
+                         *
+                         * @param event Event object.
+                         * @param viewName Name of the view.
+                         */
+                        newScope.$emit("$viewContentLoading", name);
+                        let enteredElement = null;
+                        let enteredNodes = [];
+                        transclude(newScope, (clone) => {
+                            const elementClone = getFirstElementFromClone(clone);
+                            const cloneNodes = getRootNodesFromClone(clone);
+                            if (!elementClone) {
+                                return;
+                            }
+                            initialTemplate ?? (initialTemplate = elementClone.innerHTML);
+                            const viewData = {
+                                $cfg: config,
+                                $ngView: activeNgView,
+                            };
+                            for (let i = 0; i < cloneNodes.length; i++) {
+                                const node = cloneNodes[i];
+                                setCacheData(node, "$ngViewAnim", $ngViewAnim);
+                                setCacheData(node, "$ngView", viewData);
+                            }
+                            enteredElement = elementClone;
+                            enteredNodes = cloneNodes;
+                            $element.after(elementClone);
+                            animEnter.resolve(undefined);
+                            cleanupLastView();
+                            currentEl = elementClone;
+                            currentScope = newScope;
+                            if ((isDefined(autoScrollExp) && !autoScrollExp) ||
+                                (autoScrollExp && autoScrollFn?.(scope))) {
+                                $anchorScroll(elementClone);
+                            }
+                        });
+                        if (currentScope !== newScope)
+                            return;
+                        if (newScope.$handler._destroyed) {
+                            return;
+                        }
+                        const host = assertDefined(enteredElement);
+                        const viewData = getCacheData(host, "$ngView");
+                        $view._fillView({
+                            host,
+                            rootNodes: enteredNodes,
+                            scope: newScope,
+                            config,
+                            initial: viewData?.$initial ?? initialTemplate ?? "",
+                            activeNgView,
+                            animation: $ngViewAnim,
+                        });
+                        newScope.$emit("$viewContentAnimationEnded");
+                        /**
+                         * Fired once the view is **loaded**, *after* the DOM is rendered.
+                         *
+                         * @param event Event object.
+                         */
+                        newScope.$emit("$viewContentLoaded", config ?? viewConfig);
+                        onloadFn?.(newScope);
+                    }
+                };
+            },
+        };
+        return directive;
+    }
+    /**
+     * Clears stale fallback content before a routed `ng-view` clone links children.
+     *
+     * The mounted view is filled later by `ViewService`; this guard only preserves
+     * the old two-directive transclusion ordering without owning view rendering.
+     */
+    function ViewDirectiveContentGuard() {
+        return {
+            priority: -400,
+            compile(tElement) {
+                const initial = tElement.innerHTML;
+                return {
+                    pre(_scope, $element) {
+                        const data = getCacheData($element, "$ngView");
+                        if (data) {
+                            data.$initial ?? (data.$initial = initial);
+                        }
+                        if (data?.$cfg && !data.$filled) {
+                            dealoc($element, true);
+                        }
+                    },
+                };
+            },
+        };
     }
 
     const emptyParamTypeDefinition = {};
@@ -23374,6 +23161,218 @@
         }
     }
 
+    class ParamFactory {
+        /**
+         * @param {UrlParamConfig} urlServiceConfig
+         */
+        constructor(urlServiceConfig) {
+            this._injector = undefined;
+            this.urlServiceConfig = urlServiceConfig;
+        }
+        /**
+         * @param {string} id
+         * @param {ParamType | null} type
+         * @param {ng.StateDeclaration} state
+         */
+        fromConfig(id, type, state) {
+            return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, this, state);
+        }
+        /**
+         * @param {string} id
+         * @param {ParamType} type
+         * @param {ng.StateDeclaration} state
+         */
+        fromPath(id, type, state) {
+            return new Param(id, type, DefType._PATH, this.urlServiceConfig, this, state);
+        }
+        /**
+         * @param {string} id
+         * @param {ParamType} type
+         * @param {ng.StateDeclaration} state
+         */
+        fromSearch(id, type, state) {
+            return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, this, state);
+        }
+    }
+
+    function encodePathPart(match) {
+        return match === "~" ? "~~" : "~2F";
+    }
+    function decodePathPart(match) {
+        return match === "~~" ? "~" : "/";
+    }
+    function encodePath$1(value) {
+        return !isNullOrUndefined(value)
+            ? stringify$1(value).replace(/([~/])/g, encodePathPart)
+            : value;
+    }
+    function decodePath$1(value) {
+        return !isNullOrUndefined(value)
+            ? stringify$1(value).replace(/(~~|~2F)/g, decodePathPart)
+            : value;
+    }
+    function makeDefaultType(def) {
+        const defaultTypeBase = {
+            is: (val) => isInstanceOf(val, String) || isString(val),
+            pattern: /.*/,
+            equals: (a, b) => a === b,
+        };
+        return assign({}, defaultTypeBase, def);
+    }
+    /** @internal */
+    function createDefaultParamTypes() {
+        const definitions = {
+            string: makeDefaultType({}),
+            path: makeDefaultType({
+                encode: encodePath$1,
+                decode: decodePath$1,
+                pattern: /[^/]*/,
+            }),
+            query: makeDefaultType({}),
+            hash: makeDefaultType({
+                inherit: false,
+            }),
+            int: makeDefaultType({
+                decode: (val) => parseInt(val, 10),
+                /**
+                 * @param {unknown} val
+                 */
+                is(val) {
+                    return (!isNullOrUndefined(val) &&
+                        this.decode(stringify$1(val)) ===
+                            val);
+                },
+                pattern: /-?\d+/,
+            }),
+            bool: makeDefaultType({
+                encode: (val) => (val ? "1" : "0"),
+                decode: (val) => parseInt(val, 10) !== 0,
+                is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
+                pattern: /[01]/,
+            }),
+            date: makeDefaultType({
+                /**
+                 * @param {{ getFullYear: () => number; getMonth: () => number; getDate: () => number; }} val
+                 */
+                encode(val) {
+                    if (!isInstanceOf(val, Date) || isNaN(val.valueOf())) {
+                        return "";
+                    }
+                    return [
+                        val.getFullYear(),
+                        `0${String(val.getMonth() + 1)}`.slice(-2),
+                        `0${String(val.getDate())}`.slice(-2),
+                    ].join("-");
+                },
+                /**
+                 * @param {unknown} val
+                 */
+                decode(val) {
+                    if (this.is(val))
+                        return val;
+                    const match = this.capture.exec(String(val));
+                    return match
+                        ? new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10))
+                        : undefined;
+                },
+                is: (val) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
+                /**
+                 * @param {Date} left
+                 * @param {Date} right
+                 */
+                equals(left, right) {
+                    if (!isInstanceOf(left, Date) || !isInstanceOf(right, Date)) {
+                        return false;
+                    }
+                    return (left.getFullYear() === right.getFullYear() &&
+                        left.getMonth() === right.getMonth() &&
+                        left.getDate() === right.getDate());
+                },
+                pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
+                capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
+            }),
+            json: makeDefaultType({
+                encode: (x) => JSON.stringify(x),
+                decode: (x) => JSON.parse(x),
+                is: (val) => isInstanceOf(val, Object),
+                equals,
+                pattern: /[^/]*/,
+            }),
+            // does not encode/decode
+            any: makeDefaultType({
+                encode: (x) => x,
+                decode: (x) => x,
+                is: () => true,
+                equals,
+            }),
+        };
+        return {
+            hash: new ParamType(assign({ name: "hash" }, definitions.hash)),
+            string: new ParamType(assign({ name: "string" }, definitions.string)),
+            query: new ParamType(assign({ name: "query" }, definitions.query)),
+            path: new ParamType(assign({ name: "path" }, definitions.path)),
+            int: new ParamType(assign({ name: "int" }, definitions.int)),
+            bool: new ParamType(assign({ name: "bool" }, definitions.bool)),
+            date: new ParamType(assign({ name: "date" }, definitions.date)),
+            json: new ParamType(assign({ name: "json" }, definitions.json)),
+            any: new ParamType(assign({ name: "any" }, definitions.any)),
+        };
+    }
+
+    class StateParams {
+        constructor(params = {}) {
+            assign(this, params);
+        }
+        /**
+         * Merges a set of parameters with all parameters inherited between the common parents of the
+         * current state and a given destination state.
+         *
+         * @param {Object} newParams The set of parameters which will be composited with inherited params.
+         * @param {StateObject} $current Internal definition of object representing the current state.
+         * @param {StateObject} $to Internal definition of object representing state to transition to.
+         */
+        $inherit(newParams, $current, $to) {
+            const parents = ancestors($current, $to);
+            const inherited = {};
+            const inheritList = new Set();
+            for (const parent of parents) {
+                if (!parent.params)
+                    continue;
+                const parentParams = parent.params;
+                const parentParamsKeys = keys(parentParams);
+                if (!parentParamsKeys.length)
+                    continue;
+                for (const key of parentParamsKeys) {
+                    if (!parentParams[key].inherit || inheritList.has(key)) {
+                        continue;
+                    }
+                    inheritList.add(key);
+                    inherited[key] = this[key];
+                }
+            }
+            return assign(inherited, newParams);
+        }
+    }
+    /**
+     * Finds the common ancestor path between two states.
+     *
+     * @param {StateObject} first The first state.
+     * @param {StateObject} second The second state.
+     * @return {Array<StateObject>} Returns an array of state names in descending order, not including the root.
+     */
+    function ancestors(first, second) {
+        const path = [];
+        const firstPath = first.path ?? [];
+        const secondPath = second.path ?? [];
+        const len = Math.min(firstPath.length, secondPath.length);
+        for (let i = 0; i < len; i++) {
+            if (firstPath[i] !== secondPath[i])
+                break;
+            path.push(firstPath[i]);
+        }
+        return path;
+    }
+
     const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
     const MAX_REGEX_LENGTH = 200;
     const PLACEHOLDER_REGEXP = new RegExp(`([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.|\\{(?:[^{}\\\\]{1,${String(MAX_REGEX_LENGTH)}}|\\\\.)*\\})+))?\\}`, "g");
@@ -23811,1559 +23810,6 @@
         }
     }
 
-    const TEMPLATE_VIEW_KEYS = ["templateUrl", "template"];
-    const CONTROLLER_VIEW_KEYS = ["controller"];
-    const COMPONENT_VIEW_KEYS = ["component", "bindings"];
-    const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
-    const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
-    const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
-    /**
-     * @param {unknown} url
-     */
-    function parseUrl(url) {
-        if (!isString(url))
-            return false;
-        const root = url.startsWith("^");
-        return { val: root ? url.substring(1) : url, root };
-    }
-    function buildUrl(stateObject, routerState, root) {
-        const stateDec = stateObject.self;
-        const { parent } = stateObject;
-        const parsed = parseUrl(stateDec.url);
-        const url = parsed
-            ? routerState._compile(parsed.val, { state: stateDec })
-            : null;
-        if (!url)
-            return null;
-        if (!isInstanceOf(url, UrlMatcher))
-            throw new Error(`Invalid url '${String(url)}' in state '${String(stateObject)}'`);
-        const base = (parent?.navigable ?? root);
-        return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
-    }
-    /**
-     * @param {ParamFactory} paramFactory
-     */
-    function buildParams(state, paramFactory) {
-        const params = {};
-        state._url?._params.forEach((param) => {
-            if (param.location === DefType._PATH || param.location === DefType._SEARCH)
-                params[param.id] = param;
-        });
-        const paramConfigs = state.params ?? {};
-        const paramConfigKeys = keys(paramConfigs);
-        paramConfigKeys.forEach((id) => {
-            if (!hasOwn(params, id)) {
-                params[id] = paramFactory.fromConfig(id, null, state.self);
-            }
-        });
-        return params;
-    }
-    function hasAnyViewKey(keyItems, values) {
-        for (let i = 0; i < keyItems.length; i++) {
-            if (isDefined(values[keyItems[i]])) {
-                return true;
-            }
-        }
-        return false;
-    }
-    function presentViewKeys(keyItems, values) {
-        const present = [];
-        keyItems.forEach((key) => {
-            if (isDefined(values[key])) {
-                present.push(key);
-            }
-        });
-        return present.join(", ");
-    }
-    function assertNoRemovedViewKeys(keyItems, values, description) {
-        const present = [];
-        keyItems.forEach((key) => {
-            if (isDefined(values[key])) {
-                present.push(key);
-            }
-        });
-        if (present.length) {
-            throw new Error(`${description} uses unsupported view properties: ${present.join(", ")}`);
-        }
-    }
-    function viewsBuilder(state) {
-        if (!state.parent) {
-            return {};
-        }
-        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
-        if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
-            throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
-        }
-        const views = {};
-        const defaultViewConfig = {};
-        const stateValues = state;
-        ALL_VIEW_KEYS.forEach((key) => {
-            if (isDefined(stateValues[key])) {
-                defaultViewConfig[key] = stateValues[key];
-            }
-        });
-        const viewsObject = (state.views ?? {
-            $default: defaultViewConfig,
-        });
-        keys(viewsObject).forEach((entryName) => {
-            let name = entryName;
-            let config = viewsObject[entryName];
-            name = name || "$default";
-            if (isString(config)) {
-                config = { component: config };
-            }
-            config = assign({}, config);
-            assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
-            if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
-                hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
-                throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
-            }
-            config._context = state;
-            config._name = name;
-            const normalized = normalizeNgViewTarget(config._context, config._name);
-            config._ngViewName = normalized.ngViewName;
-            config._ngViewContextAnchor = normalized.ngViewContextAnchor;
-            views[name] = config;
-        });
-        return views;
-    }
-    function getResolveLocals(ctx) {
-        const tokens = ctx.getTokens();
-        const locals = {};
-        tokens.forEach((key) => {
-            if (isString(key)) {
-                locals[key] = assertDefined(ctx.getResolvable(key)).data;
-            }
-        });
-        return locals;
-    }
-    function valueToResolvable(token, value, strictDi) {
-        if (isArray(value)) {
-            return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
-        }
-        if (isFunction(value)) {
-            return new Resolvable(token, value, annotate(value, strictDi));
-        }
-        throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
-    }
-    function literalToResolvable(literal) {
-        if (hasOwn(literal, "token") &&
-            (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))) {
-            return new Resolvable(literal);
-        }
-        throw new Error(`Invalid resolve value: ${stringify(literal)}`);
-    }
-    /**
-     * Builds the `resolve:` block on a [[StateDeclaration]].
-     *
-     * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this function
-     * validates the `resolve` property and converts it to a [[Resolvable]] array.
-     *
-     * resolve: input value can be:
-     *
-     * {
-     *   // analyzed but not injected
-     *   myFooResolve: function() { return "myFooData"; },
-     *
-     *   // function.toString() parsed, "DependencyName" dep as string (not min-safe)
-     *   myBarResolve: function(DependencyName) { return DependencyName.fetchSomethingAsPromise() },
-     *
-     *   // Array split; "DependencyName" dep as string
-     *   myBazResolve: [ "DependencyName", function(dep) { return dep.fetchSomethingAsPromise() },
-     *
-     *   // Array split; DependencyType dep as token (compared using ===)
-     *   myQuxResolve: [ DependencyType, function(dep) { return dep.fetchSometingAsPromise() },
-     *
-     *   // val.$inject used as deps
-     *   // where:
-     *   //     corgeResolve.$inject = ["DependencyName"];
-     *   //     function corgeResolve(dep) { dep.fetchSometingAsPromise() }
-     *   // then "DependencyName" dep as string
-     *   myCorgeResolve: corgeResolve,
-     *
-     * }
-     *
-     * or:
-     *
-     * [
-     *   { token: "myFooResolve", resolveFn: function() { return "myFooData" } },
-     *   { token: "myBarResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] },
-     *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
-     * ]
-     * @param {ng.StateObject & ng.StateDeclaration} state
-     * @param {boolean | undefined} strictDi
-     */
-    function resolvablesBuilder(state, strictDi) {
-        const decl = state.resolve;
-        const resolvables = [];
-        if (isArray(decl)) {
-            decl.forEach((literal) => {
-                resolvables.push(literalToResolvable(literal));
-            });
-            return resolvables;
-        }
-        const resolveObj = decl ?? {};
-        const resolveKeys = keys(resolveObj);
-        resolveKeys.forEach((token) => {
-            resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
-        });
-        return resolvables;
-    }
-    function invokeStateLifecycleHook(trans, state, hookName, pathname) {
-        const stateObject = state._state();
-        const hook = stateObject[hookName];
-        if (!hook)
-            return undefined;
-        const hookContext = stateObject._hookContext;
-        const $injector = assertDefined(hookContext._$injector);
-        const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
-        const subContext = resolveContext.subContext(stateObject);
-        const locals = assign(getResolveLocals(subContext), {
-            $state$: state,
-            $transition$: trans,
-        });
-        return $injector.invoke(hook, hookContext, locals);
-    }
-    function invokeOnEnterHook(trans, state) {
-        return invokeStateLifecycleHook(trans, state, "_onEnter", "to");
-    }
-    function invokeOnRetainHook(trans, state) {
-        return invokeStateLifecycleHook(trans, state, "_onRetain", "to");
-    }
-    function invokeOnExitHook(trans, state) {
-        return invokeStateLifecycleHook(trans, state, "_onExit", "from");
-    }
-    /**
-     * A internal global service
-     *
-     * StateBuilder is a factory for the internal [[StateObject]] objects.
-     *
-     * When you register a state with the [[StateRegistry]], you register a plain old javascript object which
-     * conforms to the [[StateDeclaration]] interface.  This factory takes that object and builds the corresponding
-     * [[StateObject]] object, which has an API and is used internally.
-     *
-     */
-    class StateBuilder {
-        /**
-         * @param {StateMatcher} matcher
-         * @param {RouterProvider} routerState
-         */
-        constructor(matcher, routerState) {
-            this._matcher = matcher;
-            this._$injector = undefined;
-            this._paramFactory = routerState._paramFactory;
-            this._routerState = routerState;
-        }
-        /** @internal */
-        _assignStateHook(stateObject, publicName, privateName, hookFn) {
-            const hook = stateObject[publicName];
-            if (!hook)
-                return;
-            stateObject[privateName] = hook;
-            stateObject._hookContext = this;
-            stateObject[publicName] = hookFn;
-        }
-        /**
-         * Builds all of the properties on an essentially blank State object, returning a State object which has all its
-         * properties and API built.
-         *
-         * @param {ng.StateObject} state an uninitialized State object
-         * @returns {ng.StateObject | null} the built State object
-         */
-        /** @internal */
-        _build(state) {
-            const { _matcher: matcher, _routerState: routerState } = this;
-            const parent = StateBuilder._parentName(state);
-            if (parent && !matcher.find(parent, undefined, false)) {
-                return null;
-            }
-            state.parent = isRoot(state)
-                ? null
-                : (matcher.find(parent) ?? matcher.find(""));
-            state._url =
-                buildUrl(state, routerState, matcher.find("")) ?? undefined;
-            state.resolvables = resolvablesBuilder(state, this._$injector?.strictDi);
-            this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
-            this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
-            this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
-            state.navigable =
-                !isRoot(state) && state._url
-                    ? state
-                    : state.parent
-                        ? state.parent.navigable
-                        : null;
-            state.params = buildParams(state, this._paramFactory);
-            if (state.parent?.data) {
-                state.data = state.self.data = assign(createObject(state.parent.data), state.data);
-            }
-            state.path = state.parent
-                ? (state.parent.path ?? []).concat(state)
-                : [state];
-            state.includes = state.parent ? assign({}, state.parent.includes) : {};
-            state.includes[state.name] = true;
-            state._views = viewsBuilder(state);
-            return state;
-        }
-        /**
-         *
-         * @param {ng.StateObject} state
-         * @returns {string}
-         */
-        /** @internal */
-        static _parentName(state) {
-            const rawName = state.self.name || state.name || "";
-            const name = rawName;
-            const segments = name.split(".");
-            segments.pop();
-            if (segments.length) {
-                if (state.parent) {
-                    throw new Error(`States that specify the 'parent:' property should not have a '.' in their name (${name})`);
-                }
-                // 'foo.bar'
-                return segments.join(".");
-            }
-            if (!state.parent)
-                return "";
-            return isString(state.parent) ? state.parent : state.parent.name;
-        }
-        /** @internal */
-        static _name(state) {
-            const name = state.self.name || state.name;
-            if (name.includes(".") || !state.parent)
-                return name;
-            const parentName = isString(state.parent)
-                ? state.parent
-                : state.parent.name;
-            return parentName ? `${parentName}.${name}` : name;
-        }
-    }
-    /**
-     * @param {ng.StateObject} state
-     * @returns {boolean}
-     */
-    function isRoot(state) {
-        return state.name === "";
-    }
-
-    /**
-     * Matches state names using glob-like pattern strings.
-     *
-     * Globs can be used in specific APIs including:
-     *
-     * - [[StateService.is]]
-     * - [[StateService.includes]]
-     * - The first argument to Hook Registration functions like [[TransitionService.onStart]]
-     *    - [[HookMatchCriteria]] and [[HookMatchCriterion]]
-     *
-     * A `Glob` string is a pattern which matches state names.
-     * Nested state names are split into segments (separated by a dot) when processing.
-     * The state named `foo.bar.baz` is split into three segments ['foo', 'bar', 'baz']
-     *
-     * Globs work according to the following rules:
-     *
-     * ### Exact match:
-     *
-     * The glob `'A.B'` matches the state named exactly `'A.B'`.
-     *
-     * | Glob        |Matches states named|Does not match state named|
-     * |:------------|:--------------------|:---------------------|
-     * | `'A'`       | `'A'`               | `'B'` , `'A.C'`      |
-     * | `'A.B'`     | `'A.B'`             | `'A'` , `'A.B.C'`    |
-     * | `'foo'`     | `'foo'`             | `'FOO'` , `'foo.bar'`|
-     *
-     * ### Single star (`*`)
-     *
-     * A single star (`*`) is a wildcard that matches exactly one segment.
-     *
-     * | Glob        |Matches states named  |Does not match state named |
-     * |:------------|:---------------------|:--------------------------|
-     * | `'*'`       | `'A'` , `'Z'`        | `'A.B'` , `'Z.Y.X'`       |
-     * | `'A.*'`     | `'A.B'` , `'A.C'`    | `'A'` , `'A.B.C'`         |
-     * | `'A.*.*'`   | `'A.B.C'` , `'A.X.Y'`| `'A'`, `'A.B'` , `'Z.Y.X'`|
-     *
-     * ### Double star (`**`)
-     *
-     * A double star (`'**'`) is a wildcard that matches *zero or more segments*
-     *
-     * | Glob        |Matches states named                           |Does not match state named         |
-     * |:------------|:----------------------------------------------|:----------------------------------|
-     * | `'**'`      | `'A'` , `'A.B'`, `'Z.Y.X'`                    | (matches all states)              |
-     * | `'A.**'`    | `'A'` , `'A.B'` , `'A.C.X'`                   | `'Z.Y.X'`                         |
-     * | `'**.X'`    | `'X'` , `'A.X'` , `'Z.Y.X'`                   | `'A'` , `'A.login.Z'`             |
-     * | `'A.**.X'`  | `'A.X'` , `'A.B.X'` , `'A.B.C.X'`             | `'A'` , `'A.B.C'`                 |
-     *
-     */
-    class Glob {
-        /** Returns a glob from the string, or null if the string isn't Glob-like. */
-        static fromString(text) {
-            return hasGlobs(text) ? new Glob(text) : null;
-        }
-        constructor(text) {
-            this._text = text;
-            const segments = this._text.split(".");
-            const regexpParts = [];
-            segments.forEach((segment) => {
-                if (segment === "**") {
-                    regexpParts.push("(?:|(?:\\.[^.]*)*)");
-                }
-                else if (segment === "*") {
-                    regexpParts.push("\\.[^.]*");
-                }
-                else {
-                    regexpParts.push(`\\.${segment}`);
-                }
-            });
-            this._regexp = new RegExp(`^${regexpParts.join("")}$`);
-        }
-        matches(name) {
-            return this._regexp.test(`.${name}`);
-        }
-    }
-    /** Returns true if the string has glob-like characters in it. */
-    function hasGlobs(text) {
-        return !!/[!,*]+/.exec(text);
-    }
-
-    /**
-     * Internal representation of a ng-router state.
-     *
-     * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
-     *
-     * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
-     *
-     * This class prototypally inherits from the corresponding [[StateDeclaration]].
-     * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
-     * @extends {ng.StateDeclaration}
-     */
-    class StateObject {
-        static isStateDeclaration(obj) {
-            return isFunction(obj._state);
-        }
-        static isState(obj) {
-            return (isObject(obj) &&
-                isObject(obj._stateObjectCache));
-        }
-        /**
-         * @param {StateDeclaration} config
-         */
-        constructor(config) {
-            assign(this, config);
-            this.self = config;
-            this.name = config.name;
-            config._state = () => this;
-            const nameGlob = this.name ? Glob.fromString(this.name) : null;
-            this._stateObjectCache = { nameGlob };
-        }
-        /** @returns {StateObject} */
-        /** @internal */
-        _state() {
-            return this;
-        }
-        /**
-         * Returns true if the provided parameter is the same state.
-         *
-         * Compares the identity of the state against the passed value, which is either an object
-         * reference to the actual `State` instance, the original definition object passed to
-         * `$stateProvider.state()`, or the fully-qualified name.
-         *
-         * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
-         *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
-         * @returns Returns `true` if `ref` matches the current `State` instance.
-         */
-        is(ref) {
-            return this === ref || this.self === ref || this.pathName() === ref;
-        }
-        /**
-         * @deprecated this does not properly handle dot notation
-         * @returns {string} Returns a dot-separated name of the state.
-         */
-        fqn() {
-            return this.pathName();
-        }
-        pathName() {
-            return (this.path ?? [])
-                .map((state) => state.name)
-                .filter(Boolean)
-                .join(".");
-        }
-        /**
-         * Returns the root node of this state's tree.
-         *
-         * @returns {StateObject} The root of this state's tree.
-         */
-        root() {
-            return this.parent?.root() ?? this;
-        }
-        /**
-         * Gets the state's `Param` objects
-         *
-         * Gets the list of [[Param]] objects owned by the state.
-         * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
-         * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
-         *
-         * @param {StateParamOptions} [opts] options
-         * @returns {Param[]} the list of [[Param]] objects
-         */
-        parameters(opts) {
-            const inherit = opts?.inherit !== false;
-            const matchingKeys = opts?.matchingKeys;
-            const inherited = inherit
-                ? (this.parent?.parameters({ matchingKeys }) ?? [])
-                : [];
-            const result = inherited.slice();
-            const { params } = this;
-            if (!params)
-                return result;
-            keys(params).forEach((id) => {
-                const { [id]: param } = params;
-                if (!matchingKeys || hasOwn(matchingKeys, id)) {
-                    result.push(param);
-                }
-            });
-            return result;
-        }
-        /**
-         * Returns a single [[Param]] that is owned by the state
-         *
-         * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
-         * @param {string} id the name of the [[Param]] to return
-         * @param {StateParamOptions} [opts] options
-         * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
-         */
-        parameter(id, opts) {
-            const urlParam = this._url?._parameter(id, opts);
-            if (urlParam)
-                return urlParam;
-            const { params } = this;
-            if (params && hasOwn(params, id)) {
-                const { [id]: param } = params;
-                return param;
-            }
-            return opts?.inherit && this.parent
-                ? this.parent.parameter(id, opts)
-                : undefined;
-        }
-        toString() {
-            return this.pathName();
-        }
-    }
-
-    function stateOrNameToString(stateOrName) {
-        return isString(stateOrName) ? stateOrName : stateOrName.name;
-    }
-    /**
-     * A registry for all of the application's [[StateDeclaration]]s
-     *
-     * This API is found at `$stateRegistry`.
-     *
-     */
-    class StateRegistryProvider {
-        constructor(routerState) {
-            this.$get = [
-                _injector,
-                /**
-                 * @param {InjectorService} $injector
-                 * @returns {StateRegistryProvider}
-                 */
-                ($injector) => {
-                    this._$injector = $injector;
-                    this._builder._$injector = $injector;
-                    this._annotateDeferredResolvables($injector.strictDi);
-                    return this;
-                },
-            ];
-            this._states = {};
-            this._routerState = routerState;
-            this._$injector = undefined;
-            this._listeners = [];
-            this._matcher = new StateMatcher(this._states);
-            this._builder = new StateBuilder(this._matcher, routerState);
-            this._queue = [];
-            this.registerRoot();
-            routerState._currentState = this.root();
-            routerState._current = routerState._currentState.self;
-        }
-        /** @internal */
-        _annotateDeferredResolvables(strictDi) {
-            const states = this.getAll();
-            states.forEach((state) => {
-                const { resolvables } = state._state();
-                resolvables.forEach((resolvable) => {
-                    if (resolvable.deps === "deferred") {
-                        resolvable.deps = annotate(resolvable.resolveFn, strictDi);
-                    }
-                });
-            });
-        }
-        /**
-         * @private
-         */
-        registerRoot() {
-            const rootStateDef = {
-                name: "",
-                url: "^",
-                params: {
-                    "#": { value: null, type: "hash", dynamic: true },
-                },
-                abstract: true,
-            };
-            this._root = this._register(rootStateDef);
-            this._root.navigable = null;
-        }
-        /**
-         * Listen for a State Registry events
-         *
-         * Adds a callback that is invoked when states are registered or deregistered with the StateRegistry.
-         *
-         * #### Example:
-         * ```js
-         * let allStates = registry.get();
-         *
-         * // Later, invoke deregisterFn() to remove the listener
-         * let deregisterFn = registry.onStatesChanged((event, states) => {
-         *   switch(event) {
-         *     case: 'registered':
-         *       states.forEach(state => allStates.push(state));
-         *       break;
-         *     case: 'deregistered':
-         *       states.forEach(state => {
-         *         let idx = allStates.indexOf(state);
-         *         if (idx !== -1) allStates.splice(idx, 1);
-         *       });
-         *       break;
-         *   }
-         * });
-         * ```
-         *
-         * @param {StateRegistryListener} listener a callback function invoked when the registered states changes.
-         *        The function receives two parameters, `event` and `state`.
-         *        See [[StateRegistryListener]]
-         * @return a function that deregisters the listener
-         */
-        onStatesChanged(listener) {
-            this._listeners.push(listener);
-            return () => {
-                const index = this._listeners.indexOf(listener);
-                if (index !== -1) {
-                    this._listeners.splice(index, 1);
-                }
-            };
-        }
-        /**
-         * Gets the implicit root state
-         *
-         * Gets the root of the state tree.
-         * The root state is implicitly created by ng-router.
-         * Note: this returns the internal [[StateObject]] representation, not a [[StateDeclaration]]
-         *
-         * @return the root [[StateObject]]
-         */
-        root() {
-            return this._root;
-        }
-        /**
-         * Adds a state to the registry
-         *
-         * Registers a [[StateDeclaration]] or queues it for registration.
-         *
-         * Note: a state will be queued if the state's parent isn't yet registered.
-         *
-         * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
-         * @returns the internal [[StateObject]] object.
-         *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
-         *          If the state was only queued, then the object is not fully built.
-         */
-        register(stateDefinition) {
-            return this._register(stateDefinition);
-        }
-        /** @internal */
-        _register(stateDeclaration) {
-            const state = new StateObject(stateDeclaration);
-            const { name } = state;
-            if (!isString(name))
-                throw new Error("State must have a valid name");
-            if (hasOwn(this._states, name) || this._isQueued(name)) {
-                throw new Error(`State '${name}' is already defined`);
-            }
-            this._queue.push(state);
-            this._flush();
-            return state;
-        }
-        /** @internal */
-        _isQueued(name) {
-            const { _queue } = this;
-            for (let i = 0; i < _queue.length; i++) {
-                if (_queue[i].name === name)
-                    return true;
-            }
-            return false;
-        }
-        /** @internal */
-        _flush() {
-            const { _queue, _states, _builder } = this;
-            const registered = [];
-            const orphans = [];
-            const previousQueueLength = {};
-            while (_queue.length) {
-                const state = _queue.shift();
-                if (!state)
-                    continue;
-                const { name } = state;
-                const result = _builder._build(state);
-                const orphanIndex = orphans.indexOf(state);
-                if (result) {
-                    const existingState = hasOwn(_states, name) ? _states[name] : undefined;
-                    if (existingState?.name === name) {
-                        throw new Error(`State '${name}' is already defined`);
-                    }
-                    _states[name] = state;
-                    this._attachRoute(state);
-                    if (orphanIndex >= 0)
-                        orphans.splice(orphanIndex, 1);
-                    registered.push(state);
-                    continue;
-                }
-                const previousLength = previousQueueLength[name];
-                previousQueueLength[name] = _queue.length;
-                if (orphanIndex >= 0 && previousLength === _queue.length) {
-                    _queue.push(state);
-                    this._notifyRegistered(registered);
-                    return _states;
-                }
-                if (orphanIndex < 0) {
-                    orphans.push(state);
-                }
-                _queue.push(state);
-            }
-            this._notifyRegistered(registered);
-            return _states;
-        }
-        /** @internal */
-        _notifyRegistered(registered) {
-            if (!registered.length)
-                return;
-            const declarations = [];
-            registered.forEach((state) => {
-                declarations.push(state.self);
-            });
-            this._notifyListeners("registered", declarations);
-        }
-        /** @internal */
-        _notifyListeners(event, states) {
-            this._listeners.forEach((listener) => {
-                listener(event, states);
-            });
-        }
-        /** @internal */
-        _attachRoute(state) {
-            if (!state.self.abstract && state._url) {
-                this._routerState._routeTable._add(state);
-            }
-        }
-        /**
-         *
-         * @param {BuiltStateDeclaration} state
-         * @returns {BuiltStateDeclaration[]}
-         */
-        /** @internal */
-        _deregisterTree(state) {
-            const allDeclarations = this.getAll();
-            const all = [];
-            allDeclarations.forEach((declaration) => {
-                all.push(declaration._state());
-            });
-            const children = [];
-            const queue = [state];
-            for (let i = 0; i < queue.length; i++) {
-                const parent = queue[i];
-                for (let j = 0; j < all.length; j++) {
-                    const candidate = all[j];
-                    if (candidate.parent === parent) {
-                        children.push(candidate);
-                        queue.push(candidate);
-                    }
-                }
-            }
-            const deregistered = children.slice().reverse();
-            deregistered.push(state);
-            deregistered.forEach((_state) => {
-                this._routerState._routeTable._remove(_state);
-                // Remove state from registry
-                deleteProperty(this._states, _state.name);
-            });
-            return deregistered;
-        }
-        /**
-         * Removes a state from the registry
-         *
-         * This removes a state from the registry.
-         * If the state has children, they are are also removed from the registry.
-         *
-         * @param {StateOrName} stateOrName the state's name or object representation
-         * @returns {BuiltStateDeclaration[]} a list of removed states
-         */
-        deregister(stateOrName) {
-            const state = this.get(stateOrName);
-            if (!state) {
-                throw new Error(`Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`);
-            }
-            const deregisteredStates = this._deregisterTree(state._state());
-            const deregisteredDeclarations = [];
-            deregisteredStates.forEach((stateDeclaration) => {
-                deregisteredDeclarations.push(stateDeclaration.self);
-            });
-            this._notifyListeners("deregistered", deregisteredDeclarations);
-            return deregisteredStates;
-        }
-        /**
-         * @return {ng.BuiltStateDeclaration[]}
-         */
-        getAll() {
-            const stateNames = keys(this._states);
-            const states = [];
-            stateNames.forEach((name) => {
-                states.push(this._states[name].self);
-            });
-            return states;
-        }
-        /**
-         *
-         * @param {StateOrName} [stateOrName]
-         * @param {StateOrName} [base]
-         * @returns {StateDeclaration | StateDeclaration[] | null}
-         */
-        get(stateOrName, base) {
-            if (arguments.length === 0) {
-                const stateNames = keys(this._states);
-                const states = [];
-                stateNames.forEach((name) => {
-                    states.push(this._states[name].self);
-                });
-                return states;
-            }
-            const found = stateOrName === undefined
-                ? undefined
-                : this._matcher.find(stateOrName, base);
-            return found?.self ?? null;
-        }
-    }
-    /* @ignore */ StateRegistryProvider.$inject = [_routerProvider];
-    function getLocals(ctx) {
-        const tokens = ctx.getTokens();
-        const locals = {};
-        tokens.forEach((key) => {
-            if (isString(key)) {
-                locals[key] = assertDefined(ctx.getResolvable(key)).data;
-            }
-        });
-        return locals;
-    }
-
-    const controllerRegisteredScopes = new WeakMap();
-    const controllerLastParamsChangedTransition = new WeakMap();
-    function appendParamSchema(nodes, schema) {
-        for (let i = 0; i < nodes.length; i++) {
-            const nodeSchema = nodes[i].paramSchema;
-            for (let j = 0; j < nodeSchema.length; j++) {
-                schema.push(nodeSchema[j]);
-            }
-        }
-    }
-    function controllerKeyData(element, key) {
-        return (getCacheData(element, key) ??
-            getInheritedData(element, key));
-    }
-    /** @internal */
-    function getComponentController(element, componentName, tagRegexp) {
-        const candidates = element.querySelectorAll("*");
-        let directiveEl;
-        for (let i = 0; i < candidates.length; i++) {
-            const candidate = candidates[i];
-            if (candidate.tagName && tagRegexp.exec(candidate.tagName)) {
-                directiveEl = candidate;
-                break;
-            }
-        }
-        if (!directiveEl)
-            return undefined;
-        const camelNameFromTag = directiveEl.tagName
-            .toLowerCase()
-            .replace(/-([a-z])/g, (_all, letter) => uppercase(letter));
-        const scopeWithCtrl = getCacheData(directiveEl, "$isolateScope") ??
-            getInheritedData(directiveEl, "$isolateScope") ??
-            getCacheData(directiveEl, "$scope") ??
-            getInheritedData(directiveEl, "$scope");
-        return (controllerKeyData(directiveEl, `$${componentName}Controller`) ??
-            controllerKeyData(directiveEl, `$${camelNameFromTag}Controller`) ??
-            controllerKeyData(directiveEl, "$ngControllerController") ??
-            scopeWithCtrl?.$ctrl);
-    }
-    /** @ignore incrementing id */
-    let _ngCanExitId = 0;
-    /**
-     * Registers component/controller transition lifecycle callbacks for an active view.
-     *
-     * @internal
-     */
-    function registerViewControllerCallbacks($transitions, controllerInstance, $scope, cfg) {
-        let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
-        if (!registeredScopes) {
-            registeredScopes = new WeakSet();
-            controllerRegisteredScopes.set(controllerInstance, registeredScopes);
-        }
-        if (registeredScopes.has($scope)) {
-            return;
-        }
-        registeredScopes.add($scope);
-        // Call $onInit() ASAP
-        const onInit = controllerInstance.$onInit;
-        if (isFunction(onInit) && !cfg._viewDecl.component) {
-            onInit();
-        }
-        const viewState = cfg._path[cfg._path.length - 1].state.self;
-        const hookOptions = { bind: controllerInstance };
-        // Add component-level hook for ngOnParamsChanged
-        if (isFunction(controllerInstance.ngOnParamsChanged)) {
-            const onParamsChanged = controllerInstance.ngOnParamsChanged;
-            const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-            const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
-            // Fire callback on any successful transition
-            const paramsUpdated = ($transition$) => {
-                if (!$transition$)
-                    return;
-                if (controllerLastParamsChangedTransition.get(controllerInstance) ===
-                    $transition$) {
-                    return;
-                }
-                controllerLastParamsChangedTransition.set(controllerInstance, $transition$);
-                // Exit early if the $transition$ is the same as the view was created within.
-                // Exit early if the $transition$ will exit the state the view is for.
-                if ($transition$ === viewCreationTrans ||
-                    $transition$.exiting().includes(viewState)) {
-                    return;
-                }
-                const toParams = $transition$.params("to");
-                const fromParams = $transition$.params("from");
-                const toNodes = $transition$._treeChanges.to;
-                const fromNodes = $transition$._treeChanges.from;
-                const toSchema = [];
-                appendParamSchema(toNodes, toSchema);
-                const fromSchema = [];
-                appendParamSchema(fromNodes, fromSchema);
-                // Find the to params that have different values than the from params
-                const changedToParams = [];
-                for (let i = 0; i < toSchema.length; i++) {
-                    const param = toSchema[i];
-                    const idx = fromSchema.indexOf(param);
-                    if (idx === -1 ||
-                        !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
-                        changedToParams.push(param);
-                    }
-                }
-                // Only trigger callback if a to param has changed or is new
-                if (changedToParams.length) {
-                    // Filter the params to only changed/new to params. `$transition$.params()` may be used to get all params.
-                    const newValues = {};
-                    for (let i = 0; i < changedToParams.length; i++) {
-                        const param = changedToParams[i];
-                        const key = param.id;
-                        if (key in toParams)
-                            newValues[key] = toParams[key];
-                    }
-                    onParamsChanged.call(controllerInstance, newValues, $transition$);
-                }
-            };
-            const hookRegistryKey = [
-                viewState.name || "",
-                cfg._viewDecl._ngViewName ?? "$default",
-                cfg._viewDecl._ngViewContextAnchor ?? "^",
-            ].join("::");
-            const rootScope = $scope.$root;
-            const registryProp = "__ngRouterParamsChangedHooks__";
-            const hookRegistry = (rootScope[registryProp] ??
-                (rootScope[registryProp] = new Map()));
-            hookRegistry.get(hookRegistryKey)?.();
-            const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
-            hookRegistry.set(hookRegistryKey, deregisterParamsHook);
-            $scope.$on("$destroy", () => {
-                if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
-                    hookRegistry.delete(hookRegistryKey);
-                }
-                deregisterParamsHook();
-            });
-        }
-        // Add component-level hook for ngCanExit
-        if (isFunction(controllerInstance.ngCanExit)) {
-            const ngCanExit = controllerInstance.ngCanExit;
-            const id = _ngCanExitId++;
-            /**
-             * Returns true if any transition in the redirect chain already answered truthy.
-             */
-            const prevTruthyAnswer = (trans) => {
-                if (!trans)
-                    return false;
-                const cache = trans._ngCanExitIds;
-                return (cache?.[id] === true ||
-                    prevTruthyAnswer(trans._options.redirectedFrom ?? null));
-            };
-            // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-            const wrappedHook = async (trans) => {
-                let promise;
-                const cacheTrans = trans;
-                const ids = (cacheTrans._ngCanExitIds = cacheTrans._ngCanExitIds ?? {});
-                if (!prevTruthyAnswer(trans)) {
-                    promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
-                    void promise.then((val) => (ids[id] = val !== false));
-                }
-                return promise;
-            };
-            const criteria = { exiting: viewState.name };
-            $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
-        }
-    }
-
-    function getFirstElementFromClone(clone) {
-        if (!clone)
-            return null;
-        if (isInstanceOf(clone, HTMLElement)) {
-            return clone;
-        }
-        if (isInstanceOf(clone, DocumentFragment)) {
-            const firstElement = clone.firstElementChild;
-            return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
-        }
-        if (isInstanceOf(clone, NodeList) || isArray(clone)) {
-            for (let i = 0, l = clone.length; i < l; i++) {
-                const node = clone[i];
-                if (isInstanceOf(node, HTMLElement)) {
-                    return node;
-                }
-            }
-            return null;
-        }
-        return isInstanceOf(clone, Element) ? clone : null;
-    }
-    function getRootNodesFromClone(clone) {
-        if (!clone) {
-            return [];
-        }
-        if (isInstanceOf(clone, DocumentFragment)) {
-            return arrayFrom(clone.childNodes);
-        }
-        return isInstanceOf(clone, NodeList) || isArray(clone)
-            ? arrayFrom(clone)
-            : [clone];
-    }
-    function withResolvers() {
-        let resolve;
-        let reject;
-        const promise = new Promise((_resolve, _reject) => {
-            resolve = _resolve;
-            reject = _reject;
-        });
-        return {
-            promise,
-            resolve: assertDefined(resolve),
-            reject: assertDefined(reject),
-        };
-    }
-    /**
-     * `ng-view`: A viewport directive which is filled in by a view from the active state.
-     *
-     * ### Attribute Runtime
-     *
-     * - `name`: (Optional) A view name.
-     *   Named views are targeted from [[StateDeclaration.views]] entries.
-     *
-     * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
-     *   Uses [[$anchorScroll]] to do the scrolling.
-     *
-     * - `onload`: Expression to evaluate whenever the view updates.
-     *
-     * #### Example:
-     * A state can render into the unnamed `$default` view, or target named views.
-     *
-     * ```html
-     * <div ng-view></div>
-     * <div ng-view="messagelist"></div>
-     * ```
-     *
-     * ```js
-     * $stateProvider.state("home", {
-     *   template: "<h1>HELLO!</h1>"
-     * })
-     *
-     * $stateProvider.state("messages", {
-     *   views: {
-     *     messagelist: "messageList"
-     *   }
-     * })
-     * ```
-     *
-     * #### Examples for `autoscroll`:
-     * ```html
-     * <!-- If autoscroll present with no expression,
-     *      then scroll ng-view into view -->
-     * <ng-view autoscroll/>
-     *
-     * <!-- If autoscroll present with valid expression,
-     *      then scroll ng-view into view if expression evaluates to true -->
-     * <ng-view autoscroll='true'/>
-     * <ng-view autoscroll='false'/>
-     * <ng-view autoscroll='scopeVariable'/>
-     * ```
-     *
-     * Resolve data:
-     *
-     * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
-     *
-     * #### Example:
-     * ```js
-     * $stateProvider.state('home', {
-     *   template: '<my-component user="$resolve.user"></my-component>',
-     *   resolve: {
-     *     user: function(UserService) { return UserService.fetchUser(); }
-     *   }
-     * });
-     * ```
-     */
-    ViewDirective.$inject = [
-        _view,
-        _state,
-        _anchorScroll,
-        _interpolate,
-        _parse,
-        _attributes,
-    ];
-    /**
-     * Renders and updates the currently active view configuration.
-     */
-    function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attributes) {
-        const rootContext = $view._rootViewContext();
-        const rootData = {
-            $cfg: { _viewDecl: { _context: rootContext } },
-            $ngView: {},
-        };
-        const directive = {
-            count: 0,
-            terminal: true,
-            priority: 400,
-            transclude: "element",
-            compile(_tElement, _tAttrs, $transclude) {
-                const transclude = assertDefined($transclude);
-                return function (scope, $element) {
-                    const onloadExp = $attributes.read($element, "onload") ?? "", autoScrollExp = $attributes.read($element, "autoscroll"), inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate($attributes.read($element, "ngView") ??
-                        $attributes.read($element, "name") ??
-                        ""))(scope), name = isString(rawName) && rawName ? rawName : "$default";
-                    const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
-                    const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
-                    let currentEl = null;
-                    let currentScope = null;
-                    let viewConfig;
-                    let configUpdateVersion = 0;
-                    const inheritedContext = inherited.$cfg._viewDecl._context;
-                    const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
-                    const activeNgView = {
-                        _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-                        _element: $element,
-                        _name: name, // ng-view name, retained internally for nested view matching
-                        _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-                        _config: null,
-                        _configUpdated: configUpdatedCallback,
-                        get _creationContext() {
-                            return (inheritedContext ??
-                                inherited.$ngView._creationContext ??
-                                rootContext);
-                        },
-                    };
-                    function configUpdatedCallback(config) {
-                        const updateVersion = ++configUpdateVersion;
-                        if (!config) {
-                            if (!viewConfig)
-                                return;
-                            queueMicrotask(() => {
-                                if (updateVersion !== configUpdateVersion ||
-                                    viewConfig !== undefined) {
-                                    return;
-                                }
-                                activeNgView._config = null;
-                                updateView(undefined);
-                            });
-                            viewConfig = undefined;
-                            activeNgView._config = null;
-                            return;
-                        }
-                        if (viewConfig === config)
-                            return;
-                        activeNgView._config = config;
-                        viewConfig = config;
-                        updateView(config);
-                    }
-                    setCacheData($element, "$ngView", { $ngView: activeNgView });
-                    updateView();
-                    const unregister = $view._registerNgView(activeNgView);
-                    scope.$on("$destroy", function () {
-                        unregister();
-                    });
-                    function cleanupLastView() {
-                        if (currentScope) {
-                            currentScope.$destroy();
-                            currentScope = null;
-                        }
-                        if (currentEl) {
-                            const _viewData = getCacheData(currentEl, "$ngViewAnim");
-                            removeElement(currentEl);
-                            _viewData?.$$animLeave.resolve(undefined);
-                            currentEl = null;
-                        }
-                    }
-                    function updateView(config) {
-                        const newScope = scope.$new();
-                        const animEnter = withResolvers();
-                        const animLeave = withResolvers();
-                        const $ngViewData = {
-                            $cfg: config,
-                            $ngView: activeNgView,
-                        };
-                        const $ngViewAnim = {
-                            $animEnter: animEnter.promise,
-                            $animLeave: animLeave.promise,
-                            $$animLeave: animLeave,
-                        };
-                        /**
-                         * Fired once the view **begins loading**, *before* the DOM is rendered.
-                         *
-                         * @param event Event object.
-                         * @param viewName Name of the view.
-                         */
-                        newScope.$emit("$viewContentLoading", name);
-                        let enteredElement = null;
-                        transclude(newScope, (clone) => {
-                            const elementClone = getFirstElementFromClone(clone);
-                            const cloneNodes = getRootNodesFromClone(clone);
-                            if (!elementClone) {
-                                return;
-                            }
-                            for (let i = 0; i < cloneNodes.length; i++) {
-                                const node = cloneNodes[i];
-                                setCacheData(node, "$ngViewAnim", $ngViewAnim);
-                                setCacheData(node, "$ngView", $ngViewData);
-                            }
-                            enteredElement = elementClone;
-                            $element.after(elementClone);
-                            animEnter.resolve(undefined);
-                            cleanupLastView();
-                            if ((isDefined(autoScrollExp) && !autoScrollExp) ||
-                                (autoScrollExp && autoScrollFn?.(scope))) {
-                                $anchorScroll(elementClone);
-                            }
-                        });
-                        currentEl = enteredElement;
-                        currentScope = newScope;
-                        currentScope.$emit("$viewContentAnimationEnded");
-                        /**
-                         * Fired once the view is **loaded**, *after* the DOM is rendered.
-                         *
-                         * @param event Event object.
-                         */
-                        currentScope.$emit("$viewContentLoaded", config ?? viewConfig);
-                        onloadFn?.(currentScope);
-                    }
-                };
-            },
-        };
-        return directive;
-    }
-    ViewDirectiveFill.$inject = [_compile, _controller, _transitions, _injector];
-    /**
-     * Instantiates the active view template and wires its controller lifecycle.
-     */
-    function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
-        return {
-            priority: -400,
-            compile(tElement) {
-                const initial = tElement.innerHTML;
-                dealoc(tElement, true);
-                return function (scope, $element) {
-                    const data = getCacheData($element, "$ngView");
-                    if (!data) {
-                        $element.innerHTML = initial;
-                        $compile($element.contentDocument ??
-                            $element.childNodes)(scope);
-                        return;
-                    }
-                    const cfg = (data.$cfg ?? {
-                        _viewDecl: {},
-                    });
-                    const resolveCtx = cfg._path && new ResolveContext(cfg._path, $injector);
-                    $element.innerHTML = data.$cfg
-                        ? (getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ??
-                            initial)
-                        : initial;
-                    const link = $compile($element.contentDocument ??
-                        $element.childNodes);
-                    const controller = cfg._controller;
-                    const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
-                    const targetScope = scope.$target;
-                    targetScope.$resolve = locals;
-                    if (controller) {
-                        const controllerInstance = $controller(controller, assign({}, locals, { $scope: scope, $element }));
-                        // TODO: Use $view service as a central point for registering component-level hooks
-                        // Then, when a component is created, tell the $view service, so it can invoke hooks
-                        // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
-                        // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
-                        setCacheData($element, "$ngControllerController", controllerInstance);
-                        const { children } = $element;
-                        for (let i = 0; i < children.length; i++) {
-                            setCacheData(children[i], "$ngControllerController", controllerInstance);
-                        }
-                        registerViewControllerCallbacks($transitions, controllerInstance, scope, cfg);
-                    }
-                    link(scope);
-                    const componentName = cfg
-                        ._component;
-                    const callbackConfig = cfg;
-                    if (isString(componentName)) {
-                        const kebobName = componentName
-                            .replace(/([A-Z])/g, "-$1")
-                            .replace(/^-/, "")
-                            .toLowerCase();
-                        const tagRegexp = new RegExp(`^${kebobName}$`, "i");
-                        const registerComponentCallbacks = (attempt = 0) => {
-                            if (scope.$handler._destroyed) {
-                                return;
-                            }
-                            const componentCtrl = getComponentController($element, componentName, tagRegexp);
-                            if (componentCtrl) {
-                                registerViewControllerCallbacks($transitions, componentCtrl, scope, callbackConfig);
-                                return;
-                            }
-                            if (attempt >= 10) {
-                                return;
-                            }
-                            queueMicrotask(() => {
-                                registerComponentCallbacks(attempt + 1);
-                            });
-                        };
-                        registerComponentCallbacks();
-                    }
-                };
-            },
-        };
-    }
-
-    class ParamFactory {
-        /**
-         * @param {UrlParamConfig} urlServiceConfig
-         */
-        constructor(urlServiceConfig) {
-            this._injector = undefined;
-            this.urlServiceConfig = urlServiceConfig;
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType | null} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromConfig(id, type, state) {
-            return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, this, state);
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromPath(id, type, state) {
-            return new Param(id, type, DefType._PATH, this.urlServiceConfig, this, state);
-        }
-        /**
-         * @param {string} id
-         * @param {ParamType} type
-         * @param {ng.StateDeclaration} state
-         */
-        fromSearch(id, type, state) {
-            return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, this, state);
-        }
-    }
-
-    function encodePathPart(match) {
-        return match === "~" ? "~~" : "~2F";
-    }
-    function decodePathPart(match) {
-        return match === "~~" ? "~" : "/";
-    }
-    function encodePath$1(value) {
-        return !isNullOrUndefined(value)
-            ? stringify$1(value).replace(/([~/])/g, encodePathPart)
-            : value;
-    }
-    function decodePath$1(value) {
-        return !isNullOrUndefined(value)
-            ? stringify$1(value).replace(/(~~|~2F)/g, decodePathPart)
-            : value;
-    }
-    function makeDefaultType(def) {
-        const defaultTypeBase = {
-            is: (val) => isInstanceOf(val, String) || isString(val),
-            pattern: /.*/,
-            equals: (a, b) => a === b,
-        };
-        return assign({}, defaultTypeBase, def);
-    }
-    /** @internal */
-    function createDefaultParamTypes() {
-        const definitions = {
-            string: makeDefaultType({}),
-            path: makeDefaultType({
-                encode: encodePath$1,
-                decode: decodePath$1,
-                pattern: /[^/]*/,
-            }),
-            query: makeDefaultType({}),
-            hash: makeDefaultType({
-                inherit: false,
-            }),
-            int: makeDefaultType({
-                decode: (val) => parseInt(val, 10),
-                /**
-                 * @param {unknown} val
-                 */
-                is(val) {
-                    return (!isNullOrUndefined(val) &&
-                        this.decode(stringify$1(val)) ===
-                            val);
-                },
-                pattern: /-?\d+/,
-            }),
-            bool: makeDefaultType({
-                encode: (val) => (val ? "1" : "0"),
-                decode: (val) => parseInt(val, 10) !== 0,
-                is: (val) => isInstanceOf(val, Boolean) || typeof val === "boolean",
-                pattern: /[01]/,
-            }),
-            date: makeDefaultType({
-                /**
-                 * @param {{ getFullYear: () => number; getMonth: () => number; getDate: () => number; }} val
-                 */
-                encode(val) {
-                    if (!isInstanceOf(val, Date) || isNaN(val.valueOf())) {
-                        return "";
-                    }
-                    return [
-                        val.getFullYear(),
-                        `0${String(val.getMonth() + 1)}`.slice(-2),
-                        `0${String(val.getDate())}`.slice(-2),
-                    ].join("-");
-                },
-                /**
-                 * @param {unknown} val
-                 */
-                decode(val) {
-                    if (this.is(val))
-                        return val;
-                    const match = this.capture.exec(String(val));
-                    return match
-                        ? new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10))
-                        : undefined;
-                },
-                is: (val) => isInstanceOf(val, Date) && !isNaN(val.valueOf()),
-                /**
-                 * @param {Date} left
-                 * @param {Date} right
-                 */
-                equals(left, right) {
-                    if (!isInstanceOf(left, Date) || !isInstanceOf(right, Date)) {
-                        return false;
-                    }
-                    return (left.getFullYear() === right.getFullYear() &&
-                        left.getMonth() === right.getMonth() &&
-                        left.getDate() === right.getDate());
-                },
-                pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
-                capture: /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/,
-            }),
-            json: makeDefaultType({
-                encode: (x) => JSON.stringify(x),
-                decode: (x) => JSON.parse(x),
-                is: (val) => isInstanceOf(val, Object),
-                equals,
-                pattern: /[^/]*/,
-            }),
-            // does not encode/decode
-            any: makeDefaultType({
-                encode: (x) => x,
-                decode: (x) => x,
-                is: () => true,
-                equals,
-            }),
-        };
-        return {
-            hash: new ParamType(assign({ name: "hash" }, definitions.hash)),
-            string: new ParamType(assign({ name: "string" }, definitions.string)),
-            query: new ParamType(assign({ name: "query" }, definitions.query)),
-            path: new ParamType(assign({ name: "path" }, definitions.path)),
-            int: new ParamType(assign({ name: "int" }, definitions.int)),
-            bool: new ParamType(assign({ name: "bool" }, definitions.bool)),
-            date: new ParamType(assign({ name: "date" }, definitions.date)),
-            json: new ParamType(assign({ name: "json" }, definitions.json)),
-            any: new ParamType(assign({ name: "any" }, definitions.any)),
-        };
-    }
-
-    class StateParams {
-        constructor(params = {}) {
-            assign(this, params);
-        }
-        /**
-         * Merges a set of parameters with all parameters inherited between the common parents of the
-         * current state and a given destination state.
-         *
-         * @param {Object} newParams The set of parameters which will be composited with inherited params.
-         * @param {StateObject} $current Internal definition of object representing the current state.
-         * @param {StateObject} $to Internal definition of object representing state to transition to.
-         */
-        $inherit(newParams, $current, $to) {
-            const parents = ancestors($current, $to);
-            const inherited = {};
-            const inheritList = new Set();
-            for (const parent of parents) {
-                if (!parent.params)
-                    continue;
-                const parentParams = parent.params;
-                const parentParamsKeys = keys(parentParams);
-                if (!parentParamsKeys.length)
-                    continue;
-                for (const key of parentParamsKeys) {
-                    if (!parentParams[key].inherit || inheritList.has(key)) {
-                        continue;
-                    }
-                    inheritList.add(key);
-                    inherited[key] = this[key];
-                }
-            }
-            return assign(inherited, newParams);
-        }
-    }
-    /**
-     * Finds the common ancestor path between two states.
-     *
-     * @param {StateObject} first The first state.
-     * @param {StateObject} second The second state.
-     * @return {Array<StateObject>} Returns an array of state names in descending order, not including the root.
-     */
-    function ancestors(first, second) {
-        const path = [];
-        const firstPath = first.path ?? [];
-        const secondPath = second.path ?? [];
-        const len = Math.min(firstPath.length, secondPath.length);
-        for (let i = 0; i < len; i++) {
-            if (firstPath[i] !== secondPath[i])
-                break;
-            path.push(firstPath[i]);
-        }
-        return path;
-    }
-
     const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
     function stateRouteMatchPriority(urlMatcher, params) {
         const path = urlMatcher._cache._path ?? [urlMatcher];
@@ -25421,6 +23867,97 @@
             });
             return best;
         }
+    }
+
+    /**
+     * Functions that manipulate strings
+     */
+    const DOTS = "...";
+    /**
+     * Returns a string shortened to a maximum length
+     *
+     * If the string is already less than the `max` length, return the string.
+     * Else return the string, shortened to `max - 3` and append three dots ("...").
+     *
+     * `max` is the maximum length of the returned string.
+     */
+    function maxLength(max, str) {
+        if (str.length <= max)
+            return str;
+        return `${str.substring(0, max - DOTS.length)}${DOTS}`;
+    }
+    /** Converts a camelCase string into kebab-case. */
+    function kebobString(camelCase) {
+        return camelCase
+            .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
+            .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
+    }
+    const FN_LENGTH = 9;
+    /** Returns a stable string representation for a function. */
+    function functionToString(fn) {
+        const fnStr = fnToString(fn);
+        const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
+        const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
+        const fnName = fn.name || "";
+        if (fnName && /function \(/.exec(toStr)) {
+            return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
+        }
+        return toStr;
+    }
+    /** Returns the raw `toString()` value for a function or injectable array. */
+    function fnToString(fn) {
+        const _fn = isArray(fn)
+            ? fn.slice(-1)[0]
+            : fn;
+        return _fn ? _fn.toString() : "undefined";
+    }
+    /** Converts arbitrary values into short readable debug strings. */
+    function stringify(value) {
+        const seen = [];
+        const isRejection = (obj) => {
+            return (isObject(obj) &&
+                "then" in obj &&
+                isFunction(obj.then) &&
+                obj.constructor.name === "Rejection");
+        };
+        const hasToString = (obj) => isObject(obj) &&
+            !isArray(obj) &&
+            obj.constructor !== Object &&
+            isFunction(Reflect.get(obj, "toString"));
+        /** Formats a single item while tracking circular references. */
+        function format(item) {
+            if (isObject(item)) {
+                if (seen.includes(item))
+                    return "[circular ref]";
+                seen.push(item);
+            }
+            if (isUndefined(item))
+                return "undefined";
+            if (isNull(item))
+                return "null";
+            if (isPromiseLike(item))
+                return "[Promise]";
+            if (isRejection(item))
+                return String(item._transitionRejection);
+            if (hasToString(item)) {
+                const toStringFn = Reflect.get(item, "toString");
+                return toStringFn.call(item);
+            }
+            if (isFunction(item))
+                return functionToString(item);
+            return item;
+        }
+        if (isUndefined(value)) {
+            // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
+            // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
+            // manually stringifying it.
+            return String(format(value));
+        }
+        const json = JSON.stringify(value, (_key, item) => format(item));
+        return isString(json) ? json.replace(/\\"/g, '"') : String(json);
+    }
+    function stripLastPathElement(str) {
+        return str.replace(/\/[^/]*$/, "");
     }
 
     /**
@@ -26247,6 +24784,1744 @@
             TransitionHook._runAllHooks(hooks);
         },
     };
+
+    async function resolveResolvable(resolvable, resolveContext, trans) {
+        const dependencies = resolveContext.getDependencies(resolvable);
+        const dependencyPromises = dependencies.map(async (dependency) => dependency.get(resolveContext, trans));
+        const resolvedDeps = await Promise.all(dependencyPromises);
+        const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
+        resolvable.data = resolvedValue;
+        resolvable.resolved = true;
+        resolvable.resolveFn = null;
+        return resolvable.data;
+    }
+    /**
+     * # The Resolve subsystem
+     *
+     * This subsystem is an asynchronous, hierarchical Dependency Injection system.
+     *
+     * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
+     */
+    /**
+     * Represents one dependency that can be resolved for a transition.
+     *
+     * A resolvable tracks its token, dependency list, eager timing, cached value,
+     * and in-flight promise so router state resolution stays idempotent.
+     */
+    class Resolvable {
+        /**
+         * @throws Error when a resolve function is provided without a token.
+         */
+        constructor(arg1, resolveFn, deps, eager, data) {
+            this.token = undefined;
+            this.resolveFn = undefined;
+            this.deps = [];
+            this.eager = false;
+            this.data = undefined;
+            this.resolved = false;
+            this.promise = undefined;
+            if (isInstanceOf(arg1, Resolvable)) {
+                this.token = arg1.token;
+                this.resolveFn = arg1.resolveFn;
+                this.deps = arg1.deps;
+                this.eager = arg1.eager;
+                this.data = arg1.data;
+                this.resolved = arg1.resolved;
+                this.promise = arg1.promise;
+            }
+            else if (isFunction(resolveFn)) {
+                assert(!isNullOrUndefined(arg1), "token argument is required");
+                this.token = arg1;
+                this.eager = !!eager;
+                this.resolveFn = resolveFn;
+                this.deps = deps ?? [];
+                this.data = data;
+                this.resolved = data !== undefined;
+                this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
+            }
+            else if (isObject(arg1) &&
+                hasOwn(arg1, "token") &&
+                (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
+                const literal = arg1;
+                this.token = literal.token;
+                this.resolveFn = literal.resolveFn;
+                this.deps = literal.deps ?? [];
+                this.eager = !!literal.eager;
+                this.data = literal.data;
+                this.resolved = literal.data !== undefined;
+                this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
+            }
+        }
+        /**
+         * Resolves this token by first resolving its dependencies, then invoking
+         * the resolve function and caching the resulting value.
+         */
+        async resolve(resolveContext, trans) {
+            this.promise = resolveResolvable(this, resolveContext, trans);
+            return this.promise;
+        }
+        /**
+         * Returns the cached promise, resolving the token first if necessary.
+         */
+        async get(resolveContext, trans) {
+            return this.promise ?? this.resolve(resolveContext, trans);
+        }
+        /**
+         * Returns a readable description of the resolvable and its dependencies.
+         */
+        toString() {
+            const deps = isArray(this.deps) ? this.deps : [this.deps];
+            return `Resolvable(token: ${stringify(this.token)}, requires: [${deps
+            .map(stringify)
+            .join(", ")}])`;
+        }
+        /**
+         * Creates a shallow copy of this resolvable.
+         */
+        clone() {
+            return new Resolvable(this);
+        }
+        /**
+         * Creates a resolvable that is already resolved to `data`.
+         */
+        static fromData(token, data) {
+            return new Resolvable(token, () => data, undefined, undefined, data);
+        }
+    }
+
+    async function resolveToken(resolvable, context, trans) {
+        return {
+            token: resolvable.token,
+            value: await resolvable.get(context, trans),
+        };
+    }
+    /**
+     * Provides resolve lookup and execution helpers for a specific transition path.
+     */
+    class ResolveContext {
+        /**
+         * @param _path path of nodes whose resolvables are visible in this context
+         * @param _injector injector used when dependency tokens are not resolvables in the path
+         */
+        constructor(_path, _injector) {
+            this._path = _path;
+            this._injector = _injector;
+        }
+        /**
+         * Returns the unique tokens available from all resolvables in this path.
+         */
+        getTokens() {
+            const tokenSet = new Set();
+            this._path.forEach(({ resolvables }) => {
+                resolvables.forEach(({ token }) => {
+                    tokenSet.add(token);
+                });
+            });
+            return Array.from(tokenSet);
+        }
+        /**
+         * Returns the most local resolvable registered for the specified token.
+         */
+        getResolvable(token) {
+            for (let i = this._path.length - 1; i >= 0; i--) {
+                const { resolvables } = this._path[i];
+                for (let j = resolvables.length - 1; j >= 0; j--) {
+                    const candidate = resolvables[j];
+                    if (candidate.token === token) {
+                        return candidate;
+                    }
+                }
+            }
+            return undefined;
+        }
+        /**
+         * Returns a child resolve context scoped to the specified state.
+         */
+        subContext(state) {
+            let contextPath;
+            for (let i = 0; i < this._path.length; i++) {
+                if (this._path[i].state.name === state.name) {
+                    contextPath = this._path.slice(0, i + 1);
+                    break;
+                }
+            }
+            return new ResolveContext(contextPath ?? this._path, this._injector);
+        }
+        /**
+         * Adds or replaces resolvables for a specific state in this path.
+         */
+        addResolvables(newResolvables, state) {
+            let node;
+            for (let i = 0; i < this._path.length; i++) {
+                const candidate = this._path[i];
+                if (candidate.state === state) {
+                    node = candidate;
+                    break;
+                }
+            }
+            if (!node) {
+                throw new Error(`Could not find path node for state: ${state.name}`);
+            }
+            const resolvables = [];
+            const tokens = new Set();
+            newResolvables.forEach((resolvable) => {
+                const normalized = isInstanceOf(resolvable, Resolvable)
+                    ? resolvable
+                    : new Resolvable(resolvable);
+                resolvables.push(normalized);
+                tokens.add(normalized.token);
+            });
+            const nextResolvables = [];
+            node.resolvables.forEach((existing) => {
+                if (!tokens.has(existing.token)) {
+                    nextResolvables.push(existing);
+                }
+            });
+            resolvables.forEach((resolvable) => {
+                nextResolvables.push(resolvable);
+            });
+            node.resolvables = nextResolvables;
+        }
+        /**
+         * Resolves the path's resolvables.
+         */
+        async resolvePath(eagerOnly, trans) {
+            const shouldResolveEagerOnly = eagerOnly ?? false;
+            const promises = [];
+            this._path.forEach((node, index) => {
+                const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
+                node.resolvables.forEach((resolvable) => {
+                    if (!shouldResolveEagerOnly || resolvable.eager) {
+                        promises.push(resolveToken(resolvable, subContext, trans));
+                    }
+                });
+            });
+            return Promise.all(promises);
+        }
+        /**
+         * Finds the path node that owns the provided resolvable.
+         */
+        findNode(resolvable) {
+            const index = this._findNodeIndex(resolvable);
+            return index === -1 ? undefined : this._path[index];
+        }
+        /** @internal */
+        _findNodeIndex(resolvable) {
+            for (let i = 0; i < this._path.length; i++) {
+                const node = this._path[i];
+                for (let j = 0; j < node.resolvables.length; j++) {
+                    if (node.resolvables[j] === resolvable) {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+        /**
+         * Resolves the dependency tokens required by a resolvable from either
+         * the current path or the injector fallback.
+         */
+        getDependencies(resolvable) {
+            const nodeIndex = this._findNodeIndex(resolvable);
+            const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
+            const latestByToken = new Map();
+            dependencyPath.forEach(({ resolvables }) => {
+                resolvables.forEach((candidate) => {
+                    if (candidate !== resolvable) {
+                        latestByToken.set(candidate.token, candidate);
+                    }
+                });
+            });
+            const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
+            const dependencies = [];
+            deps.forEach((token) => {
+                const matching = latestByToken.get(token);
+                if (matching) {
+                    dependencies.push(matching);
+                    return;
+                }
+                let fromInjector;
+                if (this._injector && isString(token)) {
+                    try {
+                        fromInjector = this._injector.get(token);
+                    }
+                    catch {
+                        fromInjector = undefined;
+                    }
+                }
+                if (isUndefined(fromInjector)) {
+                    throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
+                }
+                dependencies.push(new Resolvable({ token, data: fromInjector }));
+            });
+            return dependencies;
+        }
+    }
+
+    const controllerRegisteredScopes = new WeakMap();
+    const controllerLastParamsChangedTransition = new WeakMap();
+    function appendParamSchema(nodes, schema) {
+        for (let i = 0; i < nodes.length; i++) {
+            const nodeSchema = nodes[i].paramSchema;
+            for (let j = 0; j < nodeSchema.length; j++) {
+                schema.push(nodeSchema[j]);
+            }
+        }
+    }
+    /** @ignore incrementing id */
+    let canExitId = 0;
+    /**
+     * Registers component/controller transition lifecycle callbacks for an active view.
+     *
+     * @internal
+     */
+    function registerViewControllerCallbacks($transitions, controllerInstance, $scope, cfg) {
+        let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
+        if (!registeredScopes) {
+            registeredScopes = new WeakSet();
+            controllerRegisteredScopes.set(controllerInstance, registeredScopes);
+        }
+        if (registeredScopes.has($scope)) {
+            return;
+        }
+        registeredScopes.add($scope);
+        // Call $onInit() ASAP
+        const onInit = controllerInstance.$onInit;
+        if (isFunction(onInit) && !cfg._viewDecl.component) {
+            onInit();
+        }
+        const viewState = cfg._path[cfg._path.length - 1].state.self;
+        const hookOptions = { bind: controllerInstance };
+        // Add component/controller-level hook for $onParamsChanged
+        if (isFunction(controllerInstance.$onParamsChanged)) {
+            const onParamsChanged = controllerInstance.$onParamsChanged;
+            const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
+            const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
+            // Fire callback on any successful transition
+            const paramsUpdated = ($transition$) => {
+                if (!$transition$)
+                    return;
+                if (controllerLastParamsChangedTransition.get(controllerInstance) ===
+                    $transition$) {
+                    return;
+                }
+                controllerLastParamsChangedTransition.set(controllerInstance, $transition$);
+                // Exit early if the $transition$ is the same as the view was created within.
+                // Exit early if the $transition$ will exit the state the view is for.
+                if ($transition$ === viewCreationTrans ||
+                    $transition$.exiting().includes(viewState)) {
+                    return;
+                }
+                const toParams = $transition$.params("to");
+                const fromParams = $transition$.params("from");
+                const toNodes = $transition$._treeChanges.to;
+                const fromNodes = $transition$._treeChanges.from;
+                const toSchema = [];
+                appendParamSchema(toNodes, toSchema);
+                const fromSchema = [];
+                appendParamSchema(fromNodes, fromSchema);
+                // Find the to params that have different values than the from params
+                const changedToParams = [];
+                for (let i = 0; i < toSchema.length; i++) {
+                    const param = toSchema[i];
+                    const idx = fromSchema.indexOf(param);
+                    if (idx === -1 ||
+                        !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
+                        changedToParams.push(param);
+                    }
+                }
+                // Only trigger callback if a to param has changed or is new
+                if (changedToParams.length) {
+                    // Filter the params to only changed/new to params. `$transition$.params()` may be used to get all params.
+                    const newValues = {};
+                    for (let i = 0; i < changedToParams.length; i++) {
+                        const param = changedToParams[i];
+                        const key = param.id;
+                        if (key in toParams)
+                            newValues[key] = toParams[key];
+                    }
+                    onParamsChanged.call(controllerInstance, newValues, $transition$);
+                }
+            };
+            const hookRegistryKey = [
+                viewState.name || "",
+                cfg._viewDecl._ngViewName ?? "$default",
+                cfg._viewDecl._ngViewContextAnchor ?? "^",
+            ].join("::");
+            const rootScope = $scope.$root;
+            const registryProp = "__ngRouterParamsChangedHooks__";
+            const hookRegistry = (rootScope[registryProp] ??
+                (rootScope[registryProp] = new Map()));
+            hookRegistry.get(hookRegistryKey)?.();
+            const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
+            hookRegistry.set(hookRegistryKey, deregisterParamsHook);
+            $scope.$on("$destroy", () => {
+                if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
+                    hookRegistry.delete(hookRegistryKey);
+                }
+                deregisterParamsHook();
+            });
+        }
+        // Add component/controller-level hook for $canExit
+        if (isFunction(controllerInstance.$canExit)) {
+            const canExit = controllerInstance.$canExit;
+            const id = canExitId++;
+            /**
+             * Returns true if any transition in the redirect chain already answered truthy.
+             */
+            const prevTruthyAnswer = (trans) => {
+                if (!trans)
+                    return false;
+                const cache = trans._$canExitIds;
+                return (cache?.[id] === true ||
+                    prevTruthyAnswer(trans._options.redirectedFrom ?? null));
+            };
+            // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
+            const wrappedHook = async (trans) => {
+                let promise;
+                const cacheTrans = trans;
+                const ids = (cacheTrans._$canExitIds = cacheTrans._$canExitIds ?? {});
+                if (!prevTruthyAnswer(trans)) {
+                    promise = Promise.resolve(canExit.call(controllerInstance, trans));
+                    void promise.then((val) => (ids[id] = val !== false));
+                }
+                return promise;
+            };
+            const criteria = { exiting: viewState.name };
+            $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
+        }
+    }
+
+    class StateMatcher {
+        /** @param {StateStore} states */
+        constructor(states) {
+            this._states = states;
+        }
+        /**
+         * @param {string} stateName
+         */
+        isRelative(stateName) {
+            stateName = stateName || "";
+            return stateName.startsWith(".") || stateName.startsWith("^");
+        }
+        /**
+         * @param {StateOrName} stateOrName
+         * @param {StateOrName | undefined} [base]
+         * @returns {StateObject | undefined}
+         */
+        find(stateOrName, base, matchGlob = true) {
+            if (!stateOrName && stateOrName !== "")
+                return undefined;
+            const isStr = isString(stateOrName);
+            let name = isStr ? stateOrName : stateOrName.name;
+            if (this.isRelative(name))
+                name = this.resolvePath(name, base);
+            const state = this._states[name];
+            if (state &&
+                (isStr || state === stateOrName || state.self === stateOrName)) {
+                return state;
+            }
+            else if (isStr && matchGlob) {
+                const stateNames = keys(this._states);
+                let match;
+                let duplicateNames;
+                stateNames.forEach((stateName) => {
+                    const stateObj = this._states[stateName];
+                    if (stateObj._stateObjectCache.nameGlob?.matches(name)) {
+                        if (match) {
+                            duplicateNames = duplicateNames ?? [match.name];
+                            duplicateNames.push(stateObj.name);
+                        }
+                        else {
+                            match = stateObj;
+                        }
+                    }
+                });
+                if (duplicateNames) {
+                    throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${duplicateNames.join(", ")}`);
+                }
+                return match;
+            }
+            return undefined;
+        }
+        /**
+         * `
+         * @param {string} name
+         * @param {StateOrName} base
+         * @returns {string}
+         */
+        resolvePath(name, base) {
+            if (!base)
+                throw new Error(`No reference point given for path '${name}'`);
+            const baseState = this.find(base);
+            const splitName = name.split(".");
+            const pathLength = splitName.length;
+            let i = 0, current = baseState;
+            for (; i < pathLength; i++) {
+                if (splitName[i] === "" && i === 0) {
+                    current = baseState;
+                    continue;
+                }
+                if (splitName[i] === "^") {
+                    if (!current?.parent)
+                        throw new Error(`Path '${name}' not valid for state '${baseState?.name ?? "unknown"}'`);
+                    current = current.parent;
+                    continue;
+                }
+                break;
+            }
+            const relName = splitName.slice(i).join(".");
+            return ((current?.name ?? "") + (current?.name && relName ? "." : "") + relName);
+        }
+    }
+
+    /** @internal */
+    function normalizeNgViewTarget(context, rawViewName = "") {
+        const viewAtContext = rawViewName.split("@");
+        const [viewName, viewContextAnchor] = viewAtContext;
+        let ngViewName = viewName || "$default";
+        let ngViewContextAnchor = isString(viewContextAnchor)
+            ? viewContextAnchor
+            : "^";
+        const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+        if (relativeViewNameSugar) {
+            [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
+        }
+        if (ngViewName.startsWith("!")) {
+            ngViewName = ngViewName.substring(1);
+            ngViewContextAnchor = "";
+        }
+        const relativeMatch = /^(\^(?:\.\^)*)$/;
+        if (relativeMatch.exec(ngViewContextAnchor)) {
+            let anchorState = context;
+            let hops = 0;
+            for (let i = 0; i < ngViewContextAnchor.length; i++) {
+                if (ngViewContextAnchor[i] === "^") {
+                    hops++;
+                }
+            }
+            for (let i = 0; i < hops; i++) {
+                anchorState = anchorState?.parent;
+            }
+            if (!anchorState) {
+                anchorState = context;
+                while (anchorState.parent)
+                    anchorState = anchorState.parent;
+            }
+            ngViewContextAnchor = anchorState.name;
+        }
+        else if (ngViewContextAnchor === ".") {
+            ngViewContextAnchor = context.name;
+        }
+        return { ngViewName, ngViewContextAnchor };
+    }
+
+    const TEMPLATE_VIEW_KEYS = ["templateUrl", "template"];
+    const CONTROLLER_VIEW_KEYS = ["controller"];
+    const COMPONENT_VIEW_KEYS = ["component", "bindings"];
+    const NON_COMPONENT_VIEW_KEYS = TEMPLATE_VIEW_KEYS.concat(CONTROLLER_VIEW_KEYS);
+    const ALL_VIEW_KEYS = COMPONENT_VIEW_KEYS.concat(NON_COMPONENT_VIEW_KEYS);
+    const REMOVED_VIEW_KEYS = ["templateProvider", "controllerAs", "resolveAs"];
+    /**
+     * @param {unknown} url
+     */
+    function parseUrl(url) {
+        if (!isString(url))
+            return false;
+        const root = url.startsWith("^");
+        return { val: root ? url.substring(1) : url, root };
+    }
+    function buildUrl(stateObject, routerState, root) {
+        const stateDec = stateObject.self;
+        const { parent } = stateObject;
+        const parsed = parseUrl(stateDec.url);
+        const url = parsed
+            ? routerState._compile(parsed.val, { state: stateDec })
+            : null;
+        if (!url)
+            return null;
+        if (!isInstanceOf(url, UrlMatcher))
+            throw new Error(`Invalid url '${String(url)}' in state '${String(stateObject)}'`);
+        const base = (parent?.navigable ?? root);
+        return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
+    }
+    /**
+     * @param {ParamFactory} paramFactory
+     */
+    function buildParams(state, paramFactory) {
+        const params = {};
+        state._url?._params.forEach((param) => {
+            if (param.location === DefType._PATH || param.location === DefType._SEARCH)
+                params[param.id] = param;
+        });
+        const paramConfigs = state.params ?? {};
+        const paramConfigKeys = keys(paramConfigs);
+        paramConfigKeys.forEach((id) => {
+            if (!hasOwn(params, id)) {
+                params[id] = paramFactory.fromConfig(id, null, state.self);
+            }
+        });
+        return params;
+    }
+    function hasAnyViewKey(keyItems, values) {
+        for (let i = 0; i < keyItems.length; i++) {
+            if (isDefined(values[keyItems[i]])) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function presentViewKeys(keyItems, values) {
+        const present = [];
+        keyItems.forEach((key) => {
+            if (isDefined(values[key])) {
+                present.push(key);
+            }
+        });
+        return present.join(", ");
+    }
+    function assertNoRemovedViewKeys(keyItems, values, description) {
+        const present = [];
+        keyItems.forEach((key) => {
+            if (isDefined(values[key])) {
+                present.push(key);
+            }
+        });
+        if (present.length) {
+            throw new Error(`${description} uses unsupported view properties: ${present.join(", ")}`);
+        }
+    }
+    function routeComponentHash(value) {
+        let hash = 5381;
+        for (let i = 0; i < value.length; i++) {
+            hash = (hash * 33) ^ value.charCodeAt(i);
+        }
+        return (hash >>> 0).toString(36);
+    }
+    function routeComponentName(stateName, viewName) {
+        const raw = `${stateName} ${viewName}`;
+        const words = raw.match(/[A-Za-z0-9]+/g) ?? ["default"];
+        const readable = words
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join("");
+        return `ngRoute${readable}Component${routeComponentHash(raw)}`;
+    }
+    function normalizeComponentDeclaration(registrar, viewName, config) {
+        const component = config.component;
+        if (!isDefined(component) || isString(component)) {
+            return;
+        }
+        if (!registrar) {
+            throw new Error(`State view '${viewName}' uses an inline component before the compile provider is available`);
+        }
+        config.component = registrar.register(viewName, component);
+    }
+    function viewsBuilder(state, registrar) {
+        if (!state.parent) {
+            return {};
+        }
+        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
+        if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
+            throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
+        }
+        const views = {};
+        const defaultViewConfig = {};
+        const stateValues = state;
+        ALL_VIEW_KEYS.forEach((key) => {
+            if (isDefined(stateValues[key])) {
+                defaultViewConfig[key] = stateValues[key];
+            }
+        });
+        const viewsObject = (state.views ?? {
+            $default: defaultViewConfig,
+        });
+        keys(viewsObject).forEach((entryName) => {
+            let name = entryName;
+            let config = viewsObject[entryName];
+            name = name || "$default";
+            if (isString(config)) {
+                config = { component: config };
+            }
+            config = assign({}, config);
+            normalizeComponentDeclaration(registrar, name, config);
+            assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
+            if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
+                hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
+                throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
+            }
+            config._context = state;
+            config._name = name;
+            const normalized = normalizeNgViewTarget(config._context, config._name);
+            config._ngViewName = normalized.ngViewName;
+            config._ngViewContextAnchor = normalized.ngViewContextAnchor;
+            views[name] = config;
+        });
+        return views;
+    }
+    function getResolveLocals(ctx) {
+        const tokens = ctx.getTokens();
+        const locals = {};
+        tokens.forEach((key) => {
+            if (isString(key)) {
+                locals[key] = assertDefined(ctx.getResolvable(key)).data;
+            }
+        });
+        return locals;
+    }
+    function valueToResolvable(token, value, strictDi) {
+        if (isArray(value)) {
+            return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
+        }
+        if (isFunction(value)) {
+            return new Resolvable(token, value, annotate(value, strictDi));
+        }
+        throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
+    }
+    function literalToResolvable(literal) {
+        if (hasOwn(literal, "token") &&
+            (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))) {
+            return new Resolvable(literal);
+        }
+        throw new Error(`Invalid resolve value: ${stringify(literal)}`);
+    }
+    /**
+     * Builds the `resolve:` block on a [[StateDeclaration]].
+     *
+     * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this function
+     * validates the `resolve` property and converts it to a [[Resolvable]] array.
+     *
+     * resolve: input value can be:
+     *
+     * {
+     *   // analyzed but not injected
+     *   myFooResolve: function() { return "myFooData"; },
+     *
+     *   // function.toString() parsed, "DependencyName" dep as string (not min-safe)
+     *   myBarResolve: function(DependencyName) { return DependencyName.fetchSomethingAsPromise() },
+     *
+     *   // Array split; "DependencyName" dep as string
+     *   myBazResolve: [ "DependencyName", function(dep) { return dep.fetchSomethingAsPromise() },
+     *
+     *   // Array split; DependencyType dep as token (compared using ===)
+     *   myQuxResolve: [ DependencyType, function(dep) { return dep.fetchSometingAsPromise() },
+     *
+     *   // val.$inject used as deps
+     *   // where:
+     *   //     corgeResolve.$inject = ["DependencyName"];
+     *   //     function corgeResolve(dep) { dep.fetchSometingAsPromise() }
+     *   // then "DependencyName" dep as string
+     *   myCorgeResolve: corgeResolve,
+     *
+     * }
+     *
+     * or:
+     *
+     * [
+     *   { token: "myFooResolve", resolveFn: function() { return "myFooData" } },
+     *   { token: "myBarResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] },
+     *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
+     * ]
+     * @param {ng.StateObject & ng.StateDeclaration} state
+     * @param {boolean | undefined} strictDi
+     */
+    function resolvablesBuilder(state, strictDi) {
+        const decl = state.resolve;
+        const resolvables = [];
+        if (isArray(decl)) {
+            decl.forEach((literal) => {
+                resolvables.push(literalToResolvable(literal));
+            });
+            return resolvables;
+        }
+        const resolveObj = decl ?? {};
+        const resolveKeys = keys(resolveObj);
+        resolveKeys.forEach((token) => {
+            resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
+        });
+        return resolvables;
+    }
+    function invokeStateLifecycleHook(trans, state, hookName, pathname) {
+        const stateObject = state._state();
+        const hook = stateObject[hookName];
+        if (!hook)
+            return undefined;
+        const hookContext = stateObject._hookContext;
+        const $injector = assertDefined(hookContext._$injector);
+        const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
+        const subContext = resolveContext.subContext(stateObject);
+        const locals = assign(getResolveLocals(subContext), {
+            $state$: state,
+            $transition$: trans,
+        });
+        return $injector.invoke(hook, hookContext, locals);
+    }
+    function invokeOnEnterHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onEnter", "to");
+    }
+    function invokeOnRetainHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onRetain", "to");
+    }
+    function invokeOnExitHook(trans, state) {
+        return invokeStateLifecycleHook(trans, state, "_onExit", "from");
+    }
+    /**
+     * A internal global service
+     *
+     * StateBuilder is a factory for the internal [[StateObject]] objects.
+     *
+     * When you register a state with the [[StateRegistry]], you register a plain old javascript object which
+     * conforms to the [[StateDeclaration]] interface.  This factory takes that object and builds the corresponding
+     * [[StateObject]] object, which has an API and is used internally.
+     *
+     */
+    class StateBuilder {
+        /**
+         * @param {StateMatcher} matcher
+         * @param {RouterProvider} routerState
+         */
+        constructor(matcher, routerState, compileProvider) {
+            this._matcher = matcher;
+            this._$injector = undefined;
+            this._paramFactory = routerState._paramFactory;
+            this._routerState = routerState;
+            this._compileProvider = compileProvider;
+            this._registeredRouteComponents = new Set();
+        }
+        /** @internal */
+        _registerRouteComponent(stateName, viewName, component) {
+            const name = routeComponentName(stateName, viewName);
+            if (!this._registeredRouteComponents.has(name)) {
+                if (!this._compileProvider) {
+                    throw new Error(`State '${stateName}' cannot register inline component '${viewName}' before the compile provider is available`);
+                }
+                this._compileProvider.component(name, assign({}, component, { replace: true }));
+                this._registeredRouteComponents.add(name);
+            }
+            return name;
+        }
+        /** @internal */
+        _assignStateHook(stateObject, publicName, privateName, hookFn) {
+            const hook = stateObject[publicName];
+            if (!hook)
+                return;
+            stateObject[privateName] = hook;
+            stateObject._hookContext = this;
+            stateObject[publicName] = hookFn;
+        }
+        /**
+         * Builds all of the properties on an essentially blank State object, returning a State object which has all its
+         * properties and API built.
+         *
+         * @param {ng.StateObject} state an uninitialized State object
+         * @returns {ng.StateObject | null} the built State object
+         */
+        /** @internal */
+        _build(state) {
+            const { _matcher: matcher, _routerState: routerState } = this;
+            const parent = StateBuilder._parentName(state);
+            if (parent && !matcher.find(parent, undefined, false)) {
+                return null;
+            }
+            state.parent = isRoot(state)
+                ? null
+                : (matcher.find(parent) ?? matcher.find(""));
+            state._url =
+                buildUrl(state, routerState, matcher.find("")) ?? undefined;
+            state.resolvables = resolvablesBuilder(state, this._$injector?.strictDi);
+            this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
+            this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
+            this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
+            state.navigable =
+                !isRoot(state) && state._url
+                    ? state
+                    : state.parent
+                        ? state.parent.navigable
+                        : null;
+            state.params = buildParams(state, this._paramFactory);
+            if (state.parent?.data) {
+                state.data = state.self.data = assign(createObject(state.parent.data), state.data);
+            }
+            state.path = state.parent
+                ? (state.parent.path ?? []).concat(state)
+                : [state];
+            state.includes = state.parent ? assign({}, state.parent.includes) : {};
+            state.includes[state.name] = true;
+            state._views = viewsBuilder(state, {
+                register: (viewName, component) => this._registerRouteComponent(state.name, viewName, component),
+            });
+            return state;
+        }
+        /**
+         *
+         * @param {ng.StateObject} state
+         * @returns {string}
+         */
+        /** @internal */
+        static _parentName(state) {
+            const rawName = state.self.name || state.name || "";
+            const name = rawName;
+            const segments = name.split(".");
+            segments.pop();
+            if (segments.length) {
+                if (state.parent) {
+                    throw new Error(`States that specify the 'parent:' property should not have a '.' in their name (${name})`);
+                }
+                // 'foo.bar'
+                return segments.join(".");
+            }
+            if (!state.parent)
+                return "";
+            return isString(state.parent) ? state.parent : state.parent.name;
+        }
+        /** @internal */
+        static _name(state) {
+            const name = state.self.name || state.name;
+            if (name.includes(".") || !state.parent)
+                return name;
+            const parentName = isString(state.parent)
+                ? state.parent
+                : state.parent.name;
+            return parentName ? `${parentName}.${name}` : name;
+        }
+    }
+    /**
+     * @param {ng.StateObject} state
+     * @returns {boolean}
+     */
+    function isRoot(state) {
+        return state.name === "";
+    }
+
+    /**
+     * Matches state names using glob-like pattern strings.
+     *
+     * Globs can be used in specific APIs including:
+     *
+     * - [[StateService.is]]
+     * - [[StateService.includes]]
+     * - The first argument to Hook Registration functions like [[TransitionService.onStart]]
+     *    - [[HookMatchCriteria]] and [[HookMatchCriterion]]
+     *
+     * A `Glob` string is a pattern which matches state names.
+     * Nested state names are split into segments (separated by a dot) when processing.
+     * The state named `foo.bar.baz` is split into three segments ['foo', 'bar', 'baz']
+     *
+     * Globs work according to the following rules:
+     *
+     * ### Exact match:
+     *
+     * The glob `'A.B'` matches the state named exactly `'A.B'`.
+     *
+     * | Glob        |Matches states named|Does not match state named|
+     * |:------------|:--------------------|:---------------------|
+     * | `'A'`       | `'A'`               | `'B'` , `'A.C'`      |
+     * | `'A.B'`     | `'A.B'`             | `'A'` , `'A.B.C'`    |
+     * | `'foo'`     | `'foo'`             | `'FOO'` , `'foo.bar'`|
+     *
+     * ### Single star (`*`)
+     *
+     * A single star (`*`) is a wildcard that matches exactly one segment.
+     *
+     * | Glob        |Matches states named  |Does not match state named |
+     * |:------------|:---------------------|:--------------------------|
+     * | `'*'`       | `'A'` , `'Z'`        | `'A.B'` , `'Z.Y.X'`       |
+     * | `'A.*'`     | `'A.B'` , `'A.C'`    | `'A'` , `'A.B.C'`         |
+     * | `'A.*.*'`   | `'A.B.C'` , `'A.X.Y'`| `'A'`, `'A.B'` , `'Z.Y.X'`|
+     *
+     * ### Double star (`**`)
+     *
+     * A double star (`'**'`) is a wildcard that matches *zero or more segments*
+     *
+     * | Glob        |Matches states named                           |Does not match state named         |
+     * |:------------|:----------------------------------------------|:----------------------------------|
+     * | `'**'`      | `'A'` , `'A.B'`, `'Z.Y.X'`                    | (matches all states)              |
+     * | `'A.**'`    | `'A'` , `'A.B'` , `'A.C.X'`                   | `'Z.Y.X'`                         |
+     * | `'**.X'`    | `'X'` , `'A.X'` , `'Z.Y.X'`                   | `'A'` , `'A.login.Z'`             |
+     * | `'A.**.X'`  | `'A.X'` , `'A.B.X'` , `'A.B.C.X'`             | `'A'` , `'A.B.C'`                 |
+     *
+     */
+    class Glob {
+        /** Returns a glob from the string, or null if the string isn't Glob-like. */
+        static fromString(text) {
+            return hasGlobs(text) ? new Glob(text) : null;
+        }
+        constructor(text) {
+            this._text = text;
+            const segments = this._text.split(".");
+            const regexpParts = [];
+            segments.forEach((segment) => {
+                if (segment === "**") {
+                    regexpParts.push("(?:|(?:\\.[^.]*)*)");
+                }
+                else if (segment === "*") {
+                    regexpParts.push("\\.[^.]*");
+                }
+                else {
+                    regexpParts.push(`\\.${segment}`);
+                }
+            });
+            this._regexp = new RegExp(`^${regexpParts.join("")}$`);
+        }
+        matches(name) {
+            return this._regexp.test(`.${name}`);
+        }
+    }
+    /** Returns true if the string has glob-like characters in it. */
+    function hasGlobs(text) {
+        return !!/[!,*]+/.exec(text);
+    }
+
+    /**
+     * Internal representation of a ng-router state.
+     *
+     * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
+     *
+     * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
+     *
+     * This class prototypally inherits from the corresponding [[StateDeclaration]].
+     * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
+     * @extends {ng.StateDeclaration}
+     */
+    class StateObject {
+        static isStateDeclaration(obj) {
+            return isFunction(obj._state);
+        }
+        static isState(obj) {
+            return (isObject(obj) &&
+                isObject(obj._stateObjectCache));
+        }
+        /**
+         * @param {StateDeclaration} config
+         */
+        constructor(config) {
+            assign(this, config);
+            this.self = config;
+            this.name = config.name;
+            config._state = () => this;
+            const nameGlob = this.name ? Glob.fromString(this.name) : null;
+            this._stateObjectCache = { nameGlob };
+        }
+        /** @returns {StateObject} */
+        /** @internal */
+        _state() {
+            return this;
+        }
+        /**
+         * Returns true if the provided parameter is the same state.
+         *
+         * Compares the identity of the state against the passed value, which is either an object
+         * reference to the actual `State` instance, the original definition object passed to
+         * `$stateProvider.state()`, or the fully-qualified name.
+         *
+         * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
+         *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
+         * @returns Returns `true` if `ref` matches the current `State` instance.
+         */
+        is(ref) {
+            return this === ref || this.self === ref || this.pathName() === ref;
+        }
+        /**
+         * @deprecated this does not properly handle dot notation
+         * @returns {string} Returns a dot-separated name of the state.
+         */
+        fqn() {
+            return this.pathName();
+        }
+        pathName() {
+            return (this.path ?? [])
+                .map((state) => state.name)
+                .filter(Boolean)
+                .join(".");
+        }
+        /**
+         * Returns the root node of this state's tree.
+         *
+         * @returns {StateObject} The root of this state's tree.
+         */
+        root() {
+            return this.parent?.root() ?? this;
+        }
+        /**
+         * Gets the state's `Param` objects
+         *
+         * Gets the list of [[Param]] objects owned by the state.
+         * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
+         * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
+         *
+         * @param {StateParamOptions} [opts] options
+         * @returns {Param[]} the list of [[Param]] objects
+         */
+        parameters(opts) {
+            const inherit = opts?.inherit !== false;
+            const matchingKeys = opts?.matchingKeys;
+            const inherited = inherit
+                ? (this.parent?.parameters({ matchingKeys }) ?? [])
+                : [];
+            const result = inherited.slice();
+            const { params } = this;
+            if (!params)
+                return result;
+            keys(params).forEach((id) => {
+                const { [id]: param } = params;
+                if (!matchingKeys || hasOwn(matchingKeys, id)) {
+                    result.push(param);
+                }
+            });
+            return result;
+        }
+        /**
+         * Returns a single [[Param]] that is owned by the state
+         *
+         * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
+         * @param {string} id the name of the [[Param]] to return
+         * @param {StateParamOptions} [opts] options
+         * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
+         */
+        parameter(id, opts) {
+            const urlParam = this._url?._parameter(id, opts);
+            if (urlParam)
+                return urlParam;
+            const { params } = this;
+            if (params && hasOwn(params, id)) {
+                const { [id]: param } = params;
+                return param;
+            }
+            return opts?.inherit && this.parent
+                ? this.parent.parameter(id, opts)
+                : undefined;
+        }
+        toString() {
+            return this.pathName();
+        }
+    }
+
+    function stateOrNameToString(stateOrName) {
+        return isString(stateOrName) ? stateOrName : stateOrName.name;
+    }
+    /**
+     * A registry for all of the application's [[StateDeclaration]]s
+     *
+     * This API is found at `$stateRegistry`.
+     *
+     */
+    class StateRegistryProvider {
+        constructor(routerState, compileProvider) {
+            this.$get = [
+                _injector,
+                /**
+                 * @param {InjectorService} $injector
+                 * @returns {StateRegistryProvider}
+                 */
+                ($injector) => {
+                    this._$injector = $injector;
+                    this._builder._$injector = $injector;
+                    this._annotateDeferredResolvables($injector.strictDi);
+                    return this;
+                },
+            ];
+            this._states = {};
+            this._routerState = routerState;
+            this._$injector = undefined;
+            this._listeners = [];
+            this._matcher = new StateMatcher(this._states);
+            this._builder = new StateBuilder(this._matcher, routerState, compileProvider);
+            this._queue = [];
+            this.registerRoot();
+            routerState._currentState = this.root();
+            routerState._current = routerState._currentState.self;
+        }
+        /** @internal */
+        _annotateDeferredResolvables(strictDi) {
+            const states = this.getAll();
+            states.forEach((state) => {
+                const { resolvables } = state._state();
+                resolvables.forEach((resolvable) => {
+                    if (resolvable.deps === "deferred") {
+                        resolvable.deps = annotate(resolvable.resolveFn, strictDi);
+                    }
+                });
+            });
+        }
+        /**
+         * @private
+         */
+        registerRoot() {
+            const rootStateDef = {
+                name: "",
+                url: "^",
+                params: {
+                    "#": { value: null, type: "hash", dynamic: true },
+                },
+                abstract: true,
+            };
+            this._root = this._register(rootStateDef);
+            this._root.navigable = null;
+        }
+        /**
+         * Listen for a State Registry events
+         *
+         * Adds a callback that is invoked when states are registered or deregistered with the StateRegistry.
+         *
+         * #### Example:
+         * ```js
+         * let allStates = registry.get();
+         *
+         * // Later, invoke deregisterFn() to remove the listener
+         * let deregisterFn = registry.onStatesChanged((event, states) => {
+         *   switch(event) {
+         *     case: 'registered':
+         *       states.forEach(state => allStates.push(state));
+         *       break;
+         *     case: 'deregistered':
+         *       states.forEach(state => {
+         *         let idx = allStates.indexOf(state);
+         *         if (idx !== -1) allStates.splice(idx, 1);
+         *       });
+         *       break;
+         *   }
+         * });
+         * ```
+         *
+         * @param {StateRegistryListener} listener a callback function invoked when the registered states changes.
+         *        The function receives two parameters, `event` and `state`.
+         *        See [[StateRegistryListener]]
+         * @return a function that deregisters the listener
+         */
+        onStatesChanged(listener) {
+            this._listeners.push(listener);
+            return () => {
+                const index = this._listeners.indexOf(listener);
+                if (index !== -1) {
+                    this._listeners.splice(index, 1);
+                }
+            };
+        }
+        /**
+         * Gets the implicit root state
+         *
+         * Gets the root of the state tree.
+         * The root state is implicitly created by ng-router.
+         * Note: this returns the internal [[StateObject]] representation, not a [[StateDeclaration]]
+         *
+         * @return the root [[StateObject]]
+         */
+        root() {
+            return this._root;
+        }
+        /**
+         * Adds a state to the registry
+         *
+         * Registers a [[StateDeclaration]] or queues it for registration.
+         *
+         * Note: a state will be queued if the state's parent isn't yet registered.
+         *
+         * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
+         * @returns the internal [[StateObject]] object.
+         *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
+         *          If the state was only queued, then the object is not fully built.
+         */
+        register(stateDefinition) {
+            return this._register(stateDefinition);
+        }
+        /** @internal */
+        _register(stateDeclaration) {
+            const state = new StateObject(stateDeclaration);
+            const { name } = state;
+            if (!isString(name))
+                throw new Error("State must have a valid name");
+            if (hasOwn(this._states, name) || this._isQueued(name)) {
+                throw new Error(`State '${name}' is already defined`);
+            }
+            this._queue.push(state);
+            this._flush();
+            return state;
+        }
+        /** @internal */
+        _isQueued(name) {
+            const { _queue } = this;
+            for (let i = 0; i < _queue.length; i++) {
+                if (_queue[i].name === name)
+                    return true;
+            }
+            return false;
+        }
+        /** @internal */
+        _flush() {
+            const { _queue, _states, _builder } = this;
+            const registered = [];
+            const orphans = [];
+            const previousQueueLength = {};
+            while (_queue.length) {
+                const state = _queue.shift();
+                if (!state)
+                    continue;
+                const { name } = state;
+                const result = _builder._build(state);
+                const orphanIndex = orphans.indexOf(state);
+                if (result) {
+                    const existingState = hasOwn(_states, name) ? _states[name] : undefined;
+                    if (existingState?.name === name) {
+                        throw new Error(`State '${name}' is already defined`);
+                    }
+                    _states[name] = state;
+                    this._attachRoute(state);
+                    if (orphanIndex >= 0)
+                        orphans.splice(orphanIndex, 1);
+                    registered.push(state);
+                    continue;
+                }
+                const previousLength = previousQueueLength[name];
+                previousQueueLength[name] = _queue.length;
+                if (orphanIndex >= 0 && previousLength === _queue.length) {
+                    _queue.push(state);
+                    this._notifyRegistered(registered);
+                    return _states;
+                }
+                if (orphanIndex < 0) {
+                    orphans.push(state);
+                }
+                _queue.push(state);
+            }
+            this._notifyRegistered(registered);
+            return _states;
+        }
+        /** @internal */
+        _notifyRegistered(registered) {
+            if (!registered.length)
+                return;
+            const declarations = [];
+            registered.forEach((state) => {
+                declarations.push(state.self);
+            });
+            this._notifyListeners("registered", declarations);
+        }
+        /** @internal */
+        _notifyListeners(event, states) {
+            this._listeners.forEach((listener) => {
+                listener(event, states);
+            });
+        }
+        /** @internal */
+        _attachRoute(state) {
+            if (!state.self.abstract && state._url) {
+                this._routerState._routeTable._add(state);
+            }
+        }
+        /**
+         *
+         * @param {BuiltStateDeclaration} state
+         * @returns {BuiltStateDeclaration[]}
+         */
+        /** @internal */
+        _deregisterTree(state) {
+            const allDeclarations = this.getAll();
+            const all = [];
+            allDeclarations.forEach((declaration) => {
+                all.push(declaration._state());
+            });
+            const children = [];
+            const queue = [state];
+            for (let i = 0; i < queue.length; i++) {
+                const parent = queue[i];
+                for (let j = 0; j < all.length; j++) {
+                    const candidate = all[j];
+                    if (candidate.parent === parent) {
+                        children.push(candidate);
+                        queue.push(candidate);
+                    }
+                }
+            }
+            const deregistered = children.slice().reverse();
+            deregistered.push(state);
+            deregistered.forEach((_state) => {
+                this._routerState._routeTable._remove(_state);
+                // Remove state from registry
+                deleteProperty(this._states, _state.name);
+            });
+            return deregistered;
+        }
+        /**
+         * Removes a state from the registry
+         *
+         * This removes a state from the registry.
+         * If the state has children, they are are also removed from the registry.
+         *
+         * @param {StateOrName} stateOrName the state's name or object representation
+         * @returns {BuiltStateDeclaration[]} a list of removed states
+         */
+        deregister(stateOrName) {
+            const state = this.get(stateOrName);
+            if (!state) {
+                throw new Error(`Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`);
+            }
+            const deregisteredStates = this._deregisterTree(state._state());
+            const deregisteredDeclarations = [];
+            deregisteredStates.forEach((stateDeclaration) => {
+                deregisteredDeclarations.push(stateDeclaration.self);
+            });
+            this._notifyListeners("deregistered", deregisteredDeclarations);
+            return deregisteredStates;
+        }
+        /**
+         * @return {ng.BuiltStateDeclaration[]}
+         */
+        getAll() {
+            const stateNames = keys(this._states);
+            const states = [];
+            stateNames.forEach((name) => {
+                states.push(this._states[name].self);
+            });
+            return states;
+        }
+        /**
+         *
+         * @param {StateOrName} [stateOrName]
+         * @param {StateOrName} [base]
+         * @returns {StateDeclaration | StateDeclaration[] | null}
+         */
+        get(stateOrName, base) {
+            if (arguments.length === 0) {
+                const stateNames = keys(this._states);
+                const states = [];
+                stateNames.forEach((name) => {
+                    states.push(this._states[name].self);
+                });
+                return states;
+            }
+            const found = stateOrName === undefined
+                ? undefined
+                : this._matcher.find(stateOrName, base);
+            return found?.self ?? null;
+        }
+    }
+    /* @ignore */ StateRegistryProvider.$inject = [_routerProvider, _compileProvider];
+    function getLocals(ctx) {
+        const tokens = ctx.getTokens();
+        const locals = {};
+        tokens.forEach((key) => {
+            if (isString(key)) {
+                locals[key] = assertDefined(ctx.getResolvable(key)).data;
+            }
+        });
+        return locals;
+    }
+
+    const FQN_MULTIPLIER = 10000;
+    const COMPONENT_CONTEXT_ATTR = "data-ng-view-component-context";
+    let nextViewId = 0;
+    function createViewFillPlan(viewDecl, componentName) {
+        const resolvedComponentName = componentName ?? viewDecl.component;
+        const component = isString(resolvedComponentName)
+            ? resolvedComponentName
+            : undefined;
+        return {
+            _kind: component ? "component" : "template",
+            _componentName: component,
+            _componentElementName: component ? kebobString(component) : undefined,
+            _hasController: !!viewDecl.controller,
+            _needsResolveContext: true,
+        };
+    }
+    function viewDeclTargetKey(viewDecl) {
+        const viewName = viewDecl._ngViewName ?? "$default";
+        const viewContext = viewDecl._ngViewContextAnchor ?? "";
+        return viewContext ? `${viewContext}.${viewName}` : viewName;
+    }
+    function viewDeclDepth(viewDecl) {
+        let context = assertDefined(viewDecl._context);
+        let count = 0;
+        while (++count && context.parent) {
+            context = context.parent;
+        }
+        return count;
+    }
+    /** @internal */
+    function createViewConfig(path, viewDecl, factory) {
+        return {
+            _id: nextViewId++,
+            _path: path,
+            _viewDecl: viewDecl,
+            _factory: factory,
+            _component: undefined,
+            _template: undefined,
+            _loaded: false,
+            _controller: undefined,
+            _fillPlan: createViewFillPlan(viewDecl, undefined),
+            _targetKey: viewDeclTargetKey(viewDecl),
+            _depth: viewDeclDepth(viewDecl),
+        };
+    }
+    /** @internal */
+    function getViewTemplate(config, ngView, context) {
+        const plan = config._fillPlan;
+        return plan._kind === "component" && plan._componentName
+            ? config._factory._makeComponentTemplate(ngView, context, plan._componentName, config._viewDecl.bindings)
+            : config._template;
+    }
+    /** @internal */
+    async function loadViewConfig(config) {
+        const params = {};
+        config._path.forEach((node) => {
+            assign(params, node.paramValues);
+        });
+        const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+        config._controller = config._viewDecl.controller;
+        assign(config, viewResult);
+        config._fillPlan = createViewFillPlan(config._viewDecl, config._component);
+        return config;
+    }
+    function contextDepth(context) {
+        let cursor = context;
+        let depth = 1;
+        while (cursor.parent) {
+            depth += 1;
+            cursor = cursor.parent;
+        }
+        return depth;
+    }
+    function ngViewDepth(cache, ngView) {
+        const cached = cache.get(ngView);
+        if (cached !== undefined)
+            return cached;
+        const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
+            contextDepth(ngView._creationContext);
+        cache.set(ngView, computed);
+        return computed;
+    }
+    /**
+     * Tracks active `ng-view` instances and matches them with registered
+     * view configs produced during state transitions.
+     */
+    class ViewService {
+        /**
+         * Creates an empty view registry ready to track active `ng-view` instances.
+         */
+        constructor() {
+            /**
+             * Returns the singleton view service instance.
+             */
+            this.$get = [
+                _templateFactory,
+                _router,
+                _compileLifecycle,
+                _transitions,
+                _compile,
+                _controller,
+                _injector,
+                ($templateFactory, $routerState, $compileLifecycle, $transitions, $compile, $controller, $injector) => {
+                    this._templateFactory = $templateFactory;
+                    this._compile = $compile;
+                    this._controller = $controller;
+                    this._injector = $injector;
+                    this._rootViewContext($routerState._currentState ?? null);
+                    this._transitions = $transitions;
+                    this._deregisterCompileLifecycle?.();
+                    this._deregisterCompileLifecycle = $compileLifecycle.onControllerCreated((record) => {
+                        this._componentControllerCreated(record);
+                    });
+                    return this;
+                },
+            ];
+            this._ngViews = [];
+            this._viewConfigs = [];
+            this._viewConfigsByTarget = new Map();
+            this._templateFactory = undefined;
+            this._compile = undefined;
+            this._controller = undefined;
+            this._injector = undefined;
+            this._rootContext = undefined;
+            this._transitions = undefined;
+            this._componentContexts = new Map();
+            this._nextComponentContextId = 0;
+            this._filledHosts = new WeakSet();
+            this._deregisterCompileLifecycle = undefined;
+        }
+        /** @internal */
+        _fillView(options) {
+            const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
+            const $compile = assertDefined(this._compile);
+            const viewData = {
+                $cfg: config,
+                $ngView: activeNgView,
+                $filled: true,
+            };
+            for (let i = 0; i < rootNodes.length; i++) {
+                const node = rootNodes[i];
+                setCacheData(node, "$ngViewAnim", animation);
+                setCacheData(node, "$ngView", viewData);
+            }
+            const plan = config?._fillPlan;
+            const resolveContext = config && plan?._needsResolveContext
+                ? new ResolveContext(config._path, assertDefined(this._injector))
+                : undefined;
+            if (host.childNodes.length || this._filledHosts.has(host)) {
+                scope.$broadcast("$destroy");
+            }
+            else {
+                this._filledHosts.add(host);
+            }
+            host.innerHTML = config
+                ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
+                    initial)
+                : initial;
+            if (config && plan?._kind === "component") {
+                this._markComponentView(host, config, scope);
+            }
+            const link = $compile(host.contentDocument ?? host.childNodes);
+            const locals = resolveContext ? getLocals(resolveContext) : undefined;
+            const targetScope = scope.$target;
+            targetScope.$resolve = locals;
+            const controller = plan?._hasController ? config?._controller : undefined;
+            if (controller) {
+                const controllerConfig = assertDefined(config);
+                const controllerInstance = assertDefined(this._controller)(controller, assign({}, locals, { $scope: scope, $element: host }));
+                setCacheData(host, "$ngControllerController", controllerInstance);
+                const { children } = host;
+                for (let i = 0; i < children.length; i++) {
+                    setCacheData(children[i], "$ngControllerController", controllerInstance);
+                }
+                registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
+            }
+            link(scope);
+            if (scope.$handler._destroyed) {
+                scope.$broadcast("$destroy");
+            }
+        }
+        /** @internal */
+        _markComponentView(host, config, scope) {
+            const { _componentElementName, _componentName } = config._fillPlan;
+            if (!_componentElementName || !_componentName)
+                return;
+            const componentHost = host.querySelector(_componentElementName);
+            if (!componentHost)
+                return;
+            const id = `${String(config._id)}:${String(this._nextComponentContextId++)}`;
+            componentHost.setAttribute(COMPONENT_CONTEXT_ATTR, id);
+            this._componentContexts.set(id, {
+                componentName: _componentName,
+                config,
+                scope,
+            });
+            scope.$on("$destroy", () => {
+                this._componentContexts.delete(id);
+            });
+        }
+        /** @internal */
+        _componentControllerCreated(record) {
+            const id = record.element.getAttribute(COMPONENT_CONTEXT_ATTR);
+            if (!id)
+                return;
+            const context = this._componentContexts.get(id);
+            if (record.directiveName !== context?.componentName)
+                return;
+            record.element.removeAttribute(COMPONENT_CONTEXT_ATTR);
+            this._componentContexts.delete(id);
+            if (!this._transitions)
+                return;
+            registerViewControllerCallbacks(this._transitions, record.controller, context.scope, context.config);
+        }
+        /**
+         * Gets or sets the root view context used for relative `ng-view` targeting.
+         */
+        /** @internal */
+        _rootViewContext(context) {
+            return (this._rootContext = context ?? this._rootContext);
+        }
+        /**
+         * Removes a view config from the active registry.
+         */
+        /** @internal */
+        _deactivateViewConfig(viewConfig) {
+            removeFrom(this._viewConfigs, viewConfig);
+            const targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+            if (!targetConfigs)
+                return;
+            removeFrom(targetConfigs, viewConfig);
+            if (!targetConfigs.length) {
+                this._viewConfigsByTarget.delete(viewConfig._targetKey);
+            }
+        }
+        /**
+         * Adds a view config to the active registry.
+         */
+        /** @internal */
+        _activateViewConfig(viewConfig) {
+            this._viewConfigs.push(viewConfig);
+            let targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+            if (!targetConfigs) {
+                targetConfigs = [];
+                this._viewConfigsByTarget.set(viewConfig._targetKey, targetConfigs);
+            }
+            targetConfigs.push(viewConfig);
+        }
+        /**
+         * Re-matches active `ng-view` instances against currently registered view configs
+         * and notifies each view when its config assignment changes.
+         */
+        /** @internal */
+        _sync() {
+            const ngViewsByFqn = {};
+            this._ngViews.forEach((ngView) => {
+                ngViewsByFqn[ngView._fqn] = ngView;
+            });
+            const ngViewDepthCache = new Map();
+            this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
+                ngViewDepth(ngViewDepthCache, right));
+            this._ngViews.forEach((ngView) => {
+                let selectedViewConfig = null;
+                let bestDepth = Number.NEGATIVE_INFINITY;
+                const targetConfigs = this._viewConfigsByTarget.get(ngView._fqn) ?? [];
+                for (let i = 0; i < targetConfigs.length; i++) {
+                    const candidate = targetConfigs[i];
+                    if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
+                        continue;
+                    if (selectedViewConfig === null || candidate._depth > bestDepth) {
+                        selectedViewConfig = candidate;
+                        bestDepth = candidate._depth;
+                    }
+                }
+                if (!this._ngViews.includes(ngView))
+                    return;
+                if (ngView._config === selectedViewConfig)
+                    return;
+                ngView._config = selectedViewConfig;
+                ngView._configUpdated(selectedViewConfig ?? undefined);
+            });
+        }
+        /**
+         * Registers one active `ng-view` and returns a deregistration function.
+         */
+        /** @internal */
+        _registerNgView(ngView) {
+            const ngViews = this._ngViews;
+            ngViews.push(ngView);
+            this._sync();
+            return () => {
+                removeFrom(ngViews, ngView);
+                this._sync();
+            };
+        }
+        /**
+         * Builds a predicate that determines whether a view config matches
+         * a specific active `ng-view`.
+         */
+        /** @internal */
+        static _matches(ngViewsByFqn, ngView, viewConfig) {
+            const ngViewContext = ngView._creationContext;
+            const viewDecl = viewConfig._viewDecl;
+            const normalizedTarget = viewConfig._targetKey;
+            const vcContext = viewDecl._ngViewContextAnchor ?? "";
+            if (normalizedTarget !== ngView._fqn)
+                return false;
+            const viewContext = assertDefined(viewDecl._context);
+            if (viewContext.name !== ngViewContext.name &&
+                vcContext !== ngViewContext.name) {
+                return false;
+            }
+            const childViewFqn = `${normalizedTarget}.${ngView._name}`;
+            return !ngViewsByFqn[childViewFqn];
+        }
+    }
 
     /**
      * Converts a TargetState into the concrete path nodes used by a transition.
@@ -28094,8 +28369,11 @@
             if (isDefined(templateUrl)) {
                 return asTemplate(this._fromUrl(templateUrl, params));
             }
-            if (isDefined(component)) {
+            if (isString(component)) {
                 return asComponent(component);
+            }
+            if (isDefined(component)) {
+                throw new Error("Inline route components must be normalized before loading");
             }
             return asTemplate(DEFAULT_TEMPLATE);
         }
@@ -28314,334 +28592,6 @@
                 },
             ];
             this.autoScrollingEnabled = true;
-        }
-    }
-
-    const SIMPLE_ATTR_NAME = /^\w/;
-    const specialAttrHolder = document.createElement("div");
-    const observerStates = new WeakMap();
-    const interpolatedAttributes = new WeakMap();
-    const observerScopes = new WeakMap();
-    class AttributesServiceProvider {
-        constructor() {
-            this.$get = [
-                _injector,
-                _exceptionHandler,
-                function ($injector, $exceptionHandler) {
-                    const getAnimate = createLazyAnimate($injector);
-                    function getElement(element) {
-                        const hostElement = getDirectiveHostElement(element);
-                        if (hostElement)
-                            return hostElement;
-                        return element instanceof Element ? element : null;
-                    }
-                    function invokeCallback(callback, value) {
-                        try {
-                            callback(value);
-                        }
-                        catch (err) {
-                            $exceptionHandler(err);
-                        }
-                    }
-                    function notifyCallbacks(state, normalizedName, value) {
-                        const callbacks = state.callbacks.get(normalizedName);
-                        if (!callbacks?.size)
-                            return;
-                        Array.from(callbacks).forEach((callback) => {
-                            invokeCallback(callback, value);
-                        });
-                    }
-                    function valuesMatch(left, right) {
-                        return (Object.is(left, right) ||
-                            (typeof left === "boolean" && right === String(left)) ||
-                            (left === null && right === undefined));
-                    }
-                    function consumePendingMutation(state, normalizedName, value) {
-                        const pendingValues = state.pendingMutations.get(normalizedName);
-                        if (!pendingValues?.length)
-                            return false;
-                        const [nextValue] = pendingValues;
-                        if (!valuesMatch(nextValue, value))
-                            return false;
-                        pendingValues.shift();
-                        if (pendingValues.length === 0) {
-                            state.pendingMutations.delete(normalizedName);
-                        }
-                        return true;
-                    }
-                    function getObserverState(element) {
-                        const state = observerStates.get(element);
-                        if (state)
-                            return state;
-                        const newState = {
-                            callbacks: new Map(),
-                            pendingMutations: new Map(),
-                            observer: undefined,
-                        };
-                        newState.observer = new MutationObserver((mutations) => {
-                            for (let i = 0; i < mutations.length; i++) {
-                                const { attributeName } = mutations[i];
-                                if (!attributeName)
-                                    continue;
-                                const normalizedName = directiveNormalize(attributeName);
-                                const value = getNormalizedAttr(element, normalizedName);
-                                if (!consumePendingMutation(newState, normalizedName, value)) {
-                                    notifyCallbacks(newState, normalizedName, value);
-                                }
-                                const aliasedName = hasOwn(ALIASED_ATTR, normalizedName)
-                                    ? ALIASED_ATTR[normalizedName]
-                                    : undefined;
-                                if (aliasedName &&
-                                    !consumePendingMutation(newState, aliasedName, value)) {
-                                    notifyCallbacks(newState, aliasedName, value);
-                                }
-                            }
-                        });
-                        newState.observer.observe(element, { attributes: true });
-                        observerStates.set(element, newState);
-                        return newState;
-                    }
-                    function rememberPendingMutation(element, normalizedName, value) {
-                        const state = observerStates.get(element);
-                        if (!state)
-                            return;
-                        let pendingValues = state.pendingMutations.get(normalizedName);
-                        if (!pendingValues) {
-                            pendingValues = [];
-                            state.pendingMutations.set(normalizedName, pendingValues);
-                        }
-                        pendingValues.push(value);
-                    }
-                    function setSpecialAttr(element, attrName, value) {
-                        specialAttrHolder.innerHTML = `<span ${attrName}>`;
-                        const { attributes } = specialAttrHolder.firstChild;
-                        const attribute = attributes[0];
-                        attributes.removeNamedItem(attribute.name);
-                        attribute.value = value ?? "";
-                        element.setAttributeNode(attribute);
-                    }
-                    function tokenizeClassString(value) {
-                        const trimmed = value.trim();
-                        return trimmed ? trimmed.split(/\s+/) : [];
-                    }
-                    function tokenDifference(str1, str2) {
-                        if (str1 === str2) {
-                            return [];
-                        }
-                        const tokens1 = tokenizeClassString(str1);
-                        if (tokens1.length === 0) {
-                            return [];
-                        }
-                        const excludedTokens = new Set(tokenizeClassString(str2));
-                        const seenTokens = new Set();
-                        const difference = [];
-                        for (let i = 0; i < tokens1.length; i++) {
-                            const token = tokens1[i];
-                            if (!excludedTokens.has(token) && !seenTokens.has(token)) {
-                                seenTokens.add(token);
-                                difference.push(token);
-                            }
-                        }
-                        return difference;
-                    }
-                    return {
-                        read(element, normalizedName) {
-                            return getNormalizedAttr(getElement(element), normalizedName);
-                        },
-                        has(element, normalizedName) {
-                            return hasNormalizedAttr(getElement(element), normalizedName);
-                        },
-                        originalName(element, normalizedName) {
-                            return getNormalizedAttrName(getElement(element), normalizedName);
-                        },
-                        observe(scope, element, normalizedName, callback) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return () => undefined;
-                            const observedElement = targetElement;
-                            const normalized = directiveNormalize(normalizedName);
-                            const state = getObserverState(observedElement);
-                            let callbacks = state.callbacks.get(normalized);
-                            if (!callbacks) {
-                                callbacks = new Set();
-                                state.callbacks.set(normalized, callbacks);
-                            }
-                            callbacks.add(callback);
-                            const initialValue = getNormalizedAttr(observedElement, normalized);
-                            if (initialValue !== undefined) {
-                                invokeCallback(callback, initialValue);
-                            }
-                            let deregisterDestroy;
-                            if (scope) {
-                                deregisterDestroy = scope.$on("$destroy", () => {
-                                    deregister();
-                                });
-                            }
-                            function deregister() {
-                                callbacks?.delete(callback);
-                                if (callbacks?.size === 0) {
-                                    state.callbacks.delete(normalized);
-                                }
-                                if (state.callbacks.size === 0) {
-                                    state.observer.disconnect();
-                                    observerStates.delete(observedElement);
-                                }
-                                deregisterDestroy?.();
-                                deregisterDestroy = undefined;
-                            }
-                            return deregister;
-                        },
-                        set(element, normalizedName, value, options) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const normalized = directiveNormalize(normalizedName);
-                            const observerName = hasOwn(ALIASED_ATTR, normalized)
-                                ? ALIASED_ATTR[normalized]
-                                : normalized;
-                            const booleanName = getBooleanAttrName(targetElement, observerName);
-                            let attrName = options?.attrName;
-                            if (booleanName) {
-                                targetElement[observerName] = value;
-                                attrName = booleanName;
-                            }
-                            else
-                                attrName ?? (attrName = snakeCase(normalized, "-"));
-                            if (options?.writeAttr !== false && attrName) {
-                                rememberPendingMutation(targetElement, observerName, value);
-                                if (isNullOrUndefined(value)) {
-                                    targetElement.removeAttribute(attrName);
-                                }
-                                else if (SIMPLE_ATTR_NAME.test(attrName)) {
-                                    if (booleanName && value === false) {
-                                        targetElement.removeAttribute(attrName);
-                                    }
-                                    else if (booleanName) {
-                                        targetElement.toggleAttribute(attrName, value);
-                                    }
-                                    else {
-                                        targetElement.setAttribute(attrName, value);
-                                    }
-                                }
-                                else {
-                                    setSpecialAttr(targetElement, attrName, value);
-                                }
-                            }
-                            const state = observerStates.get(targetElement);
-                            if (state) {
-                                const observedValue = options?.writeAttr === false
-                                    ? isNullOrUndefined(value)
-                                        ? undefined
-                                        : String(value)
-                                    : attrName
-                                        ? (targetElement.getAttribute(attrName) ?? undefined)
-                                        : getNormalizedAttr(targetElement, observerName);
-                                notifyCallbacks(state, observerName, observedValue);
-                            }
-                        },
-                        addClass(element, classValue) {
-                            if (!classValue)
-                                return;
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const animate = getAnimateForNode(getAnimate, targetElement);
-                            if (animate) {
-                                animate.addClass(targetElement, classValue);
-                            }
-                            else {
-                                const tokens = tokenizeClassString(classValue);
-                                if (tokens.length) {
-                                    targetElement.classList.add(...tokens);
-                                }
-                            }
-                        },
-                        removeClass(element, classValue) {
-                            if (!classValue)
-                                return;
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const animate = getAnimateForNode(getAnimate, targetElement);
-                            if (animate) {
-                                animate.removeClass(targetElement, classValue);
-                            }
-                            else {
-                                const tokens = tokenizeClassString(classValue);
-                                if (tokens.length) {
-                                    targetElement.classList.remove(...tokens);
-                                }
-                            }
-                        },
-                        updateClass(element, newClasses, oldClasses) {
-                            if (newClasses === oldClasses)
-                                return;
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const animate = getAnimateForNode(getAnimate, targetElement);
-                            const toAdd = tokenDifference(newClasses, oldClasses);
-                            if (toAdd.length) {
-                                if (animate) {
-                                    animate.addClass(targetElement, toAdd.join(" "));
-                                }
-                                else {
-                                    targetElement.classList.add(...toAdd);
-                                }
-                            }
-                            const toRemove = tokenDifference(oldClasses, newClasses);
-                            if (toRemove.length) {
-                                if (animate) {
-                                    animate.removeClass(targetElement, toRemove.join(" "));
-                                }
-                                else {
-                                    targetElement.classList.remove(...toRemove);
-                                }
-                            }
-                        },
-                        _markInterpolated(element, normalizedName) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const normalized = directiveNormalize(normalizedName);
-                            let interpolated = interpolatedAttributes.get(targetElement);
-                            if (!interpolated) {
-                                interpolated = new Set();
-                                interpolatedAttributes.set(targetElement, interpolated);
-                            }
-                            interpolated.add(normalized);
-                        },
-                        _isInterpolated(element, normalizedName) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return false;
-                            return (interpolatedAttributes
-                                .get(targetElement)
-                                ?.has(directiveNormalize(normalizedName)) ?? false);
-                        },
-                        _setObserverScope(element, normalizedName, scope) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return;
-                            const normalized = directiveNormalize(normalizedName);
-                            let scopes = observerScopes.get(targetElement);
-                            if (!scopes) {
-                                scopes = new Map();
-                                observerScopes.set(targetElement, scopes);
-                            }
-                            scopes.set(normalized, scope);
-                        },
-                        _getObserverScope(element, normalizedName) {
-                            const targetElement = getElement(element);
-                            if (!targetElement)
-                                return undefined;
-                            return observerScopes
-                                .get(targetElement)
-                                ?.get(directiveNormalize(normalizedName));
-                        },
-                    };
-                },
-            ];
         }
     }
 
@@ -32863,7 +32813,7 @@
     }
     /** Providers required by scopes, expressions, controllers, and compile. */
     const ngCoreProviders = {
-        [_attributes]: AttributesServiceProvider,
+        [_compileLifecycle]: CompileLifecycleProvider,
         $controller: ControllerProvider,
         $exceptionHandler: ExceptionHandlerProvider,
         $interpolate: InterpolateProvider,
@@ -33029,7 +32979,7 @@
     /** Fill/transclusion directives that intentionally register after their base directive. */
     const ngFillDirectives = {
         ngInclude: ngIncludeFillContentDirective,
-        ngView: ViewDirectiveFill,
+        ngView: ViewDirectiveContentGuard,
     };
     /** Provider groups included by the default full `ng` runtime. */
     const ngDefaultProviderGroups = [
@@ -33071,8 +33021,7 @@
                 });
                 let $filterProvider;
                 ngDefaultProviderGroups.forEach((providers) => {
-                    const providerEntries = Object.entries(providers);
-                    providerEntries.forEach(([name, provider]) => {
+                    Object.entries(providers).forEach(([name, provider]) => {
                         const registeredProvider = $provide.provider(name, provider);
                         if (name === _filter) {
                             $filterProvider = registeredProvider;

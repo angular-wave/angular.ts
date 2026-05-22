@@ -14,7 +14,7 @@ import { stringify } from "../../shared/strings.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
-import { normalizeNgViewTarget } from "../view/view.ts";
+import { normalizeNgViewTarget } from "./view-target.ts";
 import type { CompileProvider } from "../../core/compile/compile.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";

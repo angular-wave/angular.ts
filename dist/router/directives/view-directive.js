@@ -1,10 +1,6 @@
-import { _view, _state, _anchorScroll, _interpolate, _parse, _attributes, _compile, _controller, _transitions, _injector } from '../../injection-tokens.js';
-import { assertDefined, assign, isString, isDefined, isInstanceOf, isArray, arrayFrom } from '../../shared/utils.js';
-import { ResolveContext } from '../resolve/resolve-context.js';
-import { dealoc, getCacheData, setCacheData, getInheritedData, removeElement } from '../../shared/dom.js';
-import { getLocals } from '../state/state-registry.js';
-import { getViewTemplate } from '../view/view.js';
-import { registerViewControllerCallbacks, getComponentController } from './view-controller-hooks.js';
+import { _view, _state, _anchorScroll, _interpolate, _parse } from '../../injection-tokens.js';
+import { assertDefined, isDefined, isString, isInstanceOf, isArray, arrayFrom } from '../../shared/utils.js';
+import { getCacheData, dealoc, getNormalizedAttr, getInheritedData, setCacheData, removeElement } from '../../shared/dom.js';
 
 function getFirstElementFromClone(clone) {
     if (!clone)
@@ -111,18 +107,11 @@ function withResolvers() {
  * });
  * ```
  */
-ViewDirective.$inject = [
-    _view,
-    _state,
-    _anchorScroll,
-    _interpolate,
-    _parse,
-    _attributes,
-];
+ViewDirective.$inject = [_view, _state, _anchorScroll, _interpolate, _parse];
 /**
  * Renders and updates the currently active view configuration.
  */
-function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attributes) {
+function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse) {
     const rootContext = $view._rootViewContext();
     const rootData = {
         $cfg: { _viewDecl: { _context: rootContext } },
@@ -133,18 +122,22 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attr
         terminal: true,
         priority: 400,
         transclude: "element",
-        compile(_tElement, _tAttrs, $transclude) {
+        compile(tElement, $transclude) {
             const transclude = assertDefined($transclude);
+            const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
+            const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
+            const viewNameExp = getNormalizedAttr(tElement, "ngView") ??
+                getNormalizedAttr(tElement, "name") ??
+                "";
             return function (scope, $element) {
-                const onloadExp = $attributes.read($element, "onload") ?? "", autoScrollExp = $attributes.read($element, "autoscroll"), inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate($attributes.read($element, "ngView") ??
-                    $attributes.read($element, "name") ??
-                    ""))(scope), name = isString(rawName) && rawName ? rawName : "$default";
+                const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 let currentEl = null;
                 let currentScope = null;
                 let viewConfig;
                 let configUpdateVersion = 0;
+                let initialTemplate;
                 const inheritedContext = inherited.$cfg._viewDecl._context;
                 const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                 const activeNgView = {
@@ -184,18 +177,29 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attr
                     updateView(config);
                 }
                 setCacheData($element, "$ngView", { $ngView: activeNgView });
-                updateView();
                 const unregister = $view._registerNgView(activeNgView);
+                if (!viewConfig) {
+                    updateView();
+                }
                 scope.$on("$destroy", function () {
                     unregister();
                 });
                 function cleanupLastView() {
+                    const destroyedScope = currentScope;
                     if (currentScope) {
                         currentScope.$destroy();
                         currentScope = null;
                     }
                     if (currentEl) {
                         const _viewData = getCacheData(currentEl, "$ngViewAnim");
+                        const elementScope = getInheritedData(currentEl, "$scope");
+                        if (destroyedScope &&
+                            elementScope &&
+                            elementScope !== destroyedScope &&
+                            elementScope.$parent === destroyedScope &&
+                            !elementScope.$handler._destroyed) {
+                            elementScope.$destroy();
+                        }
                         removeElement(currentEl);
                         _viewData?.$$animLeave.resolve(undefined);
                         currentEl = null;
@@ -205,10 +209,6 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attr
                     const newScope = scope.$new();
                     const animEnter = withResolvers();
                     const animLeave = withResolvers();
-                    const $ngViewData = {
-                        $cfg: config,
-                        $ngView: activeNgView,
-                    };
                     const $ngViewAnim = {
                         $animEnter: animEnter.promise,
                         $animLeave: animLeave.promise,
@@ -222,118 +222,89 @@ function ViewDirective($view, $state, $anchorScroll, $interpolate, $parse, $attr
                      */
                     newScope.$emit("$viewContentLoading", name);
                     let enteredElement = null;
+                    let enteredNodes = [];
                     transclude(newScope, (clone) => {
                         const elementClone = getFirstElementFromClone(clone);
                         const cloneNodes = getRootNodesFromClone(clone);
                         if (!elementClone) {
                             return;
                         }
+                        initialTemplate ?? (initialTemplate = elementClone.innerHTML);
+                        const viewData = {
+                            $cfg: config,
+                            $ngView: activeNgView,
+                        };
                         for (let i = 0; i < cloneNodes.length; i++) {
                             const node = cloneNodes[i];
                             setCacheData(node, "$ngViewAnim", $ngViewAnim);
-                            setCacheData(node, "$ngView", $ngViewData);
+                            setCacheData(node, "$ngView", viewData);
                         }
                         enteredElement = elementClone;
+                        enteredNodes = cloneNodes;
                         $element.after(elementClone);
                         animEnter.resolve(undefined);
                         cleanupLastView();
+                        currentEl = elementClone;
+                        currentScope = newScope;
                         if ((isDefined(autoScrollExp) && !autoScrollExp) ||
                             (autoScrollExp && autoScrollFn?.(scope))) {
                             $anchorScroll(elementClone);
                         }
                     });
-                    currentEl = enteredElement;
-                    currentScope = newScope;
-                    currentScope.$emit("$viewContentAnimationEnded");
+                    if (currentScope !== newScope)
+                        return;
+                    if (newScope.$handler._destroyed) {
+                        return;
+                    }
+                    const host = assertDefined(enteredElement);
+                    const viewData = getCacheData(host, "$ngView");
+                    $view._fillView({
+                        host,
+                        rootNodes: enteredNodes,
+                        scope: newScope,
+                        config,
+                        initial: viewData?.$initial ?? initialTemplate ?? "",
+                        activeNgView,
+                        animation: $ngViewAnim,
+                    });
+                    newScope.$emit("$viewContentAnimationEnded");
                     /**
                      * Fired once the view is **loaded**, *after* the DOM is rendered.
                      *
                      * @param event Event object.
                      */
-                    currentScope.$emit("$viewContentLoaded", config ?? viewConfig);
-                    onloadFn?.(currentScope);
+                    newScope.$emit("$viewContentLoaded", config ?? viewConfig);
+                    onloadFn?.(newScope);
                 }
             };
         },
     };
     return directive;
 }
-ViewDirectiveFill.$inject = [_compile, _controller, _transitions, _injector];
 /**
- * Instantiates the active view template and wires its controller lifecycle.
+ * Clears stale fallback content before a routed `ng-view` clone links children.
+ *
+ * The mounted view is filled later by `ViewService`; this guard only preserves
+ * the old two-directive transclusion ordering without owning view rendering.
  */
-function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
+function ViewDirectiveContentGuard() {
     return {
         priority: -400,
         compile(tElement) {
             const initial = tElement.innerHTML;
-            dealoc(tElement, true);
-            return function (scope, $element) {
-                const data = getCacheData($element, "$ngView");
-                if (!data) {
-                    $element.innerHTML = initial;
-                    $compile($element.contentDocument ??
-                        $element.childNodes)(scope);
-                    return;
-                }
-                const cfg = (data.$cfg ?? {
-                    _viewDecl: {},
-                });
-                const resolveCtx = cfg._path && new ResolveContext(cfg._path, $injector);
-                $element.innerHTML = data.$cfg
-                    ? (getViewTemplate(data.$cfg, $element, assertDefined(resolveCtx)) ??
-                        initial)
-                    : initial;
-                const link = $compile($element.contentDocument ??
-                    $element.childNodes);
-                const controller = cfg._controller;
-                const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
-                const targetScope = scope.$target;
-                targetScope.$resolve = locals;
-                if (controller) {
-                    const controllerInstance = $controller(controller, assign({}, locals, { $scope: scope, $element }));
-                    // TODO: Use $view service as a central point for registering component-level hooks
-                    // Then, when a component is created, tell the $view service, so it can invoke hooks
-                    // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
-                    // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
-                    setCacheData($element, "$ngControllerController", controllerInstance);
-                    const { children } = $element;
-                    for (let i = 0; i < children.length; i++) {
-                        setCacheData(children[i], "$ngControllerController", controllerInstance);
+            return {
+                pre(_scope, $element) {
+                    const data = getCacheData($element, "$ngView");
+                    if (data) {
+                        data.$initial ?? (data.$initial = initial);
                     }
-                    registerViewControllerCallbacks($transitions, controllerInstance, scope, cfg);
-                }
-                link(scope);
-                const componentName = cfg
-                    ._component;
-                const callbackConfig = cfg;
-                if (isString(componentName)) {
-                    const kebobName = componentName
-                        .replace(/([A-Z])/g, "-$1")
-                        .replace(/^-/, "")
-                        .toLowerCase();
-                    const tagRegexp = new RegExp(`^${kebobName}$`, "i");
-                    const registerComponentCallbacks = (attempt = 0) => {
-                        if (scope.$handler._destroyed) {
-                            return;
-                        }
-                        const componentCtrl = getComponentController($element, componentName, tagRegexp);
-                        if (componentCtrl) {
-                            registerViewControllerCallbacks($transitions, componentCtrl, scope, callbackConfig);
-                            return;
-                        }
-                        if (attempt >= 10) {
-                            return;
-                        }
-                        queueMicrotask(() => {
-                            registerComponentCallbacks(attempt + 1);
-                        });
-                    };
-                    registerComponentCallbacks();
-                }
+                    if (data?.$cfg && !data.$filled) {
+                        dealoc($element, true);
+                    }
+                },
             };
         },
     };
 }
 
-export { ViewDirective, ViewDirectiveFill };
+export { ViewDirective, ViewDirectiveContentGuard };

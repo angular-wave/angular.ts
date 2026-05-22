@@ -1,28 +1,23 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
-import { removeElement } from '../../shared/dom.js';
+import { removeElement, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
+import { observeInternalAttribute, isInternalAttributeInterpolated } from '../../services/attributes/attributes.js';
 import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty } from '../../shared/utils.js';
 
-function readOptionElementAttr($attributes, optionElement, optionAttrs, normalizedName) {
-    const elementValue = $attributes?.read(optionElement, normalizedName);
-    const attrValue = optionAttrs[normalizedName];
-    if (isDefined(attrValue) &&
-        (isUndefined(elementValue) || elementValue.includes("{{"))) {
-        return attrValue;
+function readOptionElementAttr(optionElement, normalizedName, observedValue) {
+    if (isDefined(observedValue)) {
+        return observedValue;
     }
-    return elementValue ?? attrValue;
+    return getNormalizedAttr(optionElement, normalizedName);
 }
-function hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, normalizedName) {
-    return Boolean($attributes._isInterpolated(optionElement, normalizedName) ||
-        $attributes.read(optionElement, normalizedName)?.includes("{{"));
+function hasInterpolatedOptionAttr(optionElement, normalizedName) {
+    return Boolean(isInternalAttributeInterpolated(optionElement, normalizedName) ||
+        getNormalizedAttr(optionElement, normalizedName)?.includes("{{"));
 }
-function observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, normalizedName, readValue, callback, skipInitial = false) {
-    if (!$attributes) {
-        return () => undefined;
-    }
+function observeOptionElementAttr(optionScope, optionElement, normalizedName, readValue, callback, skipInitial = false) {
     let lastValue = {};
     let skipNext = skipInitial;
-    return $attributes.observe(optionScope, optionElement, normalizedName, (observedValue) => {
+    return observeInternalAttribute(optionScope, optionElement, normalizedName, (observedValue) => {
         if (skipNext) {
             skipNext = false;
             return;
@@ -34,8 +29,8 @@ function observeOptionElementAttr($attributes, optionScope, optionElement, optio
         callback(newValue);
     });
 }
-function setOptionElementAttr($attributes, optionElement, normalizedName, value) {
-    $attributes.set(optionElement, normalizedName, value);
+function setOptionElementAttr(optionElement, normalizedName, value) {
+    setNormalizedAttr(optionElement, normalizedName, value);
 }
 /**
  * The controller for the `select` directive.
@@ -311,7 +306,7 @@ class SelectController {
     }
     /** @ignore */
     /** @internal */
-    _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn, $attributes, initialValue, hasNgValue = false) {
+    _registerOption(optionScope, optionElement, interpolateValueFn, interpolateTextFn, ngValueExpression, initialValue, hasNgValue = false) {
         let oldVal;
         let hashedVal;
         let registeredValue = initialValue;
@@ -340,8 +335,8 @@ class SelectController {
                 }
             };
             syncNgValue(undefined);
-            optionScope.$watch(stringify(optionAttrs.ngValue ?? ""), syncNgValue);
-            observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", (observedValue) => {
+            optionScope.$watch(stringify(ngValueExpression ?? ""), syncNgValue);
+            observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => {
                 if (observedValue !== optionElement.getAttribute("value")) {
                     return oldVal;
                 }
@@ -352,7 +347,7 @@ class SelectController {
             }, syncNgValue, true);
         }
         else if (interpolateValueFn) {
-            observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "value", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "value"), (newVal) => {
+            observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => readOptionElementAttr(optionElement, "value", observedValue), (newVal) => {
                 this._readValue();
                 let removal;
                 const previouslySelected = optionElement.selected;
@@ -366,20 +361,20 @@ class SelectController {
                 if (removal && previouslySelected) {
                     this._scheduleViewValueUpdate();
                 }
-            }, hasInterpolatedOptionAttr($attributes, optionElement, optionAttrs, "value"));
+            }, hasInterpolatedOptionAttr(optionElement, "value"));
         }
         else if (interpolateTextFn) {
             const initialTextValue = interpolateTextFn(optionScope);
             optionScope.value = initialTextValue;
             if (!registeredValue) {
-                setOptionElementAttr($attributes, optionElement, "value", String(optionScope.value));
+                setOptionElementAttr(optionElement, "value", String(optionScope.value));
                 registeredValue = initialTextValue;
                 this._addOption(String(initialTextValue), optionElement);
             }
             optionScope.$watch("value", () => {
                 const newVal = interpolateTextFn(optionScope);
                 if (!registeredValue) {
-                    setOptionElementAttr($attributes, optionElement, "value", String(newVal));
+                    setOptionElementAttr(optionElement, "value", String(newVal));
                 }
                 const previouslySelected = optionElement.selected;
                 if (oldVal !== newVal) {
@@ -396,7 +391,7 @@ class SelectController {
         else {
             this._addOption(registeredValue, optionElement);
         }
-        observeOptionElementAttr($attributes, optionScope, optionElement, optionAttrs, "disabled", () => readOptionElementAttr($attributes, optionElement, optionAttrs, "disabled"), (newVal) => {
+        observeOptionElementAttr(optionScope, optionElement, "disabled", (observedValue) => readOptionElementAttr(optionElement, "disabled", observedValue), (newVal) => {
             if (newVal === "true" || (newVal && optionElement.selected)) {
                 if (this._multiple) {
                     this._scheduleViewValueUpdate(true);

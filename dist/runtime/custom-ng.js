@@ -1,12 +1,11 @@
-import { _attributes, _provide, _angular, _window, _document, _compile, _filter } from '../injection-tokens.js';
-import { CompileProvider } from '../core/compile/compile.js';
+import { _compileLifecycle, _provide, _window, _document, _compile, _angular, _filter } from '../injection-tokens.js';
+import { CompileLifecycleProvider, CompileProvider } from '../core/compile/compile.js';
 import { FilterProvider } from '../core/filter/filter.js';
 import { InterpolateProvider } from '../core/interpolate/interpolate.js';
 import { ParseProvider } from '../core/parse/parse.js';
 import { RootScopeProvider } from '../core/scope/scope.js';
 import { ControllerProvider } from '../core/controller/controller.js';
 import { ExceptionHandlerProvider } from '../services/exception/exception.js';
-import { AttributesServiceProvider } from '../services/attributes/attributes.js';
 import { keys } from '../shared/utils.js';
 
 /**
@@ -16,7 +15,7 @@ import { keys } from '../shared/utils.js';
  * custom builds do not pull them in unless explicitly requested.
  */
 const coreProviders = {
-    [_attributes]: AttributesServiceProvider,
+    [_compileLifecycle]: CompileLifecycleProvider,
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,
@@ -39,6 +38,9 @@ function registerCustomNgModule(angular, options = {}) {
     return angular.module(moduleName, options.requires ?? [], [
         _provide,
         ($provide) => {
+            $provide.value(_window, window);
+            $provide.value(_document, document);
+            const $compileProvider = $provide.provider(_compile, CompileProvider);
             $provide.provider({
                 [_angular]: class {
                     constructor() {
@@ -47,9 +49,6 @@ function registerCustomNgModule(angular, options = {}) {
                 },
                 ...providers,
             });
-            $provide.value(_window, window);
-            $provide.value(_document, document);
-            const $compileProvider = $provide.provider(_compile, CompileProvider);
             directiveRegistrations.forEach((directives) => {
                 $compileProvider.directive(directives);
             });

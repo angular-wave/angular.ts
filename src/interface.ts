@@ -84,33 +84,6 @@ export const PublicInjectionTokens = {
 } as const;
 
 /**
- * Public compile-time attribute contract for directive template APIs.
- *
- * The runtime object is an internal compile facade. Public code should treat
- * directive attributes as a normalized attribute view with observer and class
- * helpers, not as a constructible class.
- */
-export interface DirectiveAttributes extends Record<string, unknown> {
-  /** Map from normalized attribute names to original DOM attribute names. */
-  $attr: Record<string, string>;
-
-  /** Normalize a DOM attribute name using AngularTS directive matching rules. */
-  $normalize(name: string): string;
-
-  /** Add one or more classes to the directive element. */
-  $addClass(classVal: string): void;
-
-  /** Remove one or more classes from the directive element. */
-  $removeClass(classVal: string): void;
-
-  /** Replace old class tokens with new class tokens on the directive element. */
-  $updateClass(newClasses: string, oldClasses: string): void;
-
-  /** Observe changes to a normalized attribute value. */
-  $observe(key: string, fn: (value?: unknown) => unknown): () => void;
-}
-
-/**
  * Configuration options for the AngularTS bootstrap process.
  *
  * @property strictDi - If `true`, disables automatic function annotation
@@ -495,7 +468,6 @@ export type DirectiveLinkFn<T> =
 export type DirectiveCompileFn = {
   bivarianceHack(
     templateElement: HTMLElement,
-    templateAttributes: DirectiveAttributes & Record<string, unknown>,
     transclude?: ChildTranscludeOrLinkFn,
   ): undefined | DirectiveLinkFn<unknown> | DirectivePrePost;
 }["bivarianceHack"];
@@ -534,15 +506,11 @@ export interface Directive<TCtrl = unknown> {
   /** Scope configuration (`true`, `false`, or object for isolate scope) */
   scope?: boolean | Record<string, string>;
   /** Inline template */
-  template?:
-    | string
-    | ((element: HTMLElement, attrs: DirectiveAttributes) => string);
+  template?: string | ((element: HTMLElement) => string);
   /** Template namespace (e.g., SVG, HTML) */
   templateNamespace?: string;
   /** Template URL for loading from server */
-  templateUrl?:
-    | string
-    | ((element: HTMLElement, attrs: DirectiveAttributes) => string);
+  templateUrl?: string | ((element: HTMLElement) => string);
   /** Enables transclusion or configures named slots */
   transclude?: boolean | string | Record<string, string>;
   /** Currently only used by view directive */

@@ -196,11 +196,11 @@ describe("ngProp*", () => {
   });
 
   it("should use the full ng-prop-* attribute name in $attr mappings", async () => {
-    let attrs;
+    let snapshot;
 
     compileProvider.directive("attrExposer", () => ({
       link($scope, $element) {
-        attrs = {
+        snapshot = {
           title: getNormalizedAttr($element, "title"),
           titleAttr: getNormalizedAttrName($element, "title"),
           ngPropTitle: getNormalizedAttr($element, "ngPropTitle"),
@@ -226,28 +226,28 @@ describe("ngProp*", () => {
       '<div attr-exposer ng-prop-title="12" ng-prop-super-title="34" ng-prop-my-camel-title="56">',
     )($rootScope);
     await wait();
-    expect(attrs.title).toBe("12");
-    expect(attrs.titleAttr).toBe("title");
-    expect(attrs.ngPropTitle).toBe("12");
-    expect(attrs.ngPropTitleAttr).toBe("ng-prop-title");
+    expect(snapshot.title).toBe("12");
+    expect(snapshot.titleAttr).toBe("title");
+    expect(snapshot.ngPropTitle).toBe("12");
+    expect(snapshot.ngPropTitleAttr).toBe("ng-prop-title");
 
-    expect(attrs.superTitle).toBeUndefined();
-    expect(attrs.superTitleAttr).toBeUndefined();
-    expect(attrs.ngPropSuperTitle).toBe("34");
-    expect(attrs.ngPropSuperTitleAttr).toBe("ng-prop-super-title");
+    expect(snapshot.superTitle).toBeUndefined();
+    expect(snapshot.superTitleAttr).toBeUndefined();
+    expect(snapshot.ngPropSuperTitle).toBe("34");
+    expect(snapshot.ngPropSuperTitleAttr).toBe("ng-prop-super-title");
 
-    expect(attrs.myCamelTitle).toBeUndefined();
-    expect(attrs.myCamelTitleAttr).toBeUndefined();
-    expect(attrs.ngPropMyCamelTitle).toBe("56");
-    expect(attrs.ngPropMyCamelTitleAttr).toBe("ng-prop-my-camel-title");
+    expect(snapshot.myCamelTitle).toBeUndefined();
+    expect(snapshot.myCamelTitleAttr).toBeUndefined();
+    expect(snapshot.ngPropMyCamelTitle).toBe("56");
+    expect(snapshot.ngPropMyCamelTitleAttr).toBe("ng-prop-my-camel-title");
   });
 
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
-    let attrs;
+    let snapshot;
 
     compileProvider.directive("attrExposer", () => ({
       link($scope, $element) {
-        attrs = {
+        snapshot = {
           title: getNormalizedAttr($element, "title"),
           titleAttr: getNormalizedAttrName($element, "title"),
           ngPropTitleAttr: getNormalizedAttrName($element, "ngPropTitle"),
@@ -258,9 +258,9 @@ describe("ngProp*", () => {
     $compile(
       '<div attr-exposer ng-prop-title="42" ng-attr-title="foo" title="bar">',
     )($rootScope);
-    expect(attrs.title).toBe("foo");
-    expect(attrs.titleAttr).toBe("title");
-    expect(attrs.ngPropTitleAttr).toBe("ng-prop-title");
+    expect(snapshot.title).toBe("foo");
+    expect(snapshot.titleAttr).toBe("title");
+    expect(snapshot.ngPropTitleAttr).toBe("ng-prop-title");
   });
 
   it("should disallow property binding to onclick", () => {
@@ -275,7 +275,7 @@ describe("ngProp*", () => {
 
   it("should process property bindings in pre-linking phase at priority 100", async () => {
     compileProvider.directive("propLog", () => ({
-      compile($element, $attrs) {
+      compile($element, $snapshot) {
         logs.push(`compile=${$element.myName}`);
 
         return {

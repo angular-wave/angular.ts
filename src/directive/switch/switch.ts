@@ -9,7 +9,6 @@ import {
   removeElement,
 } from "../../shared/dom.ts";
 import { assertDefined, values } from "../../shared/utils.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 
 interface NgSwitchBlock {
   /** @internal */
@@ -195,15 +194,10 @@ export function ngSwitchWhenDirective(): ng.Directive {
     terminal: true,
     priority: 1200,
     require: "^ngSwitch",
-    compile(tElement: Element, tAttrs: DirectiveAttributes) {
-      const when =
-        getNormalizedAttr(tElement, "ngSwitchWhen") ??
-        (tAttrs.ngSwitchWhen as string | undefined) ??
-        "";
+    compile(tElement: Element) {
+      const when = getNormalizedAttr(tElement, "ngSwitchWhen") ?? "";
 
-      const separator =
-        getNormalizedAttr(tElement, "ngSwitchWhenSeparator") ??
-        (tAttrs.ngSwitchWhenSeparator as string | undefined);
+      const separator = getNormalizedAttr(tElement, "ngSwitchWhenSeparator");
 
       return function ngSwitchWhenLink(
         _scope: ng.Scope,

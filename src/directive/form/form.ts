@@ -1,7 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
-  _attributes,
-  _attrs,
   _element,
   _injector,
   _interpolate,
@@ -34,12 +31,9 @@ import {
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
 import type { NgModelController } from "../model/model.ts";
-import type {
-  DirectiveAttributes,
-  DirectiveCompileFn,
-  DirectiveLinkFn,
-} from "../../interface.ts";
+import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 export interface ValidityCssHost {
   /** @internal */
@@ -177,13 +171,7 @@ function toPublicValidationState(
 // asks for $scope to fool the BC controller module
 export class FormController {
   static $nonscope = true;
-  /* @ignore */ static $inject = [
-    _element,
-    _attrs,
-    _scope,
-    _injector,
-    _interpolate,
-  ];
+  /* @ignore */ static $inject = [_element, _scope, _injector, _interpolate];
 
   /** @internal */
   _isAnimated: boolean;
@@ -238,7 +226,6 @@ export class FormController {
    */
   constructor(
     $element: HTMLFormElement,
-    $attrs: DirectiveAttributes,
     $scope: ng.Scope,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
@@ -869,14 +856,10 @@ const formDirectiveFactory = function (
 ): ng.AnnotatedDirectiveFactory {
   return [
     _parse,
-    _attributes,
     /**
      * Builds the form/ngForm directive definition.
      */
-    function (
-      $parse: ng.ParseService,
-      $attributes: AttributesService,
-    ): ng.Directive {
+    function ($parse: ng.ParseService): ng.Directive {
       return {
         name: "form",
         restrict: isNgForm ? "EA" : "E",
@@ -1071,11 +1054,15 @@ const formDirectiveFactory = function (
 
               if (nameAttr) {
                 setter(scope, controller);
-                $attributes.observe(
+                observeNormalizedAttribute(
                   scope,
                   formElementParam,
                   nameAttr,
-                  (newValue) => {
+                  () => {
+                    const newValue = getNormalizedAttr(
+                      formElementParam,
+                      nameAttr,
+                    );
                     const nextName = newValue ?? "";
 
                     if (controller.$name === nextName) return;

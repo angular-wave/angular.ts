@@ -1,11 +1,11 @@
-import { _element, _attributes, _scope, _parse } from '../../injection-tokens.js';
+import { _element, _scope, _parse } from '../../injection-tokens.js';
 import { assign, isString, deleteProperty, keys, isDefined } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 class NgModelOptionsController {
-    constructor($element, $attributes, $scope, $parse) {
+    constructor($element, $scope, $parse) {
         this._element = $element;
-        this._attributes = $attributes;
         this._scope = $scope;
         this._parse = $parse;
         this.parentCtrl = null;
@@ -15,12 +15,12 @@ class NgModelOptionsController {
         const parentOptions = this.parentCtrl
             ? this.parentCtrl.$options
             : defaultModelOptions;
-        const modelOptionsDefinition = this._parse(this._attributes.read(this._element, "ngModelOptions") ?? "")(this._scope);
+        const modelOptionsDefinition = this._parse(getNormalizedAttr(this._element, "ngModelOptions") ?? "")(this._scope);
         this.$options = parentOptions.createChild(modelOptionsDefinition);
     }
 }
 NgModelOptionsController.$nonscope = true;
-NgModelOptionsController.$inject = [_element, _attributes, _scope, _parse];
+NgModelOptionsController.$inject = [_element, _scope, _parse];
 /**
  * A container for the options set by the {@link ngModelOptions} directive
  */

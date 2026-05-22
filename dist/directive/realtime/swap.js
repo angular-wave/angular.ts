@@ -1,12 +1,12 @@
-import { emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
+import { getNormalizedAttr, emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { stringify, isInstanceOf, arrayFrom, isFunction, isArray, assertDefined } from '../../shared/utils.js';
 
 /** Creates a per-directive realtime DOM swap handler. */
-function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attributes, element, logPrefix, }) {
+function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element, logPrefix, }) {
     let content;
     return (html, swap, options = {}) => {
-        const animationEnabled = !!$attributes.read(element, "animate");
+        const animationEnabled = !!getNormalizedAttr(element, "animate");
         const animate = animationEnabled ? getAnimate() : undefined;
         let nodes = [];
         if (!["textContent", "delete", "none"].includes(swap)) {
@@ -17,7 +17,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attribu
                 ? arrayFrom(compiled.childNodes)
                 : [compiled];
         }
-        const targetSelector = options.targetSelector ?? $attributes.read(element, "target");
+        const targetSelector = options.targetSelector ?? getNormalizedAttr(element, "target");
         const target = targetSelector
             ? document.querySelector(targetSelector)
             : element;
@@ -60,11 +60,20 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attribu
                 }
                 case "textContent":
                     if (animationEnabled) {
+                        const parent = target.parentNode;
+                        if (!parent)
+                            return false;
+                        const placeholder = document.createComment("ng-text-swap");
+                        parent.insertBefore(placeholder, target);
                         assertDefined(animate)
                             .leave(target)
                             .done(() => {
                             target.textContent = stringify(html);
-                            assertDefined(animate).enter(target, target.parentNode);
+                            assertDefined(animate)
+                                .enter(target, parent, placeholder)
+                                .done(() => {
+                                placeholder.remove();
+                            });
                         });
                     }
                     else {
@@ -169,7 +178,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, $attribu
             }
             return true;
         };
-        if (shouldUseViewTransition($attributes.read(element, "viewTransition"), target, animationEnabled)) {
+        if (shouldUseViewTransition(getNormalizedAttr(element, "viewTransition"), target, animationEnabled)) {
             const documentWithTransitions = document;
             documentWithTransitions.startViewTransition(() => {
                 applySwap();

@@ -35,6 +35,10 @@ pub fn compile() -> Token(namespace.CompileService) {
   token.new("$compile")
 }
 
+pub fn compile_lifecycle() -> Token(js.JsValue) {
+  token.new("$compileLifecycle")
+}
+
 pub fn cookie() -> Token(namespace.CookieService) {
   token.new("$cookie")
 }

@@ -20,8 +20,9 @@ the AngularTS `ng` namespace. The parity source of truth is:
 
 Directive link callback parity must use the current attrs-free shape:
 `(scope, element)`, `(scope, element, transclude)`, or
-`(scope, element, controller, transclude?)`. Scala directive APIs must keep
-`CompileAttributes` on compile/template/controller APIs only.
+`(scope, element, controller, transclude?)`. Scala directive APIs must not expose
+compile/link attributes objects; attribute reads should use DOM helpers or the
+element directly.
 
 ## Dart Parity Target
 

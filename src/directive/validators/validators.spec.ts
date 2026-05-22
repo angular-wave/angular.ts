@@ -40,7 +40,7 @@ describe("validators", () => {
 
       element.setAttribute("ng-pattern", "/^\\d+$/");
 
-      const directive = patternDirective[2](parse);
+      const directive = patternDirective[1](parse);
 
       const link = directive.compile(element);
 
@@ -54,7 +54,7 @@ describe("validators", () => {
 
       element.setAttribute("ng-pattern", "pattern");
 
-      const directive = patternDirective[2](parse);
+      const directive = patternDirective[1](parse);
 
       const link = directive.compile(element);
 

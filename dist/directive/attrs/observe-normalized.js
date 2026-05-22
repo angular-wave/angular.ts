@@ -2,7 +2,7 @@ import { directiveNormalize } from '../../shared/utils.js';
 
 /**
  * Observes one normalized attribute name on one element without using the
- * framework-wide `$attributes` observer registry.
+ * framework-wide internal attribute observer registry.
  */
 function observeNormalizedAttribute(scope, element, normalizedName, callback) {
     const expectedName = directiveNormalize(normalizedName);

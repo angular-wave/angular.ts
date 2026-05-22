@@ -1,4 +1,5 @@
 import { _injector, _scope } from "../injection-tokens.ts";
+import { ALIASED_ATTR } from "./constants.ts";
 import {
   arrayFrom,
   assign,
@@ -8,8 +9,10 @@ import {
   isArray,
   isDefined,
   isInstanceOf,
+  isNullOrUndefined,
   isObject,
   isString,
+  snakeCase,
   uppercase,
   assertDefined,
 } from "./utils.ts";
@@ -57,6 +60,10 @@ const SCOPE_KEY = _scope;
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
+
+const SIMPLE_ATTR_NAME = /^\w/;
+
+const specialAttrHolder = document.createElement("div");
 
 // Table parts need to be wrapped with `<table>` or they're
 // stripped to their contents when put in a div.
@@ -392,6 +399,11 @@ export function setTranscludedHostElement(
   transcludedHostElements.set(anchor, hostElement);
 }
 
+/** Returns the original element replaced by an element-transclusion anchor. */
+export function getTranscludedHostElement(anchor: Node): Element | undefined {
+  return transcludedHostElements.get(anchor);
+}
+
 /** Copies element-transclusion host metadata from an original node tree to its clone. */
 export function cloneTranscludedHostElements(source: Node, clone: Node): void {
   const hostElement = transcludedHostElements.get(source);
@@ -427,36 +439,6 @@ export function getDirectiveHostElement(
   const hostElement = transcludedHostElements.get(node);
 
   return hostElement instanceof Element ? hostElement : null;
-}
-
-/**
- * Reads a directive attribute from the directive host element, with an attrs fallback
- * for compile/link contexts that provide synthetic or already-interpolated attrs.
- */
-export function getDirectiveAttr(
-  element: Element | Node | null | undefined,
-  attrs: Record<string, unknown> | null | undefined,
-  normalizedName: string,
-): string | undefined {
-  const hostElement = getDirectiveHostElement(element) ?? element;
-
-  const elementValue = getNormalizedAttr(hostElement, normalizedName);
-
-  return elementValue ?? (attrs?.[normalizedName] as string | undefined);
-}
-
-/** Returns whether a directive attribute is present on the host element or attrs. */
-export function hasDirectiveAttr(
-  element: Element | Node | null | undefined,
-  attrs: Record<string, unknown> | null | undefined,
-  normalizedName: string,
-): boolean {
-  return (
-    hasNormalizedAttr(
-      getDirectiveHostElement(element) ?? element,
-      normalizedName,
-    ) || attrs?.[normalizedName] !== undefined
-  );
 }
 
 /**
@@ -692,12 +674,19 @@ export function getNormalizedAttr(
   element: Element | Node | null | undefined,
   normalizedName: string,
 ): string | undefined {
-  if (!(element instanceof Element)) return undefined;
+  const attrElement =
+    element instanceof Element
+      ? element
+      : element
+        ? getTranscludedHostElement(element)
+        : undefined;
+
+  if (!(attrElement instanceof Element)) return undefined;
 
   const expected = directiveNormalize(normalizedName);
 
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attr = element.attributes[index];
+  for (let index = 0; index < attrElement.attributes.length; index += 1) {
+    const attr = attrElement.attributes[index];
 
     if (directiveNormalize(attr.name) === expected) {
       return attr.value;
@@ -712,12 +701,19 @@ export function getNormalizedAttrName(
   element: Element | Node | null | undefined,
   normalizedName: string,
 ): string | undefined {
-  if (!(element instanceof Element)) return undefined;
+  const attrElement =
+    element instanceof Element
+      ? element
+      : element
+        ? getTranscludedHostElement(element)
+        : undefined;
+
+  if (!(attrElement instanceof Element)) return undefined;
 
   const expected = directiveNormalize(normalizedName);
 
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attr = element.attributes[index];
+  for (let index = 0; index < attrElement.attributes.length; index += 1) {
+    const attr = attrElement.attributes[index];
 
     if (directiveNormalize(attr.name) === expected) {
       return attr.name;
@@ -733,6 +729,94 @@ export function hasNormalizedAttr(
   normalizedName: string,
 ): boolean {
   return getNormalizedAttr(element, normalizedName) !== undefined;
+}
+
+export type NormalizedAttributeSetValue = string | boolean | null | undefined;
+
+export interface SetNormalizedAttrOptions {
+  writeAttr?: boolean;
+  attrName?: string;
+}
+
+export interface SetNormalizedAttrResult {
+  element: Element;
+  normalizedName: string;
+  observerName: string;
+  attrName: string | undefined;
+  observedValue: string | undefined;
+}
+
+function setSpecialAttr(
+  element: Element,
+  attrName: string,
+  value: string | null | undefined,
+): void {
+  specialAttrHolder.innerHTML = `<span ${attrName}>`;
+  const { attributes } = specialAttrHolder.firstChild as Element;
+
+  const attribute = attributes[0];
+
+  attributes.removeNamedItem(attribute.name);
+  attribute.value = value ?? "";
+  element.setAttributeNode(attribute);
+}
+
+/** Writes an element attribute by normalized directive-style name. */
+export function setNormalizedAttr(
+  element: Element | Node | null | undefined,
+  normalizedName: string,
+  value: NormalizedAttributeSetValue,
+  options?: SetNormalizedAttrOptions,
+): SetNormalizedAttrResult | undefined {
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return undefined;
+
+  const normalized = directiveNormalize(normalizedName);
+  const observerName = hasOwn(ALIASED_ATTR, normalized)
+    ? ALIASED_ATTR[normalized]
+    : normalized;
+  const booleanName = getBooleanAttrName(targetElement, observerName);
+  let attrName = options?.attrName;
+
+  if (booleanName) {
+    (targetElement as unknown as Record<string, unknown>)[observerName] = value;
+    attrName = booleanName;
+  } else {
+    attrName ??= snakeCase(normalized, "-");
+  }
+
+  if (options?.writeAttr === false || !attrName) {
+    return {
+      element: targetElement,
+      normalizedName: normalized,
+      observerName,
+      attrName,
+      observedValue: isNullOrUndefined(value) ? undefined : String(value),
+    };
+  }
+
+  if (isNullOrUndefined(value)) {
+    targetElement.removeAttribute(attrName);
+  } else if (SIMPLE_ATTR_NAME.test(attrName)) {
+    if (booleanName && value === false) {
+      targetElement.removeAttribute(attrName);
+    } else if (booleanName) {
+      targetElement.toggleAttribute(attrName, value as boolean);
+    } else {
+      targetElement.setAttribute(attrName, value as string);
+    }
+  } else {
+    setSpecialAttr(targetElement, attrName, value as string | null);
+  }
+
+  return {
+    element: targetElement,
+    normalizedName: normalized,
+    observerName,
+    attrName,
+    observedValue: targetElement.getAttribute(attrName) ?? undefined,
+  };
 }
 
 function cleanSingleElementData(node: Element): void {

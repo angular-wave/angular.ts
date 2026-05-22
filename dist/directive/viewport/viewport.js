@@ -1,14 +1,15 @@
-import { _parse, _attributes } from '../../injection-tokens.js';
+import { _parse } from '../../injection-tokens.js';
 import { arrayFrom } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngViewportDirective.$inject = [_parse, _attributes];
+ngViewportDirective.$inject = [_parse];
 /** Evaluates expressions when an element enters or leaves the viewport. */
-function ngViewportDirective($parse, $attributes) {
+function ngViewportDirective($parse) {
     return {
         restrict: "A",
         link(scope, element) {
-            const enterExpr = $attributes.read(element, "onEnter");
-            const leaveExpr = $attributes.read(element, "onLeave");
+            const enterExpr = getNormalizedAttr(element, "onEnter");
+            const leaveExpr = getNormalizedAttr(element, "onLeave");
             const enterFn = enterExpr ? $parse(enterExpr) : undefined;
             const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
             const observer = new IntersectionObserver((entries) => {

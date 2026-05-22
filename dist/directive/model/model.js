@@ -1,25 +1,18 @@
-import { _scope, _exceptionHandler, _attrs, _element, _parse, _injector, _interpolate, _attributes } from '../../injection-tokens.js';
-import { VALID_CLASS, INVALID_CLASS, NOT_EMPTY_CLASS, EMPTY_CLASS, PRISTINE_CLASS, DIRTY_CLASS, UNTOUCHED_CLASS, TOUCHED_CLASS } from '../../shared/constants.js';
-import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isFunction, callFunction, isNull, isNumberNaN, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike, isDefined } from '../../shared/utils.js';
+import { _scope, _exceptionHandler, _element, _parse, _injector, _interpolate } from '../../injection-tokens.js';
+import { VALID_CLASS, INVALID_CLASS, EMPTY_CLASS, NOT_EMPTY_CLASS, PRISTINE_CLASS, DIRTY_CLASS, UNTOUCHED_CLASS, TOUCHED_CLASS } from '../../shared/constants.js';
+import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isFunction, callFunction, isNull, isNumberNaN, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike } from '../../shared/utils.js';
+import { startingTag, getNormalizedAttr } from '../../shared/dom.js';
+import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
+import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { nullFormCtrl, cachedToggleClass, PENDING_CLASS } from '../form/form.js';
 import { defaultModelOptions } from '../model-options/model-options.js';
-import { startingTag } from '../../shared/dom.js';
-import { createLazyAnimate } from '../../animations/lazy-animate.js';
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 const ngModelError = createErrorFactory("ngModel");
-function readModelAttr($attributes, element, attr, normalizedName) {
-    const elementValue = element instanceof Element
-        ? $attributes?.read(element, normalizedName)
+function readModelAttr(element, normalizedName) {
+    return element instanceof Element
+        ? getNormalizedAttr(element, normalizedName)
         : undefined;
-    const attrValue = attr
-        ? attr[normalizedName]
-        : undefined;
-    if (isDefined(attrValue) &&
-        (isUndefined(elementValue) || elementValue.includes("{{"))) {
-        return attrValue;
-    }
-    return elementValue ?? attrValue;
 }
 /**
  * @property $viewValue The actual value from the control's view.
@@ -60,7 +53,7 @@ class NgModelController {
     /**
      * Creates a model controller bound to the element, scope, and ngModel expression.
      */
-    constructor($scope, $exceptionHandler, $attr, $element, $parse, $injector, $interpolate, $attributes) {
+    constructor($scope, $exceptionHandler, $element, $parse, $injector, $interpolate) {
         /**
          * Handles configured update events by committing the staged view value.
          */
@@ -92,13 +85,12 @@ class NgModelController {
         this._customValidationStates = new Map();
         this._validationStates = this._customValidationStates;
         this.$pending = undefined; // keep pending keys here
-        const interpolatedName = $interpolate(readModelAttr($attributes, $element, $attr, "name") ?? "", false)?.($scope);
+        const interpolatedName = $interpolate(readModelAttr($element, "name") ?? "", false)?.($scope);
         this.$name = isString(interpolatedName) ? interpolatedName : "";
         this._parentForm = nullFormCtrl;
         this.$options = defaultModelOptions;
         this._updateEvents = "";
-        this._modelExpression =
-            readModelAttr($attributes, $element, $attr, "ngModel") ?? "";
+        this._modelExpression = readModelAttr($element, "ngModel") ?? "";
         this._parsedNgModel = $parse(this._modelExpression);
         this._parsedNgModelAssign = this._parsedNgModel._assign;
         this._ngModelGet = this._parsedNgModel;
@@ -108,7 +100,6 @@ class NgModelController {
         this._parserName = "parse";
         this._currentValidationRunId = 0;
         this._scope = $scope; // attempt to bind to nearest controller if present
-        this._attr = $attr;
         this._element = $element;
         this._getAnimate = createLazyAnimate($injector);
         this._parse = $parse;
@@ -333,8 +324,7 @@ class NgModelController {
         if (this.$isEmpty(value)) {
             const animate = this._getAnimateIfEnabled();
             if (animate) {
-                animate.removeClass(this._element, NOT_EMPTY_CLASS);
-                animate.addClass(this._element, EMPTY_CLASS);
+                animate.setClass(this._element, EMPTY_CLASS, NOT_EMPTY_CLASS);
             }
             else {
                 this._element.classList.remove(NOT_EMPTY_CLASS);
@@ -344,8 +334,7 @@ class NgModelController {
         else {
             const animate = this._getAnimateIfEnabled();
             if (animate) {
-                animate.removeClass(this._element, EMPTY_CLASS);
-                animate.addClass(this._element, NOT_EMPTY_CLASS);
+                animate.setClass(this._element, NOT_EMPTY_CLASS, EMPTY_CLASS);
             }
             else {
                 this._element.classList.remove(EMPTY_CLASS);
@@ -367,8 +356,7 @@ class NgModelController {
             return;
         const animate = this._getAnimateIfEnabled();
         if (animate) {
-            animate.removeClass(this._element, EMPTY_CLASS);
-            animate.addClass(this._element, PRISTINE_CLASS);
+            animate.setClass(this._element, PRISTINE_CLASS, EMPTY_CLASS);
         }
         else {
             this._element.classList.remove(EMPTY_CLASS);
@@ -390,8 +378,7 @@ class NgModelController {
         }
         const animate = this._getAnimateIfEnabled();
         if (animate) {
-            animate.removeClass(this._element, PRISTINE_CLASS);
-            animate.addClass(this._element, DIRTY_CLASS);
+            animate.setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
         }
         else {
             this._element.classList.remove(PRISTINE_CLASS);
@@ -1083,12 +1070,10 @@ class NgModelController {
 /* @ignore */ NgModelController.$inject = [
     _scope,
     _exceptionHandler,
-    _attrs,
     _element,
     _parse,
     _injector,
     _interpolate,
-    _attributes,
 ];
 /**
  * Watches the bound model expression and refreshes the controller when it changes externally.
@@ -1123,8 +1108,7 @@ function setupModelWatcher(ctrl) {
 /**
  * Builds the core `ngModel` directive definition.
  */
-ngModelDirective.$inject = [_attributes];
-function ngModelDirective($attributes) {
+function ngModelDirective() {
     return {
         restrict: "A",
         require: ["ngModel", "^?form", "^?ngModelOptions"],
@@ -1154,13 +1138,9 @@ function ngModelDirective($attributes) {
                             modelCtrl._parentForm._renameControl(modelCtrl, nextName);
                         }
                     };
-                    const deregisterNameObserver = $attributes
-                        ? $attributes.observe(scope, preElement, "name", () => {
-                            handleNameChange(readModelAttr($attributes, preElement, undefined, "name"));
-                        })
-                        : () => {
-                            /* empty */
-                        };
+                    const deregisterNameObserver = observeNormalizedAttribute(scope, preElement, "name", () => {
+                        handleNameChange(readModelAttr(preElement, "name"));
+                    });
                     const deregisterWatch = (scope.$watch(modelCtrl._modelExpression, (val) => {
                         const modelValue = deProxy(val);
                         if (modelValue === modelCtrl.$modelValue ||

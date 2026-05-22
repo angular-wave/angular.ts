@@ -1,8 +1,9 @@
-import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector, _attributes } from '../../injection-tokens.js';
+import { _webTransport, _parse, _compile, _log, _exceptionHandler, _injector } from '../../injection-tokens.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { isString, isObject, isFunction, isUndefined, isDefined } from '../../shared/utils.js';
 import { isRealtimeProtocolMessage, getRealtimeProtocolContent, SwapMode } from '../realtime/protocol.js';
 import { createRealtimeSwapHandler } from '../realtime/swap.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 ngWebTransportDirective.$inject = [
     _webTransport,
@@ -11,19 +12,18 @@ ngWebTransportDirective.$inject = [
     _log,
     _exceptionHandler,
     _injector,
-    _attributes,
 ];
 /**
  * Connects an element to a WebTransport endpoint and evaluates template
  * expressions for incoming datagrams or unidirectional streams.
  */
-function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector, $attributes) {
+function ngWebTransportDirective($webTransport, $parse, $compile, $log, $exceptionHandler, $injector) {
     const decoder = new TextDecoder();
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element) {
-            const attr = (name) => $attributes.read(element, name);
+            const attr = (name) => getNormalizedAttr(element, name);
             const eventName = attr("trigger") ?? "load";
             const mode = parseMode(attr("mode"));
             const transform = parseTransform(attr("transform"));
@@ -144,7 +144,6 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 $log,
                 getAnimate,
                 scope,
-                $attributes,
                 element,
                 logPrefix: "ngWebTransport",
             });

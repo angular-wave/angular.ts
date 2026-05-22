@@ -1,11 +1,10 @@
-import { getBooleanAttrName } from '../../shared/dom.js';
-import { _attributes } from '../../injection-tokens.js';
-import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { directiveNormalize, assertDefined, hasOwn, snakeCase, isNullOrUndefined, nullObject, isUndefined, arrayRemove, keys } from '../../shared/utils.js';
+import { hasNormalizedAttr, getBooleanAttrName } from '../../shared/dom.js';
+import { createLazyAnimate } from '../../animations/lazy-animate.js';
+import { updateClass } from '../../animations/class-mutation.js';
+import { setInternalAttribute } from '../../services/attributes/attributes.js';
+import { directiveNormalize, nullObject, keys, hasOwn, snakeCase } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
-const SIMPLE_ATTR_NAME = /^\w/;
-const specialAttrHolder = document.createElement("div");
 const lazyAnimateByInjector = new WeakMap();
 function getLazyAnimate($injector) {
     let getAnimate = lazyAnimateByInjector.get($injector);
@@ -15,8 +14,9 @@ function getLazyAnimate($injector) {
     }
     return getAnimate;
 }
-class CompileAttributes {
-    constructor($injector, $exceptionHandler, node, attributesToCopy) {
+/** @internal */
+class CompileAttributeState {
+    constructor($injector, $exceptionHandler, stateToCopy) {
         /**
          * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `data-`) to its
          * normalized, camelCase form.
@@ -30,217 +30,89 @@ class CompileAttributes {
         this.$normalize = directiveNormalize;
         this._getAnimate = getLazyAnimate($injector);
         this._exceptionHandler = $exceptionHandler;
-        try {
-            this._attributes = $injector.get(_attributes);
-        }
-        catch {
-            this._attributes = undefined;
-        }
-        this.$attr = {};
-        if (attributesToCopy) {
-            const attributeKeys = keys(attributesToCopy);
-            for (let i = 0, l = attributeKeys.length; i < l; i++) {
-                const key = attributeKeys[i];
-                if (key === "_observers") {
-                    continue;
-                }
-                this[key] = attributesToCopy[key];
+        this._attributeNames = {};
+        this._originalAttributeNames = nullObject();
+        if (stateToCopy) {
+            const attrKeys = keys(stateToCopy._attributeNames);
+            for (let i = 0, l = attrKeys.length; i < l; i++) {
+                const key = attrKeys[i];
+                this._attributeNames[key] = stateToCopy._attributeNames[key];
+            }
+            const sourceKeys = keys(stateToCopy._originalAttributeNames);
+            for (let i = 0, l = sourceKeys.length; i < l; i++) {
+                const key = sourceKeys[i];
+                this._originalAttributeNames[key] =
+                    stateToCopy._originalAttributeNames[key];
             }
         }
-        this._node = node;
-    }
-    /** @ignore Internal element accessor used by legacy attribute helpers. */
-    /** @internal */
-    _element() {
-        return assertDefined(this._node);
-    }
-    $addClass(classVal) {
-        if (classVal && classVal.length > 0) {
-            const element = this._element();
-            if (this._attributes) {
-                this._attributes.addClass(element, classVal);
-                return;
-            }
-            const animate = getAnimateForNode(this._getAnimate, element);
-            if (animate) {
-                animate.addClass(element, classVal);
-            }
-            else {
-                element.classList.add(classVal);
-            }
-        }
-    }
-    $removeClass(classVal) {
-        if (classVal && classVal.length > 0) {
-            const element = this._element();
-            if (this._attributes) {
-                this._attributes.removeClass(element, classVal);
-                return;
-            }
-            const animate = getAnimateForNode(this._getAnimate, element);
-            if (animate) {
-                animate.removeClass(element, classVal);
-            }
-            else {
-                element.classList.remove(classVal);
-            }
-        }
-    }
-    $updateClass(newClasses, oldClasses) {
-        if (newClasses === oldClasses) {
-            return;
-        }
-        const element = this._element();
-        if (this._attributes) {
-            this._attributes.updateClass(element, newClasses, oldClasses);
-            return;
-        }
-        const animate = getAnimateForNode(this._getAnimate, element);
-        const toAdd = tokenDifference(newClasses, oldClasses);
-        if (toAdd.length) {
-            if (animate) {
-                animate.addClass(element, toAdd.join(" "));
-            }
-            else {
-                element.classList.add(...toAdd);
-            }
-        }
-        const toRemove = tokenDifference(oldClasses, newClasses);
-        if (toRemove.length) {
-            if (animate) {
-                animate.removeClass(element, toRemove.join(" "));
-            }
-            else {
-                element.classList.remove(...toRemove);
-            }
-        }
-    }
-    /** @internal */
-    _setValue(key, value, writeAttr, attrName) {
-        const node = this._element();
-        const booleanKey = getBooleanAttrName(node, key);
-        const aliasedKey = hasOwn(ALIASED_ATTR, key)
-            ? ALIASED_ATTR[key]
-            : undefined;
-        let observer = key;
-        if (booleanKey) {
-            this._element()[key] = value;
-            attrName = booleanKey;
-        }
-        else if (aliasedKey) {
-            this[aliasedKey] = value;
-            observer = aliasedKey;
-        }
-        this[key] = value;
-        if (attrName) {
-            this.$attr[key] = attrName;
-        }
-        else {
-            attrName = this.$attr[key];
-            if (!attrName) {
-                this.$attr[key] = attrName = snakeCase(key, "-");
-            }
-        }
-        if (this._attributes) {
-            this._attributes.set(node, observer, value, {
-                writeAttr,
-                attrName,
-            });
-        }
-        else if (writeAttr !== false) {
-            if (!attrName)
-                return;
-            const elem = this._element();
-            if (isNullOrUndefined(value)) {
-                elem.removeAttribute(attrName);
-            }
-            else if (SIMPLE_ATTR_NAME.test(attrName)) {
-                if (booleanKey && value === false) {
-                    elem.removeAttribute(attrName);
-                }
-                else if (booleanKey) {
-                    elem.toggleAttribute(attrName, value);
-                }
-                else {
-                    elem.setAttribute(attrName, value);
-                }
-            }
-            else {
-                CompileAttributes._setSpecialAttr(elem, attrName, value);
-            }
-        }
-        const { _observers } = this;
-        const observerListeners = _observers?.[observer];
-        if (observerListeners) {
-            for (let i = 0, l = observerListeners.length; i < l; i++) {
-                try {
-                    observerListeners[i](value);
-                }
-                catch (err) {
-                    this._exceptionHandler(err);
-                }
-            }
-        }
-    }
-    $observe(key, fn) {
-        const _observers = this._observers ?? (this._observers = nullObject());
-        const listeners = _observers[key] ?? (_observers[key] = []);
-        listeners.push(fn);
-        const isInterpolated = this._attributes?._isInterpolated(this._element(), key);
-        if (!isInterpolated && hasOwn(this, key) && !isUndefined(this[key])) {
-            fn(this[key]);
-        }
-        return function () {
-            arrayRemove(listeners, fn);
-        };
-    }
-    /** @internal */
-    static _setSpecialAttr(element, attrName, value) {
-        specialAttrHolder.innerHTML = `<span ${attrName}>`;
-        const { attributes } = specialAttrHolder.firstChild;
-        const attribute = attributes[0];
-        attributes.removeNamedItem(attribute.name);
-        attribute.value = value ?? "";
-        element.attributes.setNamedItem(attribute);
     }
 }
-CompileAttributes.$nonscope = true;
-/**
- * Splits a space-separated class string into normalized tokens.
- *
- * @param value - The class string to split.
- * @returns The normalized class tokens.
- */
-function tokenizeClassString(value) {
-    const trimmed = value.trim();
-    return trimmed ? trimmed.split(/\s+/) : [];
+CompileAttributeState.$nonscope = true;
+/** @internal */
+function updateCompileAttributeClass(attrs, node, newClasses, oldClasses) {
+    if (newClasses === oldClasses) {
+        return;
+    }
+    updateClass(node, newClasses, oldClasses, attrs._getAnimate);
 }
-/**
- * Computes the difference between two space-separated token strings.
- *
- * @param str1 - The first string containing space-separated tokens.
- * @param str2 - The second string containing space-separated tokens.
- * @returns Tokens that are present in `str1` but not in `str2`.
- */
-function tokenDifference(str1, str2) {
-    if (str1 === str2) {
-        return [];
+/** @internal */
+function setCompileAttributeValue(attrs, node, key, value, writeAttr, attrName) {
+    const booleanKey = getBooleanAttrName(node, key);
+    const aliasedKey = hasOwn(ALIASED_ATTR, key) ? ALIASED_ATTR[key] : undefined;
+    let observer = key;
+    if (booleanKey) {
+        node[key] = value;
+        attrName = booleanKey;
     }
-    const tokens1 = tokenizeClassString(str1);
-    if (tokens1.length === 0) {
-        return [];
+    else if (aliasedKey) {
+        recordCompileAttribute(attrs, aliasedKey, aliasedKey);
+        observer = aliasedKey;
     }
-    const excludedTokens = new Set(tokenizeClassString(str2));
-    const seenTokens = new Set();
-    const difference = [];
-    for (let i = 0; i < tokens1.length; i++) {
-        const token = tokens1[i];
-        if (!excludedTokens.has(token) && !seenTokens.has(token)) {
-            seenTokens.add(token);
-            difference.push(token);
+    if (attrName) {
+        attrs._attributeNames[key] = attrName;
+    }
+    else {
+        attrName = attrs._attributeNames[key];
+        if (!attrName) {
+            attrs._attributeNames[key] = attrName = snakeCase(key, "-");
         }
     }
-    return difference;
+    recordCompileAttribute(attrs, key, attrName);
+    setInternalAttribute(node, observer, value, {
+        writeAttr,
+        attrName,
+    });
+}
+/** @internal */
+function recordCompileAttribute(attrs, key, attrName, sourceAttrName = attrName, overwrite = true) {
+    if (overwrite || !hasOwn(attrs._attributeNames, key)) {
+        attrs._attributeNames[key] = attrName;
+        attrs._originalAttributeNames[key] = sourceAttrName;
+    }
+}
+/** @internal */
+function hasCompileAttribute(attrs, node, key) {
+    if (hasOwn(attrs._attributeNames, key) ||
+        hasOwn(attrs._originalAttributeNames, key)) {
+        return true;
+    }
+    return hasNormalizedAttr(node, key);
+}
+/** @internal */
+function listCompileAttributes(attrs) {
+    const names = new Set(keys(attrs._attributeNames));
+    keys(attrs._originalAttributeNames).forEach((key) => {
+        names.add(key);
+    });
+    return Array.from(names);
+}
+/** @internal */
+function getCompileAttributeName(attrs, key) {
+    return attrs._attributeNames[key];
+}
+/** @internal */
+function getCompileOriginalAttributeName(attrs, key) {
+    return attrs._originalAttributeNames[key];
 }
 
-export { CompileAttributes };
+export { CompileAttributeState, getCompileAttributeName, getCompileOriginalAttributeName, hasCompileAttribute, listCompileAttributes, recordCompileAttribute, setCompileAttributeValue, updateCompileAttributeClass };

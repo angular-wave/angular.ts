@@ -40,7 +40,6 @@
     "js/ng.CookieService"
     "js/ng.CookieStoreOptions"
     "js/ng.CurrencyFilterOptions"
-    "js/ng.DateFilterFormat"
     "js/ng.DateFilterOptions"
     "js/ng.Directive"
     "js/ng.DirectiveFactory"
@@ -203,7 +202,6 @@
      "js/ng.CookieService" "High-level API for reading, writing, serializing, and removing browser cookies through the injectable `$cookie` service."
      "js/ng.CookieStoreOptions" "Serialization options for cookie-backed stores."
      "js/ng.CurrencyFilterOptions" "Public AngularTS CurrencyFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.DateFilterFormat" "Public AngularTS DateFilterFormat contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.DateFilterOptions" "Public AngularTS DateFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Directive" "Public AngularTS Directive contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.DirectiveFactory" "Directive registration factory that returns either a directive definition object or a link function."
@@ -251,7 +249,7 @@
      "js/ng.PublicLinkFn" "A function returned by the `$compile` service that links a compiled template to a scope."
      "js/ng.RealtimeProtocolEventDetail" "Public AngularTS RealtimeProtocolEventDetail contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RealtimeProtocolMessage" "Public AngularTS RealtimeProtocolMessage contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.RelativeTimeFilterOptions" "Public AngularTS RelativeTimeFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.RelativeTimeFilterOptions" "An object with some or all of properties of `options` parameter of `Intl.RelativeTimeFormat` constructor. [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters)."
      "js/ng.RequestConfig" "Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage"
      "js/ng.RequestShortcutConfig" "Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage"
      "js/ng.RestBackend" "Backend abstraction used by {@link RestService}. Implement this interface to route REST operations through `$http`, IndexedDB, the Cache API, a test double, or a composed backend such as {@link CachedRestBackend}."
@@ -599,6 +597,7 @@
     "cached-rest-backend-options-strategy"
     "component-bindings"
     "component-controller-as"
+    "component-replace"
     "component-require"
     "connection-config-event-types"
     "connection-config-heartbeat-timeout"
@@ -611,8 +610,6 @@
     "cookie-options-samesite"
     "cookie-options-secure"
     "cookie-store-options-cookie"
-    "currency-filter-options-locale"
-    "date-filter-options-locale"
     "directive-controller-as"
     "directive-count"
     "directive-name"
@@ -644,6 +641,7 @@
     "injection-tokens-dollararia"
     "injection-tokens-dollararia-provider"
     "injection-tokens-dollarcompile"
+    "injection-tokens-dollarcompile-lifecycle"
     "injection-tokens-dollarcompile-provider"
     "injection-tokens-dollarcontroller"
     "injection-tokens-dollarcontroller-provider"
@@ -744,12 +742,10 @@
     "ng-model-controller-dollarvalidity"
     "ng-model-controller-dollarview-change-listeners"
     "ng-module-name"
-    "number-filter-options-locale"
     "pub-sub-provider-event-bus"
     "realtime-protocol-event-detail-url"
     "realtime-protocol-message-swap"
     "realtime-protocol-message-target"
-    "relative-time-filter-options-locale"
     "request-config-event-handlers"
     "request-config-headers"
     "request-config-method"
@@ -819,7 +815,6 @@
     "sse-protocol-message-target"
     "state-declaration-abstract"
     "state-declaration-bindings"
-    "state-declaration-component"
     "state-declaration-dynamic"
     "state-declaration-name"
     "state-declaration-params"
@@ -2289,6 +2284,11 @@
   ^string [^js/ng.Component target]
   (.-controllerAs target))
 
+(defn component-replace
+  "Replaces the generated component host element with the component template.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.Component target]
+  (.-replace target))
+
 (defn component-require
   "Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the $onInit method is executed!\n\nType: {(!Object<string, string>|undefined)}"
   ^js/Object [^js/ng.Component target]
@@ -2348,16 +2348,6 @@
   "Cookie attributes used for writes.\n\nType: {(!ng.CookieOptions|undefined)}"
   ^js/ng.CookieOptions [^js/ng.CookieStoreOptions target]
   (.-cookie target))
-
-(defn currency-filter-options-locale
-  "Public CurrencyFilterOptions.locale member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.CurrencyFilterOptions target]
-  (.-locale target))
-
-(defn date-filter-options-locale
-  "Public DateFilterOptions.locale member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.DateFilterOptions target]
-  (.-locale target))
 
 (defn directive-controller-as
   "Alias name for the controller in templates\n\nType: {(string|undefined)}"
@@ -2513,6 +2503,11 @@
   "Public InjectionTokens.$compile member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.InjectionTokens target]
   (.-$compile target))
+
+(defn injection-tokens-dollarcompile-lifecycle
+  "Public InjectionTokens.$compileLifecycle member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$compileLifecycle target))
 
 (defn injection-tokens-dollarcompile-provider
   "Public InjectionTokens.$compileProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
@@ -3014,11 +3009,6 @@
   ^string [^js/ng.NgModule target]
   (.-name target))
 
-(defn number-filter-options-locale
-  "Public NumberFilterOptions.locale member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.NumberFilterOptions target]
-  (.-locale target))
-
 (defn pub-sub-provider-event-bus
   "Public PubSubProvider.eventBus member exposed by the AngularTS namespace contract.\n\nType: {!ng.PubSubService}"
   ^js/ng.PubSubService [^js/ng.PubSubProvider target]
@@ -3038,11 +3028,6 @@
   "Optional CSS selector that overrides the directive target for this message.\n\nType: {(string|undefined)}"
   ^string [^js/ng.RealtimeProtocolMessage target]
   (.-target target))
-
-(defn relative-time-filter-options-locale
-  "Public RelativeTimeFilterOptions.locale member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.RelativeTimeFilterOptions target]
-  (.-locale target))
 
 (defn request-config-event-handlers
   "Event handlers notified by the underlying transport.\n\nType: {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}"
@@ -3388,11 +3373,6 @@
   "An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied data from a resolve of the same name, by default. You may supply data from a different resolve name by mapping it here. Each key in this object is the name of one of the component's input bindings. Each value is the name of the resolve that should be provided to that binding. Any component bindings that are omitted from this map get the default behavior of mapping to a resolve of the same name. #### Example: ```js $stateProvider.state('foo', { resolve: { foo: function(FooService) { return FooService.get(); }, bar: function(BarService) { return BarService.get(); } }, component: 'Baz', // The component's `baz` binding gets data from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl: 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<' // baz binding } }); ```\n\nType: {(!Object<string, string>|undefined)}"
   ^js/Object [^js/ng.StateDeclaration target]
   (.-bindings target))
-
-(defn state-declaration-component
-  "The name of the component to use for this view. The name of an AngularTS `.component()` which will be used for this view. Resolve data can be provided to the component via the component's `bindings` object. For each binding declared on the component, any resolve with the same name is set on the component's controller instance. Note: Mapping from resolve names to component inputs may be specified using [[bindings]]. #### Example: ```js .state('profile', { // Use the <my-profile></my-profile> component for this state. component: 'MyProfile', } ``` Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.StateDeclaration target]
-  (.-component target))
 
 (defn state-declaration-dynamic
   "Marks all the state's parameters as `dynamic`. All parameters on the state will use this value for `dynamic` as a default. Individual parameters may override this default using [[ParamDeclaration.dynamic]] in the [[params]] block. This default applies to all parameters declared on this state.\n\nType: {(boolean|undefined)}"

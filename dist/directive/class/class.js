@@ -1,10 +1,13 @@
-import { _attributes } from '../../injection-tokens.js';
-import { getCacheData, setCacheData } from '../../shared/dom.js';
+import { _injector } from '../../injection-tokens.js';
+import { setClass } from '../../animations/class-mutation.js';
+import { createLazyAnimate } from '../../animations/lazy-animate.js';
+import { getCacheData, setCacheData, getNormalizedAttr } from '../../shared/dom.js';
 import { nullObject, isArray, isObject, hasOwn, isString } from '../../shared/utils.js';
 
-classDirective.$inject = [_attributes];
+classDirective.$inject = [_injector];
 /** Creates the `ngClass` directive. */
-function classDirective($attributes) {
+function classDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         link(scope, element) {
             let classCounts = getCacheData(element, "$classCounts");
@@ -15,7 +18,7 @@ function classDirective($attributes) {
                 setCacheData(element, "$classCounts", classCounts);
             }
             const counts = classCounts;
-            const expression = $attributes.read(element, "ngClass");
+            const expression = getNormalizedAttr(element, "ngClass");
             if (expression === undefined) {
                 return;
             }
@@ -33,10 +36,7 @@ function classDirective($attributes) {
                 const toAddArray = arrayDifference(newClassArray, oldClassArray);
                 const toRemove = digestClassCounts(toRemoveArray, -1);
                 const toAdd = digestClassCounts(toAddArray, 1);
-                if (toAdd.length)
-                    $attributes.addClass(element, toAdd.join(" "));
-                if (toRemove.length)
-                    $attributes.removeClass(element, toRemove.join(" "));
+                setClass(element, toAdd.join(" "), toRemove.join(" "), getAnimate);
             }
             /**
              * Updates reference-counts for classes and returns the classes that should be

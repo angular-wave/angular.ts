@@ -304,7 +304,7 @@ ng.Directive.prototype.restrict;
 
 /**
  * Compile function for the directive
- * @type {(function(!HTMLElement, !Object, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
+ * @type {(function(!HTMLElement, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
  */
 ng.Directive.prototype.compile;
 
@@ -364,7 +364,7 @@ ng.Directive.prototype.scope;
 
 /**
  * Inline template
- * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
+ * @type {(function(!HTMLElement): string|string|undefined)}
  */
 ng.Directive.prototype.template;
 
@@ -376,7 +376,7 @@ ng.Directive.prototype.templateNamespace;
 
 /**
  * Template URL for loading from server
- * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
+ * @type {(function(!HTMLElement): string|string|undefined)}
  */
 ng.Directive.prototype.templateUrl;
 

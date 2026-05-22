@@ -19,14 +19,17 @@ execution binds those plans to a concrete scope and DOM node list.
   `ng-on-*`, `ng-window-*`, and `ng-observe-*` synthetic directives.
 - Handle inline templates, `templateUrl`, template replacement, namespace-aware
   template parsing, and delayed linking.
-- Manage `CompileAttributes` objects, `$observe` callbacks, class updates, boolean
-  attributes, and normalized attribute names.
+- Manage compiler-only attribute metadata, element attribute observers, boolean
+  attributes, normalized attribute names, and class mutations through animation
+  helpers.
 
 ## Public Surface
 
 - `CompileProvider`: provider behind `$compileProvider`; registers directives,
   components, strict binding mode, and property security contexts.
-- `CompileAttributes`: compile/template/controller attribute wrapper exposed as `$attrs`.
+- `CompileAttributeState`: compiler-only normalized attribute metadata used for
+  interpolation writes and template bookkeeping. It is not passed to directive
+  `compile` or link callbacks.
 - `DirectiveSuffix`: suffix used for directive factory providers.
 - `CompileFn`: public `$compile` entry point type.
 - `PublicLinkFn`: link function returned by `$compile`.
@@ -41,11 +44,9 @@ execution binds those plans to a concrete scope and DOM node list.
   `applyTextInterpolationValue()`, and `byPriority()`: exported helpers used by
   tests and compiler support code.
 
-Public methods exposed through `CompileAttributes` include `$normalize`, `$addClass`,
-`$removeClass`, `$updateClass`, and `$observe`. Attribute writes are routed
-through the element-based `$attributes.set(...)` service; compile internals use
-the private `CompileAttributes._setValue(...)` bridge while the remaining `$attrs`
-surface is reduced.
+`CompileAttributeState` keeps the compiler's normalized attribute-name map and
+template replacement metadata. Attribute observation is owned by element-based
+helpers; directive authors should read static attributes from DOM helpers.
 
 ## Core Model
 
@@ -90,12 +91,14 @@ instantiated lazily through `${name}Directive` providers. Component definitions
 are converted into element directives with isolated bindings, controller
 aliases, optional templates, and optional transclusion.
 
-During compilation, each node receives a `CompileAttributes` object and a directive
-list. Directive `compile` functions run once for the template. Returned
-pre/post link functions are stored as `LinkFnRecord` entries. During linking,
-the compiler creates scopes, binds controller instances, resolves required
-controllers, initializes isolate or controller bindings, and executes link
-functions in Angular-style order.
+During compilation, each node may receive an internal normalized attribute state
+object plus a directive list. Directive `compile` functions run once for the
+template and receive only the template element and optional transclusion
+function. Returned pre/post link functions are stored as `LinkFnRecord` entries.
+During linking, the compiler creates scopes, binds controller instances,
+resolves required controllers, initializes isolate or controller bindings, and
+executes link functions in Angular-style order without passing an attributes
+object.
 
 For `templateUrl`, the element is emptied immediately, the template request is
 started, and link operations are queued until the template arrives. The delayed
@@ -130,10 +133,8 @@ requests.
 - `DelayedTemplateLinkState`: stores queued link operations for `templateUrl`.
 - `DirectiveBindingChangeState` and `OnChangesQueueState`: batch and deliver
   `$onChanges` records.
-- `CompileAttributes.`: maps normalized attribute names back to DOM attribute
-  names.
-- `CompileAttributes._observers`: stores `$observe` listeners by normalized attribute
-  key.
+- `CompileAttributeState`: compiler-only state that records normalized names back
+  to their DOM attribute names. Access should stay behind helper functions.
 
 ## Integration Points
 
@@ -147,8 +148,9 @@ requests.
 - `$templateRequest` or `fetch`: loads async templates.
 - `$exceptionHandler`: receives directive factory, link, observer, and lifecycle
   errors.
-- `AttributesService`: normalized attribute reads/writes and class mutation
-  when available.
+- Internal attribute helpers: normalized attribute observation, interpolation
+  metadata, and observer scope ownership.
+- Animation helpers: class mutations route through `$animate` when available.
 - Security adapter and SCE contexts: sanitize trusted attribute and property
   bindings.
 - Scope internals: attach scopes to DOM, create inherited/isolate/transcluded
@@ -178,9 +180,9 @@ controller maps, bound transclude references, element references, and child
 scope references when released. DOM cache data for moved or cloned transclusion
 content is removed so stale controllers and scopes are not retained.
 
-`CompileAttributes` clone construction intentionally skips observer lists. Each
-cloned attribute instance owns its own `$observe` registrations, and
-deregister functions remove observer callbacks from that instance.
+Attribute observation is element-owned. Clone construction copies only recorded
+attribute-name metadata; observer callbacks are registered against the linked
+element and removed through their disposer functions.
 
 ## Types And Interfaces
 
@@ -195,9 +197,9 @@ deregister functions remove observer callbacks from that instance.
 : Provider that owns directive/component registration and creates the `$compile`
 service.
 
-`CompileAttributes`
-: `$attrs` implementation for normalized attributes, DOM writes, class updates,
-and observers.
+`CompileAttributeState`
+: Internal normalized attribute metadata for interpolation writes, DOM writes
+owned by the compiler, class helper delegation, and template bookkeeping.
 
 `InternalDirective`
 : Normalized directive definition used by the compiler after factory
@@ -230,5 +232,5 @@ available.
   registration ordering, and terminal directives together.
 - Changes to templates or transclusion should test async `templateUrl`, queued
   linking, controller lookup, and cleanup.
-- Changes to `CompileAttributes` should test normalized names, DOM writes, boolean
-  attributes, class updates, and observer deregistration.
+- Changes to `CompileAttributeState` should test normalized names, DOM writes,
+  boolean attributes, class helper delegation, and template replacement merges.

@@ -1,4 +1,3 @@
-import type { DirectiveAttributes } from "../../interface.ts";
 import { _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
@@ -23,11 +22,10 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
   return {
     priority: -1,
     restrict: "A",
-    compile(tElement: Element, tAttrs: DirectiveAttributes) {
+    compile(tElement: Element) {
       const controllerName = directiveNormalize(getNodeName(tElement));
 
-      const expression: unknown =
-        getNormalizedAttr(tElement, "ngRef") ?? tAttrs.ngRef;
+      const expression: unknown = getNormalizedAttr(tElement, "ngRef");
 
       if (!isString(expression)) return () => undefined;
 

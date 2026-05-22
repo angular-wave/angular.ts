@@ -1,6 +1,6 @@
-import { _injector, _attributes } from '../../injection-tokens.js';
+import { _injector } from '../../injection-tokens.js';
 import { createErrorFactory, isArrayLike, arrayFrom, hasOwn, deleteProperty, nullObject, isArray, assertDefined, callFunction, callBackOnce, isDefined, isFunction, setHashKey, hashKey, isProxy, isInstanceOf } from '../../shared/utils.js';
-import { getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
+import { getNormalizedAttr, hasNormalizedAttr, getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
 import { getArrayMutationMeta } from '../../core/scope/scope.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { NodeType } from '../../shared/node.js';
@@ -8,8 +8,8 @@ import { NodeType } from '../../shared/node.js';
 const NG_REMOVED = "$$NG_REMOVED";
 const ngRepeatError = createErrorFactory("ngRepeat");
 const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
-ngRepeatDirective.$inject = [_injector, _attributes];
-function ngRepeatDirective($injector, $attributes) {
+ngRepeatDirective.$inject = [_injector];
+function ngRepeatDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     const repeatPositionLocalKeys = [
         "$index",
@@ -312,12 +312,12 @@ function ngRepeatDirective($injector, $attributes) {
         priority: 1000,
         terminal: true,
         compile($element) {
-            const expression = $attributes.read($element, "ngRepeat") ?? "";
-            const hasAnimate = $attributes.has($element, "animate");
-            const indexProperty = $attributes.read($element, "index") ??
-                $attributes.read($element, "dataIndex") ??
+            const expression = getNormalizedAttr($element, "ngRepeat") ?? "";
+            const hasAnimate = hasNormalizedAttr($element, "animate");
+            const indexProperty = getNormalizedAttr($element, "index") ??
+                getNormalizedAttr($element, "dataIndex") ??
                 undefined;
-            const hasLazy = $attributes.has($element, "lazy");
+            const hasLazy = hasNormalizedAttr($element, "lazy");
             let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
             if (!match) {
                 throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
@@ -335,14 +335,14 @@ function ngRepeatDirective($injector, $attributes) {
                 throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
             }
             const swap = callBackOnce(() => {
-                const targetSelector = $attributes.read($element, "swap");
+                const targetSelector = getNormalizedAttr($element, "swap");
                 if (hasLazy && targetSelector) {
                     document.querySelectorAll(targetSelector).forEach((x) => {
                         removeElement(x);
                     });
                 }
             });
-            function ngRepeatLink($scope, repeatElement, attr, _ctrl, $transclude) {
+            function ngRepeatLink($scope, repeatElement, $transclude) {
                 let previousNode;
                 let pendingInsertAnchor;
                 let pendingInsertEnd;

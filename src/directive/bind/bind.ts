@@ -1,5 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _parse } from "../../injection-tokens.ts";
+import { _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
   isNull,
@@ -8,8 +7,8 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 /** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {
@@ -33,15 +32,22 @@ export function ngBindDirective(): ng.Directive {
 }
 
 /** Binds the interpolated template value as plain text content. */
-ngBindTemplateDirective.$inject = [_attributes];
-export function ngBindTemplateDirective(
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngBindTemplateDirective(): ng.Directive {
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
-      $attributes.observe(scope, element, "ngBindTemplate", (value) => {
+      const syncTemplate = () => {
+        const value = getNormalizedAttr(element, "ngBindTemplate");
+
         element.textContent = isNullOrUndefined(value) ? "" : value;
-      });
+      };
+
+      syncTemplate();
+      observeNormalizedAttribute(
+        scope,
+        element,
+        "ngBindTemplate",
+        syncTemplate,
+      );
     },
   };
 }
@@ -51,9 +57,8 @@ ngBindHtmlDirective.$inject = [_parse];
 export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
-    compile(tElement: Element, tAttrs: DirectiveAttributes) {
-      const expression: unknown =
-        getNormalizedAttr(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
+    compile(tElement: Element) {
+      const expression: unknown = getNormalizedAttr(tElement, "ngBindHtml");
 
       if (!isString(expression)) return () => undefined;
 

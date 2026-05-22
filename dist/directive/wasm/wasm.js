@@ -1,15 +1,14 @@
-import { _attributes } from '../../injection-tokens.js';
 import { instantiateWasm } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngWasmDirective.$inject = [_attributes];
 /**
  * Loads a WebAssembly module and exposes its exports on `scope.$target`.
  */
-function ngWasmDirective($attributes) {
+function ngWasmDirective() {
     return {
         link($scope, element) {
-            const src = $attributes.read(element, "src");
-            const exportName = $attributes.read(element, "as");
+            const src = getNormalizedAttr(element, "src");
+            const exportName = getNormalizedAttr(element, "as");
             if (typeof src !== "string") {
                 return;
             }

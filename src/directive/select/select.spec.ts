@@ -9,6 +9,10 @@ import {
 import { hashKey, equals, isNumberNaN, toJson } from "../../shared/utils.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { optionDirective } from "./select.ts";
+import {
+  observeInternalAttribute,
+  setInternalAttribute,
+} from "../../services/attributes/attributes.ts";
 
 describe("select", () => {
   let scope;
@@ -161,61 +165,38 @@ describe("select", () => {
 
   describe("option compile", () => {
     it("should set a static value from option text during compile", () => {
-      const directive = optionDirective(
-        injector.get("$attributes"),
-        injector.get("$interpolate"),
-      );
+      const directive = optionDirective(injector.get("$interpolate"));
 
       const option = document.createElement("option");
 
-      const attr = {
-        $set: jasmine.createSpy("$set"),
-      };
-
       option.textContent = "literal";
-      const link = directive.compile(option, attr);
+      const link = directive.compile(option);
 
-      expect(attr.$set).not.toHaveBeenCalled();
       expect(option.getAttribute("value")).toBe("literal");
       expect(link).toEqual(jasmine.any(Function));
     });
 
     it("should preserve explicit option values during compile", () => {
-      const directive = optionDirective(
-        injector.get("$attributes"),
-        injector.get("$interpolate"),
-      );
+      const directive = optionDirective(injector.get("$interpolate"));
 
       const option = document.createElement("option");
 
-      const attr = {
-        value: "explicit",
-        $set: jasmine.createSpy("$set"),
-      };
+      option.setAttribute("value", "explicit");
 
-      const link = directive.compile(option, attr);
+      const link = directive.compile(option);
 
-      expect(attr.$set).not.toHaveBeenCalled();
       expect(link).toEqual(jasmine.any(Function));
     });
 
     it("should preserve normalized data-value option values during compile", () => {
-      const directive = optionDirective(
-        injector.get("$attributes"),
-        injector.get("$interpolate"),
-      );
+      const directive = optionDirective(injector.get("$interpolate"));
 
       const option = document.createElement("option");
 
-      const attr = {
-        $set: jasmine.createSpy("$set"),
-      };
-
       option.setAttribute("data-value", "explicit");
       option.textContent = "literal";
-      const link = directive.compile(option, attr);
+      const link = directive.compile(option);
 
-      expect(attr.$set).not.toHaveBeenCalled();
       expect(link).toEqual(jasmine.any(Function));
     });
   });
@@ -1702,7 +1683,7 @@ describe("select", () => {
           ).toBeTrue();
         });
       });
-      it("should interact with custom $attributes observe and set calls", async () => {
+      it("should interact with internal attribute observe and set calls", async () => {
         const log = [];
 
         compile(
@@ -1712,10 +1693,9 @@ describe("select", () => {
         );
         await wait();
 
-        const $attributes = injector.get("$attributes");
         const option = element.querySelectorAll("option")[1];
 
-        $attributes.observe(scope, option, "value", (newVal) => {
+        observeInternalAttribute(scope, option, "value", (newVal) => {
           log.push(newVal);
         });
 
@@ -1723,7 +1703,7 @@ describe("select", () => {
         await wait();
         expect(option.value).toBe("string:init");
 
-        $attributes.set(option, "value", "update");
+        setInternalAttribute(option, "value", "update");
         await wait();
         expect(log).toContain("update");
         expect(option.value).toBe("string:update");

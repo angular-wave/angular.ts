@@ -6,6 +6,7 @@ const PublicInjectionTokens = {
     $animate: "$animate",
     $aria: "$aria",
     $compile: "$compile",
+    $compileLifecycle: "$compileLifecycle",
     $cookie: "$cookie",
     $controller: "$controller",
     $document: "$document",

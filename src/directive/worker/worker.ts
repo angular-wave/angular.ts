@@ -1,10 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import {
-  _attributes,
-  _exceptionHandler,
-  _log,
-  _parse,
-} from "../../injection-tokens.ts";
+import { _exceptionHandler, _log, _parse } from "../../injection-tokens.ts";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
 import {
   createWorkerConnection,
@@ -13,9 +7,13 @@ import {
 } from "../../services/worker/worker.ts";
 import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
-import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import {
+  getNormalizedAttr,
+  hasNormalizedAttr,
+  setNormalizedAttr,
+} from "../../shared/dom.ts";
 
-ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler, _attributes];
+ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
 
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
@@ -24,7 +22,6 @@ export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
-  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -104,10 +101,10 @@ export function ngWorkerDirective(
 
           if (hasNormalizedAttr(element, "throttle")) {
             throttled = true;
-            $attributes.set(element, "throttled", true);
+            setNormalizedAttr(element, "throttled", true);
             setTimeout(
               () => {
-                $attributes.set(element, "throttled", false);
+                setNormalizedAttr(element, "throttled", false);
                 throttled = false;
               },
               parseInt(attr("throttle") ?? "", 10),

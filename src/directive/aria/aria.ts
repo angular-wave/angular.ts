@@ -1,7 +1,7 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _aria, _attributes, _parse } from "../../injection-tokens.ts";
+import { _aria, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize, extend, stringify } from "../../shared/utils.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "./../attrs/observe-normalized.ts";
 
 export interface AriaService {
   config(key: string | number): boolean | undefined;
@@ -310,12 +310,9 @@ export function ngReadonlyAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngModelAriaDirective.$inject = [_aria, _attributes];
+ngModelAriaDirective.$inject = [_aria];
 /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
-export function ngModelAriaDirective(
-  $aria: AriaService,
-  $attributes: AttributesService,
-): ng.Directive {
+export function ngModelAriaDirective($aria: AriaService): ng.Directive {
   /** Determines whether an ARIA attribute should be attached to an element. */
   function shouldAttachAttr(
     attr: string,
@@ -438,15 +435,45 @@ export function ngModelAriaDirective(
                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
 
                 if (needsAriaValuemin) {
-                  $attributes.observe(scope, elem, "min", (newVal) => {
-                    elem.setAttribute("aria-valuemin", stringify(newVal));
-                  });
+                  const updateAriaMin = () => {
+                    elem.setAttribute(
+                      "aria-valuemin",
+                      stringify(
+                        getNormalizedAttr(elem, "min") ??
+                          getNormalizedAttr(elem, "ngMin"),
+                      ),
+                    );
+                  };
+
+                  updateAriaMin();
+                  observeNormalizedAttribute(scope, elem, "min", updateAriaMin);
+                  observeNormalizedAttribute(
+                    scope,
+                    elem,
+                    "ngMin",
+                    updateAriaMin,
+                  );
                 }
 
                 if (needsAriaValuemax) {
-                  $attributes.observe(scope, elem, "max", (newVal) => {
-                    elem.setAttribute("aria-valuemax", stringify(newVal));
-                  });
+                  const updateAriaMax = () => {
+                    elem.setAttribute(
+                      "aria-valuemax",
+                      stringify(
+                        getNormalizedAttr(elem, "max") ??
+                          getNormalizedAttr(elem, "ngMax"),
+                      ),
+                    );
+                  };
+
+                  updateAriaMax();
+                  observeNormalizedAttribute(scope, elem, "max", updateAriaMax);
+                  observeNormalizedAttribute(
+                    scope,
+                    elem,
+                    "ngMax",
+                    updateAriaMax,
+                  );
                 }
 
                 if (needsAriaValuenow) {
@@ -468,12 +495,20 @@ export function ngModelAriaDirective(
             shouldAttachAttr("aria-required", "ariaRequired", elem, false)
           ) {
             // ngModel.$error.required is undefined on custom controls
-            $attributes.observe(scope, elem, "required", () => {
+            const updateAriaRequired = () => {
               elem.setAttribute(
                 "aria-required",
                 hasNormalizedAttr(elem, "required").toString(),
               );
-            });
+            };
+
+            updateAriaRequired();
+            observeNormalizedAttribute(
+              scope,
+              elem,
+              "required",
+              updateAriaRequired,
+            );
           }
 
           if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {

@@ -190,11 +190,13 @@ describe("event directives", () => {
         "click",
       );
 
-      const link = directive.compile(null, { ngClick: "click($event)" });
-
       const scope = $rootScope.$new();
 
       const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+
+      const link = directive.compile(button);
 
       scope.click = jasmine.createSpy("click");
 
@@ -247,14 +249,16 @@ describe("event directives", () => {
         "click",
       );
 
-      const link = directive.compile(null, { ngClick: "click($event)" });
-
       const scope = {
         $on: jasmine.createSpy("$on"),
         click: jasmine.createSpy("click"),
       };
 
       const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+
+      const link = directive.compile(button);
 
       const event = new Event("click");
 
@@ -272,8 +276,6 @@ describe("event directives", () => {
         "click",
       );
 
-      const link = directive.compile(null, { ngClick: "click($event)" });
-
       const rootScope = {};
 
       const scope = {
@@ -283,6 +285,10 @@ describe("event directives", () => {
       };
 
       const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+
+      const link = directive.compile(button);
 
       link(scope, button);
       button.dispatchEvent(new Event("click"));
@@ -298,11 +304,13 @@ describe("event directives", () => {
         "click",
       );
 
-      const link = directive.compile(null, { ngClick: "boom()" });
-
       const scope = $rootScope.$new();
 
       const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "boom()");
+
+      const link = directive.compile(button);
 
       scope.boom = () => {
         throw new Error("listener error");
@@ -469,9 +477,11 @@ describe("event directives", () => {
         "resize",
       );
 
-      const attr = { ngWindowResize: "onResize($event)" };
+      const element = document.createElement("div");
 
-      const link = directive.compile(null, attr);
+      element.setAttribute("ng-window-resize", "onResize($event)");
+
+      const link = directive.compile(element);
 
       const scope = $rootScope.$new();
 
@@ -513,9 +523,11 @@ describe("event directives", () => {
         "resize",
       );
 
-      const attr = { ngWindowResize: "boom()" };
+      const element = document.createElement("div");
 
-      const link = directive.compile(null, attr);
+      element.setAttribute("ng-window-resize", "boom()");
+
+      const link = directive.compile(element);
 
       const scope = $rootScope.$new();
 

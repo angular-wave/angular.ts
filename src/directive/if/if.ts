@@ -4,7 +4,6 @@ import {
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
 import { getNormalizedAttr, removeElement } from "../../shared/dom.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 
 ngIfDirective.$inject = [_injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
@@ -16,8 +15,8 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
     priority: 600,
     terminal: true,
     restrict: "A",
-    compile(tElement: Element, tAttrs: DirectiveAttributes) {
-      const expression = getNormalizedAttr(tElement, "ngIf") ?? tAttrs.ngIf;
+    compile(tElement: Element) {
+      const expression = getNormalizedAttr(tElement, "ngIf");
 
       if (typeof expression !== "string") {
         return () => undefined;

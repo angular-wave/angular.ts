@@ -1,7 +1,8 @@
-import { _state, _rootScope, _stateRegistry, _transitions, _parse, _attributes, _router, _interpolate } from '../../injection-tokens.js';
+import { _state, _rootScope, _stateRegistry, _transitions, _parse, _router, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
 import { stringify, assertDefined, isObject, keys, isString, isArray, assign, arrayFrom, isNullOrUndefined } from '../../shared/utils.js';
-import { getInheritedData } from '../../shared/dom.js';
+import { getNormalizedAttr, getInheritedData, setNormalizedAttr } from '../../shared/dom.js';
+import { observeNormalizedAttribute } from '../../directive/attrs/observe-normalized.js';
 
 const noopDeregister = () => undefined;
 const uniqueStrings = (classes) => arrayFrom(new Set(classes));
@@ -159,12 +160,11 @@ StateRefDirective.$inject = [
     _stateRegistry,
     _transitions,
     _parse,
-    _attributes,
 ];
 /**
  * Generates `ng-sref` links and keeps their href/state data in sync.
  */
-function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse, $attributes) {
+function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions, $parse) {
     const $state = $stateService;
     return {
         restrict: "A",
@@ -174,8 +174,8 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
             const active = ngSrefActive[1] ?? ngSrefActive[0];
             let unlinkInfoFn;
             const rawDef = {};
-            const ref = parseStateRef($attributes.read(element, "ngSref") ?? "");
-            const ngSrefOpts = $attributes.read(element, "ngSrefOpts");
+            const ref = parseStateRef(getNormalizedAttr(element, "ngSref") ?? "");
+            const ngSrefOpts = getNormalizedAttr(element, "ngSrefOpts");
             const ngStateOptsFn = ngSrefOpts ? $parse(ngSrefOpts) : undefined;
             const paramFn = ref._paramExpr ? $parse(ref._paramExpr) : undefined;
             rawDef._ngState = ref._state;
@@ -192,7 +192,7 @@ function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitio
                     unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
                 }
                 if (!isNullOrUndefined(def._href)) {
-                    $attributes.set(element, type._attr, def._href);
+                    setNormalizedAttr(element, type._attr, def._href);
                 }
             }
             if (ref._paramExpr) {
@@ -218,12 +218,11 @@ StateRefDynamicDirective.$inject = [
     _stateRegistry,
     _transitions,
     _parse,
-    _attributes,
 ];
 /**
  * Generates dynamic `ui-state` links whose target state is read from an expression.
  */
-function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse, $attributes) {
+function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions, $parse) {
     return {
         restrict: "A",
         require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
@@ -253,30 +252,33 @@ function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitio
                     unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
                 }
                 if (!isNullOrUndefined(def._href)) {
-                    $attributes.set(element, type._attr, def._href);
+                    setNormalizedAttr(element, type._attr, def._href);
                 }
             }
             inputAttrs.forEach((field) => {
                 function readFieldExpression() {
-                    return $attributes.read(element, field);
+                    return getNormalizedAttr(element, field);
                 }
                 const initialExpr = readFieldExpression();
                 rawDef[rawDefKeyByAttr[field]] =
-                    initialExpr
+                    initialExpr && !initialExpr.includes("{{")
                         ? $parse(initialExpr)(scope)
                         : undefined;
-                $attributes.observe(scope, element, field, () => {
+                const syncFieldExpression = () => {
                     const expr = readFieldExpression();
                     watchDeregFns[field]();
-                    if (!expr)
+                    if (!expr || expr.includes("{{")) {
                         return;
+                    }
                     watchDeregFns[field] =
                         scope.$watch(expr, (newval) => {
                             rawDef[rawDefKeyByAttr[field]] =
                                 newval;
                             update();
                         }) ?? noopDeregister;
-                });
+                };
+                syncFieldExpression();
+                observeNormalizedAttribute(scope, element, field, syncFieldExpression);
             });
             update();
             scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -295,29 +297,24 @@ StateRefActiveDirective.$inject = [
     _stateRegistry,
     _transitions,
     _parse,
-    _attributes,
 ];
 /**
  * Toggles active CSS classes based on the current router state.
  */
-function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse, $attributes) {
+function StateRefActiveDirective($state, $routerState, $interpolate, $stateRegistry, $transitions, $parse) {
     return {
         restrict: "A",
-        controller($scope, $element, $attrs) {
+        controller($scope, $element) {
             let states = [];
             let ngSrefActive;
             // There probably isn't much point in $observing this
             // ngSrefActive and ngSrefActiveEq share the same directive object with some
             // slight difference in logic routing
-            const activeEqRead = $attributes.read($element, "ngSrefActiveEq");
-            const activeEqExpr = activeEqRead?.includes("{{")
-                ? String($attrs.ngSrefActiveEq)
-                : (activeEqRead ?? "");
+            const activeEqRead = getNormalizedAttr($element, "ngSrefActiveEq");
+            const activeEqExpr = activeEqRead ?? "";
             const activeEqClass = stringify(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
-            const activeRead = $attributes.read($element, "ngSrefActive");
-            const activeExpr = activeRead?.includes("{{")
-                ? String($attrs.ngSrefActive)
-                : activeRead;
+            const activeRead = getNormalizedAttr($element, "ngSrefActive");
+            const activeExpr = activeRead;
             try {
                 ngSrefActive = activeExpr ? $parse(activeExpr)($scope) : undefined;
             }

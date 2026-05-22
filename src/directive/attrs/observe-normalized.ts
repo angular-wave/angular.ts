@@ -2,7 +2,7 @@ import { directiveNormalize } from "../../shared/utils.ts";
 
 /**
  * Observes one normalized attribute name on one element without using the
- * framework-wide `$attributes` observer registry.
+ * framework-wide internal attribute observer registry.
  */
 export function observeNormalizedAttribute(
   scope: ng.Scope,

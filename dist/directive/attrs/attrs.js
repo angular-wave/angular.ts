@@ -1,7 +1,8 @@
-import { _attributes, _sce } from '../../injection-tokens.js';
-import { BOOLEAN_ATTR } from '../../shared/dom.js';
-import { directiveNormalize, entries, getNodeName, stringify, isString, trim, isNullOrUndefined, createErrorFactory } from '../../shared/utils.js';
+import { _sce } from '../../injection-tokens.js';
+import { BOOLEAN_ATTR, getNormalizedAttr, setNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
+import { directiveNormalize, entries, getNodeName, isString, stringify, trim, isNullOrUndefined, createErrorFactory } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
+import { isInternalAttributeInterpolated, observeInternalAttribute } from '../../services/attributes/attributes.js';
 
 const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 const $compileError = createErrorFactory("$compile");
@@ -44,79 +45,75 @@ BOOLEAN_ATTR.forEach((i) => {
     if (i === "multiple")
         return;
     /** Mirrors the watched scope expression into the underlying boolean attribute. */
-    function defaultLinkFn($attributes, scope, element, attr) {
-        scope.$watch(attr[normalized] ?? "", (value) => {
-            $attributes.set(element, i, !!value);
+    const defaultLinkFn = (scope, element, expression) => {
+        scope.$watch(expression, (value) => {
+            setNormalizedAttr(element, i, !!value);
         });
-    }
+    };
     const normalized = directiveNormalize(`ng-${i}`);
     let linkFn = defaultLinkFn;
     if (i === "checked") {
-        linkFn = function ($attributes, scope, element, attr) {
+        linkFn = function (scope, element, expression, modelExpression) {
             // ensuring ngChecked doesn't interfere with ngModel when both are set on the same input
-            if (attr.ngModel !== attr[normalized]) {
-                defaultLinkFn($attributes, scope, element, attr);
+            if (modelExpression !== expression) {
+                defaultLinkFn(scope, element, expression);
             }
         };
     }
-    ngAttributeAliasDirectives[normalized] = [
-        _attributes,
-        function ($attributes) {
-            return {
-                restrict: "A",
-                priority: 100,
-                compile(_element, attr) {
-                    return (scope, element) => {
-                        linkFn($attributes, scope, element, attr);
-                    };
-                },
-            };
-        },
-    ];
+    ngAttributeAliasDirectives[normalized] = function () {
+        return {
+            restrict: "A",
+            priority: 100,
+            compile(_element) {
+                const expression = getNormalizedAttr(_element, normalized) ?? "";
+                const modelExpression = getNormalizedAttr(_element, "ngModel");
+                return (scope, element) => {
+                    linkFn(scope, element, expression, modelExpression);
+                };
+            },
+        };
+    };
 });
 // aliased input attrs are evaluated
 entries(ALIASED_ATTR).forEach(([ngAttr]) => {
-    ngAttributeAliasDirectives[ngAttr] = [
-        _attributes,
-        function ($attributes) {
-            return {
-                priority: 100,
-                compile(_element, attr) {
-                    // special case ngPattern when a literal regular expression value
-                    // is used as the expression (this way we don't have to watch anything).
-                    const { ngPattern } = attr;
-                    if (ngAttr === "ngPattern" && ngPattern.startsWith("/")) {
-                        const match = REGEX_STRING_REGEXP.exec(ngPattern);
-                        if (match) {
-                            $attributes.set(_element, "ngPattern", new RegExp(match[1], match[2]).toString());
-                            return;
-                        }
+    ngAttributeAliasDirectives[ngAttr] = function () {
+        return {
+            priority: 100,
+            compile(_element) {
+                // special case ngPattern when a literal regular expression value
+                // is used as the expression (this way we don't have to watch anything).
+                const expression = getNormalizedAttr(_element, ngAttr) ?? "";
+                if (ngAttr === "ngPattern" && expression.startsWith("/")) {
+                    const match = REGEX_STRING_REGEXP.exec(expression);
+                    if (match) {
+                        setNormalizedAttr(_element, "ngPattern", new RegExp(match[1], match[2]).toString());
+                        return;
                     }
-                    return (scope, element) => {
-                        scope.$watch(attr[ngAttr] ?? "", (value) => {
-                            $attributes.set(element, ngAttr, value);
-                        });
-                    };
-                },
-            };
-        },
-    ];
+                }
+                return (scope, element) => {
+                    scope.$watch(expression, (value) => {
+                        setNormalizedAttr(element, ngAttr, value);
+                    });
+                };
+            },
+        };
+    };
 });
 // ng-src, ng-srcset, ng-href are interpolated
 ["src", "srcset", "href"].forEach((attrName) => {
     const normalized = directiveNormalize(`ng-${attrName}`);
     ngAttributeAliasDirectives[normalized] = [
         _sce,
-        _attributes,
         /** Creates the alias directive for interpolated URL-like attributes. */
-        function ($sce, $attributes) {
+        function ($sce) {
             return {
                 priority: 99, // it needs to run after the attributes are interpolated
-                compile(_element, attr) {
+                compile(_element) {
+                    const initialValue = getNormalizedAttr(_element, normalized);
+                    const originalAttrName = getNormalizedAttrName(_element, normalized);
                     return (scope, element) => {
                         const nodeName = getNodeName(element);
                         if (attrName === "srcset") {
-                            const originalAttrName = attr.$attr[normalized];
                             if (originalAttrName) {
                                 element.removeAttribute(originalAttrName);
                             }
@@ -139,50 +136,49 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             return $sce.getTrustedMediaUrl(stringValue);
                         }
                         function readAliasValue() {
-                            const elementValue = $attributes.read(element, normalized);
-                            const attrValue = attr[normalized];
-                            if (attrValue &&
-                                (isNullOrUndefined(elementValue) || elementValue.includes("{{"))) {
-                                return attrValue;
-                            }
-                            const value = elementValue ?? attrValue;
+                            const value = getNormalizedAttr(element, normalized);
                             return value?.includes("{{") ? undefined : value;
                         }
                         function syncAliasValue(value) {
                             if (!value) {
                                 if (attrName === "href") {
-                                    $attributes.set(element, attrName, null);
+                                    setNormalizedAttr(element, attrName, null);
                                 }
+                                return;
+                            }
+                            if (attrName === "srcset" &&
+                                /^\d+(?:\.\d+)?[xw](?:\s|$)/.test(trim(value))) {
                                 return;
                             }
                             if (attrName === "href" ||
                                 (attrName === "src" &&
                                     ["img", "video", "audio", "source", "track"].includes(nodeName))) {
-                                $attributes.set(element, attrName, sanitize(value));
+                                setNormalizedAttr(element, attrName, sanitize(value));
                             }
                             else if (attrName === "srcset") {
-                                $attributes.set(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                                setNormalizedAttr(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
                             }
                             else {
-                                $attributes.set(element, attrName, value);
+                                setNormalizedAttr(element, attrName, value);
                             }
                         }
                         // We need to sanitize the url at least once, in case it is a constant
                         // non-interpolated attribute.
-                        const initialValue = attr[normalized];
-                        if (initialValue && !stringify(initialValue).includes("{{")) {
-                            $attributes.set(element, normalized, attrName === "srcset"
+                        if (initialValue && !initialValue.includes("{{")) {
+                            setNormalizedAttr(element, attrName, attrName === "srcset"
                                 ? sanitizeSrcset($sce, initialValue, "ng-srcset")
                                 : sanitize(initialValue));
                         }
-                        let skipInitialInterpolation = Boolean($attributes._isInterpolated(element, normalized) ||
-                            $attributes.read(element, normalized)?.includes("{{"));
-                        $attributes.observe(scope, element, normalized, () => {
+                        let skipInitialInterpolation = Boolean(isInternalAttributeInterpolated(element, normalized) ||
+                            getNormalizedAttr(element, normalized)?.includes("{{"));
+                        observeInternalAttribute(scope, element, normalized, () => {
+                            const value = readAliasValue();
                             if (skipInitialInterpolation) {
                                 skipInitialInterpolation = false;
-                                return;
+                                if (!value)
+                                    return;
                             }
-                            syncAliasValue(readAliasValue());
+                            syncAliasValue(value);
                         });
                     };
                 },

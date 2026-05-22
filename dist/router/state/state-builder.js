@@ -3,7 +3,7 @@ import { stringify } from '../../shared/strings.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 import { Resolvable } from '../resolve/resolvable.js';
 import { annotate } from '../../core/di/di.js';
-import { normalizeNgViewTarget } from '../view/view.js';
+import { normalizeNgViewTarget } from './view-target.js';
 import { DefType } from '../params/param.js';
 import { UrlMatcher } from '../url/url-matcher.js';
 
@@ -82,7 +82,32 @@ function assertNoRemovedViewKeys(keyItems, values, description) {
         throw new Error(`${description} uses unsupported view properties: ${present.join(", ")}`);
     }
 }
-function viewsBuilder(state) {
+function routeComponentHash(value) {
+    let hash = 5381;
+    for (let i = 0; i < value.length; i++) {
+        hash = (hash * 33) ^ value.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(36);
+}
+function routeComponentName(stateName, viewName) {
+    const raw = `${stateName} ${viewName}`;
+    const words = raw.match(/[A-Za-z0-9]+/g) ?? ["default"];
+    const readable = words
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join("");
+    return `ngRoute${readable}Component${routeComponentHash(raw)}`;
+}
+function normalizeComponentDeclaration(registrar, viewName, config) {
+    const component = config.component;
+    if (!isDefined(component) || isString(component)) {
+        return;
+    }
+    if (!registrar) {
+        throw new Error(`State view '${viewName}' uses an inline component before the compile provider is available`);
+    }
+    config.component = registrar.register(viewName, component);
+}
+function viewsBuilder(state, registrar) {
     if (!state.parent) {
         return {};
     }
@@ -109,6 +134,7 @@ function viewsBuilder(state) {
             config = { component: config };
         }
         config = assign({}, config);
+        normalizeComponentDeclaration(registrar, name, config);
         assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
         if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
             hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
@@ -244,11 +270,25 @@ class StateBuilder {
      * @param {StateMatcher} matcher
      * @param {RouterProvider} routerState
      */
-    constructor(matcher, routerState) {
+    constructor(matcher, routerState, compileProvider) {
         this._matcher = matcher;
         this._$injector = undefined;
         this._paramFactory = routerState._paramFactory;
         this._routerState = routerState;
+        this._compileProvider = compileProvider;
+        this._registeredRouteComponents = new Set();
+    }
+    /** @internal */
+    _registerRouteComponent(stateName, viewName, component) {
+        const name = routeComponentName(stateName, viewName);
+        if (!this._registeredRouteComponents.has(name)) {
+            if (!this._compileProvider) {
+                throw new Error(`State '${stateName}' cannot register inline component '${viewName}' before the compile provider is available`);
+            }
+            this._compileProvider.component(name, assign({}, component, { replace: true }));
+            this._registeredRouteComponents.add(name);
+        }
+        return name;
     }
     /** @internal */
     _assignStateHook(stateObject, publicName, privateName, hookFn) {
@@ -297,7 +337,9 @@ class StateBuilder {
             : [state];
         state.includes = state.parent ? assign({}, state.parent.includes) : {};
         state.includes[state.name] = true;
-        state._views = viewsBuilder(state);
+        state._views = viewsBuilder(state, {
+            register: (viewName, component) => this._registerRouteComponent(state.name, viewName, component),
+        });
         return state;
     }
     /**

@@ -149,7 +149,6 @@ reference example makes one necessary.
 | ng type | Go status |
 | --- | --- |
 | `CurrencyFilterOptions` | deferred |
-| `DateFilterFormat` | deferred |
 | `DateFilterOptions` | deferred |
 | `EntryFilterItem` | deferred |
 | `FilterFactory` | deferred |

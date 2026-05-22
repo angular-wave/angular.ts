@@ -3,6 +3,12 @@
 import { Angular } from "../angular.ts";
 import { createElementFromHTML, dealoc } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
+import {
+  addClass as addClassHelper,
+  removeClass as removeClassHelper,
+  setClass as setClassHelper,
+  updateClass as updateClassHelper,
+} from "./class-mutation.ts";
 
 describe("$animate", () => {
   let host;
@@ -427,5 +433,71 @@ describe("$animate", () => {
     await wait(10);
 
     expect(status).toBe(false);
+  });
+});
+
+describe("class mutation helpers", () => {
+  function splitClasses(className) {
+    const trimmed = className.trim();
+
+    return trimmed ? trimmed.split(/\s+/) : [];
+  }
+
+  it("applies class changes directly when animation is not enabled", () => {
+    const element = document.createElement("div");
+    const getAnimate = () => {
+      throw new Error("animation should not be requested");
+    };
+
+    addClassHelper(element, "first extra", getAnimate);
+    expect(element.classList.contains("first")).toBe(true);
+    expect(element.classList.contains("extra")).toBe(true);
+
+    updateClassHelper(element, "first second", "first third", getAnimate);
+    expect(element.classList.contains("first")).toBe(true);
+    expect(element.classList.contains("second")).toBe(true);
+    expect(element.classList.contains("third")).toBe(false);
+
+    removeClassHelper(element, "second extra", getAnimate);
+    expect(element.classList.contains("second")).toBe(false);
+    expect(element.classList.contains("extra")).toBe(false);
+  });
+
+  it("routes class changes through the matching animation phases", () => {
+    const element = createElementFromHTML(
+      '<div animate="fade" class="old keep"></div>',
+    );
+    const calls = [];
+    const animate = {
+      addClass(target, className) {
+        calls.push(["addClass", className]);
+        target.classList.add(...splitClasses(className));
+      },
+      removeClass(target, className) {
+        calls.push(["removeClass", className]);
+        target.classList.remove(...splitClasses(className));
+      },
+      setClass(target, add, remove) {
+        calls.push(["setClass", add, remove]);
+        target.classList.add(...splitClasses(add));
+        target.classList.remove(...splitClasses(remove));
+      },
+    };
+    const getAnimate = () => animate;
+
+    addClassHelper(element, "added", getAnimate);
+    removeClassHelper(element, "added", getAnimate);
+    updateClassHelper(element, "keep next", "keep old", getAnimate);
+    setClassHelper(element, "direct", "next", getAnimate);
+
+    expect(calls).toEqual([
+      ["addClass", "added"],
+      ["removeClass", "added"],
+      ["setClass", "next", "old"],
+      ["setClass", "direct", "next"],
+    ]);
+    expect(element.classList.contains("old")).toBe(false);
+    expect(element.classList.contains("direct")).toBe(true);
+    expect(element.classList.contains("next")).toBe(false);
   });
 });

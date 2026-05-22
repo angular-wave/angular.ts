@@ -1,6 +1,5 @@
 import {
   _angular,
-  _attributes,
   _compile,
   _compileLifecycle,
   _document,
@@ -137,7 +136,6 @@ import { TemplateFactoryProvider } from "./router/router/template-factory.ts";
 import { TransitionProvider } from "./router/transition/transition-service.ts";
 import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
-import { AttributesServiceProvider } from "./services/attributes/attributes.ts";
 import { CookieProvider } from "./services/cookie/cookie.ts";
 import { ExceptionHandlerProvider } from "./services/exception/exception.ts";
 import {
@@ -293,7 +291,6 @@ export { TemplateFactoryProvider } from "./router/router/template-factory.ts";
 export { TransitionProvider } from "./router/transition/transition-service.ts";
 export { ViewService } from "./router/view/view.ts";
 export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
-export { AttributesServiceProvider } from "./services/attributes/attributes.ts";
 export {
   getNormalizedAttr,
   getNormalizedAttrName,
@@ -367,15 +364,14 @@ function registerBuiltInFilters($filterProvider: FilterProvider): void {
 }
 
 /** Providers required by scopes, expressions, controllers, and compile. */
-export const ngCoreProviders = {
-  [_attributes]: AttributesServiceProvider,
+export const ngCoreProviders: ProviderGroup = {
   [_compileLifecycle]: CompileLifecycleProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
-} satisfies ProviderGroup;
+};
 
 /** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */
 export const ngFilterProviders = {
@@ -605,12 +601,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
         let $filterProvider: FilterProvider | undefined;
 
         ngDefaultProviderGroups.forEach((providers) => {
-          const providerEntries = Object.entries(providers) as [
-            string,
-            ProviderFactory,
-          ][];
-
-          providerEntries.forEach(([name, provider]) => {
+          Object.entries(providers).forEach(([name, provider]) => {
             const registeredProvider = $provide.provider(name, provider);
 
             if (name === _filter) {

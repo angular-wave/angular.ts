@@ -49,8 +49,8 @@ an `AbortController` for stream consumption.
 
 The main flow is:
 
-1. Read normalized attributes from `$attributes`, falling back to compiled
-   `attrs` values for interpolated attributes.
+1. Read normalized attributes directly from the element, using internal
+   observation helpers where interpolation needs live updates.
 2. Determine the event that should trigger a request.
 3. Optionally trigger from `latch` changes or `interval` polling.
 4. On trigger, skip disabled controls and prevent native form submission.
@@ -118,8 +118,8 @@ mode.
 - `$state`: performs `stateSuccess` and `stateError` navigation.
 - `$sse`: opens and manages SSE connections.
 - `$stream`: consumes readable stream response bodies as text chunks.
-- `$attributes`: reads normalized attributes and mutates loading/throttled
-  state and loading classes.
+- DOM attribute helpers: read normalized attributes and mutate
+  loading/throttled state and loading classes directly on the element.
 - Realtime swap handler: applies `innerHTML`, `outerHTML`, `textContent`,
   insertion, deletion, and targeted swap modes.
 - Browser `FormData`: collects values from forms and form-associated controls.
@@ -180,4 +180,4 @@ string, or object.
 - `delete.spec.ts` and `put.spec.ts` cover streamed response swapping for those
   methods.
 - `http-attributes.spec.ts` covers normalized `data-*` attribute reads and
-  `$attributes` mutation behavior.
+  internal attribute mutation behavior.

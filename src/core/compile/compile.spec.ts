@@ -2,7 +2,11 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
-import { CompileAttributes } from "./attributes.ts";
+import {
+  getCompileAttributeName,
+  CompileAttributeState,
+  setCompileAttributeValue,
+} from "./attributes.ts";
 import {
   Cache,
   dealoc,
@@ -11,6 +15,7 @@ import {
   createElementFromHTML as $,
   getController,
   getNormalizedAttr,
+  getNormalizedAttrName,
   getScope,
 } from "../../shared/dom.ts";
 import {
@@ -312,37 +317,31 @@ describe("$compile", () => {
       expect(stableNodes).toEqual([third]);
     });
 
-    it("creates cloned CompileAttributes with independent observer storage", () => {
+    it("copies recorded attribute names when cloning CompileAttributeState", () => {
       const templateNode = document.createElement("div");
 
       const cloneNode = document.createElement("div");
 
-      const templateAttrs = new CompileAttributes(
+      const templateAttrs = new CompileAttributeState(
         injector,
         injector.get("$exceptionHandler"),
-        templateNode,
       );
 
-      const templateObserver = jasmine.createSpy("templateObserver");
+      setCompileAttributeValue(templateAttrs, templateNode, "name", "template");
+      cloneNode.setAttribute("name", "template");
 
-      const cloneObserver = jasmine.createSpy("cloneObserver");
-
-      templateAttrs._setValue("name", "template", false);
-      templateAttrs.$observe("name", templateObserver);
-
-      const cloneAttrs = new CompileAttributes(
+      const cloneAttrs = new CompileAttributeState(
         injector,
         injector.get("$exceptionHandler"),
-        cloneNode,
         templateAttrs,
       );
 
-      cloneAttrs.$observe("name", cloneObserver);
-      cloneAttrs._setValue("name", "clone", false);
+      setCompileAttributeValue(cloneAttrs, cloneNode, "name", "clone");
 
-      expect(templateObserver.calls.count()).toBe(1);
-      expect(cloneObserver.calls.count()).toBe(2);
-      expect(templateAttrs._observers).not.toBe(cloneAttrs._observers);
+      expect(getCompileAttributeName(templateAttrs, "name")).toBe("name");
+      expect(getCompileAttributeName(cloneAttrs, "name")).toBe("name");
+      expect(templateNode.getAttribute("name")).toBe("template");
+      expect(cloneNode.getAttribute("name")).toBe("clone");
     });
 
     it("replaces a node and updates the node reference", () => {
@@ -358,38 +357,6 @@ describe("$compile", () => {
       expect(parent.firstChild).toBe(replacement);
       expect(original.parentNode?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
     });
-
-    xit("keeps link attrs on raw nodes without materializing node refs", () => {
-      let capturedNode;
-
-      registerDirectives({
-        captureNodeList: () => ({
-          restrict: "A",
-          link(_scope, _element, attrs) {
-            capturedNode = attrs._node;
-          },
-        }),
-      });
-
-      injector = bootstrap("<div></div>");
-      $rootScope = injector.get("$rootScope");
-      $compile = injector.get("$compile");
-
-      const scope = $rootScope.$new();
-
-      const linkFn = $compile("<div capture-node-list></div>");
-
-      linkFn(scope, () => {
-        /* empty */
-      });
-
-      expect(capturedNode).toBeDefined();
-      expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
-
-      scope.$destroy();
-
-      expect(capturedNode.nodeType).toBe(Node.ELEMENT_NODE);
-    });
   });
 
   function registerComponent(name: string, options: any) {
@@ -401,39 +368,51 @@ describe("$compile", () => {
       log: () => ({
         restrict: "A",
         priority: 0,
-        compile: (_element, attrs) => (scope, element) => {
-          log.push(attrs.log || "LOG");
+        compile: () => (scope, element) => {
+          log.push(
+            element instanceof Element
+              ? getNormalizedAttr(element, "log") || "LOG"
+              : "LOG",
+          );
         },
       }),
 
       highLog: () => ({
         restrict: "A",
         priority: 3,
-        compile: (_element, attrs) => (scope, element) => {
-          log.push(attrs.highLog || "HIGH");
+        compile: () => (scope, element) => {
+          log.push(
+            element instanceof Element
+              ? getNormalizedAttr(element, "highLog") || "HIGH"
+              : "HIGH",
+          );
         },
       }),
 
       mediumLog: () => ({
         restrict: "A",
         priority: 2,
-        compile: (_element, attrs) => (scope, element) => {
-          log.push(attrs.mediumLog || "MEDIUM");
+        compile: () => (scope, element) => {
+          log.push(
+            element instanceof Element
+              ? getNormalizedAttr(element, "mediumLog") || "MEDIUM"
+              : "MEDIUM",
+          );
         },
       }),
 
       greet: () => ({
         restrict: "A",
         priority: 10,
-        compile: (_element, attrs) => (scope, element) => {
-          element.innerText = `Hello ${attrs.greet}`;
+        compile: () => (scope, element) => {
+          element.innerText = `Hello ${getNormalizedAttr(element, "greet")}`;
         },
       }),
 
       set: () => ({
-        compile(_element, attrs) {
+        compile() {
           return (scope, element) => {
-            element.innerText = attrs.set;
+            element.innerText = getNormalizedAttr(element, "set");
           };
         },
       }),
@@ -1072,7 +1051,7 @@ describe("$compile", () => {
       expect(element.textContent).toEqual("1");
     });
 
-    xit("should receive scope, element, and attributes", () => {
+    it("should receive scope and element without an attributes object", () => {
       let injectableInjector;
 
       myModule.directive("log", ($rootScope, $injector) => {
@@ -1080,19 +1059,21 @@ describe("$compile", () => {
 
         return {
           restrict: "A",
-          compile(element, templateAttr) {
-            expect(typeof templateAttr.$normalize).toBe("function");
-            expect(templateAttr.$set).toBeUndefined();
-            expect(templateAttr._element() instanceof Element).toBeTrue();
-            expect(element.textContent).toEqual("unlinked");
-            expect(templateAttr.exp).toEqual("abc");
-            expect(templateAttr.aa).toEqual("A");
-            expect(templateAttr.bb).toEqual("B");
-            expect(templateAttr.cc).toEqual("C");
+          compile(...compileArgs) {
+            const [element] = compileArgs;
 
-            return function (scope, element, attr) {
+            expect(compileArgs.length).toBe(1);
+            expect(element.textContent).toEqual("unlinked");
+            expect(getNormalizedAttr(element, "exp")).toEqual("abc");
+            expect(getNormalizedAttr(element, "aa")).toEqual("A");
+            expect(getNormalizedAttr(element, "bb")).toEqual("B");
+            expect(getNormalizedAttr(element, "cc")).toEqual("C");
+
+            return function (...linkArgs) {
+              const [scope, element] = linkArgs;
+
+              expect(linkArgs.length).toBe(2);
               expect(element.textContent).toEqual("unlinked");
-              expect(attr).toBe(templateAttr);
               expect(scope).toEqual($rootScope);
               element.innerText = "worked";
             };
@@ -1112,332 +1093,37 @@ describe("$compile", () => {
   });
 
   describe("attributes", () => {
-    /**
-     * 1. Register a directive
-     * 2. Compile a DOM fragment
-     * 3. Grab the attributes object
-     * 4. Run some checks on it.
-     *
-     * @param {*} dirName A directive name to register
-     * @param {*} domString A a DOM string to parse and compile,
-     * @param {*} callback A callback to invoke when it’s all done
-     */
-    function registerAndCompile(dirName, domString, callback) {
-      let givenAttrs;
+    it("does not pass an attributes object to compile functions", () => {
+      let compileArgCount;
+      let transcludeArg;
 
-      registerDirectives(dirName, () => {
-        return {
-          compile(element, attrs) {
-            givenAttrs = attrs;
-          },
-        };
-      });
+      registerDirectives("myDirective", () => ({
+        compile(_element, transclude) {
+          compileArgCount = arguments.length;
+          transcludeArg = transclude;
+        },
+      }));
       reloadModules();
-      const el = $(domString);
 
-      $compile(el);
-      callback(el, givenAttrs, $rootScope);
-    }
+      $compile($('<my-directive my-attr="1"></my-directive>'));
 
-    it("passes the element attributes to the compile function", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive my-attr="1" my-other-attr="two"></my-directive>',
-        function (element, attrs) {
-          expect(attrs.myAttr).toEqual("1");
-          expect(attrs.myOtherAttr).toEqual("two");
-        },
-      );
+      expect(compileArgCount).toBe(1);
+      expect(transcludeArg).toBeUndefined();
     });
 
-    it("trims attribute values", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive my-attr="val"></my-directive>',
-        function (element, attrs) {
-          expect(attrs.myAttr).toEqual("val");
-        },
-      );
-    });
+    it("does not pass an attributes object to link functions", () => {
+      let thirdArg;
 
-    it("sets the value of boolean attributes to true", () => {
-      registerAndCompile(
-        "myDirective",
-        "<input my-directive disabled>",
-        function (element, attrs) {
-          expect(attrs.disabled).toBe(true);
+      registerDirectives("myDirective", () => ({
+        link(_scope, _element, arg) {
+          thirdArg = arg;
         },
-      );
-    });
-
-    it("does not set the value of non-standard boolean attributes to true", () => {
-      registerAndCompile(
-        "myDirective",
-        "<input my-directive whatever>",
-        function (element, attrs) {
-          expect(attrs.whatever).toEqual("");
-        },
-      );
-    });
-
-    it("overrides attributes with ng-attr- versions", () => {
-      registerAndCompile(
-        "myDirective",
-        '<input my-directive ng-attr-whatever="42" whatever="41">',
-        function (element, attrs) {
-          expect(attrs.whatever).toEqual("42");
-        },
-      );
-    });
-
-    it("allows setting attributes", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive attr="true"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("attr", "false");
-          expect(attrs.attr).toEqual("false");
-          expect(element.getAttribute("attr")).toEqual("false");
-        },
-      );
-    });
-
-    it("sets attributes to DOM", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive attr="true"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("attr", "false");
-          expect(attrs.attr).toEqual("false");
-        },
-      );
-    });
-
-    it("does not set attributes to DOM when flag set to false", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive attr="true"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("attr", "false", false);
-          expect(element.getAttribute("attr")).toEqual("true");
-          expect(attrs.attr).toEqual("false");
-        },
-      );
-    });
-
-    it("shares attributes between directives", () => {
-      let attrs1, attrs2;
-
-      registerDirectives({
-        myDir: () => {
-          return {
-            compile(element, attrs) {
-              attrs1 = attrs;
-            },
-          };
-        },
-        myOtherDir: () => {
-          return {
-            compile(element, attrs) {
-              attrs2 = attrs;
-            },
-          };
-        },
-      });
+      }));
       reloadModules();
-      const el = $("<div my-dir my-other-dir></div>");
 
-      $compile(el);
-      expect(attrs1).toBe(attrs2);
-    });
+      $compile($('<my-directive my-attr="1"></my-directive>'))($rootScope);
 
-    it("sets prop for boolean attributes", () => {
-      registerAndCompile(
-        "myDirective",
-        "<input my-directive>",
-        function (element, attrs) {
-          attrs._setValue("disabled", true);
-          expect(element.disabled).toBe(true);
-        },
-      );
-    });
-
-    it("sets prop for boolean attributes even when not flushing", () => {
-      registerAndCompile(
-        "myDirective",
-        "<input my-directive>",
-        function (element, attrs) {
-          attrs._setValue("disabled", true, false);
-          expect(element.disabled).toBe(true);
-        },
-      );
-    });
-
-    it("denormalizes attribute name when explicitly given", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("someAttribute", 43, true, "some-attribute");
-          expect(element.getAttribute("some-attribute")).toEqual("43");
-        },
-      );
-    });
-
-    it("denormalizes attribute by snake-casing when no other means available", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("someAttribute", 43);
-          expect(element.getAttribute("some-attribute")).toEqual("43");
-        },
-      );
-    });
-
-    it("denormalizes attribute by using original attribute name", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("someAttribute", 43);
-          expect(element.getAttribute("some-attribute")).toEqual("43");
-        },
-      );
-    });
-
-    it("accepts attribute by using original attribute name", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("some-attribute", 43);
-          expect(element.getAttribute("some-attribute")).toEqual("43");
-        },
-      );
-    });
-
-    it("does not use ng-attr- prefix in denormalized names", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive ng-attr-some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("someAttribute", 43);
-          expect(element.getAttribute("some-attribute")).toEqual("43");
-        },
-      );
-    });
-
-    it("uses new attribute name after once given", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          attrs._setValue("someAttribute", 43, true, "some-attribute");
-          attrs._setValue("someAttribute", 44);
-
-          expect(element.getAttribute("some-attribute")).toEqual("44");
-        },
-      );
-    });
-
-    it("calls observer immediately when attribute is set internally", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          let gotValue;
-
-          attrs.$observe("someAttribute", function (value) {
-            gotValue = value;
-          });
-
-          attrs._setValue("someAttribute", "43");
-          expect(gotValue).toEqual("43");
-        },
-      );
-    });
-
-    it("calls observer on immediately after registration", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs, $rootScope) {
-          let gotValue;
-
-          attrs.$observe("someAttribute", function (value) {
-            gotValue = value;
-          });
-          expect(gotValue).toEqual("42");
-        },
-      );
-    });
-
-    it("lets observers be deregistered", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive some-attribute="42"></my-directive>',
-        function (element, attrs) {
-          let gotValue;
-
-          const remove = attrs.$observe("someAttribute", function (value) {
-            gotValue = value;
-          });
-
-          attrs._setValue("someAttribute", "43");
-          expect(gotValue).toEqual("43");
-
-          remove();
-          attrs._setValue("someAttribute", "44");
-          expect(gotValue).toEqual("43");
-        },
-      );
-    });
-
-    it("does not add attribute from class without a directive", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive class="some-class"></my-directive>',
-        function (element, attrs) {
-          expect(Object.hasOwn(attrs, "someClass")).toBe(false);
-        },
-      );
-    });
-
-    it("allows adding classes", () => {
-      registerAndCompile(
-        "myDirective",
-        "<my-directive></my-directive>",
-        function (element, attrs) {
-          attrs.$addClass("some-class");
-          expect(element.classList.contains("some-class")).toBe(true);
-        },
-      );
-    });
-
-    it("allows removing classes", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive class="some-class"></my-directive>',
-        function (element, attrs) {
-          attrs.$removeClass("some-class");
-          expect(element.classList.contains("some-class")).toBe(false);
-        },
-      );
-    });
-
-    it("allows updating classes", () => {
-      registerAndCompile(
-        "myDirective",
-        '<my-directive class="one three four"></my-directive>',
-        function (element, attrs) {
-          attrs.$updateClass("one two three", "one three four");
-          expect(element.classList.contains("one")).toBe(true);
-          expect(element.classList.contains("two")).toBe(true);
-          expect(element.classList.contains("three")).toBe(true);
-          expect(element.classList.contains("four")).toBe(false);
-        },
-      );
+      expect(thirdArg).toBeUndefined();
     });
   });
 
@@ -1609,7 +1295,7 @@ describe("$compile", () => {
     registerDirectives("myDirective", () => {
       return {
         link: {
-          post(scope, element, attrs) {
+          post() {
             linked = true;
           },
         },
@@ -1947,31 +1633,6 @@ describe("$compile", () => {
     expect(getCacheData(el, "$isolateScope")).toBe(givenScope);
   });
 
-  xit("allows observing attribute to the isolate scope", () => {
-    let givenScope, givenAttrs;
-
-    registerDirectives("myDirective", () => {
-      return {
-        scope: {
-          anAttr: "@",
-        },
-        link(scope, element, attrs) {
-          givenScope = scope;
-          givenAttrs = attrs;
-        },
-      };
-    });
-    reloadModules();
-    const el = $("<div my-directive></div>");
-
-    $compile(el)($rootScope);
-    givenAttrs._setValue("anAttr", "42");
-    expect(givenScope.anAttr).toEqual("42");
-
-    givenAttrs._setValue("anAttr", "43");
-    expect(givenScope.anAttr).toEqual("43");
-  });
-
   it("sets initial value of observed attr to the isolate scope", () => {
     let givenScope;
 
@@ -1980,7 +1641,7 @@ describe("$compile", () => {
         scope: {
           anAttr: "@",
         },
-        link(scope, element, attrs) {
+        link(scope) {
           givenScope = scope;
         },
       };
@@ -2000,7 +1661,7 @@ describe("$compile", () => {
         scope: {
           aScopeAttr: "@anAttr",
         },
-        link(scope, element, attrs) {
+        link(scope) {
           givenScope = scope;
         },
       };
@@ -2509,14 +2170,12 @@ describe("$compile", () => {
       expect(controllerInvoked).toBe(true);
     });
 
-    it("gets scope, element, attrs, and attributes service through DI", () => {
-      let gotScope, gotElement, gotAttrs, gotAttributes;
+    it("gets scope and element through DI", () => {
+      let gotScope, gotElement;
 
-      function MyController($element, $scope, $attrs, $attributes) {
+      function MyController($element, $scope) {
         gotElement = $element;
         gotScope = $scope;
-        gotAttrs = $attrs;
-        gotAttributes = $attributes;
       }
       myModule
         .controller("MyController", MyController)
@@ -2529,9 +2188,6 @@ describe("$compile", () => {
       $compile(el)($rootScope);
       expect(gotElement[0]).toBe(el[0]);
       expect(gotScope).toBe($rootScope);
-      expect(gotAttrs).toBeDefined();
-      expect(gotAttrs.anAttr).toEqual("abc");
-      expect(gotAttributes).toBeDefined();
       expect(getNormalizedAttr(el, "anAttr")).toEqual("abc");
     });
 
@@ -3168,8 +2824,8 @@ describe("$compile", () => {
 
       $compile(el);
       expect(el.innerHTML).toBe('<div class="from-template"></div>');
-      expect(templateSpy.calls.first().args[0][0]).toBe(el[0]);
-      expect(templateSpy.calls.first().args[1].myDirective).toBeDefined();
+      expect(templateSpy.calls.first().args[0]).toBe(el);
+      expect(templateSpy.calls.first().args.length).toBe(1);
     });
 
     it("uses isolate scope for template contents", async () => {
@@ -3342,8 +2998,8 @@ describe("$compile", () => {
 
       $compile(el);
       await wait();
-      expect(templateUrlSpy.calls.first().args[0][0]).toBe(el[0]);
-      expect(templateUrlSpy.calls.first().args[1].myDirective).toBeDefined();
+      expect(templateUrlSpy.calls.first().args[0]).toBe(el);
+      expect(templateUrlSpy.calls.first().args.length).toBe(1);
     });
 
     it("throws when templateUrl function returns undefined", () => {
@@ -4526,71 +4182,6 @@ describe("$compile", () => {
       expect(el.getAttribute("alt")).toEqual("My favourite photo");
     });
 
-    xit("fires observers on attribute expression changes", async () => {
-      const observerSpy = jasmine.createSpy();
-
-      registerDirectives({
-        myDirective: () => {
-          return {
-            link(scope, element, attrs) {
-              attrs.$observe("alt", observerSpy);
-            },
-          };
-        },
-      });
-      reloadModules();
-      const el = $('<img alt="{{myAltText}}" my-directive>');
-
-      $compile(el)($rootScope);
-
-      $rootScope.myAltText = "My favourite photo";
-      await wait();
-      expect(observerSpy.calls.mostRecent().args[0]).toEqual(
-        "My favourite photo",
-      );
-    });
-
-    xit("fires observers just once upon registration", async () => {
-      const observerSpy = jasmine.createSpy();
-
-      registerDirectives({
-        myDirective: () => {
-          return {
-            link(scope, element, attrs) {
-              attrs.$observe("alt", observerSpy);
-            },
-          };
-        },
-      });
-      reloadModules();
-      const el = $('<img alt="{{myAltText}}" my-directive>');
-
-      $compile(el)($rootScope);
-      await wait();
-      expect(observerSpy.calls.count()).toBe(1);
-    });
-
-    xit("is done for attributes by the time other directive is linked", async () => {
-      let gotMyAttr;
-
-      registerDirectives({
-        myDirective: () => {
-          return {
-            link(scope, element, attrs) {
-              gotMyAttr = attrs.myAttr;
-            },
-          };
-        },
-      });
-      reloadModules();
-      const el = $('<div my-directive my-attr="{{myExpr}}"></div>');
-
-      $rootScope.myExpr = "Hello";
-      $compile(el)($rootScope);
-      await wait();
-      expect(gotMyAttr).toEqual("Hello");
-    });
-
     it("is done for attributes by the time bound to iso scope", async () => {
       let gotMyAttr;
 
@@ -4598,7 +4189,7 @@ describe("$compile", () => {
         myDirective: () => {
           return {
             scope: { myAttr: "@" },
-            link(scope, element, attrs) {
+            link(scope) {
               gotMyAttr = scope.myAttr;
             },
           };
@@ -4612,47 +4203,6 @@ describe("$compile", () => {
       await wait();
 
       expect(gotMyAttr).toEqual("Hello");
-    });
-
-    it("is done for attributes so that changes during compile are reflected", async () => {
-      registerDirectives({
-        myDirective: () => {
-          return {
-            compile(element, attrs) {
-              attrs._setValue("myAttr", "{{myDifferentExpr}}");
-            },
-          };
-        },
-      });
-      reloadModules();
-      const el = $('<div my-directive my-attr="{{myExpr}}"></div>');
-
-      $rootScope.myExpr = "Hello";
-      $rootScope.myDifferentExpr = "Other Hello";
-      $compile(el)($rootScope);
-      await wait();
-
-      expect(el.getAttribute("my-attr")).toEqual("Other Hello");
-    });
-
-    it("is done for attributes so that removal during compile is reflected", async () => {
-      registerDirectives({
-        myDirective: () => {
-          return {
-            compile(element, attrs) {
-              attrs._setValue("myAttr", null);
-            },
-          };
-        },
-      });
-      reloadModules();
-      const el = $('<div my-directive my-attr="{{myExpr}}"></div>');
-
-      $rootScope.myExpr = "Hello";
-      $compile(el)($rootScope);
-      await wait();
-
-      expect(el.getAttribute("my-attr")).toBeFalsy();
     });
 
     it("cannot be done for event handler attributes", () => {
@@ -4958,14 +4508,10 @@ describe("$compile", () => {
       expect(el.innerText).toEqual("42");
     });
 
-    it("may inject $element, $attrs, and $attributes to template function", async () => {
+    it("may inject $element to template function", async () => {
       myModule.component("myComponent", {
-        template($element, $attrs, $attributes) {
-          return $attributes.set(
-            $element,
-            "copiedAttr",
-            getNormalizedAttr($element, "myAttr") || $attrs.myAttr,
-          );
+        template($element) {
+          return getNormalizedAttr($element, "myAttr");
         },
       });
       reloadModules();
@@ -4973,7 +4519,7 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect(el.getAttribute("copied-attr")).toEqual("42");
+      expect(el.textContent).toEqual("42");
     });
 
     it("may read normalized attrs in a templateUrl function", async () => {
@@ -5193,17 +4739,14 @@ describe("$compile", () => {
     it("calls $onChanges when attribute changes", async () => {
       const changesSpy = jasmine.createSpy();
 
-      let attrs;
-
       myModule.component("myComponent", {
         bindings: {
           myAttr: "@",
         },
-        controller($attrs) {
+        controller() {
           this.$onChanges = function (val) {
             changesSpy(val);
           };
-          attrs = $attrs;
         },
       });
       reloadModules();
@@ -5212,7 +4755,7 @@ describe("$compile", () => {
       $compile(el)($rootScope);
       await wait();
       expect(changesSpy.calls.count()).toBe(1);
-      attrs._setValue("myAttr", "43");
+      el.setAttribute("my-attr", "43");
       await wait();
       expect(changesSpy.calls.count()).toBe(2);
       const lastChanges = changesSpy.calls.mostRecent().args[0];
@@ -5224,18 +4767,15 @@ describe("$compile", () => {
     it("calls $onChanges once with multiple changes", async () => {
       const changesSpy = jasmine.createSpy();
 
-      let attrs;
-
       myModule.component("myComponent", {
         bindings: {
           myBinding: "<",
           myAttr: "@",
         },
-        controller($attrs) {
+        controller() {
           this.$onChanges = function (val) {
             changesSpy(val);
           };
-          attrs = $attrs;
         },
       });
       reloadModules();
@@ -5256,7 +4796,7 @@ describe("$compile", () => {
 
       expect(lastChanges.myBinding.currentValue).toBe(43);
 
-      attrs._setValue("myAttr", "fourtyThree");
+      el.setAttribute("my-attr", "fourtyThree");
       await wait();
       expect(changesSpy.calls.count()).toBe(3);
       lastChanges = changesSpy.calls.mostRecent().args[0];
@@ -6006,8 +5546,6 @@ describe("$compile", () => {
     });
 
     describe("template", () => {
-      let attrs;
-
       beforeEach(() => {
         myModule
           .directive("replace", () => ({
@@ -6015,46 +5553,41 @@ describe("$compile", () => {
             replace: true,
             template:
               '<div class="log" style="width: 10px" high-log>Replace!</div>',
-            compile(element, attr) {
-              attr._setValue("compiled", "COMPILED");
+            compile(element) {
+              element.setAttribute("compiled", "COMPILED");
               element.compiled = true;
-              expect(element).toBe(attr._element());
             },
           }))
           .directive("nomerge", () => ({
             restrict: "A",
             replace: true,
             template: '<div class="log" id="myid" high-log>No Merge!</div>',
-            compile(element, attr) {
-              attr._setValue("compiled", "COMPILED");
-              expect(element).toBe(attr._element());
+            compile(element) {
+              element.setAttribute("compiled", "COMPILED");
             },
           }))
           .directive("append", () => ({
             restrict: "A",
             template:
               '<div class="log" style="width: 10px" high-log>Append!</div>',
-            compile(element, attr) {
-              attr._setValue("compiled", "COMPILED");
-              expect(element).toBe(attr._element());
+            compile(element) {
+              element.setAttribute("compiled", "COMPILED");
             },
           }))
           .directive("replaceWithInterpolatedClass", () => ({
             replace: true,
             template:
               '<div class="class_{{1+1}}">Replace with interpolated class!</div>',
-            compile(element, attr) {
-              attr._setValue("compiled", "COMPILED");
-              expect(element).toBe(attr._element());
+            compile(element) {
+              element.setAttribute("compiled", "COMPILED");
             },
           }))
           .directive("replaceWithInterpolatedStyle", () => ({
             replace: true,
             template:
               '<div style="width:{{1+1}}px">Replace with interpolated style!</div>',
-            compile(element, attr) {
-              attr._setValue("compiled", "COMPILED");
-              expect(element).toBe(attr._element());
+            compile(element) {
+              element.setAttribute("compiled", "COMPILED");
             },
           }))
           .directive("replaceWithTr", () => ({
@@ -6088,11 +5621,6 @@ describe("$compile", () => {
           .directive("replaceWithOptgroup", () => ({
             replace: true,
             template: "<optgroup>OPTGROUP</optgroup>",
-          }))
-          .directive("logAttrs", () => ({
-            link($scope, $element, $attrs) {
-              attrs = $attrs;
-            },
           }));
       });
 
@@ -6173,17 +5701,6 @@ describe("$compile", () => {
 
         expect(div.classList.contains("log")).toBe(true);
         expect(div.getAttribute("class")).toBe("log");
-      });
-
-      xit("should not set merged attributes twice in $attrs", () => {
-        reloadModules();
-        element = $compile(
-          '<div><div log-attrs replace class="myLog"></div></div>',
-        )($rootScope);
-        const div = element.childNodes[0];
-
-        expect(div.getAttribute("class")).toBe("myLog log");
-        expect(attrs.class).toBe("myLog log");
       });
 
       it("should play nice with repeater when replacing", async () => {
@@ -6410,7 +5927,7 @@ describe("$compile", () => {
         }
 
         DirectiveClass.prototype.compile = () => {
-          return function (scope, element, attrs) {
+          return function (scope, element) {
             scope.value = "Test Value";
           };
         };
@@ -6432,15 +5949,17 @@ describe("$compile", () => {
       beforeEach(() => {
         myModule.directive("myDirective", () => ({
           replace: true,
-          template($element, $attrs) {
+          template($element) {
             expect($element.textContent).toBe("original content");
-            expect($attrs.myDirective).toBe("some value");
+            expect(getNormalizedAttr($element, "myDirective")).toBe(
+              "some value",
+            );
 
             return '<div id="templateContent">template content</div>';
           },
-          compile($element, $attrs) {
+          compile($element) {
             expect($element.textContent).toBe("template content");
-            expect($attrs.id).toBe("templateContent");
+            expect(getNormalizedAttr($element, "id")).toBe("templateContent");
           },
         }));
       });
@@ -7361,7 +6880,7 @@ describe("$compile", () => {
         }
 
         DirectiveClass.prototype.compile = () => {
-          return function (scope, element, attrs) {
+          return function (scope, element) {
             scope.value = "Test Value";
           };
         };
@@ -7391,15 +6910,17 @@ describe("$compile", () => {
           '<div my-directive="some value">original content<div>';
         window.angular.module("test1", ["ng"]).directive("myDirective", () => ({
           replace: true,
-          templateUrl($element, $attrs) {
+          templateUrl($element) {
             expect($element.textContent).toBe("original content");
-            expect($attrs.myDirective).toBe("some value");
+            expect(getNormalizedAttr($element, "myDirective")).toBe(
+              "some value",
+            );
 
             return "my-directive.html";
           },
-          compile($element, $attrs) {
+          compile($element) {
             expect($element.textContent).toBe("template content");
-            expect($attrs.id).toBe("templateContent");
+            expect(getNormalizedAttr($element, "id")).toBe("templateContent");
           },
         }));
 
@@ -7841,7 +7362,7 @@ describe("$compile", () => {
 
           myModule.directive("test", () => ({
             scope: { checked: "@" },
-            link(scope, element, attrs) {
+            link(scope) {
               checkedVal = scope.checked;
             },
           }));
@@ -7851,32 +7372,11 @@ describe("$compile", () => {
           await wait();
           expect(checkedVal).toEqual(true);
         });
-
-        xit("should handle updates to @ bindings on BOOLEAN attributes", async () => {
-          let componentScope;
-
-          myModule.directive("test", () => ({
-            scope: { checked: "@" },
-            link(scope, element, attrs) {
-              componentScope = scope;
-              attrs._setValue("checked", true);
-            },
-          }));
-          injector = createInjector(["myModule"]);
-          reloadInjector();
-          $compile("<test></test>")($rootScope);
-          await wait();
-          expect(componentScope.checked).toBe(true);
-        });
       });
     });
 
     describe("interpolation", () => {
       let observeSpy;
-
-      let directiveAttrs;
-
-      let deregisterObserver;
 
       let module;
 
@@ -7885,22 +7385,6 @@ describe("$compile", () => {
       beforeEach(() => {
         log = [];
         module = window.angular.module("test1", ["ng"]);
-        module
-          .directive(
-            "observer",
-            () =>
-              function (scope, elm, attr) {
-                directiveAttrs = attr;
-                observeSpy = jasmine.createSpy("$observe attr");
-                deregisterObserver = attr.$observe("someAttr", observeSpy);
-              },
-          )
-          .directive("replaceSomeAttr", () => ({
-            compile(element, attr) {
-              attr._setValue("someAttr", "bar-{{1+1}}");
-              expect(element).toBe(attr._element());
-            },
-          }));
         dealoc(document.getElementById("app"));
         window.angular
           .bootstrap(document.getElementById("app"), ["test1"])
@@ -7975,18 +7459,20 @@ describe("$compile", () => {
         expect(element.textContent).toBe("John Wick");
       });
 
-      xit("should process attribute interpolation in pre-linking phase at priority 100", async () => {
+      it("should process attribute interpolation in pre-linking phase at priority 100", async () => {
         module
           .directive("attrLog", () => ({
-            compile($element, $attrs) {
-              log.push(`compile=${$attrs.myName}`);
+            compile($element) {
+              log.push(`compile=${getNormalizedAttr($element, "myName")}`);
 
               return {
-                pre($scope, $element, $attrs) {
-                  log.push(`preLinkP0=${$attrs.myName}`);
+                pre($scope, $element) {
+                  log.push(
+                    `preLinkP0=${getNormalizedAttr($element, "myName")}`,
+                  );
                 },
-                post($scope, $element, $attrs) {
-                  log.push(`postLink=${$attrs.myName}`);
+                post($scope, $element) {
+                  log.push(`postLink=${getNormalizedAttr($element, "myName")}`);
                 },
               };
             },
@@ -7995,8 +7481,10 @@ describe("$compile", () => {
             priority: 101,
             compile() {
               return {
-                pre($scope, $element, $attrs) {
-                  log.push(`preLinkP101=${$attrs.myName}`);
+                pre($scope, $element) {
+                  log.push(
+                    `preLinkP101=${getNormalizedAttr($element, "myName")}`,
+                  );
                 },
               };
             },
@@ -8017,33 +7505,8 @@ describe("$compile", () => {
         await wait();
         log.push(`digest=${element.getAttribute("my-name")}`);
         expect(log.join("; ")).toEqual(
-          "compile={{name}}; preLinkP101={{name}}; preLinkP0=; postLink=; digest=angular",
+          "compile={{name}}; preLinkP101={{name}}; preLinkP0={{name}}; postLink={{name}}; digest=angular",
         );
-      });
-
-      it("should allow the attribute to be removed before the attribute interpolation", async () => {
-        module.directive("removeAttr", () => ({
-          restrict: "A",
-          compile(tElement, tAttr) {
-            tAttr._setValue("removeAttr", null);
-          },
-        }));
-
-        createInjector(["test1"]).invoke(
-          (_$compile_, _$rootScope_, _$templateCache_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $templateCache = _$templateCache_;
-          },
-        );
-
-        expect(async () => {
-          element = $compile('<div remove-attr="{{ toBeRemoved }}"></div>')(
-            $rootScope,
-          );
-          await wait();
-          expect(element.getAttribute("remove-attr")).toBeNull();
-        }).not.toThrow();
       });
 
       describe("SCE values", () => {
@@ -8058,54 +7521,6 @@ describe("$compile", () => {
         });
       });
 
-      xit("should observe interpolated attrs", async () => {
-        $compile('<div some-attr="{{value}}" observer></div>')($rootScope);
-
-        // should be async
-        expect(observeSpy).not.toHaveBeenCalled();
-        $rootScope.value = "bound-value";
-        await wait();
-        expect(observeSpy).toHaveBeenCalledTimes(2);
-        expect(observeSpy).toHaveBeenCalledWith("bound-value");
-      });
-
-      xit("should return a deregistration function while observing an attribute", async () => {
-        $compile('<div some-attr="{{value}}" observer></div>')($rootScope);
-
-        $rootScope.value = "first-value";
-        await wait();
-        expect(observeSpy).toHaveBeenCalledWith("first-value");
-
-        deregisterObserver();
-        $rootScope.value = "new-value";
-        await wait();
-        expect(observeSpy).not.toHaveBeenCalledWith("new-value");
-      });
-
-      xit("should set interpolated attrs to initial interpolation value", async () => {
-        // we need the interpolated attributes to be initialized so that linking fn in a component
-        // can access the value during link
-        $rootScope.whatever = "test value";
-        $compile('<div some-attr="{{whatever}}" observer></div>')($rootScope);
-        await wait();
-        expect(directiveAttrs.someAttr).toBe($rootScope.whatever);
-      });
-
-      it("should allow directive to replace interpolated attributes before attr interpolation compilation", async () => {
-        element = $compile(
-          '<div some-attr="foo-{{1+1}}" replace-some-attr></div>',
-        )($rootScope);
-        await wait();
-        expect(element.getAttribute("some-attr")).toEqual("bar-2");
-      });
-
-      xit("should call observer of non-interpolated attr", async () => {
-        $compile('<div some-attr="nonBound" observer></div>')($rootScope);
-
-        expect(directiveAttrs.someAttr).toBe("nonBound");
-        expect(observeSpy).toHaveBeenCalled();
-      });
-
       it("should support non-interpolated `src` and `data-src` on the same element", async () => {
         const element = $compile('<img src="abc" data-src="123">')($rootScope);
 
@@ -8114,50 +7529,6 @@ describe("$compile", () => {
         expect(element.getAttribute("data-src")).toEqual("123");
         expect(element.getAttribute("src")).toEqual("abc");
         expect(element.getAttribute("data-src")).toEqual("123");
-      });
-
-      xit("should call observer only when the attribute value changes", async () => {
-        module.directive("observingDirective", () => ({
-          restrict: "E",
-          scope: { someAttr: "@" },
-        }));
-
-        createInjector(["test1"]).invoke(
-          (_$compile_, _$rootScope_, _$templateCache_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $templateCache = _$templateCache_;
-          },
-        );
-        $compile("<observing-directive observer></observing-directive>")(
-          $rootScope,
-        );
-        await wait();
-        expect(observeSpy).not.toHaveBeenCalledWith(undefined);
-      });
-
-      it("should delegate exceptions to $exceptionHandler", async () => {
-        observeSpy = jasmine.createSpy("$observe attr");
-
-        module.directive("error", ($attributes) => ({
-          link(scope, elm) {
-            $attributes.observe(scope, elm, "someAttr", observeSpy);
-            $attributes.observe(scope, elm, "someAttr", observeSpy);
-          },
-        }));
-
-        createInjector(["test1"]).invoke(
-          (_$compile_, _$rootScope_, _$templateCache_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $templateCache = _$templateCache_;
-          },
-        );
-
-        $compile('<div some-attr="{{value}}" error></div>')($rootScope);
-        await wait();
-        expect(observeSpy).toHaveBeenCalled();
-        expect(observeSpy.calls.count()).toBeGreaterThanOrEqual(2);
       });
 
       it("should translate {{}} in terminal nodes", async () => {
@@ -8311,31 +7682,6 @@ describe("$compile", () => {
         await wait();
         expect(element.textContent).toBe("ahoj|ahoj|ahoj");
       });
-
-      xit("should make attributes observable for terminal directives", async () => {
-        module.directive("myAttr", () => ({
-          terminal: true,
-          link(scope, element, attrs) {
-            attrs.$observe("myAttr", (val) => {
-              log.push(val);
-            });
-          },
-        }));
-        createInjector(["test1"]).invoke(
-          (_$compile_, _$rootScope_, _$templateCache_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $templateCache = _$templateCache_;
-          },
-        );
-
-        element = $compile('<div my-attr="{{myVal}}"></div>')($rootScope);
-        expect(log).toEqual([]);
-
-        $rootScope.myVal = "carrot";
-        await wait();
-        expect(log[0]).toEqual("carrot");
-      });
     });
 
     describe("link phase", () => {
@@ -8391,30 +7737,6 @@ describe("$compile", () => {
         expect(element.textContent).toEqual("WORKS");
       });
 
-      it("should support $observe inside link function on directive object", async () => {
-        module.directive("testLink", ($attributes) => ({
-          templateUrl: "test-link.html",
-          link(scope, element) {
-            $attributes.observe(scope, element, "testLink", (val) => {
-              scope.testAttr = val;
-            });
-          },
-        }));
-
-        createInjector(["test1"]).invoke(
-          (_$compile_, _$rootScope_, _$templateCache_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $templateCache = _$templateCache_;
-          },
-        );
-
-        $templateCache.set("test-link.html", "{{testAttr}}");
-        element = $compile('<div test-link="{{1+2}}"></div>')($rootScope);
-        await wait();
-        expect(element.textContent).toBe("3");
-      });
-
       it("should throw multilink error when linking the same element more then once", async () => {
         const linker = $compile("<div>");
 
@@ -8423,332 +7745,6 @@ describe("$compile", () => {
         expect(() => {
           linker($rootScope);
         }).toThrowError(/multilink/);
-      });
-
-      xdescribe("attrs", () => {
-        it("should allow setting of attributes", async () => {
-          module.directive("setter", () => (scope, element, attr) => {
-            attr._setValue("name", "abc");
-            attr._setValue("disabled", true);
-            expect(attr.name).toBe("abc");
-            expect(attr.disabled).toBe(true);
-          });
-
-          createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-          });
-
-          element = $compile("<div setter></div>")($rootScope);
-          await wait();
-          expect(element.getAttribute("name")).toEqual("abc");
-          expect(element.getAttribute("disabled")).toEqual("true");
-        });
-
-        it("should read boolean attributes as boolean only on control elements", async () => {
-          let value;
-
-          module.directive("input", () => ({
-            link(scope, element, attr) {
-              value = attr.required;
-            },
-          }));
-
-          createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-          });
-
-          element = $compile("<input required></input>")($rootScope);
-          await wait();
-          expect(value).toEqual(true);
-        });
-
-        it("should read boolean attributes as text on non-control elements", async () => {
-          let value;
-
-          module.directive("div", () => ({
-            link(scope, element, attr) {
-              value = attr.required;
-            },
-          }));
-
-          createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-          });
-
-          element = $compile('<div required="some text"></div>')($rootScope);
-          await wait();
-          expect(value).toEqual("some text");
-        });
-
-        it("should create new instance of attr for each template stamping", async () => {
-          const state = { first: [], second: [] };
-
-          module
-            .value("state", state)
-            .directive("first", () => ({
-              priority: 1,
-              compile(templateElement, templateAttr) {
-                return function (scope, element, attr) {
-                  state.first.push({
-                    template: {
-                      element: templateElement,
-                      attr: templateAttr,
-                    },
-                    link: { element, attr },
-                  });
-                };
-              },
-            }))
-            .directive("second", () => ({
-              priority: 2,
-              compile(templateElement, templateAttr) {
-                return function (scope, element, attr) {
-                  state.second.push({
-                    template: {
-                      element: templateElement,
-                      attr: templateAttr,
-                    },
-                    link: { element, attr },
-                  });
-                };
-              },
-            }));
-
-          createInjector(["test1"]).invoke(($rootScope, $compile, state) => {
-            const template = $compile("<div first second>");
-
-            dealoc(
-              template($rootScope.$new(), () => {
-                /* empty */
-              }),
-            );
-            dealoc(
-              template($rootScope.$new(), () => {
-                /* empty */
-              }),
-            );
-
-            // instance between directives should be shared
-            expect(state.first[0].template.element).toBe(
-              state.second[0].template.element,
-            );
-            expect(state.first[0].template.attr).toBe(
-              state.second[0].template.attr,
-            );
-
-            // the template and the link can not be the same instance
-            expect(state.first[0].template.element).not.toBe(
-              state.first[0].link.element,
-            );
-            expect(state.first[0].template.attr).not.toBe(
-              state.first[0].link.attr,
-            );
-
-            // each new template needs to be new instance
-            expect(state.first[0].link.element).not.toBe(
-              state.first[1].link.element,
-            );
-            expect(state.first[0].link.attr).not.toBe(state.first[1].link.attr);
-            expect(state.second[0].link.element).not.toBe(
-              state.second[1].link.element,
-            );
-            expect(state.second[0].link.attr).not.toBe(
-              state.second[1].link.attr,
-            );
-          });
-        });
-
-        it("should properly $observe inside ng-repeat", async () => {
-          const spies = [];
-
-          module.directive(
-            "observer",
-            ($attributes) =>
-              function (scope, elm) {
-                spies.push(jasmine.createSpy(`observer ${spies.length}`));
-                $attributes.observe(
-                  scope,
-                  elm,
-                  "some",
-                  spies[spies.length - 1],
-                );
-              },
-          );
-
-          createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-          });
-
-          element = $compile(
-            '<div><div ng-repeat="i in items">' +
-              '<span some="id_{{i.id}}" observer></span>' +
-              "</div></div>",
-          )($rootScope);
-
-          await wait();
-          $rootScope.items = [{ id: 1 }, { id: 2 }];
-
-          await wait();
-          expect(spies[0]).toHaveBeenCalledOnceWith("id_1");
-          expect(spies[1]).toHaveBeenCalledOnceWith("id_2");
-          spies[0].calls.reset();
-          spies[1].calls.reset();
-
-          $rootScope.items[0].id = 5;
-          await wait();
-
-          expect(spies[0]).toHaveBeenCalledOnceWith("id_5");
-        });
-
-        describe("_setValue", () => {
-          let attr, $sce;
-
-          beforeEach(async () => {
-            ["input", "a", "img"].forEach((tag) => {
-              module.directive(tag, () => ({
-                link(scope, element, attr) {
-                  scope.$target.attr = attr;
-                },
-              }));
-            });
-
-            createInjector(["test1"]).invoke(
-              (_$compile_, _$rootScope_, _$sce_) => {
-                $compile = _$compile_;
-                $rootScope = _$rootScope_;
-                $sce = _$sce_;
-              },
-            );
-            element = $compile("<input></input>")($rootScope);
-            await wait();
-            attr = $rootScope.attr;
-            expect(attr).toBeDefined();
-          });
-
-          it("should set attributes", async () => {
-            attr._setValue("ngMyAttr", "value");
-            expect(element.getAttribute("ng-my-attr")).toEqual("value");
-            expect(attr.ngMyAttr).toEqual("value");
-          });
-
-          it("should allow overriding of attribute name and remember the name", () => {
-            attr._setValue("ngOther", "123", true, "other");
-            expect(element.getAttribute("other")).toEqual("123");
-            expect(attr.ngOther).toEqual("123");
-
-            attr._setValue("ngOther", "246");
-            expect(element.getAttribute("other")).toEqual("246");
-            expect(attr.ngOther).toEqual("246");
-          });
-
-          it("should remove attribute", () => {
-            attr._setValue("ngMyAttr", "value");
-            expect(element.getAttribute("ng-my-attr")).toEqual("value");
-
-            attr._setValue("ngMyAttr", undefined);
-            expect(element.getAttribute("ng-my-attr")).toBeNull();
-
-            attr._setValue("ngMyAttr", "value");
-            attr._setValue("ngMyAttr", null);
-            expect(element.getAttribute("ng-my-attr")).toBeNull();
-          });
-
-          it("should set the value to empty for boolean attrs", () => {
-            attr._setValue("disabled", "value");
-            expect(element.getAttribute("disabled")).toEqual("");
-            element.removeAttribute("disabled");
-
-            attr._setValue("dISaBlEd", "VaLuE");
-            expect(element.getAttribute("disabled")).toEqual("");
-          });
-
-          it("should call removeAttr for boolean attrs when value is `false`", () => {
-            attr._setValue("disabled", false);
-            expect(element.getAttribute("disabled")).toBeNull();
-
-            attr._setValue("disabled", "value");
-            expect(element.getAttribute("disabled")).toEqual("");
-
-            attr._setValue("dISaBlEd", false);
-            expect(element.getAttribute("disabled")).toBeNull();
-          });
-
-          it("should not automatically sanitize a[href]", async () => {
-            // Breaking change in https://github.com/angular/angular.js/pull/16378
-            element = $compile("<a></a>")($rootScope);
-            await wait();
-
-            $rootScope.attr._setValue("href", "evil:foo()");
-            expect(element.getAttribute("href")).toEqual("evil:foo()");
-            expect($rootScope.attr.href).toEqual("evil:foo()");
-          });
-
-          it("should not automatically sanitize img[src]", async () => {
-            // Breaking change in https://github.com/angular/angular.js/pull/16378
-            element = $compile("<img></img>")($rootScope);
-            await wait();
-            $rootScope.attr._setValue("img", "evil:foo()");
-            await wait();
-            expect(element.getAttribute("img")).toEqual("evil:foo()");
-            expect($rootScope.attr.img).toEqual("evil:foo()");
-          });
-
-          it("should not automatically sanitize img[srcset]", async () => {
-            element = $compile("<img></img>")($rootScope);
-            $rootScope.attr._setValue("srcset", "evil:foo()");
-            await wait();
-            expect(element.getAttribute("srcset")).toEqual("evil:foo()");
-            expect($rootScope.attr.srcset).toEqual("evil:foo()");
-          });
-
-          it("should not sanitize crafted img[srcset] entries when set through $attrs", async () => {
-            module.config(($sceDelegateProvider) =>
-              $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
-                /^https:\/\/angularjs\.org\//,
-              ),
-            );
-            initInjector("test1");
-            element = $compile("<img></img>")($rootScope);
-
-            $rootScope.attr._setValue(
-              "srcset",
-              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
-            );
-            await wait();
-            expect(element.getAttribute("srcset")).toEqual(
-              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
-            );
-            expect($rootScope.attr.srcset).toEqual(
-              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
-            );
-
-            $rootScope.attr._setValue(
-              "srcset",
-              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
-            );
-            await wait();
-            expect(element.getAttribute("srcset")).toEqual(
-              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
-            );
-            expect($rootScope.attr.srcset).toEqual(
-              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
-            );
-          });
-
-          it("should accept trusted values when img[srcset] is set through $attrs", async () => {
-            const trusted = $sce.trustAsMediaUrl("trustme:foo()");
-
-            element = $compile("<img></img>")($rootScope);
-            await wait();
-            expect(() =>
-              $rootScope.attr._setValue("srcset", trusted),
-            ).not.toThrow();
-          });
-        });
       });
     });
 
@@ -9823,23 +8819,17 @@ describe("$compile", () => {
         expect($rootScope.value).toBe(true);
       });
 
-      xit("should be able to interpolate attribute names which are present in Object.prototype", async () => {
-        let attrs;
-
-        module.directive("attrExposer", () => ({
-          link($scope, $element, $attrs) {
-            attrs = $attrs;
-          },
-        }));
+      it("should be able to interpolate attribute names which are present in Object.prototype", async () => {
+        let element;
 
         createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
         });
 
-        $compile('<div attr-exposer to-string="{{1 + 1}}">')($rootScope);
+        element = $compile('<div to-string="{{1 + 1}}">')($rootScope);
         await wait();
-        expect(attrs.toString).toBe("2");
+        expect(element.getAttribute("to-string")).toBe("2");
       });
 
       it("should not initialize scope value if optional expression binding is not passed", async () => {
@@ -10003,7 +8993,7 @@ describe("$compile", () => {
 
         it("should update when interpolated attribute updates", async () => {
           $compile(
-            '<div><span my-component attr="hello {{name}}" $attr$="hi {{name}}">',
+            '<div><span my-component attr="hello {{name}}" data-extra="hi {{name}}">',
           )($rootScope);
 
           $rootScope.name = "igor";
@@ -10348,7 +9338,7 @@ describe("$compile", () => {
             module.directive(
               "changeInput",
               () =>
-                function (scope, elem, attrs) {
+                function (scope, elem) {
                   scope.name = "outer2";
                 },
             );
@@ -13706,7 +12696,7 @@ describe("$compile", () => {
             transclude: true,
             // template: '<div class="foo">whatever</div>',
             templateUrl: "foo.html",
-            compile(_, __, transclude) {
+            compile(_, transclude) {
               return function (scope, element) {
                 transclude(scope, (clone, scope) => {
                   element.innerHTML = "";
@@ -13826,6 +12816,7 @@ describe("$compile", () => {
 
           module.directive("transclude", () => ({
             transclude: "content",
+            require: "transclude",
             controller($transclude) {
               transcludeCtrl = this;
             },
@@ -13869,6 +12860,7 @@ describe("$compile", () => {
 
           module.directive("transclude", () => ({
             transclude: "content",
+            require: "transclude",
             controller($transclude) {
               ctrlTransclude = $transclude;
             },
@@ -13915,6 +12907,7 @@ describe("$compile", () => {
           module
             .directive("transclude", () => ({
               transclude: "content",
+              require: "transclude",
               controller() {},
               link(scope, element, ctrl, $transclude) {
                 $transclude((clone) => {
@@ -13959,7 +12952,7 @@ describe("$compile", () => {
           beforeEach(() => {
             module
               .directive("lazyCompile", ($compile) => ({
-                compile(tElement, tAttrs) {
+                compile(tElement) {
                   const content = tElement.childNodes[0];
 
                   tElement.innerHTML = "";
@@ -14285,7 +13278,7 @@ describe("$compile", () => {
           it("should only receive transclude from parent", async () => {
             module.directive("myExample", () => ({
               scope: {},
-              link: function link(scope, element, attrs) {
+              link: function link(scope, element) {
                 const foo = element.querySelector(".foo");
 
                 scope.children = foo.children.length;
@@ -14344,18 +13337,15 @@ describe("$compile", () => {
           controller($transclude) {
             this.$transclude = $transclude;
           },
-          compile(element, attrs, template) {
+          compile(element, template) {
             log.push(`compile`);
 
-            return function (scope, element, attrs, ctrl) {
+            return function (scope, element) {
               log.push("link");
               let cursor = element;
 
               template(scope.$new(), (clone) => {
                 cursor.after((cursor = clone));
-              });
-              ctrl.$transclude((clone) => {
-                cursor.after(clone);
               });
             };
           },
@@ -14465,8 +13455,8 @@ describe("$compile", () => {
 
         module.directive("transclude", () => ({
           transclude: "element",
-          compile(element, attr, linker) {
-            return function (scope, element, attr) {
+          compile(element, linker) {
+            return function (scope, element) {
               comment = element;
             };
           },
@@ -14487,8 +13477,8 @@ describe("$compile", () => {
           .directive("log", () => ({
             restrict: "A",
             priority: 0,
-            compile: (_element, attrs) => (scope, element) => {
-              log.push(attrs.log || "LOG");
+            compile: () => (scope, element) => {
+              log.push(getNormalizedAttr(element, "log") || "LOG");
             },
           }))
           .directive("elementTrans", () => ({
@@ -14562,6 +13552,7 @@ describe("$compile", () => {
 
         module.directive("transclude", () => ({
           transclude: "element",
+          require: "transclude",
           controller() {
             transcludeCtrl = this;
           },
@@ -14596,6 +13587,7 @@ describe("$compile", () => {
         module
           .directive("transclude", () => ({
             transclude: "element",
+            require: "transclude",
             controller() {},
             link(scope, element, ctrl, $transclude) {
               $transclude(scope, (clone) => {
@@ -15465,24 +14457,6 @@ describe("$compile", () => {
   });
 
   describe("img[srcset] sanitization", () => {
-    xit("should not error if srcset is undefined", () => {
-      let linked = false;
-
-      module.directive("setter", () => (scope, elem, attrs) => {
-        // Set srcset to a value
-        attrs._setValue("srcset", "http://example.com/");
-        expect(attrs.srcset).toBe("http://example.com/");
-        // Now set it to undefined
-        attrs._setValue("srcset", undefined);
-        expect(attrs.srcset).toBeUndefined();
-        linked = true;
-      });
-      initInjector("test1");
-      element = $compile("<img setter></img>")($rootScope);
-      expect(linked).toBe(true);
-      expect(element.getAttribute("srcset")).toBeNull();
-    });
-
     it("should NOT require trusted values for trusted URI values", async () => {
       element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "http://example.com/image.png"; // `http` is trusted
@@ -16120,76 +15094,6 @@ describe("$compile", () => {
       expect(element.getAttribute("test")).toBe("caitp!!!");
     });
 
-    describe("in directive", () => {
-      beforeEach(() => {
-        module
-          .directive("syncTest", () => ({
-            link: {
-              pre(s, e, attr) {
-                log.push(attr.test);
-              },
-              post(s, e, attr) {
-                log.push(attr.test);
-              },
-            },
-          }))
-          .directive("asyncTest", () => ({
-            templateUrl: "async.html",
-            link: {
-              pre(s, e, attr) {
-                log.push(attr.test);
-              },
-              post(s, e, attr) {
-                log.push(attr.test);
-              },
-            },
-          }));
-        initInjector("test1");
-        $templateCache.set("async.html", "<h1>Test</h1>");
-      });
-
-      xit("should provide post-digest value in synchronous directive link functions when after overridden attribute", () => {
-        $rootScope.test = "TEST";
-        element = $compile(
-          '<div sync-test test="123" ng-attr-test="{{test}}"></div>',
-        )($rootScope);
-        expect(element.getAttribute("test")).toBe("123");
-        expect(log).toEqual(["TEST", "TEST"]);
-      });
-
-      xit("should provide post-digest value in synchronous directive link functions when before overridden attribute", () => {
-        $rootScope.test = "TEST";
-        element = $compile(
-          '<div sync-test ng-attr-test="{{test}}" test="123"></div>',
-        )($rootScope);
-        expect(element.getAttribute("test")).toBe("123");
-        expect(log).toEqual(["TEST", "TEST"]);
-      });
-
-      xit("should provide post-digest value in asynchronous directive link functions when after overridden attribute", async () => {
-        $rootScope.test = "TEST";
-        element = $compile(
-          '<div async-test test="123" ng-attr-test="{{test}}"></div>',
-        )($rootScope);
-        expect(element.getAttribute("test")).toBe("123");
-
-        await wait();
-        expect(element.getAttribute("test")).toBe("TEST");
-        expect(log).toEqual(["TEST", "TEST"]);
-      });
-
-      xit("should provide post-digest value in asynchronous directive link functions when before overridden attribute", async () => {
-        $rootScope.test = "TEST";
-        element = $compile(
-          '<div async-test ng-attr-test="{{test}}" test="123"></div>',
-        )($rootScope);
-
-        await wait();
-        expect(element.getAttribute("test")).toBe("TEST");
-        expect(log).toEqual(["TEST", "TEST"]);
-      });
-    });
-
     it("should work with different prefixes", async () => {
       $rootScope.name = "Misko";
       element = $compile(
@@ -16205,38 +15109,30 @@ describe("$compile", () => {
       expect(element.getAttribute("test3")).toBe("Misko");
     });
 
-    xit("should use the non-prefixed name in $attr mappings", async () => {
-      let attrs;
-
-      module.directive("attrExposer", () => ({
-        link($scope, $element, $attrs) {
-          attrs = $attrs;
-        },
-      }));
+    it("should use the non-prefixed DOM name for ng-attr-* bindings", async () => {
       initInjector("test1");
 
-      $compile(
-        '<div attr-exposer ng-attr-title="12" ng-attr-super-title="34" ng-attr-my-camel_title="56">',
+      element = $compile(
+        '<div ng-attr-title="12" ng-attr-super-title="34" ng-attr-my-camel_title="56">',
       )($rootScope);
       await wait();
+      const snapshot = {
+        title: getNormalizedAttr(element, "title"),
+        titleAttr: getNormalizedAttrName(element, "title"),
+        superTitle: getNormalizedAttr(element, "superTitle"),
+        superTitleAttr: getNormalizedAttrName(element, "superTitle"),
+        myCameltitle: getNormalizedAttr(element, "myCameltitle"),
+        myCameltitleAttr: getNormalizedAttrName(element, "myCameltitle"),
+      };
 
-      expect(attrs.title).toBe("12");
-      expect(attrs.$attr.title).toBe("title");
-      expect(attrs.ngAttrTitle).toBeUndefined();
-      expect(attrs.$attr.ngAttrTitle).toBeUndefined();
+      expect(snapshot.title).toBe("12");
+      expect(snapshot.titleAttr).toBe("title");
 
-      expect(attrs.superTitle).toBe("34");
-      expect(attrs.$attr.superTitle).toBe("super-title");
-      expect(attrs.ngAttrSuperTitle).toBeUndefined();
-      expect(attrs.$attr.ngAttrSuperTitle).toBeUndefined();
+      expect(snapshot.superTitle).toBe("34");
+      expect(snapshot.superTitleAttr).toBe("super-title");
 
-      // Note the casing is incorrect: https://github.com/angular/angular.js/issues/16624
-      expect(attrs.myCameltitle).toBe("56");
-      expect(attrs.$attr.myCameltitle).toBe("my-camelTitle");
-      expect(attrs.ngAttrMyCameltitle).toBeUndefined();
-      expect(attrs.ngAttrMyCamelTitle).toBeUndefined();
-      expect(attrs.$attr.ngAttrMyCameltitle).toBeUndefined();
-      expect(attrs.$attr.ngAttrMyCamelTitle).toBeUndefined();
+      expect(snapshot.myCameltitle).toBe("56");
+      expect(snapshot.myCameltitleAttr).toBe("my-cameltitle");
     });
 
     it('should work with the "href" attribute', async () => {
@@ -16340,10 +15236,10 @@ describe("$compile", () => {
         expect(element.getAttribute("dash-test4")).toBe("JamieMason");
       });
 
-      xit("should keep attributes ending with -end single-element directives", () => {
+      it("should keep attributes ending with -end single-element directives", () => {
         module.directive("dashEnder", () => ({
-          link(scope, element, attrs) {
-            log.push(attrs.onDashEnd);
+          link(scope, element) {
+            log.push(getNormalizedAttr(element, "onDashEnd"));
           },
         }));
         initInjector("test1");
@@ -16713,11 +15609,11 @@ describe("$compile", () => {
     it("should allow passing injectable functions as template/templateUrl", () => {
       module
         .component("myComponent", {
-          template($element, $attrs, myValue) {
-            log.push(`template,${$element},${$attrs},${myValue}\n`);
+          template($element, myValue) {
+            log.push(`template,${$element},${myValue}\n`);
           },
-          templateUrl($element, $attrs, myValue) {
-            log.push(`templateUrl,${$element},${$attrs},${myValue}\n`);
+          templateUrl($element, myValue) {
+            log.push(`templateUrl,${$element},${myValue}\n`);
           },
         })
         .value("myValue", "blah");
@@ -16726,7 +15622,7 @@ describe("$compile", () => {
 
       myComponentDirective[0].template("a", "b");
       myComponentDirective[0].templateUrl("c", "d");
-      expect(log.join("")).toEqual("template,a,b,blah\ntemplateUrl,c,d,blah\n");
+      expect(log.join("")).toEqual("template,a,blah\ntemplateUrl,c,blah\n");
     });
 
     it("should allow passing injectable arrays as template/templateUrl", () => {
@@ -16734,18 +15630,16 @@ describe("$compile", () => {
         .component("myComponent", {
           template: [
             "$element",
-            "$attrs",
             "myValue",
-            function ($element, $attrs, myValue) {
-              log.push(`template,${$element},${$attrs},${myValue}\n`);
+            function ($element, myValue) {
+              log.push(`template,${$element},${myValue}\n`);
             },
           ],
           templateUrl: [
             "$element",
-            "$attrs",
             "myValue",
-            function ($element, $attrs, myValue) {
-              log.push(`templateUrl,${$element},${$attrs},${myValue}\n`);
+            function ($element, myValue) {
+              log.push(`templateUrl,${$element},${myValue}\n`);
             },
           ],
         })
@@ -16755,7 +15649,7 @@ describe("$compile", () => {
 
       myComponentDirective[0].template("a", "b");
       myComponentDirective[0].templateUrl("c", "d");
-      expect(log.join("")).toEqual("template,a,b,blah\ntemplateUrl,c,d,blah\n");
+      expect(log.join("")).toEqual("template,a,blah\ntemplateUrl,c,blah\n");
     });
 
     it("should allow passing transclude as object", () => {

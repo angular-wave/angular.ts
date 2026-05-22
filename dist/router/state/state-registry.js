@@ -1,4 +1,4 @@
-import { _injector, _routerProvider } from '../../injection-tokens.js';
+import { _injector, _routerProvider, _compileProvider } from '../../injection-tokens.js';
 import { StateMatcher } from './state-matcher.js';
 import { StateBuilder } from './state-builder.js';
 import { StateObject } from './state-object.js';
@@ -15,7 +15,7 @@ function stateOrNameToString(stateOrName) {
  *
  */
 class StateRegistryProvider {
-    constructor(routerState) {
+    constructor(routerState, compileProvider) {
         this.$get = [
             _injector,
             /**
@@ -34,7 +34,7 @@ class StateRegistryProvider {
         this._$injector = undefined;
         this._listeners = [];
         this._matcher = new StateMatcher(this._states);
-        this._builder = new StateBuilder(this._matcher, routerState);
+        this._builder = new StateBuilder(this._matcher, routerState, compileProvider);
         this._queue = [];
         this.registerRoot();
         routerState._currentState = this.root();
@@ -304,7 +304,7 @@ class StateRegistryProvider {
         return found?.self ?? null;
     }
 }
-/* @ignore */ StateRegistryProvider.$inject = [_routerProvider];
+/* @ignore */ StateRegistryProvider.$inject = [_routerProvider, _compileProvider];
 function getLocals(ctx) {
     const tokens = ctx.getTokens();
     const locals = {};

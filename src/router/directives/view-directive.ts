@@ -1,4 +1,3 @@
-import type { DirectiveAttributes } from "../../interface.ts";
 import {
   _anchorScroll,
   _interpolate,
@@ -192,24 +191,13 @@ export function ViewDirective(
     terminal: true,
     priority: 400,
     transclude: "element",
-    compile(
-      tElement: Element,
-      tAttrs: DirectiveAttributes,
-      $transclude?: ng.TranscludeFn,
-    ) {
+    compile(tElement: Element, $transclude?: ng.TranscludeFn) {
       const transclude = assertDefined($transclude);
-      const onloadExp =
-        getNormalizedAttr(tElement, "onload") ??
-        (tAttrs.onload as string | undefined) ??
-        "";
-      const autoScrollExp =
-        getNormalizedAttr(tElement, "autoscroll") ??
-        (tAttrs.autoscroll as string | undefined);
+      const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
+      const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
       const viewNameExp =
         getNormalizedAttr(tElement, "ngView") ??
         getNormalizedAttr(tElement, "name") ??
-        (tAttrs.ngView as string | undefined) ??
-        (tAttrs.name as string | undefined) ??
         "";
 
       return function (scope: ng.Scope, $element: HTMLElement) {

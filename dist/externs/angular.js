@@ -84,6 +84,30 @@ ng.Angular.prototype.getInjector = function(element) {};
 ng.Angular.prototype.getScope = function(element) {};
 
 /**
+ * Read an element attribute by normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.Angular.prototype.getNormalizedAttr = function(element, normalizedName) {};
+
+/**
+ * Return the actual DOM attribute name for a normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.Angular.prototype.getNormalizedAttrName = function(element, normalizedName) {};
+
+/**
+ * Return whether an element has an attribute matching a normalized name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.Angular.prototype.hasNormalizedAttr = function(element, normalizedName) {};
+
+/**
  * Global framework error-handling configuration.
  * @param {(!ng.ErrorHandlingConfig|undefined)} config
  * @return {!ng.ErrorHandlingConfig}
@@ -177,7 +201,7 @@ ng.Component = function() {};
 
 /**
  * Public Component.controller member exposed by the AngularTS namespace contract.
- * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
  */
 ng.Component.prototype.controller;
 
@@ -204,6 +228,12 @@ ng.Component.prototype.templateUrl;
  * @type {(!Object<string, string>|undefined)}
  */
 ng.Component.prototype.bindings;
+
+/**
+ * Replaces the generated component host element with the component template.
+ * @type {(boolean|undefined)}
+ */
+ng.Component.prototype.replace;
 
 /**
  * Whether transclusion is enabled. Disabled by default.
@@ -274,13 +304,13 @@ ng.Directive.prototype.restrict;
 
 /**
  * Compile function for the directive
- * @type {(function(!HTMLElement, !Object, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
+ * @type {(function(!HTMLElement, (!ng.PublicLinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
  */
 ng.Directive.prototype.compile;
 
 /**
  * Controller constructor or injectable string name
- * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
  */
 ng.Directive.prototype.controller;
 
@@ -334,7 +364,7 @@ ng.Directive.prototype.scope;
 
 /**
  * Inline template
- * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
+ * @type {(function(!HTMLElement): string|string|undefined)}
  */
 ng.Directive.prototype.template;
 
@@ -346,7 +376,7 @@ ng.Directive.prototype.templateNamespace;
 
 /**
  * Template URL for loading from server
- * @type {(function(!HTMLElement, !Object<string, ?>): string|string|undefined)}
+ * @type {(function(!HTMLElement): string|string|undefined)}
  */
 ng.Directive.prototype.templateUrl;
 
@@ -475,7 +505,7 @@ ng.NgModule.prototype.animation = function(name, animationFactory) {};
 /**
  * Public NgModule.filter member exposed by the AngularTS namespace contract.
  * @param {string} name
- * @param {function(...?): !Object} filterFn
+ * @param {function(...?): function(...?): ?} filterFn
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.filter = function(name, filterFn) {};
@@ -869,7 +899,7 @@ ng.FilterProvider.prototype.$get;
 /**
  * Public FilterProvider.register member exposed by the AngularTS namespace contract.
  * @param {string} name
- * @param {function(...?): !Object} factory
+ * @param {function(...?): function(...?): ?} factory
  * @return {!ng.FilterProvider}
  */
 ng.FilterProvider.prototype.register = function(name, factory) {};
@@ -1378,7 +1408,7 @@ ng.CompileService;
 
 /**
  * Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function((!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
+ * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
  */
 ng.ControllerService;
 
@@ -1448,7 +1478,7 @@ ng.FilterFn;
 
 /**
  * Public AngularTS FilterFactory contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(...?): !Object}
+ * @typedef {function(...?): function(...?): ?}
  */
 ng.FilterFactory;
 
@@ -1477,22 +1507,10 @@ ng.EntryFilterItem.prototype.key;
 ng.EntryFilterItem.prototype.value;
 
 /**
- * Public AngularTS DateFilterFormat contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {string}
- */
-ng.DateFilterFormat;
-
-/**
  * Public AngularTS DateFilterOptions contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
 ng.DateFilterOptions = function() {};
-
-/**
- * Public DateFilterOptions.locale member exposed by the AngularTS namespace contract.
- * @type {(string|undefined)}
- */
-ng.DateFilterOptions.prototype.locale;
 
 /**
  * Public AngularTS NumberFilterOptions contract exposed through the global ng namespace for Closure-annotated applications.
@@ -1501,34 +1519,16 @@ ng.DateFilterOptions.prototype.locale;
 ng.NumberFilterOptions = function() {};
 
 /**
- * Public NumberFilterOptions.locale member exposed by the AngularTS namespace contract.
- * @type {(string|undefined)}
- */
-ng.NumberFilterOptions.prototype.locale;
-
-/**
  * Public AngularTS CurrencyFilterOptions contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
 ng.CurrencyFilterOptions = function() {};
 
 /**
- * Public CurrencyFilterOptions.locale member exposed by the AngularTS namespace contract.
- * @type {(string|undefined)}
- */
-ng.CurrencyFilterOptions.prototype.locale;
-
-/**
- * Public AngularTS RelativeTimeFilterOptions contract exposed through the global ng namespace for Closure-annotated applications.
+ * An object with some or all of properties of `options` parameter of `Intl.RelativeTimeFormat` constructor. [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat#Parameters).
  * @record
  */
 ng.RelativeTimeFilterOptions = function() {};
-
-/**
- * Public RelativeTimeFilterOptions.locale member exposed by the AngularTS namespace contract.
- * @type {(string|undefined)}
- */
-ng.RelativeTimeFilterOptions.prototype.locale;
 
 /**
  * Function that serializes query params into a URL-encoded string.
@@ -2856,6 +2856,30 @@ ng.AngularService.prototype.getInjector = function(element) {};
 ng.AngularService.prototype.getScope = function(element) {};
 
 /**
+ * Read an element attribute by normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AngularService.prototype.getNormalizedAttr = function(element, normalizedName) {};
+
+/**
+ * Return the actual DOM attribute name for a normalized directive-style name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {(string|undefined)}
+ */
+ng.AngularService.prototype.getNormalizedAttrName = function(element, normalizedName) {};
+
+/**
+ * Return whether an element has an attribute matching a normalized name.
+ * @param {(!Element|!Node|null|undefined)} element
+ * @param {string} normalizedName
+ * @return {boolean}
+ */
+ng.AngularService.prototype.hasNormalizedAttr = function(element, normalizedName) {};
+
+/**
  * Global framework error-handling configuration.
  * @param {(!ng.ErrorHandlingConfig|undefined)} config
  * @return {!ng.ErrorHandlingConfig}
@@ -3554,6 +3578,12 @@ ng.InjectionTokens.prototype.$aria;
  * @type {string}
  */
 ng.InjectionTokens.prototype.$compile;
+
+/**
+ * Public InjectionTokens.$compileLifecycle member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$compileLifecycle;
 
 /**
  * Public InjectionTokens.$cookie member exposed by the AngularTS namespace contract.
@@ -4843,7 +4873,7 @@ ng.StateDeclaration.prototype.dynamic;
 
 /**
  * The name of the component to use for this view. The name of an AngularTS `.component()` which will be used for this view. Resolve data can be provided to the component via the component's `bindings` object. For each binding declared on the component, any resolve with the same name is set on the component's controller instance. Note: Mapping from resolve names to component inputs may be specified using [[bindings]]. #### Example: ```js .state('profile', { // Use the <my-profile></my-profile> component for this state. component: 'MyProfile', } ``` Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.
- * @type {(string|undefined)}
+ * @type {(!ng.Component|string|undefined)}
  */
 ng.StateDeclaration.prototype.component;
 
@@ -4855,7 +4885,7 @@ ng.StateDeclaration.prototype.bindings;
 
 /**
  * The view's controller function or name The controller function, or the name of a registered controller. The controller function will be used to control the contents of the [[directives.ngVIew]] directive. See: [[Ng1Controller]] for information about component-level router hooks.
- * @type {(!Array<(function(...?): (!Object|undefined)|function(...?): ?)>|function(...?): (!Object|undefined)|function(new: ?, ...?)|function(new: Object, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
  */
 ng.StateDeclaration.prototype.controller;
 

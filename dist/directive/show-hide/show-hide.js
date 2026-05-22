@@ -1,18 +1,19 @@
-import { _injector, _attributes } from '../../injection-tokens.js';
+import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 const NG_HIDE_CLASS = "ng-hide";
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
-ngShowDirective.$inject = [_injector, _attributes];
+ngShowDirective.$inject = [_injector];
 /**
  * Removes the `ng-hide` class when the watched expression becomes truthy.
  */
-function ngShowDirective($injector, $attributes) {
+function ngShowDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element) {
-            const expression = $attributes.read(element, "ngShow");
+            const expression = getNormalizedAttr(element, "ngShow");
             if (expression === undefined) {
                 return;
             }
@@ -39,16 +40,16 @@ function ngShowDirective($injector, $attributes) {
         },
     };
 }
-ngHideDirective.$inject = [_injector, _attributes];
+ngHideDirective.$inject = [_injector];
 /**
  * Adds the `ng-hide` class when the watched expression becomes truthy.
  */
-function ngHideDirective($injector, $attributes) {
+function ngHideDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element) {
-            const expression = $attributes.read(element, "ngHide");
+            const expression = getNormalizedAttr(element, "ngHide");
             if (expression === undefined) {
                 return;
             }

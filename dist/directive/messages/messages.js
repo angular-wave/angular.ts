@@ -1,7 +1,7 @@
-import { _injector, _parse, _attributes, _templateRequest, _compile } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { createNodelistFromHTML, removeElement } from '../../shared/dom.js';
+import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
 import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
+import { getNormalizedAttr, createNodelistFromHTML, removeElement } from '../../shared/dom.js';
 
 const ACTIVE_CLASS = "ng-active";
 const INACTIVE_CLASS = "ng-inactive";
@@ -146,17 +146,17 @@ class NgMessageCtrl {
         this.reRender();
     }
 }
-ngMessagesDirective.$inject = [_injector, _parse, _attributes];
+ngMessagesDirective.$inject = [_injector, _parse];
 /**
  * Builds the root `ngMessages` directive.
  */
-function ngMessagesDirective($injector, $parse, $attributes) {
+function ngMessagesDirective($injector, $parse) {
     const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngMessages",
         restrict: "AE",
-        controller: ($element, $scope) => new NgMessageCtrl($element, $scope, $attributes.read($element, "ngMessages") ??
-            $attributes.read($element, "for"), $attributes.read($element, "multiple"), $attributes.read($element, "ngMessagesMultiple"), getAnimate, $parse),
+        controller: ($element, $scope) => new NgMessageCtrl($element, $scope, getNormalizedAttr($element, "ngMessages") ??
+            getNormalizedAttr($element, "for"), getNormalizedAttr($element, "multiple"), getNormalizedAttr($element, "ngMessagesMultiple"), getAnimate, $parse),
     };
 }
 /**
@@ -176,17 +176,17 @@ function evalAttrTruthy(scope, expr) {
 function truthy(val) {
     return isString(val) ? val.length > 0 : !!val;
 }
-ngMessagesIncludeDirective.$inject = [_templateRequest, _compile, _attributes];
+ngMessagesIncludeDirective.$inject = [_templateRequest, _compile];
 /**
  * Builds the directive that inlines external message templates.
  */
-function ngMessagesIncludeDirective($templateRequest, $compile, $attributes) {
+function ngMessagesIncludeDirective($templateRequest, $compile) {
     return {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
         link($scope, element, ngMessagesCtrl) {
-            const src = $attributes.read(element, "ngMessagesInclude") ??
-                $attributes.read(element, "src") ??
+            const src = getNormalizedAttr(element, "ngMessagesInclude") ??
+                getNormalizedAttr(element, "src") ??
                 "";
             void $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
@@ -224,11 +224,11 @@ const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(isDefault) {
-    ngMessageDirectiveFn.$inject = [_injector, _parse, _attributes];
+    ngMessageDirectiveFn.$inject = [_injector, _parse];
     /**
      * Builds a concrete `ngMessage` directive definition.
      */
-    function ngMessageDirectiveFn($injector, $parse, $attributes) {
+    function ngMessageDirectiveFn($injector, $parse) {
         const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "AE",
@@ -236,97 +236,97 @@ function ngMessageDirectiveFactory(isDefault) {
             priority: 1, // must run before ngBind, otherwise the text is set on the comment
             terminal: true,
             require: "^^ngMessages",
-            link: (scope, element, ngMessagesCtrl, $transclude) => {
-                let commentNode = element;
-                let records = null;
-                let staticExp;
-                let dynamicExp;
-                if (!isDefault) {
-                    commentNode = element;
-                    staticExp =
-                        $attributes.read(element, "ngMessage") ??
-                            $attributes.read(element, "when") ??
-                            undefined;
-                    dynamicExp =
-                        $attributes.read(element, "ngMessageExp") ??
-                            $attributes.read(element, "whenExp") ??
-                            undefined;
-                    const assignRecords = function (items) {
-                        records = items
-                            ? isArray(items)
-                                ? items
-                                : items.split(/[\s,]+/)
-                            : null;
-                        ngMessagesCtrl.reRender();
-                    };
-                    if (dynamicExp) {
-                        const dynamicFn = $parse(dynamicExp);
-                        assignRecords(dynamicFn(scope));
-                        scope.$watch(dynamicExp, assignRecords);
+            compile(tElement) {
+                const staticExp = isDefault
+                    ? undefined
+                    : (getNormalizedAttr(tElement, "ngMessage") ??
+                        getNormalizedAttr(tElement, "when"));
+                const dynamicExp = isDefault
+                    ? undefined
+                    : (getNormalizedAttr(tElement, "ngMessageExp") ??
+                        getNormalizedAttr(tElement, "whenExp"));
+                return (scope, element, ngMessagesCtrl, $transclude) => {
+                    let commentNode = element;
+                    let records = null;
+                    if (!isDefault) {
+                        commentNode = element;
+                        const assignRecords = function (items) {
+                            records = items
+                                ? isArray(items)
+                                    ? items
+                                    : items.split(/[\s,]+/)
+                                : null;
+                            ngMessagesCtrl.reRender();
+                        };
+                        if (dynamicExp) {
+                            const dynamicFn = $parse(dynamicExp);
+                            assignRecords(dynamicFn(scope));
+                            scope.$watch(dynamicExp, assignRecords);
+                        }
+                        else {
+                            assignRecords(staticExp);
+                        }
                     }
-                    else {
-                        assignRecords(staticExp);
-                    }
-                }
-                /** @internal */
-                let currentElement = null;
-                let messageCtrl;
-                ngMessagesCtrl.register(commentNode, (messageCtrl = {
-                    test(name) {
-                        return contains(records, name);
-                    },
-                    attach() {
-                        if (!currentElement) {
-                            $transclude((elm, newScope) => {
-                                const transcludedElement = elm;
-                                const animate = getAnimateForNode(getAnimate, transcludedElement);
+                    /** @internal */
+                    let currentElement = null;
+                    let messageCtrl;
+                    ngMessagesCtrl.register(commentNode, (messageCtrl = {
+                        test(name) {
+                            return contains(records, name);
+                        },
+                        attach() {
+                            if (!currentElement) {
+                                $transclude((elm, newScope) => {
+                                    const transcludedElement = elm;
+                                    const animate = getAnimateForNode(getAnimate, transcludedElement);
+                                    if (animate) {
+                                        animate.enter(transcludedElement, null, element);
+                                    }
+                                    else {
+                                        element.after(transcludedElement);
+                                    }
+                                    currentElement = transcludedElement;
+                                    // Each time we attach this node to a message we get a new id that we can match
+                                    // when we are destroying the node later.
+                                    const attachId = (currentElement._attachId =
+                                        ngMessagesCtrl._getAttachId());
+                                    // in the event that the element or a parent element is destroyed
+                                    // by another structural directive then it's time
+                                    // to deregister the message from the controller
+                                    currentElement.addEventListener("$destroy", () => {
+                                        // If the message element was removed via a call to `detach` then `currentElement` will be null
+                                        // So this handler only handles cases where something else removed the message element.
+                                        if (currentElement?._attachId === attachId) {
+                                            ngMessagesCtrl.deregister(commentNode, isDefault);
+                                            messageCtrl.detach();
+                                        }
+                                        newScope?.$destroy();
+                                    });
+                                });
+                            }
+                        },
+                        detach() {
+                            if (currentElement) {
+                                const elm = currentElement;
+                                currentElement = null;
+                                const animate = getAnimateForNode(getAnimate, elm);
                                 if (animate) {
-                                    animate.enter(transcludedElement, null, element);
+                                    animate.leave(elm);
                                 }
                                 else {
-                                    element.after(transcludedElement);
+                                    removeElement(elm);
                                 }
-                                currentElement = transcludedElement;
-                                // Each time we attach this node to a message we get a new id that we can match
-                                // when we are destroying the node later.
-                                const attachId = (currentElement._attachId =
-                                    ngMessagesCtrl._getAttachId());
-                                // in the event that the element or a parent element is destroyed
-                                // by another structural directive then it's time
-                                // to deregister the message from the controller
-                                currentElement.addEventListener("$destroy", () => {
-                                    // If the message element was removed via a call to `detach` then `currentElement` will be null
-                                    // So this handler only handles cases where something else removed the message element.
-                                    if (currentElement?._attachId === attachId) {
-                                        ngMessagesCtrl.deregister(commentNode, isDefault);
-                                        messageCtrl.detach();
-                                    }
-                                    newScope?.$destroy();
-                                });
-                            });
-                        }
-                    },
-                    detach() {
-                        if (currentElement) {
-                            const elm = currentElement;
-                            currentElement = null;
-                            const animate = getAnimateForNode(getAnimate, elm);
-                            if (animate) {
-                                animate.leave(elm);
                             }
-                            else {
-                                removeElement(elm);
-                            }
-                        }
-                    },
-                }), isDefault);
-                // We need to ensure that this directive deregisters itself when it no longer exists
-                // Normally this is done when the attached element is destroyed; but if this directive
-                // gets removed before we attach the message to the DOM there is nothing to watch
-                // in which case we must deregister when the containing scope is destroyed.
-                scope.$on("$destroy", () => {
-                    ngMessagesCtrl.deregister(commentNode, isDefault);
-                });
+                        },
+                    }), isDefault);
+                    // We need to ensure that this directive deregisters itself when it no longer exists
+                    // Normally this is done when the attached element is destroyed; but if this directive
+                    // gets removed before we attach the message to the DOM there is nothing to watch
+                    // in which case we must deregister when the containing scope is destroyed.
+                    scope.$on("$destroy", () => {
+                        ngMessagesCtrl.deregister(commentNode, isDefault);
+                    });
+                };
             },
         };
     }

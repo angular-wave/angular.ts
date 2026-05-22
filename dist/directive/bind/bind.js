@@ -1,39 +1,42 @@
-import { _attributes, _parse } from '../../injection-tokens.js';
+import { _parse } from '../../injection-tokens.js';
 import { isString, stringify, deProxy, isUndefined, isNull, isNullOrUndefined } from '../../shared/utils.js';
+import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
+import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
-ngBindDirective.$inject = [_attributes];
 /** Binds the watched expression as plain text content. */
-function ngBindDirective($attributes) {
+function ngBindDirective() {
     return {
         link(scope, element) {
-            const expression = $attributes.read(element, "ngBind");
+            const expression = getNormalizedAttr(element, "ngBind");
             if (!isString(expression))
                 return;
             scope.$watch(expression, (value) => {
                 const text = stringify(deProxy(value));
                 element.textContent = isString(text) ? text : "";
-            }, $attributes.has(element, "lazy"));
+            }, hasNormalizedAttr(element, "lazy"));
         },
     };
 }
 /** Binds the interpolated template value as plain text content. */
-ngBindTemplateDirective.$inject = [_attributes];
-function ngBindTemplateDirective($attributes) {
+function ngBindTemplateDirective() {
     return {
         link(scope, element) {
-            $attributes.observe(scope, element, "ngBindTemplate", (value) => {
+            const syncTemplate = () => {
+                const value = getNormalizedAttr(element, "ngBindTemplate");
                 element.textContent = isNullOrUndefined(value) ? "" : value;
-            });
+            };
+            syncTemplate();
+            observeNormalizedAttribute(scope, element, "ngBindTemplate", syncTemplate);
         },
     };
 }
-ngBindHtmlDirective.$inject = [_parse, _attributes];
+ngBindHtmlDirective.$inject = [_parse];
 /** Binds trusted HTML into the element while still validating the expression. */
-function ngBindHtmlDirective($parse, $attributes) {
+function ngBindHtmlDirective($parse) {
     return {
         restrict: "A",
-        compile(tElement, tAttrs) {
-            const expression = $attributes?.read(tElement, "ngBindHtml") ?? tAttrs.ngBindHtml;
+        compile(tElement) {
+            const expression = getNormalizedAttr(tElement, "ngBindHtml");
             if (!isString(expression))
                 return () => undefined;
             $parse(expression); // checks for interpolation errors

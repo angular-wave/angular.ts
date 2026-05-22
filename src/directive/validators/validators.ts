@@ -1,5 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _parse } from "../../injection-tokens.ts";
+import { _parse } from "../../injection-tokens.ts";
 import {
   isNumberNaN,
   createErrorFactory,
@@ -10,8 +9,10 @@ import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
 import {
   getNormalizedAttr,
   hasNormalizedAttr,
+  setNormalizedAttr,
   startingTag,
 } from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 
 const ngPatternError = createErrorFactory("ngPattern");
 
@@ -74,7 +75,6 @@ function setNativeCustomValidityIssue(
 }
 
 function readValidatorAttr(
-  $attributes: AttributesService | undefined,
   element: Element | Node,
   normalizedName: string,
 ): string | undefined {
@@ -84,7 +84,6 @@ function readValidatorAttr(
 }
 
 function hasValidatorAttr(
-  $attributes: AttributesService | undefined,
   element: Element | Node,
   normalizedName: string,
 ): boolean {
@@ -94,16 +93,15 @@ function hasValidatorAttr(
 }
 
 function observeValidatorAttr(
-  $attributes: AttributesService | undefined,
   scope: ng.Scope,
   element: Element | Node,
   normalizedName: string,
   callback: (value?: string) => void,
 ): () => void {
-  if (!$attributes || !(element instanceof Element)) return () => undefined;
+  if (!(element instanceof Element)) return () => undefined;
 
-  return $attributes.observe(scope, element, normalizedName, (value) => {
-    callback(readValidatorAttr($attributes, element, normalizedName) ?? value);
+  return observeNormalizedAttribute(scope, element, normalizedName, () => {
+    callback(readValidatorAttr(element, normalizedName));
   });
 }
 
@@ -132,29 +130,27 @@ function observeValidatorAttr(
  */
 export const requiredDirective: [
   string,
-  string,
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ng.Directive,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
-  _attributes,
   /** Creates the `required` validator directive. */
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
       /** Wires required-state observation into the ngModel validator set. */
       (scope: ng.Scope, elm: Element, ctrl?: ValidatingNgModelController) => {
         if (!ctrl) return;
-        const ngRequired = readValidatorAttr($attributes, elm, "ngRequired");
+        const ngRequired = readValidatorAttr(elm, "ngRequired");
         // For boolean attributes like required, presence means true
         const ngRequiredGetter = ngRequired ? $parse(ngRequired) : undefined;
         let value: unknown = ngRequiredGetter
           ? Boolean(ngRequiredGetter(scope))
-          : hasValidatorAttr($attributes, elm, "required");
+          : hasValidatorAttr(elm, "required");
 
         const syncNativeRequired = (required: boolean) => {
-          if ($attributes && elm instanceof Element) {
-            $attributes.set(elm, "required", required);
+          if (elm instanceof Element) {
+            setNormalizedAttr(elm, "required", required);
           }
           const nativeControl = elm as Element & {
             willValidate?: boolean;
@@ -170,7 +166,7 @@ export const requiredDirective: [
         if (!ngRequired) {
           // force truthy in case we are on non input element
           // (input elements do this automatically for boolean attributes like required)
-          $attributes?.set(elm, "required", true);
+          setNormalizedAttr(elm, "required", true);
         }
 
         syncNativeRequired(Boolean(value));
@@ -195,19 +191,13 @@ export const requiredDirective: [
             setRequiredValue(Boolean(nextValue));
           });
         } else {
-          observeValidatorAttr(
-            $attributes,
-            scope,
-            elm,
-            "required",
-            (newVal?: string) => {
-              setRequiredValue(
-                $attributes && elm instanceof Element
-                  ? hasNormalizedAttr(elm, "required")
-                  : newVal,
-              );
-            },
-          );
+          observeValidatorAttr(scope, elm, "required", (newVal?: string) => {
+            setRequiredValue(
+              elm instanceof Element
+                ? hasNormalizedAttr(elm, "required")
+                : newVal,
+            );
+          });
         }
       },
   }),
@@ -254,13 +244,11 @@ export const requiredDirective: [
  */
 export const patternDirective: [
   string,
-  string,
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ng.Directive,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
-  _attributes,
   /** Creates the `pattern` validator directive. */
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     compile: (tElm: Element) => {
@@ -268,11 +256,7 @@ export const patternDirective: [
 
       let parseFn: (() => unknown) | ((scope: ng.Scope) => string) | undefined;
 
-      const templateNgPattern = readValidatorAttr(
-        $attributes,
-        tElm,
-        "ngPattern",
-      );
+      const templateNgPattern = readValidatorAttr(tElm, "ngPattern");
 
       if (templateNgPattern) {
         patternExp = templateNgPattern;
@@ -297,9 +281,8 @@ export const patternDirective: [
       ) {
         if (!ctrl) return;
         const modelCtrl = ctrl;
-        const ngPattern = readValidatorAttr($attributes, elm, "ngPattern");
+        const ngPattern = readValidatorAttr(elm, "ngPattern");
         let attrVal: string | RegExp | undefined = readValidatorAttr(
-          $attributes,
           elm,
           "pattern",
         );
@@ -331,7 +314,7 @@ export const patternDirective: [
           }
         }
 
-        observeValidatorAttr($attributes, scope, elm, "pattern", refreshRegexp);
+        observeValidatorAttr(scope, elm, "pattern", refreshRegexp);
 
         modelCtrl.$validators.pattern = (
           _modelValue: unknown,
@@ -392,40 +375,32 @@ export const patternDirective: [
  */
 export const maxlengthDirective: [
   string,
-  string,
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ng.Directive,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
-  _attributes,
   /** Creates the `maxlength` validator directive. */
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
       /** Watches maxlength changes and keeps the validator in sync. */
       (scope: ng.Scope, elm: Element, ctrl?: ValidatingNgModelController) => {
         if (!ctrl) return;
-        const maxlengthAttr = readValidatorAttr($attributes, elm, "maxlength");
-        const ngMaxlength = readValidatorAttr($attributes, elm, "ngMaxlength");
+        const maxlengthAttr = readValidatorAttr(elm, "maxlength");
+        const ngMaxlength = readValidatorAttr(elm, "ngMaxlength");
 
         let maxlength =
           maxlengthAttr ?? (ngMaxlength && $parse(ngMaxlength)(scope));
 
         let maxlengthParsed = parseLength(maxlength);
 
-        observeValidatorAttr(
-          $attributes,
-          scope,
-          elm,
-          "maxlength",
-          (newValue?: string) => {
-            if (maxlength !== newValue) {
-              maxlengthParsed = parseLength(newValue);
-              maxlength = newValue;
-              ctrl.$validate();
-            }
-          },
-        );
+        observeValidatorAttr(scope, elm, "maxlength", (newValue?: string) => {
+          if (maxlength !== newValue) {
+            maxlengthParsed = parseLength(newValue);
+            maxlength = newValue;
+            ctrl.$validate();
+          }
+        });
         ctrl.$validators.maxlength = function (
           _modelValue: unknown,
           viewValue: unknown,
@@ -482,40 +457,31 @@ export const maxlengthDirective: [
  */
 export const minlengthDirective: [
   string,
-  string,
-  ($parse: ng.ParseService, $attributes?: AttributesService) => ng.Directive,
+  ($parse: ng.ParseService) => ng.Directive,
 ] = [
   _parse,
-  _attributes,
   /** Creates the `minlength` validator directive. */ (
     $parse: ng.ParseService,
-    $attributes?: AttributesService,
   ) => ({
     restrict: "A",
     require: "?ngModel",
     link(scope: ng.Scope, elm: Element, ctrl?: ValidatingNgModelController) {
       if (!ctrl) return;
-      const minlengthAttr = readValidatorAttr($attributes, elm, "minlength");
-      const ngMinlength = readValidatorAttr($attributes, elm, "ngMinlength");
+      const minlengthAttr = readValidatorAttr(elm, "minlength");
+      const ngMinlength = readValidatorAttr(elm, "ngMinlength");
 
       let minlength =
         minlengthAttr ?? (ngMinlength && $parse(ngMinlength)(scope));
 
       let minlengthParsed = parseLength(minlength) || -1;
 
-      observeValidatorAttr(
-        $attributes,
-        scope,
-        elm,
-        "minlength",
-        (newValue?: string) => {
-          if (minlength !== newValue) {
-            minlengthParsed = parseLength(newValue) || -1;
-            minlength = newValue;
-            ctrl.$validate();
-          }
-        },
-      );
+      observeValidatorAttr(scope, elm, "minlength", (newValue?: string) => {
+        if (minlength !== newValue) {
+          minlengthParsed = parseLength(newValue) || -1;
+          minlength = newValue;
+          ctrl.$validate();
+        }
+      });
       ctrl.$validators.minlength = function (
         modelValue: unknown,
         viewValue: unknown,

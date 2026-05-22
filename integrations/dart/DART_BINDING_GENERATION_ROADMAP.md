@@ -235,12 +235,8 @@ exists. Callable-interface methods such as `InterpolateService.startSymbol()`
 and `InterpolateService.endSymbol()` now come from the generated base instead
 of handwritten raw calls. Optional callable properties are unwrapped when
 collecting call signatures, so members such as `TranscludeFn.isSlotFilled()`
-can also be generated instead of handwritten. Direct string-only attribute
-`$observe()` has a generated
-raw member and a handwritten public adapter because it turns a Dart callback
-into a JavaScript callback and returns a Dart disposer. Thin object-forwarding
-helpers such as `WasmService.createScopeAbi()` also come from generated
-coverage.
+can also be generated instead of handwritten. Thin object-forwarding helpers
+such as `WasmService.createScopeAbi()` also come from generated coverage.
 Generated parameter-type overrides can preserve a stricter Dart input type
 without forcing a handwritten method; `WasmService.scope()` now takes
 `Scope<Object?>` from generated coverage and `dartToJs()` unwraps objects that

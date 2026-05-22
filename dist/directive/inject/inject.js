@@ -1,14 +1,15 @@
-import { _log, _injector, _attributes } from '../../injection-tokens.js';
+import { _log, _injector } from '../../injection-tokens.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngInjectDirective.$inject = [_log, _injector, _attributes];
+ngInjectDirective.$inject = [_log, _injector];
 /**
  * Injects named services from `$injector` onto the current scope.
  */
-function ngInjectDirective($log, $injector, $attributes) {
+function ngInjectDirective($log, $injector) {
     return {
         restrict: "A",
         link(scope, element) {
-            const expr = $attributes.read(element, "ngInject");
+            const expr = getNormalizedAttr(element, "ngInject");
             if (!expr)
                 return;
             const tokens = expr

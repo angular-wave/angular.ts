@@ -1,14 +1,15 @@
-import { _parse, _log, _attributes } from '../../injection-tokens.js';
+import { _parse, _log } from '../../injection-tokens.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngSetterDirective.$inject = [_parse, _log, _attributes];
+ngSetterDirective.$inject = [_parse, _log];
 /**
  * Mirrors an element's HTML content into an assignable scope expression.
  */
-function ngSetterDirective($parse, $log, $attributes) {
+function ngSetterDirective($parse, $log) {
     return {
         restrict: "A",
         link(scope, element) {
-            const modelExpression = $attributes.read(element, "ngSetter");
+            const modelExpression = getNormalizedAttr(element, "ngSetter");
             if (!modelExpression) {
                 $log.warn("ng-setter: expression null");
                 return;

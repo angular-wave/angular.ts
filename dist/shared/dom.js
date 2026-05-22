@@ -1,5 +1,6 @@
 import { _scope, _injector } from '../injection-tokens.js';
-import { isInstanceOf, isArray, arrayFrom, hasOwn, deleteProperty, uppercase, assertDefined, isDefined, assign, directiveNormalize, isString, isObject } from './utils.js';
+import { ALIASED_ATTR } from './constants.js';
+import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, assertDefined, isDefined, assign, isString, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -29,6 +30,8 @@ const Cache = {
 const SCOPE_KEY = _scope;
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
+const SIMPLE_ATTR_NAME = /^\w/;
+const specialAttrHolder = document.createElement("div");
 /**
  * HTML attributes whose presence alone represents a truthy value.
  */
@@ -272,6 +275,10 @@ function getCacheData(element, key) {
 function setTranscludedHostElement(anchor, hostElement) {
     transcludedHostElements.set(anchor, hostElement);
 }
+/** Returns the original element replaced by an element-transclusion anchor. */
+function getTranscludedHostElement(anchor) {
+    return transcludedHostElements.get(anchor);
+}
 /** Copies element-transclusion host metadata from an original node tree to its clone. */
 function cloneTranscludedHostElements(source, clone) {
     const hostElement = transcludedHostElements.get(source);
@@ -298,19 +305,6 @@ function getDirectiveHostElement(node) {
         return node;
     const hostElement = transcludedHostElements.get(node);
     return hostElement instanceof Element ? hostElement : null;
-}
-/**
- * Reads a directive attribute from the directive host element, with an attrs fallback
- * for compile/link contexts that provide synthetic or already-interpolated attrs.
- */
-function getDirectiveAttr(element, attrs, normalizedName) {
-    const hostElement = getDirectiveHostElement(element) ?? element;
-    const elementValue = getNormalizedAttr(hostElement, normalizedName);
-    return elementValue ?? attrs?.[normalizedName];
-}
-/** Returns whether a directive attribute is present on the host element or attrs. */
-function hasDirectiveAttr(element, attrs, normalizedName) {
-    return (hasNormalizedAttr(getDirectiveHostElement(element) ?? element, normalizedName) || attrs?.[normalizedName] !== undefined);
 }
 /**
  * Deletes cache data for a given element for a particular key.
@@ -499,11 +493,16 @@ function getBooleanAttrName(element, name) {
  * so callers see attribute aliases such as `data-*` and later DOM updates.
  */
 function getNormalizedAttr(element, normalizedName) {
-    if (!(element instanceof Element))
+    const attrElement = element instanceof Element
+        ? element
+        : element
+            ? getTranscludedHostElement(element)
+            : undefined;
+    if (!(attrElement instanceof Element))
         return undefined;
     const expected = directiveNormalize(normalizedName);
-    for (let index = 0; index < element.attributes.length; index += 1) {
-        const attr = element.attributes[index];
+    for (let index = 0; index < attrElement.attributes.length; index += 1) {
+        const attr = attrElement.attributes[index];
         if (directiveNormalize(attr.name) === expected) {
             return attr.value;
         }
@@ -512,11 +511,16 @@ function getNormalizedAttr(element, normalizedName) {
 }
 /** Returns the actual DOM attribute name for a normalized directive-style name. */
 function getNormalizedAttrName(element, normalizedName) {
-    if (!(element instanceof Element))
+    const attrElement = element instanceof Element
+        ? element
+        : element
+            ? getTranscludedHostElement(element)
+            : undefined;
+    if (!(attrElement instanceof Element))
         return undefined;
     const expected = directiveNormalize(normalizedName);
-    for (let index = 0; index < element.attributes.length; index += 1) {
-        const attr = element.attributes[index];
+    for (let index = 0; index < attrElement.attributes.length; index += 1) {
+        const attr = attrElement.attributes[index];
         if (directiveNormalize(attr.name) === expected) {
             return attr.name;
         }
@@ -526,6 +530,66 @@ function getNormalizedAttrName(element, normalizedName) {
 /** Returns whether an element has an attribute matching a normalized name. */
 function hasNormalizedAttr(element, normalizedName) {
     return getNormalizedAttr(element, normalizedName) !== undefined;
+}
+function setSpecialAttr(element, attrName, value) {
+    specialAttrHolder.innerHTML = `<span ${attrName}>`;
+    const { attributes } = specialAttrHolder.firstChild;
+    const attribute = attributes[0];
+    attributes.removeNamedItem(attribute.name);
+    attribute.value = value ?? "";
+    element.setAttributeNode(attribute);
+}
+/** Writes an element attribute by normalized directive-style name. */
+function setNormalizedAttr(element, normalizedName, value, options) {
+    const targetElement = getDirectiveHostElement(element);
+    if (!targetElement)
+        return undefined;
+    const normalized = directiveNormalize(normalizedName);
+    const observerName = hasOwn(ALIASED_ATTR, normalized)
+        ? ALIASED_ATTR[normalized]
+        : normalized;
+    const booleanName = getBooleanAttrName(targetElement, observerName);
+    let attrName = options?.attrName;
+    if (booleanName) {
+        targetElement[observerName] = value;
+        attrName = booleanName;
+    }
+    else {
+        attrName ?? (attrName = snakeCase(normalized, "-"));
+    }
+    if (options?.writeAttr === false || !attrName) {
+        return {
+            element: targetElement,
+            normalizedName: normalized,
+            observerName,
+            attrName,
+            observedValue: isNullOrUndefined(value) ? undefined : String(value),
+        };
+    }
+    if (isNullOrUndefined(value)) {
+        targetElement.removeAttribute(attrName);
+    }
+    else if (SIMPLE_ATTR_NAME.test(attrName)) {
+        if (booleanName && value === false) {
+            targetElement.removeAttribute(attrName);
+        }
+        else if (booleanName) {
+            targetElement.toggleAttribute(attrName, value);
+        }
+        else {
+            targetElement.setAttribute(attrName, value);
+        }
+    }
+    else {
+        setSpecialAttr(targetElement, attrName, value);
+    }
+    return {
+        element: targetElement,
+        normalizedName: normalized,
+        observerName,
+        attrName,
+        observedValue: targetElement.getAttribute(attrName) ?? undefined,
+    };
 }
 function cleanSingleElementData(node) {
     if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
@@ -676,4 +740,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveAttr, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, hasDirectiveAttr, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setScope, setTranscludedHostElement, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

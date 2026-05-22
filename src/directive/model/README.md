@@ -123,8 +123,8 @@ removes itself from the parent form, drops the parent form back to
 - `$parse`: compiles the `ng-model` expression, optional getter/setter calls,
   and `ngChange`.
 - `$interpolate`: resolves interpolated control names.
-- `$attributes`: reads normalized attributes such as `data-ng-model` and
-  `data-name`.
+- DOM attribute helpers: read normalized attributes such as `data-ng-model` and
+  `data-name` directly from the element.
 - `ngModelOptions`: supplies inherited update, debounce, validation, and
   getter/setter settings.
 - Parent form controllers: receive control registration, renames, dirty state,

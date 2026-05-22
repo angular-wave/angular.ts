@@ -57,7 +57,7 @@ public external interface Controller {
 
 public external interface Directive<TController> {
     public var bindToController: dynamic
-    public fun compile(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    public fun compile(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
     public var controller: dynamic
     public var controllerAs: String
     public var count: Double

@@ -6,8 +6,6 @@
  * aligned around one source of truth for both service and provider names.
  */
 export const _angular = "$angular" as const;
-export const _attrs = "$attrs" as const;
-export const _attributes = "$attributes" as const;
 export const _scope = "$scope" as const;
 export const _element = "$element" as const;
 export const _animateCssDriver = "$$animateCssDriver" as const;
@@ -102,8 +100,6 @@ export const _controllerProvider = "$controllerProvider" as const;
  */
 export const $injectTokens = {
   _angular,
-  _attrs,
-  _attributes,
   _scope,
   _element,
   _animateCssDriver,

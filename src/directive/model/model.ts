@@ -1,8 +1,4 @@
-import type { DirectiveAttributes } from "../../interface.ts";
-import type { AttributesService } from "../../services/attributes/attributes.ts";
 import {
-  _attributes,
-  _attrs,
   _element,
   _exceptionHandler,
   _injector,
@@ -26,7 +22,6 @@ import {
   deProxy,
   entries,
   hasAnimate,
-  isDefined,
   isFunction,
   isNull,
   isNumber,
@@ -40,6 +35,7 @@ import {
   values,
 } from "../../shared/utils.ts";
 import { getNormalizedAttr, startingTag } from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "../attrs/observe-normalized.ts";
 import {
   createLazyAnimate,
   type LazyAnimate,
@@ -66,31 +62,13 @@ const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
 
 export const ngModelError = createErrorFactory("ngModel");
 
-type ModelAttrFallback = Record<string, string | undefined>;
-
 function readModelAttr(
-  $attributes: AttributesService | undefined,
   element: Element | Node,
-  attr: DirectiveAttributes | undefined,
   normalizedName: string,
 ): string | undefined {
-  const elementValue =
-    element instanceof Element
-      ? getNormalizedAttr(element, normalizedName)
-      : undefined;
-
-  const attrValue: string | undefined = attr
-    ? (attr as unknown as ModelAttrFallback)[normalizedName]
+  return element instanceof Element
+    ? getNormalizedAttr(element, normalizedName)
     : undefined;
-
-  if (
-    isDefined(attrValue) &&
-    (isUndefined(elementValue) || elementValue.includes("{{"))
-  ) {
-    return attrValue;
-  }
-
-  return elementValue ?? attrValue;
 }
 
 export type ModelValidators = Record<
@@ -164,12 +142,10 @@ export class NgModelController {
   /* @ignore */ static $inject = [
     _scope,
     _exceptionHandler,
-    _attrs,
     _element,
     _parse,
     _injector,
     _interpolate,
-    _attributes,
   ];
 
   [key: string]: unknown;
@@ -260,9 +236,6 @@ export class NgModelController {
   _scope: ng.Scope;
 
   /** @internal */
-  _attr: DirectiveAttributes;
-
-  /** @internal */
   _element: HTMLElement;
 
   /** @internal */
@@ -319,12 +292,10 @@ export class NgModelController {
   constructor(
     $scope: ng.Scope,
     $exceptionHandler: ng.ExceptionHandlerService,
-    $attr: DirectiveAttributes,
     $element: HTMLElement,
     $parse: ng.ParseService,
     $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
-    $attributes?: AttributesService,
   ) {
     this._isAnimated = hasAnimate($element);
     this.$viewValue = Number.NaN;
@@ -348,7 +319,7 @@ export class NgModelController {
     this._validationStates = this._customValidationStates;
     this.$pending = undefined; // keep pending keys here
     const interpolatedName: unknown = $interpolate(
-      readModelAttr($attributes, $element, $attr, "name") ?? "",
+      readModelAttr($element, "name") ?? "",
       false,
     )?.($scope);
 
@@ -356,8 +327,7 @@ export class NgModelController {
     this._parentForm = nullFormCtrl;
     this.$options = defaultModelOptions;
     this._updateEvents = "";
-    this._modelExpression =
-      readModelAttr($attributes, $element, $attr, "ngModel") ?? "";
+    this._modelExpression = readModelAttr($element, "ngModel") ?? "";
     this._parsedNgModel = $parse(this._modelExpression);
     this._parsedNgModelAssign = this._parsedNgModel._assign as (
       context: unknown,
@@ -370,7 +340,6 @@ export class NgModelController {
     this._parserName = "parse";
     this._currentValidationRunId = 0;
     this._scope = $scope; // attempt to bind to nearest controller if present
-    this._attr = $attr;
     this._element = $element;
     this._getAnimate = createLazyAnimate($injector);
     this._parse = $parse;
@@ -1570,10 +1539,7 @@ function setupModelWatcher(ctrl: NgModelController): () => void {
 /**
  * Builds the core `ngModel` directive definition.
  */
-ngModelDirective.$inject = [_attributes];
-export function ngModelDirective(
-  $attributes?: AttributesService,
-): ng.Directive {
+export function ngModelDirective(): ng.Directive {
   return {
     restrict: "A",
     require: ["ngModel", "^?form", "^?ngModelOptions"],
@@ -1618,15 +1584,14 @@ export function ngModelDirective(
               }
             };
 
-            const deregisterNameObserver = $attributes
-              ? $attributes.observe(scope, preElement, "name", () => {
-                  handleNameChange(
-                    readModelAttr($attributes, preElement, undefined, "name"),
-                  );
-                })
-              : () => {
-                  /* empty */
-                };
+            const deregisterNameObserver = observeNormalizedAttribute(
+              scope,
+              preElement,
+              "name",
+              () => {
+                handleNameChange(readModelAttr(preElement, "name"));
+              },
+            );
 
             const deregisterWatch = (scope.$watch(
               modelCtrl._modelExpression,

@@ -225,10 +225,11 @@ describe("ng-bind", () => {
       const parse = jasmine.createSpy("$parse").and.returnValue(() => {});
 
       const directive = ngBindHtmlDirective(parse);
+      const element = document.createElement("div");
 
-      const link = directive.compile(document.createElement("div"), {
-        ngBindHtml: "html",
-      });
+      element.setAttribute("ng-bind-html", "html");
+
+      const link = directive.compile(element);
 
       expect(parse).toHaveBeenCalledWith("html");
       expect(link).toEqual(jasmine.any(Function));
@@ -236,12 +237,11 @@ describe("ng-bind", () => {
 
     it("should create a link function that writes watched html", () => {
       const directive = ngBindHtmlDirective(() => {});
-
-      const link = directive.compile(document.createElement("div"), {
-        ngBindHtml: "html",
-      });
-
       const element = document.createElement("div");
+
+      element.setAttribute("ng-bind-html", "html");
+
+      const link = directive.compile(element);
 
       const scope = {
         $watch: jasmine.createSpy("$watch").and.callFake((_expr, listener) => {

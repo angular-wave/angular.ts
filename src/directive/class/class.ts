@@ -1,5 +1,6 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
+import { setClass } from "../../animations/class-mutation.ts";
+import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   getCacheData,
   getNormalizedAttr,
@@ -13,9 +14,11 @@ import {
   isString,
 } from "../../shared/utils.ts";
 
-classDirective.$inject = [_attributes];
+classDirective.$inject = [_injector];
 /** Creates the `ngClass` directive. */
-export function classDirective($attributes: AttributesService): ng.Directive {
+export function classDirective($injector: ng.InjectorService): ng.Directive {
+  const getAnimate = createLazyAnimate($injector);
+
   return {
     link(scope: ng.Scope, element: HTMLElement): void {
       let classCounts = getCacheData(element, "$classCounts") as
@@ -63,10 +66,7 @@ export function classDirective($attributes: AttributesService): ng.Directive {
 
         const toAdd = digestClassCounts(toAddArray, 1);
 
-        if (toAdd.length) $attributes.addClass(element, toAdd.join(" "));
-
-        if (toRemove.length)
-          $attributes.removeClass(element, toRemove.join(" "));
+        setClass(element, toAdd.join(" "), toRemove.join(" "), getAnimate);
       }
 
       /**

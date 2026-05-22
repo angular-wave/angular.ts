@@ -31,7 +31,6 @@ import {
 } from "../../core/scope/scope.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import { NodeType } from "../../shared/node.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 
@@ -529,24 +528,17 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     transclude: "element",
     priority: 1000,
     terminal: true,
-    compile($element: Element, tAttrs: DirectiveAttributes) {
-      const expression =
-        getNormalizedAttr($element, "ngRepeat") ??
-        (tAttrs.ngRepeat as string | undefined) ??
-        "";
+    compile($element: Element) {
+      const expression = getNormalizedAttr($element, "ngRepeat") ?? "";
 
-      const hasAnimate =
-        hasNormalizedAttr($element, "animate") || isDefined(tAttrs.animate);
+      const hasAnimate = hasNormalizedAttr($element, "animate");
 
       const indexProperty =
         getNormalizedAttr($element, "index") ??
         getNormalizedAttr($element, "dataIndex") ??
-        (tAttrs.index as string | undefined) ??
-        (tAttrs.dataIndex as string | undefined) ??
         undefined;
 
-      const hasLazy =
-        hasNormalizedAttr($element, "lazy") || isDefined(tAttrs.lazy);
+      const hasLazy = hasNormalizedAttr($element, "lazy");
 
       let match =
         /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(
@@ -591,9 +583,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       }
 
       const swap = callBackOnce(() => {
-        const targetSelector =
-          getNormalizedAttr($element, "swap") ??
-          (tAttrs.swap as string | undefined);
+        const targetSelector = getNormalizedAttr($element, "swap");
 
         if (hasLazy && targetSelector) {
           document.querySelectorAll(targetSelector).forEach((x) => {

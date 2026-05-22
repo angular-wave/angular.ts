@@ -1,12 +1,11 @@
-import { _attributes } from '../../injection-tokens.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
-ngScopeDirective.$inject = [_attributes];
 /** Assigns a stable scope name so the scope can be looked up externally. */
-function ngScopeDirective($attributes) {
+function ngScopeDirective() {
     return {
         scope: false,
         link($scope, element) {
-            const scopeName = $attributes.read(element, "ngScope");
+            const scopeName = getNormalizedAttr(element, "ngScope");
             if (typeof scopeName === "string") {
                 $scope.$scopename = scopeName;
             }

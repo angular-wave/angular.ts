@@ -1,11 +1,11 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import { _attributes, _interpolate } from "../../injection-tokens.ts";
+import { _interpolate } from "../../injection-tokens.ts";
 import {
   FUTURE_PARENT_ELEMENT_KEY,
   getCacheData,
   getInheritedData,
   getNormalizedAttr,
   hasNormalizedAttr,
+  setNormalizedAttr,
 } from "../../shared/dom.ts";
 import {
   arrayFrom,
@@ -17,41 +17,27 @@ import {
 import {
   type InterpolateFn,
   type NgModelController,
-  type SelectAttributes,
   SelectController,
   type SelectScope,
 } from "./select-ctrl.ts";
 
 function readSelectAttr(
   element: Element,
-  attr: SelectAttributes,
-  normalizedName: keyof SelectAttributes & string,
+  normalizedName: string,
 ): string | undefined {
-  const value = getNormalizedAttr(element, normalizedName);
-
-  return isDefined(value)
-    ? value
-    : (attr[normalizedName] as string | undefined);
+  return getNormalizedAttr(element, normalizedName);
 }
 
-function hasSelectAttr(
-  element: Element,
-  attr: SelectAttributes,
-  normalizedName: keyof SelectAttributes & string,
-): boolean {
-  return (
-    hasNormalizedAttr(element, normalizedName) ||
-    isDefined(attr[normalizedName])
-  );
+function hasSelectAttr(element: Element, normalizedName: string): boolean {
+  return hasNormalizedAttr(element, normalizedName);
 }
 
 function setSelectAttr(
-  $attributes: AttributesService,
   element: Element,
-  normalizedName: keyof SelectAttributes & string,
+  normalizedName: string,
   value: string | null,
 ): void {
-  $attributes.set(element, normalizedName, value);
+  setNormalizedAttr(element, normalizedName, value);
 }
 
 export function selectDirective(): ng.Directive {
@@ -186,21 +172,20 @@ export function selectDirective(): ng.Directive {
   }
 }
 
-optionDirective.$inject = [_attributes, _interpolate];
+optionDirective.$inject = [_interpolate];
 
 export function optionDirective(
-  $attributes: AttributesService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
   return {
     restrict: "E",
     priority: 100,
-    compile(element: Element, attr: SelectAttributes) {
+    compile(element: Element) {
       const optionElement = element as HTMLOptionElement;
 
-      const hasNgValue = hasSelectAttr(element, attr, "ngValue");
+      const hasNgValue = hasSelectAttr(element, "ngValue");
 
-      let initialValue = readSelectAttr(element, attr, "value");
+      let initialValue = readSelectAttr(element, "value");
 
       let interpolateValueFn: InterpolateFn;
 
@@ -214,24 +199,14 @@ export function optionDirective(
         interpolateTextFn = $interpolate(optionElement.textContent, true);
 
         if (!interpolateTextFn) {
-          setSelectAttr(
-            $attributes,
-            optionElement,
-            "value",
-            optionElement.textContent,
-          );
+          setSelectAttr(optionElement, "value", optionElement.textContent);
           initialValue = optionElement.textContent || undefined;
         }
       }
 
       return function (scope: SelectScope, elemParam: Element) {
         const optionElementParam = elemParam as HTMLOptionElement;
-        const linkAttrs = {
-          $attr: {},
-          disabled: readSelectAttr(optionElementParam, attr, "disabled"),
-          ngValue: readSelectAttr(optionElementParam, attr, "ngValue"),
-          value: readSelectAttr(optionElementParam, attr, "value"),
-        } as unknown as SelectAttributes;
+        const ngValueExpression = readSelectAttr(optionElementParam, "ngValue");
 
         const selectCtrlName = "$selectController";
 
@@ -256,10 +231,9 @@ export function optionDirective(
           selectCtrl._registerOption(
             scope,
             optionElementParam,
-            linkAttrs,
             interpolateValueFn,
             interpolateTextFn,
-            $attributes,
+            ngValueExpression,
             initialValue,
             hasNgValue,
           );

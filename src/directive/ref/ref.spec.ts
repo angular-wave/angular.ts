@@ -65,13 +65,13 @@ describe("ngRef", () => {
 
         const element = document.createElement("div");
 
+        element.setAttribute("ng-ref", "elementRef");
+
         const scope = $rootScope.$new();
 
-        const link = directive.compile(element, {
-          ngRef: "elementRef",
-        });
+        const link = directive.compile(element);
 
-        link(scope, element, {});
+        link(scope, element);
 
         expect(scope.elementRef).toBe(element);
 

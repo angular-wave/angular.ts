@@ -24,8 +24,6 @@ describe("ngRepeat", () => {
 
   let logs = [];
 
-  let $attributes;
-
   beforeEach(() => {
     const el = document.getElementById("app");
 
@@ -52,7 +50,6 @@ describe("ngRepeat", () => {
     $exceptionHandler = injector.get("$exceptionHandler");
     scope = injector.get("$rootScope");
     $templateCache = injector.get("$templateCache");
-    $attributes = injector.get("$attributes");
   });
 
   afterEach(() => {
@@ -67,7 +64,7 @@ describe("ngRepeat", () => {
 
   describe("compile", () => {
     it("should create a link function for a valid repeat expression", () => {
-      const directive = ngRepeatDirective(injector, $attributes);
+      const directive = ngRepeatDirective(injector);
 
       const element = document.createElement("li");
 
@@ -79,7 +76,7 @@ describe("ngRepeat", () => {
     });
 
     it("should reject invalid repeat expressions during compile", () => {
-      const directive = ngRepeatDirective(injector, $attributes);
+      const directive = ngRepeatDirective(injector);
 
       const element = document.createElement("li");
 
@@ -91,7 +88,7 @@ describe("ngRepeat", () => {
     });
 
     it("should read data-ng-repeat from the host element", () => {
-      const directive = ngRepeatDirective(injector, $attributes);
+      const directive = ngRepeatDirective(injector);
 
       const element = document.createElement("li");
 

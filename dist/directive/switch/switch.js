@@ -1,6 +1,6 @@
-import { _injector, _attributes } from '../../injection-tokens.js';
+import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { removeElement, domInsert } from '../../shared/dom.js';
+import { getNormalizedAttr, removeElement, domInsert } from '../../shared/dom.js';
 import { values, assertDefined } from '../../shared/utils.js';
 
 class NgSwitchController {
@@ -8,22 +8,22 @@ class NgSwitchController {
         this._cases = {};
     }
 }
-ngSwitchDirective.$inject = [_injector, _attributes];
+ngSwitchDirective.$inject = [_injector];
 function fallbackWhenEmpty(value, fallback) {
     if (value)
         return value;
     return fallback;
 }
 /** Switches between transcluded case blocks and animates block entry/exit. */
-function ngSwitchDirective($injector, $attributes) {
+function ngSwitchDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
         controller: NgSwitchController,
         link(scope, element, ngSwitchController) {
-            const ngSwitchExpr = $attributes.read(element, "ngSwitch");
-            const watchExpr = fallbackWhenEmpty(ngSwitchExpr, $attributes.read(element, "on") ?? "");
+            const ngSwitchExpr = getNormalizedAttr(element, "ngSwitch");
+            const watchExpr = fallbackWhenEmpty(ngSwitchExpr, getNormalizedAttr(element, "on") ?? "");
             let selectedTranscludes;
             const selectedElements = [];
             const previousLeaveAnimations = new Set();
@@ -106,31 +106,32 @@ function ngSwitchDirective($injector, $attributes) {
         },
     };
 }
-ngSwitchWhenDirective.$inject = [_attributes];
-function ngSwitchWhenDirective($attributes) {
+function ngSwitchWhenDirective() {
     return {
         transclude: "element",
         terminal: true,
         priority: 1200,
         require: "^ngSwitch",
-        link(scope, element, ctrl, $transclude) {
-            if (!$transclude) {
-                return;
-            }
-            const when = $attributes.read(element, "ngSwitchWhen") ?? "";
-            const separator = $attributes.read(element, "ngSwitchWhenSeparator");
-            (separator !== undefined ? when.split(separator) : [when])
-                .sort()
-                .filter(
-            // Filter duplicate cases
-            (elementParam, index, array) => array[index - 1] !== elementParam)
-                .forEach((whenCase) => {
-                var _a, _b;
-                ((_a = ctrl._cases)[_b = `!${whenCase}`] ?? (_a[_b] = [])).push({
-                    transclude: $transclude,
-                    element,
+        compile(tElement) {
+            const when = getNormalizedAttr(tElement, "ngSwitchWhen") ?? "";
+            const separator = getNormalizedAttr(tElement, "ngSwitchWhenSeparator");
+            return function ngSwitchWhenLink(_scope, element, ctrl, $transclude) {
+                if (!$transclude) {
+                    return;
+                }
+                (separator !== undefined ? when.split(separator) : [when])
+                    .sort()
+                    .filter(
+                // Filter duplicate cases
+                (elementParam, index, array) => array[index - 1] !== elementParam)
+                    .forEach((whenCase) => {
+                    var _a, _b;
+                    ((_a = ctrl._cases)[_b = `!${whenCase}`] ?? (_a[_b] = [])).push({
+                        transclude: $transclude,
+                        element,
+                    });
                 });
-            });
+            };
         },
     };
 }

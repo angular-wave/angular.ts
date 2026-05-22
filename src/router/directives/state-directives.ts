@@ -1,7 +1,4 @@
-import type { AttributesService } from "../../services/attributes/attributes.ts";
-import type { DirectiveAttributes } from "../../interface.ts";
 import {
-  _attributes,
   _interpolate,
   _parse,
   _rootScope,
@@ -22,7 +19,12 @@ import {
   keys,
   stringify,
 } from "../../shared/utils.ts";
-import { getInheritedData, getNormalizedAttr } from "../../shared/dom.ts";
+import {
+  getInheritedData,
+  getNormalizedAttr,
+  setNormalizedAttr,
+} from "../../shared/dom.ts";
+import { observeNormalizedAttribute } from "../../directive/attrs/observe-normalized.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -285,7 +287,6 @@ StateRefDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
-  _attributes,
 ];
 
 /**
@@ -297,7 +298,6 @@ export function StateRefDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: AttributesService,
 ): ng.Directive {
   const $state = $stateService;
 
@@ -346,7 +346,7 @@ export function StateRefDirective(
         }
 
         if (!isNullOrUndefined(def._href)) {
-          $attributes.set(element, type._attr, def._href);
+          setNormalizedAttr(element, type._attr, def._href);
         }
       }
 
@@ -385,7 +385,6 @@ StateRefDynamicDirective.$inject = [
   _stateRegistry,
   _transitions,
   _parse,
-  _attributes,
 ];
 
 /**
@@ -397,7 +396,6 @@ export function StateRefDynamicDirective(
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
   $parse: ng.ParseService,
-  $attributes: AttributesService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -446,7 +444,7 @@ export function StateRefDynamicDirective(
         }
 
         if (!isNullOrUndefined(def._href)) {
-          $attributes.set(element, type._attr, def._href);
+          setNormalizedAttr(element, type._attr, def._href);
         }
       }
 
@@ -462,12 +460,14 @@ export function StateRefDynamicDirective(
             ? ($parse(initialExpr)(scope) as TransitionOptions & RawParams)
             : undefined;
 
-        $attributes.observe(scope, element, field, () => {
+        const syncFieldExpression = () => {
           const expr = readFieldExpression();
 
           watchDeregFns[field]();
 
-          if (!expr || expr.includes("{{")) return;
+          if (!expr || expr.includes("{{")) {
+            return;
+          }
 
           watchDeregFns[field] =
             scope.$watch(expr, (newval) => {
@@ -475,7 +475,10 @@ export function StateRefDynamicDirective(
                 newval;
               update();
             }) ?? noopDeregister;
-        });
+        };
+
+        syncFieldExpression();
+        observeNormalizedAttribute(scope, element, field, syncFieldExpression);
       });
       update();
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
@@ -515,7 +518,6 @@ export function StateRefActiveDirective(
       this: StateRefActiveController,
       $scope: ng.Scope,
       $element: HTMLElement,
-      $attrs: DirectiveAttributes,
     ): undefined {
       let states: ActiveClassState[] = [];
 
@@ -526,9 +528,7 @@ export function StateRefActiveDirective(
       // slight difference in logic routing
       const activeEqRead = getNormalizedAttr($element, "ngSrefActiveEq");
 
-      const activeEqExpr = activeEqRead?.includes("{{")
-        ? String($attrs.ngSrefActiveEq as string | number | boolean | bigint)
-        : (activeEqRead ?? "");
+      const activeEqExpr = activeEqRead ?? "";
 
       const activeEqClass = stringify(
         assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
@@ -536,9 +536,7 @@ export function StateRefActiveDirective(
 
       const activeRead = getNormalizedAttr($element, "ngSrefActive");
 
-      const activeExpr = activeRead?.includes("{{")
-        ? String($attrs.ngSrefActive as string | number | boolean | bigint)
-        : activeRead;
+      const activeExpr = activeRead;
 
       try {
         ngSrefActive = activeExpr ? $parse(activeExpr)($scope) : undefined;

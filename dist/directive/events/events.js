@@ -1,5 +1,6 @@
 import { _parse, _exceptionHandler } from '../../injection-tokens.js';
 import { directiveNormalize, isString } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
 
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
@@ -58,8 +59,8 @@ const ngEventDirectives = EVENT_NAMES.reduce((directives, eventName) => {
 function createEventDirective($parse, $exceptionHandler, directiveName, eventName) {
     return {
         restrict: "A",
-        compile(_element, attr) {
-            const expression = attr[directiveName];
+        compile(element) {
+            const expression = getNormalizedAttr(element, directiveName);
             if (!isString(expression))
                 return () => undefined;
             const fn = $parse(expression);
@@ -86,8 +87,8 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
 function createWindowEventDirective($parse, $exceptionHandler, $window, directiveName, eventName) {
     return {
         restrict: "A",
-        compile(_element, attr) {
-            const expression = attr[directiveName];
+        compile(element) {
+            const expression = getNormalizedAttr(element, directiveName);
             if (!isString(expression))
                 return () => undefined;
             const fn = $parse(expression);

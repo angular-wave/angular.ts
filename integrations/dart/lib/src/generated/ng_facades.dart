@@ -1037,6 +1037,14 @@ base class GeneratedNgComponent extends GeneratedNgFacade {
   Object? get bindings =>
       unsafe.jsToDart<Object?>(raw.getProperty('bindings'.toJS));
 
+  /// Reads the generated replace property.
+  bool? get replace => _toDartBool(raw.getProperty('replace'.toJS));
+
+  /// Writes the generated replace property.
+  set replace(bool? value) {
+    raw.setProperty('replace'.toJS, unsafe.dartToJs(value));
+  }
+
   /// Reads the generated transclude property.
   Object? get transclude =>
       unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
@@ -1321,18 +1329,6 @@ base class GeneratedNgCookieStoreOptions extends GeneratedNgFacade {
   /// Reads the generated cookie property.
   Object? get cookie =>
       unsafe.jsToDart<Object?>(raw.getProperty('cookie'.toJS));
-}
-
-/// Generated raw facade for ng.CurrencyFilterOptions.
-base class GeneratedNgCurrencyFilterOptions extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.CurrencyFilterOptions.
-  const GeneratedNgCurrencyFilterOptions(super.raw);
-}
-
-/// Generated raw facade for ng.DateFilterOptions.
-base class GeneratedNgDateFilterOptions extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.DateFilterOptions.
-  const GeneratedNgDateFilterOptions(super.raw);
 }
 
 /// Generated raw facade for ng.Directive.
@@ -1866,6 +1862,10 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
 
   /// Reads the generated $compile property.
   String get $compile => _toDartString(raw.getProperty('\$compile'.toJS))!;
+
+  /// Reads the generated $compileLifecycle property.
+  String get $compileLifecycle =>
+      _toDartString(raw.getProperty('\$compileLifecycle'.toJS))!;
 
   /// Reads the generated $cookie property.
   String get $cookie => _toDartString(raw.getProperty('\$cookie'.toJS))!;
@@ -3196,12 +3196,6 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
   }
 }
 
-/// Generated raw facade for ng.NumberFilterOptions.
-base class GeneratedNgNumberFilterOptions extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.NumberFilterOptions.
-  const GeneratedNgNumberFilterOptions(super.raw);
-}
-
 /// Generated raw facade for ng.ParseService.
 base class GeneratedNgParseService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ParseService.
@@ -3467,12 +3461,6 @@ base class GeneratedNgRealtimeProtocolMessage extends GeneratedNgFacade {
   set swap(String? value) {
     raw.setProperty('swap'.toJS, unsafe.dartToJs(value));
   }
-}
-
-/// Generated raw facade for ng.RelativeTimeFilterOptions.
-base class GeneratedNgRelativeTimeFilterOptions extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.RelativeTimeFilterOptions.
-  const GeneratedNgRelativeTimeFilterOptions(super.raw);
 }
 
 /// Generated raw facade for ng.RequestConfig.
@@ -4961,12 +4949,8 @@ base class GeneratedNgStateDeclaration extends GeneratedNgFacade {
   }
 
   /// Reads the generated component property.
-  String? get component => _toDartString(raw.getProperty('component'.toJS));
-
-  /// Writes the generated component property.
-  set component(String? value) {
-    raw.setProperty('component'.toJS, unsafe.dartToJs(value));
-  }
+  Object? get component =>
+      unsafe.jsToDart<Object?>(raw.getProperty('component'.toJS));
 
   /// Reads the generated bindings property.
   Object? get bindings =>

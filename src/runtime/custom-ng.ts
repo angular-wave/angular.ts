@@ -1,20 +1,22 @@
 import {
   _angular,
-  _attributes,
   _compile,
+  _compileLifecycle,
   _document,
   _filter,
   _provide,
   _window,
 } from "../injection-tokens.ts";
-import { CompileProvider } from "../core/compile/compile.ts";
+import {
+  CompileLifecycleProvider,
+  CompileProvider,
+} from "../core/compile/compile.ts";
 import { FilterProvider } from "../core/filter/filter.ts";
 import { InterpolateProvider } from "../core/interpolate/interpolate.ts";
 import { ParseProvider } from "../core/parse/parse.ts";
 import { RootScopeProvider } from "../core/scope/scope.ts";
 import { ControllerProvider } from "../core/controller/controller.ts";
 import { ExceptionHandlerProvider } from "../services/exception/exception.ts";
-import { AttributesServiceProvider } from "../services/attributes/attributes.ts";
 import type { Injectable } from "../interface.ts";
 import { keys } from "../shared/utils.ts";
 
@@ -61,14 +63,14 @@ export interface CustomNgModuleOptions {
  * This set intentionally avoids browser I/O services such as `$http` so small
  * custom builds do not pull them in unless explicitly requested.
  */
-export const coreProviders = {
-  [_attributes]: AttributesServiceProvider,
+export const coreProviders: ProviderRegistration = {
+  [_compileLifecycle]: CompileLifecycleProvider,
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
-} satisfies ProviderRegistration;
+};
 
 /**
  * Registers a custom AngularTS `ng` module from core providers and a caller
@@ -96,12 +98,6 @@ export function registerCustomNgModule(
   return angular.module(moduleName, options.requires ?? [], [
     _provide,
     ($provide: ng.ProvideService) => {
-      $provide.provider({
-        [_angular]: class {
-          $get = () => angular;
-        },
-        ...providers,
-      });
       $provide.value(_window, window);
       $provide.value(_document, document);
 
@@ -109,6 +105,13 @@ export function registerCustomNgModule(
         _compile,
         CompileProvider,
       ) as unknown as ng.ProvideService;
+
+      $provide.provider({
+        [_angular]: class {
+          $get = () => angular;
+        },
+        ...providers,
+      });
 
       directiveRegistrations.forEach((directives) => {
         $compileProvider.directive(directives);

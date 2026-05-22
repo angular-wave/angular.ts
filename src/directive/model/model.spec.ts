@@ -45,8 +45,6 @@ describe("ngModel", () => {
     ]);
     $compile = injector.get("$compile");
 
-    const attrs = { name: "testAlias", ngModel: "value" };
-
     parentFormCtrl = {
       _setPending: jasmine.createSpy("_setPending"),
       $setValidity: jasmine.createSpy("$setValidity"),
@@ -57,14 +55,17 @@ describe("ngModel", () => {
     };
 
     element = createElementFromHTML("<form><input></form>");
+    const input = element.querySelector("input");
+
+    input.setAttribute("name", "testAlias");
+    input.setAttribute("ng-model", "value");
     const $controller = injector.get("$controller");
 
     scope = injector.get("$rootScope");
     $rootScope = scope;
     ctrl = $controller(NgModelController, {
       $scope: scope,
-      $element: element.querySelector("input"),
-      $attrs: attrs,
+      $element: input,
     });
 
     // Assign the mocked parentFormCtrl to the model controller

@@ -1,7 +1,9 @@
-import { _parse, _attributes, _element, _attrs, _scope, _injector, _interpolate } from '../../injection-tokens.js';
+import { _parse, _element, _scope, _injector, _interpolate } from '../../injection-tokens.js';
 import { hasAnimate, isString, isFunction, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, extend, isUndefined } from '../../shared/utils.js';
-import { VALID_CLASS, INVALID_CLASS, PRISTINE_CLASS, DIRTY_CLASS } from '../../shared/constants.js';
+import { VALID_CLASS, INVALID_CLASS, DIRTY_CLASS, PRISTINE_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
+import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
+import { observeNormalizedAttribute } from '../attrs/observe-normalized.js';
 
 const nullFormCtrl = {
     $nonscope: true,
@@ -85,11 +87,11 @@ class FormController {
     /**
      * Creates a form controller for a specific form element and its scope.
      */
-    constructor($element, $attrs, $scope, $injector, $interpolate, $attributes) {
+    constructor($element, $scope, $injector, $interpolate) {
         this._isAnimated = hasAnimate($element);
         this._controls = [];
-        const interpolatedName = $interpolate($attributes.read($element, "name") ??
-            $attributes.read($element, "ngForm") ??
+        const interpolatedName = $interpolate(getNormalizedAttr($element, "name") ??
+            getNormalizedAttr($element, "ngForm") ??
             "")?.($scope);
         this.$name = isString(interpolatedName) ? interpolatedName : "";
         /** True if user has already interacted with the form. */
@@ -252,9 +254,7 @@ class FormController {
      */
     $setDirty() {
         if (this._isAnimated) {
-            const animate = this._getAnimate();
-            animate.removeClass(this._element, PRISTINE_CLASS);
-            animate.addClass(this._element, DIRTY_CLASS);
+            this._getAnimate().setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
         }
         else {
             // Fallback for non-animated environments
@@ -500,14 +500,7 @@ class FormController {
     }
 }
 FormController.$nonscope = true;
-/* @ignore */ FormController.$inject = [
-    _element,
-    _attrs,
-    _scope,
-    _injector,
-    _interpolate,
-    _attributes,
-];
+/* @ignore */ FormController.$inject = [_element, _scope, _injector, _interpolate];
 /**
  * Helper directive that makes it possible to create control groups inside a
  * {@link ng.directive:form `form`} directive.
@@ -577,11 +570,10 @@ FormController.$nonscope = true;
 const formDirectiveFactory = function (isNgForm) {
     return [
         _parse,
-        _attributes,
         /**
          * Builds the form/ngForm directive definition.
          */
-        function ($parse, $attributes) {
+        function ($parse) {
             return {
                 name: "form",
                 restrict: isNgForm ? "EA" : "E",
@@ -590,16 +582,16 @@ const formDirectiveFactory = function (isNgForm) {
                 compile: function ngFormCompile(formElement) {
                     // Setup initial state of the control
                     formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
-                    const nameAttr = $attributes.has(formElement, "name")
+                    const nameAttr = hasNormalizedAttr(formElement, "name")
                         ? "name"
-                        : isNgForm && $attributes.has(formElement, "ngForm")
+                        : isNgForm && hasNormalizedAttr(formElement, "ngForm")
                             ? "ngForm"
                             : false;
                     return {
-                        pre: function ngFormPreLink(scope, formElementParam, attrParam, ctrls) {
+                        pre: function ngFormPreLink(scope, formElementParam, ctrls) {
                             const [controller] = ctrls;
                             if (formElementParam instanceof HTMLFormElement) {
-                                const shouldPreventSubmit = !("action" in attrParam);
+                                const shouldPreventSubmit = !hasNormalizedAttr(formElementParam, "action");
                                 const handleFormSubmission = function (event) {
                                     controller.$commitViewValue();
                                     controller.$setSubmitted();
@@ -709,7 +701,8 @@ const formDirectiveFactory = function (isNgForm) {
                                 };
                             if (nameAttr) {
                                 setter(scope, controller);
-                                $attributes.observe(scope, formElementParam, nameAttr, (newValue) => {
+                                observeNormalizedAttribute(scope, formElementParam, nameAttr, () => {
+                                    const newValue = getNormalizedAttr(formElementParam, nameAttr);
                                     const nextName = newValue ?? "";
                                     if (controller.$name === nextName)
                                         return;

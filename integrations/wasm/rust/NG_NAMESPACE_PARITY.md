@@ -171,7 +171,6 @@ necessary.
 | ng type | Rust status |
 | --- | --- |
 | `CurrencyFilterOptions` | deferred |
-| `DateFilterFormat` | deferred |
 | `DateFilterOptions` | deferred |
 | `EntryFilterItem` | deferred |
 | `FilterFactory` | deferred |

@@ -1,5 +1,5 @@
-import { _compile, _parse, _attributes } from '../../injection-tokens.js';
-import { emptyElement, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
+import { _compile, _parse } from '../../injection-tokens.js';
+import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
@@ -18,8 +18,8 @@ class OptionItem {
         this._disabled = Boolean(disabled);
     }
 }
-ngOptionsDirective.$inject = [_compile, _parse, _attributes];
-function ngOptionsDirective($compile, $parse, $attributes) {
+ngOptionsDirective.$inject = [_compile, _parse];
+function ngOptionsDirective($compile, $parse) {
     function parseOptionsExpression(optionsExp, selectElement, scope) {
         const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
@@ -98,7 +98,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
     function ngOptionsPostLink(scope, selectElement, ctrls) {
         const selectNode = selectElement;
         const [selectCtrl, ngModelCtrl] = ctrls;
-        const multiple = $attributes.has(selectElement, "multiple");
+        const multiple = hasNormalizedAttr(selectElement, "multiple");
         for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
             if (children[i].value === "") {
                 selectCtrl._hasEmptyOption = true;
@@ -109,7 +109,7 @@ function ngOptionsDirective($compile, $parse, $attributes) {
         emptyElement(selectNode);
         const providedEmptyOption = !!selectCtrl._emptyOption;
         let options;
-        const ngOptions = parseOptionsExpression($attributes.read(selectElement, "ngOptions") ?? "", selectNode, scope);
+        const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope);
         const listFragment = createDocumentFragment();
         selectCtrl._generateUnknownOptionValue = () => "?";
         if (!multiple) {
