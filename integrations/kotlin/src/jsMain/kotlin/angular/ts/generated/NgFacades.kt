@@ -231,21 +231,16 @@ public external interface AnimateService {
 }
 
 public external interface AnimationHandle {
-    public var animations: dynamic
     public fun cancel(): Unit
     public fun catch(p0: Function<*> = definedExternally): dynamic
-    public var cleanup: dynamic
     public fun complete(p0: Boolean = definedExternally): Unit
     public var controller: dynamic
     public fun done(p0: Function<*> = definedExternally): Unit
-    public var doneCallbacks: dynamic
     public fun finally(p0: Function<*> = definedExternally): dynamic
     public fun finish(): Unit
     public var finished: dynamic
     public fun pause(): Unit
     public fun play(): Unit
-    public var settled: dynamic
-    public var status: dynamic
     public fun then(p0: Function<*> = definedExternally, p1: Function<*> = definedExternally): dynamic
 }
 

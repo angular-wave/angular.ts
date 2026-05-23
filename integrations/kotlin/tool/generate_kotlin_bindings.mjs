@@ -67,6 +67,13 @@ function extractNamespaceTypes(sourcePath, overrides) {
   const sourceFile = program.getSourceFile(sourcePath);
   const types = [];
 
+  if (!sourceFile) {
+    throw new Error(
+      `Unable to read generated namespace declarations at ${sourcePath}. ` +
+        "Run `make types` from the repository root first.",
+    );
+  }
+
   function visit(node, inNgNamespace = false) {
     if (ts.isModuleDeclaration(node)) {
       const nextInNgNamespace =
@@ -127,6 +134,7 @@ function collectMembers(checker, overrides, typeName, type) {
     const declaration = property.valueDeclaration ?? property.declarations?.[0];
 
     if (property.name === "__type" || !isRepoTypesNode(declaration)) continue;
+    if (!isPublicDeclaration(declaration)) continue;
     if (skippedByOverride(typeName, property.name, manual, unsupported)) continue;
 
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
@@ -320,6 +328,14 @@ function isRepoTypesNode(node) {
       path
         .resolve(node.getSourceFile().fileName)
         .startsWith(`${path.resolve(typesRoot)}${path.sep}`),
+  );
+}
+
+function isPublicDeclaration(node) {
+  return !node.modifiers?.some(
+    (modifier) =>
+      modifier.kind === ts.SyntaxKind.PrivateKeyword ||
+      modifier.kind === ts.SyntaxKind.ProtectedKeyword,
   );
 }
 

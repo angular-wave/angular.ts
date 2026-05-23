@@ -1,4 +1,4 @@
-.PHONY: all deps format format-check test generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
+.PHONY: all deps format format-check test root-types generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
 
 GRADLE ?= ./gradlew
 NODE ?= node
@@ -18,14 +18,17 @@ format-check:
 test: deps
 	$(GRADLE) jsBrowserTest
 
-generate:
+root-types:
+	$(MAKE) -C ../.. types
+
+generate: root-types
 	$(NODE) tool/generate_kotlin_bindings.mjs
 	$(GRADLE) formatKotlin
 
-generate-check:
+generate-check: root-types
 	$(NODE) tool/check_generated_bindings.mjs
 
-parity:
+parity: root-types
 	$(NODE) tool/check_ng_namespace_parity.mjs
 	$(NODE) tool/check_ng_namespace_members.mjs
 
