@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 23, 2026 17:00:09 */
+/* Version: 0.28.0 - May 23, 2026 23:51:44 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -2993,7 +2993,7 @@
             /** @internal */
             this._bootsrappedModules = [];
             /** AngularTS version string replaced at build time. */
-            this.version = "0.27.0";
+            this.version = "0.28.0";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -3017,7 +3017,7 @@
                     this.$t[token] = token;
                 });
             }
-            if (runtimeOptions.attachToWindow) {
+            if (!runtimeOptions.subapp) {
                 window.angular = this;
             }
             if (runtimeOptions.registerBuiltins) {
@@ -3363,14 +3363,12 @@
         if (typeof options === "boolean") {
             return {
                 subapp: options,
-                attachToWindow: !options,
                 registerBuiltins: true,
             };
         }
         const subapp = options.subapp ?? false;
         return {
             subapp,
-            attachToWindow: options.attachToWindow ?? !subapp,
             registerBuiltins: options.registerBuiltins ?? true,
         };
     }
@@ -6849,6 +6847,7 @@
             createEventDirectiveFactory(eventName);
         return directives;
     }, {});
+    ngEventDirectives.ngClick;
     /**
      * Creates a directive that evaluates an expression when the element event fires.
      */
@@ -32479,6 +32478,11 @@
     const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
+    const UNSAFE_SCOPE_PATH_KEYS = new Set([
+        "__proto__",
+        "constructor",
+        "prototype",
+    ]);
     /**
      * Host-side wrapper around one AngularTS scope exposed to Wasm clients.
      *
@@ -32933,6 +32937,9 @@
             return scope;
         }
         const keys = scopePathKeys(path);
+        if (!isSafeScopePath(keys)) {
+            return undefined;
+        }
         let current = scope;
         for (let i = 0, l = keys.length; i < l; i++) {
             if (current === null || current === undefined) {
@@ -32944,7 +32951,7 @@
     }
     function writeScopePath(scope, path, value) {
         const keys = scopePathKeys(path);
-        if (keys.length === 0) {
+        if (keys.length === 0 || !isSafeScopePath(keys)) {
             return false;
         }
         let current = scope;
@@ -32964,7 +32971,7 @@
     }
     function deleteScopePath(scope, path) {
         const keys = scopePathKeys(path);
-        if (keys.length === 0) {
+        if (keys.length === 0 || !isSafeScopePath(keys)) {
             return false;
         }
         let current = scope;
@@ -32979,6 +32986,9 @@
     }
     function scopePathKeys(path) {
         return path.split(".").filter(Boolean);
+    }
+    function isSafeScopePath(keys) {
+        return keys.every((key) => !UNSAFE_SCOPE_PATH_KEYS.has(key));
     }
 
     /**
@@ -33327,17 +33337,16 @@
     }
 
     /**
-     * Creates a side-effect-free AngularTS runtime with no built-in modules.
+     * Creates an AngularTS runtime with no built-in modules.
      */
     function createAngularBare(options = {}) {
         return new AngularRuntime({
-            attachToWindow: false,
             registerBuiltins: false,
             ...options,
         });
     }
     /**
-     * Creates a side-effect-free AngularTS runtime with a custom `ng` module.
+     * Creates an AngularTS runtime with a custom `ng` module.
      */
     function createAngularCustom(options = {}) {
         const angular = createAngularBare(options);

@@ -3,6 +3,11 @@ import { instantiateWasm, deleteProperty } from '../../shared/utils.js';
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+const UNSAFE_SCOPE_PATH_KEYS = new Set([
+    "__proto__",
+    "constructor",
+    "prototype",
+]);
 /**
  * Host-side wrapper around one AngularTS scope exposed to Wasm clients.
  *
@@ -457,6 +462,9 @@ function readScopePath(scope, path) {
         return scope;
     }
     const keys = scopePathKeys(path);
+    if (!isSafeScopePath(keys)) {
+        return undefined;
+    }
     let current = scope;
     for (let i = 0, l = keys.length; i < l; i++) {
         if (current === null || current === undefined) {
@@ -468,7 +476,7 @@ function readScopePath(scope, path) {
 }
 function writeScopePath(scope, path, value) {
     const keys = scopePathKeys(path);
-    if (keys.length === 0) {
+    if (keys.length === 0 || !isSafeScopePath(keys)) {
         return false;
     }
     let current = scope;
@@ -488,7 +496,7 @@ function writeScopePath(scope, path, value) {
 }
 function deleteScopePath(scope, path) {
     const keys = scopePathKeys(path);
-    if (keys.length === 0) {
+    if (keys.length === 0 || !isSafeScopePath(keys)) {
         return false;
     }
     let current = scope;
@@ -503,6 +511,9 @@ function deleteScopePath(scope, path) {
 }
 function scopePathKeys(path) {
     return path.split(".").filter(Boolean);
+}
+function isSafeScopePath(keys) {
+    return keys.every((key) => !UNSAFE_SCOPE_PATH_KEYS.has(key));
 }
 
 export { WasmProvider, WasmScope, WasmScopeAbi };

@@ -52,6 +52,7 @@ const ngEventDirectives = EVENT_NAMES.reduce((directives, eventName) => {
         createEventDirectiveFactory(eventName);
     return directives;
 }, {});
+const ngClickDirective = ngEventDirectives.ngClick;
 /**
  * Creates a directive that evaluates an expression when the element event fires.
  */
@@ -109,4 +110,4 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
     };
 }
 
-export { createEventDirective, createWindowEventDirective, ngEventDirectives };
+export { createEventDirective, createWindowEventDirective, ngClickDirective, ngEventDirectives };

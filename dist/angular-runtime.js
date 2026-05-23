@@ -66,7 +66,7 @@ class AngularRuntime extends EventTarget {
                 this.$t[token] = token;
             });
         }
-        if (runtimeOptions.attachToWindow) {
+        if (!runtimeOptions.subapp) {
             window.angular = this;
         }
         if (runtimeOptions.registerBuiltins) {
@@ -412,14 +412,12 @@ function normalizeRuntimeOptions(options) {
     if (typeof options === "boolean") {
         return {
             subapp: options,
-            attachToWindow: !options,
             registerBuiltins: true,
         };
     }
     const subapp = options.subapp ?? false;
     return {
         subapp,
-        attachToWindow: options.attachToWindow ?? !subapp,
         registerBuiltins: options.registerBuiltins ?? true,
     };
 }
