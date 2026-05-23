@@ -108,7 +108,7 @@
           ><span class="tsd-signature-symbol">&lt;</span
           ><span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">(</span><br />        <span
@@ -142,23 +142,18 @@
             >Scope</a
           >
           <span class="tsd-signature-symbol">&amp;</span>
-          <span class="tsd-signature-type">Record</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">&gt;</span>
-          <span class="tsd-signature-symbol">&amp;</span>
           <a
             class="tsd-signature-type tsd-kind-type-parameter"
             href="#createelementscopet"
             >T</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#define-1"
-            >define</a
+            href="#defineappcomponent-1"
+            >defineAppComponent</a
           ><span class="tsd-signature-symbol">&lt;</span
-          ><a class="tsd-signature-type tsd-kind-type-parameter" href="#definet"
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#defineappcomponentt"
             >T</a
           >
           <span class="tsd-signature-keyword">extends</span>
@@ -168,7 +163,7 @@
           ><span class="tsd-signature-symbol">&lt;</span
           ><span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">(</span><br />        <span
@@ -181,11 +176,57 @@
             >options</span
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="WebComponentOptions.html"
+            href="AppComponentOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >WebComponentOptions</a
+            >AppComponentOptions</a
           ><span class="tsd-signature-symbol">&lt;</span
-          ><a class="tsd-signature-type tsd-kind-type-parameter" href="#definet"
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#defineappcomponentt"
+            >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">CustomElementConstructor</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#defineelement-1"
+            >defineElement</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#defineelementt"
+            >T</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">object</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">Record</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >name</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >elementClass</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="ScopeElementConstructor.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >ScopeElementConstructor</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#defineelementt"
             >T</a
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">,</span><br />    <span
@@ -226,14 +267,23 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>create<wbr />Element<wbr />Scope</span></a
                     >
-                    <a href="#define" class="tsd-index-link"
+                    <a href="#defineappcomponent" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Method"
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>define</span></a
+                      ><span>define<wbr />App<wbr />Component</span></a
+                    >
+                    <a href="#defineelement" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>define<wbr />Element</span></a
                     >
                   </div>
                 </section>
@@ -287,7 +337,7 @@
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">(</span><br />    <span
@@ -321,13 +371,6 @@
                       >Scope</a
                     >
                     <span class="tsd-signature-symbol">&amp;</span>
-                    <span class="tsd-signature-type">Record</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">&gt;</span>
-                    <span class="tsd-signature-symbol">&amp;</span>
                     <a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#createelementscopet"
@@ -359,7 +402,7 @@
                             ><span class="tsd-signature-symbol">&lt;</span
                             ><span class="tsd-signature-type">string</span
                             ><span class="tsd-signature-symbol">,</span>
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">unknown</span
                             ><span class="tsd-signature-symbol"
                               >&gt;</span
                             ></span
@@ -411,13 +454,6 @@
                         >Scope</a
                       >
                       <span class="tsd-signature-symbol">&amp;</span>
-                      <span class="tsd-signature-type">Record</span
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">string</span
-                      ><span class="tsd-signature-symbol">,</span>
-                      <span class="tsd-signature-type">any</span
-                      ><span class="tsd-signature-symbol">&gt;</span>
-                      <span class="tsd-signature-symbol">&amp;</span>
                       <a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#createelementscopet"
@@ -429,10 +465,10 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="define">
-                <span>define</span
+              <h3 class="tsd-anchor-link" id="defineappcomponent">
+                <span>define<wbr />App<wbr />Component</span
                 ><a
-                  href="#define"
+                  href="#defineappcomponent"
                   aria-label="Permalink"
                   class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -441,12 +477,16 @@
               </h3>
               <ul class="tsd-signatures">
                 <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="define-1">
-                    <span class="tsd-kind-call-signature">define</span
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="defineappcomponent-1"
+                  >
+                    <span class="tsd-kind-call-signature"
+                      >defineAppComponent</span
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
-                      href="#definet"
+                      href="#defineappcomponentt"
                       >T</a
                     >
                     <span class="tsd-signature-keyword">extends</span>
@@ -456,7 +496,7 @@
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">(</span><br />    <span
@@ -469,13 +509,13 @@
                       >options</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="WebComponentOptions.html"
+                      href="AppComponentOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >WebComponentOptions</a
+                      >AppComponentOptions</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
-                      href="#definet"
+                      href="#defineappcomponentt"
                       >T</a
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">,</span><br /><span
@@ -485,7 +525,7 @@
                     <span class="tsd-signature-type"
                       >CustomElementConstructor</span
                     ><a
-                      href="#define-1"
+                      href="#defineappcomponent-1"
                       aria-label="Permalink"
                       class="tsd-anchor-icon"
                       ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -494,13 +534,16 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Define a scoped custom element.</p>
+                      <p>
+                        Define an options-backed application host custom
+                        element.
+                      </p>
                     </div>
                     <section class="tsd-panel">
                       <h4>Type Parameters</h4>
                       <ul class="tsd-type-parameter-list">
                         <li>
-                          <span id="definet"
+                          <span id="defineappcomponentt"
                             ><span class="tsd-kind-type-parameter">T</span>
                             <span class="tsd-signature-keyword">extends</span>
                             <span class="tsd-signature-type">object</span> =
@@ -508,7 +551,7 @@
                             ><span class="tsd-signature-symbol">&lt;</span
                             ><span class="tsd-signature-type">string</span
                             ><span class="tsd-signature-symbol">,</span>
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">unknown</span
                             ><span class="tsd-signature-symbol"
                               >&gt;</span
                             ></span
@@ -529,13 +572,146 @@
                           <span
                             ><span class="tsd-kind-parameter">options</span>:
                             <a
-                              href="WebComponentOptions.html"
+                              href="AppComponentOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >WebComponentOptions</a
+                              >AppComponentOptions</a
                             ><span class="tsd-signature-symbol">&lt;</span
                             ><a
                               class="tsd-signature-type tsd-kind-type-parameter"
-                              href="#definet"
+                              href="#defineappcomponentt"
+                              >T</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <span class="tsd-signature-type"
+                        >CustomElementConstructor</span
+                      >
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="defineelement">
+                <span>define<wbr />Element</span
+                ><a
+                  href="#defineelement"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="defineelement-1"
+                  >
+                    <span class="tsd-kind-call-signature">defineElement</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#defineelementt"
+                      >T</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >elementClass</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="ScopeElementConstructor.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >ScopeElementConstructor</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#defineelementt"
+                      >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type"
+                      >CustomElementConstructor</span
+                    ><a
+                      href="#defineelement-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Define a native custom element backed by an AngularTS
+                        child scope.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="defineelementt"
+                            ><span class="tsd-kind-type-parameter">T</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">elementClass</span
+                            >:
+                            <a
+                              href="ScopeElementConstructor.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >ScopeElementConstructor</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#defineelementt"
                               >T</a
                             ><span class="tsd-signature-symbol"
                               >&gt;</span
@@ -725,14 +901,22 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>create<wbr />Element<wbr />Scope</span></a
-                  ><a href="#define"
+                  ><a href="#defineappcomponent"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Method"
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>define</span></a
+                    ><span>define<wbr />App<wbr />Component</span></a
+                  ><a href="#defineelement"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>define<wbr />Element</span></a
                   >
                 </div>
               </details>

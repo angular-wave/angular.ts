@@ -1,12 +1,12 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
+import { createAngularCustom } from "./index.ts";
+import { defineAngularElement } from "./web-component.ts";
 import {
-  createAngularCustom,
-  defineAngularElement,
   ngBindDirective,
-  ngClickDirective,
+  ngEventDirectives,
   ngRepeatDirective,
-} from "./index.ts";
+} from "../ng.ts";
 import { createElementFromHTML, dealoc, getScope } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
 
@@ -28,7 +28,6 @@ describe("custom runtime", () => {
 
   it("creates ng from core providers and a custom directive list", async () => {
     const angular = createAngularCustom({
-      attachToWindow: true,
       ngModule: {
         directives: {
           ngBind: ngBindDirective,
@@ -55,7 +54,7 @@ describe("custom runtime", () => {
   });
 
   it("compiles controlled bindings without an SCE provider", async () => {
-    const angular = createAngularCustom({ attachToWindow: true });
+    const angular = createAngularCustom();
 
     const injector = angular.injector(["ng"]);
 
@@ -74,13 +73,10 @@ describe("custom runtime", () => {
     expect(element.getAttribute("href")).toBe("javascript:controlled()");
   });
 
-  it("does not attach bare custom runtimes to window.angular by default", () => {
-    const previousAngular = window.angular;
-
+  it("attaches custom runtimes to window.angular", () => {
     const angular = createAngularCustom();
 
-    expect(window.angular).toBe(previousAngular);
-    expect(angular).toBeDefined();
+    expect(window.angular).toBe(angular);
   });
 
   it("registers custom filters and services", () => {
@@ -89,7 +85,6 @@ describe("custom runtime", () => {
     }
 
     const angular = createAngularCustom({
-      attachToWindow: true,
       ngModule: {
         filters: {
           suffix: () => (value) => `${value}!`,
@@ -111,7 +106,7 @@ describe("custom runtime", () => {
       this.title = "custom controller";
     }
 
-    const angular = createAngularCustom({ attachToWindow: true });
+    const angular = createAngularCustom();
 
     angular
       .module("app", [])
@@ -137,7 +132,7 @@ describe("custom runtime", () => {
   });
 
   it("fetches directive templateUrl without a template request provider", async () => {
-    const angular = createAngularCustom({ attachToWindow: true });
+    const angular = createAngularCustom();
 
     angular.module("app", []).directive("fetchedTemplate", () => ({
       templateUrl: "/public/test.html",
@@ -230,7 +225,6 @@ describe("custom runtime", () => {
     };
 
     const angular = createAngularCustom({
-      attachToWindow: true,
       ngModule: {
         providers: {
           $rest: RestProvider,
@@ -321,7 +315,7 @@ describe("custom runtime", () => {
     const definition = defineAngularElement(tagName, {
       ngModule: {
         directives: {
-          ngClick: ngClickDirective,
+          ngClick: ngEventDirectives.ngClick,
         },
         services: {
           labelService: LabelService,

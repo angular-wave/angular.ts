@@ -222,5 +222,4 @@ final class NgModule extends GeneratedNgNgModule {
     rawWebComponent(name, unsafe.JsValue(elementClass));
     return this;
   }
-
 }

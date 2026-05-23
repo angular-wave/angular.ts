@@ -248,7 +248,7 @@ func normalizeBootstrapConfig(config BootstrapConfig) BootstrapConfig {
 		config.AngularImport = "@angular-wave/angular.ts"
 	}
 	if config.WasmScopeAbiImport == "" {
-		config.WasmScopeAbiImport = "@angular-wave/angular.ts/runtime"
+		config.WasmScopeAbiImport = "@angular-wave/angular.ts/services/wasm"
 	}
 	if config.GoWasmScopeAbiImport == "" {
 		config.GoWasmScopeAbiImport = "./go-wasm-scope-abi.js"

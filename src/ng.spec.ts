@@ -1,14 +1,14 @@
 /// <reference types="jasmine" />
 import { createInjector } from "./core/di/injector.ts";
 import { Angular } from "./angular.ts";
+import { createAngularCustom } from "./runtime/index.ts";
 import {
-  createAngularCustom,
   ngBuiltInFilters,
   ngCoreProviders,
   ngDefaultDirectiveGroups,
   ngDefaultProviderGroups,
   ngFilterProviders,
-} from "./runtime/index.ts";
+} from "./ng.ts";
 import { createElementFromHTML, dealoc } from "./shared/dom.ts";
 import { wait } from "./shared/test-utils.ts";
 
@@ -58,7 +58,6 @@ describe("public", () => {
     const builtInInjector = createInjector(["ng"]);
 
     const angular = createAngularCustom({
-      attachToWindow: true,
       ngModule: {
         name: "ngRuntimeEquivalent",
         providers: Object.assign({}, ...ngDefaultProviderGroups),

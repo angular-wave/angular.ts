@@ -385,7 +385,6 @@ void main() {
     const elementOptions = ng.AngularElementOptions<Object>(
       component: ng.AppComponent<Object>(template: '<span></span>'),
       subapp: true,
-      attachToWindow: false,
       registerBuiltins: false,
     );
     const model = ng.NgModelOptions(updateOn: 'blur');
@@ -725,7 +724,6 @@ void main() {
     expect(transition.run(), isNotNull);
     expect(elementModule.name, 'demo');
     expect(elementOptions.subapp, isTrue);
-    expect(elementOptions.attachToWindow, isFalse);
     expect(elementOptions.registerBuiltins, isFalse);
     expect(model.updateOn, 'blur');
     expect(state.name, 'home');

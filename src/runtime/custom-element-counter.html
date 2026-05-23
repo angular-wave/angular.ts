@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Custom Element Counter Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+  </head>
+  <body>
+    <runtime-counter></runtime-counter>
+
+    <script type="module">
+      import { ngEventDirectives } from "/src/directive/events/events.ts";
+      import { defineAngularElement } from "/src/runtime/web-component.ts";
+
+      defineAngularElement("runtime-counter", {
+        ngModule: {
+          directives: {
+            ngClick: ngEventDirectives.ngClick,
+          },
+        },
+        component: {
+          shadow: true,
+          scope: {
+            count: 0,
+          },
+          template: `
+            <span data-testid="custom-element-counter">
+              <button type="button" data-testid="decrease" ng-click="decrease()">-</button>
+              <strong data-testid="count">{{ count }}</strong>
+              <button type="button" data-testid="increase" ng-click="increase()">+</button>
+            </span>
+          `,
+          connected({ scope }) {
+            scope.increase = () => {
+              scope.count += 1;
+            };
+            scope.decrease = () => {
+              scope.count -= 1;
+            };
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

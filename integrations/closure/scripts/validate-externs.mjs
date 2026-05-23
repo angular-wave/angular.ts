@@ -188,6 +188,9 @@ const selfReferentialTypedefs = [
     /@typedef\s*\{\s*!?ng\.([A-Za-z_$][\w$]*)\s*\}[\s\S]*?ng\.\1\s*;/g,
   ),
 ].map((match) => match[1]);
+const underscoredExternMembers = [
+  ...externsSource.matchAll(/\bng\.([A-Za-z_$][\w$]*)\.prototype\.(_[A-Za-z_$][\w$]*)\b/g),
+].map((match) => `${match[1]}.${match[2]}`);
 
 if (
   missing.length > 0 ||
@@ -196,7 +199,8 @@ if (
   nonStructural.length > 0 ||
   genericStructuralMissingTemplate.length > 0 ||
   wildcardTypedefs.length > 0 ||
-  selfReferentialTypedefs.length > 0
+  selfReferentialTypedefs.length > 0 ||
+  underscoredExternMembers.length > 0
 ) {
   if (missing.length > 0) {
     console.error("Missing AngularTS Closure extern types:");
@@ -230,6 +234,11 @@ if (
   if (selfReferentialTypedefs.length > 0) {
     console.error("Self-referential Closure typedefs are not allowed:");
     selfReferentialTypedefs.forEach((name) => console.error(`  - ${name}`));
+  }
+
+  if (underscoredExternMembers.length > 0) {
+    console.error("Underscored Closure extern members are not allowed:");
+    underscoredExternMembers.forEach((name) => console.error(`  - ${name}`));
   }
 
   process.exit(1);

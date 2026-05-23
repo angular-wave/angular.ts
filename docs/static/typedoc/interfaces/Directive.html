@@ -101,7 +101,7 @@
             >TCtrl</a
           >
           <span class="tsd-signature-symbol">=</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">&gt;</span>
           <span class="tsd-signature-symbol">{</span><br />    <a
             class="tsd-kind-property"
@@ -121,10 +121,36 @@
             href="#compile"
             >compile</a
           ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >templateElement</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">HTMLElement</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >transclude</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">ChildTranscludeOrLinkFn</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          >
+          <span class="tsd-signature-symbol">=&gt;</span>
           <a
-            href="../types/DirectiveCompileFn.html"
+            href="../types/DirectiveLinkFn.html"
             class="tsd-signature-type tsd-kind-type-alias"
-            >DirectiveCompileFn</a
+            >DirectiveLinkFn</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span>
+          <span class="tsd-signature-symbol">|</span>
+          <a
+            href="DirectivePrePost.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >DirectivePrePost</a
+          >
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">undefined</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#controller"
@@ -212,7 +238,7 @@
             href="#restrict"
             >restrict</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span
+          <span class="tsd-signature-type">DirectiveRestrict</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#scope"
@@ -238,13 +264,6 @@
           ><span class="tsd-kind-parameter">element</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">HTMLElement</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">attrs</span
-          ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../classes/Attributes.html"
-            class="tsd-signature-type tsd-kind-class"
-            >Attributes</a
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">string</span>)<span
@@ -258,25 +277,14 @@
             class="tsd-kind-property"
             href="#templateurl"
             >templateUrl</a
-          ><span class="tsd-signature-symbol">?:</span><br />        <span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span>
+          <span class="tsd-signature-symbol">|</span> (<span
             class="tsd-signature-symbol"
-            >|</span
-          >
-          <span class="tsd-signature-type">string</span><br />        <span
-            class="tsd-signature-symbol"
-            >|</span
-          >
-          (<span class="tsd-signature-symbol">(</span
+            >(</span
           ><span class="tsd-kind-parameter">element</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">HTMLElement</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">attrs</span
-          ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../classes/Attributes.html"
-            class="tsd-signature-type tsd-kind-class"
-            >Attributes</a
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">string</span>)<span
@@ -311,7 +319,7 @@
             <li>
               <span id="tctrl"
                 ><span class="tsd-kind-type-parameter">TCtrl</span> =
-                <span class="tsd-signature-type">any</span></span
+                <span class="tsd-signature-type">unknown</span></span
               >
             </li>
           </ul>
@@ -550,11 +558,36 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">compile</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <a
-                  href="../types/DirectiveCompileFn.html"
-                  class="tsd-signature-type tsd-kind-type-alias"
-                  >DirectiveCompileFn</a
+                <span class="tsd-signature-symbol">(</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >templateElement</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">HTMLElement</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >transclude</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">ChildTranscludeOrLinkFn</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >)</span
                 >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <a
+                  href="../types/DirectiveLinkFn.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >DirectiveLinkFn</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span>
+                <span class="tsd-signature-symbol">|</span>
+                <a
+                  href="DirectivePrePost.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >DirectivePrePost</a
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Compile function for the directive</p>
@@ -762,7 +795,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">restrict</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-type">DirectiveRestrict</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -819,13 +852,6 @@
                 ><span class="tsd-kind-parameter">element</span
                 ><span class="tsd-signature-symbol">:</span>
                 <span class="tsd-signature-type">HTMLElement</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-kind-parameter">attrs</span
-                ><span class="tsd-signature-symbol">:</span>
-                <a
-                  href="../classes/Attributes.html"
-                  class="tsd-signature-type tsd-kind-class"
-                  >Attributes</a
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
                 <span class="tsd-signature-type">string</span>)
@@ -877,13 +903,6 @@
                 ><span class="tsd-kind-parameter">element</span
                 ><span class="tsd-signature-symbol">:</span>
                 <span class="tsd-signature-type">HTMLElement</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-kind-parameter">attrs</span
-                ><span class="tsd-signature-symbol">:</span>
-                <a
-                  href="../classes/Attributes.html"
-                  class="tsd-signature-type tsd-kind-class"
-                  >Attributes</a
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
                 <span class="tsd-signature-type">string</span>)

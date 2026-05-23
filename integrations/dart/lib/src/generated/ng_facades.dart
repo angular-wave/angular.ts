@@ -305,15 +305,6 @@ base class GeneratedNgAngularElementOptions extends GeneratedNgFacade {
     raw.setProperty('subapp'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Reads the generated attachToWindow property.
-  bool? get attachToWindow =>
-      _toDartBool(raw.getProperty('attachToWindow'.toJS));
-
-  /// Writes the generated attachToWindow property.
-  set attachToWindow(bool? value) {
-    raw.setProperty('attachToWindow'.toJS, unsafe.dartToJs(value));
-  }
-
   /// Reads the generated registerBuiltins property.
   bool? get registerBuiltins =>
       _toDartBool(raw.getProperty('registerBuiltins'.toJS));
@@ -674,23 +665,23 @@ base class GeneratedNgAnimationHandle extends GeneratedNgFacade {
 
   /// Reads the generated animations property.
   Object? get animations =>
-      unsafe.jsToDart<Object?>(raw.getProperty('animations'.toJS));
+      unsafe.jsToDart<Object?>(raw.getProperty('_animations'.toJS));
 
   /// Reads the generated cleanup property.
   Object? get cleanup =>
-      unsafe.jsToDart<Object?>(raw.getProperty('cleanup'.toJS));
+      unsafe.jsToDart<Object?>(raw.getProperty('_cleanup'.toJS));
 
-  /// Reads the generated doneCallbacks property.
-  Object? get doneCallbacks =>
-      unsafe.jsToDart<Object?>(raw.getProperty('doneCallbacks'.toJS));
+  /// Reads the generated donecallbacks property.
+  Object? get donecallbacks =>
+      unsafe.jsToDart<Object?>(raw.getProperty('_doneCallbacks'.toJS));
 
   /// Reads the generated settled property.
   Object? get settled =>
-      unsafe.jsToDart<Object?>(raw.getProperty('settled'.toJS));
+      unsafe.jsToDart<Object?>(raw.getProperty('_settled'.toJS));
 
   /// Reads the generated status property.
   Object? get status =>
-      unsafe.jsToDart<Object?>(raw.getProperty('status'.toJS));
+      unsafe.jsToDart<Object?>(raw.getProperty('_status'.toJS));
 
   /// Invokes the generated then member.
   JSPromise<JSAny?> then(

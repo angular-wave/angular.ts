@@ -211,6 +211,30 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>get<wbr />Injector</span></a
                     >
+                    <a
+                      href="#getnormalizedattr"
+                      class="tsd-index-link tsd-is-inherited"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>get<wbr />Normalized<wbr />Attr</span></a
+                    >
+                    <a
+                      href="#getnormalizedattrname"
+                      class="tsd-index-link tsd-is-inherited"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span
+                        >get<wbr />Normalized<wbr />Attr<wbr />Name</span
+                      ></a
+                    >
                     <a href="#getscope" class="tsd-index-link tsd-is-inherited"
                       ><svg
                         class="tsd-kind-icon"
@@ -219,6 +243,17 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>get<wbr />Scope</span></a
+                    >
+                    <a
+                      href="#hasnormalizedattr"
+                      class="tsd-index-link tsd-is-inherited"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>has<wbr />Normalized<wbr />Attr</span></a
                     >
                     <a href="#subapps" class="tsd-index-link tsd-is-inherited"
                       ><svg
@@ -536,7 +571,9 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$rootScope</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">Scope</span>
+                <a href="Scope.html" class="tsd-signature-type tsd-kind-class"
+                  >Scope</a
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Root scope for the bootstrapped application.</p>
@@ -601,14 +638,15 @@
                 <span class="tsd-signature-type">&quot;$ariaProvider&quot;</span
                 ><span class="tsd-signature-symbol">;</span><br />    <span
                   class="tsd-kind-property"
-                  >$attrs</span
-                ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">&quot;$attrs&quot;</span
-                ><span class="tsd-signature-symbol">;</span><br />    <span
-                  class="tsd-kind-property"
                   >$compile</span
                 ><span class="tsd-signature-symbol">:</span>
                 <span class="tsd-signature-type">&quot;$compile&quot;</span
+                ><span class="tsd-signature-symbol">;</span><br />    <span
+                  class="tsd-kind-property"
+                  >$compileLifecycle</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type"
+                  >&quot;$compileLifecycle&quot;</span
                 ><span class="tsd-signature-symbol">;</span><br />    <span
                   class="tsd-kind-property"
                   >$compileProvider</span
@@ -1056,7 +1094,9 @@
                 <span class="tsd-signature-type">string</span
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
-                <span class="tsd-signature-type">Scope</span>
+                <a href="Scope.html" class="tsd-signature-type tsd-kind-class"
+                  >Scope</a
+                >
                 <span class="tsd-signature-symbol">|</span>
                 <span class="tsd-signature-type">undefined</span
                 ><span class="tsd-signature-symbol"> = getController</span>
@@ -1083,7 +1123,11 @@
                         <span class="tsd-signature-type">string</span
                         ><span class="tsd-signature-symbol">)</span
                         ><span class="tsd-signature-symbol">:</span>
-                        <span class="tsd-signature-type">Scope</span>
+                        <a
+                          href="Scope.html"
+                          class="tsd-signature-type tsd-kind-class"
+                          >Scope</a
+                        >
                         <span class="tsd-signature-symbol">|</span>
                         <span class="tsd-signature-type">undefined</span>
                       </li>
@@ -1128,7 +1172,12 @@
                           </ul>
                         </div>
                         <h4 class="tsd-returns-title">
-                          Returns <span class="tsd-signature-type">Scope</span>
+                          Returns
+                          <a
+                            href="Scope.html"
+                            class="tsd-signature-type tsd-kind-class"
+                            >Scope</a
+                          >
                           <span class="tsd-signature-symbol">|</span>
                           <span class="tsd-signature-type">undefined</span>
                         </h4>
@@ -1232,6 +1281,265 @@
               </aside>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
+              <h3 class="tsd-anchor-link" id="getnormalizedattr">
+                <span>get<wbr />Normalized<wbr />Attr</span
+                ><a
+                  href="#getnormalizedattr"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">getNormalizedAttr</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >element</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">Node</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Element</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >normalizedName</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol"> = getNormalizedAttr</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Read an element attribute by normalized directive-style name.
+                </p>
+              </div>
+              <div class="tsd-type-declaration">
+                <h4>Type Declaration</h4>
+                <ul class="tsd-parameters">
+                  <li class="tsd-parameter-signature">
+                    <ul class="tsd-signatures">
+                      <li class="tsd-signature">
+                        <span class="tsd-signature-symbol">(</span
+                        ><br />    <span class="tsd-kind-parameter"
+                          >element</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">Node</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">Element</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">null</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">undefined</span
+                        ><span class="tsd-signature-symbol">,</span
+                        ><br />    <span class="tsd-kind-parameter"
+                          >normalizedName</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">,</span><br /><span
+                          class="tsd-signature-symbol"
+                          >)</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">string</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">undefined</span>
+                      </li>
+                      <li class="tsd-description">
+                        <div class="tsd-comment tsd-typography">
+                          <p>
+                            Reads an element attribute by normalized
+                            directive-style name.
+                          </p>
+                          <p>
+                            This mirrors compile-time attribute normalization,
+                            but reads the live element so callers see attribute
+                            aliases such as <code>data-*</code> and later DOM
+                            updates.
+                          </p>
+                        </div>
+                        <div class="tsd-parameters">
+                          <h4 class="tsd-parameters-title">Parameters</h4>
+                          <ul class="tsd-parameter-list">
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter">element</span
+                                >: <span class="tsd-signature-type">Node</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">Element</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">null</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type"
+                                  >undefined</span
+                                ></span
+                              >
+                            </li>
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter"
+                                  >normalizedName</span
+                                >:
+                                <span class="tsd-signature-type"
+                                  >string</span
+                                ></span
+                              >
+                            </li>
+                          </ul>
+                        </div>
+                        <h4 class="tsd-returns-title">
+                          Returns <span class="tsd-signature-type">string</span>
+                          <span class="tsd-signature-symbol">|</span>
+                          <span class="tsd-signature-type">undefined</span>
+                        </h4>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from AngularRuntime.getNormalizedAttr</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member tsd-is-inherited">
+              <h3 class="tsd-anchor-link" id="getnormalizedattrname">
+                <span>get<wbr />Normalized<wbr />Attr<wbr />Name</span
+                ><a
+                  href="#getnormalizedattrname"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">getNormalizedAttrName</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >element</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">Node</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Element</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >normalizedName</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">string</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol">
+                  = getNormalizedAttrName</span
+                >
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Return the actual DOM attribute name for a normalized
+                  directive-style name.
+                </p>
+              </div>
+              <div class="tsd-type-declaration">
+                <h4>Type Declaration</h4>
+                <ul class="tsd-parameters">
+                  <li class="tsd-parameter-signature">
+                    <ul class="tsd-signatures">
+                      <li class="tsd-signature">
+                        <span class="tsd-signature-symbol">(</span
+                        ><br />    <span class="tsd-kind-parameter"
+                          >element</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">Node</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">Element</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">null</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">undefined</span
+                        ><span class="tsd-signature-symbol">,</span
+                        ><br />    <span class="tsd-kind-parameter"
+                          >normalizedName</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">,</span><br /><span
+                          class="tsd-signature-symbol"
+                          >)</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">string</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">undefined</span>
+                      </li>
+                      <li class="tsd-description">
+                        <div class="tsd-comment tsd-typography">
+                          <p>
+                            Returns the actual DOM attribute name for a
+                            normalized directive-style name.
+                          </p>
+                        </div>
+                        <div class="tsd-parameters">
+                          <h4 class="tsd-parameters-title">Parameters</h4>
+                          <ul class="tsd-parameter-list">
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter">element</span
+                                >: <span class="tsd-signature-type">Node</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">Element</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">null</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type"
+                                  >undefined</span
+                                ></span
+                              >
+                            </li>
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter"
+                                  >normalizedName</span
+                                >:
+                                <span class="tsd-signature-type"
+                                  >string</span
+                                ></span
+                              >
+                            </li>
+                          </ul>
+                        </div>
+                        <h4 class="tsd-returns-title">
+                          Returns <span class="tsd-signature-type">string</span>
+                          <span class="tsd-signature-symbol">|</span>
+                          <span class="tsd-signature-type">undefined</span>
+                        </h4>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from AngularRuntime.getNormalizedAttrName</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member tsd-is-inherited">
               <h3 class="tsd-anchor-link" id="getscope">
                 <span>get<wbr />Scope</span
                 ><a
@@ -1251,7 +1559,8 @@
                 <span class="tsd-signature-type">Element</span
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
-                <span class="tsd-signature-type">Scope</span
+                <a href="Scope.html" class="tsd-signature-type tsd-kind-class"
+                  >Scope</a
                 ><span class="tsd-signature-symbol"> = getScope</span>
               </div>
               <div class="tsd-comment tsd-typography">
@@ -1269,7 +1578,11 @@
                         <span class="tsd-signature-type">Element</span
                         ><span class="tsd-signature-symbol">)</span
                         ><span class="tsd-signature-symbol">:</span>
-                        <span class="tsd-signature-type">Scope</span>
+                        <a
+                          href="Scope.html"
+                          class="tsd-signature-type tsd-kind-class"
+                          >Scope</a
+                        >
                       </li>
                       <li class="tsd-description">
                         <div class="tsd-comment tsd-typography">
@@ -1293,7 +1606,12 @@
                           </ul>
                         </div>
                         <h4 class="tsd-returns-title">
-                          Returns <span class="tsd-signature-type">Scope</span>
+                          Returns
+                          <a
+                            href="Scope.html"
+                            class="tsd-signature-type tsd-kind-class"
+                            >Scope</a
+                          >
                         </h4>
                         <p>The scope stored on the element.</p>
                       </li>
@@ -1303,6 +1621,123 @@
               </div>
               <aside class="tsd-sources">
                 <p>Inherited from AngularRuntime.getScope</p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member tsd-is-inherited">
+              <h3 class="tsd-anchor-link" id="hasnormalizedattr">
+                <span>has<wbr />Normalized<wbr />Attr</span
+                ><a
+                  href="#hasnormalizedattr"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">hasNormalizedAttr</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >element</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">Node</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">Element</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >normalizedName</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">boolean</span
+                ><span class="tsd-signature-symbol"> = hasNormalizedAttr</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Return whether an element has an attribute matching a
+                  normalized name.
+                </p>
+              </div>
+              <div class="tsd-type-declaration">
+                <h4>Type Declaration</h4>
+                <ul class="tsd-parameters">
+                  <li class="tsd-parameter-signature">
+                    <ul class="tsd-signatures">
+                      <li class="tsd-signature">
+                        <span class="tsd-signature-symbol">(</span
+                        ><span class="tsd-kind-parameter">element</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">Node</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">Element</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">null</span>
+                        <span class="tsd-signature-symbol">|</span>
+                        <span class="tsd-signature-type">undefined</span
+                        ><span class="tsd-signature-symbol">,</span>
+                        <span class="tsd-kind-parameter">normalizedName</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol">:</span>
+                        <span class="tsd-signature-type">boolean</span>
+                      </li>
+                      <li class="tsd-description">
+                        <div class="tsd-comment tsd-typography">
+                          <p>
+                            Returns whether an element has an attribute matching
+                            a normalized name.
+                          </p>
+                        </div>
+                        <div class="tsd-parameters">
+                          <h4 class="tsd-parameters-title">Parameters</h4>
+                          <ul class="tsd-parameter-list">
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter">element</span
+                                >: <span class="tsd-signature-type">Node</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">Element</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type">null</span>
+                                <span class="tsd-signature-symbol">|</span>
+                                <span class="tsd-signature-type"
+                                  >undefined</span
+                                ></span
+                              >
+                            </li>
+                            <li>
+                              <span
+                                ><span class="tsd-kind-parameter"
+                                  >normalizedName</span
+                                >:
+                                <span class="tsd-signature-type"
+                                  >string</span
+                                ></span
+                              >
+                            </li>
+                          </ul>
+                        </div>
+                        <h4 class="tsd-returns-title">
+                          Returns
+                          <span class="tsd-signature-type">boolean</span>
+                        </h4>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from AngularRuntime.hasNormalizedAttr</p>
               </aside>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
@@ -1516,7 +1951,7 @@
                       class="tsd-kind-parameter"
                       >modules</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">ModuleLike</span
                     ><span class="tsd-signature-symbol">[]</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
                       class="tsd-kind-parameter"
@@ -1594,7 +2029,7 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">modules</span>:
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">ModuleLike</span
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                           <div class="tsd-comment tsd-typography">
@@ -1660,7 +2095,7 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">any</span
+                    ><span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#call-1"
@@ -1693,7 +2128,7 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">any</span
+                      ><span class="tsd-signature-type">unknown</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                     <aside class="tsd-sources">
@@ -1850,7 +2285,11 @@
                     <span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span>
+                    <a
+                      href="Scope.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    >
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">undefined</span
                     ><a
@@ -1882,7 +2321,12 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">Scope</span>
+                      Returns
+                      <a
+                        href="Scope.html"
+                        class="tsd-signature-type tsd-kind-class"
+                        >Scope</a
+                      >
                       <span class="tsd-signature-symbol">|</span>
                       <span class="tsd-signature-type">undefined</span>
                     </h4>
@@ -1982,7 +2426,7 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">modules</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">ModuleLike</span
                     ><span class="tsd-signature-symbol">[]</span
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">strictDi</span
@@ -2015,7 +2459,7 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">modules</span>:
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">ModuleLike</span
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                           <div class="tsd-comment tsd-typography">
@@ -2079,7 +2523,7 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">configFn</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">ModuleConfigFn</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
@@ -2173,7 +2617,9 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">configFn</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <span class="tsd-signature-type"
+                              >ModuleConfigFn</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>
@@ -2614,6 +3060,22 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>get<wbr />Injector</span></a
+                  ><a href="#getnormalizedattr" class="tsd-is-inherited"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>get<wbr />Normalized<wbr />Attr</span></a
+                  ><a href="#getnormalizedattrname" class="tsd-is-inherited"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>get<wbr />Normalized<wbr />Attr<wbr />Name</span></a
                   ><a href="#getscope" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -2622,6 +3084,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>get<wbr />Scope</span></a
+                  ><a href="#hasnormalizedattr" class="tsd-is-inherited"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>has<wbr />Normalized<wbr />Attr</span></a
                   ><a href="#subapps" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"

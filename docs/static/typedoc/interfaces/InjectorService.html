@@ -142,7 +142,7 @@
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#has-1"
@@ -167,12 +167,7 @@
             class="tsd-kind-parameter"
             >locals</span
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Record</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">&gt;</span
+          <span class="tsd-signature-type">object</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
             class="tsd-kind-parameter"
             >serviceName</span
@@ -182,7 +177,7 @@
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#invoke-1"
@@ -198,19 +193,14 @@
             class="tsd-kind-parameter"
             >self</span
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
             class="tsd-kind-parameter"
             >locals</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-type">string</span>
           <span class="tsd-signature-symbol">|</span>
-          <span class="tsd-signature-type">Record</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">&gt;</span
+          <span class="tsd-signature-type">object</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
             class="tsd-kind-parameter"
             >serviceName</span
@@ -220,13 +210,13 @@
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="552">
+        <section class="tsd-panel tsd-hierarchy" data-refl="511">
           <h4>Hierarchy</h4>
           <ul class="tsd-hierarchy">
             <li class="tsd-hierarchy-item">
@@ -378,7 +368,9 @@
                 >
                 <span class="tsd-signature-symbol">=&gt;</span>
                 <span class="tsd-signature-type">void</span
-                ><span class="tsd-signature-symbol"> = ...</span>
+                ><span class="tsd-signature-symbol">
+                  = defaultLoadNewModules</span
+                >
               </div>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
@@ -435,7 +427,7 @@
                     <span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><a
                       href="#get-1"
                       aria-label="Permalink"
@@ -461,7 +453,7 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">any</span>
+                      Returns <span class="tsd-signature-type">unknown</span>
                     </h4>
                     <aside class="tsd-sources">
                       <p>Inherited from AbstractInjector.get</p>
@@ -531,31 +523,21 @@
                 <li class="tsd-is-inherited">
                   <div class="tsd-signature tsd-anchor-link" id="instantiate-1">
                     <span class="tsd-kind-call-signature">instantiate</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >type</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">type</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">InjectableFn</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >locals</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">Record</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >serviceName</span
+                    <span class="tsd-kind-parameter">locals</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">object</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-kind-parameter">serviceName</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
+                    ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><a
                       href="#instantiate-1"
                       aria-label="Permalink"
@@ -585,14 +567,7 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">locals</span>:
-                            <span class="tsd-signature-type">Record</span
-                            ><span class="tsd-signature-symbol">&lt;</span
-                            ><span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">,</span>
-                            <span class="tsd-signature-type">any</span
-                            ><span class="tsd-signature-symbol"
-                              >&gt;</span
-                            ></span
+                            <span class="tsd-signature-type">object</span></span
                           >
                         </li>
                         <li>
@@ -606,7 +581,7 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">any</span>
+                      Returns <span class="tsd-signature-type">unknown</span>
                     </h4>
                     <aside class="tsd-sources">
                       <p>Inherited from AbstractInjector.instantiate</p>
@@ -641,19 +616,14 @@
                       class="tsd-kind-parameter"
                       >self</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
                       class="tsd-kind-parameter"
                       >locals</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <span class="tsd-signature-type">string</span>
                     <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">Record</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">&gt;</span
+                    <span class="tsd-signature-type">object</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
                       class="tsd-kind-parameter"
                       >serviceName</span
@@ -663,7 +633,7 @@
                       class="tsd-signature-symbol"
                       >)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><a
                       href="#invoke-1"
                       aria-label="Permalink"
@@ -693,7 +663,9 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">self</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
                           >
                         </li>
                         <li>
@@ -702,14 +674,7 @@
                             ><span class="tsd-kind-parameter">locals</span>:
                             <span class="tsd-signature-type">string</span>
                             <span class="tsd-signature-symbol">|</span>
-                            <span class="tsd-signature-type">Record</span
-                            ><span class="tsd-signature-symbol">&lt;</span
-                            ><span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">,</span>
-                            <span class="tsd-signature-type">any</span
-                            ><span class="tsd-signature-symbol"
-                              >&gt;</span
-                            ></span
+                            <span class="tsd-signature-type">object</span></span
                           >
                         </li>
                         <li>
@@ -723,7 +688,7 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">any</span>
+                      Returns <span class="tsd-signature-type">unknown</span>
                     </h4>
                     <aside class="tsd-sources">
                       <p>Inherited from AbstractInjector.invoke</p>

@@ -18,9 +18,8 @@ const filesToGenerate = [
       __dirname,
       "../docs/layouts/partials/hooks/head-end.html",
     ),
-    getContent: (version) => `
-      <script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts@${version}/dist/angular-ts.umd.js"></script>
-    `,
+    getContent: (version) =>
+      `<script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts@${version}/dist/angular-ts.umd.js"></script>\n`,
   },
 ];
 

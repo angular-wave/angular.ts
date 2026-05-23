@@ -560,7 +560,6 @@
     "angular-element-definition-ng-module"
     "angular-element-module-options-name"
     "angular-element-module-options-requires"
-    "angular-element-options-attach-to-window"
     "angular-element-options-component"
     "angular-element-options-element-module"
     "angular-element-options-ng-module"
@@ -2099,11 +2098,6 @@
   ^js/Array [^js/ng.AngularElementModuleOptions target]
   (.-requires target))
 
-(defn angular-element-options-attach-to-window
-  "Assign the runtime instance to `window.angular`. Defaults to `true` for root apps and `false` for sub-applications.\n\nType: {(boolean|undefined)}"
-  ^boolean [^js/ng.AngularElementOptions target]
-  (.-attachToWindow target))
-
 (defn angular-element-options-component
   "App component definition passed to `$webComponent.defineAppComponent`.\n\nType: {!ng.AppComponentOptions<T>}"
   ^js/ng.AppComponentOptions [^js/ng.AngularElementOptions target]
@@ -2125,7 +2119,7 @@
   (.-registerBuiltins target))
 
 (defn angular-element-options-subapp
-  "Treat this instance as a sub-application. Sub-applications do not attach to `window.angular` by default.\n\nType: {(boolean|undefined)}"
+  "Treat this instance as a sub-application.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.AngularElementOptions target]
   (.-subapp target))
 

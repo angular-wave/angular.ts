@@ -97,6 +97,38 @@
             </p>
           </div>
         </section>
+        <section class="tsd-panel">
+          <h4 class="tsd-before-signature">Indexable</h4>
+          <ul class="tsd-signatures">
+            <li class="tsd-index-signature">
+              <div class="tsd-signature">
+                <span class="tsd-signature-symbol">[</span
+                ><span class="tsd-kind-parameter">key</span>:
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">]:</span>
+                <span class="tsd-signature-type">unknown</span>
+              </div>
+            </li>
+            <li class="tsd-index-signature">
+              <div class="tsd-signature">
+                <span class="tsd-signature-symbol">[</span
+                ><span class="tsd-kind-parameter">key</span>:
+                <span class="tsd-signature-type">number</span
+                ><span class="tsd-signature-symbol">]:</span>
+                <span class="tsd-signature-type">unknown</span>
+              </div>
+            </li>
+            <li class="tsd-index-signature">
+              <div class="tsd-signature">
+                <span class="tsd-signature-symbol">[</span
+                ><span class="tsd-kind-parameter">key</span>:
+                <span class="tsd-signature-type">symbol</span
+                ><span class="tsd-signature-symbol">]:</span>
+                <span class="tsd-signature-type">unknown</span>
+              </div>
+            </li>
+          </ul>
+        </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
             <details class="tsd-index-content tsd-accordion" open>
@@ -374,7 +406,8 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">parent</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-class"
@@ -413,7 +446,9 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">parent</span>:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>Custom parent.</p>
@@ -492,7 +527,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$parent</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Scope</span>
+                <a href="" class="tsd-signature-type tsd-kind-class">Scope</a>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -506,7 +541,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$proxy</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">Scope</span>
+                <a href="" class="tsd-signature-type tsd-kind-class">Scope</a>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -520,7 +555,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$root</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">RootScopeService</span>
+                <a href="" class="tsd-signature-type tsd-kind-class">Scope</a>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -554,7 +589,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$target</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">any</span>
+                <span class="tsd-signature-type">ScopeTarget</span>
               </div>
             </section>
           </section>
@@ -596,7 +631,7 @@
                     <span class="tsd-signature-symbol">...</span
                     ><span class="tsd-kind-parameter">args</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">[]</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
@@ -635,7 +670,7 @@
                           <span
                             ><span class="tsd-signature-symbol">...</span
                             ><span class="tsd-kind-parameter">args</span>:
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">unknown</span
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                         </li>
@@ -709,7 +744,7 @@
                     <span class="tsd-signature-symbol">...</span
                     ><span class="tsd-kind-parameter">args</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">[]</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
@@ -745,7 +780,7 @@
                           <span
                             ><span class="tsd-signature-symbol">...</span
                             ><span class="tsd-kind-parameter">args</span>:
-                            <span class="tsd-signature-type">any</span
+                            <span class="tsd-signature-type">unknown</span
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                         </li>
@@ -899,10 +934,12 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">childInstance</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><a
                       href="#new-1"
                       aria-label="Permalink"
@@ -924,13 +961,18 @@
                             ><span class="tsd-kind-parameter"
                               >childInstance</span
                             >:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">Scope</span>
+                      Returns
+                      <a href="" class="tsd-signature-type tsd-kind-class"
+                        >Scope</a
+                      >
                     </h4>
                   </div>
                 </li>
@@ -954,10 +996,12 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">instance</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><a
                       href="#newisolate-1"
                       aria-label="Permalink"
@@ -980,13 +1024,18 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">instance</span>:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">Scope</span>
+                      Returns
+                      <a href="" class="tsd-signature-type tsd-kind-class"
+                        >Scope</a
+                      >
                     </h4>
                   </div>
                 </li>
@@ -1011,7 +1060,15 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">listener</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">ScopeEventListener</span
+                    <span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-signature-symbol">...</span
+                    ><span class="tsd-kind-parameter">args</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">)</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-symbol">()</span>
@@ -1044,8 +1101,16 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">listener</span>:
+                            <span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-signature-symbol">...</span
+                            ><span class="tsd-kind-parameter">args</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol">[]</span
+                            ><span class="tsd-signature-symbol">)</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
                             <span class="tsd-signature-type"
-                              >ScopeEventListener</span
+                              >unknown</span
                             ></span
                           >
                         </li>
@@ -1084,7 +1149,9 @@
                     <span class="tsd-signature-type">string</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span>
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    >
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">undefined</span
                     ><a
@@ -1114,7 +1181,10 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">Scope</span>
+                      Returns
+                      <a href="" class="tsd-signature-type tsd-kind-class"
+                        >Scope</a
+                      >
                       <span class="tsd-signature-symbol">|</span>
                       <span class="tsd-signature-type">undefined</span>
                     </h4>
@@ -1140,10 +1210,12 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">parentInstance</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
                     ><a
                       href="#transcluded-1"
                       aria-label="Permalink"
@@ -1168,13 +1240,18 @@
                             ><span class="tsd-kind-parameter"
                               >parentInstance</span
                             >:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">Scope</span>
+                      Returns
+                      <a href="" class="tsd-signature-type tsd-kind-class"
+                        >Scope</a
+                      >
                     </h4>
                   </div>
                 </li>
@@ -1201,10 +1278,17 @@
                       class="tsd-kind-parameter"
                       >listenerFn</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <a
-                      href="../types/ListenerFn.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >ListenerFn</a
+                    <span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">newValue</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-kind-parameter">originalTarget</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">object</span
+                    ><span class="tsd-signature-symbol">)</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <span class="tsd-signature-type">void</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
                       class="tsd-kind-parameter"
                       >lazy</span
@@ -1256,11 +1340,18 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">listenerFn</span>:
-                            <a
-                              href="../types/ListenerFn.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >ListenerFn</a
-                            ></span
+                            <span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-kind-parameter">newValue</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-kind-parameter"
+                              >originalTarget</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">object</span
+                            ><span class="tsd-signature-symbol">)</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <span class="tsd-signature-type">void</span></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>
@@ -1411,25 +1502,31 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="get-1">
                     <span class="tsd-kind-call-signature">get</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">target</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >target</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">ScopeTarget</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">property</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >property</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span>
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">number</span>
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">symbol</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">proxy</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >proxy</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span
-                    ><span class="tsd-signature-symbol">)</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><a
                       href="#get-1"
                       aria-label="Permalink"
@@ -1477,7 +1574,9 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">proxy</span>:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>The proxy object being invoked.</p>
@@ -1486,7 +1585,7 @@
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">any</span>
+                      Returns <span class="tsd-signature-type">unknown</span>
                     </h4>
                     <p>
                       The value of the property or a method if accessing
@@ -1508,23 +1607,30 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="set-1">
                     <span class="tsd-kind-call-signature">set</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">target</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >target</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">ScopeTarget</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">property</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >property</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">value</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >value</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">proxy</span
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >proxy</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Scope</span
-                    ><span class="tsd-signature-symbol">)</span
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">boolean</span
                     ><a
@@ -1569,7 +1675,9 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">value</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>The new value being assigned to the property.</p>
@@ -1578,7 +1686,9 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">proxy</span>:
-                            <span class="tsd-signature-type">Scope</span></span
+                            <a href="" class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>The proxy intercepting property access.</p>

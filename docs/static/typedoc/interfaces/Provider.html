@@ -115,7 +115,7 @@
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-kind-parameter">val</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
           <a href="" class="tsd-signature-type tsd-kind-interface">Provider</a
@@ -123,15 +123,33 @@
             class="tsd-kind-call-signature"
             href="#decorator-1"
             >decorator</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">name</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >name</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">fn</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >fn</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="../types/Injectable.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Injectable</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-symbol">(</span
+          ><span class="tsd-signature-symbol">...</span
+          ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">)</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <a href="" class="tsd-signature-type tsd-kind-interface">Provider</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
@@ -175,15 +193,33 @@
             class="tsd-kind-call-signature"
             href="#factory-1"
             >factory</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">name</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >name</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">factoryFn</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >factoryFn</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="../types/Injectable.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Injectable</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-symbol">(</span
+          ><span class="tsd-signature-symbol">...</span
+          ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">)</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <a href="" class="tsd-signature-type tsd-kind-interface">Provider</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
@@ -221,15 +257,49 @@
             class="tsd-kind-call-signature"
             href="#service-1"
             >service</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">name</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >name</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">constructor</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >constructor</span
+          ><span class="tsd-signature-symbol">:</span><br />            <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <a
+            href="../types/Injectable.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Injectable</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">Constructor</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">&gt;</span><br />            <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <a
+            href="../types/Injectable.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Injectable</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-symbol">(</span
+          ><span class="tsd-signature-symbol">...</span
+          ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">any</span
-          ><span class="tsd-signature-symbol">)</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">unknown</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <a href="" class="tsd-signature-type tsd-kind-interface">Provider</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
@@ -243,7 +313,7 @@
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-kind-parameter">val</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
           <a href="" class="tsd-signature-type tsd-kind-interface">Provider</a
@@ -376,7 +446,7 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">val</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-interface"
@@ -414,7 +484,9 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">val</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>The constant value.</p>
@@ -454,7 +526,21 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">fn</span
                     ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/Injectable.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >Injectable</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-signature-symbol">...</span
+                    ><span class="tsd-kind-parameter">args</span
+                    ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">any</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">)</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-interface"
@@ -489,7 +575,23 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">fn</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <a
+                              href="../types/Injectable.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >Injectable</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-signature-symbol">...</span
+                            ><span class="tsd-kind-parameter">args</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-type">any</span
+                            ><span class="tsd-signature-symbol">[]</span
+                            ><span class="tsd-signature-symbol">)</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>
@@ -667,15 +769,33 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="factory-1">
                     <span class="tsd-kind-call-signature">factory</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">factoryFn</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >factoryFn</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/Injectable.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >Injectable</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-signature-symbol">...</span
+                    ><span class="tsd-kind-parameter">args</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">)</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-interface"
                       >Provider</a
@@ -706,7 +826,23 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">factoryFn</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <a
+                              href="../types/Injectable.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >Injectable</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-signature-symbol">...</span
+                            ><span class="tsd-kind-parameter">args</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-type">any</span
+                            ><span class="tsd-signature-symbol">[]</span
+                            ><span class="tsd-signature-symbol">)</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>
@@ -874,15 +1010,45 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="service-1">
                     <span class="tsd-kind-call-signature">service</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">constructor</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >constructor</span
+                    ><span class="tsd-signature-symbol">:</span
+                    ><br />        <span class="tsd-signature-symbol">|</span>
+                    <a
+                      href="../types/Injectable.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >Injectable</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">Constructor</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><br />        <span class="tsd-signature-symbol">|</span>
+                    <a
+                      href="../types/Injectable.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >Injectable</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-signature-symbol">...</span
+                    ><span class="tsd-kind-parameter">args</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">any</span
-                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">)</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-interface"
                       >Provider</a
@@ -915,7 +1081,35 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">constructor</span
-                            >: <span class="tsd-signature-type">any</span></span
+                            >:
+                            <a
+                              href="../types/Injectable.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >Injectable</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">Constructor</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">&gt;</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <a
+                              href="../types/Injectable.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >Injectable</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-signature-symbol">...</span
+                            ><span class="tsd-kind-parameter">args</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-type">any</span
+                            ><span class="tsd-signature-symbol">[]</span
+                            ><span class="tsd-signature-symbol">)</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>A class or function to instantiate.</p>
@@ -952,7 +1146,7 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">val</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">any</span
+                    <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-interface"
@@ -984,7 +1178,9 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">val</span>:
-                            <span class="tsd-signature-type">any</span></span
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
                           >
                           <div class="tsd-comment tsd-typography">
                             <p>The value to use.</p>

@@ -1,5 +1,5 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
 import init, * as app from "../pkg/angular_ts_rust_scope_bridge.js";
 
 const scopeAbi = new WasmScopeAbi();
@@ -186,6 +186,12 @@ const createController = (controllerName, options) => {
 const createControllerBridge = (RustController, syncProperties, methods, bridgeConfig) => {
   const { inject, controllerAs, controllerName, scopeUpdateBind, scopeUpdateUnbind, scopeUpdateRoutes } = bridgeConfig;
   const scopeExpressionPrefix = (controllerAs || "ctrl").replace(/\\.$/, "");
+  const wasmScopeSlot = Symbol("angularTsRustWasmScope");
+  const innerSlot = Symbol("angularTsRustInner");
+  const angularScopeSlot = Symbol("angularTsRustAngularScope");
+  const scopeUpdateDisposersSlot = Symbol("angularTsRustScopeUpdateDisposers");
+  const controllerProxySlot = Symbol("angularTsRustControllerProxy");
+  const fromRustSlot = Symbol("angularTsRustFromRust");
 
   const toWasmScope = (scopeValue) => {
     const name = `${controllerName}:${++nextWasmScopeId}`;
@@ -211,40 +217,40 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
 
         const wasmScope = toWasmScope(angularScope);
 
-        this.__wasmScope = wasmScope.hostScope;
+        this[wasmScopeSlot] = wasmScope.hostScope;
         deps[scopeIndex] = wasmScope.rustScope;
       }
 
-      this.__inner = Reflect.construct(RustController, deps);
-      this.__angularScope = angularScope;
-      this.__scopeUpdateDisposers = [];
-      this.__controllerProxy = this;
-      this.__fromRust = false;
-      this.__publishControllerAlias();
-      this.__bindGeneratedRefresh();
-      this.__bindScopeUpdates();
-      this.__bindScopeUpdateRoutes();
-      this.__syncRustProperties();
-      this.__syncScope();
+      this[innerSlot] = Reflect.construct(RustController, deps);
+      this[angularScopeSlot] = angularScope;
+      this[scopeUpdateDisposersSlot] = [];
+      this[controllerProxySlot] = this;
+      this[fromRustSlot] = false;
+      this.publishControllerAlias();
+      this.bindGeneratedRefresh();
+      this.bindScopeUpdates();
+      this.bindScopeUpdateRoutes();
+      this.syncRustProperties();
+      this.syncScope();
     }
 
     $onInit() {
-      const inner = this.__inner;
+      const inner = this[innerSlot];
 
       if (inner && typeof inner.onInit === "function") {
         inner.onInit();
-        this.__syncRustProperties();
-        this.__syncScope();
+        this.syncRustProperties();
+        this.syncScope();
       }
     }
 
     $onDestroy() {
-      const inner = this.__inner;
+      const inner = this[innerSlot];
 
       if (inner && typeof inner.onDestroy === "function") {
         inner.onDestroy();
-        this.__syncRustProperties();
-        this.__syncScope();
+        this.syncRustProperties();
+        this.syncScope();
       }
 
       if (
@@ -255,29 +261,29 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
         inner[scopeUpdateUnbind]();
       }
 
-      for (const dispose of this.__scopeUpdateDisposers.splice(0)) {
+      for (const dispose of this[scopeUpdateDisposersSlot].splice(0)) {
         dispose();
       }
 
-      this.__wasmScope?.dispose();
+      this[wasmScopeSlot]?.dispose();
     }
 
-    __bindGeneratedRefresh() {
-      const hostScope = this.__wasmScope;
+    bindGeneratedRefresh() {
+      const hostScope = this[wasmScopeSlot];
 
       if (!hostScope || typeof hostScope.onSync !== "function") {
         return;
       }
 
-      this.__scopeUpdateDisposers.push(
+      this[scopeUpdateDisposersSlot].push(
         hostScope.onSync(() => {
-          this.__syncRustProperties();
+          this.syncRustProperties();
         }),
       );
     }
 
-    __bindScopeUpdates() {
-      const inner = this.__inner;
+    bindScopeUpdates() {
+      const inner = this[innerSlot];
 
       if (
         scopeUpdateBind &&
@@ -288,9 +294,9 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }
     }
 
-    __bindScopeUpdateRoutes() {
-      const inner = this.__inner;
-      const hostScope = this.__wasmScope;
+    bindScopeUpdateRoutes() {
+      const inner = this[innerSlot];
+      const hostScope = this[wasmScopeSlot];
 
       if (!hostScope || !Array.isArray(scopeUpdateRoutes)) {
         return;
@@ -311,26 +317,26 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
           ? `${scopeExpressionPrefix}.${route.path}`
           : route.path;
         const dispose = hostScope.watch(path, (update) => {
-          if (this.__fromRust) {
+          if (this[fromRustSlot]) {
             return;
           }
 
           inner[route.method](update.value);
           queueMicrotask(() => {
-            this.__syncRustProperties();
-            this.__syncScope();
+            this.syncRustProperties();
+            this.syncScope();
           });
         });
 
-        this.__scopeUpdateDisposers.push(dispose);
+        this[scopeUpdateDisposersSlot].push(dispose);
       }
     }
 
-    __syncRustProperties() {
-      const target = this.__controllerProxy || this.$proxy || this;
+    syncRustProperties() {
+      const target = this[controllerProxySlot] || this.$proxy || this;
 
       for (const property of syncProperties) {
-        const next = this.__inner[property];
+        const next = this[innerSlot][property];
         const value =
           Array.isArray(next) ? next.slice() : next;
 
@@ -338,56 +344,56 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }
     }
 
-    __syncScope() {
+    syncScope() {
       // Scope syncing is a bridge callback boundary. AngularTS schedules DOM
       // updates through the normal scope microtask pipeline.
     }
 
-    __publishControllerAlias() {
-      const angularScope = this.__angularScope;
+    publishControllerAlias() {
+      const angularScope = this[angularScopeSlot];
 
       if (!angularScope || !scopeExpressionPrefix || scopeExpressionPrefix.includes(".")) {
         return;
       }
 
       angularScope[scopeExpressionPrefix] = this;
-      this.__controllerProxy = angularScope[scopeExpressionPrefix] || this;
+      this[controllerProxySlot] = angularScope[scopeExpressionPrefix] || this;
     }
   }
 
   for (const method of methods) {
     AngularTsRustController.prototype[method] = function (...args) {
-      this.__fromRust = true;
+      this[fromRustSlot] = true;
       let result;
 
       try {
-        result = this.__inner[method](...args);
+        result = this[innerSlot][method](...args);
       } catch (error) {
-        this.__fromRust = false;
+        this[fromRustSlot] = false;
         throw error;
       }
 
       if (result && typeof result.then === "function") {
-        this.__fromRust = false;
+        this[fromRustSlot] = false;
 
         return result.then(
           (value) => {
-            this.__fromRust = true;
+            this[fromRustSlot] = true;
             try {
-              this.__syncRustProperties();
-              this.__syncScope();
+              this.syncRustProperties();
+              this.syncScope();
               return value;
             } finally {
-              this.__fromRust = false;
+              this[fromRustSlot] = false;
             }
           },
           (error) => {
-            this.__fromRust = true;
+            this[fromRustSlot] = true;
             try {
-              this.__syncRustProperties();
-              this.__syncScope();
+              this.syncRustProperties();
+              this.syncScope();
             } finally {
-              this.__fromRust = false;
+              this[fromRustSlot] = false;
             }
             throw error;
           },
@@ -395,11 +401,11 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }
 
       try {
-        this.__syncRustProperties();
-        this.__syncScope();
+        this.syncRustProperties();
+        this.syncScope();
         return result;
       } finally {
-        this.__fromRust = false;
+        this[fromRustSlot] = false;
       }
     };
   }

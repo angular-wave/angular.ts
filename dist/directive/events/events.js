@@ -47,7 +47,6 @@ function createEventDirectiveFactory(eventName) {
         },
     ];
 }
-const ngClickDirective = createEventDirectiveFactory("click");
 const ngEventDirectives = EVENT_NAMES.reduce((directives, eventName) => {
     directives[directiveNameForEvent(eventName)] =
         createEventDirectiveFactory(eventName);
@@ -110,4 +109,4 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
     };
 }
 
-export { createEventDirective, createWindowEventDirective, ngClickDirective, ngEventDirectives };
+export { createEventDirective, createWindowEventDirective, ngEventDirectives };

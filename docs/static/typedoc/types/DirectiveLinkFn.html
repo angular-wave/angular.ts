@@ -90,44 +90,77 @@
         </div>
         <div class="tsd-signature">
           <span class="tsd-kind-type-alias">DirectiveLinkFn</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-symbol">(</span><br />    <span
-            class="tsd-kind-parameter"
-            >scope</span
-          ><span class="tsd-signature-symbol">:</span>
+          ><span class="tsd-signature-symbol">:</span><br />    <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <span class="tsd-signature-type">BivariantDirectiveLinkFn</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-symbol">[</span>scope<span
+            class="tsd-signature-symbol"
+            >:</span
+          >
           <span class="tsd-signature-type">ng.Scope</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-kind-parameter"
-            >element</span
-          ><span class="tsd-signature-symbol">:</span>
+          ><span class="tsd-signature-symbol">,</span> element<span
+            class="tsd-signature-symbol"
+            >:</span
+          >
           <span class="tsd-signature-type">HTMLElement</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-kind-parameter"
-            >attrs</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">ng.Attributes</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-kind-parameter"
-            >controller</span
-          ><span class="tsd-signature-symbol">:</span>
+          ><span class="tsd-signature-symbol">]</span
+          ><span class="tsd-signature-symbol">&gt;</span><br />    <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <span class="tsd-signature-type">BivariantDirectiveLinkFn</span
+          ><span class="tsd-signature-symbol">&lt;</span><br />        <span
+            class="tsd-signature-symbol"
+            >[</span
+          ><br />            scope<span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">ng.Scope</span
+          ><span class="tsd-signature-symbol">,</span
+          ><br />            element<span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">HTMLElement</span
+          ><span class="tsd-signature-symbol">,</span
+          ><br />            controller<span class="tsd-signature-symbol"
+            >:</span
+          >
           <span class="tsd-signature-type">TController</span
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#t">T</a
           ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-kind-parameter"
-            >transclude</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">ng.TranscludeFn</span
-          ><span class="tsd-signature-symbol">,</span><br /><span
-            class="tsd-signature-symbol"
-            >)</span
+          ><span class="tsd-signature-symbol">,</span
+          ><br />            transclude<span class="tsd-signature-symbol"
+            >?:</span
           >
-          <span class="tsd-signature-symbol">=&gt;</span>
-          <span class="tsd-signature-type">void</span>
-        </div>
-        <div class="tsd-comment tsd-typography">
-          <p>A link function executed during directive linking.</p>
+          <span class="tsd-signature-type">ng.TranscludeFn</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-signature-symbol"
+            >]</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          ><br />    <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">BivariantDirectiveLinkFn</span
+          ><span class="tsd-signature-symbol">&lt;</span><br />        <span
+            class="tsd-signature-symbol"
+            >[</span
+          >scope<span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">ng.Scope</span
+          ><span class="tsd-signature-symbol">,</span> element<span
+            class="tsd-signature-symbol"
+            >:</span
+          >
+          <span class="tsd-signature-type">HTMLElement</span
+          ><span class="tsd-signature-symbol">,</span> transclude<span
+            class="tsd-signature-symbol"
+            >:</span
+          >
+          <span class="tsd-signature-type">ng.TranscludeFn</span
+          ><span class="tsd-signature-symbol">]</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          >
         </div>
         <section class="tsd-panel">
           <h4>Type Parameters</h4>
@@ -137,106 +170,6 @@
             </li>
           </ul>
         </section>
-        <div class="tsd-type-declaration">
-          <h4>Type Declaration</h4>
-          <ul class="tsd-parameters">
-            <li class="tsd-parameter-signature">
-              <ul class="tsd-signatures">
-                <li class="tsd-signature" id="__type">
-                  <span class="tsd-signature-symbol">(</span><br />    <span
-                    class="tsd-kind-parameter"
-                    >scope</span
-                  ><span class="tsd-signature-symbol">:</span>
-                  <span class="tsd-signature-type">ng.Scope</span
-                  ><span class="tsd-signature-symbol">,</span><br />    <span
-                    class="tsd-kind-parameter"
-                    >element</span
-                  ><span class="tsd-signature-symbol">:</span>
-                  <span class="tsd-signature-type">HTMLElement</span
-                  ><span class="tsd-signature-symbol">,</span><br />    <span
-                    class="tsd-kind-parameter"
-                    >attrs</span
-                  ><span class="tsd-signature-symbol">:</span>
-                  <span class="tsd-signature-type">ng.Attributes</span
-                  ><span class="tsd-signature-symbol">,</span><br />    <span
-                    class="tsd-kind-parameter"
-                    >controller</span
-                  ><span class="tsd-signature-symbol">:</span>
-                  <span class="tsd-signature-type">TController</span
-                  ><span class="tsd-signature-symbol">&lt;</span
-                  ><a
-                    class="tsd-signature-type tsd-kind-type-parameter"
-                    href="#t"
-                    >T</a
-                  ><span class="tsd-signature-symbol">&gt;</span
-                  ><span class="tsd-signature-symbol">,</span><br />    <span
-                    class="tsd-kind-parameter"
-                    >transclude</span
-                  ><span class="tsd-signature-symbol">?:</span>
-                  <span class="tsd-signature-type">ng.TranscludeFn</span
-                  ><span class="tsd-signature-symbol">,</span><br /><span
-                    class="tsd-signature-symbol"
-                    >)</span
-                  ><span class="tsd-signature-symbol">:</span>
-                  <span class="tsd-signature-type">void</span>
-                </li>
-                <li class="tsd-description">
-                  <div class="tsd-parameters">
-                    <h4 class="tsd-parameters-title">Parameters</h4>
-                    <ul class="tsd-parameter-list">
-                      <li>
-                        <span
-                          ><span class="tsd-kind-parameter">scope</span>:
-                          <span class="tsd-signature-type">ng.Scope</span></span
-                        >
-                      </li>
-                      <li>
-                        <span
-                          ><span class="tsd-kind-parameter">element</span>:
-                          <span class="tsd-signature-type"
-                            >HTMLElement</span
-                          ></span
-                        >
-                      </li>
-                      <li>
-                        <span
-                          ><span class="tsd-kind-parameter">attrs</span>:
-                          <span class="tsd-signature-type"
-                            >ng.Attributes</span
-                          ></span
-                        >
-                      </li>
-                      <li>
-                        <span
-                          ><span class="tsd-kind-parameter">controller</span>:
-                          <span class="tsd-signature-type">TController</span
-                          ><span class="tsd-signature-symbol">&lt;</span
-                          ><a
-                            class="tsd-signature-type tsd-kind-type-parameter"
-                            href="#t"
-                            >T</a
-                          ><span class="tsd-signature-symbol">&gt;</span></span
-                        >
-                      </li>
-                      <li>
-                        <span
-                          ><code class="tsd-tag">Optional</code
-                          ><span class="tsd-kind-parameter">transclude</span>:
-                          <span class="tsd-signature-type"
-                            >ng.TranscludeFn</span
-                          ></span
-                        >
-                      </li>
-                    </ul>
-                  </div>
-                  <h4 class="tsd-returns-title">
-                    Returns <span class="tsd-signature-type">void</span>
-                  </h4>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </div>
       </div>
       <div class="col-sidebar">
         <div class="page-menu">

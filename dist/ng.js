@@ -24,7 +24,7 @@ import { ngCloakDirective } from './directive/cloak/cloak.js';
 import { ngControllerDirective } from './directive/controller/controller.js';
 import { ngElDirective } from './directive/el/el.js';
 import { ngEventDirectives } from './directive/events/events.js';
-export { createEventDirective, createWindowEventDirective, ngClickDirective } from './directive/events/events.js';
+export { createEventDirective, createWindowEventDirective } from './directive/events/events.js';
 import { ngFormDirective, formDirective } from './directive/form/form.js';
 import { ngSseDirective, ngPutDirective, ngPostDirective, ngGetDirective, ngDeleteDirective } from './directive/http/http.js';
 import { ngIfDirective } from './directive/if/if.js';

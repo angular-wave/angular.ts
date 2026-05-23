@@ -1,19 +1,11 @@
 import { Angular } from './angular.js';
+export { createAngularBare, createAngularCustom } from './runtime/index.js';
+export { AngularRuntime } from './angular-runtime.js';
+export { coreProviders, registerCustomNgModule } from './runtime/custom-ng.js';
 
 /**
  * Default browser entry point.
- *
- * It creates the shared `angular` singleton and bootstraps discovered apps
- * once the DOM is ready.
  */
 const angular = new Angular();
-/**
- * Auto-bootstrap the document once the browser DOM is ready.
- */
-document.addEventListener("DOMContentLoaded", () => {
-    angular.init(document);
-}, {
-    once: true,
-});
 
 export { angular };

@@ -54,7 +54,6 @@ final class AngularElementOptions<TScope> {
     this.elementModule = const AngularElementModuleOptions(),
     this.bootstrap = const BootstrapConfig(),
     this.subapp,
-    this.attachToWindow,
     this.registerBuiltins,
     this.extra = const {},
   });
@@ -74,9 +73,6 @@ final class AngularElementOptions<TScope> {
   /// Whether this runtime is a sub-application.
   final bool? subapp;
 
-  /// Whether to assign this runtime to window.angular.
-  final bool? attachToWindow;
-
   /// Whether to register the built-in ng module during construction.
   final bool? registerBuiltins;
 
@@ -89,7 +85,6 @@ final class AngularElementOptions<TScope> {
       ...extra,
       if (ngModule != null) 'ngModule': ngModule,
       if (subapp != null) 'subapp': subapp,
-      if (attachToWindow != null) 'attachToWindow': attachToWindow,
       if (registerBuiltins != null) 'registerBuiltins': registerBuiltins,
       'elementModule': unsafe.JsValue(elementModule.toJsObject()),
       'component': unsafe.JsValue(component.toJsObject()),

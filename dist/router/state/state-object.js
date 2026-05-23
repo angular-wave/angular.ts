@@ -48,16 +48,16 @@ class StateObject {
      * @returns Returns `true` if `ref` matches the current `State` instance.
      */
     is(ref) {
-        return this === ref || this.self === ref || this.pathName() === ref;
+        return this === ref || this.self === ref || this._pathName() === ref;
     }
     /**
      * @deprecated this does not properly handle dot notation
      * @returns {string} Returns a dot-separated name of the state.
      */
     fqn() {
-        return this.pathName();
+        return this._pathName();
     }
-    pathName() {
+    _pathName() {
         return (this.path ?? [])
             .map((state) => state.name)
             .filter(Boolean)
@@ -121,7 +121,7 @@ class StateObject {
             : undefined;
     }
     toString() {
-        return this.pathName();
+        return this._pathName();
     }
 }
 

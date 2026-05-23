@@ -107,24 +107,29 @@
             href="#cache"
             >cache</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">boolean</span>
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">HttpCacheLike</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#data"
             >data</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#eventhandlers"
             >eventHandlers</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Record</span
+          <span class="tsd-signature-type">Partial</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">Record</span
           ><span class="tsd-signature-symbol">&lt;</span
           ><span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-signature-type"
             >EventListenerOrEventListenerObject</span
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
@@ -158,7 +163,7 @@
             href="#params"
             >params</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">HttpParams</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#paramserializer"
@@ -170,7 +175,7 @@
             >(</span
           ><span class="tsd-kind-parameter">obj</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">HttpParams</span
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">string</span>)<span
@@ -189,7 +194,7 @@
           <span class="tsd-signature-symbol">|</span>
           <span class="tsd-signature-type">Promise</span
           ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">any</span
+          ><span class="tsd-signature-type">unknown</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
@@ -228,13 +233,19 @@
             href="#uploadeventhandlers"
             >uploadEventHandlers</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Record</span
+          <span class="tsd-signature-type">Partial</span
+          ><span class="tsd-signature-symbol">&lt;</span><br />        <span
+            class="tsd-signature-type"
+            >Record</span
           ><span class="tsd-signature-symbol">&lt;</span
           ><span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-signature-type"
             >EventListenerOrEventListenerObject</span
           ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#url"
@@ -264,7 +275,7 @@
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="1351">
+        <section class="tsd-panel tsd-hierarchy" data-refl="1303">
           <h4>
             Hierarchy (<a href="../hierarchy.html#RequestConfig">View Summary</a
             >)
@@ -492,7 +503,9 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">cache</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">any</span>
+                <span class="tsd-signature-type">boolean</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">HttpCacheLike</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -519,7 +532,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">data</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">any</span>
+                <span class="tsd-signature-type">unknown</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -550,12 +563,15 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">eventHandlers</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Record</span
+                <span class="tsd-signature-type">Partial</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
                 ><span class="tsd-signature-symbol">&lt;</span
                 ><span class="tsd-signature-type">string</span
                 ><span class="tsd-signature-symbol">,</span>
                 <span class="tsd-signature-type"
                   >EventListenerOrEventListenerObject</span
+                ><span class="tsd-signature-symbol">&gt;</span
                 ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
@@ -639,7 +655,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">params</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">any</span>
+                <span class="tsd-signature-type">HttpParams</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Query parameters appended to the request URL.</p>
@@ -673,7 +689,7 @@
                   >(</span
                 ><span class="tsd-kind-parameter">obj</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">any</span
+                <span class="tsd-signature-type">HttpParams</span
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
                 <span class="tsd-signature-type">string</span>)
@@ -739,7 +755,7 @@
                 <span class="tsd-signature-symbol">|</span>
                 <span class="tsd-signature-type">Promise</span
                 ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">any</span
+                ><span class="tsd-signature-type">unknown</span
                 ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
@@ -851,13 +867,20 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">uploadEventHandlers</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Record</span
+                <span class="tsd-signature-type">Partial</span
+                ><span class="tsd-signature-symbol">&lt;</span><br />    <span
+                  class="tsd-signature-type"
+                  >Record</span
                 ><span class="tsd-signature-symbol">&lt;</span
                 ><span class="tsd-signature-type">string</span
                 ><span class="tsd-signature-symbol">,</span>
                 <span class="tsd-signature-type"
                   >EventListenerOrEventListenerObject</span
-                ><span class="tsd-signature-symbol">&gt;</span>
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Upload event handlers. Not used by the fetch transport.</p>

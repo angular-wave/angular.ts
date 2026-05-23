@@ -15,6 +15,7 @@ const pkg = JSON.parse(
 );
 
 const baseInput = ".build/index.js";
+const umdInput = ".build/umd.js";
 
 function hasRuntimeModuleCode(filePath) {
   const code = readFileSync(filePath, "utf-8")
@@ -39,6 +40,7 @@ function collectModuleInputs(dir) {
     if (
       !entry.isFile() ||
       !entry.name.endsWith(".ts") ||
+      entry.name === "umd.ts" ||
       /\.(spec|test)\.ts$/.test(entry.name)
     ) {
       return [];
@@ -87,7 +89,7 @@ const modulePlugins = [resolve(), commonjs()];
 export default [
   // ---- Minified UMD ----
   {
-    input: baseInput,
+    input: umdInput,
     output: [
       {
         name: "angular",

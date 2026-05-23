@@ -1,5 +1,5 @@
 /// <reference types="jasmine" />
-import { getNormalizedAttrName } from "./dom.ts";
+import { getNormalizedAttrName, setNormalizedAttr } from "./dom.ts";
 
 describe("dom", () => {
   describe("getNormalizedAttrName", () => {
@@ -48,6 +48,17 @@ describe("dom", () => {
       ).toBeUndefined();
       expect(getNormalizedAttrName(null, "ngClick")).toBeUndefined();
       expect(getNormalizedAttrName(undefined, "ngClick")).toBeUndefined();
+    });
+  });
+
+  describe("setNormalizedAttr", () => {
+    it("sets attributes with non-word starting names without parsing HTML", () => {
+      const element = document.createElement("button");
+
+      setNormalizedAttr(element, "title", "save", { attrName: "[title]" });
+
+      expect(element.getAttribute("[title]")).toBe("save");
+      expect(element.children.length).toBe(0);
     });
   });
 });

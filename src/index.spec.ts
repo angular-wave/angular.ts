@@ -9,8 +9,15 @@ describe("index", () => {
     expect(angular).toBeDefined();
   });
 
-  it("initializes ng modules", async () => {
-    expect(angular._bootsrappedModules[0]).toEqual("ng");
+  it("exports custom runtime constructors", () => {
+    expect(exports.AngularRuntime).toBeDefined();
+    expect(exports.createAngularBare).toBeDefined();
+    expect(exports.createAngularCustom).toBeDefined();
+    expect(exports.registerCustomNgModule).toBeDefined();
+  });
+
+  it("does not auto-bootstrap ESM imports", () => {
+    expect(angular._bootsrappedModules).toEqual([]);
   });
 
   it("keeps the root runtime API narrow", () => {

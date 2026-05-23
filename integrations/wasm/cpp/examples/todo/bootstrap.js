@@ -1,5 +1,5 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
 
 const moduleName = "cppWasmTodo";
 const scopeName = "cppTodo:main";
@@ -52,7 +52,7 @@ const wasi = new Proxy(
 );
 
 const result = await WebAssembly.instantiateStreaming(fetch(wasmURL), {
-  angular_ts: scopeAbi.imports(),
+  angular_ts: scopeAbi.imports.angular_ts,
   wasi_snapshot_preview1: wasi,
 });
 exports = result.instance.exports;

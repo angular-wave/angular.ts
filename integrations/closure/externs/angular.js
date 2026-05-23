@@ -3297,16 +3297,10 @@ ng.AngularElementOptions.prototype.elementModule;
 ng.AngularElementOptions.prototype.component;
 
 /**
- * Treat this instance as a sub-application. Sub-applications do not attach to `window.angular` by default.
+ * Treat this instance as a sub-application.
  * @type {(boolean|undefined)}
  */
 ng.AngularElementOptions.prototype.subapp;
-
-/**
- * Assign the runtime instance to `window.angular`. Defaults to `true` for root apps and `false` for sub-applications.
- * @type {(boolean|undefined)}
- */
-ng.AngularElementOptions.prototype.attachToWindow;
 
 /**
  * Register the configured built-in `ng` module during construction. Custom builds should pass `false` and register their own `ng` module.

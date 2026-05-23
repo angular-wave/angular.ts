@@ -13,6 +13,7 @@
     "target": "ES2023"
   },
   "include": [
+    "src/auto.ts",
     "src/namespace.ts",
     "src/runtime/index.ts",
     "src/runtime/web-component.ts"

@@ -5,13 +5,13 @@ import { domInsert, removeElement } from '../shared/dom.js';
 const $animateError = createErrorFactory("$animate");
 class AnimationHandle {
     constructor(result, controller = new AbortController(), cleanup) {
-        this.doneCallbacks = [];
-        this.settled = false;
-        this.status = true;
+        this._doneCallbacks = [];
+        this._settled = false;
+        this._status = true;
         this.controller = controller;
-        this.cleanup = cleanup;
+        this._cleanup = cleanup;
         const results = Array.isArray(result) ? result : [result];
-        this.animations = results.filter((item) => !!item && "finished" in item);
+        this._animations = results.filter((item) => !!item && "finished" in item);
         const promises = results.map(async (item) => {
             if (!item)
                 return Promise.resolve();
@@ -38,44 +38,44 @@ class AnimationHandle {
         return this.finished.finally(onfinally);
     }
     done(callback) {
-        if (this.settled) {
-            callback(this.status);
+        if (this._settled) {
+            callback(this._status);
             return;
         }
-        this.doneCallbacks.push(callback);
+        this._doneCallbacks.push(callback);
     }
     cancel() {
-        this.status = false;
-        this.animations.forEach((animation) => {
+        this._status = false;
+        this._animations.forEach((animation) => {
             animation.cancel();
         });
         this.controller.abort();
         this.complete(false);
     }
     finish() {
-        this.animations.forEach((animation) => {
+        this._animations.forEach((animation) => {
             animation.finish();
         });
         this.complete(true);
     }
     pause() {
-        this.animations.forEach((animation) => {
+        this._animations.forEach((animation) => {
             animation.pause();
         });
     }
     play() {
-        this.animations.forEach((animation) => {
+        this._animations.forEach((animation) => {
             animation.play();
         });
     }
     complete(status = true) {
-        if (this.settled)
+        if (this._settled)
             return;
-        this.settled = true;
-        this.status = status;
-        this.cleanup?.(status);
-        const callbacks = this.doneCallbacks;
-        this.doneCallbacks = [];
+        this._settled = true;
+        this._status = status;
+        this._cleanup?.(status);
+        const callbacks = this._doneCallbacks;
+        this._doneCallbacks = [];
         callbacks.forEach((callback) => {
             callback(status);
         });

@@ -1,4 +1,4 @@
-/* Version: 0.27.0 - May 23, 2026 01:18:20 */
+/* Version: 0.27.0 - May 23, 2026 17:00:09 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1338,7 +1338,6 @@
     const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
     const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
     const SIMPLE_ATTR_NAME = /^\w/;
-    const specialAttrHolder = document.createElement("div");
     /**
      * HTML attributes whose presence alone represents a truthy value.
      */
@@ -1796,10 +1795,7 @@
         return getNormalizedAttr(element, normalizedName) !== undefined;
     }
     function setSpecialAttr(element, attrName, value) {
-        specialAttrHolder.innerHTML = `<span ${attrName}>`;
-        const { attributes } = specialAttrHolder.firstChild;
-        const attribute = attributes[0];
-        attributes.removeNamedItem(attribute.name);
+        const attribute = document.createAttribute(attrName);
         attribute.value = value ?? "";
         element.setAttributeNode(attribute);
     }
@@ -3144,14 +3140,14 @@
          * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
          */
         emit(input) {
-            const { type, expr } = AngularRuntime.splitInvocation(input);
+            const { type, expr } = AngularRuntime._splitInvocation(input);
             this.dispatchEvent(new CustomEvent(type, { detail: expr }));
         }
         /**
          * Await result. Accepts a single string: `"<target>.<expression>"`
          */
         async call(input) {
-            const { type, expr } = AngularRuntime.splitInvocation(input);
+            const { type, expr } = AngularRuntime._splitInvocation(input);
             return new Promise((resolve, reject) => {
                 const ok = this.dispatchEvent(new CustomEvent(type, {
                     detail: { expr, reply: { resolve, reject } },
@@ -3340,7 +3336,7 @@
         /**
          * Splits `"target.expression"` into the dispatch target and parse expression.
          */
-        static splitInvocation(input) {
+        static _splitInvocation(input) {
             if (!isString(input)) {
                 throw new TypeError("Invocation must be a string.");
             }
@@ -3388,13 +3384,13 @@
     const $animateError = createErrorFactory("$animate");
     class AnimationHandle {
         constructor(result, controller = new AbortController(), cleanup) {
-            this.doneCallbacks = [];
-            this.settled = false;
-            this.status = true;
+            this._doneCallbacks = [];
+            this._settled = false;
+            this._status = true;
             this.controller = controller;
-            this.cleanup = cleanup;
+            this._cleanup = cleanup;
             const results = Array.isArray(result) ? result : [result];
-            this.animations = results.filter((item) => !!item && "finished" in item);
+            this._animations = results.filter((item) => !!item && "finished" in item);
             const promises = results.map(async (item) => {
                 if (!item)
                     return Promise.resolve();
@@ -3421,44 +3417,44 @@
             return this.finished.finally(onfinally);
         }
         done(callback) {
-            if (this.settled) {
-                callback(this.status);
+            if (this._settled) {
+                callback(this._status);
                 return;
             }
-            this.doneCallbacks.push(callback);
+            this._doneCallbacks.push(callback);
         }
         cancel() {
-            this.status = false;
-            this.animations.forEach((animation) => {
+            this._status = false;
+            this._animations.forEach((animation) => {
                 animation.cancel();
             });
             this.controller.abort();
             this.complete(false);
         }
         finish() {
-            this.animations.forEach((animation) => {
+            this._animations.forEach((animation) => {
                 animation.finish();
             });
             this.complete(true);
         }
         pause() {
-            this.animations.forEach((animation) => {
+            this._animations.forEach((animation) => {
                 animation.pause();
             });
         }
         play() {
-            this.animations.forEach((animation) => {
+            this._animations.forEach((animation) => {
                 animation.play();
             });
         }
         complete(status = true) {
-            if (this.settled)
+            if (this._settled)
                 return;
-            this.settled = true;
-            this.status = status;
-            this.cleanup?.(status);
-            const callbacks = this.doneCallbacks;
-            this.doneCallbacks = [];
+            this._settled = true;
+            this._status = status;
+            this._cleanup?.(status);
+            const callbacks = this._doneCallbacks;
+            this._doneCallbacks = [];
             callbacks.forEach((callback) => {
                 callback(status);
             });
@@ -6848,7 +6844,6 @@
             },
         ];
     }
-    createEventDirectiveFactory("click");
     const ngEventDirectives = EVENT_NAMES.reduce((directives, eventName) => {
         directives[directiveNameForEvent(eventName)] =
             createEventDirectiveFactory(eventName);
@@ -6955,7 +6950,7 @@
         return getAnimate;
     }
     function notifyAttributeObserverCallbacks(state, normalizedName, value) {
-        const callbacks = state.callbacks.get(normalizedName);
+        const callbacks = state._callbacks.get(normalizedName);
         if (!callbacks?.size)
             return;
         arrayFrom(callbacks).forEach((callback) => {
@@ -6968,7 +6963,7 @@
             (left === null && right === undefined));
     }
     function consumePendingAttributeMutation(state, normalizedName, value) {
-        const pendingValues = state.pendingMutations.get(normalizedName);
+        const pendingValues = state._pendingMutations.get(normalizedName);
         if (!pendingValues?.length)
             return false;
         const [nextValue] = pendingValues;
@@ -6976,7 +6971,7 @@
             return false;
         pendingValues.shift();
         if (pendingValues.length === 0) {
-            state.pendingMutations.delete(normalizedName);
+            state._pendingMutations.delete(normalizedName);
         }
         return true;
     }
@@ -6985,11 +6980,11 @@
         if (state)
             return state;
         const newState = {
-            callbacks: new Map(),
-            pendingMutations: new Map(),
-            observer: undefined,
+            _callbacks: new Map(),
+            _pendingMutations: new Map(),
+            _observer: undefined,
         };
-        newState.observer = new MutationObserver((mutations) => {
+        newState._observer = new MutationObserver((mutations) => {
             for (let i = 0; i < mutations.length; i++) {
                 const { attributeName } = mutations[i];
                 if (!attributeName)
@@ -7008,7 +7003,7 @@
                 }
             }
         });
-        newState.observer.observe(element, { attributes: true });
+        newState._observer.observe(element, { attributes: true });
         observerStates.set(element, newState);
         return newState;
     }
@@ -7016,14 +7011,13 @@
         const state = observerStates.get(element);
         if (!state)
             return;
-        let pendingValues = state.pendingMutations.get(normalizedName);
+        let pendingValues = state._pendingMutations.get(normalizedName);
         if (!pendingValues) {
             pendingValues = [];
-            state.pendingMutations.set(normalizedName, pendingValues);
+            state._pendingMutations.set(normalizedName, pendingValues);
         }
         pendingValues.push(value);
     }
-    /** @internal */
     class CompileAttributeState {
         constructor($injector, $exceptionHandler, stateToCopy) {
             this.$normalize = directiveNormalize;
@@ -7095,10 +7089,10 @@
         const observedElement = targetElement;
         const normalized = directiveNormalize(normalizedName);
         const state = getCompileAttributeObserverState(observedElement);
-        let callbacks = state.callbacks.get(normalized);
+        let callbacks = state._callbacks.get(normalized);
         if (!callbacks) {
             callbacks = new Set();
-            state.callbacks.set(normalized, callbacks);
+            state._callbacks.set(normalized, callbacks);
         }
         callbacks.add(callback);
         const initialValue = getNormalizedAttr(observedElement, normalized);
@@ -7114,10 +7108,10 @@
         function deregister() {
             callbacks?.delete(callback);
             if (callbacks?.size === 0) {
-                state.callbacks.delete(normalized);
+                state._callbacks.delete(normalized);
             }
-            if (state.callbacks.size === 0) {
-                state.observer.disconnect();
+            if (state._callbacks.size === 0) {
+                state._observer.disconnect();
                 observerStates.delete(observedElement);
             }
             deregisterDestroy?.();
@@ -7224,8 +7218,8 @@
      */
     class CompileLifecycleProvider {
         constructor() {
-            this.createdListeners = [];
-            this.destroyedListeners = [];
+            this._createdListeners = [];
+            this._destroyedListeners = [];
             this.$get = () => this;
         }
         /**
@@ -7234,9 +7228,9 @@
          * Returns a deregistration function.
          */
         onControllerCreated(listener) {
-            this.createdListeners.push(listener);
+            this._createdListeners.push(listener);
             return () => {
-                arrayRemove(this.createdListeners, listener);
+                arrayRemove(this._createdListeners, listener);
             };
         }
         /**
@@ -7245,20 +7239,20 @@
          * Returns a deregistration function.
          */
         onControllerDestroyed(listener) {
-            this.destroyedListeners.push(listener);
+            this._destroyedListeners.push(listener);
             return () => {
-                arrayRemove(this.destroyedListeners, listener);
+                arrayRemove(this._destroyedListeners, listener);
             };
         }
         /** @internal */
         _emitControllerCreated(record) {
-            this.createdListeners.slice().forEach((listener) => {
+            this._createdListeners.slice().forEach((listener) => {
                 listener(record);
             });
         }
         /** @internal */
         _emitControllerDestroyed(record) {
-            this.destroyedListeners.slice().forEach((listener) => {
+            this._destroyedListeners.slice().forEach((listener) => {
                 listener(record);
             });
         }
@@ -7526,7 +7520,7 @@
                 function factory($injector) {
                     /** Wraps injectable component options so compile-local services are available. */
                     const makeInjectable = (fn) => {
-                        if (isFunction(fn) || Array.isArray(fn)) {
+                        if (isFunction(fn) || isArray(fn)) {
                             return (tElement) => {
                                 return $injector.invoke(fn, null, {
                                     $element: tElement,
@@ -7871,7 +7865,7 @@
                     }
                     function evaluateOneWayBindingInputs(state) {
                         const inputs = state._parentGet?._inputs;
-                        if (!Array.isArray(inputs)) {
+                        if (!isArray(inputs)) {
                             return undefined;
                         }
                         const values = new Array(inputs.length);
@@ -8954,7 +8948,7 @@
                                 const controllerDirective = controllerDirectives[name];
                                 const { require } = controllerDirective;
                                 if (controllerDirective.bindToController &&
-                                    !Array.isArray(require) &&
+                                    !isArray(require) &&
                                     require &&
                                     typeof require === "object") {
                                     extend(assertDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
@@ -9605,7 +9599,7 @@
                                 throw $compileError$1("ctreq", "Controller '{0}', required by directive '{1}', can't be found!", name, directiveName);
                             }
                         }
-                        else if (Array.isArray(require)) {
+                        else if (isArray(require)) {
                             value = [];
                             for (let i = 0, ii = require.length; i < ii; i++) {
                                 value[i] = getControllers(directiveName, require[i], $element, elementControllers);
@@ -10202,7 +10196,7 @@
                                         const initialValue = parentGet
                                             ? callFunction(parentGet, undefined, scopeTarget)
                                             : undefined;
-                                        lastValue = destinationTarget[scopeName] = Array.isArray(initialValue)
+                                        lastValue = destinationTarget[scopeName] = isArray(initialValue)
                                             ? createScope(initialValue, destination.$handler)
                                             : initialValue;
                                         const twoWayBindingState = {
@@ -10335,7 +10329,7 @@
      */
     function getDirectiveRequire(directive) {
         const require = directive.require ?? (directive.controller && directive.name);
-        if (!Array.isArray(require) && require && typeof require === "object") {
+        if (!isArray(require) && require && typeof require === "object") {
             for (const key in require) {
                 if (!hasOwn(require, key)) {
                     continue;
@@ -19862,6 +19856,58 @@
     const ngRepeatError = createErrorFactory("ngRepeat");
     const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
     ngRepeatDirective.$inject = [_injector];
+    function isRepeatExpressionWhitespace(value) {
+        return value.trim() === "";
+    }
+    function findRepeatExpressionSeparator(expression, keyword) {
+        for (let index = 0; index < expression.length; index++) {
+            if (!isRepeatExpressionWhitespace(expression.charAt(index))) {
+                continue;
+            }
+            const separatorStart = index;
+            do {
+                index++;
+            } while (index < expression.length &&
+                isRepeatExpressionWhitespace(expression.charAt(index)));
+            const afterKeyword = index + keyword.length;
+            if (afterKeyword < expression.length &&
+                expression.startsWith(keyword, index) &&
+                isRepeatExpressionWhitespace(expression.charAt(afterKeyword))) {
+                index += keyword.length;
+                do {
+                    index++;
+                } while (index < expression.length &&
+                    isRepeatExpressionWhitespace(expression.charAt(index)));
+                return { start: separatorStart, end: index };
+            }
+        }
+        return undefined;
+    }
+    function parseRepeatExpression(expression) {
+        const trimmedExpression = expression.trim();
+        const inSeparator = findRepeatExpressionSeparator(trimmedExpression, "in");
+        if (!inSeparator) {
+            return undefined;
+        }
+        const lhs = trimmedExpression.slice(0, inSeparator.start).trim();
+        const rhsAndAlias = trimmedExpression.slice(inSeparator.end).trim();
+        const aliasSeparator = findRepeatExpressionSeparator(rhsAndAlias, "as");
+        if (!lhs || !rhsAndAlias) {
+            return undefined;
+        }
+        if (!aliasSeparator) {
+            return { lhs, rhs: rhsAndAlias };
+        }
+        const aliasAs = rhsAndAlias.slice(aliasSeparator.end).trim();
+        if (!aliasAs) {
+            return { lhs, rhs: rhsAndAlias };
+        }
+        return {
+            lhs,
+            rhs: rhsAndAlias.slice(0, aliasSeparator.start).trim(),
+            aliasAs,
+        };
+    }
     function ngRepeatDirective($injector) {
         const getAnimate = createLazyAnimate($injector);
         const repeatPositionLocalKeys = [
@@ -20171,12 +20217,12 @@
                     getNormalizedAttr($element, "dataIndex") ??
                     undefined;
                 const hasLazy = hasNormalizedAttr($element, "lazy");
-                let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
-                if (!match) {
+                const repeatExpression = parseRepeatExpression(expression);
+                if (!repeatExpression) {
                     throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
                 }
-                const [, lhs, rhs, aliasAs] = match;
-                match = VAR_OR_TUPLE_REGEX.exec(lhs);
+                const { lhs, rhs, aliasAs } = repeatExpression;
+                const match = VAR_OR_TUPLE_REGEX.exec(lhs);
                 if (!match) {
                     throw ngRepeatError("iidexp", "'_item_' in '_item_ in _collection_' should be an identifier or '(_key_, _value_)' expression, but got '{0}'.", lhs);
                 }
@@ -22104,13 +22150,29 @@
      * Parses an `ng-sref` expression into a target state name and parameter expression.
      */
     function parseStateRef(ref) {
-        const paramsOnly = /^\s*({[^}]*})\s*$/.exec(ref);
-        if (paramsOnly)
-            ref = `(${paramsOnly[1]})`;
-        const parsed = /^\s*([^(]*?)\s*(\((.*)\))?\s*$/.exec(ref.replace(/\n/g, " "));
-        if (parsed?.length !== 4)
+        const normalizedRef = normalizeParamsOnlyStateRef(ref).replace(/\n/g, " ");
+        const trimmedRef = normalizedRef.trim();
+        const openParenIndex = trimmedRef.indexOf("(");
+        if (openParenIndex === -1) {
+            return { _state: trimmedRef || null, _paramExpr: null };
+        }
+        const closeParenIndex = trimmedRef.lastIndexOf(")");
+        if (closeParenIndex !== trimmedRef.length - 1) {
             throw new Error(`Invalid state ref '${ref}'`);
-        return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
+        }
+        return {
+            _state: trimmedRef.slice(0, openParenIndex).trimEnd() || null,
+            _paramExpr: trimmedRef.slice(openParenIndex + 1, closeParenIndex) || null,
+        };
+    }
+    function normalizeParamsOnlyStateRef(ref) {
+        const trimmedRef = ref.trim();
+        if (trimmedRef.startsWith("{") &&
+            trimmedRef.endsWith("}") &&
+            trimmedRef.indexOf("}") === trimmedRef.length - 1) {
+            return `(${trimmedRef})`;
+        }
+        return ref;
     }
     /**
      * Resolves the relative state context for a state-ref-bearing element.
@@ -25948,16 +26010,16 @@
          * @returns Returns `true` if `ref` matches the current `State` instance.
          */
         is(ref) {
-            return this === ref || this.self === ref || this.pathName() === ref;
+            return this === ref || this.self === ref || this._pathName() === ref;
         }
         /**
          * @deprecated this does not properly handle dot notation
          * @returns {string} Returns a dot-separated name of the state.
          */
         fqn() {
-            return this.pathName();
+            return this._pathName();
         }
-        pathName() {
+        _pathName() {
             return (this.path ?? [])
                 .map((state) => state.name)
                 .filter(Boolean)
@@ -26021,7 +26083,7 @@
                 : undefined;
         }
         toString() {
-            return this.pathName();
+            return this._pathName();
         }
     }
 
@@ -33189,21 +33251,116 @@
     }
 
     /**
-     * Default browser entry point.
+     * Providers required by `$compile` and scope/interpolation at runtime.
      *
-     * It creates the shared `angular` singleton and bootstraps discovered apps
-     * once the DOM is ready.
+     * This set intentionally avoids browser I/O services such as `$http` so small
+     * custom builds do not pull them in unless explicitly requested.
+     */
+    const coreProviders = {
+        [_compileLifecycle]: CompileLifecycleProvider,
+        $controller: ControllerProvider,
+        $exceptionHandler: ExceptionHandlerProvider,
+        $interpolate: InterpolateProvider,
+        $parse: ParseProvider,
+        $rootScope: RootScopeProvider,
+    };
+    /**
+     * Registers a custom AngularTS `ng` module from core providers and a caller
+     * supplied directive list.
+     */
+    function registerCustomNgModule(angular, options = {}) {
+        const moduleName = options.name ?? "ng";
+        const providers = {
+            ...coreProviders,
+            ...(options.providers ?? {}),
+        };
+        const directiveRegistrations = normalizeDirectiveRegistrations(options.directives);
+        const filterRegistrations = normalizeFilterRegistrations(options.filters);
+        const serviceRegistrations = normalizeServiceRegistrations(options.services);
+        return angular.module(moduleName, options.requires ?? [], [
+            _provide,
+            ($provide) => {
+                $provide.value(_window, window);
+                $provide.value(_document, document);
+                const $compileProvider = $provide.provider(_compile, CompileProvider);
+                $provide.provider({
+                    [_angular]: class {
+                        constructor() {
+                            this.$get = () => angular;
+                        }
+                    },
+                    ...providers,
+                });
+                directiveRegistrations.forEach((directives) => {
+                    $compileProvider.directive(directives);
+                });
+                if (filterRegistrations.length) {
+                    const $filterProvider = $provide.provider(_filter, FilterProvider);
+                    filterRegistrations.forEach((filters) => {
+                        keys(filters).forEach((name) => {
+                            $filterProvider.register(name, filters[name]);
+                        });
+                    });
+                }
+                serviceRegistrations.forEach((services) => {
+                    keys(services).forEach((name) => {
+                        $provide.service(name, services[name]);
+                    });
+                });
+            },
+        ]);
+    }
+    function normalizeDirectiveRegistrations(directives) {
+        if (!directives)
+            return [];
+        return Array.isArray(directives) ? directives : [directives];
+    }
+    function normalizeFilterRegistrations(filters) {
+        if (!filters)
+            return [];
+        return Array.isArray(filters) ? filters : [filters];
+    }
+    function normalizeServiceRegistrations(services) {
+        if (!services)
+            return [];
+        return Array.isArray(services) ? services : [services];
+    }
+
+    /**
+     * Creates a side-effect-free AngularTS runtime with no built-in modules.
+     */
+    function createAngularBare(options = {}) {
+        return new AngularRuntime({
+            attachToWindow: false,
+            registerBuiltins: false,
+            ...options,
+        });
+    }
+    /**
+     * Creates a side-effect-free AngularTS runtime with a custom `ng` module.
+     */
+    function createAngularCustom(options = {}) {
+        const angular = createAngularBare(options);
+        registerCustomNgModule(angular, options.ngModule);
+        return angular;
+    }
+
+    /**
+     * Default browser entry point.
      */
     const angular = new Angular();
-    /**
-     * Auto-bootstrap the document once the browser DOM is ready.
-     */
+
     document.addEventListener("DOMContentLoaded", () => {
         angular.init(document);
     }, {
         once: true,
     });
 
+    exports.AngularRuntime = AngularRuntime;
     exports.angular = angular;
+    exports.coreProviders = coreProviders;
+    exports.createAngularBare = createAngularBare;
+    exports.createAngularCustom = createAngularCustom;
+    exports.registerCustomNgModule = registerCustomNgModule;
 
 }));

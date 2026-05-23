@@ -214,7 +214,6 @@ export { ngElDirective } from "./directive/el/el.ts";
 export {
   createEventDirective,
   createWindowEventDirective,
-  ngClickDirective,
   ngEventDirectives,
 } from "./directive/events/events.ts";
 export type {

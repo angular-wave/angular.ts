@@ -1,5 +1,5 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
 import { GoWasmScopeAbi } from "../go-wasm-scope-abi.js";
 import "../wasm_exec.js";
 

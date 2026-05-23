@@ -7,11 +7,14 @@ interface WasmScopeHost {
   onSync?(callback: () => void): () => void;
 }
 
+const fromRustSlot = Symbol("angularTsRustFromRust");
+const innerSlot = Symbol("angularTsRustInner");
+
 interface BridgeController {
-  __fromRust: boolean;
-  __inner: RustController;
-  __syncRustProperties(): void;
-  __syncScope(): void;
+  [fromRustSlot]: boolean;
+  [innerSlot]: RustController;
+  syncRustProperties(): void;
+  syncScope(): void;
 }
 
 interface RustScopeUpdateController extends RustController {
@@ -22,27 +25,27 @@ interface RustScopeUpdateController extends RustController {
 }
 
 export function callOnInit(controller: BridgeController): void {
-  const inner = controller.__inner as RustScopeUpdateController;
+  const inner = controller[innerSlot] as RustScopeUpdateController;
 
   if (typeof inner.onInit === "function") {
     inner.onInit();
-    controller.__syncRustProperties();
-    controller.__syncScope();
+    controller.syncRustProperties();
+    controller.syncScope();
   }
 }
 
 export function callOnDestroy(controller: BridgeController): void {
-  const inner = controller.__inner as RustScopeUpdateController;
+  const inner = controller[innerSlot] as RustScopeUpdateController;
 
   if (typeof inner.onDestroy === "function") {
     inner.onDestroy();
-    controller.__syncRustProperties();
-    controller.__syncScope();
+    controller.syncRustProperties();
+    controller.syncScope();
   }
 }
 
 export function bindScopeUpdates(controller: BridgeController): void {
-  const inner = controller.__inner as RustScopeUpdateController;
+  const inner = controller[innerSlot] as RustScopeUpdateController;
 
   if (typeof inner.bindScopeUpdates === "function") {
     inner.bindScopeUpdates();
@@ -60,13 +63,13 @@ export function bindGeneratedRefresh(
 
   disposers.push(
     wasmScope.onSync(() => {
-      controller.__syncRustProperties();
+      controller.syncRustProperties();
     }),
   );
 }
 
 export function unbindScopeUpdates(controller: BridgeController): void {
-  const inner = controller.__inner as RustScopeUpdateController;
+  const inner = controller[innerSlot] as RustScopeUpdateController;
 
   if (typeof inner.unbindScopeUpdates === "function") {
     inner.unbindScopeUpdates();
@@ -82,43 +85,43 @@ export function invokeRustMethod(
   method: string,
   args: unknown[],
 ): unknown {
-  const target = controller.__inner[method];
+  const target = controller[innerSlot][method];
 
   if (typeof target !== "function") {
     return undefined;
   }
 
-  controller.__fromRust = true;
+  controller[fromRustSlot] = true;
   let result: unknown;
 
   try {
-    result = target.apply(controller.__inner, args);
+    result = target.apply(controller[innerSlot], args);
   } catch (error) {
-    controller.__fromRust = false;
+    controller[fromRustSlot] = false;
     throw error;
   }
 
   if (isThenable(result)) {
-    controller.__fromRust = false;
+    controller[fromRustSlot] = false;
 
     return result.then(
       (value) => {
-        controller.__fromRust = true;
+        controller[fromRustSlot] = true;
         try {
-          controller.__syncRustProperties();
-          controller.__syncScope();
+          controller.syncRustProperties();
+          controller.syncScope();
           return value;
         } finally {
-          controller.__fromRust = false;
+          controller[fromRustSlot] = false;
         }
       },
       (error: unknown) => {
-        controller.__fromRust = true;
+        controller[fromRustSlot] = true;
         try {
-          controller.__syncRustProperties();
-          controller.__syncScope();
+          controller.syncRustProperties();
+          controller.syncScope();
         } finally {
-          controller.__fromRust = false;
+          controller[fromRustSlot] = false;
         }
         throw error;
       },
@@ -126,11 +129,11 @@ export function invokeRustMethod(
   }
 
   try {
-    controller.__syncRustProperties();
-    controller.__syncScope();
+    controller.syncRustProperties();
+    controller.syncScope();
     return result;
   } finally {
-    controller.__fromRust = false;
+    controller[fromRustSlot] = false;
   }
 }
 

@@ -31,7 +31,6 @@ const SCOPE_KEY = _scope;
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 const SIMPLE_ATTR_NAME = /^\w/;
-const specialAttrHolder = document.createElement("div");
 /**
  * HTML attributes whose presence alone represents a truthy value.
  */
@@ -532,10 +531,7 @@ function hasNormalizedAttr(element, normalizedName) {
     return getNormalizedAttr(element, normalizedName) !== undefined;
 }
 function setSpecialAttr(element, attrName, value) {
-    specialAttrHolder.innerHTML = `<span ${attrName}>`;
-    const { attributes } = specialAttrHolder.firstChild;
-    const attribute = attributes[0];
-    attributes.removeNamedItem(attribute.name);
+    const attribute = document.createAttribute(attrName);
     attribute.value = value ?? "";
     element.setAttributeNode(attribute);
 }

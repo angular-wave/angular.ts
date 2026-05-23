@@ -9,6 +9,58 @@ const NG_REMOVED = "$$NG_REMOVED";
 const ngRepeatError = createErrorFactory("ngRepeat");
 const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 ngRepeatDirective.$inject = [_injector];
+function isRepeatExpressionWhitespace(value) {
+    return value.trim() === "";
+}
+function findRepeatExpressionSeparator(expression, keyword) {
+    for (let index = 0; index < expression.length; index++) {
+        if (!isRepeatExpressionWhitespace(expression.charAt(index))) {
+            continue;
+        }
+        const separatorStart = index;
+        do {
+            index++;
+        } while (index < expression.length &&
+            isRepeatExpressionWhitespace(expression.charAt(index)));
+        const afterKeyword = index + keyword.length;
+        if (afterKeyword < expression.length &&
+            expression.startsWith(keyword, index) &&
+            isRepeatExpressionWhitespace(expression.charAt(afterKeyword))) {
+            index += keyword.length;
+            do {
+                index++;
+            } while (index < expression.length &&
+                isRepeatExpressionWhitespace(expression.charAt(index)));
+            return { start: separatorStart, end: index };
+        }
+    }
+    return undefined;
+}
+function parseRepeatExpression(expression) {
+    const trimmedExpression = expression.trim();
+    const inSeparator = findRepeatExpressionSeparator(trimmedExpression, "in");
+    if (!inSeparator) {
+        return undefined;
+    }
+    const lhs = trimmedExpression.slice(0, inSeparator.start).trim();
+    const rhsAndAlias = trimmedExpression.slice(inSeparator.end).trim();
+    const aliasSeparator = findRepeatExpressionSeparator(rhsAndAlias, "as");
+    if (!lhs || !rhsAndAlias) {
+        return undefined;
+    }
+    if (!aliasSeparator) {
+        return { lhs, rhs: rhsAndAlias };
+    }
+    const aliasAs = rhsAndAlias.slice(aliasSeparator.end).trim();
+    if (!aliasAs) {
+        return { lhs, rhs: rhsAndAlias };
+    }
+    return {
+        lhs,
+        rhs: rhsAndAlias.slice(0, aliasSeparator.start).trim(),
+        aliasAs,
+    };
+}
 function ngRepeatDirective($injector) {
     const getAnimate = createLazyAnimate($injector);
     const repeatPositionLocalKeys = [
@@ -318,12 +370,12 @@ function ngRepeatDirective($injector) {
                 getNormalizedAttr($element, "dataIndex") ??
                 undefined;
             const hasLazy = hasNormalizedAttr($element, "lazy");
-            let match = /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/.exec(expression);
-            if (!match) {
+            const repeatExpression = parseRepeatExpression(expression);
+            if (!repeatExpression) {
                 throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);
             }
-            const [, lhs, rhs, aliasAs] = match;
-            match = VAR_OR_TUPLE_REGEX.exec(lhs);
+            const { lhs, rhs, aliasAs } = repeatExpression;
+            const match = VAR_OR_TUPLE_REGEX.exec(lhs);
             if (!match) {
                 throw ngRepeatError("iidexp", "'_item_' in '_item_ in _collection_' should be an identifier or '(_key_, _value_)' expression, but got '{0}'.", lhs);
             }

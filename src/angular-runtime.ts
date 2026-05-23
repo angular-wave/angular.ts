@@ -45,28 +45,21 @@ const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
 
 type ModuleRegistry = Record<string, NgModule | null>;
 
+const moduleRegistry: ModuleRegistry = {};
+
 /** @internal */
 interface AppElement {
   _element: HTMLElement;
   _module: string | null;
 }
 
-const moduleRegistry: ModuleRegistry = {};
-
 type AngularWindow = Window & { angular?: AngularRuntime };
 
 export interface AngularRuntimeOptions {
   /**
-   * Treat this instance as a sub-application. Sub-applications do not attach to
-   * `window.angular` by default.
+   * Treat this instance as a sub-application.
    */
   subapp?: boolean;
-  /**
-   * Assign the runtime instance to `window.angular`.
-   *
-   * Defaults to `true` for root apps and `false` for sub-applications.
-   */
-  attachToWindow?: boolean;
   /**
    * Register the configured built-in `ng` module during construction.
    *
@@ -157,7 +150,7 @@ export class AngularRuntime extends EventTarget {
       });
     }
 
-    if (runtimeOptions.attachToWindow) {
+    if (!runtimeOptions.subapp) {
       (window as AngularWindow).angular = this;
     }
 
@@ -613,7 +606,6 @@ function normalizeRuntimeOptions(
   if (typeof options === "boolean") {
     return {
       subapp: options,
-      attachToWindow: !options,
       registerBuiltins: true,
     };
   }
@@ -622,7 +614,6 @@ function normalizeRuntimeOptions(
 
   return {
     subapp,
-    attachToWindow: options.attachToWindow ?? !subapp,
     registerBuiltins: options.registerBuiltins ?? true,
   };
 }

@@ -1,4 +1,4 @@
-import { angular } from "../../index.ts";
+import { angular } from "../../auto.ts";
 import { ScopeElement } from "./web-component.ts";
 
 class SquareElement extends ScopeElement {

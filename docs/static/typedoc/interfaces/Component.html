@@ -135,6 +135,12 @@
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
+            href="#replace"
+            >replace</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">boolean</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
             href="#require"
             >require</a
           ><span class="tsd-signature-symbol">?:</span>
@@ -160,7 +166,7 @@
           ><span class="tsd-signature-symbol">...</span
           ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">never</span
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
@@ -182,7 +188,7 @@
           ><span class="tsd-signature-symbol">...</span
           ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">any</span
+          <span class="tsd-signature-type">never</span
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
@@ -251,6 +257,15 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>controller<wbr />As?</span></a
+                    >
+                    <a href="#replace" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>replace?</span></a
                     >
                     <a href="#require" class="tsd-index-link"
                       ><svg
@@ -392,6 +407,29 @@
               </div>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="replace">
+                <code class="tsd-tag">Optional</code><span>replace</span
+                ><a
+                  href="#replace"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">replace</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Replaces the generated component host element with the
+                  component template.
+                </p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="require">
                 <code class="tsd-tag">Optional</code><span>require</span
                 ><a
@@ -449,7 +487,7 @@
                 ><span class="tsd-signature-symbol">...</span
                 ><span class="tsd-kind-parameter">args</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">any</span
+                <span class="tsd-signature-type">never</span
                 ><span class="tsd-signature-symbol">[]</span
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -462,10 +500,9 @@
                   template as a string which should be used as the contents of
                   this component. Empty string by default. If template is a
                   function, then it is injected with the following locals:
-                  $element - Current element $attrs - Current attributes object
-                  for the element Use the array form to define dependencies
-                  (necessary if strictDi is enabled and you require dependency
-                  injection)
+                  $element - Current element Use the array form to define
+                  dependencies (necessary if strictDi is enabled and you require
+                  dependency injection)
                 </p>
               </div>
             </section>
@@ -495,7 +532,7 @@
                 ><span class="tsd-signature-symbol">...</span
                 ><span class="tsd-kind-parameter">args</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">any</span
+                <span class="tsd-signature-type">never</span
                 ><span class="tsd-signature-symbol">[]</span
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -507,10 +544,9 @@
                   Path or function that returns a path to an html template that
                   should be used as the contents of this component. If
                   templateUrl is a function, then it is injected with the
-                  following locals: $element - Current element $attrs - Current
-                  attributes object for the element Use the array form to define
-                  dependencies (necessary if strictDi is enabled and you require
-                  dependency injection)
+                  following locals: $element - Current element Use the array
+                  form to define dependencies (necessary if strictDi is enabled
+                  and you require dependency injection)
                 </p>
               </div>
             </section>
@@ -728,6 +764,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>controller<wbr />As</span></a
+                  ><a href="#replace"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>replace</span></a
                   ><a href="#require"
                     ><svg
                       class="tsd-kind-icon"

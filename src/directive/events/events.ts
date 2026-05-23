@@ -68,8 +68,6 @@ function createEventDirectiveFactory(
   ];
 }
 
-export const ngClickDirective = createEventDirectiveFactory("click");
-
 export const ngEventDirectives: Record<
   NgEventDirectiveName,
   EventDirectiveFactory
@@ -82,6 +80,8 @@ export const ngEventDirectives: Record<
   },
   {} as Record<NgEventDirectiveName, EventDirectiveFactory>,
 );
+
+export const ngClickDirective = ngEventDirectives.ngClick;
 
 /**
  * Creates a directive that evaluates an expression when the element event fires.

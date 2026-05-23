@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Custom Runtime Counter Demo</title>
+    <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
+  </head>
+  <body>
+    <section
+      ng-app="counterApp"
+      ng-controller="CounterController as counter"
+      data-testid="custom-counter"
+    >
+      <button
+        type="button"
+        data-testid="decrease"
+        ng-click="counter.decrease()"
+      >
+        -
+      </button>
+      <strong data-testid="count">{{ counter.count }}</strong>
+      <button
+        type="button"
+        data-testid="increase"
+        ng-click="counter.increase()"
+      >
+        +
+      </button>
+    </section>
+
+    <script type="module">
+      import { createAngularCustom } from "/src/runtime/index.ts";
+      import { ngControllerDirective } from "/src/directive/controller/controller.ts";
+      import { ngEventDirectives } from "/src/directive/events/events.ts";
+
+      const angular = createAngularCustom({
+        ngModule: {
+          directives: {
+            ngController: ngControllerDirective,
+            ngClick: ngEventDirectives.ngClick,
+          },
+        },
+      });
+
+      class CounterController {
+        count = 0;
+
+        increase() {
+          this.count += 1;
+        }
+
+        decrease() {
+          this.count -= 1;
+        }
+      }
+
+      angular
+        .module("counterApp", [])
+        .controller("CounterController", CounterController);
+
+      angular.init(document);
+    </script>
+  </body>
+</html>

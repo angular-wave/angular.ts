@@ -29,13 +29,29 @@ function appendUniqueClasses(target, source) {
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
 function parseStateRef(ref) {
-    const paramsOnly = /^\s*({[^}]*})\s*$/.exec(ref);
-    if (paramsOnly)
-        ref = `(${paramsOnly[1]})`;
-    const parsed = /^\s*([^(]*?)\s*(\((.*)\))?\s*$/.exec(ref.replace(/\n/g, " "));
-    if (parsed?.length !== 4)
+    const normalizedRef = normalizeParamsOnlyStateRef(ref).replace(/\n/g, " ");
+    const trimmedRef = normalizedRef.trim();
+    const openParenIndex = trimmedRef.indexOf("(");
+    if (openParenIndex === -1) {
+        return { _state: trimmedRef || null, _paramExpr: null };
+    }
+    const closeParenIndex = trimmedRef.lastIndexOf(")");
+    if (closeParenIndex !== trimmedRef.length - 1) {
         throw new Error(`Invalid state ref '${ref}'`);
-    return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
+    }
+    return {
+        _state: trimmedRef.slice(0, openParenIndex).trimEnd() || null,
+        _paramExpr: trimmedRef.slice(openParenIndex + 1, closeParenIndex) || null,
+    };
+}
+function normalizeParamsOnlyStateRef(ref) {
+    const trimmedRef = ref.trim();
+    if (trimmedRef.startsWith("{") &&
+        trimmedRef.endsWith("}") &&
+        trimmedRef.indexOf("}") === trimmedRef.length - 1) {
+        return `(${trimmedRef})`;
+    }
+    return ref;
 }
 /**
  * Resolves the relative state context for a state-ref-bearing element.

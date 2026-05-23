@@ -57,8 +57,8 @@ export interface AngularElementDefinition {
 /**
  * Defines a standalone AngularTS-backed custom element.
  *
- * The helper creates a side-effect-free custom runtime, installs the
- * `$webComponent` provider, creates a small application module, and eagerly
+ * The helper creates a custom runtime, installs the `$webComponent` provider,
+ * creates a small application module, and eagerly
  * builds an injector so the native custom element can be consumed by any host
  * framework without calling `angular.bootstrap`.
  */
@@ -93,19 +93,7 @@ export function defineAngularElement<
   elementModule?.configure?.(appModule, angular);
   appModule.appComponent(name, component);
 
-  const previousAngular = (window as Window & { angular?: ng.Angular }).angular;
-
-  (window as Window & { angular?: ng.Angular }).angular = angular;
-
-  let injector: ng.InjectorService;
-
-  try {
-    injector = angular.injector([ngModuleName, elementModuleName]);
-  } finally {
-    if (!runtimeOptions.attachToWindow) {
-      (window as Window & { angular?: ng.Angular }).angular = previousAngular;
-    }
-  }
+  const injector = angular.injector([ngModuleName, elementModuleName]);
 
   (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope = injector.get(
     _rootScope,
@@ -134,7 +122,6 @@ function createAngularElementRuntime(
   options: CustomAngularRuntimeOptions,
 ): AngularRuntime {
   const angular = new AngularRuntime({
-    attachToWindow: false,
     registerBuiltins: false,
     ...options,
   });

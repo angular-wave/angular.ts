@@ -638,7 +638,6 @@ public external interface AngularElementModuleOptions {
 }
 
 public external interface AngularElementOptions<T> {
-    public var attachToWindow: Boolean
     public var component: dynamic
     public var elementModule: dynamic
     public var ngModule: dynamic

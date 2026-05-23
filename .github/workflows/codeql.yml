@@ -1,0 +1,81 @@
+name: CodeQL
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "24 3 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
+          - language: c-cpp
+            build-mode: manual
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        if: matrix.language == 'java-kotlin'
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle and Kotlin/JS
+        if: matrix.language == 'java-kotlin'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            integrations/kotlin/.gradle
+            integrations/kotlin/kotlin-js-store
+          key: codeql-kotlin-${{ runner.os }}-${{ hashFiles('integrations/kotlin/**/*.gradle.kts', 'integrations/kotlin/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json') }}
+          restore-keys: |
+            codeql-kotlin-${{ runner.os }}-
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Build C and C++ integrations
+        if: matrix.language == 'c-cpp'
+        run: |
+          make -C integrations/wasm/c clean test example typecheck
+          make -C integrations/wasm/cpp clean test example typecheck
+
+      - name: Build Kotlin integration
+        if: matrix.language == 'java-kotlin'
+        working-directory: integrations/kotlin
+        run: |
+          ./gradlew compileKotlinJs compileTestKotlinJs \
+            :examples:basic_app:compileKotlinJs \
+            :examples:web_components:compileKotlinJs \
+            --no-daemon
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

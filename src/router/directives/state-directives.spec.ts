@@ -114,6 +114,15 @@ describe("ngStateRef", () => {
 
       expect(app.querySelector("a").getAttribute("href")).toBe("#/contacts/6");
     });
+
+    it("parses state refs with long whitespace without regex backtracking", async () => {
+      app.innerHTML = `<a ng-sref="contacts.item.detail${" ".repeat(200)}({ id: contact.id })">Details</a>`;
+      $rootScope.contact = { id: 6 };
+      $compile(app)($rootScope);
+      await wait();
+
+      expect(app.querySelector("a").getAttribute("href")).toBe("#/contacts/6");
+    });
   });
 
   async function buildDOM() {

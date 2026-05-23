@@ -1,5 +1,5 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/runtime";
+import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
 
 const moduleName = "cWasmTodo";
 const scopeName = "cTodo:main";
@@ -7,7 +7,7 @@ const wasmURL = new URL("./main.wasm", import.meta.url);
 
 const scopeAbi = new WasmScopeAbi();
 const result = await WebAssembly.instantiateStreaming(fetch(wasmURL), {
-  angular_ts: scopeAbi.imports(),
+  angular_ts: scopeAbi.imports.angular_ts,
 });
 const exports = result.instance.exports;
 

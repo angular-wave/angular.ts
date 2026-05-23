@@ -702,7 +702,6 @@ class AngularTsTest {
             elementModule = elementModule,
             bootstrap = BootstrapConfig(strictDi = true),
             subapp = true,
-            attachToWindow = false,
             registerBuiltins = false,
             extra = mapOf("mode" to "test"),
         )
@@ -716,7 +715,6 @@ class AngularTsTest {
         assertEquals("test", rawElementOptions.mode)
         assertEquals("kotlinNg", rawElementOptions.ngModule.name)
         assertEquals(true, rawElementOptions.config.strictDi)
-        assertEquals(false, rawElementOptions.attachToWindow)
         assertEquals("kotlin-card", definition.name)
         assertEquals("kotlinElementModule", definition.elementModule.name)
         assertEquals(true, definition.injector.has(webComponentToken))

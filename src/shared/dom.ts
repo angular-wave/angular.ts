@@ -63,8 +63,6 @@ const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 
 const SIMPLE_ATTR_NAME = /^\w/;
 
-const specialAttrHolder = document.createElement("div");
-
 // Table parts need to be wrapped with `<table>` or they're
 // stripped to their contents when put in a div.
 // XHTML parsers do not magically insert elements in the
@@ -751,12 +749,8 @@ function setSpecialAttr(
   attrName: string,
   value: string | null | undefined,
 ): void {
-  specialAttrHolder.innerHTML = `<span ${attrName}>`;
-  const { attributes } = specialAttrHolder.firstChild as Element;
+  const attribute = document.createAttribute(attrName);
 
-  const attribute = attributes[0];
-
-  attributes.removeNamedItem(attribute.name);
   attribute.value = value ?? "";
   element.setAttributeNode(attribute);
 }

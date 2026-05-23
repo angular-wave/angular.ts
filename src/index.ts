@@ -1,22 +1,45 @@
 import { Angular } from "./angular.ts";
+import type {
+  AngularRuntimeConstructorInput,
+  AngularRuntimeOptions,
+  BuiltinNgModuleRegistrar,
+} from "./angular-runtime.ts";
+import type {
+  CustomAngularRuntimeOptions,
+  CustomNgModuleOptions,
+  DirectiveRegistration,
+  DirectiveRegistrations,
+  FilterRegistration,
+  FilterRegistrations,
+  ProviderRegistration,
+  ServiceRegistration,
+  ServiceRegistrations,
+} from "./runtime/index.ts";
 
 /**
  * Default browser entry point.
- *
- * It creates the shared `angular` singleton and bootstraps discovered apps
- * once the DOM is ready.
  */
 export const angular = new Angular();
 
-/**
- * Auto-bootstrap the document once the browser DOM is ready.
- */
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    angular.init(document);
-  },
-  {
-    once: true,
-  },
-);
+export {
+  AngularRuntime,
+  createAngularBare,
+  createAngularCustom,
+  coreProviders,
+  registerCustomNgModule,
+} from "./runtime/index.ts";
+
+export type {
+  AngularRuntimeConstructorInput,
+  AngularRuntimeOptions,
+  BuiltinNgModuleRegistrar,
+  CustomAngularRuntimeOptions,
+  CustomNgModuleOptions,
+  DirectiveRegistration,
+  DirectiveRegistrations,
+  FilterRegistration,
+  FilterRegistrations,
+  ProviderRegistration,
+  ServiceRegistration,
+  ServiceRegistrations,
+};

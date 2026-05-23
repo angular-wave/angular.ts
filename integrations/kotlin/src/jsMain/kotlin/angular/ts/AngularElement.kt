@@ -35,7 +35,6 @@ public data class AngularElementOptions<TState : Any> public constructor(
     public val elementModule: AngularElementModuleOptions = AngularElementModuleOptions(),
     public val bootstrap: BootstrapConfig = BootstrapConfig(),
     public val subapp: Boolean? = null,
-    public val attachToWindow: Boolean? = null,
     public val registerBuiltins: Boolean? = null,
     public val extra: Map<String, Any?> = emptyMap(),
 )
@@ -101,7 +100,6 @@ internal fun <TState : Any> AngularElementOptions<TState>.toJs(): dynamic {
 
     if (ngModule != null) raw.ngModule = ngModule
     if (subapp != null) raw.subapp = subapp
-    if (attachToWindow != null) raw.attachToWindow = attachToWindow
     if (registerBuiltins != null) raw.registerBuiltins = registerBuiltins
     raw.elementModule = elementModule.toJs()
     raw.component = component.toJs()

@@ -247,11 +247,19 @@
                     <span class="tsd-signature-keyword">new</span>
                     <span class="tsd-kind-constructor-signature"
                       >StateRegistryProvider</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">routerState</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >routerState</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">RouterProvider</span
-                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >compileProvider</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">CompileProvider</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-class"
                       >StateRegistryProvider</a
@@ -273,6 +281,16 @@
                             >:
                             <span class="tsd-signature-type"
                               >RouterProvider</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >compileProvider</span
+                            >:
+                            <span class="tsd-signature-type"
+                              >CompileProvider</span
                             ></span
                           >
                         </li>
@@ -419,9 +437,13 @@
               </h3>
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$inject</span
-                ><span class="tsd-signature-symbol">:</span>
+                ><span class="tsd-signature-symbol">:</span> (<span
+                  class="tsd-signature-type"
+                  >&quot;$compileProvider&quot;</span
+                >
+                <span class="tsd-signature-symbol">|</span>
                 <span class="tsd-signature-type">&quot;$$rProvider&quot;</span
-                ><span class="tsd-signature-symbol">[]</span
+                >)<span class="tsd-signature-symbol">[]</span
                 ><span class="tsd-signature-symbol"> = ...</span>
               </div>
             </section>

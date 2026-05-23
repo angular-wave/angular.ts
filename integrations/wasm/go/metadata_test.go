@@ -90,6 +90,18 @@ func TestNgModuleValidateRejectsDuplicateMethods(t *testing.T) {
 	}
 }
 
+func TestNgModuleValidateRejectsUnderscoredMethods(t *testing.T) {
+	module := NewNgModule("goDemo")
+	module.Controller(NewController[metadataDemoInfo](
+		"demoInfo",
+		"__ng_controller_DemoInfo",
+	).WithMethods("_save"))
+
+	if _, err := module.ManifestJSON(); err == nil {
+		t.Fatal("expected underscored method error")
+	}
+}
+
 func TestNgModuleValidateRejectsDuplicateFields(t *testing.T) {
 	module := NewNgModule("goDemo")
 	module.Controller(NewController[metadataDemoInfo](
@@ -99,6 +111,18 @@ func TestNgModuleValidateRejectsDuplicateFields(t *testing.T) {
 
 	if _, err := module.ManifestJSON(); err == nil {
 		t.Fatal("expected duplicate field error")
+	}
+}
+
+func TestNgModuleValidateRejectsUnderscoredFields(t *testing.T) {
+	module := NewNgModule("goDemo")
+	module.Controller(NewController[metadataDemoInfo](
+		"demoInfo",
+		"__ng_controller_DemoInfo",
+	).WithFields(Field("_title")))
+
+	if _, err := module.ManifestJSON(); err == nil {
+		t.Fatal("expected underscored field error")
 	}
 }
 
@@ -142,6 +166,18 @@ func TestNgModuleValidateRejectsDuplicateWatchRoutes(t *testing.T) {
 
 	if _, err := module.ManifestJSON(); err == nil {
 		t.Fatal("expected duplicate watch route error")
+	}
+}
+
+func TestNgModuleValidateRejectsUnderscoredWatchRoutes(t *testing.T) {
+	module := NewNgModule("goDemo")
+	module.Controller(NewController[metadataDemoInfo](
+		"demoInfo",
+		"__ng_controller_DemoInfo",
+	).WithWatchRoutes(WatchRoute("_title", "onTitle")))
+
+	if _, err := module.ManifestJSON(); err == nil {
+		t.Fatal("expected underscored watch route error")
 	}
 }
 

@@ -4,7 +4,7 @@
 [![stats](https://data.jsdelivr.com/v1/package/npm/@angular-wave/angular.ts/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@angular-wave/angular.ts)
 
 AngularTS preserves, modernizes and expands the original
-[AngularJS](https://angularjs.org/) framework. It keeps its best parts: 
+[AngularJS](https://angularjs.org/) framework. It keeps its best parts:
 declarative templates, dependency injection, controllers,
 directives, and two-way binding. It then replaces the legacy digest-era
 runtime with reactive change detection, native browser APIs and TypeScript
@@ -21,7 +21,7 @@ AngularTS builds on AngularJS' decade of production hardening and adds:
 - injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, streams and WASM modules
 - first class support for Google Closure compiler and its J2CL and ClojureScript compilation targets
 - first class support for JS targets: Scala, Kotlin, Gleam
-- first class support for WASM targets: Rust, Golang, Zig, C, C++ 
+- first class support for WASM targets: Rust, Golang, Zig, C, C++
 
 The result is a high-performance, buildless, multi-paradigm framework that stays
 close to Web standards while preserving AngularJS' HTML-first model.
@@ -62,82 +62,99 @@ Initialize your app
 
 The default package includes the full framework: compiler, router, animation
 system, HTTP services, storage, workers, streams and other browser integrations.
-That is useful for exploration, but a production build should include only the 
+That is useful for exploration, but a production build should include only the
 features actually used by your application.
 
-With `@angular-wave/angular.ts/runtime`, you can assemble an `ng` module from
-only the directives, providers, filters and services your application uses. 
-For example, an application that only needs `ng-bind` and `ng-repeat` can use:
+Custom runtimes start from the runtime entry point and import the emitted files they
+need. For example, a counter app only needs interpolation, scope, compile, the
+controller directive, and the `ng-click` event directive:
+
+```html
+<section ng-app="counterApp" ng-controller="CounterController as counter">
+  <button ng-click="counter.decrease()">-</button>
+  <strong>{{ counter.count }}</strong>
+  <button ng-click="counter.increase()">+</button>
+</section>
+```
 
 ```js
-import {
-  createAngularCustom,
-  ngBindDirective,
-  ngRepeatDirective,
-} from "@angular-wave/angular.ts/runtime";
+import { createAngularCustom } from "@angular-wave/angular.ts/runtime";
+import { ngControllerDirective } from "@angular-wave/angular.ts/directive/controller/controller";
+import { ngEventDirectives } from "@angular-wave/angular.ts/directive/events/events";
 
 const angular = createAngularCustom({
-  attachToWindow: true,
   ngModule: {
     directives: {
-      ngBind: ngBindDirective,
-      ngRepeat: ngRepeatDirective,
+      ngController: ngControllerDirective,
+      ngClick: ngEventDirectives.ngClick,
     },
   },
 });
 
-angular.module("app", []);
-angular.bootstrap(document, ["app"]);
+class CounterController {
+  count = 0;
+
+  increase() {
+    this.count += 1;
+  }
+
+  decrease() {
+    this.count -= 1;
+  }
+}
+
+angular.module("counterApp", []).controller("CounterController", CounterController);
+
+angular.init(document);
 ```
 
-Custom runtime can also be published as a micro app, wrapped in a standalone custom
-element (Web Component):
+The minimal event-directive runtime example above currently comes in around
+**32KB** gzip.
+
+The same counter can also ship as a standalone Web Component microapp. The host
+page only needs to load the element definition and place the custom element:
+
+```html
+<runtime-counter></runtime-counter>
+```
 
 ```js
-import {
-  defineAngularElement,
-  ngClickDirective,
-} from "@angular-wave/angular.ts/runtime";
+import { ngEventDirectives } from "@angular-wave/angular.ts/directive/events/events";
+import { defineAngularElement } from "@angular-wave/angular.ts/runtime/web-component";
 
-defineAngularElement("billing-summary", {
+defineAngularElement("runtime-counter", {
   ngModule: {
     directives: {
-      ngClick: ngClickDirective,
-    },
-    services: {
-      billingApi: BillingApi,
+      ngClick: ngEventDirectives.ngClick,
     },
   },
   component: {
     shadow: true,
-    inputs: {
-      accountId: String,
+    scope: {
+      count: 0,
     },
     template: `
-      <button ng-click="refresh()">
-        {{ accountId }} / {{ status }}
-      </button>
+      <span>
+        <button type="button" ng-click="decrease()">-</button>
+        <strong>{{ count }}</strong>
+        <button type="button" ng-click="increase()">+</button>
+      </span>
     `,
-    connected({ dispatch, injector, scope }) {
-      const api = injector.get("billingApi");
-
-      scope.status = "ready";
-      scope.refresh = () => {
-        scope.status = api.status(scope.accountId);
-        dispatch("billing-refresh", { status: scope.status });
+    connected({ scope }) {
+      scope.increase = () => {
+        scope.count += 1;
+      };
+      scope.decrease = () => {
+        scope.count -= 1;
       };
     },
   },
 });
 ```
 
-```html
-<script type="module" src="/widgets/billing-summary.js"></script>
-<billing-summary account-id="acct_123"></billing-summary>
-```
-
-The minimal directive runtime example above currently comes in around
-**32KB** gzip.
+The element owns its isolated AngularTS runtime, so it can be embedded in a
+server-rendered page, another framework, or a larger AngularTS app without a
+host-page bootstrap.
 
 For a complete starting point, see
 [angular-seed](https://github.com/angular-wave/angular-seed).

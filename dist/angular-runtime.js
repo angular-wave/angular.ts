@@ -189,14 +189,14 @@ class AngularRuntime extends EventTarget {
      * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
      */
     emit(input) {
-        const { type, expr } = AngularRuntime.splitInvocation(input);
+        const { type, expr } = AngularRuntime._splitInvocation(input);
         this.dispatchEvent(new CustomEvent(type, { detail: expr }));
     }
     /**
      * Await result. Accepts a single string: `"<target>.<expression>"`
      */
     async call(input) {
-        const { type, expr } = AngularRuntime.splitInvocation(input);
+        const { type, expr } = AngularRuntime._splitInvocation(input);
         return new Promise((resolve, reject) => {
             const ok = this.dispatchEvent(new CustomEvent(type, {
                 detail: { expr, reply: { resolve, reject } },
@@ -385,7 +385,7 @@ class AngularRuntime extends EventTarget {
     /**
      * Splits `"target.expression"` into the dispatch target and parse expression.
      */
-    static splitInvocation(input) {
+    static _splitInvocation(input) {
         if (!isString(input)) {
             throw new TypeError("Invocation must be a string.");
         }

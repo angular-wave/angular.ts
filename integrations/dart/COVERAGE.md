@@ -101,7 +101,7 @@ integration tests:
 
 - `AngularRuntime.createAngularBare` / custom runtime creation.
 - `createAngularCustom` and custom `ng` module configuration.
-- Runtime options such as `attachToWindow`, `registerBuiltins`, and `subapp`.
+- Runtime options such as `registerBuiltins` and `subapp`.
 
 ## Built-In Service Coverage
 

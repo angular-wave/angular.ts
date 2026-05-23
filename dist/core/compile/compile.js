@@ -1,10 +1,10 @@
 import { _injector, _interpolate, _exceptionHandler, _parse, _controller, _compileLifecycle, _templateRequest, _scope, _provide } from '../../injection-tokens.js';
-import { hasNormalizedAttr, setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, getBooleanAttrName, getDirectiveHostElement, getNormalizedAttr, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, setNormalizedAttr, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements } from '../../shared/dom.js';
+import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements, setNormalizedAttr } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
 import { getSecurityAdapter } from '../security/security-adapter.js';
-import { directiveNormalize, nullObject, keys, hasOwn, arrayFrom, arrayRemove, assign, getNodeName, uppercase, isFunction, trim, assertDefined, inherit, stringify, snakeCase, assertArg, assertNotHasOwnProperty, deleteProperty, isError, extend, callFunction, createErrorFactory, simpleCompare, isScope, equals } from '../../shared/utils.js';
+import { arrayRemove, assign, getNodeName, uppercase, isFunction, trim, nullObject, hasOwn, assertDefined, inherit, stringify, directiveNormalize, assertArg, assertNotHasOwnProperty, deleteProperty, isError, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, equals } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -25,7 +25,7 @@ function getLazyAnimate($injector) {
     return getAnimate;
 }
 function notifyAttributeObserverCallbacks(state, normalizedName, value) {
-    const callbacks = state.callbacks.get(normalizedName);
+    const callbacks = state._callbacks.get(normalizedName);
     if (!callbacks?.size)
         return;
     arrayFrom(callbacks).forEach((callback) => {
@@ -38,7 +38,7 @@ function attributeObserverValuesMatch(left, right) {
         (left === null && right === undefined));
 }
 function consumePendingAttributeMutation(state, normalizedName, value) {
-    const pendingValues = state.pendingMutations.get(normalizedName);
+    const pendingValues = state._pendingMutations.get(normalizedName);
     if (!pendingValues?.length)
         return false;
     const [nextValue] = pendingValues;
@@ -46,7 +46,7 @@ function consumePendingAttributeMutation(state, normalizedName, value) {
         return false;
     pendingValues.shift();
     if (pendingValues.length === 0) {
-        state.pendingMutations.delete(normalizedName);
+        state._pendingMutations.delete(normalizedName);
     }
     return true;
 }
@@ -55,11 +55,11 @@ function getCompileAttributeObserverState(element) {
     if (state)
         return state;
     const newState = {
-        callbacks: new Map(),
-        pendingMutations: new Map(),
-        observer: undefined,
+        _callbacks: new Map(),
+        _pendingMutations: new Map(),
+        _observer: undefined,
     };
-    newState.observer = new MutationObserver((mutations) => {
+    newState._observer = new MutationObserver((mutations) => {
         for (let i = 0; i < mutations.length; i++) {
             const { attributeName } = mutations[i];
             if (!attributeName)
@@ -78,7 +78,7 @@ function getCompileAttributeObserverState(element) {
             }
         }
     });
-    newState.observer.observe(element, { attributes: true });
+    newState._observer.observe(element, { attributes: true });
     observerStates.set(element, newState);
     return newState;
 }
@@ -86,14 +86,13 @@ function rememberPendingAttributeMutation(element, normalizedName, value) {
     const state = observerStates.get(element);
     if (!state)
         return;
-    let pendingValues = state.pendingMutations.get(normalizedName);
+    let pendingValues = state._pendingMutations.get(normalizedName);
     if (!pendingValues) {
         pendingValues = [];
-        state.pendingMutations.set(normalizedName, pendingValues);
+        state._pendingMutations.set(normalizedName, pendingValues);
     }
     pendingValues.push(value);
 }
-/** @internal */
 class CompileAttributeState {
     constructor($injector, $exceptionHandler, stateToCopy) {
         this.$normalize = directiveNormalize;
@@ -165,10 +164,10 @@ function observeElementAttribute(scope, element, normalizedName, callback) {
     const observedElement = targetElement;
     const normalized = directiveNormalize(normalizedName);
     const state = getCompileAttributeObserverState(observedElement);
-    let callbacks = state.callbacks.get(normalized);
+    let callbacks = state._callbacks.get(normalized);
     if (!callbacks) {
         callbacks = new Set();
-        state.callbacks.set(normalized, callbacks);
+        state._callbacks.set(normalized, callbacks);
     }
     callbacks.add(callback);
     const initialValue = getNormalizedAttr(observedElement, normalized);
@@ -184,10 +183,10 @@ function observeElementAttribute(scope, element, normalizedName, callback) {
     function deregister() {
         callbacks?.delete(callback);
         if (callbacks?.size === 0) {
-            state.callbacks.delete(normalized);
+            state._callbacks.delete(normalized);
         }
-        if (state.callbacks.size === 0) {
-            state.observer.disconnect();
+        if (state._callbacks.size === 0) {
+            state._observer.disconnect();
             observerStates.delete(observedElement);
         }
         deregisterDestroy?.();
@@ -294,8 +293,8 @@ const EMPTY_PARSED_DIRECTIVE_BINDINGS = Object.freeze({
  */
 class CompileLifecycleProvider {
     constructor() {
-        this.createdListeners = [];
-        this.destroyedListeners = [];
+        this._createdListeners = [];
+        this._destroyedListeners = [];
         this.$get = () => this;
     }
     /**
@@ -304,9 +303,9 @@ class CompileLifecycleProvider {
      * Returns a deregistration function.
      */
     onControllerCreated(listener) {
-        this.createdListeners.push(listener);
+        this._createdListeners.push(listener);
         return () => {
-            arrayRemove(this.createdListeners, listener);
+            arrayRemove(this._createdListeners, listener);
         };
     }
     /**
@@ -315,20 +314,20 @@ class CompileLifecycleProvider {
      * Returns a deregistration function.
      */
     onControllerDestroyed(listener) {
-        this.destroyedListeners.push(listener);
+        this._destroyedListeners.push(listener);
         return () => {
-            arrayRemove(this.destroyedListeners, listener);
+            arrayRemove(this._destroyedListeners, listener);
         };
     }
     /** @internal */
     _emitControllerCreated(record) {
-        this.createdListeners.slice().forEach((listener) => {
+        this._createdListeners.slice().forEach((listener) => {
             listener(record);
         });
     }
     /** @internal */
     _emitControllerDestroyed(record) {
-        this.destroyedListeners.slice().forEach((listener) => {
+        this._destroyedListeners.slice().forEach((listener) => {
             listener(record);
         });
     }
@@ -596,7 +595,7 @@ class CompileProvider {
             function factory($injector) {
                 /** Wraps injectable component options so compile-local services are available. */
                 const makeInjectable = (fn) => {
-                    if (isFunction(fn) || Array.isArray(fn)) {
+                    if (isFunction(fn) || isArray(fn)) {
                         return (tElement) => {
                             return $injector.invoke(fn, null, {
                                 $element: tElement,
@@ -941,7 +940,7 @@ class CompileProvider {
                 }
                 function evaluateOneWayBindingInputs(state) {
                     const inputs = state._parentGet?._inputs;
-                    if (!Array.isArray(inputs)) {
+                    if (!isArray(inputs)) {
                         return undefined;
                     }
                     const values = new Array(inputs.length);
@@ -2024,7 +2023,7 @@ class CompileProvider {
                             const controllerDirective = controllerDirectives[name];
                             const { require } = controllerDirective;
                             if (controllerDirective.bindToController &&
-                                !Array.isArray(require) &&
+                                !isArray(require) &&
                                 require &&
                                 typeof require === "object") {
                                 extend(assertDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
@@ -2675,7 +2674,7 @@ class CompileProvider {
                             throw $compileError("ctreq", "Controller '{0}', required by directive '{1}', can't be found!", name, directiveName);
                         }
                     }
-                    else if (Array.isArray(require)) {
+                    else if (isArray(require)) {
                         value = [];
                         for (let i = 0, ii = require.length; i < ii; i++) {
                             value[i] = getControllers(directiveName, require[i], $element, elementControllers);
@@ -3272,7 +3271,7 @@ class CompileProvider {
                                     const initialValue = parentGet
                                         ? callFunction(parentGet, undefined, scopeTarget)
                                         : undefined;
-                                    lastValue = destinationTarget[scopeName] = Array.isArray(initialValue)
+                                    lastValue = destinationTarget[scopeName] = isArray(initialValue)
                                         ? createScope(initialValue, destination.$handler)
                                         : initialValue;
                                     const twoWayBindingState = {
@@ -3405,7 +3404,7 @@ function assertValidDirectiveName(name) {
  */
 function getDirectiveRequire(directive) {
     const require = directive.require ?? (directive.controller && directive.name);
-    if (!Array.isArray(require) && require && typeof require === "object") {
+    if (!isArray(require) && require && typeof require === "object") {
         for (const key in require) {
             if (!hasOwn(require, key)) {
                 continue;
@@ -3531,4 +3530,4 @@ function replaceWith(oldNode, newNode, index) {
     fragment.appendChild(oldNode);
 }
 
-export { CompileAttributeState, CompileLifecycleProvider, CompileProvider, DirectiveSuffix, replaceWith, wrapTemplate };
+export { CompileLifecycleProvider, CompileProvider, DirectiveSuffix };

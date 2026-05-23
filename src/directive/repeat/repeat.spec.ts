@@ -87,6 +87,18 @@ describe("ngRepeat", () => {
       }).toThrowError(/Expected expression/);
     });
 
+    it("should reject long invalid repeat expressions during compile", () => {
+      const directive = ngRepeatDirective(injector);
+
+      const element = document.createElement("li");
+
+      element.setAttribute("ng-repeat", `item${" ".repeat(20000)}of items`);
+
+      expect(() => {
+        directive.compile(element, {} as any);
+      }).toThrowError(/Expected expression/);
+    });
+
     it("should read data-ng-repeat from the host element", () => {
       const directive = ngRepeatDirective(injector);
 

@@ -129,6 +129,9 @@ func (f ScopeField) Validate() error {
 	if f.Name == "" {
 		return fmt.Errorf("name is required")
 	}
+	if isPrivateAngularName(f.Name) {
+		return fmt.Errorf("name %q must not start with underscore", f.Name)
+	}
 	if f.GoName == "" {
 		return fmt.Errorf("Go name is required")
 	}
@@ -160,6 +163,9 @@ func TypedWatchRoute[T any](path string, handler string) ScopeWatchRoute {
 func (r ScopeWatchRoute) Validate() error {
 	if r.Path == "" {
 		return fmt.Errorf("path is required")
+	}
+	if isPrivateAngularName(r.Path) {
+		return fmt.Errorf("path %q must not start with underscore", r.Path)
 	}
 	if r.Handler == "" {
 		return fmt.Errorf("handler is required")
@@ -544,6 +550,9 @@ func (r Registration) Validate() error {
 		if method == "" {
 			return fmt.Errorf("method %d is required", index)
 		}
+		if isPrivateAngularName(method) {
+			return fmt.Errorf("method %q must not start with underscore", method)
+		}
 		for previous := 0; previous < index; previous++ {
 			if r.Methods[previous] == method {
 				return fmt.Errorf("method %q is duplicated", method)
@@ -596,6 +605,10 @@ func (i InjectionMetadata) Validate() error {
 	}
 
 	return nil
+}
+
+func isPrivateAngularName(name string) bool {
+	return len(name) > 0 && name[0] == '_'
 }
 
 func componentRegistration(component Component) Registration {

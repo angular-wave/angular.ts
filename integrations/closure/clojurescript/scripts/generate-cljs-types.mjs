@@ -10,7 +10,7 @@ const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
 const expectedTypeTagCount = 158;
 const expectedStrictWrapperCount = 215;
-const expectedStrictPropertyReaderCount = 334;
+const expectedStrictPropertyReaderCount = 333;
 
 const source = readFileSync(externsPath, "utf8");
 
