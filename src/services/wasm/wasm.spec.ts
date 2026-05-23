@@ -128,6 +128,54 @@ describe("WasmScopeAbi", () => {
     expect(rootScope.filters.status).toBeUndefined();
   });
 
+  it("rejects prototype-polluting write paths", () => {
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
+    const value = guest.writeJson("polluted");
+    const poisoned = [
+      "__proto__.wasmPolluted",
+      "safe.constructor.prototype.wasmPolluted",
+      "safe.prototype.wasmPolluted",
+    ];
+
+    for (const pathValue of poisoned) {
+      const path = guest.write(pathValue);
+
+      expect(
+        imports.scope_set(
+          scope.handle,
+          path.ptr,
+          path.len,
+          value.ptr,
+          value.len,
+        ),
+      ).toBe(0);
+    }
+
+    expect(rootScope.safe).toBeUndefined();
+    expect(({} as Record<string, unknown>).wasmPolluted).toBeUndefined();
+  });
+
+  it("rejects prototype-polluting read and delete paths", () => {
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
+    const path = guest.write("__proto__.wasmPolluted");
+
+    (Object.prototype as Record<string, unknown>).wasmPolluted = "inherited";
+
+    try {
+      const result = imports.scope_get(scope.handle, path.ptr, path.len);
+
+      expect(
+        guest.readJson(imports.buffer_ptr(result), imports.buffer_len(result)),
+      ).toBeNull();
+      expect(imports.scope_delete(scope.handle, path.ptr, path.len)).toBe(0);
+      expect(({} as Record<string, unknown>).wasmPolluted).toBe("inherited");
+
+      imports.buffer_free(result);
+    } finally {
+      delete (Object.prototype as Record<string, unknown>).wasmPolluted;
+    }
+  });
+
   it("runs bridge sync callbacks asynchronously", async () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const name = guest.write("todoList:main");

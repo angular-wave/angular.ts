@@ -6,6 +6,12 @@ const textEncoder = new TextEncoder();
 
 const textDecoder = new TextDecoder();
 
+const UNSAFE_SCOPE_PATH_KEYS = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
+
 /** Options for loading a WebAssembly module through `$wasm`. */
 export interface WasmOptions {
   /**
@@ -895,6 +901,11 @@ function readScopePath(scope: ng.Scope, path: string): unknown {
   }
 
   const keys = scopePathKeys(path);
+
+  if (!isSafeScopePath(keys)) {
+    return undefined;
+  }
+
   let current: unknown = scope;
 
   for (let i = 0, l = keys.length; i < l; i++) {
@@ -915,7 +926,7 @@ function writeScopePath(
 ): boolean {
   const keys = scopePathKeys(path);
 
-  if (keys.length === 0) {
+  if (keys.length === 0 || !isSafeScopePath(keys)) {
     return false;
   }
 
@@ -944,7 +955,7 @@ function writeScopePath(
 function deleteScopePath(scope: ng.Scope, path: string): boolean {
   const keys = scopePathKeys(path);
 
-  if (keys.length === 0) {
+  if (keys.length === 0 || !isSafeScopePath(keys)) {
     return false;
   }
 
@@ -965,4 +976,8 @@ function deleteScopePath(scope: ng.Scope, path: string): boolean {
 
 function scopePathKeys(path: string): string[] {
   return path.split(".").filter(Boolean);
+}
+
+function isSafeScopePath(keys: string[]): boolean {
+  return keys.every((key) => !UNSAFE_SCOPE_PATH_KEYS.has(key));
 }
