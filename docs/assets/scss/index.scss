@@ -1,48 +1,243 @@
+$ats-ink: #111827;
+$ats-muted: #6b7280;
+$ats-nav: #374151;
+$ats-border: #cfd4dc;
+$ats-panel: #f3f4f6;
+$ats-panel-border: #d1d5db;
+$ats-ts-blue: #3178c6;
+$ats-ts-blue-dark: #2b6fb6;
+
+.td-navbar,
+.td-navbar.td-navbar-cover,
+.td-navbar.navbar-bg-onscroll {
+  background: #fff !important;
+  border-bottom: 1px solid $ats-border;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: $ats-ink;
+}
+
+.td-navbar {
+  .navbar-brand,
+  .navbar-brand:hover,
+  .navbar-brand:focus,
+  .navbar-brand__name {
+    color: $ats-ink;
+  }
+
+  .navbar-brand .navbar-brand__name {
+    font-size: 0;
+    line-height: 1;
+
+    &::before,
+    &::after {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    &::before {
+      color: $ats-ink;
+      content: 'Angular';
+    }
+
+    &::after {
+      color: $ats-ts-blue;
+      content: 'TS';
+    }
+  }
+
+  .navbar-brand svg {
+    height: 26px !important;
+    margin: 0 8px !important;
+  }
+
+  .nav-link {
+    color: $ats-nav !important;
+    font-weight: 600;
+    text-shadow: none !important;
+
+    &:hover,
+    &:focus,
+    &.active,
+    .active > & {
+      color: $ats-ink !important;
+    }
+  }
+
+  .navbar-toggler {
+    color: $ats-nav;
+  }
+
+  .td-navbar-github {
+    display: flex !important;
+    flex: 0 0 auto;
+    margin-left: 1rem;
+    min-width: max-content;
+
+    .nav-link {
+      align-items: center;
+      color: $ats-ink !important;
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem 0.5rem 0;
+      text-decoration: none;
+      white-space: nowrap;
+
+      .fab {
+        color: inherit;
+      }
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .td-navbar-github {
+      margin-left: 0;
+      margin-top: 0.25rem;
+
+      .nav-link {
+        justify-content: center;
+        padding: 0.25rem 0 0.5rem;
+      }
+    }
+  }
+}
+
+body.td-home .td-footer {
+  display: none;
+}
+
 #td-cover-block-0 {
+  &::after {
+    background-color: #fff !important;
+  }
+
+  .hero-grid,
+  .hero-main,
+  .hero-lockup,
+  .hero-actions,
+  .hero-meta,
+  .hero-actions > .highlight {
+    display: flex;
+  }
+
+  .hero-grid,
+  .hero-main,
+  .hero-actions {
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-lockup {
+    align-items: center;
+    gap: 1.1rem;
+    justify-content: center;
+
+    h1 {
+      margin: 0 !important;
+    }
+  }
+
+  .hero-logo {
+    transform: translateY(-0.04em);
+
+    svg {
+      display: block;
+      height: auto;
+      width: 104px;
+    }
+
+    path:nth-child(1),
+    path:nth-child(3) {
+      fill: $ats-ts-blue;
+    }
+
+    path:nth-child(2) {
+      fill: $ats-ts-blue-dark;
+    }
+
+    path:nth-child(4) {
+      fill: #f8fafc;
+    }
+
+    path:nth-child(5) {
+      fill: #fff;
+    }
+  }
+
+  .hero-wordmark {
+    color: $ats-ink;
+    line-height: 1;
+  }
+
   h1 {
     font-weight: 900;
 
-    & span {
-      color: var(--bs-secondary);
+    span {
+      color: $ats-ts-blue;
     }
   }
 
-  &::after {
-    background-color: white !important; // override dark overlay
+  .hero-actions {
+    gap: 0.75rem;
+    justify-content: center;
   }
 
-  #download {
-    display: flex;
-    flex-direction: row;
+  .hero-meta {
+    color: $ats-muted;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    font-weight: 500;
+    gap: 0.75rem 1.25rem;
     justify-content: center;
-    align-items: baseline;
+    line-height: 1.5;
 
-    #version {
+    b {
+      color: $ats-ink;
       font-weight: 600;
-      margin-right: 2rem;
     }
   }
 
-  #npm {
-    margin-top: 2rem;
-    display: flex;
+  .hero-actions > .highlight {
     justify-content: center;
+    margin: 0;
+  }
 
-    .click-to-copy {
-      display: block;
-      float: right;
+  .hero-install pre {
+    background-color: $ats-panel !important;
+    border: 1px solid $ats-panel-border;
+    border-radius: 5px;
+    color: $ats-ink;
+    margin: 0;
+  }
+
+  .hero-install code {
+    border-radius: 5px;
+    display: block;
+    padding: 0.875rem 3rem 0.875rem 1.125rem;
+  }
+
+  .click-to-copy {
+    display: block;
+    float: right;
+  }
+
+  @media (max-width: 575.98px) {
+    .hero-grid {
+      gap: 2rem;
     }
 
-    pre {
-      color: white;
-      background-color: gray !important;
-      border-radius: 5px;
+    .hero-lockup {
+      gap: 0.75rem;
     }
 
-    code > :first-child {
-      padding: 1rem;
-      border-radius: 5px;
-      padding-right: 3rem;
+    .hero-logo svg {
+      width: 70px;
+    }
+  }
+
+  @media (min-width: 576px) and (max-width: 991.98px) {
+    .hero-logo svg {
+      width: 88px;
     }
   }
 }

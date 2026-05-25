@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-integrations test-types types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps lint lint-check lint-fix
+.PHONY: build build-ts check test test-integrations test-types types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -17,6 +17,12 @@ ensure-deps:
 	@if [ ! -d ./node_modules ]; then \
 		echo "Installing dependencies..."; \
 		npm ci; \
+	fi
+
+ensure-docs-deps:
+	@if [ ! -d ./docs/node_modules ]; then \
+		echo "Installing docs dependencies..."; \
+		cd docs && npm ci; \
 	fi
 
 build: ensure-deps
@@ -144,5 +150,5 @@ coverage-open: ensure-deps
 	@echo $(INFO) "Open coverage report"
 	@node ./utils/open-coverage.mjs
 
-hugo:
+hugo: ensure-docs-deps
 	cd docs && npm run _hugo-dev -- serve --disableFastRender --ignoreCache --noHTTPCache
