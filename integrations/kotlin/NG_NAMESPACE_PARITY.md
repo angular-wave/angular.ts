@@ -45,6 +45,7 @@ part of the Kotlin public facade.
 | `NgModule` | generated |
 | `PublicLinkFn` | generated |
 | `Scope` | generated |
+| `ScopeService` | generated |
 | `TranscludeFn` | generated |
 | `AnnotatedFactory` | generated |
 | `ControllerConstructor` | generated |
@@ -62,17 +63,45 @@ part of the Kotlin public facade.
 | ng type | Kotlin status |
 | --- | --- |
 | `AnchorScrollProvider` | generated |
+| `AngularProvider` | generated |
 | `AngularServiceProvider` | generated |
 | `AnimateProvider` | generated |
+| `AriaProvider` | generated |
+| `CompileLifecycleProvider` | generated |
+| `CompileProvider` | generated |
+| `ControllerProvider` | generated |
+| `CookieProvider` | generated |
+| `EventBusProvider` | generated |
 | `ExceptionHandlerProvider` | generated |
 | `FilterProvider` | generated |
 | `HttpParamSerializerProvider` | generated |
+| `HttpProvider` | generated |
 | `InterpolateProvider` | generated |
 | `LocationProvider` | generated |
+| `LogProvider` | generated |
+| `ParseProvider` | generated |
 | `PubSubProvider` | generated |
+| `RestProvider` | generated |
+| `RootScopeProvider` | generated |
+| `RouterProvider` | generated |
 | `SceDelegateProvider` | generated |
 | `SceProvider` | generated |
+| `SseProvider` | generated |
+| `StateProvider` | generated |
+| `StateRegistryProvider` | generated |
+| `StreamProvider` | generated |
+| `TemplateCacheProvider` | generated |
+| `TemplateFactoryProvider` | generated |
+| `TemplateRequestProvider` | generated |
+| `TransitionProvider` | generated |
+| `TransitionsProvider` | generated |
 | `TransitionService` | generated |
+| `ViewProvider` | generated |
+| `WasmProvider` | generated |
+| `WebComponentProvider` | generated |
+| `WebSocketProvider` | generated |
+| `WebTransportProvider` | generated |
+| `WorkerProvider` | generated |
 
 ## Services
 
@@ -82,12 +111,16 @@ part of the Kotlin public facade.
 | `AngularService` | generated |
 | `AnimateService` | generated |
 | `AriaService` | generated |
+| `CompileLifecycleService` | generated |
 | `CompileService` | generated |
 | `ControllerService` | generated |
 | `CookieService` | generated |
 | `DocumentService` | alias |
+| `ElementService` | alias |
+| `EventBusService` | generated |
 | `ExceptionHandlerService` | generated |
 | `FilterService` | generated |
+| `HttpParamSerializerService` | generated |
 | `HttpParamSerializerSerService` | generated |
 | `HttpService` | generated |
 | `InjectorService` | generated |
@@ -105,11 +138,15 @@ part of the Kotlin public facade.
 | `StateService` | generated |
 | `StreamService` | generated |
 | `TemplateCacheService` | generated |
+| `TemplateFactoryService` | generated |
 | `TemplateRequestService` | generated |
+| `TransitionsService` | generated |
+| `ViewService` | generated |
 | `WebComponentService` | generated |
 | `WebSocketService` | generated |
 | `WebTransportService` | generated |
 | `WindowService` | alias |
+| `WorkerService` | generated |
 
 ## HTTP And REST
 

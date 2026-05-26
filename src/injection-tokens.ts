@@ -16,7 +16,6 @@ export const _animation = "$$animation" as const;
 export const _taskTrackerFactory = "$$taskTrackerFactory" as const;
 export const _anchorScroll = "$anchorScroll" as const;
 export const _animate = "$animate" as const;
-export const _animateCss = "$animateCss" as const;
 export const _aria = "$aria" as const;
 export const _compile = "$compile" as const;
 export const _compileLifecycle = "$compileLifecycle" as const;
@@ -57,7 +56,6 @@ export const _provide = "$provide" as const;
 export const _injector = "$injector" as const;
 export const _angularProvider = "$angularProvider" as const;
 export const _anchorScrollProvider = "$anchorScrollProvider" as const;
-export const _animateCssProvider = "$animateCssProvider" as const;
 export const _ariaProvider = "$ariaProvider" as const;
 export const _compileProvider = "$compileProvider" as const;
 export const _compileLifecycleProvider = "$compileLifecycleProvider" as const;
@@ -110,7 +108,6 @@ export const $injectTokens = {
   _taskTrackerFactory,
   _anchorScroll,
   _animate,
-  _animateCss,
   _aria,
   _compile,
   _compileLifecycle,
@@ -151,7 +148,6 @@ export const $injectTokens = {
   _injector,
   _angularProvider,
   _anchorScrollProvider,
-  _animateCssProvider,
   _ariaProvider,
   _compileProvider,
   _compileLifecycleProvider,

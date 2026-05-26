@@ -237,46 +237,6 @@ The driver reads the `transitionDelay` from `.ng-enter-stagger` and multiplies i
   transition-duration: 0s;
 }
 ```
-## The `$animateCss` service
-
-The `$animateCss` service is the low-level function that the CSS driver calls internally. You can inject it directly when you need programmatic control over CSS animations — for example, in a custom directive or animation factory. It accepts an element and an options object, and returns an `Animator` handle with `_willAnimate`, `start()`, and `end()` properties.
-
-```typescript
-  return {
-    link(scope, element) {
-      const animator = $animateCss(element[0], {
-        event: 'enter',
-        structural: true,
-        duration: 0.5,
-        easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-        from: { opacity: 0, transform: 'scale(0.5)' },
-        to:   { opacity: 1, transform: 'scale(1)' },
-      });
-
-      if (animator._willAnimate) {
-        animator.start();
-      }
-    },
-  };
-}]);
-```
-
-Key options accepted by `$animateCss`:
-
-| Option          | Type                     | Description                                                                              |
-| --------------- | ------------------------ | ---------------------------------------------------------------------------------------- |
-| `event`         | `string \| string[]`     | The animation event name(s) used to compute preparation class names.                     |
-| `structural`    | `boolean`                | Set to `true` for `enter`, `leave`, `move` so the driver applies `ng-` prefixed classes. |
-| `addClass`      | `string`                 | CSS classes to add; drives `-add` / `-add-active` classes.                               |
-| `removeClass`   | `string`                 | CSS classes to remove; drives `-remove` / `-remove-active` classes.                      |
-| `from`          | `Record<string, string>` | Initial inline styles applied before the animation starts.                               |
-| `to`            | `Record<string, string>` | Final inline styles applied when the active class is added.                              |
-| `duration`      | `number`                 | Override the `transitionDuration` (in seconds).                                          |
-| `delay`         | `number \| string`       | Override the `transitionDelay` or `animationDelay`.                                      |
-| `easing`        | `string`                 | Override `transitionTimingFunction` or `animationTimingFunction`.                        |
-| `stagger`       | `number`                 | Explicit stagger delay in seconds (bypasses `.ng-enter-stagger` detection).              |
-| `staggerIndex`  | `number`                 | Index of this element in the stagger sequence.                                           |
-| `cleanupStyles` | `boolean`                | Restore original inline styles after the animation completes.                            |
 ## Performance tips
 
 CSS animations can be expensive when they trigger layout or paint on every frame. Follow these guidelines to keep animations smooth:

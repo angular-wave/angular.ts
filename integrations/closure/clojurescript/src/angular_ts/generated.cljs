@@ -12,6 +12,7 @@
     "js/ng.AngularElementDefinition"
     "js/ng.AngularElementModuleOptions"
     "js/ng.AngularElementOptions"
+    "js/ng.AngularProvider"
     "js/ng.AngularService"
     "js/ng.AngularServiceProvider"
     "js/ng.AnimateProvider"
@@ -27,16 +28,22 @@
     "js/ng.AnnotatedDirectiveFactory"
     "js/ng.AnnotatedFactory"
     "js/ng.AppComponentOptions"
+    "js/ng.AriaProvider"
     "js/ng.AriaService"
     "js/ng.CachedRestBackendOptions"
+    "js/ng.CompileLifecycleProvider"
+    "js/ng.CompileLifecycleService"
+    "js/ng.CompileProvider"
     "js/ng.CompileService"
     "js/ng.Component"
     "js/ng.ConnectionConfig"
     "js/ng.ConnectionEvent"
     "js/ng.Controller"
     "js/ng.ControllerConstructor"
+    "js/ng.ControllerProvider"
     "js/ng.ControllerService"
     "js/ng.CookieOptions"
+    "js/ng.CookieProvider"
     "js/ng.CookieService"
     "js/ng.CookieStoreOptions"
     "js/ng.CurrencyFilterOptions"
@@ -46,9 +53,12 @@
     "js/ng.DirectiveRestrict"
     "js/ng.DocumentService"
     "js/ng.ElementScopeOptions"
+    "js/ng.ElementService"
     "js/ng.EntityClass"
     "js/ng.EntryFilterItem"
     "js/ng.ErrorHandlingConfig"
+    "js/ng.EventBusProvider"
+    "js/ng.EventBusService"
     "js/ng.ExceptionHandlerProvider"
     "js/ng.ExceptionHandlerService"
     "js/ng.Expression"
@@ -59,7 +69,9 @@
     "js/ng.HttpMethod"
     "js/ng.HttpParamSerializerProvider"
     "js/ng.HttpParamSerializerSerService"
+    "js/ng.HttpParamSerializerService"
     "js/ng.HttpPromise"
+    "js/ng.HttpProvider"
     "js/ng.HttpProviderDefaults"
     "js/ng.HttpResponse"
     "js/ng.HttpResponseStatus"
@@ -74,12 +86,14 @@
     "js/ng.ListenerFn"
     "js/ng.LocationProvider"
     "js/ng.LocationService"
+    "js/ng.LogProvider"
     "js/ng.LogService"
     "js/ng.NativeAnimationOptions"
     "js/ng.NativeWebTransport"
     "js/ng.NgModelController"
     "js/ng.NgModule"
     "js/ng.NumberFilterOptions"
+    "js/ng.ParseProvider"
     "js/ng.ParseService"
     "js/ng.ProvideService"
     "js/ng.PubSubProvider"
@@ -96,12 +110,15 @@
     "js/ng.RestDefinition"
     "js/ng.RestFactory"
     "js/ng.RestOptions"
+    "js/ng.RestProvider"
     "js/ng.RestRequest"
     "js/ng.RestResponse"
     "js/ng.RestRevalidateEvent"
     "js/ng.RestService"
     "js/ng.RootElementService"
+    "js/ng.RootScopeProvider"
     "js/ng.RootScopeService"
+    "js/ng.RouterProvider"
     "js/ng.SceDelegateProvider"
     "js/ng.SceDelegateService"
     "js/ng.SceProvider"
@@ -110,30 +127,45 @@
     "js/ng.ScopeElement"
     "js/ng.ScopeElementConstructor"
     "js/ng.ScopeEvent"
+    "js/ng.ScopeService"
     "js/ng.ServiceProvider"
     "js/ng.SseConfig"
     "js/ng.SseConnection"
     "js/ng.SseProtocolEventDetail"
     "js/ng.SseProtocolMessage"
+    "js/ng.SseProvider"
     "js/ng.SseService"
     "js/ng.StateDeclaration"
+    "js/ng.StateProvider"
+    "js/ng.StateRegistryProvider"
     "js/ng.StateRegistryService"
     "js/ng.StateResolveArray"
     "js/ng.StateResolveObject"
     "js/ng.StateService"
     "js/ng.StorageBackend"
     "js/ng.StorageType"
+    "js/ng.StreamProvider"
     "js/ng.StreamService"
     "js/ng.SwapModeType"
+    "js/ng.TemplateCacheProvider"
     "js/ng.TemplateCacheService"
+    "js/ng.TemplateFactoryProvider"
+    "js/ng.TemplateFactoryService"
+    "js/ng.TemplateRequestProvider"
     "js/ng.TemplateRequestService"
     "js/ng.TranscludeFn"
     "js/ng.Transition"
+    "js/ng.TransitionProvider"
     "js/ng.TransitionService"
+    "js/ng.TransitionsProvider"
+    "js/ng.TransitionsService"
     "js/ng.Validator"
+    "js/ng.ViewProvider"
+    "js/ng.ViewService"
     "js/ng.WasmAbiExports"
     "js/ng.WasmInstantiationResult"
     "js/ng.WasmOptions"
+    "js/ng.WasmProvider"
     "js/ng.WasmScope"
     "js/ng.WasmScopeAbi"
     "js/ng.WasmScopeAbiImportObject"
@@ -148,9 +180,11 @@
     "js/ng.WebComponentInput"
     "js/ng.WebComponentInputConfig"
     "js/ng.WebComponentInputs"
+    "js/ng.WebComponentProvider"
     "js/ng.WebComponentService"
     "js/ng.WebSocketConfig"
     "js/ng.WebSocketConnection"
+    "js/ng.WebSocketProvider"
     "js/ng.WebSocketService"
     "js/ng.WebTransportBufferInput"
     "js/ng.WebTransportCertificateHash"
@@ -158,12 +192,15 @@
     "js/ng.WebTransportConnection"
     "js/ng.WebTransportDatagramEvent"
     "js/ng.WebTransportOptions"
+    "js/ng.WebTransportProvider"
     "js/ng.WebTransportReconnectEvent"
     "js/ng.WebTransportRetryDelay"
     "js/ng.WebTransportService"
     "js/ng.WindowService"
     "js/ng.WorkerConfig"
-    "js/ng.WorkerConnection"})
+    "js/ng.WorkerConnection"
+    "js/ng.WorkerProvider"
+    "js/ng.WorkerService"})
 
 (comment
   (def public-type-docs
@@ -174,6 +211,7 @@
      "js/ng.AngularElementDefinition" "Runtime metadata returned after defining a standalone custom element."
      "js/ng.AngularElementModuleOptions" "Configuration for the application module that owns the custom element."
      "js/ng.AngularElementOptions" "Public AngularTS AngularElementOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.AngularProvider" "Public AngularTS AngularProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AngularService" "Main AngularTS runtime entry point with the full built-in `ng` module configured by default."
      "js/ng.AngularServiceProvider" "Public AngularTS AngularServiceProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AnimateProvider" "Public AngularTS AnimateProvider contract exposed through the global ng namespace for Closure-annotated applications."
@@ -189,16 +227,22 @@
      "js/ng.AnnotatedDirectiveFactory" "Dependency-annotated directive factory array containing dependency token names followed by a directive factory function."
      "js/ng.AnnotatedFactory" "Dependency-annotated injectable array containing dependency token names followed by the factory or constructor function."
      "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.AriaProvider" "Public AngularTS AriaProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
+     "js/ng.CompileLifecycleProvider" "Publishes controller creation/destruction events from `$compile`."
+     "js/ng.CompileLifecycleService" "Publishes controller creation/destruction events from `$compile`."
+     "js/ng.CompileProvider" "Public AngularTS CompileProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CompileService" "Entry point for the `$compile` service."
      "js/ng.Component" "Defines a component's configuration object (a simplified directive definition object)."
      "js/ng.ConnectionConfig" "Public AngularTS ConnectionConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ConnectionEvent" "Public AngularTS ConnectionEvent contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Controller" "AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement \"lifecycle hooks\". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component"
      "js/ng.ControllerConstructor" "A controller constructor function used in AngularTS."
+     "js/ng.ControllerProvider" "Public AngularTS ControllerProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ControllerService" "Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CookieOptions" "Public AngularTS CookieOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.CookieProvider" "Service provider that creates a {@link CookieService$cookie} service."
      "js/ng.CookieService" "High-level API for reading, writing, serializing, and removing browser cookies through the injectable `$cookie` service."
      "js/ng.CookieStoreOptions" "Serialization options for cookie-backed stores."
      "js/ng.CurrencyFilterOptions" "Public AngularTS CurrencyFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
@@ -208,9 +252,12 @@
      "js/ng.DirectiveRestrict" "Supported directive matching locations."
      "js/ng.DocumentService" "The **`Document`** interface represents any web page loaded in the browser and serves as an entry point into the web page's content, which is the DOM tree. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document)"
      "js/ng.ElementScopeOptions" "Public AngularTS ElementScopeOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ElementService" "**`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)"
      "js/ng.EntityClass" "Constructor used by REST resources to map raw response data into entity instances."
      "js/ng.EntryFilterItem" "Public AngularTS EntryFilterItem contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ErrorHandlingConfig" "Error configuration object. May only contain the options that need to be updated."
+     "js/ng.EventBusProvider" "Configurable provider for the application-wide {@link PubSub} event bus. The provider creates the singleton `$eventBus` service and also exposes it on the global Angular service for integrations that publish from outside dependency injection."
+     "js/ng.EventBusService" "Public AngularTS EventBusService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ExceptionHandlerProvider" "Provider for the `$exceptionHandler` service. The default implementation rethrows exceptions, enabling strict fail-fast behavior. Applications may replace the handler via by setting `errorHandler`property or by providing their own `$exceptionHandler` factory."
      "js/ng.ExceptionHandlerService" "A callback type for handling errors."
      "js/ng.Expression" "Public AngularTS Expression contract exposed through the global ng namespace for Closure-annotated applications."
@@ -221,7 +268,9 @@
      "js/ng.HttpMethod" "Public AngularTS HttpMethod contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpParamSerializerProvider" "Public AngularTS HttpParamSerializerProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpParamSerializerSerService" "Function that serializes query params into a URL-encoded string."
+     "js/ng.HttpParamSerializerService" "Function that serializes query params into a URL-encoded string."
      "js/ng.HttpPromise" "Public AngularTS HttpPromise contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.HttpProvider" "Public AngularTS HttpProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpProviderDefaults" "Default request settings exposed through `$httpProvider.defaults`. Not every `RequestShortcutConfig` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage https://docs.angularjs.org/api/ng/provider/$httpProvider The properties section"
      "js/ng.HttpResponse" "Public AngularTS HttpResponse contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpResponseStatus" "Final transport status reported by transport completion handlers."
@@ -236,12 +285,14 @@
      "js/ng.ListenerFn" "Public AngularTS ListenerFn contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.LocationProvider" "Public AngularTS LocationProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.LocationService" "Public AngularTS LocationService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.LogProvider" "Configuration provider for `$log` service"
      "js/ng.LogService" "Service for logging messages at various levels."
      "js/ng.NativeAnimationOptions" "Public AngularTS NativeAnimationOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NativeWebTransport" "Public AngularTS NativeWebTransport contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NgModelController" "Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NgModule" "AngularTS module registration surface for controllers, directives, services, factories, providers, filters, run blocks, and config blocks."
      "js/ng.NumberFilterOptions" "Public AngularTS NumberFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ParseProvider" "Public AngularTS ParseProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ParseService" "Parses a string or expression function into a compiled expression."
      "js/ng.ProvideService" "The API for registering different types of providers with the injector. This interface is used within AngularTS's `$provide` service to define services, factories, constants, values, decorators, etc."
      "js/ng.PubSubProvider" "Provider used during module configuration to register and expose the application-wide AngularTS pub/sub event bus service."
@@ -258,12 +309,15 @@
      "js/ng.RestDefinition" "Public AngularTS RestDefinition contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestFactory" "Factory service exposed as `$rest`. Creates a typed {@link RestService} for a base URL, optional entity mapper, and optional backend request defaults."
      "js/ng.RestOptions" "Extra backend options merged into requests made by a REST resource."
+     "js/ng.RestProvider" "Public AngularTS RestProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestRequest" "Normalized request object passed from {@link RestService} to a {@link RestBackend}. Backends receive expanded URLs and already-separated request options, so they can focus on transport, persistence, or cache policy."
      "js/ng.RestResponse" "Public AngularTS RestResponse contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestRevalidateEvent" "Public AngularTS RestRevalidateEvent contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestService" "Public AngularTS RestService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RootElementService" "**`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)"
+     "js/ng.RootScopeProvider" "Public AngularTS RootScopeProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RootScopeService" "Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior."
+     "js/ng.RouterProvider" "Mutable router state/config shared across state, URL, and transition services."
      "js/ng.SceDelegateProvider" "' ]); // The banned resource URL list overrides the trusted resource URL list so the open redirect // here is blocked. $sceDelegateProvider.bannedResourceUrlList([ 'http://myapp.example.com/clickThru**' ]); }); ``` Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates requested by {@link ng.$templateRequest $templateRequest} that are present in {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism to populate your templates in that cache at config time, then it is a good idea to remove 'self' from the trusted resource URL lsit. This helps to mitigate the security impact of certain types of issues, like for instance attacker-controlled `ng-includes`."
      "js/ng.SceDelegateService" "Public AngularTS SceDelegateService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SceProvider" "Public AngularTS SceProvider contract exposed through the global ng namespace for Closure-annotated applications."
@@ -272,30 +326,45 @@
      "js/ng.ScopeElement" "Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeElementConstructor" "Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeEvent" "Event object passed to `$emit` and `$broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods."
+     "js/ng.ScopeService" "Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior."
      "js/ng.ServiceProvider" "An object that defines how a service is constructed. It must define a `$get` property that provides the instance of the service, either as a plain factory function or as an {@link AnnotatedFactory}."
      "js/ng.SseConfig" "SSE-specific configuration"
      "js/ng.SseConnection" "Managed SSE connection object returned by $sse. Provides a safe way to close the connection and stop reconnection attempts."
      "js/ng.SseProtocolEventDetail" "Public AngularTS SseProtocolEventDetail contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SseProtocolMessage" "Public AngularTS SseProtocolMessage contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.SseProvider" "Public AngularTS SseProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SseService" "$sse service type Returns a managed SSE connection that automatically reconnects when needed."
      "js/ng.StateDeclaration" "The StateDeclaration object is used to define a state or nested state. #### Example: ```js // StateDeclaration object var foldersState = { name: 'folders', url: '/folders', component: FoldersComponent, resolve: { allfolders: function(FolderService) { return FolderService.list(); } }, } registry.register(foldersState); ```"
+     "js/ng.StateProvider" "Provides services related to ng-router states. This API is located at `$state`."
+     "js/ng.StateRegistryProvider" "A registry for all of the application's [[StateDeclaration]]s This API is found at `$stateRegistry`."
      "js/ng.StateRegistryService" "A registry for all of the application's [[StateDeclaration]]s This API is found at `$stateRegistry`."
      "js/ng.StateResolveArray" "Array-style state resolves. Use this when you need explicit resolve metadata such as `token`, `deps`, `eager`, or pre-resolved `data`. Example: ```js resolve: [ { token: \"user\", deps: [\"UserService\", Transition], resolveFn: (UserService, trans) => UserService.fetchUser(trans.params().userId), eager: true, }, ] ```"
      "js/ng.StateResolveObject" "Object-style state resolves. Use this when resolve tokens are string keys and each value is a normal AngularTS injectable function or annotated factory. Example: ```js resolve: { user: [\"UserService\", (UserService) => UserService.current()], featureFlags: () => fetchFlags(), } ```"
      "js/ng.StateService" "Provides services related to ng-router states. This API is located at `$state`."
      "js/ng.StorageBackend" "Public AngularTS StorageBackend contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.StorageType" "Built-in persistent storage backends understood by `NgModule.store()`."
+     "js/ng.StreamProvider" "Public AngularTS StreamProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.StreamService" "Public AngularTS StreamService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SwapModeType" "Public AngularTS SwapModeType contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.TemplateCacheProvider" "Provides an instance of a cache that can be used to store and retrieve template content."
      "js/ng.TemplateCacheService" "Public AngularTS TemplateCacheService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.TemplateFactoryProvider" "Resolves route templates and components from state view declarations."
+     "js/ng.TemplateFactoryService" "Resolves route templates and components from state view declarations."
+     "js/ng.TemplateRequestProvider" "Provider for the `$templateRequest` service. Fetches templates via HTTP and caches them in `$templateCache`. Templates are assumed trusted. This provider allows configuring per-request `$http` options such as headers, timeout, or transform functions via `httpOptions`. Option A: - Provide a sensible default for template fetching (e.g. `Accept: text/html`) - Keep `httpOptions` overridable during config phase"
      "js/ng.TemplateRequestService" "Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true)."
      "js/ng.TranscludeFn" "A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive."
      "js/ng.Transition" "Represents a transition between two states. When navigating to a state, we are transitioning **from** the current state **to** the new state. This object contains all contextual information about the to/from states, parameters, resolves. It has information about all states being entered and exited as a result of the transition."
+     "js/ng.TransitionProvider" "Central registry and factory for transition events, hooks, and transition instances."
      "js/ng.TransitionService" "This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started."
+     "js/ng.TransitionsProvider" "Central registry and factory for transition events, hooks, and transition instances."
+     "js/ng.TransitionsService" "This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started."
      "js/ng.Validator" "Public AngularTS Validator contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ViewProvider" "Tracks active `ng-view` instances and matches them with registered view configs produced during state transitions."
+     "js/ng.ViewService" "Tracks active `ng-view` instances and matches them with registered view configs produced during state transitions."
      "js/ng.WasmAbiExports" "WebAssembly exports required by the language-neutral AngularTS ABI."
      "js/ng.WasmInstantiationResult" "Public AngularTS WasmInstantiationResult contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WasmOptions" "Options for loading a WebAssembly module through `$wasm`."
+     "js/ng.WasmProvider" "Public AngularTS WasmProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WasmScope" "Host-side wrapper around one AngularTS scope exposed to Wasm clients. The wrapper mutates the real AngularTS scope. It does not use event bus, scope-sync, DOM hydration, or object merging."
      "js/ng.WasmScopeAbi" "Language-neutral AngularTS scope ABI for raw Wasm clients. The ABI exchanges strings and JSON-compatible values through guest linear memory. Guest modules provide `ng_abi_alloc` and `ng_abi_free`; AngularTS uses those exports whenever it needs to place callback or return payloads in guest memory."
      "js/ng.WasmScopeAbiImportObject" "Full import object returned by `WasmScopeAbi.imports`."
@@ -310,9 +379,11 @@
      "js/ng.WebComponentInput" "Public AngularTS WebComponentInput contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebComponentInputConfig" "Public AngularTS WebComponentInputConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebComponentInputs" "Public AngularTS WebComponentInputs contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WebComponentProvider" "Provider for scoped custom element integration."
      "js/ng.WebComponentService" "Public AngularTS WebComponentService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebSocketConfig" "WebSocket-specific configuration"
      "js/ng.WebSocketConnection" "Managed WebSocket connection returned by $websocket."
+     "js/ng.WebSocketProvider" "WebSocketProvider Provides a pre-configured WebSocket connection as an injectable."
      "js/ng.WebSocketService" "Public AngularTS WebSocketService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebTransportBufferInput" "Public AngularTS WebTransportBufferInput contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebTransportCertificateHash" "Public AngularTS WebTransportCertificateHash contract exposed through the global ng namespace for Closure-annotated applications."
@@ -320,12 +391,15 @@
      "js/ng.WebTransportConnection" "Managed WebTransport connection returned by `$webTransport`. The connection wraps the browser-native `WebTransport` object and keeps its promise/stream model visible while adding small conveniences for sending bytes, text, datagrams, and unidirectional streams."
      "js/ng.WebTransportDatagramEvent" "Public AngularTS WebTransportDatagramEvent contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WebTransportOptions" "Public AngularTS WebTransportOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WebTransportProvider" "Provider for the `$webTransport` service."
      "js/ng.WebTransportReconnectEvent" "Event passed to WebTransport reconnect and renegotiation hooks."
      "js/ng.WebTransportRetryDelay" "Delay, in milliseconds, before a reconnect attempt is opened."
      "js/ng.WebTransportService" "Factory function exposed as `$webTransport`."
      "js/ng.WindowService" "The **`Window`** interface represents a window containing a DOM document; the `document` property points to the DOM document loaded in that window. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window)"
      "js/ng.WorkerConfig" "Public AngularTS WorkerConfig contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.WorkerConnection" "Public AngularTS WorkerConnection contract exposed through the global ng namespace for Closure-annotated applications."}))
+     "js/ng.WorkerConnection" "Public AngularTS WorkerConnection contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkerProvider" "Public AngularTS WorkerProvider contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkerService" "Public AngularTS WorkerService contract exposed through the global ng namespace for Closure-annotated applications."}))
 
 (def strict-wrapper-names
   "Extern methods with fully concrete ClojureScript wrapper signatures."
@@ -339,6 +413,7 @@
     "angular-get-scope-by-name"
     "angular-injector"
     "angular-module"
+    "angular-provider-dollarget"
     "angular-register-ng-module"
     "angular-service-call"
     "angular-service-dispatch-event"
@@ -366,10 +441,22 @@
     "animation-handle-finish"
     "animation-handle-pause"
     "animation-handle-play"
+    "aria-provider-config"
+    "compile-lifecycle-provider-dollarget"
+    "compile-lifecycle-service-dollarget"
+    "compile-provider-add-property-security-context"
+    "controller-provider-has"
+    "cookie-provider-dollarget"
     "cookie-service-get"
     "cookie-service-get-all"
     "cookie-service-put"
     "cookie-service-remove"
+    "event-bus-provider-dollarget"
+    "event-bus-service-dispose"
+    "event-bus-service-get-count"
+    "event-bus-service-is-disposed"
+    "event-bus-service-publish"
+    "event-bus-service-reset"
     "http-response-headers"
     "http-service-call"
     "http-service-delete"
@@ -393,6 +480,7 @@
     "location-service-search"
     "location-service-set-url"
     "location-service-url"
+    "log-provider-dollarget"
     "log-service-debug"
     "log-service-error"
     "log-service-info"
@@ -473,8 +561,20 @@
     "scope-element-connected-callback"
     "scope-element-disconnected-callback"
     "scope-event-prevent-default"
+    "scope-service-dollarbroadcast"
+    "scope-service-dollardestroy"
+    "scope-service-dollaremit"
+    "scope-service-dollarnew"
+    "scope-service-dollarnew-isolate"
+    "scope-service-dollarsearch-by-name"
+    "scope-service-dollartranscluded"
     "sse-connection-close"
     "sse-connection-connect"
+    "state-provider-get-current-path"
+    "state-provider-state"
+    "state-registry-provider-get-all"
+    "state-registry-provider-register-root"
+    "state-registry-provider-root"
     "state-registry-service-get-all"
     "state-registry-service-register-root"
     "state-registry-service-root"
@@ -483,11 +583,13 @@
     "storage-backend-get"
     "storage-backend-remove"
     "storage-backend-set"
+    "stream-provider-dollarget"
     "stream-service-consume-json-lines"
     "stream-service-consume-text"
     "stream-service-read-json-lines"
     "stream-service-read-lines"
     "stream-service-read-text"
+    "template-cache-provider-dollarget"
     "transition-abort"
     "transition-apply-view-configs"
     "transition-dollarfrom"
@@ -499,13 +601,18 @@
     "transition-from"
     "transition-is-active"
     "transition-params"
+    "transition-provider-create"
+    "transition-provider-dollarget"
     "transition-redirect"
     "transition-run"
     "transition-to"
     "transition-to-string"
     "transition-valid"
+    "transitions-provider-create"
+    "transitions-provider-dollarget"
     "wasm-abi-exports-ng-abi-alloc"
     "wasm-abi-exports-ng-abi-free"
+    "wasm-provider-dollarget"
     "wasm-scope-abi-attach"
     "wasm-scope-abi-create-scope"
     "wasm-scope-abi-free-buffer"
@@ -604,10 +711,12 @@
     "connection-config-retry-delay"
     "connection-event-type"
     "controller-name"
+    "controller-provider-dollarget"
     "cookie-options-domain"
     "cookie-options-path"
     "cookie-options-samesite"
     "cookie-options-secure"
+    "cookie-provider-defaults"
     "cookie-store-options-cookie"
     "directive-controller-as"
     "directive-count"
@@ -620,6 +729,7 @@
     "element-scope-options-isolate"
     "element-scope-options-parent-scope"
     "error-handling-config-object-max-depth"
+    "event-bus-provider-event-bus"
     "filter-provider-dollarget"
     "http-provider-defaults-headers"
     "http-provider-defaults-with-credentials"
@@ -684,6 +794,8 @@
     "injection-tokens-dollarstate-provider"
     "injection-tokens-dollarstate-registry"
     "injection-tokens-dollarstate-registry-provider"
+    "injection-tokens-dollarstream"
+    "injection-tokens-dollarstream-provider"
     "injection-tokens-dollartemplate-cache"
     "injection-tokens-dollartemplate-cache-provider"
     "injection-tokens-dollartemplate-factory"
@@ -696,6 +808,10 @@
     "injection-tokens-dollarview-provider"
     "injection-tokens-dollarwasm"
     "injection-tokens-dollarwasm-provider"
+    "injection-tokens-dollarweb-component"
+    "injection-tokens-dollarweb-component-provider"
+    "injection-tokens-dollarweb-transport"
+    "injection-tokens-dollarweb-transport-provider"
     "injection-tokens-dollarwebsocket"
     "injection-tokens-dollarwebsocket-provider"
     "injection-tokens-dollarwindow"
@@ -718,6 +834,7 @@
     "location-service-base-prefix"
     "location-service-hash-prefix"
     "location-service-html5"
+    "log-provider-debug"
     "native-animation-options-add-class"
     "native-animation-options-animation"
     "native-animation-options-from"
@@ -741,6 +858,7 @@
     "ng-model-controller-dollarvalidity"
     "ng-model-controller-dollarview-change-listeners"
     "ng-module-name"
+    "parse-provider-dollarget"
     "pub-sub-provider-event-bus"
     "realtime-protocol-event-detail-url"
     "realtime-protocol-message-swap"
@@ -765,6 +883,7 @@
     "rest-definition-options"
     "rest-definition-url"
     "rest-options-backend"
+    "rest-provider-dollarget"
     "rest-request-collection-url"
     "rest-request-method"
     "rest-request-options"
@@ -779,12 +898,14 @@
     "rest-revalidate-event-key"
     "rest-revalidate-event-request"
     "rest-revalidate-event-response"
+    "root-scope-provider-dollarget"
     "root-scope-service-dollarid"
     "root-scope-service-dollarparent"
     "root-scope-service-dollarproxy"
     "root-scope-service-dollarroot"
     "root-scope-service-dollarscopename"
     "root-scope-service-dollartarget"
+    "router-provider-dollarget"
     "sce-delegate-provider-dollarget"
     "scope-dollarid"
     "scope-dollarparent"
@@ -800,6 +921,12 @@
     "scope-event-default-prevented"
     "scope-event-name"
     "scope-event-stopped"
+    "scope-service-dollarid"
+    "scope-service-dollarparent"
+    "scope-service-dollarproxy"
+    "scope-service-dollarroot"
+    "scope-service-dollarscopename"
+    "scope-service-dollartarget"
     "service-provider-dollarget"
     "sse-config-event-types"
     "sse-config-headers"
@@ -812,6 +939,8 @@
     "sse-protocol-event-detail-url"
     "sse-protocol-message-swap"
     "sse-protocol-message-target"
+    "sse-provider-defaults"
+    "sse-provider-dollarget"
     "state-declaration-abstract"
     "state-declaration-bindings"
     "state-declaration-dynamic"
@@ -819,14 +948,26 @@
     "state-declaration-params"
     "state-declaration-url"
     "state-declaration-views"
+    "state-provider-current"
+    "state-provider-dollarcurrent"
+    "state-provider-dollarget"
+    "state-provider-params"
+    "state-registry-provider-dollarget"
     "state-registry-service-dollarget"
     "state-service-current"
     "state-service-dollarcurrent"
     "state-service-dollarget"
     "state-service-params"
+    "template-cache-provider-cache"
+    "template-factory-provider-dollarget"
+    "template-factory-service-dollarget"
+    "template-request-provider-dollarget"
+    "template-request-provider-http-options"
     "transition-dollarid"
     "transition-promise"
     "transition-success"
+    "view-provider-dollarget"
+    "view-service-dollarget"
     "wasm-abi-exports-memory"
     "wasm-instantiation-result-exports"
     "wasm-instantiation-result-instance"
@@ -852,11 +993,15 @@
     "web-component-context-shadow-root"
     "web-component-input-config-attribute"
     "web-component-input-config-reflect"
+    "web-component-provider-defaults"
+    "web-component-provider-dollarget"
     "web-socket-config-event-types"
     "web-socket-config-heartbeat-timeout"
     "web-socket-config-max-retries"
     "web-socket-config-protocols"
     "web-socket-config-retry-delay"
+    "web-socket-provider-defaults"
+    "web-socket-provider-dollarget"
     "web-transport-certificate-hash-algorithm"
     "web-transport-certificate-hash-value"
     "web-transport-config-allow-pooling"
@@ -873,13 +1018,16 @@
     "web-transport-options-congestion-control"
     "web-transport-options-require-unreliable"
     "web-transport-options-server-certificate-hashes"
+    "web-transport-provider-defaults"
+    "web-transport-provider-dollarget"
     "web-transport-reconnect-event-attempt"
     "web-transport-reconnect-event-connection"
     "web-transport-reconnect-event-url"
     "worker-config-auto-restart"
     "worker-config-auto-terminate"
     "worker-config-logger"
-    "worker-connection-config"})
+    "worker-connection-config"
+    "worker-provider-dollarget"})
 
 (def angular
   "AngularTS global runtime, typed from the generated Closure externs."
@@ -941,6 +1089,17 @@
   "The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure existing services inside initialization blocks. myModule.config(['$locationProvider', function($locationProvider) { // Configure existing providers $locationProvider.hashPrefix('!'); }]); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.\n\nParams:\n- name: {string}\n- requires: {(!Array<string>|undefined)}\n- configFn: {(!ng.Injectable|undefined)}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.Angular target ^string name ^js/Array requires ^js/ng.Injectable configFn]
   (.module target name requires configFn))
+
+(defn angular-provider-dollarget
+  "Public AngularProvider.$get member exposed by the AngularTS namespace contract.\n\nParams:\n- var_args: {...?}\n\nReturns: {!ng.Angular}"
+  (^js/ng.Angular [^js/ng.AngularProvider target]
+   (.$get target))
+  (^js/ng.Angular [^js/ng.AngularProvider target value]
+   (.$get target value))
+  (^js/ng.Angular [^js/ng.AngularProvider target value extra]
+   (.$get target value extra))
+  (^js/ng.Angular [^js/ng.AngularProvider target value extra more]
+   (.$get target value extra more)))
 
 (defn angular-register-ng-module
   "Registers the configured built-in `ng` module for this runtime instance.\n\nReturns: {!ng.NgModule}"
@@ -1083,6 +1242,36 @@
   [^js/ng.AnimationHandle target]
   (.play target))
 
+(defn aria-provider-config
+  "Public AriaProvider.config member exposed by the AngularTS namespace contract.\n\nParams:\n- newConfig: {!Object}\n\nReturns: {void}"
+  [^js/ng.AriaProvider target ^js/Object newConfig]
+  (.config target newConfig))
+
+(defn compile-lifecycle-provider-dollarget
+  "Public CompileLifecycleProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.CompileLifecycleProvider}"
+  ^js/ng.CompileLifecycleProvider [^js/ng.CompileLifecycleProvider target]
+  (.$get target))
+
+(defn compile-lifecycle-service-dollarget
+  "Public CompileLifecycleService.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.CompileLifecycleProvider}"
+  ^js/ng.CompileLifecycleProvider [^js/ng.CompileLifecycleService target]
+  (.$get target))
+
+(defn compile-provider-add-property-security-context
+  "Public CompileProvider.addPropertySecurityContext member exposed by the AngularTS namespace contract.\n\nParams:\n- elementName: {string}\n- propertyName: {string}\n- ctx: {string}\n\nReturns: {!ng.CompileProvider}"
+  ^js/ng.CompileProvider [^js/ng.CompileProvider target ^string elementName ^string propertyName ^string ctx]
+  (.addPropertySecurityContext target elementName propertyName ctx))
+
+(defn controller-provider-has
+  "Public ControllerProvider.has member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n\nReturns: {boolean}"
+  ^boolean [^js/ng.ControllerProvider target ^string name]
+  (.has target name))
+
+(defn cookie-provider-dollarget
+  "Public CookieProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.CookieService}"
+  ^js/ng.CookieService [^js/ng.CookieProvider target]
+  (.$get target))
+
 (defn cookie-service-get
   "Retrieves a raw cookie value.\n\nParams:\n- key: {string}\n\nReturns: {(null|string)}"
   ^string [^js/ng.CookieService target ^string key]
@@ -1102,6 +1291,42 @@
   "Removes a cookie by setting an expired date.\n\nParams:\n- key: {string}\n- options: {(!ng.CookieOptions|undefined)}\n\nReturns: {void}"
   [^js/ng.CookieService target ^string key ^js/ng.CookieOptions options]
   (.remove target key options))
+
+(defn event-bus-provider-dollarget
+  "Public EventBusProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.PubSubService}"
+  ^js/ng.PubSubService [^js/ng.EventBusProvider target]
+  (.$get target))
+
+(defn event-bus-service-dispose
+  "Dispose the instance, removing all topics and listeners.\n\nReturns: {void}"
+  [^js/ng.EventBusService target]
+  (.dispose target))
+
+(defn event-bus-service-get-count
+  "Get the number of subscribers for a topic.\n\nParams:\n- topic: {string}\n\nReturns: {number}"
+  ^number [^js/ng.EventBusService target ^string topic]
+  (.getCount target topic))
+
+(defn event-bus-service-is-disposed
+  "Checks if instance has been disposed.\n\nReturns: {boolean}"
+  ^boolean [^js/ng.EventBusService target]
+  (.isDisposed target))
+
+(defn event-bus-service-publish
+  "Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`.\n\nParams:\n- topic: {string}\n- var_args: {...?}\n\nReturns: {boolean}"
+  (^boolean [^js/ng.EventBusService target ^string topic]
+   (.publish target topic))
+  (^boolean [^js/ng.EventBusService target ^string topic value]
+   (.publish target topic value))
+  (^boolean [^js/ng.EventBusService target ^string topic value extra]
+   (.publish target topic value extra))
+  (^boolean [^js/ng.EventBusService target ^string topic value extra more]
+   (.publish target topic value extra more)))
+
+(defn event-bus-service-reset
+  "Reset the bus to its initial state without disposing it. All topics and listeners are removed, and the instance can be reused.\n\nReturns: {void}"
+  [^js/ng.EventBusService target]
+  (.reset target))
 
 (defn http-response-headers
   "Lazy response header reader.\n\nReturns: {!Object<string, string>}"
@@ -1217,6 +1442,11 @@
   "Public LocationService.url member exposed by the AngularTS namespace contract.\n\nReturns: {string}"
   ^string [^js/ng.LocationService target]
   (.url target))
+
+(defn log-provider-dollarget
+  "Creates the runtime `$log` service.\n\nReturns: {!ng.LogService}"
+  ^js/ng.LogService [^js/ng.LogProvider target]
+  (.$get target))
 
 (defn log-service-debug
   "Log a debug message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
@@ -1678,6 +1908,53 @@
   [^js/ng.ScopeEvent target]
   (.preventDefault target))
 
+(defn scope-service-dollarbroadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
+   (.$broadcast target name))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
+   (.$broadcast target name value))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra]
+   (.$broadcast target name value extra))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra more]
+   (.$broadcast target name value extra more)))
+
+(defn scope-service-dollardestroy
+  "Public ScopeService.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.ScopeService target]
+  (.$destroy target))
+
+(defn scope-service-dollaremit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
+   (.$emit target name))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
+   (.$emit target name value))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra]
+   (.$emit target name value extra))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra more]
+   (.$emit target name value extra more)))
+
+(defn scope-service-dollarnew
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope childInstance]
+  (.$new target childInstance))
+
+(defn scope-service-dollarnew-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope instance]
+  (.$newIsolate target instance))
+
+(defn scope-service-dollarsearch-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+  ^js/ng.Scope [^js/ng.ScopeService target ^string name]
+  (.$searchByName target name))
+
+(defn scope-service-dollartranscluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope parentInstance]
+  (.$transcluded target parentInstance))
+
 (defn sse-connection-close
   "Manually close the SSE connection and stop all reconnect attempts\n\nReturns: {void}"
   [^js/ng.SseConnection target]
@@ -1687,6 +1964,31 @@
   "Manually restart the SSE connection.\n\nReturns: {void}"
   [^js/ng.SseConnection target]
   (.connect target))
+
+(defn state-provider-get-current-path
+  "Public StateProvider.getCurrentPath member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!Object>}"
+  ^js/Array [^js/ng.StateProvider target]
+  (.getCurrentPath target))
+
+(defn state-provider-state
+  "Register a router state. Register a named router state.\n\nParams:\n- definition: {!ng.StateDeclaration}\n\nReturns: {!ng.StateProvider}"
+  ^js/ng.StateProvider [^js/ng.StateProvider target ^js/ng.StateDeclaration definition]
+  (.state target definition))
+
+(defn state-registry-provider-get-all
+  "Public StateRegistryProvider.getAll member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!ng.StateDeclaration>}"
+  ^js/Array [^js/ng.StateRegistryProvider target]
+  (.getAll target))
+
+(defn state-registry-provider-register-root
+  "Public StateRegistryProvider.registerRoot member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.StateRegistryProvider target]
+  (.registerRoot target))
+
+(defn state-registry-provider-root
+  "Gets the implicit root state Gets the root of the state tree. The root state is implicitly created by ng-router. Note: this returns the internal [[StateObject]] representation, not a [[StateDeclaration]]\n\nReturns: {!Object}"
+  ^js/Object [^js/ng.StateRegistryProvider target]
+  (.root target))
 
 (defn state-registry-service-get-all
   "Public StateRegistryService.getAll member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!ng.StateDeclaration>}"
@@ -1709,8 +2011,8 @@
   (.getCurrentPath target))
 
 (defn state-service-state
-  "Register a router state. Register a named router state.\n\nParams:\n- definition: {!ng.StateDeclaration}\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.StateService target ^js/ng.StateDeclaration definition]
+  "Register a router state. Register a named router state.\n\nParams:\n- definition: {!ng.StateDeclaration}\n\nReturns: {!ng.StateProvider}"
+  ^js/ng.StateProvider [^js/ng.StateService target ^js/ng.StateDeclaration definition]
   (.state target definition))
 
 (defn storage-backend-get
@@ -1727,6 +2029,11 @@
   "Store a serialized value.\n\nParams:\n- key: {string}\n- value: {string}\n\nReturns: {void}"
   [^js/ng.StorageBackend target ^string key ^string value]
   (.set target key value))
+
+(defn stream-provider-dollarget
+  "Public StreamProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.StreamService}"
+  ^js/ng.StreamService [^js/ng.StreamProvider target]
+  (.$get target))
 
 (defn stream-service-consume-json-lines
   "Decodes newline-delimited JSON without retaining parsed values.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<void>}"
@@ -1752,6 +2059,11 @@
   "Decodes a byte stream into text chunks.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<string>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.readText target stream options))
+
+(defn template-cache-provider-dollarget
+  "Returns the singleton template cache instance.\n\nReturns: {!Map<string, string>}"
+  ^js/Map [^js/ng.TemplateCacheProvider target]
+  (.$get target))
 
 (defn transition-abort
   "Aborts this transition Imperative API to abort a Transition. This only applies to Transitions that are not yet complete.\n\nReturns: {void}"
@@ -1808,6 +2120,16 @@
   ^js/Object [^js/ng.Transition target ^string pathname]
   (.params target pathname))
 
+(defn transition-provider-create
+  "Creates a new transition from the current path to a target state.\n\nParams:\n- fromPath: {!Array<!Object>}\n- targetState: {!Object}\n\nReturns: {!ng.Transition}"
+  ^js/ng.Transition [^js/ng.TransitionProvider target ^js/Array fromPath ^js/Object targetState]
+  (.create target fromPath targetState))
+
+(defn transition-provider-dollarget
+  "Wires runtime services into the transition service and registers the hooks that depend on state/url/view services.\n\nReturns: {!ng.TransitionProvider}"
+  ^js/ng.TransitionProvider [^js/ng.TransitionProvider target]
+  (.$get target))
+
 (defn transition-redirect
   "Creates a new transition that is a redirection of the current one. This transition can be returned from a [[TransitionService]] hook to redirect a transition to a new state and/or set of parameters.\n\nParams:\n- targetState: {!Object}\n\nReturns: {!ng.Transition}"
   ^js/ng.Transition [^js/ng.Transition target ^js/Object targetState]
@@ -1833,6 +2155,16 @@
   ^boolean [^js/ng.Transition target]
   (.valid target))
 
+(defn transitions-provider-create
+  "Creates a new transition from the current path to a target state.\n\nParams:\n- fromPath: {!Array<!Object>}\n- targetState: {!Object}\n\nReturns: {!ng.Transition}"
+  ^js/ng.Transition [^js/ng.TransitionsProvider target ^js/Array fromPath ^js/Object targetState]
+  (.create target fromPath targetState))
+
+(defn transitions-provider-dollarget
+  "Wires runtime services into the transition service and registers the hooks that depend on state/url/view services.\n\nReturns: {!ng.TransitionProvider}"
+  ^js/ng.TransitionProvider [^js/ng.TransitionsProvider target]
+  (.$get target))
+
 (defn wasm-abi-exports-ng-abi-alloc
   "Allocates `size` bytes in guest memory and returns the pointer.\n\nParams:\n- size: {number}\n\nReturns: {number}"
   ^number [^js/ng.WasmAbiExports target ^number size]
@@ -1842,6 +2174,11 @@
   "Releases a pointer previously returned by `ng_abi_alloc`.\n\nParams:\n- ptr: {number}\n- size: {number}\n\nReturns: {void}"
   [^js/ng.WasmAbiExports target ^number ptr ^number size]
   (.ng_abi_free target ptr size))
+
+(defn wasm-provider-dollarget
+  "Public WasmProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.WasmService}"
+  ^js/ng.WasmService [^js/ng.WasmProvider target]
+  (.$get target))
 
 (defn wasm-scope-abi-attach
   "Attaches guest exports after instantiation.\n\nParams:\n- exports: {!ng.WasmAbiExports}\n\nReturns: {void}"
@@ -2318,6 +2655,11 @@
   ^string [^js/ng.Controller target]
   (.-name target))
 
+(defn controller-provider-dollarget
+  "Public ControllerProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
+  ^js/Array [^js/ng.ControllerProvider target]
+  (.-$get target))
+
 (defn cookie-options-domain
   "Domain scope for the cookie.\n\nType: {(string|undefined)}"
   ^string [^js/ng.CookieOptions target]
@@ -2337,6 +2679,11 @@
   "Restrict the cookie to HTTPS connections.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.CookieOptions target]
   (.-secure target))
+
+(defn cookie-provider-defaults
+  "Default cookie attributes merged into each write and remove call.\n\nType: {!ng.CookieOptions}"
+  ^js/ng.CookieOptions [^js/ng.CookieProvider target]
+  (.-defaults target))
 
 (defn cookie-store-options-cookie
   "Cookie attributes used for writes.\n\nType: {(!ng.CookieOptions|undefined)}"
@@ -2397,6 +2744,11 @@
   "The max depth for stringifying objects. Setting to a non-positive or non-numeric value removes the max depth limit. Default: 5.\n\nType: {(number|undefined)}"
   ^number [^js/ng.ErrorHandlingConfig target]
   (.-objectMaxDepth target))
+
+(defn event-bus-provider-event-bus
+  "Public EventBusProvider.eventBus member exposed by the AngularTS namespace contract.\n\nType: {!ng.PubSubService}"
+  ^js/ng.PubSubService [^js/ng.EventBusProvider target]
+  (.-eventBus target))
 
 (defn filter-provider-dollarget
   "Public FilterProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
@@ -2718,6 +3070,16 @@
   ^string [^js/ng.InjectionTokens target]
   (.-$stateRegistryProvider target))
 
+(defn injection-tokens-dollarstream
+  "Public InjectionTokens.$stream member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$stream target))
+
+(defn injection-tokens-dollarstream-provider
+  "Public InjectionTokens.$streamProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$streamProvider target))
+
 (defn injection-tokens-dollartemplate-cache
   "Public InjectionTokens.$templateCache member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.InjectionTokens target]
@@ -2777,6 +3139,26 @@
   "Public InjectionTokens.$wasmProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.InjectionTokens target]
   (.-$wasmProvider target))
+
+(defn injection-tokens-dollarweb-component
+  "Public InjectionTokens.$webComponent member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$webComponent target))
+
+(defn injection-tokens-dollarweb-component-provider
+  "Public InjectionTokens.$webComponentProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$webComponentProvider target))
+
+(defn injection-tokens-dollarweb-transport
+  "Public InjectionTokens.$webTransport member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$webTransport target))
+
+(defn injection-tokens-dollarweb-transport-provider
+  "Public InjectionTokens.$webTransportProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$webTransportProvider target))
 
 (defn injection-tokens-dollarwebsocket
   "Public InjectionTokens.$websocket member exposed by the AngularTS namespace contract.\n\nType: {string}"
@@ -2887,6 +3269,11 @@
   "Public LocationService.html5 member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.LocationService target]
   (.-html5 target))
+
+(defn log-provider-debug
+  "Public LogProvider.debug member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.LogProvider target]
+  (.-debug target))
 
 (defn native-animation-options-add-class
   "Public NativeAnimationOptions.addClass member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
@@ -3002,6 +3389,11 @@
   "Public NgModule.name member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.NgModule target]
   (.-name target))
+
+(defn parse-provider-dollarget
+  "Public ParseProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
+  ^js/Array [^js/ng.ParseProvider target]
+  (.-$get target))
 
 (defn pub-sub-provider-event-bus
   "Public PubSubProvider.eventBus member exposed by the AngularTS namespace contract.\n\nType: {!ng.PubSubService}"
@@ -3123,6 +3515,11 @@
   ^js/ng.RestBackend [^js/ng.RestOptions target]
   (.-backend target))
 
+(defn rest-provider-dollarget
+  "Public RestProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
+  ^js/Array [^js/ng.RestProvider target]
+  (.-$get target))
+
 (defn rest-request-collection-url
   "Collection URL used for broad cache invalidation.\n\nType: {(string|undefined)}"
   ^string [^js/ng.RestRequest target]
@@ -3193,6 +3590,11 @@
   ^js/ng.RestResponse [^js/ng.RestRevalidateEvent target]
   (.-response target))
 
+(defn root-scope-provider-dollarget
+  "Public RootScopeProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
+  ^js/Array [^js/ng.RootScopeProvider target]
+  (.-$get target))
+
 (defn root-scope-service-dollarid
   "Public RootScopeService.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.RootScopeService target]
@@ -3222,6 +3624,11 @@
   "Public RootScopeService.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
   ^js/Object [^js/ng.RootScopeService target]
   (.-$target target))
+
+(defn router-provider-dollarget
+  "Public RouterProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.LocationService, !ng.InjectorService): !ng.RouterProvider|string)>}"
+  ^js/Array [^js/ng.RouterProvider target]
+  (.-$get target))
 
 (defn sce-delegate-provider-dollarget
   "Public SceDelegateProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<string>}"
@@ -3298,6 +3705,36 @@
   ^boolean [^js/ng.ScopeEvent target]
   (.-stopped target))
 
+(defn scope-service-dollarid
+  "Public ScopeService.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.ScopeService target]
+  (.-$id target))
+
+(defn scope-service-dollarparent
+  "Public ScopeService.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+  ^js/ng.Scope [^js/ng.ScopeService target]
+  (.-$parent target))
+
+(defn scope-service-dollarproxy
+  "Public ScopeService.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeService target]
+  (.-$proxy target))
+
+(defn scope-service-dollarroot
+  "Public ScopeService.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ScopeService target]
+  (.-$root target))
+
+(defn scope-service-dollarscopename
+  "Public ScopeService.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.ScopeService target]
+  (.-$scopename target))
+
+(defn scope-service-dollartarget
+  "Public ScopeService.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.ScopeService target]
+  (.-$target target))
+
 (defn service-provider-dollarget
   "Public ServiceProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!ng.Injectable}"
   ^js/ng.Injectable [^js/ng.ServiceProvider target]
@@ -3358,6 +3795,16 @@
   ^string [^js/ng.SseProtocolMessage target]
   (.-target target))
 
+(defn sse-provider-defaults
+  "Public SseProvider.defaults member exposed by the AngularTS namespace contract.\n\nType: {!ng.SseConfig}"
+  ^js/ng.SseConfig [^js/ng.SseProvider target]
+  (.-defaults target))
+
+(defn sse-provider-dollarget
+  "Returns the `$sse` connection factory bound to the configured defaults.\n\nType: {!Array<(function(!ng.LogService): function(string, (!ng.SseConfig|undefined)): !ng.SseConnection|string)>}"
+  ^js/Array [^js/ng.SseProvider target]
+  (.-$get target))
+
 (defn state-declaration-abstract
   "Abstract state indicator An abstract state can never be directly activated. Use an abstract state to provide inherited properties (url, resolve, data, etc) to children states.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.StateDeclaration target]
@@ -3393,8 +3840,33 @@
   ^js/Object [^js/ng.StateDeclaration target]
   (.-views target))
 
+(defn state-provider-current
+  "The current [[StateDeclaration]]\n\nType: {(!ng.StateDeclaration|undefined)}"
+  ^js/ng.StateDeclaration [^js/ng.StateProvider target]
+  (.-current target))
+
+(defn state-provider-dollarcurrent
+  "The current [[StateObject]] (an internal API)\n\nType: {(!Object|undefined)}"
+  ^js/Object [^js/ng.StateProvider target]
+  (.-$current target))
+
+(defn state-provider-dollarget
+  "Public StateProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService, !ng.StateRegistryProvider, !ng.RouterProvider, !ng.Scope, !ng.ViewService): !ng.StateProvider|string)>}"
+  ^js/Array [^js/ng.StateProvider target]
+  (.-$get target))
+
+(defn state-provider-params
+  "The latest successful state parameters\n\nType: {!Object<string, ?>}"
+  ^js/Object [^js/ng.StateProvider target]
+  (.-params target))
+
+(defn state-registry-provider-dollarget
+  "Public StateRegistryProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService): !ng.StateRegistryProvider|string)>}"
+  ^js/Array [^js/ng.StateRegistryProvider target]
+  (.-$get target))
+
 (defn state-registry-service-dollarget
-  "Public StateRegistryService.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService): !Object|string)>}"
+  "Public StateRegistryService.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService): !ng.StateRegistryProvider|string)>}"
   ^js/Array [^js/ng.StateRegistryService target]
   (.-$get target))
 
@@ -3409,7 +3881,7 @@
   (.-$current target))
 
 (defn state-service-dollarget
-  "Public StateService.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService, !Object, !Object, !ng.Scope, !Object): !Object|string)>}"
+  "Public StateService.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService, !ng.StateRegistryProvider, !ng.RouterProvider, !ng.Scope, !ng.ViewService): !ng.StateProvider|string)>}"
   ^js/Array [^js/ng.StateService target]
   (.-$get target))
 
@@ -3417,6 +3889,31 @@
   "The latest successful state parameters\n\nType: {!Object<string, ?>}"
   ^js/Object [^js/ng.StateService target]
   (.-params target))
+
+(defn template-cache-provider-cache
+  "Public TemplateCacheProvider.cache member exposed by the AngularTS namespace contract.\n\nType: {!Map<string, string>}"
+  ^js/Map [^js/ng.TemplateCacheProvider target]
+  (.-cache target))
+
+(defn template-factory-provider-dollarget
+  "Wires template request and injector services into the factory.\n\nType: {!Array<(function(function(string): !Promise<string>, !ng.InjectorService): !ng.TemplateFactoryProvider|string)>}"
+  ^js/Array [^js/ng.TemplateFactoryProvider target]
+  (.-$get target))
+
+(defn template-factory-service-dollarget
+  "Wires template request and injector services into the factory.\n\nType: {!Array<(function(function(string): !Promise<string>, !ng.InjectorService): !ng.TemplateFactoryProvider|string)>}"
+  ^js/Array [^js/ng.TemplateFactoryService target]
+  (.-$get target))
+
+(defn template-request-provider-dollarget
+  "Public TemplateRequestProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!Map<string, string>, !ng.HttpService): function(string): !Promise<string>|string)>}"
+  ^js/Array [^js/ng.TemplateRequestProvider target]
+  (.-$get target))
+
+(defn template-request-provider-http-options
+  "Optional `$http.get()` config applied to every template request. This is merged on top of the default template request config: - `cache: $templateCache` - `transformResponse`: with `defaultHttpResponseTransform` removed Use this to set template-specific defaults such as custom headers, timeouts, credentials, etc.\n\nType: {!ng.RequestShortcutConfig}"
+  ^js/ng.RequestShortcutConfig [^js/ng.TemplateRequestProvider target]
+  (.-httpOptions target))
 
 (defn transition-dollarid
   "Public Transition.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
@@ -3432,6 +3929,16 @@
   "Public Transition.success member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.Transition target]
   (.-success target))
+
+(defn view-provider-dollarget
+  "Returns the singleton view service instance.\n\nType: {!Array<(function(!ng.TemplateFactoryProvider, !ng.RouterProvider, !ng.CompileLifecycleProvider, !Object, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn, function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?, !ng.InjectorService): !ng.ViewService|string)>}"
+  ^js/Array [^js/ng.ViewProvider target]
+  (.-$get target))
+
+(defn view-service-dollarget
+  "Returns the singleton view service instance.\n\nType: {!Array<(function(!ng.TemplateFactoryProvider, !ng.RouterProvider, !ng.CompileLifecycleProvider, !Object, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn, function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?, !ng.InjectorService): !ng.ViewService|string)>}"
+  ^js/Array [^js/ng.ViewService target]
+  (.-$get target))
 
 (defn wasm-abi-exports-memory
   "Linear memory used for ABI string and JSON payload exchange.\n\nType: {!Object}"
@@ -3558,6 +4065,16 @@
   ^boolean [^js/ng.WebComponentInputConfig target]
   (.-reflect target))
 
+(defn web-component-provider-defaults
+  "Default options merged into every app component definition.\n\nType: {!Object}"
+  ^js/Object [^js/ng.WebComponentProvider target]
+  (.-defaults target))
+
+(defn web-component-provider-dollarget
+  "Public WebComponentProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.InjectorService, !ng.Scope, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn): !ng.WebComponentService|string)>}"
+  ^js/Array [^js/ng.WebComponentProvider target]
+  (.-$get target))
+
 (defn web-socket-config-event-types
   "Additional EventSource event names to subscribe to\n\nType: {(!Array<string>|undefined)}"
   ^js/Array [^js/ng.WebSocketConfig target]
@@ -3582,6 +4099,16 @@
   "Delay between reconnect attempts in milliseconds\n\nType: {(number|undefined)}"
   ^number [^js/ng.WebSocketConfig target]
   (.-retryDelay target))
+
+(defn web-socket-provider-defaults
+  "Public WebSocketProvider.defaults member exposed by the AngularTS namespace contract.\n\nType: {!ng.WebSocketConfig}"
+  ^js/ng.WebSocketConfig [^js/ng.WebSocketProvider target]
+  (.-defaults target))
+
+(defn web-socket-provider-dollarget
+  "Returns the `$websocket` connection factory bound to the configured defaults.\n\nType: {!Array<(function(!ng.LogService): function(string, (!Array<string>|undefined), (!ng.WebSocketConfig|undefined)): !ng.WebSocketConnection|string)>}"
+  ^js/Array [^js/ng.WebSocketProvider target]
+  (.-$get target))
 
 (defn web-transport-certificate-hash-algorithm
   "Public WebTransportCertificateHash.algorithm member exposed by the AngularTS namespace contract.\n\nType: {string}"
@@ -3663,6 +4190,16 @@
   ^js/Array [^js/ng.WebTransportOptions target]
   (.-serverCertificateHashes target))
 
+(defn web-transport-provider-defaults
+  "Default options merged into every `$webTransport` call.\n\nType: {!ng.WebTransportConfig}"
+  ^js/ng.WebTransportConfig [^js/ng.WebTransportProvider target]
+  (.-defaults target))
+
+(defn web-transport-provider-dollarget
+  "Returns a factory that opens browser-native WebTransport sessions.\n\nType: {!Array<(function(!ng.LogService): function(string, (!ng.WebTransportConfig|undefined)): !ng.WebTransportConnection|string)>}"
+  ^js/Array [^js/ng.WebTransportProvider target]
+  (.-$get target))
+
 (defn web-transport-reconnect-event-attempt
   "One-based reconnect attempt count for this connection.\n\nType: {number}"
   ^number [^js/ng.WebTransportReconnectEvent target]
@@ -3697,6 +4234,11 @@
   "Public WorkerConnection.config member exposed by the AngularTS namespace contract.\n\nType: {!ng.WorkerConfig}"
   ^js/ng.WorkerConfig [^js/ng.WorkerConnection target]
   (.-config target))
+
+(defn worker-provider-dollarget
+  "Public WorkerProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.LogService, function(?): ?): function((!Object|string), (!ng.WorkerConfig|undefined)): !ng.WorkerConnection|string)>}"
+  ^js/Array [^js/ng.WorkerProvider target]
+  (.-$get target))
 
 (defn module
   "Retrieve or create an AngularTS module."

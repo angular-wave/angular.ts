@@ -68,6 +68,8 @@
           .module("todo", [])
           .controller("TodoCtrl", TodoController)
           .controller("DemoCtrl", Demo);
+
+        window.angular.bootstrap(document, ["todo"]);  
       });
     </script>
 
@@ -150,7 +152,7 @@
       }
     </style>
   </head>
-  <body ng-app="todo">
+  <body>
     <main id="$ctrl" ng-controller="TodoCtrl as $ctrl">
       <h3>{{ $ctrl.greeting | async }}</h3>
       <section>

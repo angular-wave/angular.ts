@@ -4,6 +4,7 @@ import type { Angular as TAngular } from "./angular.ts";
 import type {
   Scope as TScope,
   ListenerFn as TListenerFn,
+  RootScopeProvider as TRootScopeProvider,
   ScopeEvent as TScopeEvent,
 } from "./core/scope/scope.ts";
 import type { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
@@ -13,16 +14,26 @@ import type {
   AnchorScrollProvider as TAnchorScrollProvider,
   AnchorScrollService as TAnchorScrollService,
 } from "./services/anchor-scroll/anchor-scroll.ts";
-import type { ControllerService as TControllerService } from "./core/controller/controller.ts";
+import type {
+  ControllerProvider as TControllerProvider,
+  ControllerService as TControllerService,
+} from "./core/controller/controller.ts";
 import type {
   ExceptionHandler as TExceptionHandler,
   ExceptionHandlerProvider as TExceptionHandlerProvider,
 } from "./services/exception/exception.ts";
-import type { ParseService as TParseService } from "./core/parse/parse.ts";
-import type { TemplateRequestService as TTemplateRequestService } from "./services/template-request/template-request.ts";
+import type {
+  ParseProvider as TParseProvider,
+  ParseService as TParseService,
+} from "./core/parse/parse.ts";
+import type {
+  TemplateRequestProvider as TTemplateRequestProvider,
+  TemplateRequestService as TTemplateRequestService,
+} from "./services/template-request/template-request.ts";
 
 import type {
   HttpParamSerializerProvider,
+  HttpProvider,
   HttpMethod as THttpMethod,
   HttpParamSerializer as THttpParamSerializer,
   HttpPromise as THttpPromise,
@@ -58,7 +69,10 @@ import type {
   SceService as TSceService,
 } from "./services/sce/sce.ts";
 import type { StateProvider as TStateProvider } from "./router/state/state-service.ts";
-import type { LogService as TLogService } from "./services/log/log.ts";
+import type {
+  LogProvider as TLogProvider,
+  LogService as TLogService,
+} from "./services/log/log.ts";
 import type {
   PubSubProvider as TPubSubProvider,
   PubSub as TPubSub,
@@ -82,6 +96,7 @@ import type {
 } from "./interface.ts";
 import type {
   SseConnection as TSseConnection,
+  SseProvider as TSseProvider,
   SseService as TSseService,
   SseConfig as TSseConfig,
 } from "./services/sse/sse.ts";
@@ -91,6 +106,8 @@ import type {
 } from "./shared/interface.ts";
 import type {
   CompileFn as TCompileFn,
+  CompileLifecycleProvider as TCompileLifecycleProvider,
+  CompileProvider as TCompileProvider,
   PublicLinkFn as TPublicLinkFn,
   TranscludeFn as TTranscludeFn,
 } from "./core/compile/compile.ts";
@@ -116,6 +133,7 @@ import type {
   WasmScopeReference as TWasmScopeReference,
   WasmScopeUpdate as TWasmScopeUpdate,
   WasmScopeWatchOptions as TWasmScopeWatchOptions,
+  WasmProvider as TWasmProvider,
   WasmService as TWasmService,
 } from "./services/wasm/wasm.ts";
 import type {
@@ -142,12 +160,17 @@ import type {
   ConnectionConfig as TConnectionConfig,
   ConnectionEvent as TConnectionEvent,
 } from "./services/connection/connection-manager.ts";
-import type { StreamService as TStreamService } from "./services/stream/readable-stream.ts";
+import type {
+  StreamProvider as TStreamProvider,
+  StreamService as TStreamService,
+} from "./services/stream/readable-stream.ts";
 import type {
   CookieService as TCookieService,
+  CookieProvider as TCookieProvider,
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
 } from "./services/cookie/cookie.ts";
+import type { TemplateCacheProvider as TTemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import type {
   CachedRestBackendOptions as TCachedRestBackendOptions,
   RestDefinition as TRestDefinition,
@@ -157,6 +180,7 @@ import type {
   RestCacheStrategy as TRestCacheStrategy,
   RestFactory as TRestFactory,
   RestOptions as TRestOptions,
+  RestProvider as TRestProvider,
   RestRequest as TRestRequest,
   RestResponse as TRestResponse,
   RestRevalidateEvent as TRestRevalidateEvent,
@@ -169,9 +193,13 @@ import type {
   StateResolveObject as TStateResolveObject,
 } from "./router/state/interface.ts";
 import type { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
+import type { RouterProvider as TRouterProvider } from "./router/router.ts";
+import type { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/router/template-factory.ts";
+import type { ViewService as TViewService } from "./router/view/view.ts";
 import type {
   WebSocketConnection as TWebSocketConnection,
   WebSocketConfig as TWebSocketConfig,
+  WebSocketProvider as TWebSocketProvider,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
 import type {
@@ -183,6 +211,7 @@ import type {
   WebComponentInput as TWebComponentInput,
   WebComponentInputConfig as TWebComponentInputConfig,
   WebComponentInputs as TWebComponentInputs,
+  WebComponentProvider as TWebComponentProvider,
   WebComponentService as TWebComponentService,
 } from "./services/web-component/web-component.ts";
 import type {
@@ -198,13 +227,22 @@ import type {
   WebTransportConnection as TWebTransportConnection,
   WebTransportDatagramEvent as TWebTransportDatagramEvent,
   WebTransportOptions as TWebTransportOptions,
+  WebTransportProvider as TWebTransportProvider,
   WebTransportReconnectEvent as TWebTransportReconnectEvent,
   WebTransportRetryDelay as TWebTransportRetryDelay,
   WebTransportService as TWebTransportService,
 } from "./services/webtransport/webtransport.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
-import type { AriaService as TAriaService } from "./directive/aria/aria.ts";
+import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
+import type {
+  AriaProvider,
+  AriaService as TAriaService,
+} from "./directive/aria/aria.ts";
+import type {
+  WorkerProvider as TWorkerProvider,
+  WorkerService as TWorkerService,
+} from "./services/worker/worker.ts";
 
 declare global {
   interface Function {
@@ -241,14 +279,30 @@ declare global {
 
     export type Scope = TScope;
 
+    export type ScopeService = TScope;
+
     export type TranscludeFn = TTranscludeFn;
 
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
 
+    export type AngularProvider = TAngularServiceProvider;
+
     export type AngularServiceProvider = TAngularServiceProvider;
 
     export type AnimateProvider = ThisParameterType<typeof AnimateProvider>;
+
+    export type AriaProvider = ThisParameterType<typeof AriaProvider>;
+
+    export type CompileLifecycleProvider = TCompileLifecycleProvider;
+
+    export type CompileProvider = TCompileProvider;
+
+    export type ControllerProvider = TControllerProvider;
+
+    export type CookieProvider = TCookieProvider;
+
+    export type EventBusProvider = TPubSubProvider;
 
     export type FilterProvider = TFilterProvider;
 
@@ -258,15 +312,57 @@ declare global {
       typeof HttpParamSerializerProvider
     >;
 
+    export type HttpProvider = ThisParameterType<typeof HttpProvider>;
+
     export type InterpolateProvider = TInterpolateProvider;
 
     export type LocationProvider = TLocationProvider;
+
+    export type LogProvider = TLogProvider;
+
+    export type ParseProvider = TParseProvider;
+
+    export type RestProvider = TRestProvider;
+
+    export type RootScopeProvider = TRootScopeProvider;
+
+    export type RouterProvider = TRouterProvider;
 
     export type SceDelegateProvider = TSceDelegateProvider;
 
     export type SceProvider = ThisParameterType<typeof SceProvider>;
 
+    export type SseProvider = TSseProvider;
+
+    export type StateProvider = TStateProvider;
+
+    export type StateRegistryProvider = TStateRegistryProvider;
+
+    export type StreamProvider = TStreamProvider;
+
+    export type TemplateCacheProvider = TTemplateCacheProvider;
+
+    export type TemplateFactoryProvider = TTemplateFactoryProvider;
+
+    export type TemplateRequestProvider = TTemplateRequestProvider;
+
+    export type TransitionProvider = TTransitionProvider;
+
+    export type TransitionsProvider = TTransitionProvider;
+
     export type TransitionService = TTransitionService;
+
+    export type ViewProvider = TViewService;
+
+    export type WasmProvider = TWasmProvider;
+
+    export type WebComponentProvider = TWebComponentProvider;
+
+    export type WebSocketProvider = TWebSocketProvider;
+
+    export type WebTransportProvider = TWebTransportProvider;
+
+    export type WorkerProvider = TWorkerProvider;
 
     // Services
     export type AnchorScrollService = TAnchorScrollService;
@@ -283,9 +379,15 @@ declare global {
 
     export type CompileService = TCompileFn;
 
+    export type CompileLifecycleService = TCompileLifecycleProvider;
+
     export type ControllerService = TControllerService;
 
     export type CookieService = TCookieService;
+
+    export type ElementService = Element;
+
+    export type EventBusService = TPubSub;
 
     export type ExceptionHandlerService = TExceptionHandler;
 
@@ -306,6 +408,8 @@ declare global {
     export type RelativeTimeFilterOptions = TRelativeTimeFilterOptions;
 
     export type HttpParamSerializerSerService = THttpParamSerializer;
+
+    export type HttpParamSerializerService = THttpParamSerializer;
 
     export type HttpService = THttpService;
 
@@ -357,7 +461,15 @@ declare global {
 
     export type TemplateCacheService = Map<string, string>;
 
+    export type TemplateFactoryService = TTemplateFactoryProvider;
+
     export type TemplateRequestService = TTemplateRequestService;
+
+    export type TransitionsService = TTransitionService;
+
+    export type ViewService = TViewService;
+
+    export type WorkerService = TWorkerService;
 
     // Support types
     export type AngularService = Angular;

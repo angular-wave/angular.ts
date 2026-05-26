@@ -115,6 +115,10 @@ pub fn state_registry() -> Token(namespace.StateRegistryService) {
   token.new("$stateRegistry")
 }
 
+pub fn stream() -> Token(js.JsValue) {
+  token.new("$stream")
+}
+
 pub fn sse() -> Token(namespace.SseService) {
   token.new("$sse")
 }
@@ -141,6 +145,14 @@ pub fn view() -> Token(js.JsValue) {
 
 pub fn window() -> Token(namespace.WindowService) {
   token.new("$window")
+}
+
+pub fn web_component() -> Token(js.JsValue) {
+  token.new("$webComponent")
+}
+
+pub fn web_transport() -> Token(js.JsValue) {
+  token.new("$webTransport")
 }
 
 pub fn websocket() -> Token(namespace.WebSocketService) {
@@ -253,6 +265,10 @@ pub fn state_registry_provider() -> Token(namespace.StateRegistryService) {
   token.new("$stateRegistryProvider")
 }
 
+pub fn stream_provider() -> Token(js.JsValue) {
+  token.new("$streamProvider")
+}
+
 pub fn template_cache_provider() -> Token(js.JsValue) {
   token.new("$templateCacheProvider")
 }
@@ -271,6 +287,14 @@ pub fn transitions_provider() -> Token(namespace.TransitionService) {
 
 pub fn view_provider() -> Token(js.JsValue) {
   token.new("$viewProvider")
+}
+
+pub fn web_component_provider() -> Token(js.JsValue) {
+  token.new("$webComponentProvider")
+}
+
+pub fn web_transport_provider() -> Token(js.JsValue) {
+  token.new("$webTransportProvider")
 }
 
 pub fn websocket_provider() -> Token(namespace.WebSocketService) {

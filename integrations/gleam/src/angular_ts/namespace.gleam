@@ -25,13 +25,29 @@ pub type PubSubProvider
 
 pub type Scope
 
+pub type ScopeService
+
 pub type TranscludeFn
 
 pub type AnchorScrollProvider
 
+pub type AngularProvider
+
 pub type AngularServiceProvider
 
 pub type AnimateProvider
+
+pub type AriaProvider
+
+pub type CompileLifecycleProvider
+
+pub type CompileProvider
+
+pub type ControllerProvider
+
+pub type CookieProvider
+
+pub type EventBusProvider
 
 pub type FilterProvider
 
@@ -39,15 +55,57 @@ pub type ExceptionHandlerProvider
 
 pub type HttpParamSerializerProvider
 
+pub type HttpProvider
+
 pub type InterpolateProvider
 
 pub type LocationProvider
+
+pub type LogProvider
+
+pub type ParseProvider
+
+pub type RestProvider
+
+pub type RootScopeProvider
+
+pub type RouterProvider
 
 pub type SceDelegateProvider
 
 pub type SceProvider
 
+pub type SseProvider
+
+pub type StateProvider
+
+pub type StateRegistryProvider
+
+pub type StreamProvider
+
+pub type TemplateCacheProvider
+
+pub type TemplateFactoryProvider
+
+pub type TemplateRequestProvider
+
+pub type TransitionProvider
+
+pub type TransitionsProvider
+
 pub type TransitionService
+
+pub type ViewProvider
+
+pub type WasmProvider
+
+pub type WebComponentProvider
+
+pub type WebSocketProvider
+
+pub type WebTransportProvider
+
+pub type WorkerProvider
 
 pub type AnchorScrollService
 
@@ -63,9 +121,15 @@ pub type AriaService
 
 pub type CompileService
 
+pub type CompileLifecycleService
+
 pub type ControllerService
 
 pub type CookieService
+
+pub type ElementService
+
+pub type EventBusService
 
 pub type ExceptionHandlerService
 
@@ -86,6 +150,8 @@ pub type CurrencyFilterOptions
 pub type RelativeTimeFilterOptions
 
 pub type HttpParamSerializerSerService
+
+pub type HttpParamSerializerService
 
 pub type HttpService
 
@@ -133,7 +199,15 @@ pub type SwapModeType
 
 pub type TemplateCacheService
 
+pub type TemplateFactoryService
+
 pub type TemplateRequestService
+
+pub type TransitionsService
+
+pub type ViewService
+
+pub type WorkerService
 
 pub type AngularService
 

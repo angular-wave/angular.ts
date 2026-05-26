@@ -42,6 +42,7 @@ part of the Dart public facade.
 | `NgModule` | started |
 | `PublicLinkFn` | started |
 | `Scope` | started |
+| `ScopeService` | started |
 | `TranscludeFn` | started |
 | `AnnotatedFactory` | started |
 | `ControllerConstructor` | started |
@@ -59,17 +60,45 @@ part of the Dart public facade.
 | ng type | Dart status |
 | --- | --- |
 | `AnchorScrollProvider` | started |
+| `AngularProvider` | started |
 | `AngularServiceProvider` | started |
 | `AnimateProvider` | started |
+| `AriaProvider` | started |
+| `CompileLifecycleProvider` | started |
+| `CompileProvider` | started |
+| `ControllerProvider` | started |
+| `CookieProvider` | started |
+| `EventBusProvider` | started |
 | `ExceptionHandlerProvider` | started |
 | `FilterProvider` | started |
 | `HttpParamSerializerProvider` | started |
+| `HttpProvider` | started |
 | `InterpolateProvider` | started |
 | `LocationProvider` | started |
+| `LogProvider` | started |
+| `ParseProvider` | started |
 | `PubSubProvider` | started |
+| `RestProvider` | started |
+| `RootScopeProvider` | started |
+| `RouterProvider` | started |
 | `SceDelegateProvider` | started |
 | `SceProvider` | started |
+| `SseProvider` | started |
+| `StateProvider` | started |
+| `StateRegistryProvider` | started |
+| `StreamProvider` | started |
+| `TemplateCacheProvider` | started |
+| `TemplateFactoryProvider` | started |
+| `TemplateRequestProvider` | started |
+| `TransitionProvider` | started |
+| `TransitionsProvider` | started |
 | `TransitionService` | started |
+| `ViewProvider` | started |
+| `WasmProvider` | started |
+| `WebComponentProvider` | started |
+| `WebSocketProvider` | started |
+| `WebTransportProvider` | started |
+| `WorkerProvider` | started |
 
 ## Services
 
@@ -79,12 +108,16 @@ part of the Dart public facade.
 | `AngularService` | started |
 | `AnimateService` | started |
 | `AriaService` | started |
+| `CompileLifecycleService` | started |
 | `CompileService` | started |
 | `ControllerService` | started |
 | `CookieService` | started |
 | `DocumentService` | alias |
+| `ElementService` | alias |
+| `EventBusService` | started |
 | `ExceptionHandlerService` | started |
 | `FilterService` | started |
+| `HttpParamSerializerService` | started |
 | `HttpParamSerializerSerService` | started |
 | `HttpService` | started |
 | `InjectorService` | started |
@@ -102,11 +135,15 @@ part of the Dart public facade.
 | `StateService` | started |
 | `StreamService` | started |
 | `TemplateCacheService` | started |
+| `TemplateFactoryService` | started |
 | `TemplateRequestService` | started |
+| `TransitionsService` | started |
+| `ViewService` | started |
 | `WebComponentService` | started |
 | `WebSocketService` | started |
 | `WebTransportService` | started |
 | `WindowService` | alias |
+| `WorkerService` | started |
 
 ## HTTP And REST
 

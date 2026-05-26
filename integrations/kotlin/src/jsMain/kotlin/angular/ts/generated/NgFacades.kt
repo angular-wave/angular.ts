@@ -141,6 +141,30 @@ public external interface Scope {
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
 }
 
+public external interface ScopeService {
+    public fun `$broadcast`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
+    public fun `$destroy`(): Unit
+    public fun `$emit`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
+    public fun `$getById`(p0: dynamic = definedExternally): dynamic
+    public var `$handler`: dynamic
+    public var `$id`: Double
+    public fun `$merge`(p0: dynamic = definedExternally): Unit
+    public fun `$new`(p0: dynamic = definedExternally): dynamic
+    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
+    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): Function<*>
+    public var `$parent`: dynamic
+    public var `$proxy`: dynamic
+    public var `$root`: dynamic
+    public var `$scopename`: String
+    public fun `$searchByName`(p0: String = definedExternally): dynamic
+    public var `$target`: dynamic
+    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
+    public fun `$watch`(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: Boolean = definedExternally): Function<*>
+    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
+    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+}
+
 public external interface TranscludeFn {
     public operator fun invoke(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
     public fun isSlotFilled(p0: dynamic = definedExternally): Boolean
@@ -151,6 +175,10 @@ public external interface AnchorScrollProvider {
     public var autoScrollingEnabled: Boolean
 }
 
+public external interface AngularProvider {
+    public fun `$get`(vararg p0: Array<dynamic>): dynamic
+}
+
 public external interface AngularServiceProvider {
     public fun `$get`(vararg p0: Array<dynamic>): dynamic
 }
@@ -158,6 +186,41 @@ public external interface AngularServiceProvider {
 public external interface AnimateProvider {
     public var `$get`: Array<dynamic>
     public fun register(p0: String = definedExternally, p1: dynamic = definedExternally): Unit
+}
+
+public external interface AriaProvider {
+    public var `$get`: dynamic
+    public fun config(p0: dynamic = definedExternally): Unit
+}
+
+public external interface CompileLifecycleProvider {
+    public fun `$get`(): dynamic
+    public fun onControllerCreated(p0: Function<*> = definedExternally): Function<*>
+    public fun onControllerDestroyed(p0: Function<*> = definedExternally): Function<*>
+}
+
+public external interface CompileProvider {
+    public var `$get`: dynamic
+    public fun addPropertySecurityContext(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally): dynamic
+    public fun component(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun directive(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun strictComponentBindingsEnabled(p0: Boolean = definedExternally): dynamic
+}
+
+public external interface ControllerProvider {
+    public var `$get`: Array<dynamic>
+    public fun has(p0: String = definedExternally): Boolean
+    public fun register(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
+}
+
+public external interface CookieProvider {
+    public fun `$get`(): dynamic
+    public var defaults: dynamic
+}
+
+public external interface EventBusProvider {
+    public fun `$get`(): dynamic
+    public var eventBus: dynamic
 }
 
 public external interface FilterProvider {
@@ -173,6 +236,8 @@ public external interface ExceptionHandlerProvider {
 public external interface HttpParamSerializerProvider {
     public fun `$get`(): Function<*>
 }
+
+public external interface HttpProvider
 
 public external interface InterpolateProvider {
     public var `$get`: Array<dynamic>
@@ -191,6 +256,27 @@ public external interface LocationProvider {
     public fun state(): dynamic
 }
 
+public external interface LogProvider {
+    public fun `$get`(): dynamic
+    public var debug: Boolean
+    public fun setLogger(p0: Function<*> = definedExternally): Unit
+}
+
+public external interface ParseProvider {
+    public var `$get`: Array<dynamic>
+}
+
+public external interface RestProvider {
+    public var `$get`: Array<dynamic>
+    public fun rest(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Unit
+}
+
+public external interface RootScopeProvider {
+    public var `$get`: Array<dynamic>
+}
+
+public external interface RouterProvider
+
 public external interface SceDelegateProvider {
     public var `$get`: Array<dynamic>
     public fun aHrefSanitizationTrustedUrlList(p0: dynamic = definedExternally): dynamic
@@ -201,6 +287,61 @@ public external interface SceDelegateProvider {
 
 public external interface SceProvider
 
+public external interface SseProvider {
+    public var `$get`: Array<dynamic>
+    public var defaults: dynamic
+}
+
+public external interface StateProvider {
+    public var `$current`: dynamic
+    public var `$get`: Array<dynamic>
+    public var current: dynamic
+    public fun defaultErrorHandler(p0: Function<*> = definedExternally): Function<*>
+    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun getCurrentPath(): Array<dynamic>
+    public fun go(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    public fun href(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): String
+    public fun includes(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    public fun `is`(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    public fun lazy(p0: String = definedExternally, p1: Function<*> = definedExternally): dynamic
+    public var params: dynamic
+    public fun reload(p0: dynamic = definedExternally): dynamic
+    public fun state(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun target(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    public fun transitionTo(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+}
+
+public external interface StateRegistryProvider {
+    public var `$get`: Array<dynamic>
+    public fun deregister(p0: dynamic = definedExternally): Array<dynamic>
+    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun getAll(): Array<dynamic>
+    public fun onStatesChanged(p0: Function<*> = definedExternally): Function<*>
+    public fun register(p0: dynamic = definedExternally): dynamic
+    public fun registerRoot(): Unit
+    public fun root(): dynamic
+}
+
+public external interface StreamProvider {
+    public fun `$get`(): dynamic
+}
+
+public external interface TemplateCacheProvider {
+    public fun `$get`(): dynamic
+    public var cache: dynamic
+}
+
+public external interface TemplateFactoryProvider
+
+public external interface TemplateRequestProvider {
+    public var `$get`: Array<dynamic>
+    public var httpOptions: dynamic
+}
+
+public external interface TransitionProvider
+
+public external interface TransitionsProvider
+
 public external interface TransitionService {
     public fun onBefore(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
     public fun onEnter(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
@@ -210,6 +351,33 @@ public external interface TransitionService {
     public fun onRetain(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
     public fun onStart(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
     public fun onSuccess(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+}
+
+public external interface ViewProvider {
+    public var `$get`: Array<dynamic>
+}
+
+public external interface WasmProvider {
+    public fun `$get`(): Function<*>
+}
+
+public external interface WebComponentProvider {
+    public var `$get`: Array<dynamic>
+    public var defaults: dynamic
+}
+
+public external interface WebSocketProvider {
+    public var `$get`: Array<dynamic>
+    public var defaults: dynamic
+}
+
+public external interface WebTransportProvider {
+    public var `$get`: Array<dynamic>
+    public var defaults: dynamic
+}
+
+public external interface WorkerProvider {
+    public var `$get`: Array<dynamic>
 }
 
 public external interface AnchorScrollService {
@@ -266,6 +434,12 @@ public external interface CompileService {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Double = definedExternally, p3: String = definedExternally, p4: dynamic = definedExternally): Function<*>
 }
 
+public external interface CompileLifecycleService {
+    public fun `$get`(): dynamic
+    public fun onControllerCreated(p0: Function<*> = definedExternally): Function<*>
+    public fun onControllerDestroyed(p0: Function<*> = definedExternally): Function<*>
+}
+
 public external interface ControllerService {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Boolean = definedExternally, p3: String = definedExternally): dynamic
 }
@@ -277,6 +451,19 @@ public external interface CookieService {
     public fun put(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): Unit
     public fun putObject(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Unit
     public fun remove(p0: String = definedExternally, p1: dynamic = definedExternally): Unit
+}
+
+public external interface ElementService
+
+public external interface EventBusService {
+    public fun dispose(): Unit
+    public fun getCount(p0: String = definedExternally): Double
+    public fun isDisposed(): Boolean
+    public fun publish(p0: String = definedExternally, vararg p1: Array<dynamic>): Boolean
+    public fun reset(): Unit
+    public fun subscribe(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun subscribeOnce(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun unsubscribe(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Boolean
 }
 
 public external interface ExceptionHandlerService {
@@ -309,6 +496,10 @@ public external interface CurrencyFilterOptions
 public external interface RelativeTimeFilterOptions
 
 public external interface HttpParamSerializerSerService {
+    public operator fun invoke(p0: dynamic = definedExternally): String
+}
+
+public external interface HttpParamSerializerService {
     public operator fun invoke(p0: dynamic = definedExternally): String
 }
 
@@ -540,8 +731,29 @@ public external interface SwapModeType
 
 public external interface TemplateCacheService
 
+public external interface TemplateFactoryService
+
 public external interface TemplateRequestService {
     public operator fun invoke(p0: String = definedExternally): dynamic
+}
+
+public external interface TransitionsService {
+    public fun onBefore(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onEnter(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onError(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onExit(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onFinish(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onRetain(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onStart(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onSuccess(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
+}
+
+public external interface ViewService {
+    public var `$get`: Array<dynamic>
+}
+
+public external interface WorkerService {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
 }
 
 public external interface AngularService {
@@ -753,6 +965,8 @@ public external interface InjectionTokens {
     public var `$stateProvider`: String
     public var `$stateRegistry`: String
     public var `$stateRegistryProvider`: String
+    public var `$stream`: String
+    public var `$streamProvider`: String
     public var `$templateCache`: String
     public var `$templateCacheProvider`: String
     public var `$templateFactory`: String
@@ -765,8 +979,12 @@ public external interface InjectionTokens {
     public var `$viewProvider`: String
     public var `$wasm`: String
     public var `$wasmProvider`: String
+    public var `$webComponent`: String
+    public var `$webComponentProvider`: String
     public var `$websocket`: String
     public var `$websocketProvider`: String
+    public var `$webTransport`: String
+    public var `$webTransportProvider`: String
     public var `$window`: String
     public var `$worker`: String
     public var `$workerProvider`: String

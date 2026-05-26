@@ -315,6 +315,15 @@ base class GeneratedNgAngularElementOptions extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.AngularProvider.
+base class GeneratedNgAngularProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.AngularProvider.
+  const GeneratedNgAngularProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.AngularService.
 base class GeneratedNgAngularService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.AngularService.
@@ -937,6 +946,19 @@ base class GeneratedNgAppComponentOptions extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('attributeChanged'.toJS));
 }
 
+/// Generated raw facade for ng.AriaProvider.
+base class GeneratedNgAriaProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.AriaProvider.
+  const GeneratedNgAriaProvider(super.raw);
+
+  /// Reads the generated config property.
+  Object? get config =>
+      unsafe.jsToDart<Object?>(raw.getProperty('config'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.AriaService.
 base class GeneratedNgAriaService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.AriaService.
@@ -974,6 +996,101 @@ base class GeneratedNgCachedRestBackendOptions extends GeneratedNgFacade {
   /// Reads the generated onRevalidate property.
   Object? get onRevalidate =>
       unsafe.jsToDart<Object?>(raw.getProperty('onRevalidate'.toJS));
+}
+
+/// Generated raw facade for ng.CompileLifecycleProvider.
+base class GeneratedNgCompileLifecycleProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CompileLifecycleProvider.
+  const GeneratedNgCompileLifecycleProvider(super.raw);
+
+  /// Reads the generated createdlisteners property.
+  Object? get createdlisteners =>
+      unsafe.jsToDart<Object?>(raw.getProperty('_createdListeners'.toJS));
+
+  /// Reads the generated destroyedlisteners property.
+  Object? get destroyedlisteners =>
+      unsafe.jsToDart<Object?>(raw.getProperty('_destroyedListeners'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated onControllerCreated member.
+  Object? onControllerCreated(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('onControllerCreated'.toJS, args));
+  }
+
+  /// Invokes the generated onControllerDestroyed member.
+  Object? onControllerDestroyed(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('onControllerDestroyed'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.CompileLifecycleService.
+base class GeneratedNgCompileLifecycleService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CompileLifecycleService.
+  const GeneratedNgCompileLifecycleService(super.raw);
+
+  /// Reads the generated createdlisteners property.
+  Object? get createdlisteners =>
+      unsafe.jsToDart<Object?>(raw.getProperty('_createdListeners'.toJS));
+
+  /// Reads the generated destroyedlisteners property.
+  Object? get destroyedlisteners =>
+      unsafe.jsToDart<Object?>(raw.getProperty('_destroyedListeners'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated onControllerCreated member.
+  Object? onControllerCreated(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('onControllerCreated'.toJS, args));
+  }
+
+  /// Invokes the generated onControllerDestroyed member.
+  Object? onControllerDestroyed(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('onControllerDestroyed'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.CompileProvider.
+base class GeneratedNgCompileProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CompileProvider.
+  const GeneratedNgCompileProvider(super.raw);
+
+  /// Reads the generated directive property.
+  Object? get directive =>
+      unsafe.jsToDart<Object?>(raw.getProperty('directive'.toJS));
+
+  /// Reads the generated component property.
+  Object? get component =>
+      unsafe.jsToDart<Object?>(raw.getProperty('component'.toJS));
+
+  /// Reads the generated strictComponentBindingsEnabled property.
+  Object? get strictComponentBindingsEnabled => unsafe.jsToDart<Object?>(
+      raw.getProperty('strictComponentBindingsEnabled'.toJS));
+
+  /// Reads the generated addPropertySecurityContext property.
+  Object? get addPropertySecurityContext => unsafe
+      .jsToDart<Object?>(raw.getProperty('addPropertySecurityContext'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.CompileService.
@@ -1183,6 +1300,32 @@ base class GeneratedNgControllerConstructor extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.ControllerProvider.
+base class GeneratedNgControllerProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ControllerProvider.
+  const GeneratedNgControllerProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated has member.
+  bool has(String arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return _toDartBool(raw.callMethodVarArgs('has'.toJS, args))!;
+  }
+
+  /// Invokes the generated register member.
+  void register(Object? arg0, [Object? arg1 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('register'.toJS, args));
+  }
+}
+
 /// Generated raw facade for ng.ControllerService.
 base class GeneratedNgControllerService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ControllerService.
@@ -1243,6 +1386,19 @@ base class GeneratedNgCookieOptions extends GeneratedNgFacade {
   set samesite(String? value) {
     raw.setProperty('samesite'.toJS, unsafe.dartToJs(value));
   }
+}
+
+/// Generated raw facade for ng.CookieProvider.
+base class GeneratedNgCookieProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CookieProvider.
+  const GeneratedNgCookieProvider(super.raw);
+
+  /// Reads the generated defaults property.
+  Object? get defaults =>
+      unsafe.jsToDart<Object?>(raw.getProperty('defaults'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.CookieService.
@@ -1506,6 +1662,102 @@ base class GeneratedNgErrorHandlingConfig extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.EventBusProvider.
+base class GeneratedNgEventBusProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.EventBusProvider.
+  const GeneratedNgEventBusProvider(super.raw);
+
+  /// Reads the generated eventBus property.
+  Object? get eventBus =>
+      unsafe.jsToDart<Object?>(raw.getProperty('eventBus'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
+/// Generated raw facade for ng.EventBusService.
+base class GeneratedNgEventBusService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.EventBusService.
+  const GeneratedNgEventBusService(super.raw);
+
+  /// Invokes the generated reset member.
+  void reset() {
+    unsafe
+        .jsToDart<void>(raw.callMethodVarArgs('reset'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated isDisposed member.
+  bool isDisposed() {
+    return _toDartBool(
+        raw.callMethodVarArgs('isDisposed'.toJS, const <JSAny?>[]))!;
+  }
+
+  /// Invokes the generated dispose member.
+  void dispose() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('dispose'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated subscribe member.
+  Object? subscribe(String arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('subscribe'.toJS, args));
+  }
+
+  /// Invokes the generated subscribeOnce member.
+  Object? subscribeOnce(String arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('subscribeOnce'.toJS, args));
+  }
+
+  /// Invokes the generated unsubscribe member.
+  bool unsubscribe(String arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return _toDartBool(raw.callMethodVarArgs('unsubscribe'.toJS, args))!;
+  }
+
+  /// Invokes the generated getCount member.
+  num getCount(String arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return _toDartNumber(raw.callMethodVarArgs('getCount'.toJS, args))!;
+  }
+
+  /// Invokes the generated publish member.
+  bool publish(String arg0,
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument,
+      Object? arg4 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
+
+    return _toDartBool(raw.callMethodVarArgs('publish'.toJS, args))!;
+  }
+}
+
 /// Generated raw facade for ng.ExceptionHandlerProvider.
 base class GeneratedNgExceptionHandlerProvider extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ExceptionHandlerProvider.
@@ -1638,6 +1890,26 @@ base class GeneratedNgHttpParamSerializerSerService extends GeneratedNgFacade {
 
     return _toDartString(_callFunction(raw as JSFunction, args))!;
   }
+}
+
+/// Generated raw facade for ng.HttpParamSerializerService.
+base class GeneratedNgHttpParamSerializerService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.HttpParamSerializerService.
+  const GeneratedNgHttpParamSerializerService(super.raw);
+
+  /// Invokes the generated call member.
+  String call([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    return _toDartString(_callFunction(raw as JSFunction, args))!;
+  }
+}
+
+/// Generated raw facade for ng.HttpProvider.
+base class GeneratedNgHttpProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.HttpProvider.
+  const GeneratedNgHttpProvider(super.raw);
 }
 
 /// Generated raw facade for ng.HttpProviderDefaults.
@@ -1922,6 +2194,9 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
   String get $stateRegistry =>
       _toDartString(raw.getProperty('\$stateRegistry'.toJS))!;
 
+  /// Reads the generated $stream property.
+  String get $stream => _toDartString(raw.getProperty('\$stream'.toJS))!;
+
   /// Reads the generated $sse property.
   String get $sse => _toDartString(raw.getProperty('\$sse'.toJS))!;
 
@@ -1946,6 +2221,14 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
 
   /// Reads the generated $window property.
   String get $window => _toDartString(raw.getProperty('\$window'.toJS))!;
+
+  /// Reads the generated $webComponent property.
+  String get $webComponent =>
+      _toDartString(raw.getProperty('\$webComponent'.toJS))!;
+
+  /// Reads the generated $webTransport property.
+  String get $webTransport =>
+      _toDartString(raw.getProperty('\$webTransport'.toJS))!;
 
   /// Reads the generated $websocket property.
   String get $websocket => _toDartString(raw.getProperty('\$websocket'.toJS))!;
@@ -2050,6 +2333,10 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
   String get $stateRegistryProvider =>
       _toDartString(raw.getProperty('\$stateRegistryProvider'.toJS))!;
 
+  /// Reads the generated $streamProvider property.
+  String get $streamProvider =>
+      _toDartString(raw.getProperty('\$streamProvider'.toJS))!;
+
   /// Reads the generated $templateCacheProvider property.
   String get $templateCacheProvider =>
       _toDartString(raw.getProperty('\$templateCacheProvider'.toJS))!;
@@ -2069,6 +2356,14 @@ base class GeneratedNgInjectionTokens extends GeneratedNgFacade {
   /// Reads the generated $viewProvider property.
   String get $viewProvider =>
       _toDartString(raw.getProperty('\$viewProvider'.toJS))!;
+
+  /// Reads the generated $webComponentProvider property.
+  String get $webComponentProvider =>
+      _toDartString(raw.getProperty('\$webComponentProvider'.toJS))!;
+
+  /// Reads the generated $webTransportProvider property.
+  String get $webTransportProvider =>
+      _toDartString(raw.getProperty('\$webTransportProvider'.toJS))!;
 
   /// Reads the generated $websocketProvider property.
   String get $websocketProvider =>
@@ -2511,6 +2806,34 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg0));
 
     unsafe.jsToDart<void>(raw.callMethodVarArgs('parse'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.LogProvider.
+base class GeneratedNgLogProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.LogProvider.
+  const GeneratedNgLogProvider(super.raw);
+
+  /// Reads the generated debug property.
+  bool get debug => _toDartBool(raw.getProperty('debug'.toJS))!;
+
+  /// Writes the generated debug property.
+  set debug(bool value) {
+    raw.setProperty('debug'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Invokes the generated setLogger member.
+  void setLogger(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('setLogger'.toJS, args));
+  }
+
+  /// Invokes the generated $get member.
+  Object? $get() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('\$get'.toJS, const <JSAny?>[]));
   }
 }
 
@@ -3187,6 +3510,15 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.ParseProvider.
+base class GeneratedNgParseProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ParseProvider.
+  const GeneratedNgParseProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.ParseService.
 base class GeneratedNgParseService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ParseService.
@@ -3739,6 +4071,27 @@ base class GeneratedNgRestOptions extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('backend'.toJS));
 }
 
+/// Generated raw facade for ng.RestProvider.
+base class GeneratedNgRestProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.RestProvider.
+  const GeneratedNgRestProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated rest member.
+  void rest(String arg0, String arg1,
+      [Object? arg2 = _undefinedArgument, Object? arg3 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('rest'.toJS, args));
+  }
+}
+
 /// Generated raw facade for ng.RestRequest.
 base class GeneratedNgRestRequest extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.RestRequest.
@@ -3919,6 +4272,15 @@ base class GeneratedNgRestService extends GeneratedNgFacade {
 
     return raw.callMethodVarArgs('delete'.toJS, args) as JSPromise<JSAny?>;
   }
+}
+
+/// Generated raw facade for ng.RootScopeProvider.
+base class GeneratedNgRootScopeProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.RootScopeProvider.
+  const GeneratedNgRootScopeProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.RootScopeService.
@@ -4104,6 +4466,12 @@ base class GeneratedNgRootScopeService extends GeneratedNgFacade {
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$searchByName'.toJS, args));
   }
+}
+
+/// Generated raw facade for ng.RouterProvider.
+base class GeneratedNgRouterProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.RouterProvider.
+  const GeneratedNgRouterProvider(super.raw);
 }
 
 /// Generated raw facade for ng.SceDelegateProvider.
@@ -4691,6 +5059,190 @@ base class GeneratedNgScopeEvent extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.ScopeService.
+base class GeneratedNgScopeService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ScopeService.
+  const GeneratedNgScopeService(super.raw);
+
+  /// Reads the generated $proxy property.
+  Object? get $proxy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$proxy'.toJS));
+
+  /// Reads the generated $handler property.
+  Object? get $handler =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$handler'.toJS));
+
+  /// Reads the generated $target property.
+  Object? get $target =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$target'.toJS));
+
+  /// Reads the generated $id property.
+  num get $id => _toDartNumber(raw.getProperty('\$id'.toJS))!;
+
+  /// Writes the generated $id property.
+  set $id(num value) {
+    raw.setProperty('\$id'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated $root property.
+  Object? get $root => unsafe.jsToDart<Object?>(raw.getProperty('\$root'.toJS));
+
+  /// Reads the generated $parent property.
+  Object? get $parent =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$parent'.toJS));
+
+  /// Reads the generated $scopename property.
+  String? get $scopename => _toDartString(raw.getProperty('\$scopename'.toJS));
+
+  /// Writes the generated $scopename property.
+  set $scopename(String? value) {
+    raw.setProperty('\$scopename'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Invokes the generated setMember member.
+  bool setMember(Object? arg0, String arg1, Object? arg2, Scope<Object?> arg3) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+    args.add(unsafe.dartToJs(arg3));
+
+    return _toDartBool(raw.callMethodVarArgs('set'.toJS, args))!;
+  }
+
+  /// Invokes the generated getMember member.
+  Object? getMember(Object? arg0, Object? arg1, Scope<Object?> arg2) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('get'.toJS, args));
+  }
+
+  /// Invokes the generated deleteProperty member.
+  bool deleteProperty(Object? arg0, Object? arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    return _toDartBool(raw.callMethodVarArgs('deleteProperty'.toJS, args))!;
+  }
+
+  /// Invokes the generated $watch member.
+  Object? $watch(String arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
+  }
+
+  /// Invokes the generated $new member.
+  GeneratedNgScopeService $new([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    raw.callMethodVarArgs('\$new'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated $newIsolate member.
+  GeneratedNgScopeService $newIsolate([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    raw.callMethodVarArgs('\$newIsolate'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated $transcluded member.
+  GeneratedNgScopeService $transcluded([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    raw.callMethodVarArgs('\$transcluded'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated $merge member.
+  void $merge(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('\$merge'.toJS, args));
+  }
+
+  /// Invokes the generated $on member.
+  Object? $on(String arg0, JSFunction arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('\$on'.toJS, args));
+  }
+
+  /// Invokes the generated $emit member.
+  Object? $emit(String arg0,
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument,
+      Object? arg4 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('\$emit'.toJS, args));
+  }
+
+  /// Invokes the generated $broadcast member.
+  Object? $broadcast(String arg0,
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument,
+      Object? arg4 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('\$broadcast'.toJS, args));
+  }
+
+  /// Invokes the generated $destroy member.
+  void $destroy() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('\$destroy'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated $getById member.
+  Object? $getById(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('\$getById'.toJS, args));
+  }
+
+  /// Invokes the generated $searchByName member.
+  Object? $searchByName(String arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('\$searchByName'.toJS, args));
+  }
+}
+
 /// Generated raw facade for ng.ServiceProvider.
 base class GeneratedNgServiceProvider extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ServiceProvider.
@@ -4853,6 +5405,19 @@ base class GeneratedNgSseProtocolMessage extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.SseProvider.
+base class GeneratedNgSseProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.SseProvider.
+  const GeneratedNgSseProvider(super.raw);
+
+  /// Reads the generated defaults property.
+  Object? get defaults =>
+      unsafe.jsToDart<Object?>(raw.getProperty('defaults'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.SseService.
 base class GeneratedNgSseService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.SseService.
@@ -4958,6 +5523,212 @@ base class GeneratedNgStateDeclaration extends GeneratedNgFacade {
   /// Reads the generated templateUrl property.
   Object? get templateUrl =>
       unsafe.jsToDart<Object?>(raw.getProperty('templateUrl'.toJS));
+}
+
+/// Generated raw facade for ng.StateProvider.
+base class GeneratedNgStateProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.StateProvider.
+  const GeneratedNgStateProvider(super.raw);
+
+  /// Reads the generated params property.
+  Object? get params =>
+      unsafe.jsToDart<Object?>(raw.getProperty('params'.toJS));
+
+  /// Reads the generated current property.
+  Object? get current =>
+      unsafe.jsToDart<Object?>(raw.getProperty('current'.toJS));
+
+  /// Reads the generated $current property.
+  Object? get $current =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$current'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated state member.
+  GeneratedNgStateProvider state(Object? arg0,
+      [Object? arg1 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    raw.callMethodVarArgs('state'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated lazy member.
+  GeneratedNgStateProvider lazy(String arg0, Object? arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    raw.callMethodVarArgs('lazy'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated reload member.
+  JSPromise<JSAny?> reload([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    return raw.callMethodVarArgs('reload'.toJS, args) as JSPromise<JSAny?>;
+  }
+
+  /// Invokes the generated go member.
+  JSPromise<JSAny?> go(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return raw.callMethodVarArgs('go'.toJS, args) as JSPromise<JSAny?>;
+  }
+
+  /// Invokes the generated target member.
+  Object? target(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('target'.toJS, args));
+  }
+
+  /// Invokes the generated getCurrentPath member.
+  Object? getCurrentPath() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('getCurrentPath'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated transitionTo member.
+  JSPromise<JSAny?> transitionTo(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return raw.callMethodVarArgs('transitionTo'.toJS, args)
+        as JSPromise<JSAny?>;
+  }
+
+  /// Invokes the generated isMember member.
+  bool? isMember(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return _toDartBool(raw.callMethodVarArgs('is'.toJS, args));
+  }
+
+  /// Invokes the generated includes member.
+  bool? includes(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return _toDartBool(raw.callMethodVarArgs('includes'.toJS, args));
+  }
+
+  /// Invokes the generated href member.
+  String? href(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return _toDartString(raw.callMethodVarArgs('href'.toJS, args));
+  }
+
+  /// Invokes the generated defaultErrorHandler member.
+  Object? defaultErrorHandler([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('defaultErrorHandler'.toJS, args));
+  }
+
+  /// Invokes the generated getMember member.
+  Object? getMember(
+      [Object? arg0 = _undefinedArgument, Object? arg1 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('get'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.StateRegistryProvider.
+base class GeneratedNgStateRegistryProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.StateRegistryProvider.
+  const GeneratedNgStateRegistryProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+
+  /// Invokes the generated registerRoot member.
+  void registerRoot() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('registerRoot'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated onStatesChanged member.
+  Object? onStatesChanged(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onStatesChanged'.toJS, args));
+  }
+
+  /// Invokes the generated root member.
+  Object? root() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('root'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated register member.
+  Object? register(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('register'.toJS, args));
+  }
+
+  /// Invokes the generated deregister member.
+  Object? deregister(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('deregister'.toJS, args));
+  }
+
+  /// Invokes the generated getAll member.
+  Object? getAll() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('getAll'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated getMember member.
+  Object? getMember(
+      [Object? arg0 = _undefinedArgument, Object? arg1 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('get'.toJS, args));
+  }
 }
 
 /// Generated raw facade for ng.StateRegistryService.
@@ -5203,6 +5974,15 @@ base class GeneratedNgStorageType extends GeneratedNgFacade {
   const GeneratedNgStorageType(super.raw);
 }
 
+/// Generated raw facade for ng.StreamProvider.
+base class GeneratedNgStreamProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.StreamProvider.
+  const GeneratedNgStreamProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.StreamService.
 base class GeneratedNgStreamService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.StreamService.
@@ -5273,6 +6053,46 @@ base class GeneratedNgStreamService extends GeneratedNgFacade {
 base class GeneratedNgSwapModeType extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.SwapModeType.
   const GeneratedNgSwapModeType(super.raw);
+}
+
+/// Generated raw facade for ng.TemplateCacheProvider.
+base class GeneratedNgTemplateCacheProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TemplateCacheProvider.
+  const GeneratedNgTemplateCacheProvider(super.raw);
+
+  /// Reads the generated cache property.
+  Object? get cache => unsafe.jsToDart<Object?>(raw.getProperty('cache'.toJS));
+
+  /// Invokes the generated $get member.
+  Object? $get() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('\$get'.toJS, const <JSAny?>[]));
+  }
+}
+
+/// Generated raw facade for ng.TemplateFactoryProvider.
+base class GeneratedNgTemplateFactoryProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TemplateFactoryProvider.
+  const GeneratedNgTemplateFactoryProvider(super.raw);
+}
+
+/// Generated raw facade for ng.TemplateFactoryService.
+base class GeneratedNgTemplateFactoryService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TemplateFactoryService.
+  const GeneratedNgTemplateFactoryService(super.raw);
+}
+
+/// Generated raw facade for ng.TemplateRequestProvider.
+base class GeneratedNgTemplateRequestProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TemplateRequestProvider.
+  const GeneratedNgTemplateRequestProvider(super.raw);
+
+  /// Reads the generated httpOptions property.
+  Object? get httpOptions =>
+      unsafe.jsToDart<Object?>(raw.getProperty('httpOptions'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.TemplateRequestService.
@@ -5434,10 +6254,123 @@ base class GeneratedNgTransition extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.TransitionProvider.
+base class GeneratedNgTransitionProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TransitionProvider.
+  const GeneratedNgTransitionProvider(super.raw);
+}
+
 /// Generated raw facade for ng.TransitionService.
 base class GeneratedNgTransitionService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.TransitionService.
   const GeneratedNgTransitionService(super.raw);
+
+  /// Invokes the generated onBefore member.
+  Object? onBefore(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onBefore'.toJS, args));
+  }
+
+  /// Invokes the generated onStart member.
+  Object? onStart(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onStart'.toJS, args));
+  }
+
+  /// Invokes the generated onEnter member.
+  Object? onEnter(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onEnter'.toJS, args));
+  }
+
+  /// Invokes the generated onRetain member.
+  Object? onRetain(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onRetain'.toJS, args));
+  }
+
+  /// Invokes the generated onExit member.
+  Object? onExit(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('onExit'.toJS, args));
+  }
+
+  /// Invokes the generated onFinish member.
+  Object? onFinish(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onFinish'.toJS, args));
+  }
+
+  /// Invokes the generated onSuccess member.
+  Object? onSuccess(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onSuccess'.toJS, args));
+  }
+
+  /// Invokes the generated onError member.
+  Object? onError(Object? arg0, JSFunction arg1,
+      [Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('onError'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.TransitionsProvider.
+base class GeneratedNgTransitionsProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TransitionsProvider.
+  const GeneratedNgTransitionsProvider(super.raw);
+}
+
+/// Generated raw facade for ng.TransitionsService.
+base class GeneratedNgTransitionsService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TransitionsService.
+  const GeneratedNgTransitionsService(super.raw);
 
   /// Invokes the generated onBefore member.
   Object? onBefore(Object? arg0, JSFunction arg1,
@@ -5549,6 +6482,24 @@ base class GeneratedNgValidator extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.ViewProvider.
+base class GeneratedNgViewProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ViewProvider.
+  const GeneratedNgViewProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
+/// Generated raw facade for ng.ViewService.
+base class GeneratedNgViewService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ViewService.
+  const GeneratedNgViewService(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.WasmAbiExports.
 base class GeneratedNgWasmAbiExports extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.WasmAbiExports.
@@ -5638,6 +6589,15 @@ base class GeneratedNgWasmOptions extends GeneratedNgFacade {
   set rawValue(bool? value) {
     raw.setProperty('raw'.toJS, unsafe.dartToJs(value));
   }
+}
+
+/// Generated raw facade for ng.WasmProvider.
+base class GeneratedNgWasmProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WasmProvider.
+  const GeneratedNgWasmProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.WasmScope.
@@ -6196,6 +7156,19 @@ base class GeneratedNgWebComponentInputConfig extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('default'.toJS));
 }
 
+/// Generated raw facade for ng.WebComponentProvider.
+base class GeneratedNgWebComponentProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WebComponentProvider.
+  const GeneratedNgWebComponentProvider(super.raw);
+
+  /// Reads the generated defaults property.
+  Object? get defaults =>
+      unsafe.jsToDart<Object?>(raw.getProperty('defaults'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.WebComponentService.
 base class GeneratedNgWebComponentService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.WebComponentService.
@@ -6329,6 +7302,19 @@ base class GeneratedNgWebSocketConnection extends GeneratedNgFacade {
     unsafe
         .jsToDart<void>(raw.callMethodVarArgs('close'.toJS, const <JSAny?>[]));
   }
+}
+
+/// Generated raw facade for ng.WebSocketProvider.
+base class GeneratedNgWebSocketProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WebSocketProvider.
+  const GeneratedNgWebSocketProvider(super.raw);
+
+  /// Reads the generated defaults property.
+  Object? get defaults =>
+      unsafe.jsToDart<Object?>(raw.getProperty('defaults'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 }
 
 /// Generated raw facade for ng.WebSocketService.
@@ -6562,6 +7548,19 @@ base class GeneratedNgWebTransportOptions extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('serverCertificateHashes'.toJS));
 }
 
+/// Generated raw facade for ng.WebTransportProvider.
+base class GeneratedNgWebTransportProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WebTransportProvider.
+  const GeneratedNgWebTransportProvider(super.raw);
+
+  /// Reads the generated defaults property.
+  Object? get defaults =>
+      unsafe.jsToDart<Object?>(raw.getProperty('defaults'.toJS));
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
 /// Generated raw facade for ng.WebTransportReconnectEvent.
 base class GeneratedNgWebTransportReconnectEvent extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.WebTransportReconnectEvent.
@@ -6700,4 +7699,28 @@ base class GeneratedNgWorkerConnection extends GeneratedNgFacade {
   /// Reads the generated config property.
   Object? get config =>
       unsafe.jsToDart<Object?>(raw.getProperty('config'.toJS));
+}
+
+/// Generated raw facade for ng.WorkerProvider.
+base class GeneratedNgWorkerProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkerProvider.
+  const GeneratedNgWorkerProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
+/// Generated raw facade for ng.WorkerService.
+base class GeneratedNgWorkerService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkerService.
+  const GeneratedNgWorkerService(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0, [Object? arg1 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
 }

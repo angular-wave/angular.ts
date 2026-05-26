@@ -55,6 +55,7 @@ reference example makes one necessary.
 | `PublicLinkFn` | deferred |
 | `PubSubProvider` | deferred |
 | `Scope` | covered |
+| `ScopeService` | covered |
 | `TranscludeFn` | deferred |
 | `AnnotatedFactory` | deferred |
 | `ControllerConstructor` | covered |
@@ -72,16 +73,44 @@ reference example makes one necessary.
 | ng type | Go status |
 | --- | --- |
 | `AnchorScrollProvider` | deferred |
+| `AngularProvider` | deferred |
 | `AngularServiceProvider` | deferred |
 | `AnimateProvider` | deferred |
+| `AriaProvider` | deferred |
+| `CompileLifecycleProvider` | deferred |
+| `CompileProvider` | deferred |
+| `ControllerProvider` | deferred |
+| `CookieProvider` | deferred |
+| `EventBusProvider` | deferred |
 | `ExceptionHandlerProvider` | deferred |
 | `FilterProvider` | deferred |
 | `HttpParamSerializerProvider` | deferred |
+| `HttpProvider` | deferred |
 | `InterpolateProvider` | deferred |
 | `LocationProvider` | deferred |
+| `LogProvider` | deferred |
+| `ParseProvider` | deferred |
+| `RestProvider` | deferred |
+| `RootScopeProvider` | deferred |
+| `RouterProvider` | deferred |
 | `SceDelegateProvider` | deferred |
 | `SceProvider` | deferred |
+| `SseProvider` | deferred |
+| `StateProvider` | deferred |
+| `StateRegistryProvider` | deferred |
+| `StreamProvider` | deferred |
+| `TemplateCacheProvider` | deferred |
+| `TemplateFactoryProvider` | deferred |
+| `TemplateRequestProvider` | deferred |
+| `TransitionProvider` | deferred |
+| `TransitionsProvider` | deferred |
 | `TransitionService` | deferred |
+| `ViewProvider` | deferred |
+| `WasmProvider` | deferred |
+| `WebComponentProvider` | deferred |
+| `WebSocketProvider` | deferred |
+| `WebTransportProvider` | deferred |
+| `WorkerProvider` | deferred |
 
 ## Services
 
@@ -91,12 +120,16 @@ reference example makes one necessary.
 | `AngularService` | deferred |
 | `AnimateService` | deferred |
 | `AriaService` | deferred |
+| `CompileLifecycleService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
 | `DocumentService` | unsafe |
+| `ElementService` | unsafe |
+| `EventBusService` | covered |
 | `ExceptionHandlerService` | covered |
 | `FilterService` | deferred |
+| `HttpParamSerializerService` | deferred |
 | `HttpParamSerializerSerService` | deferred |
 | `HttpService` | covered |
 | `InjectorService` | deferred |
@@ -114,11 +147,15 @@ reference example makes one necessary.
 | `StateService` | covered |
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
+| `TemplateFactoryService` | deferred |
 | `TemplateRequestService` | covered |
+| `TransitionsService` | deferred |
+| `ViewService` | deferred |
 | `WebComponentService` | deferred |
 | `WebSocketService` | covered |
 | `WebTransportService` | deferred |
 | `WindowService` | unsafe |
+| `WorkerService` | deferred |
 
 ## HTTP And REST
 

@@ -43,6 +43,7 @@ part of the Gleam public facade.
 | `PublicLinkFn` | inventory |
 | `PubSubProvider` | inventory |
 | `Scope` | started |
+| `ScopeService` | started |
 | `TranscludeFn` | inventory |
 | `AnnotatedFactory` | started |
 | `ControllerConstructor` | review |
@@ -60,16 +61,44 @@ part of the Gleam public facade.
 | ng type | Gleam status |
 | --- | --- |
 | `AnchorScrollProvider` | inventory |
+| `AngularProvider` | inventory |
 | `AngularServiceProvider` | inventory |
 | `AnimateProvider` | inventory |
+| `AriaProvider` | inventory |
+| `CompileLifecycleProvider` | inventory |
+| `CompileProvider` | inventory |
+| `ControllerProvider` | inventory |
+| `CookieProvider` | inventory |
+| `EventBusProvider` | inventory |
 | `FilterProvider` | inventory |
 | `ExceptionHandlerProvider` | inventory |
 | `HttpParamSerializerProvider` | inventory |
+| `HttpProvider` | inventory |
 | `InterpolateProvider` | inventory |
 | `LocationProvider` | inventory |
+| `LogProvider` | inventory |
+| `ParseProvider` | inventory |
+| `RestProvider` | inventory |
+| `RootScopeProvider` | inventory |
+| `RouterProvider` | inventory |
 | `SceDelegateProvider` | inventory |
 | `SceProvider` | inventory |
+| `SseProvider` | inventory |
+| `StateProvider` | inventory |
+| `StateRegistryProvider` | inventory |
+| `StreamProvider` | inventory |
+| `TemplateCacheProvider` | inventory |
+| `TemplateFactoryProvider` | inventory |
+| `TemplateRequestProvider` | inventory |
+| `TransitionProvider` | inventory |
+| `TransitionsProvider` | inventory |
 | `TransitionService` | inventory |
+| `ViewProvider` | inventory |
+| `WasmProvider` | inventory |
+| `WebComponentProvider` | inventory |
+| `WebSocketProvider` | inventory |
+| `WebTransportProvider` | inventory |
+| `WorkerProvider` | inventory |
 
 ## Services
 
@@ -82,13 +111,17 @@ part of the Gleam public facade.
 | `AnimationContext` | inventory |
 | `AnimationLifecycleCallback` | inventory |
 | `AriaService` | inventory |
+| `CompileLifecycleService` | inventory |
 | `CompileService` | inventory |
 | `ControllerService` | inventory |
 | `CookieService` | inventory |
+| `ElementService` | alias |
+| `EventBusService` | inventory |
 | `ExceptionHandlerService` | inventory |
 | `FilterFn` | inventory |
 | `FilterFactory` | inventory |
 | `FilterService` | inventory |
+| `HttpParamSerializerService` | inventory |
 | `HttpParamSerializerSerService` | inventory |
 | `HttpService` | inventory |
 | `InjectorService` | started |
@@ -106,8 +139,12 @@ part of the Gleam public facade.
 | `StateRegistryService` | inventory |
 | `StreamService` | inventory |
 | `TemplateCacheService` | inventory |
+| `TemplateFactoryService` | inventory |
 | `TemplateRequestService` | inventory |
+| `TransitionsService` | inventory |
+| `ViewService` | inventory |
 | `WindowService` | alias |
+| `WorkerService` | inventory |
 
 ## HTTP And REST
 
