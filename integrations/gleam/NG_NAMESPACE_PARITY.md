@@ -122,7 +122,6 @@ part of the Gleam public facade.
 | `FilterFactory` | inventory |
 | `FilterService` | inventory |
 | `HttpParamSerializerService` | inventory |
-| `HttpParamSerializerSerService` | inventory |
 | `HttpService` | inventory |
 | `InjectorService` | started |
 | `InterpolateService` | inventory |

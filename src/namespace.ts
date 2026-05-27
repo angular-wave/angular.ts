@@ -32,8 +32,8 @@ import type {
 } from "./services/template-request/template-request.ts";
 
 import type {
-  HttpParamSerializerProvider,
-  HttpProvider,
+  HttpParamSerializerProvider as THttpParamSerializerProvider,
+  HttpProvider as THttpProvider,
   HttpMethod as THttpMethod,
   HttpParamSerializer as THttpParamSerializer,
   HttpPromise as THttpPromise,
@@ -63,7 +63,7 @@ import type {
   InterpolateProvider as TInterpolateProvider,
 } from "./core/interpolate/interpolate.ts";
 import type {
-  SceProvider,
+  SceProvider as TSceProvider,
   SceDelegateProvider as TSceDelegateProvider,
   SceDelegateService as TSceDelegateService,
   SceService as TSceService,
@@ -148,7 +148,7 @@ import type {
   AnimationPreset as TAnimationPreset,
   AnimationPresetHandler as TAnimationPresetHandler,
   AnimationResult as TAnimationResult,
-  AnimateProvider,
+  AnimateProvider as TAnimateProvider,
   AnimateService as TAnimateService,
   NativeAnimationOptions as TNativeAnimationOptions,
 } from "./animations/animate.ts";
@@ -236,7 +236,7 @@ import type { Transition as TTransition } from "./router/transition/transition.t
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import type {
-  AriaProvider,
+  AriaProvider as TAriaProvider,
   AriaService as TAriaService,
 } from "./directive/aria/aria.ts";
 import type {
@@ -290,9 +290,9 @@ declare global {
 
     export type AngularServiceProvider = TAngularServiceProvider;
 
-    export type AnimateProvider = ThisParameterType<typeof AnimateProvider>;
+    export type AnimateProvider = TAnimateProvider;
 
-    export type AriaProvider = ThisParameterType<typeof AriaProvider>;
+    export type AriaProvider = TAriaProvider;
 
     export type CompileLifecycleProvider = TCompileLifecycleProvider;
 
@@ -308,11 +308,9 @@ declare global {
 
     export type ExceptionHandlerProvider = TExceptionHandlerProvider;
 
-    export type HttpParamSerializerProvider = ThisParameterType<
-      typeof HttpParamSerializerProvider
-    >;
+    export type HttpParamSerializerProvider = THttpParamSerializerProvider;
 
-    export type HttpProvider = ThisParameterType<typeof HttpProvider>;
+    export type HttpProvider = THttpProvider;
 
     export type InterpolateProvider = TInterpolateProvider;
 
@@ -330,7 +328,7 @@ declare global {
 
     export type SceDelegateProvider = TSceDelegateProvider;
 
-    export type SceProvider = ThisParameterType<typeof SceProvider>;
+    export type SceProvider = TSceProvider;
 
     export type SseProvider = TSseProvider;
 
@@ -406,8 +404,6 @@ declare global {
     export type CurrencyFilterOptions = TCurrencyFilterOptions;
 
     export type RelativeTimeFilterOptions = TRelativeTimeFilterOptions;
-
-    export type HttpParamSerializerSerService = THttpParamSerializer;
 
     export type HttpParamSerializerService = THttpParamSerializer;
 

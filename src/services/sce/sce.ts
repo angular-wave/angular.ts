@@ -774,12 +774,17 @@ export class SceDelegateProvider implements UriSanitizationConfig {
   }
 }
 
-export function SceProvider(this: unknown): void {
-  const provider = this as {
-    enabled?: (value?: boolean) => boolean;
-    $get?: unknown;
-  };
+/** Provider configuration surface available as `$sceProvider`. */
+export interface SceProvider {
+  /**
+   * Enables or disables SCE application-wide and returns the current state.
+   */
+  enabled(value?: boolean): boolean;
+  /** @internal */
+  $get?: unknown;
+}
 
+export function SceProvider(this: SceProvider): void {
   let enabled = true;
 
   /**
@@ -789,7 +794,7 @@ export function SceProvider(this: unknown): void {
    *
    * Enables/disables SCE and returns the current value.
    */
-  provider.enabled = function (value?: boolean) {
+  this.enabled = function (value?: boolean) {
     if (arguments.length) {
       enabled = !!value;
     }
@@ -797,7 +802,7 @@ export function SceProvider(this: unknown): void {
     return enabled;
   };
 
-  provider.$get = [
+  this.$get = [
     _parse,
     _sceDelegate,
     /**

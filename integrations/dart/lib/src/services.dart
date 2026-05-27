@@ -53,13 +53,13 @@ final class AriaService extends GeneratedNgAriaService {
 }
 
 /// Represents aria provider.
-final class AriaProvider extends AngularTsJsFacade {
+final class AriaProvider extends GeneratedNgAriaProvider {
   /// Creates a aria provider.
   const AriaProvider(super.raw);
 }
 
 /// Represents compile provider.
-final class CompileProvider extends AngularTsJsFacade {
+final class CompileProvider extends GeneratedNgCompileProvider {
   /// Creates a compile provider.
   const CompileProvider(super.raw);
 }
@@ -71,7 +71,7 @@ final class CompileService extends GeneratedNgCompileService {
 }
 
 /// Represents controller provider.
-final class ControllerProvider extends AngularTsJsFacade {
+final class ControllerProvider extends GeneratedNgControllerProvider {
   /// Creates a controller provider.
   const ControllerProvider(super.raw);
 }
@@ -83,11 +83,12 @@ final class ControllerService extends GeneratedNgControllerService {
 }
 
 /// Represents cookie provider.
-final class CookieProvider extends AngularTsJsFacade {
+final class CookieProvider extends GeneratedNgCookieProvider {
   /// Creates a cookie provider.
   const CookieProvider(super.raw);
 
   /// Default cookie attributes merged into writes and removals.
+  @override
   Object? get defaults {
     return unsafe.jsToDart<Object?>(unsafe.getProperty(raw, 'defaults'));
   }
@@ -99,6 +100,7 @@ final class CookieProvider extends AngularTsJsFacade {
   }
 
   /// The runtime service factory.
+  @override
   Object? get $get =>
       unsafe.jsToDart<Object?>(unsafe.getProperty(raw, r'$get'));
 }
@@ -110,7 +112,7 @@ final class CookieService extends GeneratedNgCookieService {
 }
 
 /// Represents event bus provider.
-final class EventBusProvider extends AngularTsJsFacade {
+final class EventBusProvider extends GeneratedNgEventBusProvider {
   /// Creates a event bus provider.
   const EventBusProvider(super.raw);
 }
@@ -145,7 +147,7 @@ final class FilterService extends GeneratedNgFilterService {
 }
 
 /// Represents http provider.
-final class HttpProvider extends AngularTsJsFacade {
+final class HttpProvider extends GeneratedNgHttpProvider {
   /// Creates a http provider.
   const HttpProvider(super.raw);
 }
@@ -159,7 +161,7 @@ final class HttpParamSerializerProvider
 
 /// Represents http param serializer service.
 final class HttpParamSerializerService
-    extends GeneratedNgHttpParamSerializerSerService {
+    extends GeneratedNgHttpParamSerializerService {
   /// Creates a http param serializer service.
   const HttpParamSerializerService(super.raw);
 }
@@ -277,7 +279,7 @@ final class LocationService extends GeneratedNgLocationService {
 }
 
 /// Represents log provider.
-final class LogProvider extends AngularTsJsFacade {
+final class LogProvider extends GeneratedNgLogProvider {
   /// Creates a log provider.
   const LogProvider(super.raw);
 }
@@ -289,7 +291,7 @@ final class LogService extends GeneratedNgLogService {
 }
 
 /// Represents parse provider.
-final class ParseProvider extends AngularTsJsFacade {
+final class ParseProvider extends GeneratedNgParseProvider {
   /// Creates a parse provider.
   const ParseProvider(super.raw);
 }
@@ -330,7 +332,7 @@ final class PubSubService extends GeneratedNgPubSubService {
 }
 
 /// Represents rest provider.
-final class RestProvider extends AngularTsJsFacade {
+final class RestProvider extends GeneratedNgRestProvider {
   /// Creates a rest provider.
   const RestProvider(super.raw);
 }
@@ -342,7 +344,7 @@ final class RestServiceFacade extends GeneratedNgRestService {
 }
 
 /// Represents root scope provider.
-final class RootScopeProvider extends AngularTsJsFacade {
+final class RootScopeProvider extends GeneratedNgRootScopeProvider {
   /// Creates a root scope provider.
   const RootScopeProvider(super.raw);
 }
@@ -372,7 +374,7 @@ final class SceDelegateService extends GeneratedNgSceDelegateService {
 }
 
 /// Represents sse provider.
-final class SseProvider extends AngularTsJsFacade {
+final class SseProvider extends GeneratedNgSseProvider {
   /// Creates a sse provider.
   const SseProvider(super.raw);
 }
@@ -384,26 +386,29 @@ final class SseService extends GeneratedNgSseService {
 }
 
 /// Represents state provider.
-final class StateProvider extends AngularTsJsFacade {
+final class StateProvider extends GeneratedNgStateProvider {
   /// Creates a state provider.
   const StateProvider(super.raw);
 }
 
 /// Represents state registry provider.
-final class StateRegistryProvider extends AngularTsJsFacade {
+final class StateRegistryProvider extends GeneratedNgStateRegistryProvider {
   /// Creates a state registry provider.
   const StateRegistryProvider(super.raw);
 
   /// The runtime service factory.
+  @override
   Object? get $get =>
       unsafe.jsToDart<Object?>(unsafe.getProperty(raw, r'$get'));
 
   /// Registers the implicit root state.
+  @override
   void registerRoot() {
     unsafe.callMethod(raw, 'registerRoot');
   }
 
   /// Registers a state-registry listener.
+  @override
   Object? onStatesChanged(Object? listener) {
     return unsafe.callMethod1(
       raw,
@@ -413,11 +418,13 @@ final class StateRegistryProvider extends AngularTsJsFacade {
   }
 
   /// Returns the implicit root state.
+  @override
   Object? root() {
     return unsafe.callMethod(raw, 'root');
   }
 
   /// Registers a state declaration.
+  @override
   Object? register(Object? stateDefinition) {
     return unsafe.callMethod1(
       raw,
@@ -427,6 +434,7 @@ final class StateRegistryProvider extends AngularTsJsFacade {
   }
 
   /// Deregisters a state.
+  @override
   Object? deregister(Object? stateOrName) {
     return unsafe.callMethod1(
       raw,
@@ -436,6 +444,7 @@ final class StateRegistryProvider extends AngularTsJsFacade {
   }
 
   /// Returns all registered states.
+  @override
   Object? getAll() {
     return unsafe.callMethod(raw, 'getAll');
   }
@@ -472,11 +481,12 @@ final class StreamService extends GeneratedNgStreamService {
 }
 
 /// Represents template cache provider.
-final class TemplateCacheProvider extends AngularTsJsFacade {
+final class TemplateCacheProvider extends GeneratedNgTemplateCacheProvider {
   /// Creates a template cache provider.
   const TemplateCacheProvider(super.raw);
 
   /// The backing cache.
+  @override
   TemplateCacheService get cache {
     final value = unsafe.getProperty(raw, 'cache');
     return TemplateCacheService(value as JSObject);
@@ -487,6 +497,7 @@ final class TemplateCacheProvider extends AngularTsJsFacade {
   }
 
   /// The runtime service factory.
+  @override
   TemplateCacheService $get() {
     final value = unsafe.callMethod(raw, r'$get');
     return TemplateCacheService(value as JSObject);
@@ -494,13 +505,13 @@ final class TemplateCacheProvider extends AngularTsJsFacade {
 }
 
 /// Represents template factory provider.
-final class TemplateFactoryProvider extends AngularTsJsFacade {
+final class TemplateFactoryProvider extends GeneratedNgTemplateFactoryProvider {
   /// Creates a template factory provider.
   const TemplateFactoryProvider(super.raw);
 }
 
 /// Represents template request provider.
-final class TemplateRequestProvider extends AngularTsJsFacade {
+final class TemplateRequestProvider extends GeneratedNgTemplateRequestProvider {
   /// Creates a template request provider.
   const TemplateRequestProvider(super.raw);
 }
@@ -570,19 +581,19 @@ final class TransitionService extends GeneratedNgTransitionService {
 }
 
 /// Represents transitions provider.
-final class TransitionsProvider extends AngularTsJsFacade {
+final class TransitionsProvider extends GeneratedNgTransitionsProvider {
   /// Creates a transitions provider.
   const TransitionsProvider(super.raw);
 }
 
 /// Represents view provider.
-final class ViewProvider extends AngularTsJsFacade {
+final class ViewProvider extends GeneratedNgViewProvider {
   /// Creates a view provider.
   const ViewProvider(super.raw);
 }
 
 /// Represents view service.
-final class ViewService extends AngularTsJsFacade {
+final class ViewService extends GeneratedNgViewService {
   /// Creates a view service.
   const ViewService(super.raw);
 }
@@ -594,7 +605,7 @@ final class WebComponentService extends GeneratedNgWebComponentService {
 }
 
 /// Represents web socket provider.
-final class WebSocketProvider extends AngularTsJsFacade {
+final class WebSocketProvider extends GeneratedNgWebSocketProvider {
   /// Creates a web socket provider.
   const WebSocketProvider(super.raw);
 }
@@ -606,7 +617,7 @@ final class WebSocketService extends GeneratedNgWebSocketService {
 }
 
 /// Represents web transport provider.
-final class WebTransportProvider extends AngularTsJsFacade {
+final class WebTransportProvider extends GeneratedNgWebTransportProvider {
   /// Creates a web transport provider.
   const WebTransportProvider(super.raw);
 }
@@ -618,19 +629,19 @@ final class WebTransportService extends GeneratedNgWebTransportService {
 }
 
 /// Represents worker provider.
-final class WorkerProvider extends AngularTsJsFacade {
+final class WorkerProvider extends GeneratedNgWorkerProvider {
   /// Creates a worker provider.
   const WorkerProvider(super.raw);
 }
 
 /// Represents worker service.
-final class WorkerService extends AngularTsJsFacade {
+final class WorkerService extends GeneratedNgWorkerService {
   /// Creates a worker service.
   const WorkerService(super.raw);
 }
 
 /// Represents wasm provider.
-final class WasmProvider extends AngularTsJsFacade {
+final class WasmProvider extends GeneratedNgWasmProvider {
   /// Creates a wasm provider.
   const WasmProvider(super.raw);
 }

@@ -20,8 +20,6 @@ import type { StateObject } from "./state/state-object.ts";
 
 /**
  * Mutable router state/config shared across state, URL, and transition services.
- *
- * @internal
  */
 export class RouterProvider {
   /* @ignore */ static $inject = [_locationProvider];

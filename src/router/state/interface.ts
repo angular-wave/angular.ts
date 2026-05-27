@@ -1,7 +1,6 @@
 import type { ParamDeclaration, RawParams } from "../params/interface.ts";
 import type { Param } from "../params/param.ts";
 import type { StateObject } from "./state-object.ts";
-import type { ViewContext } from "../view/view.ts";
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { TransitionStateHookFn } from "../transition/interface.ts";
@@ -213,6 +212,7 @@ export interface ViewDeclaration extends ViewDeclarationCommon {
   /**
    * The raw view declaration name from [[StateDeclaration.views]].
    */
+  /** @internal */
   _name?: string;
 
   /**
@@ -221,6 +221,7 @@ export interface ViewDeclaration extends ViewDeclarationCommon {
    * A view target is matched relative to the `_ngViewContextAnchor`.
    * @example `header`, `messagecontent`, or `$default`
    */
+  /** @internal */
   _ngViewName?: string;
 
   /**
@@ -228,12 +229,14 @@ export interface ViewDeclaration extends ViewDeclarationCommon {
    *
    * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
    */
+  /** @internal */
   _ngViewContextAnchor?: string;
 
   /**
    * The context that this view is declared within.
    */
-  _context?: ViewContext;
+  /** @internal */
+  _context?: import("../view/view.ts").ViewContext;
 }
 
 /**
@@ -772,7 +775,6 @@ export interface HrefOptions {
  * Either a [[StateDeclaration]] or an ES6 class that implements [[StateDeclaration]]
  * The ES6 class constructor should have no arguments.
  */
-/** @internal */
 export type StateDeclarationInput =
   | StateDeclaration
   | (new () => StateDeclaration);

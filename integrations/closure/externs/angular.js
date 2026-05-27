@@ -1054,7 +1054,7 @@ ng.AnimateProvider.prototype.register = function(name, preset) {};
 ng.AnimateProvider.prototype.$get;
 
 /**
- * Public AngularTS AriaProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * Used for configuring the ARIA attributes injected and managed by ngAria. ```js angular.module('myApp', ['ngAria'], function config($ariaProvider) { $ariaProvider.config({ ariaValue: true, tabindex: false }); }); ``` ## Dependencies Requires the {@link ngAria } module to be installed.
  * @record
  */
 ng.AriaProvider = function() {};
@@ -1245,22 +1245,46 @@ ng.ExceptionHandlerProvider.prototype.handler = function(exception) {};
 ng.ExceptionHandlerProvider.prototype.$get = function() {};
 
 /**
- * Public AngularTS HttpParamSerializerProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * Default params serializer that converts objects to strings according to the following rules: * `{'foo': 'bar'}` results in `foo=bar` * `{'foo': Date.now()}` results in `foo=2015-04-01T09%3A50%3A49.262Z` (`toISOString()` and encoded representation of a Date object) * `{'foo': ['bar', 'baz']}` results in `foo=bar&foo=baz` (repeated key for each array element) * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object) Note that serializer will sort the request parameters alphabetically. Provider configuration surface available as `$httpParamSerializerProvider`.
  * @record
  */
 ng.HttpParamSerializerProvider = function() {};
 
 /**
- * Public HttpParamSerializerProvider.$get member exposed by the AngularTS namespace contract.
+ * Creates the runtime query-parameter serializer.
  * @type {(function(): function((!Object<string, ?>|undefined)): string|undefined)}
  */
 ng.HttpParamSerializerProvider.prototype.$get;
 
 /**
- * Public AngularTS HttpProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * Configures the default behavior of the `$http` service. Provider configuration surface available as `$httpProvider`.
  * @record
  */
 ng.HttpProvider = function() {};
+
+/**
+ * Default values applied to all `$http` requests unless a request overrides them.
+ * @type {!ng.HttpProviderDefaults}
+ */
+ng.HttpProvider.prototype.defaults;
+
+/**
+ * Interceptor factories applied to requests and responses.
+ * @type {!Array<(!Array<function(): !Object>|function(): !Object|string)>}
+ */
+ng.HttpProvider.prototype.interceptors;
+
+/**
+ * Origins trusted to receive the XSRF token.
+ * @type {!Array<string>}
+ */
+ng.HttpProvider.prototype.xsrfTrustedOrigins;
+
+/**
+ * Public HttpProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {(?|undefined)}
+ */
+ng.HttpProvider.prototype.$get;
 
 /**
  * Public AngularTS InterpolateProvider contract exposed through the global ng namespace for Closure-annotated applications.
@@ -1467,10 +1491,23 @@ ng.SceDelegateProvider.prototype.imgSrcSanitizationTrustedUrlList = function(reg
 ng.SceDelegateProvider.prototype.$get;
 
 /**
- * Public AngularTS SceProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * Provider configuration surface available as `$sceProvider`.
  * @record
  */
 ng.SceProvider = function() {};
+
+/**
+ * Enables or disables SCE application-wide and returns the current state.
+ * @param {(boolean|undefined)} value
+ * @return {boolean}
+ */
+ng.SceProvider.prototype.enabled = function(value) {};
+
+/**
+ * Public SceProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {(?|undefined)}
+ */
+ng.SceProvider.prototype.$get;
 
 /**
  * Public AngularTS SseProvider contract exposed through the global ng namespace for Closure-annotated applications.
@@ -2596,12 +2633,6 @@ ng.CurrencyFilterOptions = function() {};
  * @record
  */
 ng.RelativeTimeFilterOptions = function() {};
-
-/**
- * Function that serializes query params into a URL-encoded string.
- * @typedef {function((!Object<string, ?>|undefined)): string}
- */
-ng.HttpParamSerializerSerService;
 
 /**
  * Function that serializes query params into a URL-encoded string.

@@ -28,7 +28,7 @@ interface AriaConfig {
   bindRoleForClick: boolean;
 }
 
-interface AriaProviderInstance {
+export interface AriaProvider {
   config: (newConfig: Partial<AriaConfig>) => void;
   $get: ng.Injectable<() => AriaService>;
 }
@@ -82,7 +82,7 @@ const isNodeOneOf = function (
  * Requires the {@link ngAria} module to be installed.
  *
  */
-export function AriaProvider(this: AriaProviderInstance): void {
+export function AriaProvider(this: AriaProvider): void {
   let config: AriaConfig = {
     ariaHidden: true,
     ariaChecked: true,

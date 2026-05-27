@@ -10,7 +10,7 @@ import angular.ts.generated.ExceptionHandlerService as RawExceptionHandlerServic
 import angular.ts.generated.FilterProvider as RawFilterProvider
 import angular.ts.generated.FilterService as RawFilterService
 import angular.ts.generated.HttpParamSerializerProvider as RawHttpParamSerializerProvider
-import angular.ts.generated.HttpParamSerializerSerService as RawHttpParamSerializerSerService
+import angular.ts.generated.HttpParamSerializerService as RawHttpParamSerializerService
 import angular.ts.generated.HttpService as RawHttpService
 import angular.ts.generated.InterpolateService as RawInterpolateService
 import angular.ts.generated.LocationService as RawLocationService
@@ -483,7 +483,7 @@ public class HttpParamSerializerProvider internal constructor(
 )
 
 public class HttpParamSerializerService internal constructor(
-    internal val raw: RawHttpParamSerializerSerService,
+    internal val raw: RawHttpParamSerializerService,
 ) {
     public operator fun invoke(params: HttpParams? = null): String =
         callJsFunction(raw, null, arrayOf(params?.toJsRecord())).unsafeCast<String>()

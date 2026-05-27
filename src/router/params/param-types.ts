@@ -23,7 +23,6 @@ type BuiltInParamTypeName =
   | "json"
   | "any";
 
-/** @internal */
 export type ParamTypeMap = Record<BuiltInParamTypeName, ParamType> &
   Record<string, ParamType | undefined>;
 

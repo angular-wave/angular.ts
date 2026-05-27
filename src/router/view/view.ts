@@ -27,6 +27,7 @@ import type { StateObject } from "../state/state-object.ts";
 import type { TemplateFactoryProvider } from "../router/template-factory.ts";
 import type { RouterProvider } from "../router.ts";
 import { getLocals } from "../state/state-registry.ts";
+/** @internal */
 export { normalizeNgViewTarget } from "../state/view-target.ts";
 
 /** @internal */

@@ -43,11 +43,7 @@ import type {
 import type { StateObject } from "./state-object.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { RouterProvider } from "../router.ts";
-import {
-  silentRejection,
-  silenceUncaughtInPromise,
-  transitionToState,
-} from "./state-transition.ts";
+import { transitionToState } from "./state-transition.ts";
 
 const stateProviderError = createErrorFactory("$stateProvider");
 
@@ -57,8 +53,6 @@ export interface LazyStateRegistration {
   promise?: Promise<void>;
   loaded: boolean;
 }
-
-export { silentRejection, silenceUncaughtInPromise };
 
 /**
  * Provides services related to ng-router states.

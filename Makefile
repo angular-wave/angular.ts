@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-integrations test-types types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix hugo
+.PHONY: build build-ts check test test-integrations test-types test-namespace-js types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -81,11 +81,16 @@ check: ensure-deps
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types
+	@$(MAKE) test-namespace-js
 	@$(MAKE) docs-examples-check
 
 test-types: ensure-deps
 	@echo "Typechecking tests"
 	./node_modules/.bin/tsc --project tsconfig.test.json
+
+test-namespace-js: types
+	@echo "Typechecking JavaScript namespace consumer"
+	./node_modules/.bin/tsc --project tsconfig.namespace-js.json
 
 docs-examples-check: ensure-deps
 	@echo "Checking docs example API references"

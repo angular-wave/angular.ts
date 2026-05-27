@@ -121,7 +121,6 @@ part of the Kotlin public facade.
 | `ExceptionHandlerService` | generated |
 | `FilterService` | generated |
 | `HttpParamSerializerService` | generated |
-| `HttpParamSerializerSerService` | generated |
 | `HttpService` | generated |
 | `InjectorService` | generated |
 | `InterpolateService` | generated |

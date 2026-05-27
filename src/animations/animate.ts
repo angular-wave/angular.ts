@@ -236,7 +236,7 @@ export interface AnimateService {
 
 type PresetRegistration = AnimationPreset | Injectable<() => AnimationPreset>;
 
-interface AnimateProviderInstance {
+export interface AnimateProvider {
   /** @internal */
   _registeredAnimations: Partial<Record<string, PresetRegistration>>;
   /** @internal */
@@ -284,7 +284,7 @@ const BUILT_IN_PRESETS: Record<string, AnimationPreset> = {
 
 AnimateProvider.$inject = [] as string[];
 
-export function AnimateProvider(this: AnimateProviderInstance): void {
+export function AnimateProvider(this: AnimateProvider): void {
   /** @internal */
   this._registeredAnimations = { ...BUILT_IN_PRESETS };
   /** @internal */

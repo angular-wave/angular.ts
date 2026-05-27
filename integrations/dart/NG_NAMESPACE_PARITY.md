@@ -118,7 +118,6 @@ part of the Dart public facade.
 | `ExceptionHandlerService` | started |
 | `FilterService` | started |
 | `HttpParamSerializerService` | started |
-| `HttpParamSerializerSerService` | started |
 | `HttpService` | started |
 | `InjectorService` | started |
 | `InterpolateService` | started |

@@ -41,8 +41,6 @@ export const defaultTransOpts: TransitionOptions = {
  * Note: In this codebase, `$get` returns the provider instance (`return this;`),
  * so the "service" surface includes both the public HookRegistry API and
  * a set of internal fields/methods used by built-in hook registrations.
- *
- * @internal
  */
 export interface TransitionService extends HookRegistry {
   /**
@@ -94,8 +92,6 @@ export interface TransitionService extends HookRegistry {
 
 /**
  * Central registry and factory for transition events, hooks, and transition instances.
- *
- * @internal
  */
 export class TransitionProvider implements TransitionService {
   static $inject = [_routerProvider, _exceptionHandlerProvider] as const;

@@ -149,8 +149,6 @@ pub type CurrencyFilterOptions
 
 pub type RelativeTimeFilterOptions
 
-pub type HttpParamSerializerSerService
-
 pub type HttpParamSerializerService
 
 pub type HttpService

@@ -152,7 +152,6 @@ necessary.
 | `ExceptionHandlerService` | covered |
 | `FilterService` | deferred |
 | `HttpParamSerializerService` | deferred |
-| `HttpParamSerializerSerService` | deferred |
 | `HttpService` | covered |
 | `InjectorService` | deferred |
 | `InterpolateService` | deferred |

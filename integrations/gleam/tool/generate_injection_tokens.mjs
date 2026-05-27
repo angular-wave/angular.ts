@@ -26,7 +26,7 @@ const typeMap = new Map(
     $exceptionHandler: "namespace.ExceptionHandlerService",
     $filter: "namespace.FilterService",
     $http: "namespace.HttpService",
-    $httpParamSerializer: "namespace.HttpParamSerializerSerService",
+    $httpParamSerializer: "namespace.HttpParamSerializerService",
     $interpolate: "namespace.InterpolateService",
     $location: "namespace.LocationService",
     $log: "namespace.LogService",

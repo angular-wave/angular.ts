@@ -237,7 +237,11 @@ public external interface HttpParamSerializerProvider {
     public fun `$get`(): Function<*>
 }
 
-public external interface HttpProvider
+public external interface HttpProvider {
+    public var defaults: dynamic
+    public var interceptors: Array<dynamic>
+    public var xsrfTrustedOrigins: Array<dynamic>
+}
 
 public external interface InterpolateProvider {
     public var `$get`: Array<dynamic>
@@ -275,7 +279,9 @@ public external interface RootScopeProvider {
     public var `$get`: Array<dynamic>
 }
 
-public external interface RouterProvider
+public external interface RouterProvider {
+    public var `$get`: Array<dynamic>
+}
 
 public external interface SceDelegateProvider {
     public var `$get`: Array<dynamic>
@@ -285,7 +291,9 @@ public external interface SceDelegateProvider {
     public fun trustedResourceUrlList(p0: Array<dynamic> = definedExternally): Array<dynamic>
 }
 
-public external interface SceProvider
+public external interface SceProvider {
+    public fun enabled(p0: Boolean = definedExternally): Boolean
+}
 
 public external interface SseProvider {
     public var `$get`: Array<dynamic>
@@ -331,16 +339,42 @@ public external interface TemplateCacheProvider {
     public var cache: dynamic
 }
 
-public external interface TemplateFactoryProvider
+public external interface TemplateFactoryProvider {
+    public var `$get`: Array<dynamic>
+}
 
 public external interface TemplateRequestProvider {
     public var `$get`: Array<dynamic>
     public var httpOptions: dynamic
 }
 
-public external interface TransitionProvider
+public external interface TransitionProvider {
+    public fun `$get`(): dynamic
+    public fun create(p0: Array<dynamic> = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun on(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Function<*>
+    public fun onBefore(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onEnter(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onError(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onExit(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onFinish(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onRetain(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onStart(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onSuccess(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+}
 
-public external interface TransitionsProvider
+public external interface TransitionsProvider {
+    public fun `$get`(): dynamic
+    public fun create(p0: Array<dynamic> = definedExternally, p1: dynamic = definedExternally): dynamic
+    public fun on(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Function<*>
+    public fun onBefore(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onEnter(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onError(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onExit(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onFinish(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onRetain(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onStart(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+    public fun onSuccess(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Function<*>
+}
 
 public external interface TransitionService {
     public fun onBefore(p0: dynamic = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Function<*>
@@ -494,10 +528,6 @@ public external interface NumberFilterOptions
 public external interface CurrencyFilterOptions
 
 public external interface RelativeTimeFilterOptions
-
-public external interface HttpParamSerializerSerService {
-    public operator fun invoke(p0: dynamic = definedExternally): String
-}
 
 public external interface HttpParamSerializerService {
     public operator fun invoke(p0: dynamic = definedExternally): String
@@ -731,7 +761,9 @@ public external interface SwapModeType
 
 public external interface TemplateCacheService
 
-public external interface TemplateFactoryService
+public external interface TemplateFactoryService {
+    public var `$get`: Array<dynamic>
+}
 
 public external interface TemplateRequestService {
     public operator fun invoke(p0: String = definedExternally): dynamic

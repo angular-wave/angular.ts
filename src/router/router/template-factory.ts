@@ -61,8 +61,6 @@ function componentElementName(camelCase: string): string {
 
 /**
  * Resolves route templates and components from state view declarations.
- *
- * @internal
  */
 export class TemplateFactoryProvider {
   /** @internal */

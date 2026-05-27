@@ -11,7 +11,7 @@ import angular.ts.generated.ExceptionHandlerService as RawExceptionHandlerServic
 import angular.ts.generated.FilterProvider as RawFilterProvider
 import angular.ts.generated.FilterService as RawFilterService
 import angular.ts.generated.HttpParamSerializerProvider as RawHttpParamSerializerProvider
-import angular.ts.generated.HttpParamSerializerSerService as RawHttpParamSerializerSerService
+import angular.ts.generated.HttpParamSerializerService as RawHttpParamSerializerService
 import angular.ts.generated.HttpService as RawHttpService
 import angular.ts.generated.InjectorService as RawInjectorService
 import angular.ts.generated.InterpolateService as RawInterpolateService
@@ -74,7 +74,7 @@ public val httpToken: Token<HttpService> =
 
 public val httpParamSerializerToken: Token<HttpParamSerializerService> =
     Token("\$httpParamSerializer") { value ->
-        HttpParamSerializerService(value.unsafeCast<RawHttpParamSerializerSerService>())
+        HttpParamSerializerService(value.unsafeCast<RawHttpParamSerializerService>())
     }
 
 public val injectorToken: Token<Injector> =

@@ -322,6 +322,24 @@ export type HttpInterceptorFactory = () => HttpInterceptor;
 
 type HttpInterceptorHook = (value: unknown) => unknown;
 
+/** Provider configuration surface available as `$httpParamSerializerProvider`. */
+export interface HttpParamSerializerProvider {
+  /** Creates the runtime query-parameter serializer. */
+  $get?: () => HttpParamSerializer;
+}
+
+/** Provider configuration surface available as `$httpProvider`. */
+export interface HttpProvider {
+  /** Default values applied to all `$http` requests unless a request overrides them. */
+  defaults: HttpProviderDefaults;
+  /** Interceptor factories applied to requests and responses. */
+  interceptors: (string | ng.Injectable<HttpInterceptorFactory>)[];
+  /** Origins trusted to receive the XSRF token. */
+  xsrfTrustedOrigins: string[];
+  /** @internal */
+  $get?: unknown;
+}
+
 /**
  * @internal
  */
@@ -372,9 +390,9 @@ function serializeValue(
  *
  * Note that serializer will sort the request parameters alphabetically.
  */
-export function HttpParamSerializerProvider(this: {
-  $get?: () => HttpParamSerializer;
-}): void {
+export function HttpParamSerializerProvider(
+  this: HttpParamSerializerProvider,
+): void {
   /**
    * Returns the runtime query-parameter serializer.
    */
@@ -628,20 +646,14 @@ function deProxyHttpPayload(
 }
 
 /** Configures the default behavior of the `$http` service. */
-export function HttpProvider(this: unknown): void {
-  const provider = this as {
-    defaults: HttpProviderDefaults;
-    interceptors: (string | ng.Injectable<HttpInterceptorFactory>)[];
-    xsrfTrustedOrigins: string[];
-    $get?: unknown;
-  };
+export function HttpProvider(this: HttpProvider): void {
   /**
    * Default values applied to all `$http` requests unless a request overrides them.
    *
    * This includes cache behavior, default headers, request/response transforms, XSRF names,
    * credentials defaults, and parameter serialization.
    */
-  const defaults: HttpProviderDefaults = (provider.defaults = {
+  const defaults: HttpProviderDefaults = (this.defaults = {
     // transform incoming response data
     transformResponse: [defaultHttpResponseTransform],
     // transform outgoing request data
@@ -678,10 +690,7 @@ export function HttpProvider(this: unknown): void {
    *
    * See the `$http` service documentation for detailed interceptor behavior.
    */
-  provider.interceptors = [] as (
-    | string
-    | ng.Injectable<HttpInterceptorFactory>
-  )[];
+  this.interceptors = [] as (string | ng.Injectable<HttpInterceptorFactory>)[];
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
@@ -719,26 +728,20 @@ export function HttpProvider(this: unknown): void {
    * ```
    *
    */
-  provider.xsrfTrustedOrigins = [] as string[];
+  this.xsrfTrustedOrigins = [] as string[];
 
-  const that = provider as {
-    interceptors: (string | ng.Injectable<HttpInterceptorFactory>)[];
-    xsrfTrustedOrigins: string[];
-    defaults: HttpProviderDefaults;
-  };
-
-  provider.$get = [
+  this.$get = [
     _injector,
     _sce,
     _cookie,
     _stream,
     /** Creates the runtime `$http` service. */
-    function (
+    (
       $injector: ng.InjectorService,
       $sce: ng.SceService,
       $cookie: ng.CookieService,
       $stream: ng.StreamService,
-    ) {
+    ) => {
       const defaultCache = new Map<string, unknown>();
 
       /**
@@ -754,7 +757,7 @@ export function HttpProvider(this: unknown): void {
        */
       const reversedInterceptors: HttpInterceptor[] = [];
 
-      that.interceptors.forEach(
+      this.interceptors.forEach(
         (
           interceptorFactory: string | ng.Injectable<HttpInterceptorFactory>,
         ) => {
@@ -770,7 +773,7 @@ export function HttpProvider(this: unknown): void {
        * Creates the origin check used for XSRF header inclusion.
        */
       const urlIsAllowedOrigin = urlIsAllowedOriginFactory(
-        that.xsrfTrustedOrigins,
+        this.xsrfTrustedOrigins,
       );
 
       /**

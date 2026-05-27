@@ -384,7 +384,6 @@ export interface Replace {
  * fooId === "123" // false
  * fooId === 123 // true
  * ```
- * @internal
  */
 export interface ParamTypeDefinition {
   /**

@@ -68,7 +68,6 @@
     "js/ng.FilterService"
     "js/ng.HttpMethod"
     "js/ng.HttpParamSerializerProvider"
-    "js/ng.HttpParamSerializerSerService"
     "js/ng.HttpParamSerializerService"
     "js/ng.HttpPromise"
     "js/ng.HttpProvider"
@@ -227,7 +226,7 @@
      "js/ng.AnnotatedDirectiveFactory" "Dependency-annotated directive factory array containing dependency token names followed by a directive factory function."
      "js/ng.AnnotatedFactory" "Dependency-annotated injectable array containing dependency token names followed by the factory or constructor function."
      "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.AriaProvider" "Public AngularTS AriaProvider contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.AriaProvider" "Used for configuring the ARIA attributes injected and managed by ngAria. ```js angular.module('myApp', ['ngAria'], function config($ariaProvider) { $ariaProvider.config({ ariaValue: true, tabindex: false }); }); ``` ## Dependencies Requires the {@link ngAria } module to be installed."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
      "js/ng.CompileLifecycleProvider" "Publishes controller creation/destruction events from `$compile`."
@@ -266,11 +265,10 @@
      "js/ng.FilterProvider" "Public AngularTS FilterProvider contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.FilterService" "Public AngularTS FilterService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpMethod" "Public AngularTS HttpMethod contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.HttpParamSerializerProvider" "Public AngularTS HttpParamSerializerProvider contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.HttpParamSerializerSerService" "Function that serializes query params into a URL-encoded string."
+     "js/ng.HttpParamSerializerProvider" "Default params serializer that converts objects to strings according to the following rules: * `{'foo': 'bar'}` results in `foo=bar` * `{'foo': Date.now()}` results in `foo=2015-04-01T09%3A50%3A49.262Z` (`toISOString()` and encoded representation of a Date object) * `{'foo': ['bar', 'baz']}` results in `foo=bar&foo=baz` (repeated key for each array element) * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object) Note that serializer will sort the request parameters alphabetically. Provider configuration surface available as `$httpParamSerializerProvider`."
      "js/ng.HttpParamSerializerService" "Function that serializes query params into a URL-encoded string."
      "js/ng.HttpPromise" "Public AngularTS HttpPromise contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.HttpProvider" "Public AngularTS HttpProvider contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.HttpProvider" "Configures the default behavior of the `$http` service. Provider configuration surface available as `$httpProvider`."
      "js/ng.HttpProviderDefaults" "Default request settings exposed through `$httpProvider.defaults`. Not every `RequestShortcutConfig` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage https://docs.angularjs.org/api/ng/provider/$httpProvider The properties section"
      "js/ng.HttpResponse" "Public AngularTS HttpResponse contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpResponseStatus" "Final transport status reported by transport completion handlers."
@@ -320,7 +318,7 @@
      "js/ng.RouterProvider" "Mutable router state/config shared across state, URL, and transition services."
      "js/ng.SceDelegateProvider" "' ]); // The banned resource URL list overrides the trusted resource URL list so the open redirect // here is blocked. $sceDelegateProvider.bannedResourceUrlList([ 'http://myapp.example.com/clickThru**' ]); }); ``` Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates requested by {@link ng.$templateRequest $templateRequest} that are present in {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism to populate your templates in that cache at config time, then it is a good idea to remove 'self' from the trusted resource URL lsit. This helps to mitigate the security impact of certain types of issues, like for instance attacker-controlled `ng-includes`."
      "js/ng.SceDelegateService" "Public AngularTS SceDelegateService contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.SceProvider" "Public AngularTS SceProvider contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.SceProvider" "Provider configuration surface available as `$sceProvider`."
      "js/ng.SceService" "Public AngularTS SceService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Scope" "Reactive scope object used by AngularTS templates, directives, event propagation, listener registration, and queued change delivery."
      "js/ng.ScopeElement" "Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications."
@@ -543,6 +541,7 @@
     "root-scope-service-dollartranscluded"
     "sce-delegate-provider-banned-resource-url-list"
     "sce-delegate-provider-trusted-resource-url-list"
+    "sce-provider-enabled"
     "sce-service-is-enabled"
     "sce-service-parse"
     "sce-service-parse-as-html"
@@ -731,10 +730,13 @@
     "error-handling-config-object-max-depth"
     "event-bus-provider-event-bus"
     "filter-provider-dollarget"
+    "http-provider-defaults"
     "http-provider-defaults-headers"
     "http-provider-defaults-with-credentials"
     "http-provider-defaults-xsrf-cookie-name"
     "http-provider-defaults-xsrf-header-name"
+    "http-provider-interceptors"
+    "http-provider-xsrf-trusted-origins"
     "http-response-config"
     "http-response-status"
     "http-response-status-text"
@@ -1806,6 +1808,11 @@
   ^js/Array [^js/ng.SceDelegateProvider target ^js/Array value]
   (.trustedResourceUrlList target value))
 
+(defn sce-provider-enabled
+  "Enables or disables SCE application-wide and returns the current state.\n\nParams:\n- value: {(boolean|undefined)}\n\nReturns: {boolean}"
+  ^boolean [^js/ng.SceProvider target ^boolean value]
+  (.enabled target value))
+
 (defn sce-service-is-enabled
   "Public SceService.isEnabled member exposed by the AngularTS namespace contract.\n\nReturns: {boolean}"
   ^boolean [^js/ng.SceService target]
@@ -2755,6 +2762,11 @@
   ^js/Array [^js/ng.FilterProvider target]
   (.-$get target))
 
+(defn http-provider-defaults
+  "Default values applied to all `$http` requests unless a request overrides them.\n\nType: {!ng.HttpProviderDefaults}"
+  ^js/ng.HttpProviderDefaults [^js/ng.HttpProvider target]
+  (.-defaults target))
+
 (defn http-provider-defaults-headers
   "Default headers merged into each request.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.RequestConfig): ?|null|number|string|undefined)>|undefined)}"
   ^js/Object [^js/ng.HttpProviderDefaults target]
@@ -2774,6 +2786,16 @@
   "Header name used when sending the XSRF token.\n\nType: {(string|undefined)}"
   ^string [^js/ng.HttpProviderDefaults target]
   (.-xsrfHeaderName target))
+
+(defn http-provider-interceptors
+  "Interceptor factories applied to requests and responses.\n\nType: {!Array<(!Array<function(): !Object>|function(): !Object|string)>}"
+  ^js/Array [^js/ng.HttpProvider target]
+  (.-interceptors target))
+
+(defn http-provider-xsrf-trusted-origins
+  "Origins trusted to receive the XSRF token.\n\nType: {!Array<string>}"
+  ^js/Array [^js/ng.HttpProvider target]
+  (.-xsrfTrustedOrigins target))
 
 (defn http-response-config
   "Request configuration that produced this response.\n\nType: {!ng.RequestConfig}"

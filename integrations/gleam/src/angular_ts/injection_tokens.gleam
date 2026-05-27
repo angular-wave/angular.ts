@@ -67,7 +67,7 @@ pub fn http() -> Token(namespace.HttpService) {
   token.new("$http")
 }
 
-pub fn http_param_serializer() -> Token(namespace.HttpParamSerializerSerService) {
+pub fn http_param_serializer() -> Token(namespace.HttpParamSerializerService) {
   token.new("$httpParamSerializer")
 }
 
