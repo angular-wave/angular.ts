@@ -1,4 +1,4 @@
-/* Version: 0.28.0 - May 23, 2026 23:51:44 */
+/* Version: 0.29.0 - May 27, 2026 02:59:23 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -23,7 +23,6 @@
     const _taskTrackerFactory = "$$taskTrackerFactory";
     const _anchorScroll = "$anchorScroll";
     const _animate = "$animate";
-    const _animateCss = "$animateCss";
     const _aria = "$aria";
     const _compile = "$compile";
     const _compileLifecycle = "$compileLifecycle";
@@ -64,7 +63,6 @@
     const _injector = "$injector";
     const _angularProvider = "$angularProvider";
     const _anchorScrollProvider = "$anchorScrollProvider";
-    const _animateCssProvider = "$animateCssProvider";
     const _ariaProvider = "$ariaProvider";
     const _compileProvider = "$compileProvider";
     const _compileLifecycleProvider = "$compileLifecycleProvider";
@@ -115,7 +113,6 @@
         _taskTrackerFactory,
         _anchorScroll,
         _animate,
-        _animateCss,
         _aria,
         _compile,
         _compileLifecycle,
@@ -156,7 +153,6 @@
         _injector,
         _angularProvider,
         _anchorScrollProvider,
-        _animateCssProvider,
         _ariaProvider,
         _compileProvider,
         _compileLifecycleProvider,
@@ -2993,7 +2989,7 @@
             /** @internal */
             this._bootsrappedModules = [];
             /** AngularTS version string replaced at build time. */
-            this.version = "0.28.0";
+            this.version = "0.29.0";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */

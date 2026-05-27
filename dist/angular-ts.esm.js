@@ -1,4 +1,4 @@
-/* Version: 0.28.0 - May 23, 2026 23:51:48 */
+/* Version: 0.29.0 - May 27, 2026 02:59:27 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -17,7 +17,6 @@ const _animation = "$$animation";
 const _taskTrackerFactory = "$$taskTrackerFactory";
 const _anchorScroll = "$anchorScroll";
 const _animate = "$animate";
-const _animateCss = "$animateCss";
 const _aria = "$aria";
 const _compile = "$compile";
 const _compileLifecycle = "$compileLifecycle";
@@ -58,7 +57,6 @@ const _provide = "$provide";
 const _injector = "$injector";
 const _angularProvider = "$angularProvider";
 const _anchorScrollProvider = "$anchorScrollProvider";
-const _animateCssProvider = "$animateCssProvider";
 const _ariaProvider = "$ariaProvider";
 const _compileProvider = "$compileProvider";
 const _compileLifecycleProvider = "$compileLifecycleProvider";
@@ -109,7 +107,6 @@ const $injectTokens = {
     _taskTrackerFactory,
     _anchorScroll,
     _animate,
-    _animateCss,
     _aria,
     _compile,
     _compileLifecycle,
@@ -150,7 +147,6 @@ const $injectTokens = {
     _injector,
     _angularProvider,
     _anchorScrollProvider,
-    _animateCssProvider,
     _ariaProvider,
     _compileProvider,
     _compileLifecycleProvider,
@@ -2987,7 +2983,7 @@ class AngularRuntime extends EventTarget {
         /** @internal */
         this._bootsrappedModules = [];
         /** AngularTS version string replaced at build time. */
-        this.version = "0.28.0";
+        this.version = "0.29.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */

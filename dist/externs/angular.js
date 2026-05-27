@@ -1,8 +1,8 @@
 /**
  * @externs
- * Public externs for AngularTS 0.28.0 applications compiled with Google Closure.
+ * Public externs for AngularTS 0.29.0 applications compiled with Google Closure.
  *
- * Version-pinned to @angular-wave/angular.ts 0.28.0; regenerate
+ * Version-pinned to @angular-wave/angular.ts 0.29.0; regenerate
  * this file when updating the public ng namespace.
  *
  * This file is generated from src/namespace.ts by
@@ -813,6 +813,162 @@ ng.Scope.prototype.$getById = function(id) {};
 ng.Scope.prototype.$searchByName = function(name) {};
 
 /**
+ * Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior.
+ * @record
+ */
+ng.ScopeService = function() {};
+
+/**
+ * Public ScopeService.$proxy member exposed by the AngularTS namespace contract.
+ * @type {!ng.Scope}
+ */
+ng.ScopeService.prototype.$proxy;
+
+/**
+ * Public ScopeService.$handler member exposed by the AngularTS namespace contract.
+ * @type {?}
+ */
+ng.ScopeService.prototype.$handler;
+
+/**
+ * Public ScopeService.$target member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.ScopeService.prototype.$target;
+
+/**
+ * Public ScopeService.$id member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.ScopeService.prototype.$id;
+
+/**
+ * Public ScopeService.$root member exposed by the AngularTS namespace contract.
+ * @type {!ng.Scope}
+ */
+ng.ScopeService.prototype.$root;
+
+/**
+ * Public ScopeService.$parent member exposed by the AngularTS namespace contract.
+ * @type {(!ng.Scope|undefined)}
+ */
+ng.ScopeService.prototype.$parent;
+
+/**
+ * Public ScopeService.$scopename member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.ScopeService.prototype.$scopename;
+
+/**
+ * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
+ * @param {!Object} target
+ * @param {string} property
+ * @param {?} value
+ * @param {!ng.Scope} proxy
+ * @return {boolean}
+ */
+ng.ScopeService.prototype.set = function(target, property, value, proxy) {};
+
+/**
+ * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
+ * @param {!Object} target
+ * @param {(number|string|symbol)} property
+ * @param {!ng.Scope} proxy
+ * @return {?}
+ */
+ng.ScopeService.prototype.get = function(target, property, proxy) {};
+
+/**
+ * Public ScopeService.deleteProperty member exposed by the AngularTS namespace contract.
+ * @param {!Object} target
+ * @param {(number|string|symbol)} property
+ * @return {boolean}
+ */
+ng.ScopeService.prototype.deleteProperty = function(target, property) {};
+
+/**
+ * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
+ * @param {string} watchProp
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
+ * @param {(boolean|undefined)} lazy
+ * @return {(function(): void|undefined)}
+ */
+ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+
+/**
+ * Creates a prototypically inherited child scope.
+ * @param {(!ng.Scope|undefined)} childInstance
+ * @return {!ng.Scope}
+ */
+ng.ScopeService.prototype.$new = function(childInstance) {};
+
+/**
+ * Creates an isolate child scope that does not inherit watchable properties directly.
+ * @param {(!ng.Scope|undefined)} instance
+ * @return {!ng.Scope}
+ */
+ng.ScopeService.prototype.$newIsolate = function(instance) {};
+
+/**
+ * Creates a transcluded child scope linked to this scope and an optional parent instance.
+ * @param {(!ng.Scope|undefined)} parentInstance
+ * @return {!ng.Scope}
+ */
+ng.ScopeService.prototype.$transcluded = function(parentInstance) {};
+
+/**
+ * Merges enumerable properties from the provided object into the current scope target.
+ * @param {?} newTarget
+ * @return {void}
+ */
+ng.ScopeService.prototype.$merge = function(newTarget) {};
+
+/**
+ * Registers an event listener on this scope and returns a deregistration function.
+ * @param {string} name
+ * @param {function(...?): ?} listener
+ * @return {function(): void}
+ */
+ng.ScopeService.prototype.$on = function(name, listener) {};
+
+/**
+ * Emits an event upward through the scope hierarchy.
+ * @param {string} name
+ * @param {...?} var_args
+ * @return {(!ng.ScopeEvent|undefined)}
+ */
+ng.ScopeService.prototype.$emit = function(name, var_args) {};
+
+/**
+ * Broadcasts an event downward through the scope hierarchy.
+ * @param {string} name
+ * @param {...?} var_args
+ * @return {(!ng.ScopeEvent|undefined)}
+ */
+ng.ScopeService.prototype.$broadcast = function(name, var_args) {};
+
+/**
+ * Public ScopeService.$destroy member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.ScopeService.prototype.$destroy = function() {};
+
+/**
+ * Searches this scope tree for a scope with the given id.
+ * @param {(number|string)} id
+ * @return {(!ng.Scope|undefined)}
+ */
+ng.ScopeService.prototype.$getById = function(id) {};
+
+/**
+ * Searches the scope tree for a scope registered under the provided name.
+ * @param {string} name
+ * @return {(!ng.Scope|undefined)}
+ */
+ng.ScopeService.prototype.$searchByName = function(name) {};
+
+/**
  * A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive.
  * @record
  */
@@ -852,6 +1008,19 @@ ng.AnchorScrollProvider.prototype.autoScrollingEnabled;
 ng.AnchorScrollProvider.prototype.$get;
 
 /**
+ * Public AngularTS AngularProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.AngularProvider = function() {};
+
+/**
+ * Public AngularProvider.$get member exposed by the AngularTS namespace contract.
+ * @param {...?} var_args
+ * @return {!ng.Angular}
+ */
+ng.AngularProvider.prototype.$get = function(var_args) {};
+
+/**
  * Public AngularTS AngularServiceProvider contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
@@ -883,6 +1052,158 @@ ng.AnimateProvider.prototype.register = function(name, preset) {};
  * @type {!Array<string>}
  */
 ng.AnimateProvider.prototype.$get;
+
+/**
+ * Public AngularTS AriaProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.AriaProvider = function() {};
+
+/**
+ * Public AriaProvider.config member exposed by the AngularTS namespace contract.
+ * @param {!Object} newConfig
+ * @return {void}
+ */
+ng.AriaProvider.prototype.config = function(newConfig) {};
+
+/**
+ * Public AriaProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {(!Array<function(): !ng.AriaService>|function(): !ng.AriaService)}
+ */
+ng.AriaProvider.prototype.$get;
+
+/**
+ * Publishes controller creation/destruction events from `$compile`.
+ * @record
+ */
+ng.CompileLifecycleProvider = function() {};
+
+/**
+ * Public CompileLifecycleProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.CompileLifecycleProvider}
+ */
+ng.CompileLifecycleProvider.prototype.$get = function() {};
+
+/**
+ * Registers a listener that runs after `$compile` creates a controller. Returns a deregistration function.
+ * @param {function(!Object): void} listener
+ * @return {function(): void}
+ */
+ng.CompileLifecycleProvider.prototype.onControllerCreated = function(listener) {};
+
+/**
+ * Registers a listener that runs when a compiled controller scope is destroyed. Returns a deregistration function.
+ * @param {function(!Object): void} listener
+ * @return {function(): void}
+ */
+ng.CompileLifecycleProvider.prototype.onControllerDestroyed = function(listener) {};
+
+/**
+ * Public AngularTS CompileProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.CompileProvider = function() {};
+
+/**
+ * Public CompileProvider.directive member exposed by the AngularTS namespace contract.
+ * @param {(!Object<string, (!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))>|string)} name
+ * @param {(!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void)|undefined)} directiveFactory
+ * @return {?}
+ */
+ng.CompileProvider.prototype.directive = function(name, directiveFactory) {};
+
+/**
+ * Public CompileProvider.component member exposed by the AngularTS namespace contract.
+ * @param {(!Object<string, !ng.Component>|string)} name
+ * @param {(!ng.Component|undefined)} options
+ * @return {?}
+ */
+ng.CompileProvider.prototype.component = function(name, options) {};
+
+/**
+ * Public CompileProvider.strictComponentBindingsEnabled member exposed by the AngularTS namespace contract.
+ * @param {(boolean|undefined)} enabled
+ * @return {?}
+ */
+ng.CompileProvider.prototype.strictComponentBindingsEnabled = function(enabled) {};
+
+/**
+ * Public CompileProvider.addPropertySecurityContext member exposed by the AngularTS namespace contract.
+ * @param {string} elementName
+ * @param {string} propertyName
+ * @param {string} ctx
+ * @return {!ng.CompileProvider}
+ */
+ng.CompileProvider.prototype.addPropertySecurityContext = function(elementName, propertyName, ctx) {};
+
+/**
+ * Public CompileProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {?}
+ */
+ng.CompileProvider.prototype.$get;
+
+/**
+ * Public AngularTS ControllerProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.ControllerProvider = function() {};
+
+/**
+ * Public ControllerProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<string>}
+ */
+ng.ControllerProvider.prototype.$get;
+
+/**
+ * Public ControllerProvider.has member exposed by the AngularTS namespace contract.
+ * @param {string} name
+ * @return {boolean}
+ */
+ng.ControllerProvider.prototype.has = function(name) {};
+
+/**
+ * Public ControllerProvider.register member exposed by the AngularTS namespace contract.
+ * @param {(!Object<string, ?>|string)} name
+ * @param {(?|undefined)} constructor
+ * @return {void}
+ */
+ng.ControllerProvider.prototype.register = function(name, constructor) {};
+
+/**
+ * Service provider that creates a {@link CookieService$cookie} service.
+ * @record
+ */
+ng.CookieProvider = function() {};
+
+/**
+ * Default cookie attributes merged into each write and remove call.
+ * @type {!ng.CookieOptions}
+ */
+ng.CookieProvider.prototype.defaults;
+
+/**
+ * Public CookieProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.CookieService}
+ */
+ng.CookieProvider.prototype.$get = function() {};
+
+/**
+ * Configurable provider for the application-wide {@link PubSub} event bus. The provider creates the singleton `$eventBus` service and also exposes it on the global Angular service for integrations that publish from outside dependency injection.
+ * @record
+ */
+ng.EventBusProvider = function() {};
+
+/**
+ * Public EventBusProvider.eventBus member exposed by the AngularTS namespace contract.
+ * @type {!ng.PubSubService}
+ */
+ng.EventBusProvider.prototype.eventBus;
+
+/**
+ * Public EventBusProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.PubSubService}
+ */
+ng.EventBusProvider.prototype.$get = function() {};
 
 /**
  * Public AngularTS FilterProvider contract exposed through the global ng namespace for Closure-annotated applications.
@@ -934,6 +1255,12 @@ ng.HttpParamSerializerProvider = function() {};
  * @type {(function(): function((!Object<string, ?>|undefined)): string|undefined)}
  */
 ng.HttpParamSerializerProvider.prototype.$get;
+
+/**
+ * Public AngularTS HttpProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.HttpProvider = function() {};
 
 /**
  * Public AngularTS InterpolateProvider contract exposed through the global ng namespace for Closure-annotated applications.
@@ -1016,6 +1343,90 @@ ng.LocationProvider.prototype.cacheState = function() {};
 ng.LocationProvider.prototype.$get;
 
 /**
+ * Configuration provider for `$log` service
+ * @record
+ */
+ng.LogProvider = function() {};
+
+/**
+ * Public LogProvider.debug member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.LogProvider.prototype.debug;
+
+/**
+ * Override the default {@link LogService} implemenation
+ * @param {function(...?): !ng.LogService} fn
+ * @return {void}
+ */
+ng.LogProvider.prototype.setLogger = function(fn) {};
+
+/**
+ * Creates the runtime `$log` service.
+ * @return {!ng.LogService}
+ */
+ng.LogProvider.prototype.$get = function() {};
+
+/**
+ * Public AngularTS ParseProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.ParseProvider = function() {};
+
+/**
+ * Public ParseProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<string>}
+ */
+ng.ParseProvider.prototype.$get;
+
+/**
+ * Public AngularTS RestProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.RestProvider = function() {};
+
+/**
+ * Public RestProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<string>}
+ */
+ng.RestProvider.prototype.$get;
+
+/**
+ * Accept a REST resource definition during provider configuration. Named injectable resources are registered by {@link NgModule.rest }; the provider exposes the runtime `$rest` factory.
+ * @template T
+ * @param {string} name
+ * @param {string} url
+ * @param {(function(new: T, ?)|undefined)} entityClass
+ * @param {(!ng.RestOptions|undefined)} options
+ * @return {void}
+ */
+ng.RestProvider.prototype.rest = function(name, url, entityClass, options) {};
+
+/**
+ * Public AngularTS RootScopeProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.RootScopeProvider = function() {};
+
+/**
+ * Public RootScopeProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<string>}
+ */
+ng.RootScopeProvider.prototype.$get;
+
+/**
+ * Mutable router state/config shared across state, URL, and transition services.
+ * @record
+ */
+ng.RouterProvider = function() {};
+
+/**
+ * Public RouterProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.LocationService, !ng.InjectorService): !ng.RouterProvider|string)>}
+ */
+ng.RouterProvider.prototype.$get;
+
+/**
  * The `$sceDelegateProvider` provider allows developers to configure the {@link ng.$sceDelegate * $sceDelegate service}, used as a delegate for {@link ng.$sce Strict Contextual Escaping (SCE)}. The `$sceDelegateProvider` allows one to get/set the `trustedResourceUrlList` and `bannedResourceUrlList` used to ensure that the URLs used for sourcing AngularTS templates and other script-running URLs are safe (all places that use the `$sce.RESOURCE_URL` context). See {@link ng.$sceDelegateProvider#trustedResourceUrlList * $sceDelegateProvider.trustedResourceUrlList} and {@link ng.$sceDelegateProvider#bannedResourceUrlList $sceDelegateProvider.bannedResourceUrlList}, For the general details about this service in AngularTS, read the main page for {@link ng.$sce * Strict Contextual Escaping (SCE)}. **Example**: Consider the following case. <a name="example"></a> - your app is hosted at url `http://myapp.example.com/` - but some of your templates are hosted on other domains you control such as `http://srv01.assets.example.com/`, `http://srv02.assets.example.com/`, etc. - and you have an open redirect at `http://myapp.example.com/clickThru?...`. Here is what a secure configuration for this scenario might look like: ``` angular.module('myApp', []).config(function($sceDelegateProvider) { $sceDelegateProvider.trustedResourceUrlList([ // Allow same origin resource loads. 'self', // Allow loading from our assets domain. Notice the difference between * and **. 'http://srv*.assets.example.com/**' ]); // The banned resource URL list overrides the trusted resource URL list so the open redirect // here is blocked. $sceDelegateProvider.bannedResourceUrlList([ 'http://myapp.example.com/clickThru**' ]); }); ``` Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates requested by {@link ng.$templateRequest $templateRequest} that are present in {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism to populate your templates in that cache at config time, then it is a good idea to remove 'self' from the trusted resource URL lsit. This helps to mitigate the security impact of certain types of issues, like for instance attacker-controlled `ng-includes`.
  * @record
  */
@@ -1060,6 +1471,474 @@ ng.SceDelegateProvider.prototype.$get;
  * @record
  */
 ng.SceProvider = function() {};
+
+/**
+ * Public AngularTS SseProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.SseProvider = function() {};
+
+/**
+ * Public SseProvider.defaults member exposed by the AngularTS namespace contract.
+ * @type {!ng.SseConfig}
+ */
+ng.SseProvider.prototype.defaults;
+
+/**
+ * Returns the `$sse` connection factory bound to the configured defaults.
+ * @type {!Array<(function(!ng.LogService): function(string, (!ng.SseConfig|undefined)): !ng.SseConnection|string)>}
+ */
+ng.SseProvider.prototype.$get;
+
+/**
+ * Provides services related to ng-router states. This API is located at `$state`.
+ * @record
+ */
+ng.StateProvider = function() {};
+
+/**
+ * The latest successful state parameters
+ * @type {!Object<string, ?>}
+ */
+ng.StateProvider.prototype.params;
+
+/**
+ * The current [[StateDeclaration]]
+ * @type {(!ng.StateDeclaration|undefined)}
+ */
+ng.StateProvider.prototype.current;
+
+/**
+ * The current [[StateObject]] (an internal API)
+ * @type {(!Object|undefined)}
+ */
+ng.StateProvider.prototype.$current;
+
+/**
+ * Public StateProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.InjectorService, !ng.StateRegistryProvider, !ng.RouterProvider, !ng.Scope, !ng.ViewService): !ng.StateProvider|string)>}
+ */
+ng.StateProvider.prototype.$get;
+
+/**
+ * Register a router state. Register a named router state.
+ * @param {!ng.StateDeclaration} definition
+ * @return {!ng.StateProvider}
+ */
+ng.StateProvider.prototype.state = function(definition) {};
+
+/**
+ * Registers a lazy state namespace. The loader is invoked the first time navigation targets this prefix.
+ * @param {string} prefix
+ * @param {function(!Object, (!ng.InjectorService|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader
+ * @return {!ng.StateProvider}
+ */
+ng.StateProvider.prototype.lazy = function(prefix, loader) {};
+
+/**
+ * Reloads the current state A method that force reloads the current state, or a partial state hierarchy. All resolves are re-resolved, and components reinstantiated. #### Example: ```js let app = angular.module('app', []); app.controller('ctrl', function ($scope, $state) { $scope.reload = function(){ $state.reload(); } }); ``` Note: `reload()` is just an alias for: ```js $state.transitionTo($state.current, $state.params, { reload: true, inherit: false }); ```
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} reloadState
+ * @return {(!Object|!Promise<(!ng.StateDeclaration|undefined)>)}
+ */
+ng.StateProvider.prototype.reload = function(reloadState) {};
+
+/**
+ * Transition to a different state and/or parameters Convenience method for transitioning to a new state. `$state.go` calls `$state.transitionTo` internally but automatically sets options to `{ location: true, inherit: true, relative: $state.$current }`. This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`). It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters inherit from the current parameter values (because of `inherit: true`). #### Example: ```js let app = angular.module('app', []); app.controller('ctrl', function ($scope, $state) { $scope.changeState = function () { $state.go('contact.detail'); }; }); ```
+ * @param {(!Object|!ng.StateDeclaration|string)} to
+ * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object|undefined)} options
+ * @return {(!Object|!Promise<(!ng.StateDeclaration|undefined)>)}
+ */
+ng.StateProvider.prototype.go = function(to, params, options) {};
+
+/**
+ * Creates a [[TargetState]] This is a factory method for creating a TargetState This may be returned from a Transition Hook to redirect a transition, for example.
+ * @param {(!Object|!ng.StateDeclaration|string)} identifier
+ * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object|undefined)} options
+ * @return {!Object}
+ */
+ng.StateProvider.prototype.target = function(identifier, params, options) {};
+
+/**
+ * Public StateProvider.getCurrentPath member exposed by the AngularTS namespace contract.
+ * @return {!Array<!Object>}
+ */
+ng.StateProvider.prototype.getCurrentPath = function() {};
+
+/**
+ * Low-level method for transitioning to a new state. The [[go]] method (which uses `transitionTo` internally) is recommended in most situations. #### Example: ```js let app = angular.module('app', []); app.controller('ctrl', function ($scope, $state) { $scope.changeState = function () { $state.transitionTo('contact.detail'); }; }); ```
+ * @param {(!Object|!ng.StateDeclaration|string)} to
+ * @param {(!Object<string, ?>|undefined)} toParams
+ * @param {(!Object|undefined)} options
+ * @return {(!Object|!Promise<(!ng.StateDeclaration|undefined)>)}
+ */
+ng.StateProvider.prototype.transitionTo = function(to, toParams, options) {};
+
+/**
+ * Checks if the current state *is* the provided state Similar to [[includes]] but only checks for the full state name. If params is supplied then it will be tested for strict equality against the current active params object, so all params must match with none missing and no extras. #### Example: ```js $state.$current.name = 'contacts.details.item'; // absolute name $state.is('contact.details.item'); // returns true $state.is(contactDetailItemStateObject); // returns true ``` // relative name (. and ^), typically from a template // E.g. from the 'contacts.details' template ```html <div ng-class="{highlighted: $state.is('.item')}">Item</div> ```
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
+ * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object|undefined)} options
+ * @return {(boolean|undefined)}
+ */
+ng.StateProvider.prototype.is = function(stateOrName, params, options) {};
+
+/**
+ * Checks if the current state *includes* the provided state A method to determine if the current active state is equal to or is the child of the state stateName. If any params are passed then they will be tested for a match as well. Not all the parameters need to be passed, just the ones you'd like to test for equality. #### Example when `$state.$current.name === 'contacts.details.item'` ```js // Using partial names $state.includes("contacts"); // returns true $state.includes("contacts.details"); // returns true $state.includes("contacts.details.item"); // returns true $state.includes("contacts.list"); // returns false $state.includes("about"); // returns false ``` #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`: ```js $state.includes("*.details.*.*"); // returns true $state.includes("*.details.**"); // returns true $state.includes("**.item.**"); // returns true $state.includes("*.details.item.url"); // returns true $state.includes("*.details.*.url"); // returns true $state.includes("*.details.*"); // returns false $state.includes("item.**"); // returns false ```
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
+ * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object|undefined)} options
+ * @return {(boolean|undefined)}
+ */
+ng.StateProvider.prototype.includes = function(stateOrName, params, options) {};
+
+/**
+ * Generates a URL for a state and parameters Returns the url for the given state populated with the given params. #### Example: ```js expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob"); ```
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
+ * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object|undefined)} options
+ * @return {(null|string)}
+ */
+ng.StateProvider.prototype.href = function(stateOrName, params, options) {};
+
+/**
+ * Sets or gets the default [[transitionTo]] error handler. The error handler is called when a [[Transition]] is rejected or when any error occurred during the Transition. This includes errors caused by resolves and transition hooks. Note: This handler does not receive certain Transition rejections. Redirected and Ignored Transitions are not considered to be errors by [[StateService.transitionTo]]. The built-in default error handler logs the error to the console. You can provide your own custom handler. #### Example: ```js stateService.defaultErrorHandler(function() { // Do not log transitionTo errors }); ```
+ * @param {(function(?): ?|undefined)} handler
+ * @return {function(?): ?}
+ */
+ng.StateProvider.prototype.defaultErrorHandler = function(handler) {};
+
+/**
+ * Public StateProvider.get member exposed by the AngularTS namespace contract.
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} stateOrName
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} base
+ * @return {(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|null)}
+ */
+ng.StateProvider.prototype.get = function(stateOrName, base) {};
+
+/**
+ * A registry for all of the application's [[StateDeclaration]]s This API is found at `$stateRegistry`.
+ * @record
+ */
+ng.StateRegistryProvider = function() {};
+
+/**
+ * Public StateRegistryProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.InjectorService): !ng.StateRegistryProvider|string)>}
+ */
+ng.StateRegistryProvider.prototype.$get;
+
+/**
+ * Public StateRegistryProvider.registerRoot member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.StateRegistryProvider.prototype.registerRoot = function() {};
+
+/**
+ * Listen for a State Registry events Adds a callback that is invoked when states are registered or deregistered with the StateRegistry. #### Example: ```js let allStates = registry.get(); // Later, invoke deregisterFn() to remove the listener let deregisterFn = registry.onStatesChanged((event, states) => { switch(event) { case: 'registered': states.forEach(state => allStates.push(state)); break; case: 'deregistered': states.forEach(state => { let idx = allStates.indexOf(state); if (idx !== -1) allStates.splice(idx, 1); }); break; } }); ```
+ * @param {function(string, !Array<!ng.StateDeclaration>): void} listener
+ * @return {function(): void}
+ */
+ng.StateRegistryProvider.prototype.onStatesChanged = function(listener) {};
+
+/**
+ * Gets the implicit root state Gets the root of the state tree. The root state is implicitly created by ng-router. Note: this returns the internal [[StateObject]] representation, not a [[StateDeclaration]]
+ * @return {!Object}
+ */
+ng.StateRegistryProvider.prototype.root = function() {};
+
+/**
+ * Adds a state to the registry Registers a [[StateDeclaration]] or queues it for registration. Note: a state will be queued if the state's parent isn't yet registered.
+ * @param {(!ng.StateDeclaration|function(new: ng.StateDeclaration))} stateDefinition
+ * @return {!Object}
+ */
+ng.StateRegistryProvider.prototype.register = function(stateDefinition) {};
+
+/**
+ * Removes a state from the registry This removes a state from the registry. If the state has children, they are are also removed from the registry.
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
+ * @return {!Array<!ng.StateDeclaration>}
+ */
+ng.StateRegistryProvider.prototype.deregister = function(stateOrName) {};
+
+/**
+ * Public StateRegistryProvider.getAll member exposed by the AngularTS namespace contract.
+ * @return {!Array<!ng.StateDeclaration>}
+ */
+ng.StateRegistryProvider.prototype.getAll = function() {};
+
+/**
+ * Public StateRegistryProvider.get member exposed by the AngularTS namespace contract.
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} stateOrName
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} base
+ * @return {(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|null)}
+ */
+ng.StateRegistryProvider.prototype.get = function(stateOrName, base) {};
+
+/**
+ * Public AngularTS StreamProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.StreamProvider = function() {};
+
+/**
+ * Public StreamProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.StreamService}
+ */
+ng.StreamProvider.prototype.$get = function() {};
+
+/**
+ * Provides an instance of a cache that can be used to store and retrieve template content.
+ * @record
+ */
+ng.TemplateCacheProvider = function() {};
+
+/**
+ * Public TemplateCacheProvider.cache member exposed by the AngularTS namespace contract.
+ * @type {!Map<string, string>}
+ */
+ng.TemplateCacheProvider.prototype.cache;
+
+/**
+ * Returns the singleton template cache instance.
+ * @return {!Map<string, string>}
+ */
+ng.TemplateCacheProvider.prototype.$get = function() {};
+
+/**
+ * Resolves route templates and components from state view declarations.
+ * @record
+ */
+ng.TemplateFactoryProvider = function() {};
+
+/**
+ * Wires template request and injector services into the factory.
+ * @type {!Array<(function(function(string): !Promise<string>, !ng.InjectorService): !ng.TemplateFactoryProvider|string)>}
+ */
+ng.TemplateFactoryProvider.prototype.$get;
+
+/**
+ * Provider for the `$templateRequest` service. Fetches templates via HTTP and caches them in `$templateCache`. Templates are assumed trusted. This provider allows configuring per-request `$http` options such as headers, timeout, or transform functions via `httpOptions`. Option A: - Provide a sensible default for template fetching (e.g. `Accept: text/html`) - Keep `httpOptions` overridable during config phase
+ * @record
+ */
+ng.TemplateRequestProvider = function() {};
+
+/**
+ * Optional `$http.get()` config applied to every template request. This is merged on top of the default template request config: - `cache: $templateCache` - `transformResponse`: with `defaultHttpResponseTransform` removed Use this to set template-specific defaults such as custom headers, timeouts, credentials, etc.
+ * @type {!ng.RequestShortcutConfig}
+ */
+ng.TemplateRequestProvider.prototype.httpOptions;
+
+/**
+ * Public TemplateRequestProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!Map<string, string>, !ng.HttpService): function(string): !Promise<string>|string)>}
+ */
+ng.TemplateRequestProvider.prototype.$get;
+
+/**
+ * Central registry and factory for transition events, hooks, and transition instances.
+ * @record
+ */
+ng.TransitionProvider = function() {};
+
+/**
+ * Wires runtime services into the transition service and registers the hooks that depend on state/url/view services.
+ * @return {!ng.TransitionProvider}
+ */
+ng.TransitionProvider.prototype.$get = function() {};
+
+/**
+ * Creates a new transition from the current path to a target state.
+ * @param {!Array<!Object>} fromPath
+ * @param {!Object} targetState
+ * @return {!ng.Transition}
+ */
+ng.TransitionProvider.prototype.create = function(fromPath, targetState) {};
+
+/**
+ * Registers a transition hook by event name.
+ * @param {string} eventName
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.on = function(eventName, matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onBefore` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onBefore = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onStart` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onStart = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onEnter` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onEnter = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onRetain` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onRetain = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onExit` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onExit = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onFinish` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onFinish = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onSuccess` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onSuccess = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onError` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionProvider.prototype.onError = function(matchCriteria, callback, options) {};
+
+/**
+ * Central registry and factory for transition events, hooks, and transition instances.
+ * @record
+ */
+ng.TransitionsProvider = function() {};
+
+/**
+ * Wires runtime services into the transition service and registers the hooks that depend on state/url/view services.
+ * @return {!ng.TransitionProvider}
+ */
+ng.TransitionsProvider.prototype.$get = function() {};
+
+/**
+ * Creates a new transition from the current path to a target state.
+ * @param {!Array<!Object>} fromPath
+ * @param {!Object} targetState
+ * @return {!ng.Transition}
+ */
+ng.TransitionsProvider.prototype.create = function(fromPath, targetState) {};
+
+/**
+ * Registers a transition hook by event name.
+ * @param {string} eventName
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.on = function(eventName, matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onBefore` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onBefore = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onStart` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onStart = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onEnter` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onEnter = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onRetain` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onRetain = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onExit` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onExit = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onFinish` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onFinish = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onSuccess` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onSuccess = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers an `onError` transition hook.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {(function(!ng.Transition): ?|function(!ng.Transition, !ng.StateDeclaration): ?)} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsProvider.prototype.onError = function(matchCriteria, callback, options) {};
 
 /**
  * This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started.
@@ -1138,6 +2017,96 @@ ng.TransitionService.prototype.onSuccess = function(matchCriteria, callback, opt
  * @return {function(): void}
  */
 ng.TransitionService.prototype.onError = function(matchCriteria, callback, options) {};
+
+/**
+ * Tracks active `ng-view` instances and matches them with registered view configs produced during state transitions.
+ * @record
+ */
+ng.ViewProvider = function() {};
+
+/**
+ * Returns the singleton view service instance.
+ * @type {!Array<(function(!ng.TemplateFactoryProvider, !ng.RouterProvider, !ng.CompileLifecycleProvider, !Object, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn, function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?, !ng.InjectorService): !ng.ViewService|string)>}
+ */
+ng.ViewProvider.prototype.$get;
+
+/**
+ * Public AngularTS WasmProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WasmProvider = function() {};
+
+/**
+ * Public WasmProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.WasmService}
+ */
+ng.WasmProvider.prototype.$get = function() {};
+
+/**
+ * Provider for scoped custom element integration.
+ * @record
+ */
+ng.WebComponentProvider = function() {};
+
+/**
+ * Default options merged into every app component definition.
+ * @type {!Object}
+ */
+ng.WebComponentProvider.prototype.defaults;
+
+/**
+ * Public WebComponentProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.InjectorService, !ng.Scope, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn): !ng.WebComponentService|string)>}
+ */
+ng.WebComponentProvider.prototype.$get;
+
+/**
+ * WebSocketProvider Provides a pre-configured WebSocket connection as an injectable.
+ * @record
+ */
+ng.WebSocketProvider = function() {};
+
+/**
+ * Public WebSocketProvider.defaults member exposed by the AngularTS namespace contract.
+ * @type {!ng.WebSocketConfig}
+ */
+ng.WebSocketProvider.prototype.defaults;
+
+/**
+ * Returns the `$websocket` connection factory bound to the configured defaults.
+ * @type {!Array<(function(!ng.LogService): function(string, (!Array<string>|undefined), (!ng.WebSocketConfig|undefined)): !ng.WebSocketConnection|string)>}
+ */
+ng.WebSocketProvider.prototype.$get;
+
+/**
+ * Provider for the `$webTransport` service.
+ * @record
+ */
+ng.WebTransportProvider = function() {};
+
+/**
+ * Default options merged into every `$webTransport` call.
+ * @type {!ng.WebTransportConfig}
+ */
+ng.WebTransportProvider.prototype.defaults;
+
+/**
+ * Returns a factory that opens browser-native WebTransport sessions.
+ * @type {!Array<(function(!ng.LogService): function(string, (!ng.WebTransportConfig|undefined)): !ng.WebTransportConnection|string)>}
+ */
+ng.WebTransportProvider.prototype.$get;
+
+/**
+ * Public AngularTS WorkerProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkerProvider = function() {};
+
+/**
+ * Public WorkerProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.LogService, function(?): ?): function((!Object|string), (!ng.WorkerConfig|undefined)): !ng.WorkerConnection|string)>}
+ */
+ng.WorkerProvider.prototype.$get;
 
 /**
  * Public AngularTS AnchorScrollService contract exposed through the global ng namespace for Closure-annotated applications.
@@ -1407,6 +2376,32 @@ ng.AriaService.prototype.config = function(key) {};
 ng.CompileService;
 
 /**
+ * Publishes controller creation/destruction events from `$compile`.
+ * @record
+ */
+ng.CompileLifecycleService = function() {};
+
+/**
+ * Public CompileLifecycleService.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.CompileLifecycleProvider}
+ */
+ng.CompileLifecycleService.prototype.$get = function() {};
+
+/**
+ * Registers a listener that runs after `$compile` creates a controller. Returns a deregistration function.
+ * @param {function(!Object): void} listener
+ * @return {function(): void}
+ */
+ng.CompileLifecycleService.prototype.onControllerCreated = function(listener) {};
+
+/**
+ * Registers a listener that runs when a compiled controller scope is destroyed. Returns a deregistration function.
+ * @param {function(!Object): void} listener
+ * @return {function(): void}
+ */
+ng.CompileLifecycleService.prototype.onControllerDestroyed = function(listener) {};
+
+/**
  * Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
  */
@@ -1463,6 +2458,78 @@ ng.CookieService.prototype.putObject = function(key, value, options) {};
  * @return {void}
  */
 ng.CookieService.prototype.remove = function(key, options) {};
+
+/**
+ * **`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)
+ * @typedef {!Element}
+ */
+ng.ElementService;
+
+/**
+ * Public AngularTS EventBusService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.EventBusService = function() {};
+
+/**
+ * Reset the bus to its initial state without disposing it. All topics and listeners are removed, and the instance can be reused.
+ * @return {void}
+ */
+ng.EventBusService.prototype.reset = function() {};
+
+/**
+ * Checks if instance has been disposed.
+ * @return {boolean}
+ */
+ng.EventBusService.prototype.isDisposed = function() {};
+
+/**
+ * Dispose the instance, removing all topics and listeners.
+ * @return {void}
+ */
+ng.EventBusService.prototype.dispose = function() {};
+
+/**
+ * Subscribe a function to a topic. The returned function removes only this listener registration.
+ * @param {string} topic
+ * @param {function(...?): ?} fn
+ * @param {(?|undefined)} context
+ * @return {function(): boolean}
+ */
+ng.EventBusService.prototype.subscribe = function(topic, fn, context) {};
+
+/**
+ * Subscribe a function to a topic only once. Listener is removed before the first invocation.
+ * @param {string} topic
+ * @param {function(...?): ?} fn
+ * @param {(?|undefined)} context
+ * @return {function(): boolean}
+ */
+ng.EventBusService.prototype.subscribeOnce = function(topic, fn, context) {};
+
+/**
+ * Unsubscribe a specific function from a topic. Matches by function reference and optional context.
+ * @param {string} topic
+ * @param {function(...?): ?} fn
+ * @param {(?|undefined)} context
+ * @return {boolean}
+ */
+ng.EventBusService.prototype.unsubscribe = function(topic, fn, context) {};
+
+/**
+ * Get the number of subscribers for a topic.
+ * @param {string} topic
+ * @return {number}
+ */
+ng.EventBusService.prototype.getCount = function(topic) {};
+
+/**
+ * Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`.
+ * @param {string} topic
+ * @param {...?} var_args
+ * @return {boolean}
+ */
+ng.EventBusService.prototype.publish = function(topic, var_args) {};
 
 /**
  * A callback type for handling errors.
@@ -1535,6 +2602,12 @@ ng.RelativeTimeFilterOptions = function() {};
  * @typedef {function((!Object<string, ?>|undefined)): string}
  */
 ng.HttpParamSerializerSerService;
+
+/**
+ * Function that serializes query params into a URL-encoded string.
+ * @typedef {function((!Object<string, ?>|undefined)): string}
+ */
+ng.HttpParamSerializerService;
 
 /**
  * Runtime `$http` service contract for full request configs, HTTP verb shortcuts, defaults, and pending request tracking.
@@ -2215,14 +3288,14 @@ ng.StateService.prototype.$current;
 
 /**
  * Public StateService.$get member exposed by the AngularTS namespace contract.
- * @type {!Array<(function(!ng.InjectorService, !Object, !Object, !ng.Scope, !Object): !Object|string)>}
+ * @type {!Array<(function(!ng.InjectorService, !ng.StateRegistryProvider, !ng.RouterProvider, !ng.Scope, !ng.ViewService): !ng.StateProvider|string)>}
  */
 ng.StateService.prototype.$get;
 
 /**
  * Register a router state. Register a named router state.
  * @param {!ng.StateDeclaration} definition
- * @return {!Object}
+ * @return {!ng.StateProvider}
  */
 ng.StateService.prototype.state = function(definition) {};
 
@@ -2230,7 +3303,7 @@ ng.StateService.prototype.state = function(definition) {};
  * Registers a lazy state namespace. The loader is invoked the first time navigation targets this prefix.
  * @param {string} prefix
  * @param {function(!Object, (!ng.InjectorService|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader
- * @return {!Object}
+ * @return {!ng.StateProvider}
  */
 ng.StateService.prototype.lazy = function(prefix, loader) {};
 
@@ -2324,7 +3397,7 @@ ng.StateRegistryService = function() {};
 
 /**
  * Public StateRegistryService.$get member exposed by the AngularTS namespace contract.
- * @type {!Array<(function(!ng.InjectorService): !Object|string)>}
+ * @type {!Array<(function(!ng.InjectorService): !ng.StateRegistryProvider|string)>}
  */
 ng.StateRegistryService.prototype.$get;
 
@@ -2792,10 +3865,118 @@ ng.SwapModeType;
 ng.TemplateCacheService;
 
 /**
+ * Resolves route templates and components from state view declarations.
+ * @record
+ */
+ng.TemplateFactoryService = function() {};
+
+/**
+ * Wires template request and injector services into the factory.
+ * @type {!Array<(function(function(string): !Promise<string>, !ng.InjectorService): !ng.TemplateFactoryProvider|string)>}
+ */
+ng.TemplateFactoryService.prototype.$get;
+
+/**
  * Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true).
  * @typedef {function(string): !Promise<string>}
  */
 ng.TemplateRequestService;
+
+/**
+ * This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started.
+ * @record
+ */
+ng.TransitionsService = function() {};
+
+/**
+ * Registers a [[TransitionHookFn]], called *before a transition starts*. Registers a transition lifecycle hook, which is invoked before a transition even begins. This hook can be useful to implement logic which prevents a transition from even starting, such as authentication, redirection See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onBefore` hooks are invoked *before a Transition starts*. No resolves have been fetched yet. Each `onBefore` hook is invoked synchronously, in the same call stack as [[StateService.transitionTo]]. The registered `onBefore` hooks are invoked in priority order. Note: during the `onBefore` phase, additional hooks can be added to the specific [[Transition]] instance. These "on-the-fly" hooks only affect the currently running transition.. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. If any hook modifies the transition *synchronously* (by throwing, returning `false`, or returning a [[TargetState]]), the remainder of the hooks are skipped. If a hook returns a promise, the remainder of the `onBefore` hooks are still invoked synchronously. All promises are resolved, and processed asynchronously before the `onStart` phase of the Transition. ### Examples #### Default Substate This example redirects any transition from 'home' to 'home.dashboard'. This is commonly referred to as a "default substate".
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onBefore = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionHookFn]], called when a transition starts. Registers a transition lifecycle hook, which is invoked as a transition starts running. This hook can be useful to perform some asynchronous action before completing a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onStart` hooks are invoked asynchronously when the Transition starts running. This happens after the `onBefore` phase is complete. At this point, the Transition has not yet exited nor entered any states. The registered `onStart` hooks are invoked in priority order. Note: A built-in `onStart` hook with high priority is used to fetch any eager resolve data. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Example #### Login during transition This example intercepts any transition to a state which requires authentication, when the user is not currently authenticated. It allows the user to authenticate asynchronously, then resumes the transition. If the user did not authenticate successfully, it redirects to the "guest" state, which does not require authentication. This example assumes: - authenticated states are marked using `data.requiresAuth`. - `MyAuthService.isAuthenticated()` synchronously returns a boolean. - `MyAuthService.authenticate()` presents a login dialog, and returns a promise which is resolved or rejected, whether or not the login attempt was successful. #### Example: ```js $transitions.onStart( { to: state => state.data?.requiresAuth }, function(trans) { var $state = trans.router.stateService; var MyAuthService = trans.injector().get('MyAuthService'); // If the user is not authenticated if (!MyAuthService.isAuthenticated()) { // Then return a promise for a successful login. // The transition will wait for this promise to settle return MyAuthService.authenticate().catch(function() { // If the authenticate() method failed for whatever reason, // redirect to a 'guest' state which doesn't require auth. return $state.target("guest"); }); } }); ```
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onStart = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionStateHookFn]], called when a specific state is entered. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being entered. Since this hook is run only when the specific state is being *entered*, it can be useful for performing tasks when entering a submodule/feature area such as initializing a stateful service, or for guarding access to a submodule/feature area. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onEnter` hooks generally specify `{ entering: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onEnter` hooks are invoked when the Transition is entering a state. States are entered after the `onRetain` phase is complete. If more than one state is being entered, the parent state is entered first. The registered `onEnter` hooks for a state are invoked in priority order. Note: A built-in `onEnter` hook with high priority is used to fetch lazy resolve data for states being entered. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onEnter` hooks using the [[TransitionService]], you may define an `onEnter` hook directly on a state declaration (see: [[StateDeclaration.onEnter]]). ### Examples #### Audit Log This example uses a service to log that a user has entered the admin section of an app. This assumes that there are substates of the "admin" state, such as "admin.users", "admin.pages", etc.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition, !ng.StateDeclaration): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onEnter = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionStateHookFn]], called when a specific state is retained/kept. Registers a lifecycle hook, which is invoked (during a transition) for a specific state that was previously active will remain active (is not being entered nor exited). This hook is invoked when a state is "retained" or "kept". It means the transition is coming *from* a substate of the retained state *to* a substate of the retained state. This hook can be used to perform actions when the user moves from one substate to another, such as between steps in a wizard. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onRetain` hooks generally specify `{ retained: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onRetain` hooks are invoked after any `onExit` hooks have been fired. If more than one state is retained, the child states' `onRetain` hooks are invoked first. The registered `onRetain` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onRetain` hooks using the [[TransitionService]], you may define an `onRetain` hook directly on a state declaration (see: [[StateDeclaration.onRetain]]).
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition, !ng.StateDeclaration): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onRetain = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionStateHookFn]], called when a specific state is exited. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being exited. Since this hook is run only when the specific state is being *exited*, it can be useful for performing tasks when leaving a submodule/feature area such as cleaning up a stateful service, or for preventing the user from leaving a state or submodule until some criteria is satisfied. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onExit` hooks generally specify `{ exiting: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onExit` hooks are invoked when the Transition is exiting a state. States are exited after any `onStart` phase is complete. If more than one state is being exited, the child states are exited first. The registered `onExit` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onExit` hooks using the [[TransitionService]], you may define an `onExit` hook directly on a state declaration (see: [[StateDeclaration.onExit]]).
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition, !ng.StateDeclaration): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onExit = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionHookFn]], called *just before a transition finishes*. Registers a transition lifecycle hook, which is invoked just before a transition finishes. This hook is a last chance to cancel or redirect a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onFinish` hooks are invoked after the `onEnter` phase is complete. These hooks are invoked just before the transition is "committed". Each hook is invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information.
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onFinish = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionHookFn]], called after a successful transition completed. Registers a transition lifecycle hook, which is invoked after a transition successfully completes. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onSuccess` hooks are chained off the Transition's promise (see [[Transition.promise]]). If the Transition is successful and its promise is resolved, then the `onSuccess` hooks are invoked. Since these hooks are run after the transition is over, their return value is ignored. The `onSuccess` hooks are invoked in priority order. ### Return value Since the Transition is already completed, the hook's return value is ignored
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onSuccess = function(matchCriteria, callback, options) {};
+
+/**
+ * Registers a [[TransitionHookFn]], called after a transition has errored. Registers a transition lifecycle hook, which is invoked after a transition has been rejected for any reason. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle The `onError` hooks are chained off the Transition's promise (see [[Transition.promise]]). If a Transition fails, its promise is rejected and the `onError` hooks are invoked. The `onError` hooks are invoked in priority order. Since these hooks are run after the transition is over, their return value is ignored. A transition "errors" if it was started, but failed to complete (for any reason). A *non-exhaustive list* of reasons a transition can error: - A transition was cancelled because a new transition started while it was still running (`Transition superseded`) - A transition was cancelled by a Transition Hook returning false - A transition was redirected by a Transition Hook returning a [[TargetState]] - A Transition Hook or resolve function threw an error - A Transition Hook returned a rejected promise - A resolve function returned a rejected promise To check the failure reason, inspect the return value of [[Transition.error]]. Note: `onError` should be used for targeted error handling, or error recovery. For simple catch-all error reporting, use [[StateService.defaultErrorHandler]]. ### Return value Since the Transition is already completed, the hook's return value is ignored
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition|undefined)): boolean|string|undefined)>} matchCriteria
+ * @param {function(!ng.Transition): ?} callback
+ * @param {(!Object|undefined)} options
+ * @return {function(): void}
+ */
+ng.TransitionsService.prototype.onError = function(matchCriteria, callback, options) {};
+
+/**
+ * Tracks active `ng-view` instances and matches them with registered view configs produced during state transitions.
+ * @record
+ */
+ng.ViewService = function() {};
+
+/**
+ * Returns the singleton view service instance.
+ * @type {!Array<(function(!ng.TemplateFactoryProvider, !ng.RouterProvider, !ng.CompileLifecycleProvider, !Object, function((!Element|!Node|!Object|null|string), (!ng.PublicLinkFn|!ng.TranscludeFn|null|undefined), (number|undefined), (string|undefined), (!Object|null|undefined)): !ng.PublicLinkFn, function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?, !ng.InjectorService): !ng.ViewService|string)>}
+ */
+ng.ViewService.prototype.$get;
+
+/**
+ * Public AngularTS WorkerService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function((!Object|string), (!ng.WorkerConfig|undefined)): !ng.WorkerConnection}
+ */
+ng.WorkerService;
 
 /**
  * Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
@@ -3694,6 +4875,12 @@ ng.InjectionTokens.prototype.$state;
 ng.InjectionTokens.prototype.$stateRegistry;
 
 /**
+ * Public InjectionTokens.$stream member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$stream;
+
+/**
  * Public InjectionTokens.$sse member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -3734,6 +4921,18 @@ ng.InjectionTokens.prototype.$view;
  * @type {string}
  */
 ng.InjectionTokens.prototype.$window;
+
+/**
+ * Public InjectionTokens.$webComponent member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$webComponent;
+
+/**
+ * Public InjectionTokens.$webTransport member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$webTransport;
 
 /**
  * Public InjectionTokens.$websocket member exposed by the AngularTS namespace contract.
@@ -3898,6 +5097,12 @@ ng.InjectionTokens.prototype.$stateProvider;
 ng.InjectionTokens.prototype.$stateRegistryProvider;
 
 /**
+ * Public InjectionTokens.$streamProvider member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$streamProvider;
+
+/**
  * Public InjectionTokens.$templateCacheProvider member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -3926,6 +5131,18 @@ ng.InjectionTokens.prototype.$transitionsProvider;
  * @type {string}
  */
 ng.InjectionTokens.prototype.$viewProvider;
+
+/**
+ * Public InjectionTokens.$webComponentProvider member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$webComponentProvider;
+
+/**
+ * Public InjectionTokens.$webTransportProvider member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$webTransportProvider;
 
 /**
  * Public InjectionTokens.$websocketProvider member exposed by the AngularTS namespace contract.
