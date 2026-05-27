@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
-    <title>WebTransportOptions | AngularTS</title>
+    <title>AnimateProvider | AngularTS</title>
     <meta name="description" content="Documentation for AngularTS" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="../assets/style.css" />
@@ -84,71 +84,55 @@
       <div class="col-content">
         <div class="tsd-page-title">
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-            <li><a href="" aria-current="page">WebTransportOptions</a></li>
+            <li><a href="" aria-current="page">AnimateProvider</a></li>
           </ul>
-          <h1>Interface WebTransportOptions</h1>
+          <h1>Interface AnimateProvider</h1>
         </div>
         <div class="tsd-signature">
           <span class="tsd-signature-keyword">interface</span>
-          <span class="tsd-kind-interface">WebTransportOptions</span>
+          <span class="tsd-kind-interface">AnimateProvider</span>
           <span class="tsd-signature-symbol">{</span><br />    <a
             class="tsd-kind-property"
-            href="#allowpooling"
-            >allowPooling</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">boolean</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
-            href="#congestioncontrol"
-            >congestionControl</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">&quot;default&quot;</span>
-          <span class="tsd-signature-symbol">|</span>
-          <span class="tsd-signature-type">&quot;throughput&quot;</span>
-          <span class="tsd-signature-symbol">|</span>
-          <span class="tsd-signature-type">&quot;low-latency&quot;</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
-            href="#requireunreliable"
-            >requireUnreliable</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">boolean</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
-            href="#servercertificatehashes"
-            >serverCertificateHashes</a
-          ><span class="tsd-signature-symbol">?:</span>
+            href="#get"
+            >$get</a
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-symbol">[</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-symbol">(</span
+          ><span class="tsd-kind-parameter">$injector</span
+          ><span class="tsd-signature-symbol">:</span>
           <a
-            href="WebTransportCertificateHash.html"
+            href="InjectorService.html"
             class="tsd-signature-type tsd-kind-interface"
-            >WebTransportCertificateHash</a
-          ><span class="tsd-signature-symbol">[]</span
+            >InjectorService</a
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <a
+            href="AnimateService.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >AnimateService</a
+          ><span class="tsd-signature-symbol">]</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#register-1"
+            >register</a
+          ><span class="tsd-signature-symbol">(</span
+          ><span class="tsd-kind-parameter">name</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-kind-parameter">preset</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">PresetRegistration</span
+          ><span class="tsd-signature-symbol">)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="3292">
-          <h4>
-            Hierarchy (<a href="../hierarchy.html#WebTransportOptions"
-              >View Summary</a
-            >)
-          </h4>
-          <ul class="tsd-hierarchy">
-            <li class="tsd-hierarchy-item">
-              <span class="tsd-hierarchy-target">WebTransportOptions</span>
-              <ul class="tsd-hierarchy">
-                <li class="tsd-hierarchy-item">
-                  <a
-                    href="WebTransportConfig.html"
-                    class="tsd-signature-type tsd-kind-interface"
-                    >WebTransportConfig</a
-                  >
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
             <details class="tsd-index-content tsd-accordion" open>
@@ -168,41 +152,28 @@
                 <section class="tsd-index-section">
                   <h3 class="tsd-index-heading">Properties</h3>
                   <div class="tsd-index-list">
-                    <a href="#allowpooling" class="tsd-index-link"
+                    <a href="#get" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Property"
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>allow<wbr />Pooling?</span></a
+                      ><span>$get</span></a
                     >
-                    <a href="#congestioncontrol" class="tsd-index-link"
+                  </div>
+                </section>
+                <section class="tsd-index-section">
+                  <h3 class="tsd-index-heading">Methods</h3>
+                  <div class="tsd-index-list">
+                    <a href="#register" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
-                        aria-label="Property"
+                        aria-label="Method"
                       >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>congestion<wbr />Control?</span></a
-                    >
-                    <a href="#requireunreliable" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>require<wbr />Unreliable?</span></a
-                    >
-                    <a href="#servercertificatehashes" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>server<wbr />Certificate<wbr />Hashes?</span></a
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>register</span></a
                     >
                   </div>
                 </section>
@@ -225,84 +196,111 @@
           </summary>
           <section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="allowpooling">
-                <code class="tsd-tag">Optional</code
-                ><span>allow<wbr />Pooling</span
-                ><a
-                  href="#allowpooling"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
+              <h3 class="tsd-anchor-link" id="get">
+                <span>$get</span
+                ><a href="#get" aria-label="Permalink" class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
                     <use href="../assets/icons.svg#icon-anchor"></use></svg
                 ></a>
               </h3>
               <div class="tsd-signature">
-                <span class="tsd-kind-property">allowPooling</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">boolean</span>
-              </div>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="congestioncontrol">
-                <code class="tsd-tag">Optional</code
-                ><span>congestion<wbr />Control</span
-                ><a
-                  href="#congestioncontrol"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">congestionControl</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">&quot;default&quot;</span>
-                <span class="tsd-signature-symbol">|</span>
-                <span class="tsd-signature-type">&quot;throughput&quot;</span>
-                <span class="tsd-signature-symbol">|</span>
-                <span class="tsd-signature-type">&quot;low-latency&quot;</span>
-              </div>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="requireunreliable">
-                <code class="tsd-tag">Optional</code
-                ><span>require<wbr />Unreliable</span
-                ><a
-                  href="#requireunreliable"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">requireUnreliable</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">boolean</span>
-              </div>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="servercertificatehashes">
-                <code class="tsd-tag">Optional</code
-                ><span>server<wbr />Certificate<wbr />Hashes</span
-                ><a
-                  href="#servercertificatehashes"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">serverCertificateHashes</span
-                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-kind-property">$get</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">[</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">$injector</span
+                ><span class="tsd-signature-symbol">:</span>
                 <a
-                  href="WebTransportCertificateHash.html"
+                  href="InjectorService.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >WebTransportCertificateHash</a
-                ><span class="tsd-signature-symbol">[]</span>
+                  >InjectorService</a
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <a
+                  href="AnimateService.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >AnimateService</a
+                ><span class="tsd-signature-symbol">]</span>
               </div>
+            </section>
+          </section>
+        </details>
+        <details class="tsd-panel-group tsd-member-group tsd-accordion" open>
+          <summary class="tsd-accordion-summary" data-key="section-Methods">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <use href="../assets/icons.svg#icon-chevronDown"></use>
+            </svg>
+            <h2>Methods</h2>
+          </summary>
+          <section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="register">
+                <span>register</span
+                ><a
+                  href="#register"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="register-1">
+                    <span class="tsd-kind-call-signature">register</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-kind-parameter">preset</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">PresetRegistration</span
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">void</span
+                    ><a
+                      href="#register-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">preset</span>:
+                            <span class="tsd-signature-type"
+                              >PresetRegistration</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">void</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
             </section>
           </section>
         </details>
@@ -467,38 +465,41 @@
                   >Properties
                 </summary>
                 <div>
-                  <a href="#allowpooling"
+                  <a href="#get"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Property"
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>allow<wbr />Pooling</span></a
-                  ><a href="#congestioncontrol"
+                    ><span>$get</span></a
+                  >
+                </div>
+              </details>
+              <details open class="tsd-accordion tsd-page-navigation-section">
+                <summary
+                  class="tsd-accordion-summary"
+                  data-key="section-Methods"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <use href="../assets/icons.svg#icon-chevronDown"></use></svg
+                  >Methods
+                </summary>
+                <div>
+                  <a href="#register"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
-                      aria-label="Property"
+                      aria-label="Method"
                     >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>congestion<wbr />Control</span></a
-                  ><a href="#requireunreliable"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>require<wbr />Unreliable</span></a
-                  ><a href="#servercertificatehashes"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>server<wbr />Certificate<wbr />Hashes</span></a
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>register</span></a
                   >
                 </div>
               </details>

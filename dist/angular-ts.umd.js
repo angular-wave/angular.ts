@@ -1,4 +1,4 @@
-/* Version: 0.29.0 - May 27, 2026 03:09:25 */
+/* Version: 0.29.1 - May 27, 2026 04:14:02 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -2989,7 +2989,7 @@
             /** @internal */
             this._bootsrappedModules = [];
             /** AngularTS version string replaced at build time. */
-            this.version = "0.29.0";
+            this.version = "0.29.1";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -15546,14 +15546,13 @@
     }
     /** Configures the default behavior of the `$http` service. */
     function HttpProvider() {
-        const provider = this;
         /**
          * Default values applied to all `$http` requests unless a request overrides them.
          *
          * This includes cache behavior, default headers, request/response transforms, XSRF names,
          * credentials defaults, and parameter serialization.
          */
-        const defaults = (provider.defaults = {
+        const defaults = (this.defaults = {
             // transform incoming response data
             transformResponse: [defaultHttpResponseTransform],
             // transform outgoing request data
@@ -15589,7 +15588,7 @@
          *
          * See the `$http` service documentation for detailed interceptor behavior.
          */
-        provider.interceptors = [];
+        this.interceptors = [];
         /**
          * Array containing URLs whose origins are trusted to receive the XSRF token. See the
          * See the `$http` service documentation for XSRF security considerations.
@@ -15626,15 +15625,14 @@
          * ```
          *
          */
-        provider.xsrfTrustedOrigins = [];
-        const that = provider;
-        provider.$get = [
+        this.xsrfTrustedOrigins = [];
+        this.$get = [
             _injector,
             _sce,
             _cookie,
             _stream,
             /** Creates the runtime `$http` service. */
-            function ($injector, $sce, $cookie, $stream) {
+            ($injector, $sce, $cookie, $stream) => {
                 const defaultCache = new Map();
                 /**
                  * Resolves the configured default param serializer to a callable function.
@@ -15647,7 +15645,7 @@
                  * The reversal lets request interceptors wrap the server request in the expected order.
                  */
                 const reversedInterceptors = [];
-                that.interceptors.forEach((interceptorFactory) => {
+                this.interceptors.forEach((interceptorFactory) => {
                     const interceptor = isString(interceptorFactory)
                         ? $injector.get(interceptorFactory)
                         : $injector.invoke(interceptorFactory);
@@ -15656,7 +15654,7 @@
                 /**
                  * Creates the origin check used for XSRF header inclusion.
                  */
-                const urlIsAllowedOrigin = urlIsAllowedOriginFactory(that.xsrfTrustedOrigins);
+                const urlIsAllowedOrigin = urlIsAllowedOriginFactory(this.xsrfTrustedOrigins);
                 /**
                  * Issues an HTTP request using the provider defaults and configured interceptors.
                  */
@@ -24237,8 +24235,6 @@
 
     /**
      * Mutable router state/config shared across state, URL, and transition services.
-     *
-     * @internal
      */
     class RouterProvider {
         /**
@@ -27789,8 +27785,6 @@
     };
     /**
      * Central registry and factory for transition events, hooks, and transition instances.
-     *
-     * @internal
      */
     class TransitionProvider {
         constructor(routerState, $exceptionHandler) {
@@ -28526,8 +28520,6 @@
     }
     /**
      * Resolves route templates and components from state view declarations.
-     *
-     * @internal
      */
     class TemplateFactoryProvider {
         constructor() {
@@ -31064,7 +31056,6 @@
         }
     }
     function SceProvider() {
-        const provider = this;
         let enabled = true;
         /**
          * @param value If provided, then enables/disables SCE application-wide.
@@ -31073,13 +31064,13 @@
          *
          * Enables/disables SCE and returns the current value.
          */
-        provider.enabled = function (value) {
+        this.enabled = function (value) {
             if (arguments.length) {
                 enabled = !!value;
             }
             return enabled;
         };
-        provider.$get = [
+        this.$get = [
             _parse,
             _sceDelegate,
             /**

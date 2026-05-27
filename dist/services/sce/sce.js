@@ -503,7 +503,6 @@ class SceDelegateProvider {
     }
 }
 function SceProvider() {
-    const provider = this;
     let enabled = true;
     /**
      * @param value If provided, then enables/disables SCE application-wide.
@@ -512,13 +511,13 @@ function SceProvider() {
      *
      * Enables/disables SCE and returns the current value.
      */
-    provider.enabled = function (value) {
+    this.enabled = function (value) {
         if (arguments.length) {
             enabled = !!value;
         }
         return enabled;
     };
-    provider.$get = [
+    this.$get = [
         _parse,
         _sceDelegate,
         /**

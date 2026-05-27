@@ -14,8 +14,6 @@ const defaultTransOpts = {
 };
 /**
  * Central registry and factory for transition events, hooks, and transition instances.
- *
- * @internal
  */
 class TransitionProvider {
     constructor(routerState, $exceptionHandler) {

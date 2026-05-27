@@ -23,8 +23,6 @@ function componentElementName(camelCase) {
 }
 /**
  * Resolves route templates and components from state view declarations.
- *
- * @internal
  */
 class TemplateFactoryProvider {
     constructor() {

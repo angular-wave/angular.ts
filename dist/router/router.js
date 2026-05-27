@@ -9,8 +9,6 @@ import { UrlMatcher } from './url/url-matcher.js';
 
 /**
  * Mutable router state/config shared across state, URL, and transition services.
- *
- * @internal
  */
 class RouterProvider {
     /**

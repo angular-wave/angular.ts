@@ -242,14 +242,13 @@ function deProxyHttpPayload(value, seen = new WeakMap()) {
 }
 /** Configures the default behavior of the `$http` service. */
 function HttpProvider() {
-    const provider = this;
     /**
      * Default values applied to all `$http` requests unless a request overrides them.
      *
      * This includes cache behavior, default headers, request/response transforms, XSRF names,
      * credentials defaults, and parameter serialization.
      */
-    const defaults = (provider.defaults = {
+    const defaults = (this.defaults = {
         // transform incoming response data
         transformResponse: [defaultHttpResponseTransform],
         // transform outgoing request data
@@ -285,7 +284,7 @@ function HttpProvider() {
      *
      * See the `$http` service documentation for detailed interceptor behavior.
      */
-    provider.interceptors = [];
+    this.interceptors = [];
     /**
      * Array containing URLs whose origins are trusted to receive the XSRF token. See the
      * See the `$http` service documentation for XSRF security considerations.
@@ -322,15 +321,14 @@ function HttpProvider() {
      * ```
      *
      */
-    provider.xsrfTrustedOrigins = [];
-    const that = provider;
-    provider.$get = [
+    this.xsrfTrustedOrigins = [];
+    this.$get = [
         _injector,
         _sce,
         _cookie,
         _stream,
         /** Creates the runtime `$http` service. */
-        function ($injector, $sce, $cookie, $stream) {
+        ($injector, $sce, $cookie, $stream) => {
             const defaultCache = new Map();
             /**
              * Resolves the configured default param serializer to a callable function.
@@ -343,7 +341,7 @@ function HttpProvider() {
              * The reversal lets request interceptors wrap the server request in the expected order.
              */
             const reversedInterceptors = [];
-            that.interceptors.forEach((interceptorFactory) => {
+            this.interceptors.forEach((interceptorFactory) => {
                 const interceptor = isString(interceptorFactory)
                     ? $injector.get(interceptorFactory)
                     : $injector.invoke(interceptorFactory);
@@ -352,7 +350,7 @@ function HttpProvider() {
             /**
              * Creates the origin check used for XSRF header inclusion.
              */
-            const urlIsAllowedOrigin = urlIsAllowedOriginFactory(that.xsrfTrustedOrigins);
+            const urlIsAllowedOrigin = urlIsAllowedOriginFactory(this.xsrfTrustedOrigins);
             /**
              * Issues an HTTP request using the provider defaults and configured interceptors.
              */

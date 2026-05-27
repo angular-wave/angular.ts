@@ -16,8 +16,6 @@ import type { StateProvider } from "./state-service.ts";
 /**
  * Attaches a catch handler to silence unhandled rejection warnings,
  * while preserving the original promise.
- *
- * @internal
  */
 
 export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
@@ -28,8 +26,6 @@ export function silenceUncaughtInPromise<T>(promise: Promise<T>): Promise<T> {
 
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
- *
- * @internal
  */
 export async function silentRejection(reason: unknown): Promise<never> {
   const promise = Promise.reject(

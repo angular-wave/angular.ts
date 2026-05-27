@@ -8,7 +8,6 @@ import { TargetState } from './target-state.js';
 import { Param } from '../params/param.js';
 import { Glob } from '../glob/glob.js';
 import { transitionToState } from './state-transition.js';
-export { silenceUncaughtInPromise, silentRejection } from './state-transition.js';
 
 const stateProviderError = createErrorFactory("$stateProvider");
 /**

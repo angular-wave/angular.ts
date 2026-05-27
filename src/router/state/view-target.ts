@@ -1,7 +1,6 @@
 import { isString } from "../../shared/utils.ts";
 import type { StateObject } from "./state-object.ts";
 
-/** @internal */
 export function normalizeNgViewTarget(
   context: StateObject,
   rawViewName = "",
