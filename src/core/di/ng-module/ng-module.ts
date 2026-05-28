@@ -23,7 +23,7 @@ import {
 } from "../../../injection-tokens.ts";
 import { isInjectable } from "../injectable.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
-import type { Injectable } from "../../../interface.ts";
+import type { Constructor, Injectable } from "../../../interface.ts";
 import type {
   PersistentStoreConfig,
   StorageLike,
@@ -58,6 +58,10 @@ export type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 
 type NamedInjectable = Injectable<(...args: never[]) => unknown>;
 
+type NamedConstructorInjectable = Injectable<Constructor>;
+
+type NamedServiceInjectable = NamedConstructorInjectable | NamedInjectable;
+
 type StoreConfig = StorageLike & PersistentStoreConfig;
 
 type StoreFactory = (...args: never[]) => unknown;
@@ -70,7 +74,7 @@ type InvokeQueueItem =
   | [typeof _provide, "value", [string, unknown]]
   | [typeof _provide, "constant", [string, object | string | number]]
   | [typeof _provide, "factory", [string, NamedInjectable]]
-  | [typeof _provide, "service", [string, NamedInjectable]]
+  | [typeof _provide, "service", [string, NamedServiceInjectable]]
   | [typeof _provide, "provider", [string, NamedInjectable]]
   | [typeof _provide, "decorator", [string, NamedInjectable]]
   | [
@@ -214,7 +218,7 @@ export class NgModule {
    * @param {ng.Injectable<(...args: unknown[]) => unknown>} serviceFunction
    * @returns {NgModule}
    */
-  service(name: string, serviceFunction: NamedInjectable): this {
+  service(name: string, serviceFunction: NamedServiceInjectable): this {
     validate(isString, name, "name");
     validateRequired(serviceFunction, "serviceFunction");
     this._services.push(name);

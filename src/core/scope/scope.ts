@@ -807,6 +807,23 @@ function collectExpressionListenerKeys(
     return;
   }
 
+  if (node._type === ASTType._CallExpression) {
+    collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
+
+    const callArguments = node._arguments ?? [];
+
+    for (let i = 0, l = callArguments.length; i < l; i++) {
+      collectExpressionListenerKeys(
+        callArguments[i],
+        keySet,
+        seenKeys,
+        listener,
+      );
+    }
+
+    return;
+  }
+
   collectListenerKeys(node, keySet, seenKeys, listener);
 }
 

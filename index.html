@@ -11,200 +11,34 @@
     <script type="module" src="/src/index.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        class Todo {
-          constructor(task) {
-            this.task = task;
-            this.done = false;
-          }
-        }
-        class TodoController {
-          static $scopename = "test";
-          constructor() {
-            this.greeting = Promise.resolve("Todos");
-            this.model = {
-              name: "John",
-              lastName: "Doe",
-            };
-            this.tasks = [
-              new Todo("Learn AngularTS"),
-              new Todo("Build an AngularTS app"),
-            ];
-          }
-
-          get() {
-            return this.counter;
-          }
-
-          increase() {
-            this.counter++;
-          }
-
-          /**
-           * @param {String} task
-           * @return {void}
-           */
-          add(task) {
-            this.tasks.push(new Todo(task));
-          }
-
-          /**
-           * Delete all finished tasks
-           * @return {void}
-           */
-          archive() {
-            let newTasks = this.tasks.filter((task) => !task.done);
-            this.tasks = newTasks;
-          }
-        }
-
         class Demo {
-          constructor($eventBus, $scope) {
-            $eventBus.subscribe("demo", (val) => {
-              $scope["$ctrl"].mailBox = val;
-            });
+          constructor(Greeter) {
+            this.greeter = Greeter;
+          }
+        }
+
+        class Greeter {
+          constructor() {
+            this.greeting = "Hello";
+          }
+
+          greet() {
+            this.greeting = this.greeting + " !"
           }
         }
         window.angular
           .module("todo", [])
-          .controller("TodoCtrl", TodoController)
+          .service("Greeter", Greeter)
           .controller("DemoCtrl", Demo);
 
         window.angular.bootstrap(document, ["todo"]);  
       });
     </script>
-
-    <style>
-      body {
-        font:
-          14px/1.5 system-ui,
-          sans-serif;
-        margin: 0;
-        padding: 32px;
-      }
-
-      main {
-        max-width: 720px;
-        margin: 0 auto;
-      }
-
-      section {
-        margin: 24px 0;
-      }
-
-      button {
-        cursor: pointer;
-        margin: 4px 6px 4px 0;
-      }
-
-      .fade {
-        --ng-enter-animation: fade-in 500ms linear both;
-        --ng-leave-animation: fade-out 500ms linear both;
-        background: red;
-        margin-top: 12px;
-        padding: 12px;
-      }
-
-      @keyframes fade-in {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fade-out {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-        }
-      }
-
-      .animate-css-demo {
-        --ng-enter-animation: fadeInDown 600ms both;
-        --ng-leave-animation: fadeOutDown 450ms both;
-        border: 1px solid #ccc;
-        margin-top: 12px;
-        padding: 12px;
-      }
-
-      @keyframes fadeInDown {
-        from {
-          opacity: 0;
-          transform: translate3d(0, -100%, 0);
-        }
-        to {
-          opacity: 1;
-          transform: translate3d(0, 0, 0);
-        }
-      }
-
-      @keyframes fadeOutDown {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-          transform: translate3d(0, 100%, 0);
-        }
-      }
-    </style>
   </head>
   <body>
-    <main id="$ctrl" ng-controller="TodoCtrl as $ctrl">
-      <h3>{{ $ctrl.greeting | async }}</h3>
-      <section>
-        <button ng-click="$ctrl.archive()">Archive</button>
-        <button
-          onclick="
-            angular.getScope(this.parentElement.parentElement).$ctrl.greeting =
-              'woot'
-          "
-        >
-          test
-        </button>
-        <ul>
-          <li ng-repeat="todo in $ctrl.tasks" data-animate="fade-slide">
-            {{ todo.task }} {{ todo.done }}
-            <input type="checkbox" ng-click="todo.done = !todo.done" />
-          </li>
-        </ul>
-        <form ng-submit="$ctrl.add(newTodo)" ng-scope="todoScope">
-          <input type="text" ng-model="newTodo" ng-required="true" />
-          <button type="submit">Add</button>
-        </form>
-      </section>
-
-      <section>
-        <h4>HTTP target animation</h4>
-        <button
-          ng-get="/mock/div"
-          target="#p"
-          trigger="click"
-          data-animate="fade-slide"
-        >
-          Get
-        </button>
-        <div id="p"></div>
-      </section>
-
-      <section>
-        <h4>Fade animation</h4>
-        <div ng-if="bool" class="fade" animate>Fade me in out</div>
-        <button ng-click="bool=true">Fade In!</button>
-        <button ng-click="bool=false">Fade Out!</button>
-      </section>
-
-      <section>
-        <h4>animate.css keyframes</h4>
-        <div ng-if="animateCssVisible" class="animate-css-demo" animate>
-          Uses animate.css fadeInDown and fadeOutDown through CSS variables.
-        </div>
-        <button ng-click="animateCssVisible=true">Show animate.css</button>
-        <button ng-click="animateCssVisible=false">Hide animate.css</button>
-      </section>
+    <main id="$ctrl" ng-controller="DemoCtrl as $ctrl">
+      <h3>{{ $ctrl.greeter.greeting  }}</h3>
+      <button ng-click="$ctrl.greeter.greet()">Greet</button>
     </main>
   </body>
 </html>

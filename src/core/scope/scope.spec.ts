@@ -1662,6 +1662,52 @@ describe("Scope", () => {
         expect(values[values.length - 1]).toBe("Loading case");
       });
 
+      it("watches conditional expressions with method calls", async () => {
+        const values = [];
+
+        scope.greeter = {
+          greetEnabled: true,
+          canGreet() {
+            return this.greetEnabled;
+          },
+        };
+
+        expect(() => {
+          scope.$watch("greeter.canGreet() ? 'false' : 'true'", (value) => {
+            values.push(value);
+          });
+        }).not.toThrow();
+
+        await wait();
+        expect(values[values.length - 1]).toBe("false");
+
+        scope.greeter.greetEnabled = false;
+        await wait();
+        expect(values[values.length - 1]).toBe("true");
+      });
+
+      it("watches boolean conditional expressions with method calls", async () => {
+        const values = [];
+
+        scope.greeter = {
+          greetEnabled: true,
+          canGreet() {
+            return this.greetEnabled;
+          },
+        };
+
+        scope.$watch("greeter.canGreet() ? false : true", (value) => {
+          values.push(value);
+        });
+
+        await wait();
+        expect(values[values.length - 1]).toBe(false);
+
+        scope.greeter.greetEnabled = false;
+        await wait();
+        expect(values[values.length - 1]).toBe(true);
+      });
+
       it("watches logical fallback expressions across parent and value updates", async () => {
         const values = [];
 
