@@ -1,6 +1,5 @@
 import { isString } from '../../shared/utils.js';
 
-/** @internal */
 function normalizeNgViewTarget(context, rawViewName = "") {
     const viewAtContext = rawViewName.split("@");
     const [viewName, viewContextAnchor] = viewAtContext;

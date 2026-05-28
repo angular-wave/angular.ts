@@ -1,4 +1,4 @@
-/* Version: 0.29.1 - May 27, 2026 04:14:02 */
+/* Version: 0.29.2 - May 29, 2026 00:59:00 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -2989,7 +2989,7 @@
             /** @internal */
             this._bootsrappedModules = [];
             /** AngularTS version string replaced at build time. */
-            this.version = "0.29.1";
+            this.version = "0.29.2";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -4352,6 +4352,14 @@
             collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
             collectExpressionListenerKeys(node._alternate, keySet, seenKeys, listener);
             collectExpressionListenerKeys(node._consequent, keySet, seenKeys, listener);
+            return;
+        }
+        if (node._type === ASTType._CallExpression) {
+            collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
+            const callArguments = node._arguments ?? [];
+            for (let i = 0, l = callArguments.length; i < l; i++) {
+                collectExpressionListenerKeys(callArguments[i], keySet, seenKeys, listener);
+            }
             return;
         }
         collectListenerKeys(node, keySet, seenKeys, listener);
@@ -25458,7 +25466,6 @@
         }
     }
 
-    /** @internal */
     function normalizeNgViewTarget(context, rawViewName = "") {
         const viewAtContext = rawViewName.split("@");
         const [viewName, viewContextAnchor] = viewAtContext;
@@ -27923,8 +27930,6 @@
     /**
      * Attaches a catch handler to silence unhandled rejection warnings,
      * while preserving the original promise.
-     *
-     * @internal
      */
     function silenceUncaughtInPromise(promise) {
         promise.catch(() => undefined);
@@ -27932,8 +27937,6 @@
     }
     /**
      * Creates a rejected promise whose rejection is intentionally silenced.
-     *
-     * @internal
      */
     async function silentRejection(reason) {
         const promise = Promise.reject(reason instanceof Error ? reason : Rejection.errored(reason));

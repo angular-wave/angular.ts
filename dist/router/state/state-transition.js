@@ -7,8 +7,6 @@ import { TargetState } from './target-state.js';
 /**
  * Attaches a catch handler to silence unhandled rejection warnings,
  * while preserving the original promise.
- *
- * @internal
  */
 function silenceUncaughtInPromise(promise) {
     promise.catch(() => undefined);
@@ -16,8 +14,6 @@ function silenceUncaughtInPromise(promise) {
 }
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
- *
- * @internal
  */
 async function silentRejection(reason) {
     const promise = Promise.reject(reason instanceof Error ? reason : Rejection.errored(reason));

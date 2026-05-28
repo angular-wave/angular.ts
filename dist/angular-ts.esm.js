@@ -1,4 +1,4 @@
-/* Version: 0.29.1 - May 27, 2026 04:14:05 */
+/* Version: 0.29.2 - May 29, 2026 00:59:03 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -2983,7 +2983,7 @@ class AngularRuntime extends EventTarget {
         /** @internal */
         this._bootsrappedModules = [];
         /** AngularTS version string replaced at build time. */
-        this.version = "0.29.1";
+        this.version = "0.29.2";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -4346,6 +4346,14 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
         collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
         collectExpressionListenerKeys(node._alternate, keySet, seenKeys, listener);
         collectExpressionListenerKeys(node._consequent, keySet, seenKeys, listener);
+        return;
+    }
+    if (node._type === ASTType._CallExpression) {
+        collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
+        const callArguments = node._arguments ?? [];
+        for (let i = 0, l = callArguments.length; i < l; i++) {
+            collectExpressionListenerKeys(callArguments[i], keySet, seenKeys, listener);
+        }
         return;
     }
     collectListenerKeys(node, keySet, seenKeys, listener);
@@ -25452,7 +25460,6 @@ class StateMatcher {
     }
 }
 
-/** @internal */
 function normalizeNgViewTarget(context, rawViewName = "") {
     const viewAtContext = rawViewName.split("@");
     const [viewName, viewContextAnchor] = viewAtContext;
@@ -27917,8 +27924,6 @@ TransitionProvider.$inject = [_routerProvider, _exceptionHandlerProvider];
 /**
  * Attaches a catch handler to silence unhandled rejection warnings,
  * while preserving the original promise.
- *
- * @internal
  */
 function silenceUncaughtInPromise(promise) {
     promise.catch(() => undefined);
@@ -27926,8 +27931,6 @@ function silenceUncaughtInPromise(promise) {
 }
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
- *
- * @internal
  */
 async function silentRejection(reason) {
     const promise = Promise.reject(reason instanceof Error ? reason : Rejection.errored(reason));
