@@ -139,6 +139,7 @@ interface ListenerSchedulerState {
   _index: number;
   _queued: boolean;
   _flushing: boolean;
+  _batchDepth: number;
   _flushTask: () => void;
 }
 
@@ -199,6 +200,12 @@ export type ScopeProxied<T extends object> = T & {
 type ScopeProxy = ng.Scope;
 
 type ScopeTarget = NonScopeMarked & Record<PropertyKey, unknown>;
+
+export const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
+
+export interface _ScopeProxyBindable {
+  [_SCOPE_PROXY_BIND]?: (handler: Scope, proxy: ScopeProxy) => void;
+}
 
 type ScopeEventListener = {
   bivarianceHack(...args: unknown[]): unknown;
@@ -576,6 +583,16 @@ export function getArrayMutationMeta(
   const target = isProxy(value) ? value.$target : value;
 
   return isArray(target) ? arrayMutationMeta.get(target as object) : undefined;
+}
+
+function warnAsyncBatchCallback(): void {
+  try {
+    console.warn(
+      "$batch callback returned a Promise. Async mutations after await are not batched.",
+    );
+  } catch {
+    // Warning delivery should not affect the batched mutation contract.
+  }
 }
 
 export class RootScopeProvider {
@@ -1175,6 +1192,12 @@ function getCachedScopeProxy(target: unknown, handler: Scope): unknown {
   if (!proxy) {
     proxy = new Proxy(target, handler) as ScopeProxy;
     proxiesByHandler.set(handler, proxy);
+
+    const bind = (target as _ScopeProxyBindable)[_SCOPE_PROXY_BIND];
+
+    if (isFunction(bind)) {
+      bind.call(target, handler, proxy);
+    }
   }
 
   return proxy;
@@ -1426,6 +1449,7 @@ export class Scope {
       _index: 0,
       _queued: false,
       _flushing: false,
+      _batchDepth: 0,
       _flushTask: () => {
         this._flushScheduledTasks();
       },
@@ -1439,6 +1463,7 @@ export class Scope {
 
     this._propertyMap = {
       $broadcast: this.$broadcast.bind(this),
+      $batch: this.$batch.bind(this),
       _children: this._children,
       $destroy: this.$destroy.bind(this),
       $emit: this.$emit.bind(this),
@@ -2831,12 +2856,26 @@ export class Scope {
   _queueScheduledFlush(): void {
     const scheduler = this._listenerScheduler;
 
-    if (scheduler._queued) {
+    if (scheduler._queued || scheduler._batchDepth > 0) {
       return;
     }
 
     scheduler._queued = true;
     queueMicrotask(scheduler._flushTask);
+  }
+
+  /** @internal Queues a shared scheduled task flush when pending work can run. */
+  _queueScheduledFlushIfNeeded(): void {
+    const scheduler = this._listenerScheduler;
+
+    if (
+      scheduler._batchDepth === 0 &&
+      !scheduler._queued &&
+      !scheduler._flushing &&
+      scheduler._queue.length > scheduler._index
+    ) {
+      this._queueScheduledFlush();
+    }
   }
 
   /** @internal Queues a shared scheduled task flush for this scope family. */
@@ -2845,9 +2884,7 @@ export class Scope {
 
     scheduler._queue.push(task);
 
-    if (!scheduler._queued && !scheduler._flushing) {
-      this._queueScheduledFlush();
-    }
+    this._queueScheduledFlushIfNeeded();
   }
 
   /** @internal Flushes queued listener and callback tasks in FIFO order. */
@@ -2905,6 +2942,30 @@ export class Scope {
       if (hasRemainingTasks) {
         this._queueScheduledFlush();
       }
+    }
+  }
+
+  /**
+   * Runs synchronous scope mutations as one batch. Listener notifications are
+   * queued while the callback runs and flushed once after the outermost batch
+   * exits. Mutations are not rolled back if the callback throws.
+   */
+  $batch<T>(fn: () => T): T {
+    const scheduler = this._listenerScheduler;
+
+    scheduler._batchDepth++;
+
+    try {
+      const result = fn();
+
+      if (isPromiseLike(result)) {
+        warnAsyncBatchCallback();
+      }
+
+      return result;
+    } finally {
+      scheduler._batchDepth--;
+      this._queueScheduledFlushIfNeeded();
     }
   }
 

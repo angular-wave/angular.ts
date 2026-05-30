@@ -11,6 +11,10 @@ pub type Component
 
 pub type Controller
 
+pub type ClassMap
+
+pub type ClassValue
+
 pub type Directive(a)
 
 pub type DirectiveRestrict
@@ -62,6 +66,8 @@ pub type InterpolateProvider
 pub type LocationProvider
 
 pub type LogProvider
+
+pub type MachineProvider
 
 pub type ParseProvider
 
@@ -160,6 +166,8 @@ pub type InterpolateService
 pub type LocationService
 
 pub type LogService
+
+pub type MachineService
 
 pub type ParseService
 
@@ -262,6 +270,18 @@ pub type InterpolationFunction
 pub type InvocationDetail
 
 pub type ListenerFn
+
+pub type Machine(a)
+
+pub type MachineConfig(a)
+
+pub type MachineMode
+
+pub type MachineTransition(a, b)
+
+pub type MachineTransitionMap(a)
+
+pub type MachineTransitionResult
 
 pub type NgModelController
 

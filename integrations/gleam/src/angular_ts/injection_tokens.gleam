@@ -83,6 +83,10 @@ pub fn log() -> Token(namespace.LogService) {
   token.new("$log")
 }
 
+pub fn machine() -> Token(namespace.MachineService) {
+  token.new("$machine")
+}
+
 pub fn parse() -> Token(namespace.ParseService) {
   token.new("$parse")
 }
@@ -231,6 +235,10 @@ pub fn location_provider() -> Token(namespace.LocationProvider) {
 
 pub fn log_provider() -> Token(js.JsValue) {
   token.new("$logProvider")
+}
+
+pub fn machine_provider() -> Token(namespace.MachineProvider) {
+  token.new("$machineProvider")
 }
 
 pub fn parse_provider() -> Token(js.JsValue) {

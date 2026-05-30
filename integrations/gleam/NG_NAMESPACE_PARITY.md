@@ -34,6 +34,8 @@ part of the Gleam public facade.
 | --- | --- |
 | `Angular` | inventory |
 | `AnnotatedDirectiveFactory` | inventory |
+| `ClassMap` | inventory |
+| `ClassValue` | review |
 | `Component` | started |
 | `Controller` | inventory |
 | `Directive` | started |
@@ -52,6 +54,12 @@ part of the Gleam public facade.
 | `InjectionTokens` | started |
 | `InvocationDetail` | inventory |
 | `ListenerFn` | inventory |
+| `Machine` | inventory |
+| `MachineConfig` | inventory |
+| `MachineMode` | alias |
+| `MachineTransition` | inventory |
+| `MachineTransitionMap` | review |
+| `MachineTransitionResult` | review |
 | `ScopeEvent` | inventory |
 | `ServiceProvider` | inventory |
 | `Validator` | inventory |
@@ -77,6 +85,7 @@ part of the Gleam public facade.
 | `InterpolateProvider` | inventory |
 | `LocationProvider` | inventory |
 | `LogProvider` | inventory |
+| `MachineProvider` | inventory |
 | `ParseProvider` | inventory |
 | `RestProvider` | inventory |
 | `RootScopeProvider` | inventory |
@@ -127,6 +136,7 @@ part of the Gleam public facade.
 | `InterpolateService` | inventory |
 | `LocationService` | inventory |
 | `LogService` | inventory |
+| `MachineService` | inventory |
 | `ParseService` | inventory |
 | `ProvideService` | inventory |
 | `PubSubService` | inventory |

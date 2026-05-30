@@ -4,6 +4,7 @@ import {
   _compileLifecycle,
   _document,
   _filter,
+  _machine,
   _provide,
   _window,
 } from "../injection-tokens.ts";
@@ -13,6 +14,7 @@ import {
 } from "../core/compile/compile.ts";
 import { FilterProvider } from "../core/filter/filter.ts";
 import { InterpolateProvider } from "../core/interpolate/interpolate.ts";
+import { MachineProvider } from "../core/machine/machine.ts";
 import { ParseProvider } from "../core/parse/parse.ts";
 import { RootScopeProvider } from "../core/scope/scope.ts";
 import { ControllerProvider } from "../core/controller/controller.ts";
@@ -68,6 +70,7 @@ export const coreProviders: ProviderRegistration = {
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
+  [_machine]: MachineProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
 };

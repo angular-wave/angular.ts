@@ -168,6 +168,7 @@ The `ng` module is registered automatically when the `Angular` class is instanti
 | `$filter`      | Filter registry                 |
 | `$animate`     | Animation support               |
 | `$location`    | URL management                  |
+| `$machine`     | Reactive mode machines          |
 | `$sce`         | Strict contextual escaping      |
 | `$state`       | Router state service            |
 | `$eventBus`    | Pub/sub messaging               |
@@ -178,6 +179,13 @@ The `ng` module is registered automatically when the `Angular` class is instanti
 Beyond the standard registration methods, `NgModule` supports several higher-level conveniences:
 
 ```typescript
+// Register an injectable reactive mode machine
+app.machine('sessionMachine', {
+  initial: 'setup',
+  data: {},
+  transitions: {},
+});
+
 app.wasm('mathLib', '/wasm/math.wasm', {});
 
 // Register a Web Worker connection

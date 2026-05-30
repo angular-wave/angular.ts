@@ -103,6 +103,37 @@ _enqueueScheduledTask(task: ScheduledTask): void {
 ```
 
 If you set ten properties in one synchronous function, all ten listener notifications are flushed together in a single microtask. The DOM is updated once, not ten times.
+## Post-render layout work
+
+Use `$afterRender` when a controller needs to read layout after AngularTS has applied the DOM work from the current flush:
+
+```typescript
+class BoardGridController {
+  $afterRender() {
+    this.realignShips();
+  }
+}
+```
+
+AngularTS coalesces `$afterRender` to one callback per controller instance per render flush. The hook runs after directive and binding DOM mutations have completed, after linked children from structural directives such as `ng-repeat` exist, after class/style/attribute bindings for that flush are applied, and after one browser animation frame gives layout a chance to settle. It does not wait for external resources such as fonts or images by default.
+
+For explicit scheduling outside the controller lifecycle, import `afterRender` or `queueAfterRender`:
+
+```typescript
+import { afterRender } from '@angular-wave/angular.ts';
+
+afterRender(() => {
+  this.realignShips();
+});
+```
+
+If font metrics are required, opt in per callback:
+
+```typescript
+afterRender(() => {
+  this.realignLabels();
+}, { fonts: true });
+```
 ## What objects are tracked
 
 Not all objects are proxied. The `isNonScope` function explicitly excludes:

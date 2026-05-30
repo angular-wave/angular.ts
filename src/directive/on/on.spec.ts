@@ -71,6 +71,32 @@ describe("ngOn* event binding", () => {
     expect($rootScope.barEvent).toHaveBeenCalled();
   });
 
+  it("should apply element event policy to all ng-on-* handlers", () => {
+    const seen = ($rootScope.seen = jasmine.createSpy("seen"));
+
+    const element = $compile(
+      '<span data-event-prevent ng-on-foo="seen($event)" ng-on-bar="seen($event)"></span>',
+    )($rootScope);
+
+    const fooEvent = new Event("foo", {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    const barEvent = new Event("bar", {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    element.dispatchEvent(fooEvent);
+    element.dispatchEvent(barEvent);
+
+    expect(fooEvent.defaultPrevented).toBe(true);
+    expect(barEvent.defaultPrevented).toBe(true);
+    expect(seen).toHaveBeenCalledWith(fooEvent);
+    expect(seen).toHaveBeenCalledWith(barEvent);
+  });
+
   it("should work with different prefixes", () => {
     const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
 

@@ -321,6 +321,103 @@ describe("event directives", () => {
 
       expect(logs).toEqual(["listener error"]);
     });
+
+    it("should apply prevent and stop event policy before evaluating the expression", async () => {
+      const parentClick = jasmine.createSpy("parentClick");
+
+      const scope = $rootScope.$new();
+
+      scope.handleClick = jasmine.createSpy("handleClick");
+
+      element = $compile(
+        '<section><button type="button" ng-click="handleClick($event)" ' +
+          "data-event-prevent data-event-stop>Click</button></section>",
+      )(scope);
+      await wait();
+
+      element.addEventListener("click", parentClick);
+
+      const button = element.querySelector("button");
+
+      const event = new Event("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+
+      button.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(scope.handleClick).toHaveBeenCalledWith(event);
+      expect(parentClick).not.toHaveBeenCalled();
+    });
+
+    it("should register listener options from event policy attributes", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+
+      const scope = $rootScope.$new();
+
+      const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+      button.setAttribute("data-event-capture", "");
+      button.setAttribute("data-event-once", "");
+      button.setAttribute("data-event-passive", "");
+
+      const link = directive.compile(button);
+
+      spyOn(button, "addEventListener").and.callThrough();
+      spyOn(button, "removeEventListener").and.callThrough();
+
+      link(scope, button);
+
+      expect(button.addEventListener).toHaveBeenCalledWith(
+        "click",
+        jasmine.any(Function),
+        {
+          capture: true,
+          once: true,
+          passive: true,
+        },
+      );
+
+      const handler = button.addEventListener.calls.mostRecent().args[1];
+
+      scope.$destroy();
+
+      expect(button.removeEventListener).toHaveBeenCalledWith(
+        "click",
+        handler,
+        {
+          capture: true,
+          once: true,
+          passive: true,
+        },
+      );
+    });
+
+    it("should reject passive listeners that also prevent default", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+
+      const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+      button.setAttribute("data-event-passive", "");
+      button.setAttribute("data-event-prevent", "");
+
+      expect(() => {
+        directive.compile(button);
+      }).toThrowError(/data-event-prevent cannot be combined/);
+    });
   });
 
   it("should expose keyboard event information to handlers", async () => {
@@ -542,6 +639,52 @@ describe("event directives", () => {
       handler({ type: "resize" });
 
       expect(logs).toEqual(["window listener error"]);
+    });
+
+    it("should register and remove document listeners", () => {
+      const documentSpy = {
+        addEventListener: jasmine.createSpy("addEventListener"),
+        removeEventListener: jasmine.createSpy("removeEventListener"),
+      };
+
+      const directive = createWindowEventDirective(
+        $parse,
+        $exceptionHandler,
+        documentSpy,
+        "ngDocumentPointerup",
+        "pointerup",
+      );
+
+      const element = document.createElement("div");
+
+      element.setAttribute("ng-document-pointerup", "endDrag($event)");
+
+      const link = directive.compile(element);
+
+      const scope = $rootScope.$new();
+
+      scope.endDrag = jasmine.createSpy("endDrag");
+
+      link(scope);
+
+      expect(documentSpy.addEventListener).toHaveBeenCalledWith(
+        "pointerup",
+        jasmine.any(Function),
+      );
+      const handler = documentSpy.addEventListener.calls.mostRecent().args[1];
+
+      const event = { type: "pointerup" };
+
+      handler(event);
+
+      expect(scope.endDrag).toHaveBeenCalledWith(event);
+
+      scope.$destroy();
+
+      expect(documentSpy.removeEventListener).toHaveBeenCalledWith(
+        "pointerup",
+        handler,
+      );
     });
   });
 });

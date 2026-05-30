@@ -1,0 +1,117 @@
+<style>
+  .pointer-capture-demo {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 30rem;
+  }
+
+  .pointer-capture-demo__board {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid #cbd5e1;
+    background:
+      linear-gradient(90deg, rgba(14, 165, 233, 0.12) 1px, transparent 1px),
+      linear-gradient(rgba(14, 165, 233, 0.12) 1px, transparent 1px), #f8fafc;
+    background-size: 2rem 2rem;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .pointer-capture-demo__marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #2563eb;
+    box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.22);
+    will-change: transform;
+  }
+
+  .pointer-capture-demo__status {
+    margin: 0;
+    color: #475569;
+  }
+</style>
+
+<section ng-app="pointerCaptureDemo" class="pointer-capture-demo">
+  <div ng-controller="PointerCaptureDemo as $ctrl">
+    <div
+      class="pointer-capture-demo__board"
+      ng-pointer-capture
+      ng-on-pointerdown="$ctrl.start($event)"
+      ng-on-pointermove="$ctrl.move($event)"
+      ng-on-pointerup="$ctrl.end($event)"
+      ng-on-pointercancel="$ctrl.cancel()"
+      data-event-prevent
+    >
+      <div
+        class="pointer-capture-demo__marker"
+        ng-style="$ctrl.markerStyle"
+      ></div>
+    </div>
+    <p class="pointer-capture-demo__status">{{ $ctrl.status }}</p>
+  </div>
+</section>
+
+<script>
+  window.angular
+    .module('pointerCaptureDemo', [])
+    .controller('PointerCaptureDemo', function () {
+      this.dragging = false;
+      this.status = 'Drag the marker across the board';
+      this.markerStyle = {
+        transform: 'translate(32px, 32px)',
+      };
+
+      this.positionFromEvent = function (event) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const radius = 12;
+        const x = Math.max(
+          radius,
+          Math.min(event.clientX - rect.left, rect.width - radius),
+        );
+        const y = Math.max(
+          radius,
+          Math.min(event.clientY - rect.top, rect.height - radius),
+        );
+
+        this.markerStyle = {
+          transform:
+            'translate(' + (x - radius) + 'px, ' + (y - radius) + 'px)',
+        };
+      };
+
+      this.start = function (event) {
+        this.dragging = true;
+        this.status = 'Pointer captured';
+        this.positionFromEvent(event);
+      };
+
+      this.move = function (event) {
+        if (!this.dragging) {
+          return;
+        }
+
+        this.status = 'Dragging pointer ' + event.pointerId;
+        this.positionFromEvent(event);
+      };
+
+      this.end = function (event) {
+        if (this.dragging) {
+          this.positionFromEvent(event);
+        }
+
+        this.dragging = false;
+        this.status = 'Pointer released';
+      };
+
+      this.cancel = function () {
+        this.dragging = false;
+        this.status = 'Pointer cancelled';
+      };
+    });
+</script>

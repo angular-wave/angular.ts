@@ -181,6 +181,51 @@ describe("ngClass", () => {
     expect(element.classList.contains("B")).toBeTruthy();
   });
 
+  it("should support precomputed view-model class maps", async () => {
+    element = $compile('<button ng-class="tile.classes"></button>')($rootScope);
+
+    $rootScope.tile = {
+      classes: {
+        placed: true,
+        hit: false,
+        miss: false,
+        sunk: false,
+      },
+    };
+    await wait();
+
+    expect(element).toHaveClass("placed");
+    expect(element).not.toHaveClass("hit");
+    expect(element).not.toHaveClass("miss");
+    expect(element).not.toHaveClass("sunk");
+
+    $rootScope.tile.classes = {
+      placed: false,
+      hit: true,
+      miss: false,
+      sunk: true,
+    };
+    await wait();
+
+    expect(element).not.toHaveClass("placed");
+    expect(element).toHaveClass("hit");
+    expect(element).not.toHaveClass("miss");
+    expect(element).toHaveClass("sunk");
+
+    $rootScope.tile.classes = {
+      placed: false,
+      hit: true,
+      miss: true,
+      sunk: false,
+    };
+    await wait();
+
+    expect(element).not.toHaveClass("placed");
+    expect(element).toHaveClass("hit");
+    expect(element).toHaveClass("miss");
+    expect(element).not.toHaveClass("sunk");
+  });
+
   it("should support adding multiple classes via a space delimited string", async () => {
     element = $compile('<div class="existing" ng-class="\'A B\'"></div>')(
       $rootScope,

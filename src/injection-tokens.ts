@@ -30,6 +30,7 @@ export const _httpParamSerializer = "$httpParamSerializer" as const;
 export const _interpolate = "$interpolate" as const;
 export const _location = "$location" as const;
 export const _log = "$log" as const;
+export const _machine = "$machine" as const;
 export const _parse = "$parse" as const;
 export const _rest = "$rest" as const;
 export const _rootScope = "$rootScope" as const;
@@ -70,6 +71,7 @@ export const _httpParamSerializerProvider =
 export const _interpolateProvider = "$interpolateProvider" as const;
 export const _locationProvider = "$locationProvider" as const;
 export const _logProvider = "$logProvider" as const;
+export const _machineProvider = "$machineProvider" as const;
 export const _parseProvider = "$parseProvider" as const;
 export const _restProvider = "$restProvider" as const;
 export const _rootScopeProvider = "$rootScopeProvider" as const;
@@ -122,6 +124,7 @@ export const $injectTokens = {
   _interpolate,
   _location,
   _log,
+  _machine,
   _parse,
   _rest,
   _rootScope,
@@ -161,6 +164,7 @@ export const $injectTokens = {
   _interpolateProvider,
   _locationProvider,
   _logProvider,
+  _machineProvider,
   _parseProvider,
   _restProvider,
   _rootScopeProvider,

@@ -1,4 +1,4 @@
-export { angular } from "./index.ts";
+export { afterRender, angular, queueAfterRender } from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
 import type {
@@ -63,6 +63,16 @@ import type {
   InterpolateProvider as TInterpolateProvider,
 } from "./core/interpolate/interpolate.ts";
 import type {
+  Machine as TMachine,
+  MachineConfig as TMachineConfig,
+  MachineMode as TMachineMode,
+  MachineProvider as TMachineProvider,
+  MachineService as TMachineService,
+  MachineTransition as TMachineTransition,
+  MachineTransitionMap as TMachineTransitionMap,
+  MachineTransitionResult as TMachineTransitionResult,
+} from "./core/machine/machine.ts";
+import type {
   SceProvider as TSceProvider,
   SceDelegateProvider as TSceDelegateProvider,
   SceDelegateService as TSceDelegateService,
@@ -79,6 +89,8 @@ import type {
 } from "./services/pubsub/pubsub.ts";
 import type {
   AnnotatedFactory as TAnnotatedFactory,
+  ClassMap as TClassMap,
+  ClassValue as TClassValue,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
   DirectiveRestrict as TDirectiveRestrict,
@@ -265,6 +277,10 @@ declare global {
 
     export type Controller = TController;
 
+    export type ClassMap = TClassMap;
+
+    export type ClassValue = TClassValue;
+
     export type Directive<TController = unknown> = TDirective<TController>;
 
     export type DirectiveRestrict = TDirectiveRestrict;
@@ -317,6 +333,8 @@ declare global {
     export type LocationProvider = TLocationProvider;
 
     export type LogProvider = TLogProvider;
+
+    export type MachineProvider = TMachineProvider;
 
     export type ParseProvider = TParseProvider;
 
@@ -416,6 +434,8 @@ declare global {
     export type LocationService = TLocationService;
 
     export type LogService = TLogService;
+
+    export type MachineService = TMachineService;
 
     export type ParseService = TParseService;
 
@@ -530,6 +550,25 @@ declare global {
     export type InvocationDetail = TInvocationDetail;
 
     export type ListenerFn = TListenerFn;
+
+    export type Machine<TData extends object = Record<string, unknown>> =
+      TMachine<TData>;
+
+    export type MachineConfig<TData extends object = Record<string, unknown>> =
+      TMachineConfig<TData>;
+
+    export type MachineMode = TMachineMode;
+
+    export type MachineTransition<
+      TData extends object = Record<string, unknown>,
+      TPayload = unknown,
+    > = TMachineTransition<TData, TPayload>;
+
+    export type MachineTransitionMap<
+      TData extends object = Record<string, unknown>,
+    > = TMachineTransitionMap<TData>;
+
+    export type MachineTransitionResult = TMachineTransitionResult;
 
     export type NgModelController = TNgModelController;
 

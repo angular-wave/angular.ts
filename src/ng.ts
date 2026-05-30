@@ -4,6 +4,7 @@ import {
   _compileLifecycle,
   _document,
   _filter,
+  _machine,
   _provide,
   _router,
   _window,
@@ -16,6 +17,7 @@ import {
 import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
+import { MachineProvider } from "./core/machine/machine.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
 import { RootScopeProvider } from "./core/scope/scope.ts";
 import {
@@ -93,6 +95,7 @@ import {
 } from "./directive/messages/messages.ts";
 import { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.ts";
 import { ngOptionsDirective } from "./directive/options/options.ts";
+import { ngPointerCaptureDirective } from "./directive/pointer-capture/pointer-capture.ts";
 import { optionDirective, selectDirective } from "./directive/select/select.ts";
 import { ngRefDirective } from "./directive/ref/ref.ts";
 import { ngRepeatDirective } from "./directive/repeat/repeat.ts";
@@ -166,6 +169,7 @@ export {
 export { ControllerProvider } from "./core/controller/controller.ts";
 export { FilterProvider } from "./core/filter/filter.ts";
 export { InterpolateProvider } from "./core/interpolate/interpolate.ts";
+export { MachineProvider } from "./core/machine/machine.ts";
 export { ParseProvider } from "./core/parse/parse.ts";
 export { RootScopeProvider } from "./core/scope/scope.ts";
 export {
@@ -248,6 +252,7 @@ export {
 } from "./directive/messages/messages.ts";
 export { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.ts";
 export { ngOptionsDirective } from "./directive/options/options.ts";
+export { ngPointerCaptureDirective } from "./directive/pointer-capture/pointer-capture.ts";
 export { optionDirective, selectDirective } from "./directive/select/select.ts";
 export { ngRefDirective } from "./directive/ref/ref.ts";
 export { ngRepeatDirective } from "./directive/repeat/repeat.ts";
@@ -369,6 +374,7 @@ export const ngCoreProviders: ProviderGroup = {
   $controller: ControllerProvider,
   $exceptionHandler: ExceptionHandlerProvider,
   $interpolate: InterpolateProvider,
+  [_machine]: MachineProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
 };
@@ -476,6 +482,7 @@ export const ngTemplateDirectives = {
   ngInit: ngInitDirective,
   ngListener: ngListenerDirective,
   ngNonBindable: ngNonBindableDirective,
+  ngPointerCapture: ngPointerCaptureDirective,
   ngRepeat: ngRepeatDirective,
   ngScope: ngScopeDirective,
   ngSetter: ngSetterDirective,

@@ -82,6 +82,10 @@ import { ngObserveDirective } from "../../directive/observe/observe.ts";
 import type { Component, DirectiveRestrict } from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
+import {
+  AFTER_RENDER_EVENT_SCHEDULER_KEY,
+  queueAfterRender,
+} from "../render/after-render.ts";
 
 type CompileAttributeValue = string | boolean | null | undefined;
 
@@ -1551,9 +1555,15 @@ const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
 // 'on' and be composed of only English letters.
 const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
 
-const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
+const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window|Document)([A-Z].*)$/;
 
-type NgPrefixBinding = "Attr" | "Prop" | "On" | "Observe" | "Window";
+type NgPrefixBinding =
+  | "Attr"
+  | "Prop"
+  | "On"
+  | "Observe"
+  | "Window"
+  | "Document";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -1563,6 +1573,7 @@ type ControllerLifecycleInstance = UnknownRecord & {
   $onInit?: RuntimeFunction;
   $onDestroy?: RuntimeFunction;
   $postLink?: RuntimeFunction;
+  $afterRender?: RuntimeFunction;
   $destroy?: RuntimeFunction;
   _destroyed?: boolean;
 };
@@ -2239,12 +2250,59 @@ export class CompileProvider {
           queueMicrotask(queueState._flush);
         }
 
+        function scheduleControllerAfterRender(
+          controllerInstance: UnknownRecord,
+          scope: Scope,
+        ): void {
+          const controllerTarget = (controllerInstance.$target ??
+            controllerInstance) as UnknownRecord & {
+            $afterRender?: RuntimeFunction;
+          };
+
+          if (!isFunction(controllerTarget.$afterRender)) {
+            return;
+          }
+
+          queueAfterRender(controllerTarget, () => {
+            if (scope._destroyed || controllerInstance._destroyed) {
+              return;
+            }
+
+            try {
+              callFunction(
+                assertDefined(controllerTarget.$afterRender),
+                controllerTarget,
+              );
+            } catch (err) {
+              $exceptionHandler(err);
+            }
+          });
+        }
+
+        function scheduleElementControllersAfterRender(
+          elementControllers: ElementControllers,
+          controllerScope: Scope,
+        ): void {
+          for (const name in elementControllers) {
+            const controllerInstance = elementControllers[name]?._instance;
+
+            if (controllerInstance) {
+              scheduleControllerAfterRender(
+                controllerInstance,
+                controllerScope,
+              );
+            }
+          }
+        }
+
         function recordDirectiveBindingChange(
           state: DirectiveBindingChangeState,
           key: string,
           currentValue: unknown,
           initial: boolean,
         ): void {
+          scheduleControllerAfterRender(state._destAny, state._scope);
+
           if (!isFunction(state._destAny.$onChanges)) {
             return;
           }
@@ -2311,6 +2369,7 @@ export class CompileProvider {
         ): void {
           state._scopeTarget[state._attrName] = val;
           syncParentValue(state._scope);
+          scheduleControllerAfterRender(state._destAny, state._scope);
         }
 
         function handleTwoWayDestinationChange(
@@ -2342,6 +2401,7 @@ export class CompileProvider {
               state._scopeTarget[key] = valRecord[key];
             }
 
+            scheduleControllerAfterRender(state._destAny, state._scope);
             return;
           }
 
@@ -2363,6 +2423,8 @@ export class CompileProvider {
               );
             }
           }
+
+          scheduleControllerAfterRender(state._destAny, state._scope);
         }
 
         function handleStringBindingObserve(
@@ -3400,7 +3462,12 @@ export class CompileProvider {
                 uppercase(letter),
               );
 
-            if (prefix === "Prop" || prefix === "On" || prefix === "Window") {
+            if (
+              prefix === "Prop" ||
+              prefix === "On" ||
+              prefix === "Window" ||
+              prefix === "Document"
+            ) {
               attrs =
                 attrs ??
                 createCompileAttributeStateWithPrecedingValues(
@@ -3526,7 +3593,8 @@ export class CompileProvider {
               prefix === "Prop" ||
               prefix === "On" ||
               prefix === "Observe" ||
-              prefix === "Window"
+              prefix === "Window" ||
+              prefix === "Document"
             ) {
               return;
             }
@@ -3593,17 +3661,19 @@ export class CompileProvider {
             return;
           }
 
-          directives.push(
-            createSyntheticDirective(
-              createWindowEventDirective(
-                $parse,
-                $exceptionHandler,
-                window,
-                normalizedName,
-                propertyName,
+          if (prefix === "Window" || prefix === "Document") {
+            directives.push(
+              createSyntheticDirective(
+                createWindowEventDirective(
+                  $parse,
+                  $exceptionHandler,
+                  prefix === "Window" ? window : document,
+                  normalizedName,
+                  propertyName,
+                ),
               ),
-            ),
-          );
+            );
+          }
         }
 
         /**
@@ -4688,6 +4758,15 @@ export class CompileProvider {
           }
 
           if (nodeLinkState._controllerDirectives) {
+            setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
+              scheduleElementControllersAfterRender(
+                elementControllers,
+                controllerScope,
+              );
+            });
+          }
+
+          if (nodeLinkState._controllerDirectives) {
             for (const name in controllerDirectives) {
               const controllerDirective = controllerDirectives[name];
 
@@ -4874,6 +4953,8 @@ export class CompileProvider {
             if (isFunction(controllerInstance.$postLink)) {
               callFunction(controllerInstance.$postLink, controllerInstance);
             }
+
+            scheduleControllerAfterRender(controllerInstance, controllerScope);
           }
         }
 

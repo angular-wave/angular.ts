@@ -31,6 +31,8 @@
     "js/ng.AriaProvider"
     "js/ng.AriaService"
     "js/ng.CachedRestBackendOptions"
+    "js/ng.ClassMap"
+    "js/ng.ClassValue"
     "js/ng.CompileLifecycleProvider"
     "js/ng.CompileLifecycleService"
     "js/ng.CompileProvider"
@@ -87,6 +89,14 @@
     "js/ng.LocationService"
     "js/ng.LogProvider"
     "js/ng.LogService"
+    "js/ng.Machine"
+    "js/ng.MachineConfig"
+    "js/ng.MachineMode"
+    "js/ng.MachineProvider"
+    "js/ng.MachineService"
+    "js/ng.MachineTransition"
+    "js/ng.MachineTransitionMap"
+    "js/ng.MachineTransitionResult"
     "js/ng.NativeAnimationOptions"
     "js/ng.NativeWebTransport"
     "js/ng.NgModelController"
@@ -229,6 +239,8 @@
      "js/ng.AriaProvider" "Used for configuring the ARIA attributes injected and managed by ngAria. ```js angular.module('myApp', ['ngAria'], function config($ariaProvider) { $ariaProvider.config({ ariaValue: true, tabindex: false }); }); ``` ## Dependencies Requires the {@link ngAria } module to be installed."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
+     "js/ng.ClassMap" "Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it."
+     "js/ng.ClassValue" "Public shape accepted by `ng-class` for class binding expressions."
      "js/ng.CompileLifecycleProvider" "Publishes controller creation/destruction events from `$compile`."
      "js/ng.CompileLifecycleService" "Publishes controller creation/destruction events from `$compile`."
      "js/ng.CompileProvider" "Public AngularTS CompileProvider contract exposed through the global ng namespace for Closure-annotated applications."
@@ -285,6 +297,14 @@
      "js/ng.LocationService" "Public AngularTS LocationService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.LogProvider" "Configuration provider for `$log` service"
      "js/ng.LogService" "Service for logging messages at various levels."
+     "js/ng.Machine" "Public AngularTS Machine contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineConfig" "Public AngularTS MachineConfig contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineMode" "Public AngularTS MachineMode contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineProvider" "Provides reactive mode machines backed by AngularTS scope proxies."
+     "js/ng.MachineService" "Public AngularTS MachineService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineTransition" "Public AngularTS MachineTransition contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineTransitionMap" "Make all properties in T optional"
+     "js/ng.MachineTransitionResult" "Public AngularTS MachineTransitionResult contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NativeAnimationOptions" "Public AngularTS NativeAnimationOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NativeWebTransport" "Public AngularTS NativeWebTransport contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NgModelController" "Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications."
@@ -484,6 +504,9 @@
     "log-service-info"
     "log-service-log"
     "log-service-warn"
+    "machine-can"
+    "machine-matches"
+    "machine-provider-dollarget"
     "ng-model-controller-dollarcommit-view-value"
     "ng-model-controller-dollaroverride-model-options"
     "ng-model-controller-dollarprocess-model-value"
@@ -505,6 +528,7 @@
     "ng-module-decorator"
     "ng-module-directive"
     "ng-module-factory"
+    "ng-module-machine"
     "ng-module-provider"
     "ng-module-run"
     "ng-module-service"
@@ -777,6 +801,8 @@
     "injection-tokens-dollarlocation-provider"
     "injection-tokens-dollarlog"
     "injection-tokens-dollarlog-provider"
+    "injection-tokens-dollarmachine"
+    "injection-tokens-dollarmachine-provider"
     "injection-tokens-dollarparse"
     "injection-tokens-dollarparse-provider"
     "injection-tokens-dollarprovide"
@@ -837,6 +863,9 @@
     "location-service-hash-prefix"
     "location-service-html5"
     "log-provider-debug"
+    "machine-config-initial"
+    "machine-config-transitions"
+    "machine-current"
     "native-animation-options-add-class"
     "native-animation-options-animation"
     "native-animation-options-from"
@@ -1505,6 +1534,21 @@
   ([^js/ng.LogService target value extra more]
    (.warn target value extra more)))
 
+(defn machine-can
+  "Public Machine.can member exposed by the AngularTS namespace contract.\n\nParams:\n- type: {string}\n\nReturns: {boolean}"
+  ^boolean [^js/ng.Machine target ^string type]
+  (.can target type))
+
+(defn machine-matches
+  "Public Machine.matches member exposed by the AngularTS namespace contract.\n\nParams:\n- mode: {string}\n\nReturns: {boolean}"
+  ^boolean [^js/ng.Machine target ^string mode]
+  (.matches target mode))
+
+(defn machine-provider-dollarget
+  "Public MachineProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.MachineService}"
+  ^js/ng.MachineService [^js/ng.MachineProvider target]
+  (.$get target))
+
 (defn ng-model-controller-dollarcommit-view-value
   "Commit a pending update to the `$modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
@@ -1609,6 +1653,11 @@
   "Public NgModule.factory member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- providerFunction: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable providerFunction]
   (.factory target name providerFunction))
+
+(defn ng-module-machine
+  "Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {!ng.MachineConfig<TData>}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.MachineConfig config]
+  (.machine target name config))
 
 (defn ng-module-provider
   "Public NgModule.provider member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- providerType: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
@@ -2997,6 +3046,16 @@
   ^string [^js/ng.InjectionTokens target]
   (.-$logProvider target))
 
+(defn injection-tokens-dollarmachine
+  "Public InjectionTokens.$machine member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$machine target))
+
+(defn injection-tokens-dollarmachine-provider
+  "Public InjectionTokens.$machineProvider member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.InjectionTokens target]
+  (.-$machineProvider target))
+
 (defn injection-tokens-dollarparse
   "Public InjectionTokens.$parse member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.InjectionTokens target]
@@ -3296,6 +3355,21 @@
   "Public LogProvider.debug member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.LogProvider target]
   (.-debug target))
+
+(defn machine-config-initial
+  "Public MachineConfig.initial member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.MachineConfig target]
+  (.-initial target))
+
+(defn machine-config-transitions
+  "Public MachineConfig.transitions member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, (!Object<string, (function(TData, ?, !ng.Machine<TData>): (boolean|string|undefined)|undefined)>|undefined)>}"
+  ^js/Object [^js/ng.MachineConfig target]
+  (.-transitions target))
+
+(defn machine-current
+  "Public Machine.current member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.Machine target]
+  (.-current target))
 
 (defn native-animation-options-add-class
   "Public NativeAnimationOptions.addClass member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"

@@ -48,12 +48,17 @@ public external interface Component {
 }
 
 public external interface Controller {
+    public fun `$afterRender`(): Unit
     public fun `$onChanges`(p0: dynamic = definedExternally): Unit
     public fun `$onDestroy`(): Unit
     public fun `$onInit`(): Unit
     public fun `$postLink`(): Unit
     public var name: String
 }
+
+public external interface ClassMap
+
+public external interface ClassValue
 
 public external interface Directive<TController> {
     public var bindToController: dynamic
@@ -90,6 +95,7 @@ public external interface NgModule {
     public fun directive(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun factory(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun filter(p0: String = definedExternally, p1: Function<*> = definedExternally): dynamic
+    public fun machine(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public var name: String
     public fun provider(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun rest(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
@@ -118,6 +124,7 @@ public external interface PubSubProvider {
 }
 
 public external interface Scope {
+    public fun `$batch`(p0: Function<*> = definedExternally): dynamic
     public fun `$broadcast`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
     public fun `$destroy`(): Unit
     public fun `$emit`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
@@ -142,6 +149,7 @@ public external interface Scope {
 }
 
 public external interface ScopeService {
+    public fun `$batch`(p0: Function<*> = definedExternally): dynamic
     public fun `$broadcast`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
     public fun `$destroy`(): Unit
     public fun `$emit`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
@@ -264,6 +272,10 @@ public external interface LogProvider {
     public fun `$get`(): dynamic
     public var debug: Boolean
     public fun setLogger(p0: Function<*> = definedExternally): Unit
+}
+
+public external interface MachineProvider {
+    public fun `$get`(): Function<*>
 }
 
 public external interface ParseProvider {
@@ -594,6 +606,10 @@ public external interface LogService {
     public fun warn(vararg p0: Array<dynamic>): Unit
 }
 
+public external interface MachineService {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+}
+
 public external interface ParseService {
     public operator fun invoke(p0: String = definedExternally, p1: Function<*> = definedExternally): Function<*>
 }
@@ -622,6 +638,7 @@ public external interface PubSubService {
 public external interface RootElementService
 
 public external interface RootScopeService {
+    public fun `$batch`(p0: Function<*> = definedExternally): dynamic
     public fun `$broadcast`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
     public fun `$destroy`(): Unit
     public fun `$emit`(p0: String = definedExternally, vararg p1: Array<dynamic>): dynamic
@@ -978,6 +995,8 @@ public external interface InjectionTokens {
     public var `$locationProvider`: String
     public var `$log`: String
     public var `$logProvider`: String
+    public var `$machine`: String
+    public var `$machineProvider`: String
     public var `$parse`: String
     public var `$parseProvider`: String
     public var `$provide`: String
@@ -1036,6 +1055,30 @@ public external interface InvocationDetail {
 public external interface ListenerFn {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
 }
+
+public external interface Machine<TData> {
+    public fun can(p0: String = definedExternally): Boolean
+    public var current: String
+    public var data: dynamic
+    public fun matches(p0: String = definedExternally): Boolean
+    public fun send(p0: String = definedExternally, p1: dynamic = definedExternally): Boolean
+}
+
+public external interface MachineConfig<TData> {
+    public var data: dynamic
+    public var initial: String
+    public var transitions: dynamic
+}
+
+public external interface MachineMode
+
+public external interface MachineTransition<TData, TPayload> {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+}
+
+public external interface MachineTransitionMap<TData>
+
+public external interface MachineTransitionResult
 
 public external interface NgModelController {
     public var `$asyncValidators`: dynamic

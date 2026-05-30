@@ -4492,6 +4492,193 @@ describe("$compile", () => {
       ]);
     });
 
+    it("calls $afterRender after structural children and DOM bindings are applied", async () => {
+      let snapshot;
+
+      myModule.component("boardGrid", {
+        controller() {
+          this.tiles = ["alpha", "bravo"];
+          this.ready = true;
+          this.tileWidth = "40px";
+          this.tileHeight = "20px";
+          this.$afterRender = () => {
+            const tiles = el.querySelectorAll(".tile");
+            const rect = tiles[0].getBoundingClientRect();
+
+            snapshot = {
+              count: tiles.length,
+              classApplied: tiles[0].classList.contains("ready"),
+              state: tiles[0].getAttribute("data-state"),
+              width: rect.width,
+              height: rect.height,
+            };
+          };
+        },
+        template:
+          '<div class="tile" ng-repeat="tile in $ctrl.tiles" ' +
+          'ng-class="{ready: $ctrl.ready}" ' +
+          'ng-style="{width: $ctrl.tileWidth, height: $ctrl.tileHeight}" ' +
+          "data-state=\"{{$ctrl.ready ? 'ready' : 'idle'}}\">{{ tile }}</div>",
+      });
+
+      reloadModules();
+      const el = $("<board-grid></board-grid>");
+
+      document.getElementById("app").appendChild(el);
+      $compile(el)($rootScope);
+
+      await waitUntil(() => !!snapshot);
+
+      expect(snapshot).toEqual({
+        count: 2,
+        classApplied: true,
+        state: "ready",
+        width: 40,
+        height: 20,
+      });
+    });
+
+    it("coalesces $afterRender to one call per controller per binding flush", async () => {
+      const afterRenderSpy = jasmine.createSpy("afterRender");
+
+      myModule.component("myComponent", {
+        bindings: {
+          first: "<",
+          second: "<",
+        },
+        controller() {
+          this.$afterRender = afterRenderSpy;
+        },
+        template: "<span>{{ $ctrl.first }} {{ $ctrl.second }}</span>",
+      });
+
+      reloadModules();
+      $rootScope.first = 1;
+      $rootScope.second = 2;
+      const el = $(
+        '<my-component first="first" second="second"></my-component>',
+      );
+
+      $compile(el)($rootScope);
+      await waitUntil(() => afterRenderSpy.calls.count() === 1);
+      expect(el.textContent).toContain("1 2");
+
+      afterRenderSpy.calls.reset();
+      $rootScope.first = 3;
+      $rootScope.second = 4;
+
+      await waitUntil(() => afterRenderSpy.calls.count() === 1);
+      expect(el.textContent).toContain("3 4");
+
+      await wait(30);
+      expect(afterRenderSpy.calls.count()).toBe(1);
+    });
+
+    it("calls $afterRender after Angular event expressions update DOM", async () => {
+      let snapshot;
+
+      myModule.component("pointerPanel", {
+        controller() {
+          this.size = 12;
+          this.$afterRender = () => {
+            const box = el.querySelector(".box");
+
+            snapshot = {
+              text: box.textContent.trim(),
+              width: box.getBoundingClientRect().width,
+            };
+          };
+        },
+        template:
+          '<button type="button" ng-on-pointermove="$ctrl.size = 48">Move</button>' +
+          '<div class="box" ng-style="{width: $ctrl.size + \'px\'}">{{$ctrl.size}}</div>',
+      });
+
+      reloadModules();
+      const el = $("<pointer-panel></pointer-panel>");
+
+      document.getElementById("app").appendChild(el);
+      $compile(el)($rootScope);
+
+      await waitUntil(() => !!snapshot);
+      snapshot = undefined;
+
+      el.querySelector("button").dispatchEvent(
+        new Event("pointermove", { bubbles: true }),
+      );
+
+      await waitUntil(() => !!snapshot);
+
+      expect(snapshot).toEqual({
+        text: "48",
+        width: 48,
+      });
+    });
+
+    it("coalesces $afterRender after repeated Angular event expressions", async () => {
+      const afterRenderSpy = jasmine.createSpy("afterRender");
+
+      myModule.component("dragCounter", {
+        controller() {
+          this.count = 0;
+          this.$afterRender = afterRenderSpy;
+        },
+        template:
+          '<button type="button" ng-on-pointermove="$ctrl.count = $ctrl.count + 1">Drag</button>' +
+          "<span>{{ $ctrl.count }}</span>",
+      });
+
+      reloadModules();
+      const el = $("<drag-counter></drag-counter>");
+
+      document.getElementById("app").appendChild(el);
+      $compile(el)($rootScope);
+
+      await waitUntil(() => afterRenderSpy.calls.count() === 1);
+      afterRenderSpy.calls.reset();
+
+      const button = el.querySelector("button");
+
+      button.dispatchEvent(new Event("pointermove", { bubbles: true }));
+      button.dispatchEvent(new Event("pointermove", { bubbles: true }));
+
+      await waitUntil(() => afterRenderSpy.calls.count() === 1);
+      expect(el.textContent).toContain("2");
+
+      await wait(30);
+      expect(afterRenderSpy.calls.count()).toBe(1);
+    });
+
+    it("calls $afterRender after document event expressions update DOM", async () => {
+      let snapshot = "";
+
+      myModule.component("documentPointerPanel", {
+        controller() {
+          this.done = false;
+          this.$afterRender = () => {
+            snapshot = el.querySelector("span").textContent.trim();
+          };
+        },
+        template:
+          '<button type="button" ng-document-pointerup="$ctrl.done = true">Release</button>' +
+          "<span>{{ $ctrl.done }}</span>",
+      });
+
+      reloadModules();
+      const el = $("<document-pointer-panel></document-pointer-panel>");
+
+      document.getElementById("app").appendChild(el);
+      $compile(el)($rootScope);
+
+      await waitUntil(() => snapshot === "false");
+      snapshot = "";
+
+      document.dispatchEvent(new Event("pointerup"));
+
+      await waitUntil(() => snapshot === "true");
+      expect(el.textContent).toContain("true");
+    });
+
     it("does not call $onChanges for two-way bindings", () => {
       const changesSpy = jasmine.createSpy();
 

@@ -30,6 +30,18 @@ is clicked.
   <div ng-click="$ctrl.greet($event)"></div>
   ```
 
+  Event policy attributes can be added to the same element:
+
+  ```html
+  <button ng-click="$ctrl.submit($event)" data-event-prevent data-event-once>
+    Submit
+  </button>
+  ```
+
+  `data-event-prevent`, `data-event-stop`, `data-event-capture`,
+  `data-event-once`, and `data-event-passive` apply to every event directive on
+  the same element.
+
 ---
 
 #### Demo

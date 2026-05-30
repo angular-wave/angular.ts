@@ -17,3 +17,17 @@ module.service("injectedGameState", InjectedGameStateService);
 module.service("legacyGameState", function LegacyGameStateService() {
   return undefined;
 });
+module.machine("sessionMachine", {
+  initial: "setup",
+  data: {
+    roomId: "",
+  },
+  transitions: {
+    setup: {
+      join(data, payload: { roomId: string }) {
+        data.roomId = payload.roomId;
+        return "waiting";
+      },
+    },
+  },
+});

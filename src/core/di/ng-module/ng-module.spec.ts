@@ -10,6 +10,7 @@ import {
   _controllerProvider,
   _filterProvider,
   _injector,
+  _machine,
   _provide,
   _rest,
   _sse,
@@ -186,6 +187,11 @@ describe("NgModule", () => {
 
   it("stores high-level injectable helpers as provider factories", () => {
     ngModule
+      .machine("sessionMachine", {
+        initial: "setup",
+        data: {},
+        transitions: {},
+      })
       .rest("posts", "/api/posts")
       .worker("backgroundWorker", "/workers/bg.js")
       .wasm("mathLib", "/wasm/math.wasm")
@@ -200,6 +206,7 @@ describe("NgModule", () => {
       _provide,
       _provide,
       _provide,
+      _provide,
     ]);
     expect(ngModule._invokeQueue.map((item) => item[1])).toEqual([
       "factory",
@@ -208,8 +215,10 @@ describe("NgModule", () => {
       "factory",
       "factory",
       "factory",
+      "factory",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][0])).toEqual([
+      "sessionMachine",
       "posts",
       "backgroundWorker",
       "mathLib",
@@ -218,6 +227,7 @@ describe("NgModule", () => {
       "live",
     ]);
     expect(ngModule._invokeQueue.map((item) => item[2][1][0])).toEqual([
+      _machine,
       _rest,
       _worker,
       _wasm,
@@ -225,6 +235,33 @@ describe("NgModule", () => {
       _websocket,
       _webTransport,
     ]);
+  });
+
+  it("registers named machines through the machine service", () => {
+    const angular = new Angular();
+
+    angular.module("machineApp", ["ng"]).machine("sessionMachine", {
+      initial: "setup",
+      data: {
+        roomId: "",
+      },
+      transitions: {
+        setup: {
+          join(data, payload) {
+            data.roomId = payload.roomId;
+            return "waiting";
+          },
+        },
+      },
+    });
+
+    const injector = createInjector(["machineApp"]);
+    const sessionMachine = injector.get("sessionMachine");
+
+    expect(sessionMachine.current).toBe("setup");
+    expect(sessionMachine.send("join", { roomId: "abc" })).toBe(true);
+    expect(sessionMachine.current).toBe("waiting");
+    expect(sessionMachine.data.roomId).toBe("abc");
   });
 
   it("stores app component definitions as run blocks", () => {

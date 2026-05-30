@@ -37,6 +37,8 @@ part of the Kotlin public facade.
 | --- | --- |
 | `Angular` | generated |
 | `AnnotatedDirectiveFactory` | generated |
+| `ClassMap` | generated |
+| `ClassValue` | generated |
 | `Component` | generated |
 | `Controller` | generated |
 | `Directive` | generated |
@@ -54,6 +56,12 @@ part of the Kotlin public facade.
 | `InjectionTokens` | generated |
 | `InvocationDetail` | generated |
 | `ListenerFn` | generated |
+| `Machine` | generated |
+| `MachineConfig` | generated |
+| `MachineMode` | alias |
+| `MachineTransition` | generated |
+| `MachineTransitionMap` | review |
+| `MachineTransitionResult` | review |
 | `ScopeEvent` | generated |
 | `ServiceProvider` | generated |
 | `Validator` | generated |
@@ -79,6 +87,7 @@ part of the Kotlin public facade.
 | `InterpolateProvider` | generated |
 | `LocationProvider` | generated |
 | `LogProvider` | generated |
+| `MachineProvider` | generated |
 | `ParseProvider` | generated |
 | `PubSubProvider` | generated |
 | `RestProvider` | generated |
@@ -126,6 +135,7 @@ part of the Kotlin public facade.
 | `InterpolateService` | generated |
 | `LocationService` | generated |
 | `LogService` | generated |
+| `MachineService` | generated |
 | `ParseService` | generated |
 | `ProvideService` | generated |
 | `PubSubService` | generated |

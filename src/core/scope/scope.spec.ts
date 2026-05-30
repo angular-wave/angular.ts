@@ -4922,6 +4922,161 @@ describe("Scope optimizations", () => {
       expect(scope.$handler._listenerScheduler._index).toBe(0);
       expect(queuedMicrotasks.length).toBe(0);
     });
+
+    it("should batch scheduled callbacks until the callback exits", () => {
+      const queuedMicrotasks = [];
+
+      const queueMicrotaskSpy = spyOn(
+        globalThis,
+        "queueMicrotask",
+      ).and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+
+      let signature = "";
+      let callsDuringBatch = -1;
+
+      scope.$batch(() => {
+        scope.$handler._scheduleCallback(() => {
+          signature += "A";
+        });
+        scope.$handler._scheduleCallback(() => {
+          signature += "B";
+        });
+        callsDuringBatch = queueMicrotaskSpy.calls.count();
+      });
+
+      expect(callsDuringBatch).toBe(0);
+      expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
+      expect(signature).toBe("");
+
+      queuedMicrotasks.shift()();
+
+      expect(signature).toBe("AB");
+    });
+
+    it("should only flush once for nested batches", () => {
+      const queuedMicrotasks = [];
+
+      const queueMicrotaskSpy = spyOn(
+        globalThis,
+        "queueMicrotask",
+      ).and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+
+      let signature = "";
+
+      scope.$batch(() => {
+        scope.$handler._scheduleCallback(() => {
+          signature += "A";
+        });
+
+        scope.$batch(() => {
+          scope.$handler._scheduleCallback(() => {
+            signature += "B";
+          });
+        });
+
+        expect(queueMicrotaskSpy).not.toHaveBeenCalled();
+      });
+
+      expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
+
+      queuedMicrotasks.shift()();
+
+      expect(signature).toBe("AB");
+    });
+
+    it("should schedule a flush and rethrow when the batch callback throws", () => {
+      const queuedMicrotasks = [];
+
+      spyOn(globalThis, "queueMicrotask").and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+
+      let signature = "";
+
+      expect(() => {
+        scope.$batch(() => {
+          scope.$handler._scheduleCallback(() => {
+            signature += "A";
+          });
+
+          throw new Error("boom");
+        });
+      }).toThrowError("boom");
+
+      expect(queuedMicrotasks.length).toBe(1);
+      expect(signature).toBe("");
+
+      queuedMicrotasks.shift()();
+
+      expect(signature).toBe("A");
+    });
+
+    it("should preserve the batch callback return value", () => {
+      const result = scope.$batch(() => "done");
+
+      expect(result).toBe("done");
+    });
+
+    it("should warn for promise-returning batch callbacks without keeping the batch open", () => {
+      const queuedMicrotasks = [];
+
+      const queueMicrotaskSpy = spyOn(
+        globalThis,
+        "queueMicrotask",
+      ).and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+      const warnSpy = spyOn(console, "warn");
+
+      const promise = Promise.resolve("done");
+
+      const result = scope.$batch(() => {
+        scope.$handler._scheduleCallback(() => undefined);
+
+        return promise;
+      });
+
+      expect(result).toBe(promise);
+      expect(warnSpy).toHaveBeenCalledWith(
+        "$batch callback returned a Promise. Async mutations after await are not batched.",
+      );
+      expect(scope.$handler._listenerScheduler._batchDepth).toBe(0);
+      expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
+      expect(queuedMicrotasks.length).toBe(1);
+    });
+
+    it("should not schedule an extra flush for work queued before the batch", () => {
+      const queuedMicrotasks = [];
+
+      const queueMicrotaskSpy = spyOn(
+        globalThis,
+        "queueMicrotask",
+      ).and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+
+      let signature = "";
+
+      scope.$handler._scheduleCallback(() => {
+        signature += "A";
+      });
+
+      scope.$batch(() => {
+        scope.$handler._scheduleCallback(() => {
+          signature += "B";
+        });
+      });
+
+      expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
+
+      queuedMicrotasks.shift()();
+
+      expect(signature).toBe("AB");
+    });
   });
 
   describe("internal nested listener stats", () => {

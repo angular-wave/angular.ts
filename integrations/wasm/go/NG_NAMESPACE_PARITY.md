@@ -46,6 +46,8 @@ reference example makes one necessary.
 | --- | --- |
 | `Angular` | deferred |
 | `AnnotatedDirectiveFactory` | deferred |
+| `ClassMap` | deferred |
+| `ClassValue` | deferred |
 | `Component` | covered |
 | `Controller` | covered |
 | `Directive` | deferred |
@@ -64,6 +66,12 @@ reference example makes one necessary.
 | `InjectionTokens` | covered |
 | `InvocationDetail` | covered |
 | `ListenerFn` | covered |
+| `Machine` | deferred |
+| `MachineConfig` | deferred |
+| `MachineMode` | deferred |
+| `MachineTransition` | deferred |
+| `MachineTransitionMap` | deferred |
+| `MachineTransitionResult` | deferred |
 | `ScopeEvent` | covered |
 | `ServiceProvider` | deferred |
 | `Validator` | deferred |
@@ -89,6 +97,7 @@ reference example makes one necessary.
 | `InterpolateProvider` | deferred |
 | `LocationProvider` | deferred |
 | `LogProvider` | deferred |
+| `MachineProvider` | deferred |
 | `ParseProvider` | deferred |
 | `RestProvider` | deferred |
 | `RootScopeProvider` | deferred |
@@ -135,6 +144,7 @@ reference example makes one necessary.
 | `InterpolateService` | deferred |
 | `LocationService` | deferred |
 | `LogService` | covered |
+| `MachineService` | deferred |
 | `ParseService` | deferred |
 | `ProvideService` | deferred |
 | `PubSubService` | covered |

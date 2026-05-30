@@ -179,6 +179,35 @@ $scope.hasError = false;
 // Result: class="active"
 ```
 
+For larger views, prefer projecting domain state into a view-model class map and binding that map directly. This keeps templates readable and lets JavaScript type checking validate the object shape.
+
+```html
+<button ng-class="tile.classes">
+  Fire
+</button>
+```
+
+```javascript
+/**
+ * @param {{ state: string, sunk: boolean }} tile
+ * @returns {ng.ClassMap}
+ */
+function tileClasses(tile) {
+  return {
+    placed: tile.state === 'unit',
+    hit: tile.state === 'hit',
+    miss: tile.state === 'miss',
+    sunk: tile.sunk,
+  };
+}
+
+$scope.tile = {
+  state: 'unit',
+  sunk: false,
+  classes: tileClasses({ state: 'unit', sunk: false }),
+};
+```
+
 ### Array syntax
 
 Each element is evaluated as a class name or object. Useful when combining static and conditional classes.
@@ -225,7 +254,7 @@ These variants apply classes only to even- or odd-indexed rows inside an `ng-rep
 ```
 #### `ng-class`
 
-- **Type:** `string | object | array`
+- **Type:** `ng.ClassValue` (`string | ng.ClassMap | array`)
 - **Required:** yes
 
 * **String** — a space-delimited list of class names.

@@ -34,6 +34,8 @@ part of the Dart public facade.
 | --- | --- |
 | `Angular` | started |
 | `AnnotatedDirectiveFactory` | started |
+| `ClassMap` | started |
+| `ClassValue` | review |
 | `Component` | started |
 | `Controller` | started |
 | `Directive` | started |
@@ -51,6 +53,12 @@ part of the Dart public facade.
 | `InjectionTokens` | started |
 | `InvocationDetail` | started |
 | `ListenerFn` | started |
+| `Machine` | started |
+| `MachineConfig` | started |
+| `MachineMode` | alias |
+| `MachineTransition` | started |
+| `MachineTransitionMap` | review |
+| `MachineTransitionResult` | review |
 | `ScopeEvent` | started |
 | `ServiceProvider` | started |
 | `Validator` | started |
@@ -76,6 +84,7 @@ part of the Dart public facade.
 | `InterpolateProvider` | started |
 | `LocationProvider` | started |
 | `LogProvider` | started |
+| `MachineProvider` | started |
 | `ParseProvider` | started |
 | `PubSubProvider` | started |
 | `RestProvider` | started |
@@ -123,6 +132,7 @@ part of the Dart public facade.
 | `InterpolateService` | started |
 | `LocationService` | started |
 | `LogService` | started |
+| `MachineService` | started |
 | `ParseService` | started |
 | `ProvideService` | started |
 | `PubSubService` | started |

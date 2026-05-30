@@ -284,6 +284,24 @@ ng.Controller.prototype.$onDestroy;
 ng.Controller.prototype.$postLink;
 
 /**
+ * Called after this controller has been linked, AngularTS has applied DOM mutations for the current flush, and the browser has had one animation frame to settle layout. Multiple schedules for the same controller in one flush are coalesced into one call.
+ * @type {(function(): void|undefined)}
+ */
+ng.Controller.prototype.$afterRender;
+
+/**
+ * Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it.
+ * @record
+ */
+ng.ClassMap = function() {};
+
+/**
+ * Public shape accepted by `ng-class` for class binding expressions.
+ * @typedef {(!Array<(!Object<string, (boolean|null|undefined)>|null|string|undefined)>|!Object<string, (boolean|null|undefined)>|null|string|undefined)}
+ */
+ng.ClassValue;
+
+/**
  * Public AngularTS Directive contract exposed through the global ng namespace for Closure-annotated applications.
  * @template TController
  * @record
@@ -519,6 +537,15 @@ ng.NgModule.prototype.filter = function(name, filterFn) {};
 ng.NgModule.prototype.controller = function(name, ctlFn) {};
 
 /**
+ * Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.
+ * @template TData
+ * @param {string} name
+ * @param {!ng.MachineConfig<TData>} config
+ * @return {!ng.NgModule}
+ */
+ng.NgModule.prototype.machine = function(name, config) {};
+
+/**
  * Register a router state during module configuration. This is equivalent to calling `$stateProvider.state(...)` in a config block, but keeps route declarations in the same fluent module API used for components, services, directives, and custom elements. Register a named router state during module configuration. The provided `name` is copied onto the state declaration before it is passed to `$stateProvider`.
  * @param {!ng.StateDeclaration} definition
  * @return {!ng.NgModule}
@@ -732,6 +759,14 @@ ng.Scope.prototype.get = function(target, property, proxy) {};
 ng.Scope.prototype.deleteProperty = function(target, property) {};
 
 /**
+ * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
+ * @template T
+ * @param {function(): T} fn
+ * @return {T}
+ */
+ng.Scope.prototype.$batch = function(fn) {};
+
+/**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
@@ -886,6 +921,14 @@ ng.ScopeService.prototype.get = function(target, property, proxy) {};
  * @return {boolean}
  */
 ng.ScopeService.prototype.deleteProperty = function(target, property) {};
+
+/**
+ * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
+ * @template T
+ * @param {function(): T} fn
+ * @return {T}
+ */
+ng.ScopeService.prototype.$batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
@@ -1390,6 +1433,18 @@ ng.LogProvider.prototype.setLogger = function(fn) {};
  * @return {!ng.LogService}
  */
 ng.LogProvider.prototype.$get = function() {};
+
+/**
+ * Provides reactive mode machines backed by AngularTS scope proxies.
+ * @record
+ */
+ng.MachineProvider = function() {};
+
+/**
+ * Public MachineProvider.$get member exposed by the AngularTS namespace contract.
+ * @return {!ng.MachineService}
+ */
+ng.MachineProvider.prototype.$get = function() {};
 
 /**
  * Public AngularTS ParseProvider contract exposed through the global ng namespace for Closure-annotated applications.
@@ -2998,6 +3053,12 @@ ng.LogService.prototype.log = function(var_args) {};
 ng.LogService.prototype.warn = function(var_args) {};
 
 /**
+ * Public AngularTS MachineService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.MachineConfig<?>): !ng.Machine<?>}
+ */
+ng.MachineService;
+
+/**
  * Parses a string or expression function into a compiled expression.
  * @typedef {function(string, (function(?): ?|undefined)): !Object}
  */
@@ -3211,6 +3272,14 @@ ng.RootScopeService.prototype.get = function(target, property, proxy) {};
  * @return {boolean}
  */
 ng.RootScopeService.prototype.deleteProperty = function(target, property) {};
+
+/**
+ * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
+ * @template T
+ * @param {function(): T} fn
+ * @return {T}
+ */
+ng.RootScopeService.prototype.$batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
@@ -4858,6 +4927,12 @@ ng.InjectionTokens.prototype.$location;
 ng.InjectionTokens.prototype.$log;
 
 /**
+ * Public InjectionTokens.$machine member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$machine;
+
+/**
  * Public InjectionTokens.$parse member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -5080,6 +5155,12 @@ ng.InjectionTokens.prototype.$locationProvider;
 ng.InjectionTokens.prototype.$logProvider;
 
 /**
+ * Public InjectionTokens.$machineProvider member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.InjectionTokens.prototype.$machineProvider;
+
+/**
  * Public InjectionTokens.$parseProvider member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -5248,6 +5329,97 @@ ng.InvocationDetail.prototype.reply;
  * @typedef {function((?|undefined), (?|undefined)): void}
  */
 ng.ListenerFn;
+
+/**
+ * Public AngularTS Machine contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData
+ * @record
+ */
+ng.Machine = function() {};
+
+/**
+ * Public Machine.current member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.Machine.prototype.current;
+
+/**
+ * Public Machine.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.Machine.prototype.data;
+
+/**
+ * Public Machine.send member exposed by the AngularTS namespace contract.
+ * @param {string} type
+ * @param {(?|undefined)} payload
+ * @return {boolean}
+ */
+ng.Machine.prototype.send = function(type, payload) {};
+
+/**
+ * Public Machine.can member exposed by the AngularTS namespace contract.
+ * @param {string} type
+ * @return {boolean}
+ */
+ng.Machine.prototype.can = function(type) {};
+
+/**
+ * Public Machine.matches member exposed by the AngularTS namespace contract.
+ * @param {string} mode
+ * @return {boolean}
+ */
+ng.Machine.prototype.matches = function(mode) {};
+
+/**
+ * Public AngularTS MachineConfig contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData
+ * @record
+ */
+ng.MachineConfig = function() {};
+
+/**
+ * Public MachineConfig.initial member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.MachineConfig.prototype.initial;
+
+/**
+ * Public MachineConfig.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.MachineConfig.prototype.data;
+
+/**
+ * Public MachineConfig.transitions member exposed by the AngularTS namespace contract.
+ * @type {!Object<string, (!Object<string, (function(TData, ?, !ng.Machine<TData>): (boolean|string|undefined)|undefined)>|undefined)>}
+ */
+ng.MachineConfig.prototype.transitions;
+
+/**
+ * Public AngularTS MachineMode contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {string}
+ */
+ng.MachineMode;
+
+/**
+ * Public AngularTS MachineTransition contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?, ?, !ng.Machine<?>): (boolean|string|undefined)}
+ */
+ng.MachineTransition;
+
+/**
+ * Make all properties in T optional
+ * @template TData
+ * @record
+ */
+ng.MachineTransitionMap = function() {};
+
+/**
+ * Public AngularTS MachineTransitionResult contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {(boolean|string|undefined)}
+ */
+ng.MachineTransitionResult;
 
 /**
  * Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications.

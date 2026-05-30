@@ -3,4 +3,8 @@
   <b>Throttling</b> dropdown -> Click <b>Offline</b> checkbox
   <div ng-window-online="online = true">Connected: {{ online }}</div>
   <div ng-window-offline="offline = true">Disconnected: {{ offline }}</div>
+  <button ng-document-click="lastDocumentClick = $event.type">
+    Listen for next document click
+  </button>
+  <div>Document event: {{ lastDocumentClick || 'none' }}</div>
 </section>

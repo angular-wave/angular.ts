@@ -261,3 +261,37 @@ The expression is evaluated in the current scope. `$event` refers to the native 
 ```html
 <input ng-keydown="$event.key === 'Enter' && submit()">
 ```
+
+Event policy can be declared once on the same element and applies to every `ng-on-*` or generated event directive on that element:
+
+```html
+<div
+  ng-on-pointerdown="$ctrl.startDrag($event)"
+  data-event-prevent
+  data-event-capture>
+</div>
+```
+
+Supported policy attributes:
+
+| Attribute             | Behavior                                      |
+| --------------------- | --------------------------------------------- |
+| `data-event-prevent`  | Calls `$event.preventDefault()` first         |
+| `data-event-stop`     | Calls `$event.stopPropagation()` first        |
+| `data-event-capture`  | Registers the listener with `capture: true`   |
+| `data-event-once`     | Registers the listener with `once: true`      |
+| `data-event-passive`  | Registers the listener with `passive: true`   |
+
+`data-event-passive` cannot be combined with `data-event-prevent`, because passive listeners cannot cancel default browser behavior.
+
+`ng-pointer-capture` can be combined with `ng-on-pointer*` handlers for game and board interactions that need reliable pointer streams:
+
+```html
+<div
+  ng-pointer-capture
+  ng-on-pointerdown="$ctrl.startDrag($event)"
+  ng-on-pointermove="$ctrl.drag($event)"
+  ng-on-pointerup="$ctrl.drop($event)"
+  data-event-prevent>
+</div>
+```

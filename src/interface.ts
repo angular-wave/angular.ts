@@ -30,6 +30,7 @@ export const PublicInjectionTokens = {
   $interpolate: "$interpolate",
   $location: "$location",
   $log: "$log",
+  $machine: "$machine",
   $parse: "$parse",
   $rest: "$rest",
   $rootScope: "$rootScope",
@@ -67,6 +68,7 @@ export const PublicInjectionTokens = {
   $interpolateProvider: "$interpolateProvider",
   $locationProvider: "$locationProvider",
   $logProvider: "$logProvider",
+  $machineProvider: "$machineProvider",
   $parseProvider: "$parseProvider",
   $restProvider: "$restProvider",
   $rootScopeProvider: "$rootScopeProvider",
@@ -117,6 +119,24 @@ export interface AngularBootstrapConfig {
 export type Expression = string;
 
 export type ExpandoStore = Record<string, unknown>;
+
+/**
+ * Boolean class map consumed by `ng-class`.
+ *
+ * Each key is a CSS class name. Truthy values add the class; `false`, `null`,
+ * and `undefined` remove it.
+ */
+export type ClassMap = Record<string, boolean | null | undefined>;
+
+/**
+ * Public shape accepted by `ng-class` for class binding expressions.
+ */
+export type ClassValue =
+  | string
+  | ClassMap
+  | readonly (string | ClassMap | null | undefined)[]
+  | null
+  | undefined;
 
 /**
  * Dependency-annotated factory array used by AngularTS DI system.
@@ -341,6 +361,19 @@ export interface PostLink {
 }
 
 /**
+ * Interface for the $afterRender lifecycle hook.
+ */
+export interface AfterRender {
+  /**
+   * Called after this controller has been linked, AngularTS has applied DOM
+   * mutations for the current flush, and the browser has had one animation frame
+   * to settle layout. External resources such as fonts and images are not waited
+   * on by default.
+   */
+  $afterRender(): void;
+}
+
+/**
  * AngularTS component lifecycle interface.
  * Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that
  * will be called by Angular at certain points in the life cycle of the directive.
@@ -377,6 +410,13 @@ export type Controller = object & {
    * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
    */
   $postLink?: () => void;
+  /**
+   * Called after this controller has been linked, AngularTS has applied DOM
+   * mutations for the current flush, and the browser has had one animation frame
+   * to settle layout. Multiple schedules for the same controller in one flush are
+   * coalesced into one call.
+   */
+  $afterRender?: () => void;
 };
 
 /**

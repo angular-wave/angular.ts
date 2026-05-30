@@ -48,7 +48,7 @@ Keep these groups in mind when choosing where to look in the docs.
 | [Forms]({{< relref "/docs/directives/forms" >}}) | Track validity, dirty state, messages, and model options | `form`, `ng-model`, `ng-messages`, validators |
 | [HTTP]({{< relref "/docs/directives/http" >}}) | Trigger declarative network work from the DOM | `ng-get`, `ng-post`, `ng-put`, `ng-delete`, `ng-sse` |
 | [Animations]({{< relref "/docs/directives/animations" >}}) | Coordinate directive-driven animation hooks | `ng-animate-swap`, `ng-animate-children` |
-| [Advanced]({{< relref "/docs/directives/advanced" >}}) | Bridge browser APIs and integration boundaries | `ng-worker`, `ng-wasm`, `ng-viewport`, `ng-inject` |
+| [Advanced]({{< relref "/docs/directives/advanced" >}}) | Bridge browser APIs and integration boundaries | `ng-worker`, `ng-wasm`, `ng-viewport`, `ng-pointer-capture` |
 
 ## Create A Custom Directive
 

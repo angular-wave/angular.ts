@@ -11,6 +11,7 @@ import {
   _controllerProvider,
   _filterProvider,
   _injector,
+  _machine,
   _provide,
   _rest,
   _sse,
@@ -53,6 +54,7 @@ import type {
   ScopeElementConstructor,
   WebComponentService,
 } from "../../../services/web-component/web-component.ts";
+import type { MachineConfig, MachineService } from "../../machine/machine.ts";
 
 export type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 
@@ -312,6 +314,32 @@ export class NgModule {
     validate(isString, name, "name");
     validateRequired(ctlFn, `fictlFnlterFn`);
     this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
+
+    return this;
+  }
+
+  /**
+   * Register a named reactive mode machine as an injectable service.
+   *
+   * The machine is created by `$machine` when the named service is requested.
+   * The returned instance is not tied to any one scope lifetime; it registers
+   * with AngularTS scope proxies when assigned to a controller or scope.
+   *
+   * @param {string} name - Injectable name.
+   * @param {ng.MachineConfig} config - Machine configuration.
+   * @returns {NgModule}
+   */
+  machine<TData extends object = Record<string, unknown>>(
+    name: string,
+    config: MachineConfig<TData>,
+  ): this {
+    validate(isString, name, "name");
+    validate(isObject, config, "config");
+    this._invokeQueue.push([
+      _provide,
+      "factory",
+      [name, [_machine, ($machine: MachineService) => $machine(config)]],
+    ]);
 
     return this;
   }

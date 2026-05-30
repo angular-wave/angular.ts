@@ -10,6 +10,8 @@
  * @typedef {{
  *   Angular: ng.Angular,
  *   AnnotatedDirectiveFactory: ng.AnnotatedDirectiveFactory,
+ *   ClassMap: ng.ClassMap,
+ *   ClassValue: ng.ClassValue,
  *   Component: ng.Component,
  *   Controller: ng.Controller,
  *   Directive: ng.Directive<unknown>,
@@ -38,6 +40,7 @@
  *   InterpolateProvider: ng.InterpolateProvider,
  *   LocationProvider: ng.LocationProvider,
  *   LogProvider: ng.LogProvider,
+ *   MachineProvider: ng.MachineProvider,
  *   ParseProvider: ng.ParseProvider,
  *   RestProvider: ng.RestProvider,
  *   RootScopeProvider: ng.RootScopeProvider,
@@ -87,6 +90,7 @@
  *   InterpolateService: ng.InterpolateService,
  *   LocationService: ng.LocationService,
  *   LogService: ng.LogService,
+ *   MachineService: ng.MachineService,
  *   ParseService: ng.ParseService,
  *   ProvideService: ng.ProvideService,
  *   PubSubService: ng.PubSubService,
@@ -138,6 +142,12 @@
  *   InterpolationFunction: ng.InterpolationFunction,
  *   InvocationDetail: ng.InvocationDetail,
  *   ListenerFn: ng.ListenerFn,
+ *   Machine: ng.Machine<{ roomId: string }>,
+ *   MachineConfig: ng.MachineConfig<{ roomId: string }>,
+ *   MachineMode: ng.MachineMode,
+ *   MachineTransition: ng.MachineTransition<{ roomId: string }, { roomId: string }>,
+ *   MachineTransitionMap: ng.MachineTransitionMap<{ roomId: string }>,
+ *   MachineTransitionResult: ng.MachineTransitionResult,
  *   NgModelController: ng.NgModelController,
  *   RequestConfig: ng.RequestConfig,
  *   RequestShortcutConfig: ng.RequestShortcutConfig,
@@ -207,6 +217,54 @@
 
 /** @type {Partial<AngularTsNamespaceTypes>} */
 export const namespaceTypes = Object.freeze({});
+
+/** @type {ng.ClassMap} */
+export const tileClasses = Object.freeze({
+  placed: true,
+  hit: false,
+  miss: null,
+  sunk: undefined,
+});
+
+/** @type {ng.ClassValue} */
+export const tileClassValue = ["tile", tileClasses];
+
+/**
+ * @param {ng.ScopeService} $scope
+ */
+export function batchScopeUpdate($scope) {
+  return $scope.$batch(() => {
+    $scope.status = "playing";
+
+    return $scope.status;
+  });
+}
+
+/**
+ * @param {ng.MachineService} $machine
+ * @returns {ng.Machine<{ roomId: string }>}
+ */
+export function createSessionMachine($machine) {
+  return $machine({
+    initial: "setup",
+    data: {
+      roomId: "",
+    },
+    transitions: {
+      setup: {
+        /**
+         * @param {{ roomId: string }} data
+         * @param {{ roomId: string }} payload
+         * @returns {ng.MachineTransitionResult}
+         */
+        join(data, payload) {
+          data.roomId = payload.roomId;
+          return "waiting";
+        },
+      },
+    },
+  });
+}
 
 /**
  * @param {ng.HttpProvider} $httpProvider

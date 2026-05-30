@@ -15,6 +15,28 @@ expression types:
   class.
 - **Array** — containing strings and/or objects as described above.
 
+For complex view state, bind a precomputed class map instead of embedding a long
+object expression in the template:
+
+```html
+<button ng-class="tile.classes"></button>
+```
+
+```javascript
+/**
+ * @param {{ state: string, sunk: boolean }} tile
+ * @returns {ng.ClassMap}
+ */
+function tileClasses(tile) {
+  return {
+    placed: tile.state === 'unit',
+    hit: tile.state === 'hit',
+    miss: tile.state === 'miss',
+    sunk: tile.sunk,
+  };
+}
+```
+
 When the expression changes:
 
 - Previously added classes are removed.
@@ -47,6 +69,7 @@ to the element:
 #### `ng-class`
 
 - **Type:** `string | object | array`
+- **Type alias:** `ng.ClassValue`
 - **Description:** An expression whose result determines the CSS classes to
   apply.
 - **Example:**
