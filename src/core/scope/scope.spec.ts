@@ -704,7 +704,8 @@ describe("Scope", () => {
 
     it("should notify Map watchers for includes()", async () => {
       const includesMethod =
-        typeof (Map.prototype as Record<string, unknown>).includes === "function"
+        typeof (Map.prototype as Record<string, unknown>).includes ===
+        "function"
           ? "includes"
           : "has";
       const includesExpr = `map.${includesMethod}('b')`;
@@ -723,10 +724,7 @@ describe("Scope", () => {
       scope.map.set("b", 2);
       await wait();
 
-      expect(includesValues).toEqual([
-        false,
-        true,
-      ]);
+      expect(includesValues).toEqual([false, true]);
 
       scope.map.delete("b");
       await wait();
@@ -736,7 +734,8 @@ describe("Scope", () => {
 
     it("should notify Set watchers for includes()", async () => {
       const includesMethod =
-        typeof (Set.prototype as Record<string, unknown>).includes === "function"
+        typeof (Set.prototype as Record<string, unknown>).includes ===
+        "function"
           ? "includes"
           : "has";
       const includesExpr = `set.${includesMethod}('b')`;
@@ -3986,12 +3985,12 @@ describe("Scope", () => {
           expect(log.includes("2>")).toBe(true);
         });
 
-      it("should stop broadcasting to sibling branches when propagation is stopped", () => {
-        child1.$on("myEvent", (event) => {
-          event.stopPropagation();
-        });
+        it("should stop broadcasting to sibling branches when propagation is stopped", () => {
+          child1.$on("myEvent", (event) => {
+            event.stopPropagation();
+          });
 
-        scope.$broadcast("myEvent");
+          scope.$broadcast("myEvent");
 
           expect(log).toBe("0>1>");
         });

@@ -14,15 +14,17 @@ describe("ngEl", () => {
 
     const angular = new Angular();
 
-    angular.module("default", []).controller(
-      "ElementController",
-      function ElementController(this: { boardEl: Element | null }) {
-        elementController = this;
-        this.boardEl = null;
+    angular
+      .module("default", [])
+      .controller(
+        "ElementController",
+        function ElementController(this: { boardEl: Element | null }) {
+          elementController = this;
+          this.boardEl = null;
 
-        return this;
-      },
-    );
+          return this;
+        },
+      );
 
     angular
       .bootstrap(el, ["default"])

@@ -184,9 +184,9 @@ describe("$machine", () => {
       const directiveScopes: ng.Scope[] = [];
 
       window.angular = new Angular();
-      window.angular.module("machineRoadmapRestoreApp", ["ng"]).directive(
-        "machinePanel",
-        () => ({
+      window.angular
+        .module("machineRoadmapRestoreApp", ["ng"])
+        .directive("machinePanel", () => ({
           scope: true,
           template:
             '<span class="mode">{{ session.current }}</span>' +
@@ -195,8 +195,7 @@ describe("$machine", () => {
             directiveScopes.push(scope);
             scope.session.matches("setup");
           },
-        }),
-      );
+        }));
 
       const injector = createInjector(["machineRoadmapRestoreApp"]);
       const compile = injector.get("$compile") as ng.CompileService;
@@ -220,7 +219,9 @@ describe("$machine", () => {
 
       expect(directiveScopes.length).toBe(2);
       expect(element.querySelector(".first .status")?.textContent).toBe("idle");
-      expect(element.querySelector(".second .status")?.textContent).toBe("idle");
+      expect(element.querySelector(".second .status")?.textContent).toBe(
+        "idle",
+      );
 
       directiveScopes[0].$destroy();
 
@@ -243,9 +244,9 @@ describe("$machine", () => {
 
     it("isolates named machine Map and Set data across injectors", () => {
       window.angular = new Angular();
-      window.angular.module("namedMachineCollectionApp", ["ng"]).machine(
-        "sessionMachine",
-        {
+      window.angular
+        .module("namedMachineCollectionApp", ["ng"])
+        .machine("sessionMachine", {
           initial: "setup",
           data: {
             metadata: new Map([["phase", "idle"]]),
@@ -261,8 +262,7 @@ describe("$machine", () => {
               },
             },
           },
-        },
-      );
+        });
 
       const firstInjector = createInjector(["namedMachineCollectionApp"]);
       const secondInjector = createInjector(["namedMachineCollectionApp"]);
@@ -530,7 +530,9 @@ describe("$machine", () => {
       await wait();
 
       expect(element.querySelector(".mode")?.textContent).toBe("waiting");
-      expect(element.querySelector(".status")?.textContent).toBe("transitioned");
+      expect(element.querySelector(".status")?.textContent).toBe(
+        "transitioned",
+      );
     });
   });
 
@@ -733,7 +735,10 @@ describe("$machine", () => {
         hooks: {
           transition({ machine }) {
             persistedWrites += 1;
-            localStorage.setItem(storageKey, JSON.stringify(machine.snapshot()));
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify(machine.snapshot()),
+            );
           },
         },
       });
@@ -909,9 +914,11 @@ describe("$machine", () => {
     const enter = Object.create(null);
     const hooks = Object.create(null);
 
-    enter.waiting = (context: ng.MachineTransitionContext<{
-      status: string;
-    }>) => {
+    enter.waiting = (
+      context: ng.MachineTransitionContext<{
+        status: string;
+      }>,
+    ) => {
       context.data.status = "entered";
     };
     hooks.enter = enter;
@@ -1667,9 +1674,9 @@ describe("$machine", () => {
 
     expect(machine.current).toBe("ready");
     expect(machine.data.status).toBe("ready");
-    expect(Object.prototype.hasOwnProperty.call(machine.data, "__proto__")).toBe(
-      true,
-    );
+    expect(
+      Object.prototype.hasOwnProperty.call(machine.data, "__proto__"),
+    ).toBe(true);
     expect(machine.data.__proto__).toEqual({
       polluted: true,
     });
@@ -1733,9 +1740,9 @@ describe("$machine", () => {
 
     expect(machine.current).toBe("ready");
     expect(machine.data.status).toBe("ready");
-    expect(Object.prototype.hasOwnProperty.call(machine.data, "constructor")).toBe(
-      true,
-    );
+    expect(
+      Object.prototype.hasOwnProperty.call(machine.data, "constructor"),
+    ).toBe(true);
     expect(machine.data.constructor).toEqual({
       prototype: {
         polluted: true,
@@ -1769,9 +1776,9 @@ describe("$machine", () => {
     const snapshot = machine.snapshot();
 
     expect(snapshot.current).toBe("setup");
-    expect(Object.prototype.hasOwnProperty.call(snapshot.data, "__proto__")).toBe(
-      true,
-    );
+    expect(
+      Object.prototype.hasOwnProperty.call(snapshot.data, "__proto__"),
+    ).toBe(true);
     expect(snapshot.data.__proto__).toEqual({
       label: "data",
     });
@@ -1780,9 +1787,9 @@ describe("$machine", () => {
 
   it("restores named machines registered through module.machine", () => {
     window.angular = new Angular();
-    window.angular.module("namedMachineSnapshotApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineSnapshotApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
           status: "idle",
@@ -1795,8 +1802,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const injector = createInjector(["namedMachineSnapshotApp"]);
     const machine = injector.get("sessionMachine") as ng.Machine<{
@@ -1825,9 +1831,9 @@ describe("$machine", () => {
 
   it("returns one named machine instance per injector", () => {
     window.angular = new Angular();
-    window.angular.module("namedMachineSingletonApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineSingletonApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
           status: "idle",
@@ -1840,8 +1846,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const injector = createInjector(["namedMachineSingletonApp"]);
     const firstMachine = injector.get("sessionMachine") as ng.Machine<{
@@ -1859,9 +1864,9 @@ describe("$machine", () => {
 
   it("returns separate named machine instances for separate injectors", () => {
     window.angular = new Angular();
-    window.angular.module("namedMachineInjectorApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineInjectorApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
           status: "idle",
@@ -1874,8 +1879,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const firstInjector = createInjector(["namedMachineInjectorApp"]);
     const secondInjector = createInjector(["namedMachineInjectorApp"]);
@@ -1903,9 +1907,9 @@ describe("$machine", () => {
     };
 
     window.angular = new Angular();
-    window.angular.module("namedMachineConfigDataApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineConfigDataApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: configData,
         transitions: {
@@ -1917,8 +1921,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const injector = createInjector(["namedMachineConfigDataApp"]);
     const machine = injector.get("sessionMachine") as ng.Machine<{
@@ -1941,9 +1944,9 @@ describe("$machine", () => {
 
   it("deeply isolates named machine data across separate injectors", () => {
     window.angular = new Angular();
-    window.angular.module("namedMachineNestedInjectorApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineNestedInjectorApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
           room: {
@@ -1960,8 +1963,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const firstInjector = createInjector(["namedMachineNestedInjectorApp"]);
     const secondInjector = createInjector(["namedMachineNestedInjectorApp"]);
@@ -3009,9 +3011,9 @@ describe("$machine", () => {
     expect(() =>
       $machine(createConfig({ exit: { setup: "bad" } })),
     ).toThrowError("$machine hooks.exit entries must be functions.");
-    expect(() =>
-      $machine(createConfig({ transition: "bad" })),
-    ).toThrowError("$machine hooks.transition must be a function.");
+    expect(() => $machine(createConfig({ transition: "bad" }))).toThrowError(
+      "$machine hooks.transition must be a function.",
+    );
   });
 
   it("binds lazily when a scope proxy reads the machine", () => {
@@ -3137,9 +3139,7 @@ describe("$machine", () => {
     expect(machine.current).toBe("ready");
     expect(machine.data.status).toBe("restored");
     expect(firstElement.querySelector(".mode")?.textContent).toBe("ready");
-    expect(firstElement.querySelector(".status")?.textContent).toBe(
-      "restored",
-    );
+    expect(firstElement.querySelector(".status")?.textContent).toBe("restored");
     expect(secondElement.querySelector(".mode")?.textContent).toBe("ready");
     expect(secondElement.querySelector(".status")?.textContent).toBe(
       "restored",
@@ -3461,9 +3461,9 @@ describe("$machine", () => {
     const directiveScopes: ng.Scope[] = [];
 
     window.angular = new Angular();
-    window.angular.module("machineDirectiveApp", ["ng"]).directive(
-      "machinePanel",
-      () => ({
+    window.angular
+      .module("machineDirectiveApp", ["ng"])
+      .directive("machinePanel", () => ({
         scope: true,
         template:
           '<span class="mode">{{ session.current }}</span>' +
@@ -3472,8 +3472,7 @@ describe("$machine", () => {
           directiveScopes.push(scope);
           scope.session.matches("idle");
         },
-      }),
-    );
+      }));
 
     const injector = createInjector(["machineDirectiveApp"]);
     const compile = injector.get("$compile") as ng.CompileService;
@@ -3521,9 +3520,9 @@ describe("$machine", () => {
     const directiveScopes: ng.Scope[] = [];
 
     window.angular = new Angular();
-    window.angular.module("machineDirectiveRestoreApp", ["ng"]).directive(
-      "machinePanel",
-      () => ({
+    window.angular
+      .module("machineDirectiveRestoreApp", ["ng"])
+      .directive("machinePanel", () => ({
         scope: true,
         template:
           '<span class="mode">{{ session.current }}</span>' +
@@ -3532,8 +3531,7 @@ describe("$machine", () => {
           directiveScopes.push(scope);
           scope.session.matches("idle");
         },
-      }),
-    );
+      }));
 
     const injector = createInjector(["machineDirectiveRestoreApp"]);
     const compile = injector.get("$compile") as ng.CompileService;
@@ -3580,9 +3578,9 @@ describe("$machine", () => {
     const directiveScopes: ng.Scope[] = [];
 
     window.angular = new Angular();
-    window.angular.module("machineDirectiveOlderApp", ["ng"]).directive(
-      "machinePanel",
-      () => ({
+    window.angular
+      .module("machineDirectiveOlderApp", ["ng"])
+      .directive("machinePanel", () => ({
         scope: true,
         template:
           '<span class="mode">{{ session.current }}</span>' +
@@ -3591,8 +3589,7 @@ describe("$machine", () => {
           directiveScopes.push(scope);
           scope.session.matches("idle");
         },
-      }),
-    );
+      }));
 
     const injector = createInjector(["machineDirectiveOlderApp"]);
     const compile = injector.get("$compile") as ng.CompileService;
@@ -3638,9 +3635,9 @@ describe("$machine", () => {
     const directiveScopesByClass: Record<string, ng.Scope> = {};
 
     window.angular = new Angular();
-    window.angular.module("machineDirectiveIsolateApp", ["ng"]).directive(
-      "machinePanel",
-      () => ({
+    window.angular
+      .module("machineDirectiveIsolateApp", ["ng"])
+      .directive("machinePanel", () => ({
         scope: {
           session: "=",
         },
@@ -3652,8 +3649,7 @@ describe("$machine", () => {
           directiveScopesByClass[element.className] = scope;
           scope.session.matches("idle");
         },
-      }),
-    );
+      }));
 
     const injector = createInjector(["machineDirectiveIsolateApp"]);
     const compile = injector.get("$compile") as ng.CompileService;
@@ -3700,9 +3696,9 @@ describe("$machine", () => {
     const calls: string[] = [];
 
     window.angular = new Angular();
-    window.angular.module("namedMachineHookApp", ["ng"]).machine(
-      "sessionMachine",
-      {
+    window.angular
+      .module("namedMachineHookApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
           status: "idle",
@@ -3722,8 +3718,7 @@ describe("$machine", () => {
             },
           },
         },
-      },
-    );
+      });
 
     const injector = createInjector(["namedMachineHookApp"]);
     const machine = injector.get("sessionMachine") as ng.Machine<{
