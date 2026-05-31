@@ -230,6 +230,15 @@
                 <section class="tsd-index-section">
                   <h3 class="tsd-index-heading">Methods</h3>
                   <div class="tsd-index-list">
+                    <a href="#batch" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>$batch</span></a
+                    >
                     <a href="#broadcast" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -609,6 +618,97 @@
           </summary>
           <section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="batch">
+                <span>$batch</span
+                ><a href="#batch" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="batch-1">
+                    <span class="tsd-kind-call-signature">$batch</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#batcht"
+                      >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">fn</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-symbol">()</span>
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#batcht"
+                      >T</a
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#batcht"
+                      >T</a
+                    ><a
+                      href="#batch-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Runs synchronous scope mutations as one batch. Listener
+                        notifications are queued while the callback runs and
+                        flushed once after the outermost batch exits. Mutations
+                        are not rolled back if the callback throws.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="batcht"
+                            ><span class="tsd-kind-type-parameter"
+                              >T</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">fn</span>:
+                            <span class="tsd-signature-symbol">()</span>
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#batcht"
+                              >T</a
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#batcht"
+                        >T</a
+                      >
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="broadcast">
                 <span>$broadcast</span
                 ><a
@@ -639,9 +739,6 @@
                       href="../interfaces/ScopeEvent.html"
                       class="tsd-signature-type tsd-kind-interface"
                       >ScopeEvent</a
-                    >
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">undefined</span
                     ><a
                       href="#broadcast-1"
                       aria-label="Permalink"
@@ -683,8 +780,6 @@
                         class="tsd-signature-type tsd-kind-interface"
                         >ScopeEvent</a
                       >
-                      <span class="tsd-signature-symbol">|</span>
-                      <span class="tsd-signature-type">undefined</span>
                     </h4>
                   </div>
                 </li>
@@ -752,9 +847,6 @@
                       href="../interfaces/ScopeEvent.html"
                       class="tsd-signature-type tsd-kind-interface"
                       >ScopeEvent</a
-                    >
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">undefined</span
                     ><a
                       href="#emit-1"
                       aria-label="Permalink"
@@ -793,8 +885,6 @@
                         class="tsd-signature-type tsd-kind-interface"
                         >ScopeEvent</a
                       >
-                      <span class="tsd-signature-symbol">|</span>
-                      <span class="tsd-signature-type">undefined</span>
                     </h4>
                   </div>
                 </li>
@@ -1969,7 +2059,15 @@
                   >Methods
                 </summary>
                 <div>
-                  <a href="#broadcast"
+                  <a href="#batch"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>$batch</span></a
+                  ><a href="#broadcast"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"

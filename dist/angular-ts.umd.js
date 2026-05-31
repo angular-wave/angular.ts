@@ -1,4 +1,4 @@
-/* Version: 0.29.2 - May 31, 2026 11:33:31 */
+/* Version: 0.30.0 - May 31, 2026 11:53:35 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -3062,7 +3062,7 @@
             /** @internal */
             this._bootsrappedModules = [];
             /** AngularTS version string replaced at build time. */
-            this.version = "0.29.2";
+            this.version = "0.30.0";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */

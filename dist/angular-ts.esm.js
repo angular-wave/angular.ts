@@ -1,4 +1,4 @@
-/* Version: 0.29.2 - May 31, 2026 11:33:34 */
+/* Version: 0.30.0 - May 31, 2026 11:53:39 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -3056,7 +3056,7 @@ class AngularRuntime extends EventTarget {
         /** @internal */
         this._bootsrappedModules = [];
         /** AngularTS version string replaced at build time. */
-        this.version = "0.29.2";
+        this.version = "0.30.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */

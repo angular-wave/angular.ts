@@ -95,6 +95,13 @@
           <span class="tsd-signature-symbol">&amp;</span>
           <span class="tsd-signature-symbol">{</span><br />    <span
             class="tsd-kind-property"
+            >$afterRender</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span><br />    <span
+            class="tsd-kind-property"
             >$onChanges</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">(</span
@@ -156,6 +163,25 @@
         <div class="tsd-type-declaration">
           <h4>Type Declaration</h4>
           <ul class="tsd-parameters">
+            <li class="tsd-parameter">
+              <h5>
+                <code class="tsd-tag">Optional</code
+                ><span class="tsd-kind-property">$afterRender</span
+                ><span class="tsd-signature-symbol">?: </span
+                ><span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span>
+              </h5>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Called after this controller has been linked, AngularTS has
+                  applied DOM mutations for the current flush, and the browser
+                  has had one animation frame to settle layout. Multiple
+                  schedules for the same controller in one flush are coalesced
+                  into one call.
+                </p>
+              </div>
+            </li>
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code

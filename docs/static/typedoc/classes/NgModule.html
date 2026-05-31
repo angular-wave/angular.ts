@@ -237,6 +237,15 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>filter</span></a
                     >
+                    <a href="#machine" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>machine</span></a
+                    >
                     <a href="#provider" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -353,6 +362,15 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>worker</span></a
+                    >
+                    <a href="#workflow" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>workflow</span></a
                     >
                   </div>
                 </section>
@@ -1243,6 +1261,170 @@
                               >FilterFactory</a
                             ></span
                           >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">this</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="machine">
+                <span>machine</span
+                ><a
+                  href="#machine"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="machine-1">
+                    <span class="tsd-kind-call-signature">machine</span
+                    ><span class="tsd-signature-symbol">&lt;</span><br />    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#machinetdata"
+                      >TData</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#machinetevents"
+                      >TEvents</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">MachineNoEvents</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >config</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">MachineConfig</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#machinetdata"
+                      >TData</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#machinetevents"
+                      >TEvents</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">this</span
+                    ><a
+                      href="#machine-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Register a named reactive mode machine as an injectable
+                        service.
+                      </p>
+                      <p>
+                        The machine is created by <code>$machine</code> when the
+                        named service is requested. The returned instance is not
+                        tied to any one scope lifetime; it registers with
+                        AngularTS scope proxies when assigned to a controller or
+                        scope.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="machinetdata"
+                            ><span class="tsd-kind-type-parameter">TData</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="machinetevents"
+                            ><span class="tsd-kind-type-parameter"
+                              >TEvents</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type"
+                              >MachineNoEvents</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>Injectable name.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">config</span>:
+                            <span class="tsd-signature-type">MachineConfig</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#machinetdata"
+                              >TData</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#machinetevents"
+                              >TEvents</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>Machine configuration.</p>
+                          </div>
                         </li>
                       </ul>
                     </div>
@@ -2638,6 +2820,198 @@
                 </li>
               </ul>
             </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="workflow">
+                <span>workflow</span
+                ><a
+                  href="#workflow"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="workflow-1">
+                    <span class="tsd-kind-call-signature">workflow</span
+                    ><span class="tsd-signature-symbol">&lt;</span><br />    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtdata"
+                      >TData</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtevents"
+                      >TEvents</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">MachineNoEvents</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtcommands"
+                      >TCommands</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">object</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">WorkflowNoCommands</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >config</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">WorkflowConfig</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtdata"
+                      >TData</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtevents"
+                      >TEvents</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#workflowtcommands"
+                      >TCommands</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">this</span
+                    ><a
+                      href="#workflow-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Register a named workflow as an injectable service.</p>
+                      <p>
+                        The workflow is created by <code>$workflow</code> when
+                        the named service is requested. Workflow behavior
+                        remains local to its <code>WorkflowConfig</code>; the
+                        provider does not apply global workflow defaults.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="workflowtdata"
+                            ><span class="tsd-kind-type-parameter">TData</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">unknown</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="workflowtevents"
+                            ><span class="tsd-kind-type-parameter"
+                              >TEvents</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type"
+                              >MachineNoEvents</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="workflowtcommands"
+                            ><span class="tsd-kind-type-parameter"
+                              >TCommands</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">object</span> =
+                            <span class="tsd-signature-type"
+                              >WorkflowNoCommands</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>Injectable name.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">config</span>:
+                            <span class="tsd-signature-type"
+                              >WorkflowConfig</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#workflowtdata"
+                              >TData</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#workflowtevents"
+                              >TEvents</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#workflowtcommands"
+                              >TCommands</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>Workflow configuration.</p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">this</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
           </section>
         </details>
       </div>
@@ -2935,6 +3309,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>filter</span></a
+                  ><a href="#machine"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>machine</span></a
                   ><a href="#provider"
                     ><svg
                       class="tsd-kind-icon"
@@ -3039,6 +3421,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>worker</span></a
+                  ><a href="#workflow"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>workflow</span></a
                   >
                 </div>
               </details>
