@@ -1,5 +1,5 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
-import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent } from '../../../injection-tokens.js';
+import { _provide, _injector, _compileProvider, _animateProvider, _filterProvider, _controllerProvider, _machine, _workflow, _stateProvider, _wasm, _worker, _rest, _sse, _websocket, _webTransport, _webComponent } from '../../../injection-tokens.js';
 import { isInjectable } from '../injectable.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
 
@@ -177,6 +177,66 @@ class NgModule {
         validate(isString, name, "name");
         validateRequired(ctlFn, `fictlFnlterFn`);
         this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
+        return this;
+    }
+    /**
+     * Register a named reactive mode machine as an injectable service.
+     *
+     * The machine is created by `$machine` when the named service is requested.
+     * The returned instance is not tied to any one scope lifetime; it registers
+     * with AngularTS scope proxies when assigned to a controller or scope.
+     *
+     * @param {string} name - Injectable name.
+     * @param {ng.MachineConfig} config - Machine configuration.
+     * @returns {NgModule}
+     */
+    machine(name, config) {
+        validate(isString, name, "name");
+        validate(isObject, config, "config");
+        this._invokeQueue.push([
+            _provide,
+            "factory",
+            [
+                name,
+                [
+                    _machine,
+                    ($machine) => $machine({
+                        ...config,
+                        data: structuredClone(config.data),
+                    }),
+                ],
+            ],
+        ]);
+        return this;
+    }
+    /**
+     * Register a named workflow as an injectable service.
+     *
+     * The workflow is created by `$workflow` when the named service is requested.
+     * Workflow behavior remains local to its `WorkflowConfig`; the provider does
+     * not apply global workflow defaults.
+     *
+     * @param {string} name - Injectable name.
+     * @param {ng.WorkflowConfig} config - Workflow configuration.
+     * @returns {NgModule}
+     */
+    workflow(name, config) {
+        validate(isString, name, "name");
+        validate(isObject, config, "config");
+        this._invokeQueue.push([
+            _provide,
+            "factory",
+            [
+                name,
+                [
+                    _workflow,
+                    ($workflow) => $workflow({
+                        ...config,
+                        data: structuredClone(config.data),
+                    }),
+                ],
+            ],
+        ]);
         return this;
     }
     state(nameOrDefinition, definition) {

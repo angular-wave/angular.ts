@@ -7,6 +7,7 @@ import {
   _machine,
   _provide,
   _window,
+  _workflow,
 } from "../injection-tokens.ts";
 import {
   CompileLifecycleProvider,
@@ -14,7 +15,8 @@ import {
 } from "../core/compile/compile.ts";
 import { FilterProvider } from "../core/filter/filter.ts";
 import { InterpolateProvider } from "../core/interpolate/interpolate.ts";
-import { MachineProvider } from "../core/machine/machine.ts";
+import { MachineProvider } from "../services/machine/machine.ts";
+import { WorkflowProvider } from "../services/workflow/workflow.ts";
 import { ParseProvider } from "../core/parse/parse.ts";
 import { RootScopeProvider } from "../core/scope/scope.ts";
 import { ControllerProvider } from "../core/controller/controller.ts";
@@ -73,6 +75,7 @@ export const coreProviders: ProviderRegistration = {
   [_machine]: MachineProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
+  [_workflow]: WorkflowProvider,
 };
 
 /**

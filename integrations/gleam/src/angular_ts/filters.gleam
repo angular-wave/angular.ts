@@ -21,15 +21,25 @@ pub type EntryFilterItem(key, value) {
   EntryFilterItem(key: key, value: value)
 }
 
+pub type DateFormat {
+  MediumDate
+}
+
+pub fn date_format_name(format: DateFormat) -> String {
+  case format {
+    MediumDate -> "mediumDate"
+  }
+}
+
 pub fn date_options() -> DateFilterOptions {
   DateFilterOptions(intl: unsafe.empty_object())
 }
 
 pub fn date_options_with_intl(
-  options: DateFilterOptions,
+  _options: DateFilterOptions,
   intl: Dynamic,
 ) -> DateFilterOptions {
-  DateFilterOptions(..options, intl: intl)
+  DateFilterOptions(intl: intl)
 }
 
 pub fn number_options() -> NumberFilterOptions {
@@ -37,10 +47,10 @@ pub fn number_options() -> NumberFilterOptions {
 }
 
 pub fn number_options_with_intl(
-  options: NumberFilterOptions,
+  _options: NumberFilterOptions,
   intl: Dynamic,
 ) -> NumberFilterOptions {
-  NumberFilterOptions(..options, intl: intl)
+  NumberFilterOptions(intl: intl)
 }
 
 pub fn currency_options() -> CurrencyFilterOptions {
@@ -48,10 +58,10 @@ pub fn currency_options() -> CurrencyFilterOptions {
 }
 
 pub fn currency_options_with_intl(
-  options: CurrencyFilterOptions,
+  _options: CurrencyFilterOptions,
   intl: Dynamic,
 ) -> CurrencyFilterOptions {
-  CurrencyFilterOptions(..options, intl: intl)
+  CurrencyFilterOptions(intl: intl)
 }
 
 pub fn relative_time_options() -> RelativeTimeFilterOptions {
@@ -59,10 +69,10 @@ pub fn relative_time_options() -> RelativeTimeFilterOptions {
 }
 
 pub fn relative_time_options_with_intl(
-  options: RelativeTimeFilterOptions,
+  _options: RelativeTimeFilterOptions,
   intl: Dynamic,
 ) -> RelativeTimeFilterOptions {
-  RelativeTimeFilterOptions(..options, intl: intl)
+  RelativeTimeFilterOptions(intl: intl)
 }
 
 pub fn to_js_date_options(options: DateFilterOptions) -> Dynamic {

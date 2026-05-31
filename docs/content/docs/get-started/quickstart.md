@@ -1,5 +1,6 @@
 ---
 title: "Build your first AngularTS app"
+linkTitle: "Quickstart"
 weight: 30
 description: "A step-by-step guide to creating modules, controllers, and directives in AngularTS — with a counter example and a complete todo list application."
 ---

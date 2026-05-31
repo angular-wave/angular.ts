@@ -1,5 +1,6 @@
 ---
 title: "Modules: organizing your AngularTS application"
+linkTitle: "Modules"
 weight: 210
 description: "Learn how AngularTS modules group controllers, services, directives, and config into composable units that the injector loads at bootstrap."
 ---

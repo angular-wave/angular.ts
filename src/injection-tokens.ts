@@ -53,6 +53,7 @@ export const _webTransport = "$webTransport" as const;
 export const _websocket = "$websocket" as const;
 export const _worker = "$worker" as const;
 export const _wasm = "$wasm" as const;
+export const _workflow = "$workflow" as const;
 export const _provide = "$provide" as const;
 export const _injector = "$injector" as const;
 export const _angularProvider = "$angularProvider" as const;
@@ -92,6 +93,7 @@ export const _webTransportProvider = "$webTransportProvider" as const;
 export const _websocketProvider = "$websocketProvider" as const;
 export const _workerProvider = "$workerProvider" as const;
 export const _wasmProvider = "$wasmProvider" as const;
+export const _workflowProvider = "$workflowProvider" as const;
 export const _controllerProvider = "$controllerProvider" as const;
 
 /**
@@ -147,6 +149,7 @@ export const $injectTokens = {
   _websocket,
   _worker,
   _wasm,
+  _workflow,
   _provide,
   _injector,
   _angularProvider,
@@ -185,5 +188,6 @@ export const $injectTokens = {
   _websocketProvider,
   _workerProvider,
   _wasmProvider,
+  _workflowProvider,
   _controllerProvider,
 } as const satisfies Readonly<Record<string, string>>;

@@ -1,5 +1,6 @@
 ---
 title: "Structural Directives: ng-if, ng-repeat, ng-switch"
+linkTitle: "Structural Directives"
 weight: 300
 description: "Master AngularTS structural directives including ng-if, ng-show, ng-hide, ng-repeat with track by, ng-switch, ng-include, and ng-non-bindable."
 ---

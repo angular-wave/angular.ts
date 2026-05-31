@@ -7235,7 +7235,7 @@ export class CompileProvider {
                     );
 
                     // make it lazy as we dont want to trigger the two way data binding at this point
-                    scope.$watch(
+                    removeWatch = scope.$watch(
                       twoWayAttrExpression,
                       (val) => {
                         handleTwoWayExpressionChange(
@@ -7246,6 +7246,7 @@ export class CompileProvider {
                       },
                       true,
                     );
+                    removeWatchCollection.push(removeWatch);
                   }
 
                   removeWatch = destination.$watch(

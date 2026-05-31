@@ -1,5 +1,6 @@
 ---
 title: "Typed REST Resources"
+linkTitle: "REST"
 weight: 410
 description: "Define typed REST endpoints once and use $rest for list, get, create, update, and delete flows backed by pluggable backends."
 ---

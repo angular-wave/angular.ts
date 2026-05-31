@@ -1,5 +1,6 @@
 ---
 title: "Reactive change detection with ES6 Proxy scopes"
+linkTitle: "Change Detection"
 weight: 190
 description: "See how AngularTS replaces the AngularJS digest loop with ES6 Proxy interception, scheduling microtask DOM updates that only re-evaluate affected bindings."
 ---

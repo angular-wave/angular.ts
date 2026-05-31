@@ -105,19 +105,22 @@ Implemented Rust API expansion priorities after the required Rust surface:
    `RealtimeProtocolEventDetail`, and `SwapModeType`;
 3. core REST facades for `RestFactory`, `RestService`, `RestRequest`,
    `RestResponse`, `RestDefinition`, `RestOptions`, and `RestBackend`.
+4. machine facades for `MachineService`, `Machine`, `MachineConfig`,
+   `MachineSnapshot`, transition maps, transition results, and hooks.
 
 REST cache/revalidation helper types remain deferred until a Rust app needs
 cache policy control beyond the core `$rest` resource facade.
 
 Next Rust API expansion priority:
 
-4. form and validation facades for `NgModelController` and `Validator`, once
-   router, realtime, and REST app-authoring surfaces are in place.
+5. form and validation facades for `NgModelController` and `Validator`, once
+   router, realtime, REST, and machine app-authoring surfaces are in place.
 
 Deferred from the Rust feature-complete gate:
 
 - provider and config-time APIs such as `*Provider`, `ProvideService`, and
-  `AngularServiceProvider`;
+  `AngularServiceProvider`, except config-free marker facades such as
+  `MachineProvider` when the runtime service is otherwise covered;
 - compile/link/transclusion directive internals such as `CompileService`,
   `Directive`, `DirectiveFactory`, `AnnotatedDirectiveFactory`,
   `PublicLinkFn`/`DirectiveLinkFn` with attrs-free link callbacks,

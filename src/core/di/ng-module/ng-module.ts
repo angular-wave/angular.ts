@@ -21,6 +21,7 @@ import {
   _webTransport,
   _websocket,
   _worker,
+  _workflow,
 } from "../../../injection-tokens.ts";
 import { isInjectable } from "../injectable.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
@@ -54,7 +55,16 @@ import type {
   ScopeElementConstructor,
   WebComponentService,
 } from "../../../services/web-component/web-component.ts";
-import type { MachineConfig, MachineService } from "../../machine/machine.ts";
+import type {
+  MachineConfig,
+  MachineNoEvents,
+  MachineService,
+} from "../../../services/machine/machine.ts";
+import type {
+  WorkflowConfig,
+  WorkflowNoCommands,
+  WorkflowService,
+} from "../../../services/workflow/workflow.ts";
 
 export type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 
@@ -329,16 +339,63 @@ export class NgModule {
    * @param {ng.MachineConfig} config - Machine configuration.
    * @returns {NgModule}
    */
-  machine<TData extends object = Record<string, unknown>>(
-    name: string,
-    config: MachineConfig<TData>,
-  ): this {
+  machine<
+    TData extends object = Record<string, unknown>,
+    TEvents extends object = MachineNoEvents,
+  >(name: string, config: MachineConfig<TData, TEvents>): this {
     validate(isString, name, "name");
     validate(isObject, config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
-      [name, [_machine, ($machine: MachineService) => $machine(config)]],
+      [
+        name,
+        [
+          _machine,
+          ($machine: MachineService) =>
+            $machine({
+              ...config,
+              data: structuredClone(config.data),
+            }),
+        ],
+      ],
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a named workflow as an injectable service.
+   *
+   * The workflow is created by `$workflow` when the named service is requested.
+   * Workflow behavior remains local to its `WorkflowConfig`; the provider does
+   * not apply global workflow defaults.
+   *
+   * @param {string} name - Injectable name.
+   * @param {ng.WorkflowConfig} config - Workflow configuration.
+   * @returns {NgModule}
+   */
+  workflow<
+    TData extends object = Record<string, unknown>,
+    TEvents extends object = MachineNoEvents,
+    TCommands extends object = WorkflowNoCommands,
+  >(name: string, config: WorkflowConfig<TData, TEvents, TCommands>): this {
+    validate(isString, name, "name");
+    validate(isObject, config, "config");
+    this._invokeQueue.push([
+      _provide,
+      "factory",
+      [
+        name,
+        [
+          _workflow,
+          ($workflow: WorkflowService) =>
+            $workflow({
+              ...config,
+              data: structuredClone(config.data),
+            }),
+        ],
+      ],
     ]);
 
     return this;

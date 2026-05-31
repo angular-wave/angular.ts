@@ -169,6 +169,8 @@ pub type LogService
 
 pub type MachineService
 
+pub type WorkflowService
+
 pub type ParseService
 
 pub type ProvideService
@@ -271,17 +273,63 @@ pub type InvocationDetail
 
 pub type ListenerFn
 
-pub type Machine(a)
+pub type MachineEventMap
 
-pub type MachineConfig(a)
+pub type MachineNoEvents
+
+pub type Machine(a, b)
+
+pub type MachineConfig(a, b)
+
+pub type MachineHooks(a, b)
 
 pub type MachineMode
 
-pub type MachineTransition(a, b)
+pub type MachineModeHooks(a, b)
 
-pub type MachineTransitionMap(a)
+pub type MachineSnapshot(a)
+
+pub type MachineTransition(a, b, c)
+
+pub type MachineTransitionContext(a, b, c)
+
+pub type MachineTransitionHook(a, b)
+
+pub type MachineTransitionMap(a, b)
 
 pub type MachineTransitionResult
+
+pub type Workflow(a, b, c)
+
+pub type WorkflowCommand(a, b, c, d, e, f)
+
+pub type WorkflowCommandContext(a, b, c, d, e)
+
+pub type WorkflowCommandMap(a, b)
+
+pub type WorkflowCommandOptions
+
+pub type WorkflowConcurrencyPolicy
+
+pub type WorkflowCommandResult(a)
+
+pub type WorkflowConfig(a, b, c)
+
+pub type WorkflowDiagnostic
+
+pub type WorkflowHistoryEntry
+
+pub type WorkflowMode
+
+pub type WorkflowNoCommands
+
+pub type WorkflowProvider
+
+pub type WorkflowSnapshot(a)
+
+pub type WorkflowSnapshotMigration(a)
+
+pub type WorkflowStatus
 
 pub type NgModelController
 

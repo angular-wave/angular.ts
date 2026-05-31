@@ -1,6 +1,6 @@
 import { _scope, _injector } from '../injection-tokens.js';
 import { ALIASED_ATTR } from './constants.js';
-import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, assertDefined, isDefined, assign, isString, isObject } from './utils.js';
+import { directiveNormalize, isDefined, uppercase, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, assertDefined, assign, isString, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**

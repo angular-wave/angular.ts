@@ -1,5 +1,6 @@
 ---
 title: "URL matching and configuration in AngularTS router"
+linkTitle: "URL Matching"
 weight: 370
 description: "Configure URL parameters, typed path and query params, hash vs HTML5 mode, base href, and custom parameter types in the AngularTS state-based router."
 ---

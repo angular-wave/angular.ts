@@ -123,7 +123,8 @@ Go is feature complete when:
 - Go facade APIs cover the same app-authoring namespace surface completed by
   Rust: `WasmScope` boundary types, restricted `Scope`, `$rootScope`, authoring
   metadata, `$http`, diagnostics/events, template request/cache, storage,
-  cookies, router/state, realtime WebSocket/SSE, and core REST;
+  cookies, router/state, realtime WebSocket/SSE, core REST, and machine
+  facades;
 - unsupported boundary types fail during `go generate`, `go vet`, or build-time
   validation rather than at runtime where practical;
 - generated bootstrap snapshot tests and Playwright browser tests cover the Go
@@ -150,9 +151,10 @@ same required surface:
 - Persistence: `StorageBackend`, `StorageType`, `CookieService`,
   `CookieOptions`, and `CookieStoreOptions`.
 
-Deferred Go parity follows the Rust deferred list: providers, compile/link
-directive internals with attrs-free directive link callbacks, transclusion,
-browser object escape hatches, animation, workers, web components,
+Deferred Go parity follows the Rust deferred list: providers other than
+config-free marker facades such as `MachineProvider`, compile/link directive
+internals with attrs-free directive link callbacks, transclusion, browser
+object escape hatches, animation, workers, web components,
 parse/interpolate/filter/SCE/location, forms, REST cache/revalidation helpers,
 and WebTransport unless a Go reference example needs them.
 

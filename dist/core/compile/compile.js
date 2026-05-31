@@ -11,6 +11,7 @@ import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { updateClass } from '../../animations/class-mutation.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
 import { ngObserveDirective } from '../../directive/observe/observe.js';
+import { AFTER_RENDER_EVENT_SCHEDULER_KEY, queueAfterRender } from '../render/after-render.js';
 
 const compileAttributeObserverScopes = new WeakMap();
 const lazyAnimateByInjector = new WeakMap();
@@ -377,7 +378,7 @@ const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
 // The assumption is that future DOM event attribute names will begin with
 // 'on' and be composed of only English letters.
 const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
-const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
+const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window|Document)([A-Z].*)$/;
 const LOWERCASE_N_CHAR_CODE = "n".charCodeAt(0);
 const LOWERCASE_G_CHAR_CODE = "g".charCodeAt(0);
 const ISOLATE_BINDING_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
@@ -834,7 +835,34 @@ class CompileProvider {
                     queueState._scheduled = true;
                     queueMicrotask(queueState._flush);
                 }
+                function scheduleControllerAfterRender(controllerInstance, scope) {
+                    const controllerTarget = (controllerInstance.$target ??
+                        controllerInstance);
+                    if (!isFunction(controllerTarget.$afterRender)) {
+                        return;
+                    }
+                    queueAfterRender(controllerTarget, () => {
+                        if (scope._destroyed || controllerInstance._destroyed) {
+                            return;
+                        }
+                        try {
+                            callFunction(assertDefined(controllerTarget.$afterRender), controllerTarget);
+                        }
+                        catch (err) {
+                            $exceptionHandler(err);
+                        }
+                    });
+                }
+                function scheduleElementControllersAfterRender(elementControllers, controllerScope) {
+                    for (const name in elementControllers) {
+                        const controllerInstance = elementControllers[name]?._instance;
+                        if (controllerInstance) {
+                            scheduleControllerAfterRender(controllerInstance, controllerScope);
+                        }
+                    }
+                }
                 function recordDirectiveBindingChange(state, key, currentValue, initial) {
+                    scheduleControllerAfterRender(state._destAny, state._scope);
                     if (!isFunction(state._destAny.$onChanges)) {
                         return;
                     }
@@ -872,6 +900,7 @@ class CompileProvider {
                 function handleTwoWayExpressionChange(state, syncParentValue, val) {
                     state._scopeTarget[state._attrName] = val;
                     syncParentValue(state._scope);
+                    scheduleControllerAfterRender(state._destAny, state._scope);
                 }
                 function handleTwoWayDestinationChange(state, val) {
                     if (val === state._lastValue && state._attrExpression !== undefined) {
@@ -892,6 +921,7 @@ class CompileProvider {
                             }
                             state._scopeTarget[key] = valRecord[key];
                         }
+                        scheduleControllerAfterRender(state._destAny, state._scope);
                         return;
                     }
                     callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
@@ -901,6 +931,7 @@ class CompileProvider {
                             attributeWatchers[i]._listenerFn(val, state._scope.$target);
                         }
                     }
+                    scheduleControllerAfterRender(state._destAny, state._scope);
                 }
                 function handleStringBindingObserve(state, value) {
                     if (typeof value !== "string" && typeof value !== "boolean") {
@@ -1410,7 +1441,10 @@ class CompileProvider {
                             .toLowerCase()
                             .substring(4 + prefix.length)
                             .replace(/_(.)/g, (_match, letter) => uppercase(letter));
-                        if (prefix === "Prop" || prefix === "On" || prefix === "Window") {
+                        if (prefix === "Prop" ||
+                            prefix === "On" ||
+                            prefix === "Window" ||
+                            prefix === "Document") {
                             attrs =
                                 attrs ??
                                     createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
@@ -1464,7 +1498,8 @@ class CompileProvider {
                         if (prefix === "Prop" ||
                             prefix === "On" ||
                             prefix === "Observe" ||
-                            prefix === "Window") {
+                            prefix === "Window" ||
+                            prefix === "Document") {
                             return;
                         }
                         normalizedName = normalizeDirectiveName(name.toLowerCase());
@@ -1483,7 +1518,9 @@ class CompileProvider {
                         directives.push(createSyntheticDirective(createEventDirective($parse, $exceptionHandler, normalizedName, propertyName)));
                         return;
                     }
-                    directives.push(createSyntheticDirective(createWindowEventDirective($parse, $exceptionHandler, window, normalizedName, propertyName)));
+                    if (prefix === "Window" || prefix === "Document") {
+                        directives.push(createSyntheticDirective(createWindowEventDirective($parse, $exceptionHandler, prefix === "Window" ? window : document, normalizedName, propertyName)));
+                    }
                 }
                 /**
                  * A function generator that is used to support both eager and lazy compilation
@@ -2019,6 +2056,11 @@ class CompileProvider {
                         controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                     }
                     if (nodeLinkState._controllerDirectives) {
+                        setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
+                            scheduleElementControllersAfterRender(elementControllers, controllerScope);
+                        });
+                    }
+                    if (nodeLinkState._controllerDirectives) {
                         for (const name in controllerDirectives) {
                             const controllerDirective = controllerDirectives[name];
                             const { require } = controllerDirective;
@@ -2122,6 +2164,7 @@ class CompileProvider {
                         if (isFunction(controllerInstance.$postLink)) {
                             callFunction(controllerInstance.$postLink, controllerInstance);
                         }
+                        scheduleControllerAfterRender(controllerInstance, controllerScope);
                     }
                 }
                 /**
@@ -3292,9 +3335,10 @@ class CompileProvider {
                                     if (typeof twoWayAttrExpression === "string") {
                                         const syncParentValue = $parse(twoWayAttrExpression, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                         // make it lazy as we dont want to trigger the two way data binding at this point
-                                        scope.$watch(twoWayAttrExpression, (val) => {
+                                        removeWatch = scope.$watch(twoWayAttrExpression, (val) => {
                                             handleTwoWayExpressionChange(twoWayBindingState, syncParentValue, val);
                                         }, true);
+                                        removeWatchCollection.push(removeWatch);
                                     }
                                     removeWatch = destination.$watch(attrName, (val) => {
                                         handleTwoWayDestinationChange(twoWayBindingState, val);

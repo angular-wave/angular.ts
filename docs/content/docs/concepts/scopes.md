@@ -1,5 +1,6 @@
 ---
 title: "Scopes, data binding, and the scope hierarchy"
+linkTitle: "Scopes"
 weight: 220
 description: "Explore how AngularTS scopes work as reactive ES6 Proxies, how the hierarchy flows from $rootScope, and how to use events and watchers effectively."
 ---

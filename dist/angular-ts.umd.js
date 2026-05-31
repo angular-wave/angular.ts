@@ -1,4 +1,4 @@
-/* Version: 0.29.2 - May 29, 2026 01:13:58 */
+/* Version: 0.29.2 - May 31, 2026 11:33:31 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -37,6 +37,7 @@
     const _interpolate = "$interpolate";
     const _location = "$location";
     const _log = "$log";
+    const _machine = "$machine";
     const _parse = "$parse";
     const _rest = "$rest";
     const _rootScope = "$rootScope";
@@ -59,6 +60,7 @@
     const _websocket = "$websocket";
     const _worker = "$worker";
     const _wasm = "$wasm";
+    const _workflow = "$workflow";
     const _provide = "$provide";
     const _injector = "$injector";
     const _angularProvider = "$angularProvider";
@@ -76,6 +78,7 @@
     const _interpolateProvider = "$interpolateProvider";
     const _locationProvider = "$locationProvider";
     const _logProvider = "$logProvider";
+    const _machineProvider = "$machineProvider";
     const _parseProvider = "$parseProvider";
     const _restProvider = "$restProvider";
     const _rootScopeProvider = "$rootScopeProvider";
@@ -96,6 +99,7 @@
     const _websocketProvider = "$websocketProvider";
     const _workerProvider = "$workerProvider";
     const _wasmProvider = "$wasmProvider";
+    const _workflowProvider = "$workflowProvider";
     const _controllerProvider = "$controllerProvider";
     /**
      * Runtime token registry. Prefer importing individual token constants in source
@@ -127,6 +131,7 @@
         _interpolate,
         _location,
         _log,
+        _machine,
         _parse,
         _rest,
         _rootScope,
@@ -149,6 +154,7 @@
         _websocket,
         _worker,
         _wasm,
+        _workflow,
         _provide,
         _injector,
         _angularProvider,
@@ -166,6 +172,7 @@
         _interpolateProvider,
         _locationProvider,
         _logProvider,
+        _machineProvider,
         _parseProvider,
         _restProvider,
         _rootScopeProvider,
@@ -186,6 +193,7 @@
         _websocketProvider,
         _workerProvider,
         _wasmProvider,
+        _workflowProvider,
         _controllerProvider,
     };
 
@@ -296,6 +304,11 @@
         return Array.isArray(array);
     }
     function isInstanceOf(val, type) {
+        if (!isFunction(type))
+            return false;
+        const typePrototype = type.prototype;
+        if (!isObject(typePrototype))
+            return false;
         return val instanceof type;
     }
     /**
@@ -2718,6 +2731,66 @@
             this._invokeQueue.push([_controllerProvider, "register", [name, ctlFn]]);
             return this;
         }
+        /**
+         * Register a named reactive mode machine as an injectable service.
+         *
+         * The machine is created by `$machine` when the named service is requested.
+         * The returned instance is not tied to any one scope lifetime; it registers
+         * with AngularTS scope proxies when assigned to a controller or scope.
+         *
+         * @param {string} name - Injectable name.
+         * @param {ng.MachineConfig} config - Machine configuration.
+         * @returns {NgModule}
+         */
+        machine(name, config) {
+            validate(isString, name, "name");
+            validate(isObject, config, "config");
+            this._invokeQueue.push([
+                _provide,
+                "factory",
+                [
+                    name,
+                    [
+                        _machine,
+                        ($machine) => $machine({
+                            ...config,
+                            data: structuredClone(config.data),
+                        }),
+                    ],
+                ],
+            ]);
+            return this;
+        }
+        /**
+         * Register a named workflow as an injectable service.
+         *
+         * The workflow is created by `$workflow` when the named service is requested.
+         * Workflow behavior remains local to its `WorkflowConfig`; the provider does
+         * not apply global workflow defaults.
+         *
+         * @param {string} name - Injectable name.
+         * @param {ng.WorkflowConfig} config - Workflow configuration.
+         * @returns {NgModule}
+         */
+        workflow(name, config) {
+            validate(isString, name, "name");
+            validate(isObject, config, "config");
+            this._invokeQueue.push([
+                _provide,
+                "factory",
+                [
+                    name,
+                    [
+                        _workflow,
+                        ($workflow) => $workflow({
+                            ...config,
+                            data: structuredClone(config.data),
+                        }),
+                    ],
+                ],
+            ]);
+            return this;
+        }
         state(nameOrDefinition, definition) {
             const state = normalizeStateDeclaration$1(nameOrDefinition, definition);
             this._configBlocks.push([_stateProvider, "state", [state]]);
@@ -3977,6 +4050,10 @@
         _UpdateExpression: 18,
     };
 
+    function isScopeEventStopped(event) {
+        return event.stopped;
+    }
+    const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
     let uid = 0;
     /**
      * Returns the next generated scope/listener id.
@@ -4203,6 +4280,14 @@
         const target = isProxy(value) ? value.$target : value;
         return isArray(target) ? arrayMutationMeta.get(target) : undefined;
     }
+    function warnAsyncBatchCallback() {
+        try {
+            console.warn("$batch callback returned a Promise. Async mutations after await are not batched.");
+        }
+        catch {
+            // Warning delivery should not affect the batched mutation contract.
+        }
+    }
     class RootScopeProvider {
         constructor() {
             this.$get = [
@@ -4411,7 +4496,19 @@
     const setMutationMethods = new Set(["add", "delete", "clear"].filter((key) => isFunction(setPrototype[key])));
     const mapValueMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key) && key !== "has" && key !== "keys");
     const mapMembershipMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key));
+    if (isFunction(mapPrototype.includes) &&
+        !mapMembershipMutationWatchKeys.includes("includes")) {
+        mapMembershipMutationWatchKeys.push("includes");
+    }
+    if (isFunction(mapPrototype.includes) &&
+        !mapValueMutationWatchKeys.includes("includes")) {
+        mapValueMutationWatchKeys.push("includes");
+    }
     const setMutationWatchKeys = getPrototypeMethodNames(setPrototype, (key) => !setMutationMethods.has(key));
+    if (isFunction(setPrototype.includes) &&
+        !setMutationWatchKeys.includes("includes")) {
+        setMutationWatchKeys.push("includes");
+    }
     const datePrototype = Date.prototype;
     const dateValueWatchKeys = Object.getOwnPropertyNames(datePrototype).filter((key) => key !== "constructor" &&
         !key.startsWith("set") &&
@@ -4492,7 +4589,7 @@
         }
         return target;
     }
-    function isMapTarget(target) {
+    function isMapTarget$1(target) {
         try {
             return isInstanceOf(target, Map);
         }
@@ -4500,7 +4597,7 @@
             return false;
         }
     }
-    function isSetTarget(target) {
+    function isSetTarget$1(target) {
         try {
             return isInstanceOf(target, Set);
         }
@@ -4517,7 +4614,7 @@
         }
     }
     function isNativeScopedTarget(target) {
-        return isMapTarget(target) || isSetTarget(target) || isDateTarget(target);
+        return isMapTarget$1(target) || isSetTarget$1(target) || isDateTarget(target);
     }
     function isNativeIteratorTarget(target) {
         try {
@@ -4581,6 +4678,10 @@
         if (!proxy) {
             proxy = new Proxy(target, handler);
             proxiesByHandler.set(handler, proxy);
+            const bind = target[_SCOPE_PROXY_BIND];
+            if (isFunction(bind)) {
+                bind.call(target, handler, proxy);
+            }
         }
         return proxy;
     }
@@ -4623,6 +4724,9 @@
         for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
             try {
                 const ctor = nonScopeConstructors[i];
+                if (!isFunction(ctor)) {
+                    continue;
+                }
                 if (isInstanceOf(objectTarget, ctor)) {
                     nonScopeCache.add(objectTarget);
                     return true;
@@ -4696,6 +4800,7 @@
                 _index: 0,
                 _queued: false,
                 _flushing: false,
+                _batchDepth: 0,
                 _flushTask: () => {
                     this._flushScheduledTasks();
                 },
@@ -4706,6 +4811,7 @@
                 context?._collectionMethodWrappers ?? new WeakMap();
             this._propertyMap = {
                 $broadcast: this.$broadcast.bind(this),
+                $batch: this.$batch.bind(this),
                 _children: this._children,
                 $destroy: this.$destroy.bind(this),
                 $emit: this.$emit.bind(this),
@@ -4984,7 +5090,8 @@
                         ? Reflect.get(this.$parent, "_foreignListeners")
                         : undefined;
                     const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
-                        (isInstanceOf(parentForeignListeners, Map) &&
+                        (isObject(parentForeignListeners) &&
+                            isInstanceOf(parentForeignListeners, Map) &&
                             parentForeignListeners.has(property));
                     const hasObjectListeners = property !== "length" && this._objectListeners.has(target);
                     const hasArrayLengthListeners = isArray(target) && this._watchers.has("length");
@@ -5220,7 +5327,7 @@
                 return this._propertyMap[property];
             }
             if (isNativeScopedTarget(target)) {
-                if (isFunction(targetProp)) {
+                if (isFunction(targetProp) && property !== "constructor") {
                     return this._getNativeCollectionMethodWrapper(target, property, targetProp);
                 }
                 return targetProp;
@@ -5319,10 +5426,10 @@
             }
             const wrapper = (...args) => {
                 const rawArgs = unwrapCollectionArgs(args);
-                if (isMapTarget(target) && isString(property)) {
+                if (isMapTarget$1(target) && isString(property)) {
                     return this._applyMapMethod(target, property, method, rawArgs);
                 }
-                if (isSetTarget(target) && isString(property)) {
+                if (isSetTarget$1(target) && isString(property)) {
                     return this._applySetMethod(target, property, method, rawArgs);
                 }
                 if (isDateTarget(target) && isString(property)) {
@@ -5365,9 +5472,9 @@
                 }
                 return result;
             }
-            const hadValues = target.size > 0;
+            const previousSize = target.size;
             const result = Reflect.apply(method, target, args);
-            if (hadValues) {
+            if (target.size !== previousSize) {
                 this._scheduleNativeCollectionMutation(target, undefined, true);
             }
             return result;
@@ -5393,9 +5500,9 @@
                 }
                 return result;
             }
-            const hadValues = target.size > 0;
+            const previousSize = target.size;
             const result = Reflect.apply(method, target, args);
-            if (hadValues) {
+            if (target.size !== previousSize) {
                 this._scheduleNativeCollectionMutation(target, setMutationWatchKeys, true);
             }
             return result;
@@ -5424,7 +5531,7 @@
             if (watchKeys) {
                 this._scheduleWatchKeys(watchKeys, seenListenerIds);
             }
-            else if (isMapTarget(target)) {
+            else if (isMapTarget$1(target)) {
                 this._scheduleWatchKeys(mapValueMutationWatchKeys, seenListenerIds);
                 this._scheduleWatchKeys(mapMembershipMutationWatchKeys, seenListenerIds);
             }
@@ -5606,19 +5713,27 @@
         /** @internal Queues a shared scheduled task flush for this scope family. */
         _queueScheduledFlush() {
             const scheduler = this._listenerScheduler;
-            if (scheduler._queued) {
+            if (scheduler._queued || scheduler._batchDepth > 0) {
                 return;
             }
             scheduler._queued = true;
             queueMicrotask(scheduler._flushTask);
         }
+        /** @internal Queues a shared scheduled task flush when pending work can run. */
+        _queueScheduledFlushIfNeeded() {
+            const scheduler = this._listenerScheduler;
+            if (scheduler._batchDepth === 0 &&
+                !scheduler._queued &&
+                !scheduler._flushing &&
+                scheduler._queue.length > scheduler._index) {
+                this._queueScheduledFlush();
+            }
+        }
         /** @internal Queues a shared scheduled task flush for this scope family. */
         _enqueueScheduledTask(task) {
             const scheduler = this._listenerScheduler;
             scheduler._queue.push(task);
-            if (!scheduler._queued && !scheduler._flushing) {
-                this._queueScheduledFlush();
-            }
+            this._queueScheduledFlushIfNeeded();
         }
         /** @internal Flushes queued listener and callback tasks in FIFO order. */
         _flushScheduledTasks() {
@@ -5664,6 +5779,26 @@
                 if (hasRemainingTasks) {
                     this._queueScheduledFlush();
                 }
+            }
+        }
+        /**
+         * Runs synchronous scope mutations as one batch. Listener notifications are
+         * queued while the callback runs and flushed once after the outermost batch
+         * exits. Mutations are not rolled back if the callback throws.
+         */
+        $batch(fn) {
+            const scheduler = this._listenerScheduler;
+            scheduler._batchDepth++;
+            try {
+                const result = fn();
+                if (isPromiseLike(result)) {
+                    warnAsyncBatchCallback();
+                }
+                return result;
+            }
+            finally {
+                scheduler._batchDepth--;
+                this._queueScheduledFlushIfNeeded();
             }
         }
         /** @internal Schedules a callback to run in the shared listener flush queue. */
@@ -6379,22 +6514,17 @@
          * constructs the shared event object on first use.
          */
         _eventHelper({ name, event, broadcast, }, ...args) {
-            if (!broadcast) {
-                if (!this._listeners.has(name)) {
-                    if (this.$parent) {
-                        return this.$parent.$handler._eventHelper({ name, event, broadcast }, ...args);
-                    }
-                    return undefined;
-                }
-            }
+            const initialChildCount = this._children.length;
+            const initialChildren = initialChildCount > 0 ? this._children.slice() : undefined;
             if (event) {
-                event.currentScope = this.$proxy;
+                event.currentScope = this
+                    .$target;
             }
             else {
                 event = {
                     name,
-                    targetScope: this.$proxy,
-                    currentScope: this.$proxy,
+                    targetScope: this.$target,
+                    currentScope: this.$target,
                     stopped: false,
                     stopPropagation() {
                         assertDefined(event).stopped = true;
@@ -6432,10 +6562,19 @@
                 return currentEvent;
             }
             if (broadcast) {
-                const children = this._children;
-                for (let i = 0; i < children.length; i++) {
-                    const child = children[i];
-                    event = child.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+                if (initialChildren) {
+                    const children = initialChildren;
+                    for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        const childHandler = child.$handler;
+                        if (childHandler._destroyed || !this._children.includes(child)) {
+                            continue;
+                        }
+                        event = child.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+                        if (isScopeEventStopped(currentEvent)) {
+                            break;
+                        }
+                    }
                 }
                 return event;
             }
@@ -6801,6 +6940,83 @@
         setClass(element, tokenDifference(newClasses, oldClasses).join(" "), tokenDifference(oldClasses, newClasses).join(" "), getAnimate);
     }
 
+    const AFTER_RENDER_EVENT_SCHEDULER_KEY = "$$ar";
+    const afterRenderQueue = new Map();
+    let afterRenderScheduled = false;
+    /**
+     * Queue one post-render callback for an instance.
+     *
+     * Multiple calls for the same instance before the next render flush are
+     * coalesced into one callback. The callback runs after the current JavaScript
+     * turn, after AngularTS has applied synchronous DOM work, and after one browser
+     * animation frame gives layout a chance to settle.
+     */
+    function queueAfterRender(instance, callback, options) {
+        const pending = afterRenderQueue.get(instance);
+        afterRenderQueue.set(instance, {
+            _callback: callback,
+            _fonts: !!options?.fonts || !!pending?._fonts,
+        });
+        scheduleAfterRenderFlush();
+    }
+    /**
+     * Queue a post-render callback using the callback itself as the coalescing key.
+     */
+    function afterRender(callback, options) {
+        queueAfterRender(callback, callback, options);
+    }
+    function scheduleAfterRenderFlush() {
+        if (afterRenderScheduled) {
+            return;
+        }
+        afterRenderScheduled = true;
+        queueMicrotask(() => {
+            requestFrame(flushAfterRenderQueue);
+        });
+    }
+    function flushAfterRenderQueue() {
+        afterRenderScheduled = false;
+        const entries = Array.from(afterRenderQueue.values());
+        afterRenderQueue.clear();
+        for (let i = 0; i < entries.length; i++) {
+            runAfterRenderEntry(entries[i]);
+        }
+    }
+    function runAfterRenderEntry(entry) {
+        if (entry._fonts) {
+            const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+            if (fonts?.ready) {
+                void fonts.ready
+                    .catch(() => undefined)
+                    .then(() => {
+                    invokeAfterRenderCallback(entry._callback);
+                    return undefined;
+                });
+                return;
+            }
+        }
+        invokeAfterRenderCallback(entry._callback);
+    }
+    function invokeAfterRenderCallback(callback) {
+        try {
+            callback();
+        }
+        catch (err) {
+            setTimeout(() => {
+                throw err;
+            });
+        }
+    }
+    function requestFrame(callback) {
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(callback);
+            return;
+        }
+        setTimeout(() => {
+            callback(Date.now());
+        });
+    }
+
     /*
      * A collection of directives that allows creation of custom event handlers that are defined as
      * AngularTS expressions and are compiled and executed within the current scope.
@@ -6862,28 +7078,81 @@
                 const expression = getNormalizedAttr(element, directiveName);
                 if (!isString(expression))
                     return () => undefined;
+                const eventPolicy = readEventPolicy(element);
                 const fn = $parse(expression);
                 return (scope, element) => {
                     const handler = (event) => {
+                        if (eventPolicy._prevent) {
+                            event.preventDefault();
+                        }
+                        if (eventPolicy._stop) {
+                            event.stopPropagation();
+                        }
                         try {
                             fn(scope, { $event: event });
                         }
                         catch (error) {
                             $exceptionHandler(error);
                         }
+                        finally {
+                            scheduleEventAfterRender(scope, element);
+                        }
                     };
-                    element.addEventListener(eventName, handler);
+                    if (eventPolicy._listenerOptions) {
+                        element.addEventListener(eventName, handler, eventPolicy._listenerOptions);
+                    }
+                    else {
+                        element.addEventListener(eventName, handler);
+                    }
                     scope.$on("$destroy", () => {
-                        element.removeEventListener(eventName, handler);
+                        if (eventPolicy._listenerOptions) {
+                            element.removeEventListener(eventName, handler, eventPolicy._listenerOptions);
+                        }
+                        else {
+                            element.removeEventListener(eventName, handler);
+                        }
                     });
                 };
             },
         };
     }
+    function readEventPolicy(element) {
+        const prevent = hasNormalizedAttr(element, "eventPrevent");
+        const stop = hasNormalizedAttr(element, "eventStop");
+        const capture = hasNormalizedAttr(element, "eventCapture");
+        const once = hasNormalizedAttr(element, "eventOnce");
+        const passive = hasNormalizedAttr(element, "eventPassive");
+        if (prevent && passive) {
+            throw new Error("data-event-prevent cannot be combined with data-event-passive because passive listeners cannot prevent default.");
+        }
+        return {
+            _prevent: prevent,
+            _stop: stop,
+            _listenerOptions: capture || once || passive
+                ? {
+                    capture,
+                    once,
+                    passive,
+                }
+                : undefined,
+        };
+    }
+    function scheduleEventAfterRender(scope, element) {
+        const scheduler = getInheritedData(element, AFTER_RENDER_EVENT_SCHEDULER_KEY);
+        const scheduleCallback = scope._scheduleCallback;
+        if (!scheduler) {
+            return;
+        }
+        if (scheduleCallback) {
+            scheduleCallback.call(scope, scheduler);
+            return;
+        }
+        scheduler();
+    }
     /**
-     * Creates a directive that evaluates an expression when the window event fires.
+     * Creates a directive that evaluates an expression when a global event target fires.
      */
-    function createWindowEventDirective($parse, $exceptionHandler, $window, directiveName, eventName) {
+    function createWindowEventDirective($parse, $exceptionHandler, target, directiveName, eventName) {
         return {
             restrict: "A",
             compile(element) {
@@ -6899,10 +7168,13 @@
                         catch (error) {
                             $exceptionHandler(error);
                         }
+                        finally {
+                            scheduleEventAfterRender(scope, element);
+                        }
                     };
-                    $window.addEventListener(eventName, handler);
+                    target.addEventListener(eventName, handler);
                     scope.$on("$destroy", () => {
-                        $window.removeEventListener(eventName, handler);
+                        target.removeEventListener(eventName, handler);
                     });
                 };
             },
@@ -7305,7 +7577,7 @@
     // The assumption is that future DOM event attribute names will begin with
     // 'on' and be composed of only English letters.
     const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
-    const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
+    const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window|Document)([A-Z].*)$/;
     const LOWERCASE_N_CHAR_CODE = "n".charCodeAt(0);
     const LOWERCASE_G_CHAR_CODE = "g".charCodeAt(0);
     const ISOLATE_BINDING_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
@@ -7762,7 +8034,34 @@
                         queueState._scheduled = true;
                         queueMicrotask(queueState._flush);
                     }
+                    function scheduleControllerAfterRender(controllerInstance, scope) {
+                        const controllerTarget = (controllerInstance.$target ??
+                            controllerInstance);
+                        if (!isFunction(controllerTarget.$afterRender)) {
+                            return;
+                        }
+                        queueAfterRender(controllerTarget, () => {
+                            if (scope._destroyed || controllerInstance._destroyed) {
+                                return;
+                            }
+                            try {
+                                callFunction(assertDefined(controllerTarget.$afterRender), controllerTarget);
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                        });
+                    }
+                    function scheduleElementControllersAfterRender(elementControllers, controllerScope) {
+                        for (const name in elementControllers) {
+                            const controllerInstance = elementControllers[name]?._instance;
+                            if (controllerInstance) {
+                                scheduleControllerAfterRender(controllerInstance, controllerScope);
+                            }
+                        }
+                    }
                     function recordDirectiveBindingChange(state, key, currentValue, initial) {
+                        scheduleControllerAfterRender(state._destAny, state._scope);
                         if (!isFunction(state._destAny.$onChanges)) {
                             return;
                         }
@@ -7800,6 +8099,7 @@
                     function handleTwoWayExpressionChange(state, syncParentValue, val) {
                         state._scopeTarget[state._attrName] = val;
                         syncParentValue(state._scope);
+                        scheduleControllerAfterRender(state._destAny, state._scope);
                     }
                     function handleTwoWayDestinationChange(state, val) {
                         if (val === state._lastValue && state._attrExpression !== undefined) {
@@ -7820,6 +8120,7 @@
                                 }
                                 state._scopeTarget[key] = valRecord[key];
                             }
+                            scheduleControllerAfterRender(state._destAny, state._scope);
                             return;
                         }
                         callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
@@ -7829,6 +8130,7 @@
                                 attributeWatchers[i]._listenerFn(val, state._scope.$target);
                             }
                         }
+                        scheduleControllerAfterRender(state._destAny, state._scope);
                     }
                     function handleStringBindingObserve(state, value) {
                         if (typeof value !== "string" && typeof value !== "boolean") {
@@ -8338,7 +8640,10 @@
                                 .toLowerCase()
                                 .substring(4 + prefix.length)
                                 .replace(/_(.)/g, (_match, letter) => uppercase(letter));
-                            if (prefix === "Prop" || prefix === "On" || prefix === "Window") {
+                            if (prefix === "Prop" ||
+                                prefix === "On" ||
+                                prefix === "Window" ||
+                                prefix === "Document") {
                                 attrs =
                                     attrs ??
                                         createCompileAttributeStateWithPrecedingValues(node, nodeAttributes, attrIndex);
@@ -8392,7 +8697,8 @@
                             if (prefix === "Prop" ||
                                 prefix === "On" ||
                                 prefix === "Observe" ||
-                                prefix === "Window") {
+                                prefix === "Window" ||
+                                prefix === "Document") {
                                 return;
                             }
                             normalizedName = normalizeDirectiveName(name.toLowerCase());
@@ -8411,7 +8717,9 @@
                             directives.push(createSyntheticDirective(createEventDirective($parse, $exceptionHandler, normalizedName, propertyName)));
                             return;
                         }
-                        directives.push(createSyntheticDirective(createWindowEventDirective($parse, $exceptionHandler, window, normalizedName, propertyName)));
+                        if (prefix === "Window" || prefix === "Document") {
+                            directives.push(createSyntheticDirective(createWindowEventDirective($parse, $exceptionHandler, prefix === "Window" ? window : document, normalizedName, propertyName)));
+                        }
                     }
                     /**
                      * A function generator that is used to support both eager and lazy compilation
@@ -8947,6 +9255,11 @@
                             controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                         }
                         if (nodeLinkState._controllerDirectives) {
+                            setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
+                                scheduleElementControllersAfterRender(elementControllers, controllerScope);
+                            });
+                        }
+                        if (nodeLinkState._controllerDirectives) {
                             for (const name in controllerDirectives) {
                                 const controllerDirective = controllerDirectives[name];
                                 const { require } = controllerDirective;
@@ -9050,6 +9363,7 @@
                             if (isFunction(controllerInstance.$postLink)) {
                                 callFunction(controllerInstance.$postLink, controllerInstance);
                             }
+                            scheduleControllerAfterRender(controllerInstance, controllerScope);
                         }
                     }
                     /**
@@ -10220,9 +10534,10 @@
                                         if (typeof twoWayAttrExpression === "string") {
                                             const syncParentValue = $parse(twoWayAttrExpression, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                             // make it lazy as we dont want to trigger the two way data binding at this point
-                                            scope.$watch(twoWayAttrExpression, (val) => {
+                                            removeWatch = scope.$watch(twoWayAttrExpression, (val) => {
                                                 handleTwoWayExpressionChange(twoWayBindingState, syncParentValue, val);
                                             }, true);
+                                            removeWatchCollection.push(removeWatch);
                                         }
                                         removeWatch = destination.$watch(attrName, (val) => {
                                             handleTwoWayDestinationChange(twoWayBindingState, val);
@@ -10664,6 +10979,1448 @@
                     return $interpolate;
                 },
             ];
+        }
+    }
+
+    /**
+     * Provides reactive mode machines backed by AngularTS scope proxies.
+     */
+    class MachineProvider {
+        constructor() {
+            this.$get = () => createMachine;
+        }
+    }
+    function defineMachine(config) {
+        return config;
+    }
+    function createMachine(scopeOrConfig, maybeConfig) {
+        const { _scope: scope, _config: config } = normalizeMachineArgs(scopeOrConfig, maybeConfig);
+        assertMachineConfig(config);
+        const rawData = config.data;
+        let activeBinding;
+        const bindings = new Map();
+        const machineTarget = {
+            current: config.initial,
+            data: rawData,
+            send(type, payload) {
+                if (!isString(type)) {
+                    return false;
+                }
+                const transition = getTransition(machineTarget.current, config, type);
+                if (!transition) {
+                    return false;
+                }
+                const binding = getActiveBinding();
+                return batch(binding?._handler, () => {
+                    let transitionStarted = false;
+                    try {
+                        const activeMachine = getActiveMachine();
+                        const from = machineTarget.current;
+                        transitionStarted = true;
+                        const nextMode = transition(activeMachine.data, payload, activeMachine);
+                        const to = isNonEmptyString(nextMode) ? nextMode : from;
+                        const context = {
+                            type,
+                            from,
+                            to,
+                            payload,
+                            data: activeMachine.data,
+                            machine: activeMachine,
+                        };
+                        const hookContext = context;
+                        if (from !== to) {
+                            getModeHook(config.hooks?.exit, from)?.(hookContext);
+                        }
+                        if (isNonEmptyString(nextMode)) {
+                            machineTarget.current = nextMode;
+                        }
+                        else {
+                            machineTarget.current = from;
+                        }
+                        if (from !== to) {
+                            getModeHook(config.hooks?.enter, to)?.(hookContext);
+                        }
+                        getTransitionHook(config.hooks)?.(hookContext);
+                        return true;
+                    }
+                    finally {
+                        if (transitionStarted) {
+                            scheduleMachineBindings();
+                        }
+                    }
+                });
+            },
+            can(type) {
+                if (!isString(type)) {
+                    return false;
+                }
+                return !!getTransition(machineTarget.current, config, type);
+            },
+            matches(mode) {
+                return machineTarget.current === mode;
+            },
+            snapshot() {
+                return {
+                    current: machineTarget.current,
+                    data: cloneMachineData(rawData),
+                };
+            },
+            restore(snapshot) {
+                assertMachineSnapshot(snapshot);
+                const binding = getActiveBinding();
+                batch(binding?._handler, () => {
+                    const previousDataKeys = collectMachineDataKeys(rawData);
+                    machineTarget.current = snapshot.current;
+                    restoreMachineData(rawData, snapshot.data);
+                    scheduleMachineBindings(previousDataKeys);
+                });
+            },
+        };
+        Object.defineProperty(machineTarget, _SCOPE_PROXY_BIND, {
+            value(handler, proxy) {
+                let binding = bindings.get(handler.$id);
+                if (!binding) {
+                    binding = {
+                        _handler: handler,
+                        _proxy: proxy,
+                    };
+                    bindings.set(handler.$id, binding);
+                }
+                activeBinding = binding;
+            },
+        });
+        if (scope?.$handler) {
+            return createScope(machineTarget, scope.$handler);
+        }
+        return machineTarget;
+        function getActiveMachine() {
+            return getActiveBinding()?._proxy ?? machineTarget;
+        }
+        function getActiveBinding() {
+            if (activeBinding && !activeBinding._handler._destroyed) {
+                return activeBinding;
+            }
+            for (const [scopeId, binding] of bindings) {
+                if (binding._handler._destroyed) {
+                    bindings.delete(scopeId);
+                    continue;
+                }
+                activeBinding = binding;
+                return binding;
+            }
+            activeBinding = undefined;
+            return undefined;
+        }
+        function scheduleMachineBindings(extraDataKeys = []) {
+            const dataKeys = Array.from(new Set([...extraDataKeys, ...collectMachineDataKeys(rawData)]));
+            for (const [scopeId, binding] of bindings) {
+                if (binding._handler._destroyed) {
+                    bindings.delete(scopeId);
+                    continue;
+                }
+                binding._handler._scheduleWatchKeys(["current", "data"]);
+                binding._handler._checkListenersForAllKeys(rawData);
+                if (dataKeys.length > 0) {
+                    binding._handler._scheduleWatchKeys(dataKeys);
+                }
+            }
+        }
+    }
+    function collectMachineDataKeys(value) {
+        const keySet = new Set();
+        const visited = new WeakSet();
+        collectKeys(value, keySet, visited);
+        return Array.from(keySet);
+    }
+    function collectKeys(value, keySet, visited) {
+        if (!isObject(value)) {
+            return;
+        }
+        const objectValue = value;
+        if (visited.has(objectValue)) {
+            return;
+        }
+        visited.add(objectValue);
+        collectNativeCollectionKeys(objectValue, keySet);
+        const keyList = keys(objectValue);
+        for (let i = 0, l = keyList.length; i < l; i++) {
+            const key = keyList[i];
+            keySet.add(key);
+            collectKeys(objectValue[key], keySet, visited);
+        }
+    }
+    function collectNativeCollectionKeys(value, keySet) {
+        if (isMapTarget(value)) {
+            keySet.add("size");
+            keySet.add("get");
+            keySet.add("has");
+            return;
+        }
+        if (isSetTarget(value)) {
+            keySet.add("size");
+            keySet.add("has");
+        }
+    }
+    function cloneMachineData(data) {
+        return structuredClone(data);
+    }
+    function restoreMachineData(target, source) {
+        restoreMachineDataValue(target, source, new WeakMap());
+    }
+    function restoreMachineDataValue(target, source, visited) {
+        let sourceTargets = visited.get(source);
+        if (sourceTargets?.has(target)) {
+            return;
+        }
+        if (!sourceTargets) {
+            sourceTargets = new WeakSet();
+            visited.set(source, sourceTargets);
+        }
+        sourceTargets.add(target);
+        const targetRecord = target;
+        const sourceRecord = source;
+        const targetKeys = keys(target);
+        for (let i = 0, l = targetKeys.length; i < l; i++) {
+            const key = targetKeys[i];
+            if (!hasOwn(sourceRecord, key)) {
+                Reflect.deleteProperty(targetRecord, key);
+            }
+        }
+        const sourceKeys = keys(source);
+        for (let i = 0, l = sourceKeys.length; i < l; i++) {
+            const key = sourceKeys[i];
+            const sourceValue = sourceRecord[key];
+            const targetValue = getMachineDataProperty(targetRecord, key);
+            if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
+                restoreMachineDataValue(targetValue, sourceValue, visited);
+                continue;
+            }
+            setMachineDataProperty(targetRecord, key, cloneSnapshotValue(sourceValue));
+        }
+    }
+    function cloneSnapshotValue(value) {
+        return isObject(value) ? structuredClone(value) : value;
+    }
+    function getMachineDataProperty(target, key) {
+        if (key === "__proto__") {
+            return Object.prototype.hasOwnProperty.call(target, key)
+                ? Object.getOwnPropertyDescriptor(target, key)?.value
+                : undefined;
+        }
+        return target[key];
+    }
+    function setMachineDataProperty(target, key, value) {
+        if (key === "__proto__") {
+            Object.defineProperty(target, key, {
+                value,
+                enumerable: true,
+                configurable: true,
+                writable: true,
+            });
+            return;
+        }
+        target[key] = value;
+    }
+    function getTransition(mode, config, type) {
+        if (!hasOwn(config.transitions, mode)) {
+            return undefined;
+        }
+        const transitions = config.transitions[mode];
+        if (!isObject(transitions) || !hasOwn(transitions, type)) {
+            return undefined;
+        }
+        const transition = transitions[type];
+        return isFunction(transition)
+            ? transition
+            : undefined;
+    }
+    function getModeHook(hooks, mode) {
+        if (!hooks || !hasOwn(hooks, mode)) {
+            return undefined;
+        }
+        const hook = hooks[mode];
+        return isFunction(hook) ? hook : undefined;
+    }
+    function getTransitionHook(hooks) {
+        if (!hooks || !hasOwn(hooks, "transition")) {
+            return undefined;
+        }
+        return isFunction(hooks.transition) ? hooks.transition : undefined;
+    }
+    function batch(scope, fn) {
+        if (!scope || scope._destroyed) {
+            return fn();
+        }
+        return scope.$batch(fn);
+    }
+    function normalizeMachineArgs(scopeOrConfig, maybeConfig) {
+        if (maybeConfig) {
+            return {
+                _scope: scopeOrConfig,
+                _config: maybeConfig,
+            };
+        }
+        return {
+            _config: scopeOrConfig,
+        };
+    }
+    function assertMachineConfig(config) {
+        if (!isObject(config)) {
+            throw new Error("$machine requires a config object.");
+        }
+        if (!isString(config.initial) || !config.initial) {
+            throw new Error("$machine requires a non-empty initial mode.");
+        }
+        if (!isObject(config.data)) {
+            throw new Error("$machine requires a data object.");
+        }
+        if (!isObject(config.transitions)) {
+            throw new Error("$machine requires a transitions object.");
+        }
+        assertMachineHooks(config.hooks);
+    }
+    function assertMachineSnapshot(snapshot) {
+        if (!snapshot || !isObject(snapshot)) {
+            throw new Error("$machine restore requires a snapshot object.");
+        }
+        const candidate = snapshot;
+        if (!isString(candidate.current) || !candidate.current) {
+            throw new Error("$machine restore requires a non-empty current mode.");
+        }
+        if (!isObject(candidate.data)) {
+            throw new Error("$machine restore requires a data object.");
+        }
+    }
+    function assertMachineHooks(hooks) {
+        if (hooks === undefined) {
+            return;
+        }
+        if (!isPlainObject(hooks)) {
+            throw new Error("$machine hooks must be an object.");
+        }
+        assertMachineHookMap("enter", hooks.enter);
+        assertMachineHookMap("exit", hooks.exit);
+        if (hooks.transition !== undefined && !isFunction(hooks.transition)) {
+            throw new Error("$machine hooks.transition must be a function.");
+        }
+    }
+    function assertMachineHookMap(name, hooks) {
+        if (hooks === undefined) {
+            return;
+        }
+        if (!isPlainObject(hooks)) {
+            throw new Error(`$machine hooks.${name} must be an object.`);
+        }
+        const hookNames = keys(hooks);
+        for (let i = 0, l = hookNames.length; i < l; i++) {
+            if (!isFunction(hooks[hookNames[i]])) {
+                throw new Error(`$machine hooks.${name} entries must be functions.`);
+            }
+        }
+    }
+    function isNonEmptyString(value) {
+        return isString(value) && value !== "";
+    }
+    function isPlainObject(value) {
+        if (!isObject(value) || Array.isArray(value)) {
+            return false;
+        }
+        const prototype = Reflect.getPrototypeOf(value);
+        return prototype === Object.prototype || prototype === null;
+    }
+    function isMapTarget(value) {
+        try {
+            return value instanceof Map;
+        }
+        catch {
+            return false;
+        }
+    }
+    function isSetTarget(value) {
+        try {
+            return value instanceof Set;
+        }
+        catch {
+            return false;
+        }
+    }
+
+    class WorkflowProvider {
+        constructor() {
+            this.$get = [
+                _machine,
+                ($machine) => createWorkflowFactory($machine),
+            ];
+        }
+    }
+    function defineWorkflow(config) {
+        return config;
+    }
+    function defineCommand(command) {
+        return command;
+    }
+    function createWorkflowFactory($machine) {
+        return function createWorkflow(scopeOrConfig, maybeConfig) {
+            const { _scope: scope, _config: config } = normalizeWorkflowArgs(scopeOrConfig, maybeConfig);
+            assertWorkflowConfig(config);
+            const machine = $machine({
+                initial: config.initial,
+                data: config.data,
+                transitions: config.transitions,
+            });
+            const diagnostics = [];
+            const history = [];
+            const diagnosticLimit = normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
+            const historyLimit = normalizeHistoryLimit(config.historyLimit);
+            const runningCommands = new Set();
+            const commandQueues = new Map();
+            const replayInputs = new Map();
+            const bindings = new Map();
+            let activeBinding;
+            let nextHistoryId = 1;
+            let queueGeneration = 0;
+            const workflowTarget = {
+                id: config.id,
+                get current() {
+                    return machine.current;
+                },
+                get data() {
+                    return machine.data;
+                },
+                diagnostics,
+                history,
+                send(type, payload) {
+                    const handled = machine.send(type, payload);
+                    if (handled) {
+                        scheduleWorkflowBindings();
+                    }
+                    else {
+                        appendDiagnostics(createDiagnostic("workflow.invalidTransition", `Workflow mode '${machine.current}' cannot handle transition '${type}'.`, undefined, true, {
+                            current: machine.current,
+                            type,
+                            payload,
+                        }));
+                        scheduleWorkflowBindings();
+                    }
+                    return handled;
+                },
+                can(type) {
+                    return machine.can(type);
+                },
+                matches(mode) {
+                    return machine.matches(mode);
+                },
+                async run(command, input, options) {
+                    if (!isString(command) || !command) {
+                        return failCommand("workflow.invalidCommand", command, input, [
+                            createDiagnostic("workflow.invalidCommand", "Workflow command name must be a non-empty string.", command, true),
+                        ]);
+                    }
+                    const handler = getCommand(config, command);
+                    if (!handler) {
+                        return failCommand("workflow.missingCommand", command, input, [
+                            createDiagnostic("workflow.missingCommand", `Workflow command '${command}' is not configured.`, command, true),
+                        ]);
+                    }
+                    const policy = options?.concurrency ?? config.concurrency ?? "allow";
+                    const optionDiagnostic = validateCommandOptions(command, options);
+                    if (optionDiagnostic) {
+                        return failCommand("workflow.invalidCommandOptions", command, input, [optionDiagnostic]);
+                    }
+                    if (policy === "reject" && isCommandRunning(command)) {
+                        return failCommand("workflow.commandRunning", command, input, [
+                            createDiagnostic("workflow.commandRunning", `Workflow command '${command}' is already running.`, command, true),
+                        ]);
+                    }
+                    if (policy === "queue") {
+                        const generation = queueGeneration;
+                        const previous = commandQueues.get(command) ?? Promise.resolve();
+                        const queued = previous
+                            .catch(() => undefined)
+                            .then(() => {
+                            if (generation !== queueGeneration) {
+                                return {
+                                    ok: false,
+                                    diagnostics: [
+                                        createDiagnostic("workflow.commandCancelled", `Workflow command '${command}' was cancelled.`, command, true),
+                                    ],
+                                };
+                            }
+                            return executeCommand(command, input, handler, options);
+                        });
+                        const tail = queued.finally(() => {
+                            if (commandQueues.get(command) === tail) {
+                                commandQueues.delete(command);
+                            }
+                        });
+                        commandQueues.set(command, tail);
+                        return queued;
+                    }
+                    return executeCommand(command, input, handler, options);
+                },
+                retry(command, options) {
+                    const replay = normalizeReplayArgs(command, options);
+                    if (replay.invalidCommand) {
+                        return Promise.resolve(failWithoutHistory([
+                            createDiagnostic("workflow.invalidCommand", "Workflow command name must be a non-empty string.", undefined, true),
+                        ]));
+                    }
+                    const retryEntry = findRetryEntry(replay.command);
+                    if (!retryEntry) {
+                        return Promise.resolve(failWithoutHistory([
+                            createDiagnostic("workflow.noFailedCommand", isString(replay.command) && replay.command
+                                ? `Workflow command '${replay.command}' has no failed run to retry.`
+                                : "Workflow has no failed command to retry.", isString(replay.command) && replay.command
+                                ? replay.command
+                                : undefined, true),
+                        ]));
+                    }
+                    return runWorkflowCommand(workflowTarget, retryEntry.command, getReplayInput(retryEntry), replay.options);
+                },
+                repeat(command, options) {
+                    const replay = normalizeReplayArgs(command, options);
+                    if (replay.invalidCommand) {
+                        return Promise.resolve(failWithoutHistory([
+                            createDiagnostic("workflow.invalidCommand", "Workflow command name must be a non-empty string.", undefined, true),
+                        ]));
+                    }
+                    const repeatEntry = findRepeatEntry(replay.command);
+                    if (!repeatEntry) {
+                        return Promise.resolve(failWithoutHistory([
+                            createDiagnostic("workflow.noCompletedCommand", isString(replay.command) && replay.command
+                                ? `Workflow command '${replay.command}' has no completed run to repeat.`
+                                : "Workflow has no completed command to repeat.", isString(replay.command) && replay.command
+                                ? replay.command
+                                : undefined, true),
+                        ]));
+                    }
+                    return runWorkflowCommand(workflowTarget, repeatEntry.command, getReplayInput(repeatEntry), replay.options);
+                },
+                cancel(command) {
+                    if (command !== undefined && (!isString(command) || !command)) {
+                        return 0;
+                    }
+                    let cancelled = 0;
+                    for (const state of runningCommands) {
+                        if (command && state._command !== command) {
+                            continue;
+                        }
+                        cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true));
+                        cancelled += 1;
+                    }
+                    return cancelled;
+                },
+                snapshot() {
+                    return {
+                        version: 1,
+                        id: config.id,
+                        current: machine.current,
+                        data: structuredClone(machine.data),
+                        diagnostics: structuredClone(diagnostics),
+                        history: structuredClone(history),
+                    };
+                },
+                restore(snapshot) {
+                    const restoredSnapshot = normalizeWorkflowSnapshot(snapshot);
+                    if (restoredSnapshot.id !== config.id) {
+                        throw new Error("$workflow restore snapshot id must match workflow id.");
+                    }
+                    queueGeneration += 1;
+                    commandQueues.clear();
+                    cancelRunningCommands(false);
+                    machine.restore({
+                        current: restoredSnapshot.current,
+                        data: restoredSnapshot.data,
+                    });
+                    replaceArray(diagnostics, normalizeDiagnostics(restoredSnapshot.diagnostics));
+                    trimDiagnostics();
+                    replaceArray(history, normalizeHistory(restoredSnapshot.history));
+                    trimHistory();
+                    resetReplayInputs();
+                    nextHistoryId =
+                        history.reduce((max, entry) => Math.max(max, entry.id), 0) + 1;
+                    scheduleWorkflowBindings();
+                },
+            };
+            Object.defineProperty(workflowTarget, _SCOPE_PROXY_BIND, {
+                value(handler, proxy) {
+                    let binding = bindings.get(handler.$id);
+                    if (!binding) {
+                        binding = {
+                            _handler: handler,
+                            _proxy: proxy,
+                        };
+                        bindings.set(handler.$id, binding);
+                    }
+                    activeBinding = binding;
+                },
+            });
+            if (scope?.$handler) {
+                return createScope(workflowTarget, scope.$handler);
+            }
+            return workflowTarget;
+            async function executeCommand(command, input, handler, options) {
+                appendHistory({
+                    type: "command.started",
+                    command,
+                    input,
+                });
+                const state = createRunState(command, options);
+                try {
+                    const cancelDiagnostic = state._cancelDiagnostic;
+                    if (cancelDiagnostic) {
+                        return failCommand(cancelDiagnostic.code, command, input, [
+                            cancelDiagnostic,
+                        ]);
+                    }
+                    const commandPromise = Promise.resolve((() => {
+                        const data = createWorkflowDataProxy(machine.data, state);
+                        return handler({
+                            workflow: createCommandWorkflow(getActiveWorkflow(), state, data),
+                            cleanup(callback) {
+                                if (!isFunction(callback)) {
+                                    return;
+                                }
+                                state._cleanups.push(callback);
+                            },
+                            data,
+                            input,
+                            command,
+                            signal: state._controller.signal,
+                        });
+                    })());
+                    const commandValue = (await Promise.race([
+                        commandPromise,
+                        state._cancelPromise.then((diagnostic) => ({
+                            _workflowCancel: diagnostic,
+                        })),
+                    ]));
+                    commandPromise.catch(() => undefined);
+                    if (isObject(commandValue) && hasOwn(commandValue, "_workflowCancel")) {
+                        const cancelled = commandValue;
+                        if (state._discardResult) {
+                            return {
+                                ok: false,
+                                diagnostics: [cancelled._workflowCancel],
+                            };
+                        }
+                        return failCommand(cancelled._workflowCancel.code, command, input, [cancelled._workflowCancel]);
+                    }
+                    const result = normalizeCommandResult(commandValue);
+                    if (result.diagnostics?.length) {
+                        appendDiagnostics(...result.diagnostics);
+                    }
+                    appendHistory(result.ok
+                        ? {
+                            type: "command.completed",
+                            command,
+                            input,
+                            output: result.output,
+                            diagnostics: result.diagnostics,
+                        }
+                        : {
+                            type: "command.failed",
+                            command,
+                            input,
+                            diagnostics: result.diagnostics,
+                        });
+                    return result;
+                }
+                catch (error) {
+                    if (state._cancelDiagnostic) {
+                        if (state._discardResult) {
+                            return {
+                                ok: false,
+                                diagnostics: [state._cancelDiagnostic],
+                            };
+                        }
+                        return failCommand(state._cancelDiagnostic.code, command, input, [state._cancelDiagnostic]);
+                    }
+                    return failCommand("workflow.commandFailed", command, input, [
+                        diagnosticFromError(error, command),
+                    ]);
+                }
+                finally {
+                    finishRunState(state);
+                }
+            }
+            function getActiveWorkflow() {
+                return getActiveBinding()?._proxy ?? workflowTarget;
+            }
+            function getActiveBinding() {
+                if (activeBinding && !activeBinding._handler._destroyed) {
+                    return activeBinding;
+                }
+                for (const [scopeId, binding] of bindings) {
+                    if (binding._handler._destroyed) {
+                        bindings.delete(scopeId);
+                        continue;
+                    }
+                    activeBinding = binding;
+                    return binding;
+                }
+                activeBinding = undefined;
+                return undefined;
+            }
+            function scheduleWorkflowBindings() {
+                for (const [scopeId, binding] of bindings) {
+                    if (binding._handler._destroyed) {
+                        bindings.delete(scopeId);
+                        continue;
+                    }
+                    binding._handler._scheduleWatchKeys([
+                        "current",
+                        "data",
+                        "diagnostics",
+                        "history",
+                    ]);
+                    binding._handler._checkListenersForAllKeys(machine.data);
+                    binding._handler._checkListenersForAllKeys(diagnostics);
+                    binding._handler._checkListenersForAllKeys(history);
+                }
+            }
+            function appendDiagnostics(...entries) {
+                diagnostics.push(...entries);
+                trimDiagnostics();
+            }
+            function trimDiagnostics() {
+                trimArray(diagnostics, diagnosticLimit);
+            }
+            function appendHistory(entry) {
+                const historyEntry = {
+                    id: nextHistoryId++,
+                    type: entry.type,
+                    command: entry.command,
+                };
+                if (hasOwn(entry, "input")) {
+                    historyEntry.input = normalizeHistoryValue(entry.input);
+                    replayInputs.set(historyEntry.id, entry.input);
+                }
+                if (hasOwn(entry, "output")) {
+                    historyEntry.output = normalizeHistoryValue(entry.output);
+                }
+                if (entry.diagnostics) {
+                    historyEntry.diagnostics = normalizeDiagnostics(entry.diagnostics);
+                }
+                history.push(historyEntry);
+                trimHistory();
+                scheduleWorkflowBindings();
+                return historyEntry;
+            }
+            function trimHistory() {
+                const removed = trimArray(history, historyLimit);
+                for (const entry of removed) {
+                    replayInputs.delete(entry.id);
+                }
+            }
+            function isCommandRunning(command) {
+                for (const state of runningCommands) {
+                    if (state._command === command) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            function createRunState(command, options) {
+                const controller = new AbortController();
+                let cancel;
+                const state = {
+                    _cancel(diagnostic) {
+                        cancel(diagnostic);
+                    },
+                    _cancelPromise: new Promise((resolve) => {
+                        cancel = resolve;
+                    }),
+                    _cleanups: [],
+                    _command: command,
+                    _controller: controller,
+                    _discardResult: false,
+                    _done: false,
+                };
+                const timeout = normalizeTimeout(options?.timeout ?? config.commandTimeout);
+                let timeoutId;
+                if (options?.signal) {
+                    if (options.signal.aborted) {
+                        cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${command}' was cancelled.`, command, true));
+                    }
+                    else {
+                        const abortHandler = () => {
+                            cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${command}' was cancelled.`, command, true));
+                        };
+                        options.signal.addEventListener("abort", abortHandler, {
+                            once: true,
+                        });
+                        state._cleanups.push(() => options.signal?.removeEventListener("abort", abortHandler));
+                    }
+                }
+                if (timeout !== undefined) {
+                    timeoutId = window.setTimeout(() => {
+                        cancelRun(state, createDiagnostic("workflow.commandTimeout", `Workflow command '${command}' timed out after ${String(timeout)}ms.`, command, true, {
+                            timeout,
+                        }));
+                    }, timeout);
+                }
+                if (timeoutId !== undefined) {
+                    state._cleanups.push(() => {
+                        window.clearTimeout(timeoutId);
+                    });
+                }
+                runningCommands.add(state);
+                return state;
+            }
+            function cancelRun(state, diagnostic, discardResult = false) {
+                if (state._done || state._cancelDiagnostic) {
+                    return;
+                }
+                state._discardResult = discardResult;
+                state._cancelDiagnostic = diagnostic;
+                state._cancel(diagnostic);
+                if (!state._controller.signal.aborted) {
+                    state._controller.abort(diagnostic);
+                }
+            }
+            function finishRunState(state) {
+                state._done = true;
+                runningCommands.delete(state);
+                while (state._cleanups.length) {
+                    const cleanup = state._cleanups.pop();
+                    try {
+                        cleanup?.();
+                    }
+                    catch (error) {
+                        if (state._discardResult) {
+                            continue;
+                        }
+                        appendDiagnostics(diagnosticFromError(error, state._command, "workflow.cleanupFailed"));
+                    }
+                }
+                scheduleWorkflowBindings();
+            }
+            function cancelRunningCommands(recordResult = true) {
+                for (const state of runningCommands) {
+                    cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true), !recordResult);
+                }
+            }
+            function findRetryEntry(command) {
+                for (let index = history.length - 1; index >= 0; index -= 1) {
+                    const entry = history[index];
+                    if (entry.type !== "command.failed") {
+                        continue;
+                    }
+                    if (isString(command) && command && entry.command !== command) {
+                        continue;
+                    }
+                    return entry;
+                }
+                return undefined;
+            }
+            function findRepeatEntry(command) {
+                for (let index = history.length - 1; index >= 0; index -= 1) {
+                    const entry = history[index];
+                    if (entry.type !== "command.completed") {
+                        continue;
+                    }
+                    if (isString(command) && command && entry.command !== command) {
+                        continue;
+                    }
+                    return entry;
+                }
+                return undefined;
+            }
+            function getReplayInput(entry) {
+                return replayInputs.has(entry.id)
+                    ? replayInputs.get(entry.id)
+                    : entry.input;
+            }
+            function resetReplayInputs() {
+                replayInputs.clear();
+                for (const entry of history) {
+                    if (hasOwn(entry, "input")) {
+                        replayInputs.set(entry.id, entry.input);
+                    }
+                }
+            }
+            function normalizeWorkflowSnapshot(snapshot) {
+                if (isObject(snapshot) &&
+                    snapshot.version === 1) {
+                    assertWorkflowSnapshot(snapshot);
+                    return snapshot;
+                }
+                if (config.migrateSnapshot) {
+                    const migrated = config.migrateSnapshot(snapshot);
+                    assertWorkflowSnapshot(migrated);
+                    return migrated;
+                }
+                assertWorkflowSnapshot(snapshot);
+                return snapshot;
+            }
+            function failCommand(code, command, input, commandDiagnostics) {
+                appendDiagnostics(...commandDiagnostics);
+                if (isString(command) && command) {
+                    appendHistory({
+                        type: "command.failed",
+                        command,
+                        input,
+                        diagnostics: commandDiagnostics,
+                    });
+                }
+                else {
+                    scheduleWorkflowBindings();
+                }
+                return {
+                    ok: false,
+                    diagnostics: commandDiagnostics.length
+                        ? commandDiagnostics
+                        : [
+                            createDiagnostic(code, "Workflow command failed.", isString(command) ? command : undefined, true),
+                        ],
+                };
+            }
+            function failWithoutHistory(commandDiagnostics) {
+                appendDiagnostics(...commandDiagnostics);
+                scheduleWorkflowBindings();
+                return {
+                    ok: false,
+                    diagnostics: commandDiagnostics,
+                };
+            }
+        };
+    }
+    function runWorkflowCommand(workflow, command, input, options) {
+        const runner = workflow;
+        return runner.run(command, input, options);
+    }
+    function createCommandWorkflow(workflow, state, data) {
+        return new Proxy(workflow, {
+            get(target, property, receiver) {
+                if (property === "data") {
+                    return data;
+                }
+                if (property === "send") {
+                    return (...args) => state._done
+                        ? false
+                        : target.send(...args);
+                }
+                if (property === "run" || property === "retry" || property === "repeat") {
+                    return (...args) => state._done
+                        ? Promise.resolve({
+                            ok: false,
+                            diagnostics: [
+                                createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true),
+                            ],
+                        })
+                        : target[property](...args);
+                }
+                return Reflect.get(target, property, receiver);
+            },
+        });
+    }
+    function createWorkflowDataProxy(data, state) {
+        const proxies = new WeakMap();
+        return proxify(data);
+        function proxify(value) {
+            if (!isWorkflowDataProxyable(value)) {
+                return value;
+            }
+            const cached = proxies.get(value);
+            if (cached) {
+                return cached;
+            }
+            const proxy = new Proxy(value, {
+                get(target, property, receiver) {
+                    if (target instanceof Map) {
+                        return getWorkflowMapProperty(target, property, receiver, state, proxify);
+                    }
+                    if (target instanceof Set) {
+                        return getWorkflowSetProperty(target, property, receiver, state);
+                    }
+                    return proxify(Reflect.get(target, property, receiver));
+                },
+                set(target, property, nextValue, receiver) {
+                    if (state._done) {
+                        return true;
+                    }
+                    return Reflect.set(target, property, nextValue, receiver);
+                },
+                deleteProperty(target, property) {
+                    if (state._done) {
+                        return true;
+                    }
+                    return Reflect.deleteProperty(target, property);
+                },
+                defineProperty(target, property, descriptor) {
+                    if (state._done) {
+                        return true;
+                    }
+                    return Reflect.defineProperty(target, property, descriptor);
+                },
+                setPrototypeOf(target, prototype) {
+                    if (state._done) {
+                        return true;
+                    }
+                    return Reflect.setPrototypeOf(target, prototype);
+                },
+            });
+            proxies.set(value, proxy);
+            return proxy;
+        }
+    }
+    function getWorkflowMapProperty(target, property, receiver, state, proxify) {
+        if (property === "size") {
+            return target.size;
+        }
+        if (property === "get") {
+            return (key) => proxify(target.get(key));
+        }
+        if (property === "set") {
+            return (key, value) => {
+                if (state._done) {
+                    return receiver;
+                }
+                target.set(key, value);
+                return receiver;
+            };
+        }
+        if (property === "delete") {
+            return (key) => (state._done ? false : target.delete(key));
+        }
+        if (property === "clear") {
+            return () => {
+                if (!state._done) {
+                    target.clear();
+                }
+            };
+        }
+        const value = Reflect.get(target, property, target);
+        return isFunction(value) ? value.bind(target) : value;
+    }
+    function getWorkflowSetProperty(target, property, receiver, state) {
+        if (property === "size") {
+            return target.size;
+        }
+        if (property === "add") {
+            return (value) => {
+                if (state._done) {
+                    return receiver;
+                }
+                target.add(value);
+                return receiver;
+            };
+        }
+        if (property === "delete") {
+            return (value) => (state._done ? false : target.delete(value));
+        }
+        if (property === "clear") {
+            return () => {
+                if (!state._done) {
+                    target.clear();
+                }
+            };
+        }
+        if (property === "has") {
+            return (value) => target.has(value);
+        }
+        const value = Reflect.get(target, property, target);
+        return isFunction(value) ? value.bind(target) : value;
+    }
+    function isWorkflowDataProxyable(value) {
+        if (!isObject(value)) {
+            return false;
+        }
+        const prototype = Object.getPrototypeOf(value);
+        return (Array.isArray(value) ||
+            value instanceof Map ||
+            value instanceof Set ||
+            prototype === Object.prototype ||
+            prototype === null);
+    }
+    function getCommand(config, command) {
+        if (!config.commands || !hasOwn(config.commands, command)) {
+            return undefined;
+        }
+        const handler = config.commands[command];
+        return isFunction(handler)
+            ? handler
+            : undefined;
+    }
+    function normalizeCommandResult(value) {
+        if (isObject(value) && hasOwn(value, "ok")) {
+            const result = value;
+            const ok = result.ok;
+            if (ok === true) {
+                return {
+                    ok: true,
+                    output: result.output,
+                    diagnostics: normalizeOptionalDiagnostics(result.diagnostics),
+                };
+            }
+            if (ok === false) {
+                return {
+                    ok: false,
+                    diagnostics: normalizeOptionalDiagnostics(result.diagnostics) ?? [
+                        createDiagnostic("workflow.commandFailed", "Workflow command failed.", undefined, true),
+                    ],
+                };
+            }
+            return {
+                ok: false,
+                diagnostics: [
+                    createDiagnostic("workflow.invalidCommandResult", "Workflow command result must use ok: true or ok: false.", undefined, true, value),
+                ],
+            };
+        }
+        return {
+            ok: true,
+            output: value,
+        };
+    }
+    function normalizeDiagnostics(diagnostics) {
+        if (!Array.isArray(diagnostics)) {
+            return [];
+        }
+        return diagnostics.map((diagnostic) => isObject(diagnostic)
+            ? {
+                code: isString(diagnostic.code)
+                    ? diagnostic.code
+                    : "workflow.diagnostic",
+                message: isString(diagnostic.message)
+                    ? diagnostic.message
+                    : "Workflow diagnostic.",
+                recoverable: diagnostic.recoverable,
+                path: isString(diagnostic.path) ? diagnostic.path : undefined,
+                command: isString(diagnostic.command)
+                    ? diagnostic.command
+                    : undefined,
+                detail: normalizeDiagnosticDetail(diagnostic.detail),
+            }
+            : createDiagnostic("workflow.diagnostic", formatUnknownMessage(diagnostic), undefined, true));
+    }
+    function normalizeOptionalDiagnostics(diagnostics) {
+        if (!Array.isArray(diagnostics)) {
+            return undefined;
+        }
+        return normalizeDiagnostics(diagnostics);
+    }
+    function normalizeHistoryValue(value) {
+        return normalizeDiagnosticDetail(value);
+    }
+    function normalizeHistory(historyEntries) {
+        if (!Array.isArray(historyEntries)) {
+            return [];
+        }
+        let nextFallbackId = 1;
+        const usedIds = new Set();
+        return historyEntries.map((entry) => {
+            const candidate = isObject(entry)
+                ? entry
+                : {};
+            const id = allocateHistoryId(candidate.id);
+            const historyEntry = {
+                id,
+                type: normalizeHistoryType(candidate.type),
+                command: isString(candidate.command) && candidate.command
+                    ? candidate.command
+                    : "unknown",
+            };
+            if (hasOwn(candidate, "input")) {
+                historyEntry.input = normalizeHistoryValue(candidate.input);
+            }
+            if (hasOwn(candidate, "output")) {
+                historyEntry.output = normalizeHistoryValue(candidate.output);
+            }
+            if (hasOwn(candidate, "diagnostics")) {
+                historyEntry.diagnostics = normalizeDiagnostics(candidate.diagnostics);
+            }
+            return historyEntry;
+        });
+        function allocateHistoryId(value) {
+            if (typeof value === "number" &&
+                Number.isInteger(value) &&
+                value > 0 &&
+                !usedIds.has(value)) {
+                usedIds.add(value);
+                nextFallbackId = Math.max(nextFallbackId, value + 1);
+                return value;
+            }
+            while (usedIds.has(nextFallbackId)) {
+                nextFallbackId += 1;
+            }
+            const id = nextFallbackId;
+            usedIds.add(id);
+            nextFallbackId += 1;
+            return id;
+        }
+    }
+    function normalizeHistoryType(value) {
+        if (value === "command.started" ||
+            value === "command.completed" ||
+            value === "command.failed") {
+            return value;
+        }
+        return "command.failed";
+    }
+    function diagnosticFromError(error, command, code = "workflow.commandFailed") {
+        if (error instanceof Error) {
+            return createDiagnostic(code, error.message || "Workflow command failed.", command, true, {
+                name: error.name,
+            });
+        }
+        return createDiagnostic(code, formatUnknownMessage(error), command, true);
+    }
+    function normalizeHistoryLimit(value) {
+        return normalizeEntryLimit(value, "$workflow historyLimit", 1000);
+    }
+    function normalizeEntryLimit(value, label, defaultValue) {
+        if (value === undefined) {
+            return defaultValue;
+        }
+        if (typeof value !== "number" || !Number.isFinite(value)) {
+            throw new Error(`${label} must be a finite number.`);
+        }
+        if (!Number.isInteger(value) || value < 0) {
+            throw new Error(`${label} must be a non-negative integer.`);
+        }
+        return value;
+    }
+    function trimArray(target, limit) {
+        if (!Number.isFinite(limit) || limit < 0) {
+            return [];
+        }
+        const deleteCount = target.length - limit;
+        if (deleteCount <= 0) {
+            return [];
+        }
+        return target.splice(0, deleteCount);
+    }
+    function normalizeReplayArgs(command, options) {
+        if (isString(command)) {
+            if (!command) {
+                return {
+                    invalidCommand: true,
+                    options,
+                };
+            }
+            return {
+                command,
+                options,
+            };
+        }
+        if (isObject(command)) {
+            return {
+                options: command,
+            };
+        }
+        return {
+            options,
+        };
+    }
+    function validateCommandOptions(command, options) {
+        if (options === undefined) {
+            return undefined;
+        }
+        if (!isObject(options)) {
+            return createDiagnostic("workflow.invalidCommandOptions", "Workflow command options must be an object.", command, true);
+        }
+        const concurrency = options.concurrency;
+        if (concurrency !== undefined &&
+            concurrency !== "allow" &&
+            concurrency !== "reject" &&
+            concurrency !== "queue") {
+            return createDiagnostic("workflow.invalidCommandOptions", "Workflow command concurrency must be 'allow', 'reject', or 'queue'.", command, true, {
+                concurrency,
+            });
+        }
+        try {
+            normalizeTimeout(options.timeout);
+        }
+        catch (error) {
+            return diagnosticFromError(error, command, "workflow.invalidCommandOptions");
+        }
+        if (options.signal !== undefined && !isAbortSignalLike(options.signal)) {
+            return createDiagnostic("workflow.invalidCommandOptions", "Workflow command signal must be an AbortSignal.", command, true);
+        }
+        return undefined;
+    }
+    function isAbortSignalLike(value) {
+        const signal = value;
+        return (isObject(value) &&
+            typeof signal.aborted === "boolean" &&
+            isFunction(signal.addEventListener) &&
+            isFunction(signal.removeEventListener));
+    }
+    function normalizeTimeout(value) {
+        if (value === undefined) {
+            return undefined;
+        }
+        if (typeof value !== "number" || !Number.isFinite(value)) {
+            throw new Error("$workflow command timeout must be a finite number.");
+        }
+        if (!Number.isInteger(value) || value < 0) {
+            throw new Error("$workflow command timeout must be a non-negative integer.");
+        }
+        return value;
+    }
+    function createDiagnostic(code, message, command, recoverable = true, detail) {
+        return {
+            code,
+            message,
+            recoverable,
+            command,
+            detail: normalizeDiagnosticDetail(detail),
+        };
+    }
+    function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
+        if (value === undefined || value === null) {
+            return value;
+        }
+        const valueType = typeof value;
+        if (valueType === "string" ||
+            valueType === "number" ||
+            valueType === "boolean") {
+            return value;
+        }
+        if (valueType === "bigint") {
+            return value.toString();
+        }
+        if (valueType === "symbol") {
+            return formatSymbol(value);
+        }
+        if (valueType === "function") {
+            return "[Function]";
+        }
+        const objectValue = value;
+        if (seen.has(objectValue)) {
+            return "[Circular]";
+        }
+        seen.add(objectValue);
+        if (value instanceof Date) {
+            seen.delete(objectValue);
+            return value.toISOString();
+        }
+        if (Array.isArray(value)) {
+            const normalized = value.map((item) => normalizeDiagnosticDetail(item, seen));
+            seen.delete(objectValue);
+            return normalized;
+        }
+        if (value instanceof Map) {
+            const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
+                normalizeDiagnosticDetail(key, seen),
+                normalizeDiagnosticDetail(entryValue, seen),
+            ]);
+            seen.delete(objectValue);
+            return normalized;
+        }
+        if (value instanceof Set) {
+            const normalized = Array.from(value.values()).map((item) => normalizeDiagnosticDetail(item, seen));
+            seen.delete(objectValue);
+            return normalized;
+        }
+        if (isObject(value)) {
+            const normalized = {};
+            for (const key of Object.keys(value)) {
+                normalized[key] = normalizeDiagnosticDetail(value[key], seen);
+            }
+            seen.delete(objectValue);
+            return normalized;
+        }
+        seen.delete(objectValue);
+        return "[Unknown]";
+    }
+    function formatUnknownMessage(value) {
+        if (value instanceof Error) {
+            return value.message || value.name;
+        }
+        if (isString(value)) {
+            return value;
+        }
+        const valueType = typeof value;
+        if (valueType === "number" || valueType === "boolean") {
+            return String(value);
+        }
+        if (valueType === "bigint") {
+            return value.toString();
+        }
+        if (valueType === "symbol") {
+            return formatSymbol(value);
+        }
+        if (valueType === "function") {
+            return "[Function]";
+        }
+        return "Workflow diagnostic.";
+    }
+    function formatSymbol(value) {
+        return value.description ? `Symbol(${value.description})` : "Symbol()";
+    }
+    function replaceArray(target, source) {
+        target.splice(0, target.length, ...structuredClone(source));
+    }
+    function normalizeWorkflowArgs(scopeOrConfig, maybeConfig) {
+        if (maybeConfig) {
+            return {
+                _scope: scopeOrConfig,
+                _config: maybeConfig,
+            };
+        }
+        return {
+            _config: scopeOrConfig,
+        };
+    }
+    function assertWorkflowConfig(config) {
+        if (!isObject(config)) {
+            throw new Error("$workflow requires a config object.");
+        }
+        if (!isString(config.id) || !config.id) {
+            throw new Error("$workflow requires a non-empty id.");
+        }
+        if (!isString(config.initial) || !config.initial) {
+            throw new Error("$workflow requires a non-empty initial mode.");
+        }
+        if (!isObject(config.data)) {
+            throw new Error("$workflow requires a data object.");
+        }
+        if (!isObject(config.transitions)) {
+            throw new Error("$workflow requires a transitions object.");
+        }
+        if (config.commands !== undefined && !isObject(config.commands)) {
+            throw new Error("$workflow commands must be an object.");
+        }
+        const concurrency = config.concurrency;
+        if (concurrency !== undefined &&
+            concurrency !== "allow" &&
+            concurrency !== "reject" &&
+            concurrency !== "queue") {
+            throw new Error("$workflow concurrency must be 'allow', 'reject', or 'queue'.");
+        }
+        normalizeHistoryLimit(config.historyLimit);
+        normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
+        normalizeTimeout(config.commandTimeout);
+        if (config.migrateSnapshot !== undefined &&
+            !isFunction(config.migrateSnapshot)) {
+            throw new Error("$workflow migrateSnapshot must be a function.");
+        }
+    }
+    function assertWorkflowSnapshot(snapshot) {
+        if (!isObject(snapshot)) {
+            throw new Error("$workflow restore requires a snapshot object.");
+        }
+        const candidate = snapshot;
+        if (candidate.version !== 1) {
+            throw new Error("$workflow restore requires a version 1 snapshot.");
+        }
+        if (!isString(candidate.id) || !candidate.id) {
+            throw new Error("$workflow restore requires a non-empty id.");
+        }
+        if (!isString(candidate.current) || !candidate.current) {
+            throw new Error("$workflow restore requires a non-empty current mode.");
+        }
+        if (!isObject(candidate.data)) {
+            throw new Error("$workflow restore requires a data object.");
+        }
+        if (!Array.isArray(candidate.diagnostics)) {
+            throw new Error("$workflow restore requires diagnostics.");
+        }
+        if (!Array.isArray(candidate.history)) {
+            throw new Error("$workflow restore requires history.");
         }
     }
 
@@ -14407,33 +16164,83 @@
         };
     }
 
+    const ngElError = createErrorFactory("ngEl");
+    ngElDirective.$inject = [_parse];
     /**
-     * Exposes the current element on `scope.$target` under the provided key.
+     * Exposes the current element on `scope.$target` or an assignable expression.
      */
-    function ngElDirective() {
+    function ngElDirective($parse) {
         return {
             restrict: "A",
-            link(scope, element) {
-                const target = scope.$target;
-                const expr = getNormalizedAttr(element, "ngEl");
-                const key = isString(expr) && expr ? expr : element.id;
-                target[key] = element;
-                const parent = element.parentNode;
-                if (!parent)
-                    return;
-                const observer = new MutationObserver((mutations) => {
-                    for (const mutation of mutations) {
-                        arrayFrom(mutation.removedNodes).forEach((removedNode) => {
-                            if (removedNode === element) {
-                                deleteProperty(target, key);
-                                observer.disconnect();
-                            }
-                        });
-                    }
-                });
-                observer.observe(parent, { childList: true });
+            compile(tElement) {
+                const expr = getNormalizedAttr(tElement, "ngEl");
+                const expression = isString(expr) ? expr.trim() : "";
+                const usesExpression = !!expression && !isSimpleElementKey(expression);
+                const assign = usesExpression
+                    ? createElementAssignment($parse, expression)
+                    : undefined;
+                return (scope, element) => {
+                    const cleanup = assign
+                        ? bindExpressionElement(scope, element, assign)
+                        : bindKeyedElement(scope, element, expression || element.id);
+                    registerElementCleanup(scope, element, cleanup);
+                };
             },
         };
+    }
+    function createElementAssignment($parse, expression) {
+        const getter = $parse(expression);
+        const setter = getter._assign ??
+            function () {
+                throw ngElError("nonassign", 'Expression in ngEl="{0}" is non-assignable!', expression);
+            };
+        return setter;
+    }
+    function bindExpressionElement(scope, element, assign) {
+        const targetScope = deProxy(scope);
+        assign(targetScope, element);
+        return () => {
+            assign(targetScope, null);
+        };
+    }
+    function bindKeyedElement(scope, element, key) {
+        const target = scope.$target;
+        target[key] = element;
+        return () => {
+            deleteProperty(target, key);
+        };
+    }
+    function registerElementCleanup(scope, element, cleanup) {
+        let cleaned = false;
+        let observer = undefined;
+        let removeDestroyListener = () => undefined;
+        const cleanupOnce = () => {
+            if (cleaned) {
+                return;
+            }
+            cleaned = true;
+            cleanup();
+            removeDestroyListener();
+            observer?.disconnect();
+        };
+        removeDestroyListener = scope.$on("$destroy", cleanupOnce);
+        const parent = element.parentNode;
+        if (!parent) {
+            return;
+        }
+        observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                arrayFrom(mutation.removedNodes).forEach((removedNode) => {
+                    if (removedNode === element) {
+                        cleanupOnce();
+                    }
+                });
+            }
+        });
+        observer.observe(parent, { childList: true });
+    }
+    function isSimpleElementKey(expression) {
+        return /^[$A-Z_a-z][$\w]*$/.test(expression);
     }
 
     const nullFormCtrl = {
@@ -19210,6 +21017,77 @@
                     };
                 },
                 post: ngOptionsPostLink,
+            },
+        };
+    }
+
+    function hasPointerCaptureApi(element) {
+        return (typeof element.setPointerCapture === "function" &&
+            typeof element.releasePointerCapture === "function");
+    }
+    function getPointerId(event) {
+        const pointerId = event.pointerId;
+        return typeof pointerId === "number" ? pointerId : undefined;
+    }
+    /** Captures active pointer streams on an element until pointer end/cancel. */
+    function ngPointerCaptureDirective() {
+        return {
+            restrict: "A",
+            priority: 1,
+            link(scope, element) {
+                if (!hasPointerCaptureApi(element)) {
+                    return;
+                }
+                const capturedPointers = new Set();
+                const capturePointer = (event) => {
+                    const pointerId = getPointerId(event);
+                    if (pointerId === undefined) {
+                        return;
+                    }
+                    try {
+                        element.setPointerCapture(pointerId);
+                        capturedPointers.add(pointerId);
+                    }
+                    catch {
+                        // Browsers can reject capture for inactive or invalid pointer ids.
+                    }
+                };
+                const releasePointer = (event) => {
+                    const pointerId = getPointerId(event);
+                    if (pointerId !== undefined) {
+                        releasePointerId(pointerId);
+                    }
+                };
+                const forgetPointer = (event) => {
+                    const pointerId = getPointerId(event);
+                    if (pointerId !== undefined) {
+                        capturedPointers.delete(pointerId);
+                    }
+                };
+                const releasePointerId = (pointerId) => {
+                    if (!capturedPointers.delete(pointerId)) {
+                        return;
+                    }
+                    try {
+                        element.releasePointerCapture(pointerId);
+                    }
+                    catch {
+                        // Capture may already be released by the browser or element removal.
+                    }
+                };
+                element.addEventListener("pointerdown", capturePointer);
+                element.addEventListener("pointerup", releasePointer);
+                element.addEventListener("pointercancel", releasePointer);
+                element.addEventListener("lostpointercapture", forgetPointer);
+                scope.$on("$destroy", () => {
+                    element.removeEventListener("pointerdown", capturePointer);
+                    element.removeEventListener("pointerup", releasePointer);
+                    element.removeEventListener("pointercancel", releasePointer);
+                    element.removeEventListener("lostpointercapture", forgetPointer);
+                    for (const pointerId of Array.from(capturedPointers)) {
+                        releasePointerId(pointerId);
+                    }
+                });
             },
         };
     }
@@ -33009,8 +34887,10 @@
         $controller: ControllerProvider,
         $exceptionHandler: ExceptionHandlerProvider,
         $interpolate: InterpolateProvider,
+        [_machine]: MachineProvider,
         $parse: ParseProvider,
         $rootScope: RootScopeProvider,
+        [_workflow]: WorkflowProvider,
     };
     /** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */
     const ngFilterProviders = {
@@ -33106,6 +34986,7 @@
         ngInit: ngInitDirective,
         ngListener: ngListenerDirective,
         ngNonBindable: ngNonBindableDirective,
+        ngPointerCapture: ngPointerCaptureDirective,
         ngRepeat: ngRepeatDirective,
         ngScope: ngScopeDirective,
         ngSetter: ngSetterDirective,
@@ -33261,8 +35142,10 @@
         $controller: ControllerProvider,
         $exceptionHandler: ExceptionHandlerProvider,
         $interpolate: InterpolateProvider,
+        [_machine]: MachineProvider,
         $parse: ParseProvider,
         $rootScope: RootScopeProvider,
+        [_workflow]: WorkflowProvider,
     };
     /**
      * Registers a custom AngularTS `ng` module from core providers and a caller
@@ -33356,10 +35239,17 @@
     });
 
     exports.AngularRuntime = AngularRuntime;
+    exports.MachineProvider = MachineProvider;
+    exports.WorkflowProvider = WorkflowProvider;
+    exports.afterRender = afterRender;
     exports.angular = angular;
     exports.coreProviders = coreProviders;
     exports.createAngularBare = createAngularBare;
     exports.createAngularCustom = createAngularCustom;
+    exports.defineCommand = defineCommand;
+    exports.defineMachine = defineMachine;
+    exports.defineWorkflow = defineWorkflow;
+    exports.queueAfterRender = queueAfterRender;
     exports.registerCustomNgModule = registerCustomNgModule;
 
 }));

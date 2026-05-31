@@ -2,6 +2,10 @@ import { _exceptionHandler, _parse } from '../../injection-tokens.js';
 import { isFunction, isProxy, isArray, isPromiseLike, isObject, hasOwn, keys, deleteProperty, isUndefined, isDefined, isInstanceOf, getHashKey, isProxySymbol, isString, assert, callFunction, assertDefined, createObject, isNull, nextUid, nullObject } from '../../shared/utils.js';
 import { ASTType } from '../parse/ast-type.js';
 
+function isScopeEventStopped(event) {
+    return event.stopped;
+}
+const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
 let uid = 0;
 /**
  * Returns the next generated scope/listener id.
@@ -228,6 +232,14 @@ function getArrayMutationMeta(value) {
     const target = isProxy(value) ? value.$target : value;
     return isArray(target) ? arrayMutationMeta.get(target) : undefined;
 }
+function warnAsyncBatchCallback() {
+    try {
+        console.warn("$batch callback returned a Promise. Async mutations after await are not batched.");
+    }
+    catch {
+        // Warning delivery should not affect the batched mutation contract.
+    }
+}
 class RootScopeProvider {
     constructor() {
         this.$get = [
@@ -436,7 +448,19 @@ const mapMutationMethods = new Set(["set", "delete", "clear", "getOrInsert", "ge
 const setMutationMethods = new Set(["add", "delete", "clear"].filter((key) => isFunction(setPrototype[key])));
 const mapValueMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key) && key !== "has" && key !== "keys");
 const mapMembershipMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key));
+if (isFunction(mapPrototype.includes) &&
+    !mapMembershipMutationWatchKeys.includes("includes")) {
+    mapMembershipMutationWatchKeys.push("includes");
+}
+if (isFunction(mapPrototype.includes) &&
+    !mapValueMutationWatchKeys.includes("includes")) {
+    mapValueMutationWatchKeys.push("includes");
+}
 const setMutationWatchKeys = getPrototypeMethodNames(setPrototype, (key) => !setMutationMethods.has(key));
+if (isFunction(setPrototype.includes) &&
+    !setMutationWatchKeys.includes("includes")) {
+    setMutationWatchKeys.push("includes");
+}
 const datePrototype = Date.prototype;
 const dateValueWatchKeys = Object.getOwnPropertyNames(datePrototype).filter((key) => key !== "constructor" &&
     !key.startsWith("set") &&
@@ -606,6 +630,10 @@ function getCachedScopeProxy(target, handler) {
     if (!proxy) {
         proxy = new Proxy(target, handler);
         proxiesByHandler.set(handler, proxy);
+        const bind = target[_SCOPE_PROXY_BIND];
+        if (isFunction(bind)) {
+            bind.call(target, handler, proxy);
+        }
     }
     return proxy;
 }
@@ -648,6 +676,9 @@ function isNonScope(target) {
     for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
         try {
             const ctor = nonScopeConstructors[i];
+            if (!isFunction(ctor)) {
+                continue;
+            }
             if (isInstanceOf(objectTarget, ctor)) {
                 nonScopeCache.add(objectTarget);
                 return true;
@@ -721,6 +752,7 @@ class Scope {
             _index: 0,
             _queued: false,
             _flushing: false,
+            _batchDepth: 0,
             _flushTask: () => {
                 this._flushScheduledTasks();
             },
@@ -731,6 +763,7 @@ class Scope {
             context?._collectionMethodWrappers ?? new WeakMap();
         this._propertyMap = {
             $broadcast: this.$broadcast.bind(this),
+            $batch: this.$batch.bind(this),
             _children: this._children,
             $destroy: this.$destroy.bind(this),
             $emit: this.$emit.bind(this),
@@ -1009,7 +1042,8 @@ class Scope {
                     ? Reflect.get(this.$parent, "_foreignListeners")
                     : undefined;
                 const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
-                    (isInstanceOf(parentForeignListeners, Map) &&
+                    (isObject(parentForeignListeners) &&
+                        isInstanceOf(parentForeignListeners, Map) &&
                         parentForeignListeners.has(property));
                 const hasObjectListeners = property !== "length" && this._objectListeners.has(target);
                 const hasArrayLengthListeners = isArray(target) && this._watchers.has("length");
@@ -1245,7 +1279,7 @@ class Scope {
             return this._propertyMap[property];
         }
         if (isNativeScopedTarget(target)) {
-            if (isFunction(targetProp)) {
+            if (isFunction(targetProp) && property !== "constructor") {
                 return this._getNativeCollectionMethodWrapper(target, property, targetProp);
             }
             return targetProp;
@@ -1390,9 +1424,9 @@ class Scope {
             }
             return result;
         }
-        const hadValues = target.size > 0;
+        const previousSize = target.size;
         const result = Reflect.apply(method, target, args);
-        if (hadValues) {
+        if (target.size !== previousSize) {
             this._scheduleNativeCollectionMutation(target, undefined, true);
         }
         return result;
@@ -1418,9 +1452,9 @@ class Scope {
             }
             return result;
         }
-        const hadValues = target.size > 0;
+        const previousSize = target.size;
         const result = Reflect.apply(method, target, args);
-        if (hadValues) {
+        if (target.size !== previousSize) {
             this._scheduleNativeCollectionMutation(target, setMutationWatchKeys, true);
         }
         return result;
@@ -1631,19 +1665,27 @@ class Scope {
     /** @internal Queues a shared scheduled task flush for this scope family. */
     _queueScheduledFlush() {
         const scheduler = this._listenerScheduler;
-        if (scheduler._queued) {
+        if (scheduler._queued || scheduler._batchDepth > 0) {
             return;
         }
         scheduler._queued = true;
         queueMicrotask(scheduler._flushTask);
     }
+    /** @internal Queues a shared scheduled task flush when pending work can run. */
+    _queueScheduledFlushIfNeeded() {
+        const scheduler = this._listenerScheduler;
+        if (scheduler._batchDepth === 0 &&
+            !scheduler._queued &&
+            !scheduler._flushing &&
+            scheduler._queue.length > scheduler._index) {
+            this._queueScheduledFlush();
+        }
+    }
     /** @internal Queues a shared scheduled task flush for this scope family. */
     _enqueueScheduledTask(task) {
         const scheduler = this._listenerScheduler;
         scheduler._queue.push(task);
-        if (!scheduler._queued && !scheduler._flushing) {
-            this._queueScheduledFlush();
-        }
+        this._queueScheduledFlushIfNeeded();
     }
     /** @internal Flushes queued listener and callback tasks in FIFO order. */
     _flushScheduledTasks() {
@@ -1689,6 +1731,26 @@ class Scope {
             if (hasRemainingTasks) {
                 this._queueScheduledFlush();
             }
+        }
+    }
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are
+     * queued while the callback runs and flushed once after the outermost batch
+     * exits. Mutations are not rolled back if the callback throws.
+     */
+    $batch(fn) {
+        const scheduler = this._listenerScheduler;
+        scheduler._batchDepth++;
+        try {
+            const result = fn();
+            if (isPromiseLike(result)) {
+                warnAsyncBatchCallback();
+            }
+            return result;
+        }
+        finally {
+            scheduler._batchDepth--;
+            this._queueScheduledFlushIfNeeded();
         }
     }
     /** @internal Schedules a callback to run in the shared listener flush queue. */
@@ -2404,22 +2466,17 @@ class Scope {
      * constructs the shared event object on first use.
      */
     _eventHelper({ name, event, broadcast, }, ...args) {
-        if (!broadcast) {
-            if (!this._listeners.has(name)) {
-                if (this.$parent) {
-                    return this.$parent.$handler._eventHelper({ name, event, broadcast }, ...args);
-                }
-                return undefined;
-            }
-        }
+        const initialChildCount = this._children.length;
+        const initialChildren = initialChildCount > 0 ? this._children.slice() : undefined;
         if (event) {
-            event.currentScope = this.$proxy;
+            event.currentScope = this
+                .$target;
         }
         else {
             event = {
                 name,
-                targetScope: this.$proxy,
-                currentScope: this.$proxy,
+                targetScope: this.$target,
+                currentScope: this.$target,
                 stopped: false,
                 stopPropagation() {
                     assertDefined(event).stopped = true;
@@ -2457,10 +2514,19 @@ class Scope {
             return currentEvent;
         }
         if (broadcast) {
-            const children = this._children;
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                event = child.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+            if (initialChildren) {
+                const children = initialChildren;
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    const childHandler = child.$handler;
+                    if (childHandler._destroyed || !this._children.includes(child)) {
+                        continue;
+                    }
+                    event = child.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+                    if (isScopeEventStopped(currentEvent)) {
+                        break;
+                    }
+                }
             }
             return event;
         }
@@ -2700,4 +2766,4 @@ function collectChildIds(child) {
     return ids;
 }
 
-export { RootScopeProvider, Scope, createScope, getArrayMutationMeta, isNonScope };
+export { RootScopeProvider, Scope, _SCOPE_PROXY_BIND, createScope, getArrayMutationMeta, isNonScope };

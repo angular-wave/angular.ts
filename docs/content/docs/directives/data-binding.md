@@ -1,5 +1,6 @@
 ---
 title: "Data Binding Directives in AngularTS Explained"
+linkTitle: "Data Binding"
 weight: 260
 description: "Explore ng-bind, ng-bind-html, ng-model, ng-class, ng-style, and ng-init with real examples covering one-way and two-way data binding."
 ---

@@ -2950,16 +2950,23 @@ base class GeneratedNgMachine extends GeneratedNgFacade {
   Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
 
   /// Invokes the generated send member.
-  bool send(String arg0, [Object? arg1 = _undefinedArgument]) {
+  bool send(Object? arg0,
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument,
+      Object? arg4 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
 
     return _toDartBool(raw.callMethodVarArgs('send'.toJS, args))!;
   }
 
   /// Invokes the generated can member.
-  bool can(String arg0) {
+  bool can(Object? arg0) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
 
@@ -2972,6 +2979,20 @@ base class GeneratedNgMachine extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg0));
 
     return _toDartBool(raw.callMethodVarArgs('matches'.toJS, args))!;
+  }
+
+  /// Invokes the generated snapshot member.
+  Object? snapshot() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('snapshot'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated restore member.
+  void restore(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('restore'.toJS, args));
   }
 }
 
@@ -2994,6 +3015,25 @@ base class GeneratedNgMachineConfig extends GeneratedNgFacade {
   /// Reads the generated transitions property.
   Object? get transitions =>
       unsafe.jsToDart<Object?>(raw.getProperty('transitions'.toJS));
+
+  /// Reads the generated hooks property.
+  Object? get hooks => unsafe.jsToDart<Object?>(raw.getProperty('hooks'.toJS));
+}
+
+/// Generated raw facade for ng.MachineHooks.
+base class GeneratedNgMachineHooks extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineHooks.
+  const GeneratedNgMachineHooks(super.raw);
+
+  /// Reads the generated enter property.
+  Object? get enter => unsafe.jsToDart<Object?>(raw.getProperty('enter'.toJS));
+
+  /// Reads the generated exit property.
+  Object? get exit => unsafe.jsToDart<Object?>(raw.getProperty('exit'.toJS));
+
+  /// Reads the generated transition property.
+  Object? get transition =>
+      unsafe.jsToDart<Object?>(raw.getProperty('transition'.toJS));
 }
 
 /// Generated raw facade for ng.MachineProvider.
@@ -3019,6 +3059,23 @@ base class GeneratedNgMachineService extends GeneratedNgFacade {
   }
 }
 
+/// Generated raw facade for ng.MachineSnapshot.
+base class GeneratedNgMachineSnapshot extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineSnapshot.
+  const GeneratedNgMachineSnapshot(super.raw);
+
+  /// Reads the generated current property.
+  String get current => _toDartString(raw.getProperty('current'.toJS))!;
+
+  /// Writes the generated current property.
+  set current(String value) {
+    raw.setProperty('current'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+}
+
 /// Generated raw facade for ng.MachineTransition.
 base class GeneratedNgMachineTransition extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.MachineTransition.
@@ -3032,6 +3089,61 @@ base class GeneratedNgMachineTransition extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg2));
 
     return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Generated raw facade for ng.MachineTransitionContext.
+base class GeneratedNgMachineTransitionContext extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineTransitionContext.
+  const GeneratedNgMachineTransitionContext(super.raw);
+
+  /// Reads the generated typeMember property.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+
+  /// Writes the generated typeMember property.
+  set typeMember(String value) {
+    raw.setProperty('type'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated from property.
+  String get from => _toDartString(raw.getProperty('from'.toJS))!;
+
+  /// Writes the generated from property.
+  set from(String value) {
+    raw.setProperty('from'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated to property.
+  String get to => _toDartString(raw.getProperty('to'.toJS))!;
+
+  /// Writes the generated to property.
+  set to(String value) {
+    raw.setProperty('to'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated payload property.
+  Object? get payload =>
+      unsafe.jsToDart<Object?>(raw.getProperty('payload'.toJS));
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+
+  /// Reads the generated machine property.
+  Object? get machine =>
+      unsafe.jsToDart<Object?>(raw.getProperty('machine'.toJS));
+}
+
+/// Generated raw facade for ng.MachineTransitionHook.
+base class GeneratedNgMachineTransitionHook extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineTransitionHook.
+  const GeneratedNgMachineTransitionHook(super.raw);
+
+  /// Invokes the generated call member.
+  void call(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(_callFunction(raw as JSFunction, args));
   }
 }
 
@@ -3520,6 +3632,16 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg1));
 
     raw.callMethodVarArgs('machine'.toJS, args);
+    return this;
+  }
+
+  /// Invokes the generated workflow member.
+  GeneratedNgNgModule workflow(String arg0, Object? arg1) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+
+    raw.callMethodVarArgs('workflow'.toJS, args);
     return this;
   }
 
@@ -8141,6 +8263,439 @@ base class GeneratedNgWorkerService extends GeneratedNgFacade {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Generated raw facade for ng.Workflow.
+base class GeneratedNgWorkflow extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.Workflow.
+  const GeneratedNgWorkflow(super.raw);
+
+  /// Reads the generated id property.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// Writes the generated id property.
+  set id(String value) {
+    raw.setProperty('id'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated current property.
+  String get current => _toDartString(raw.getProperty('current'.toJS))!;
+
+  /// Writes the generated current property.
+  set current(String value) {
+    raw.setProperty('current'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+
+  /// Reads the generated diagnostics property.
+  Object? get diagnostics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('diagnostics'.toJS));
+
+  /// Reads the generated history property.
+  Object? get history =>
+      unsafe.jsToDart<Object?>(raw.getProperty('history'.toJS));
+
+  /// Invokes the generated send member.
+  bool send(Object? arg0,
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument,
+      Object? arg4 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+    if (!identical(arg4, _undefinedArgument)) args.add(unsafe.dartToJs(arg4));
+
+    return _toDartBool(raw.callMethodVarArgs('send'.toJS, args))!;
+  }
+
+  /// Invokes the generated can member.
+  bool can(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return _toDartBool(raw.callMethodVarArgs('can'.toJS, args))!;
+  }
+
+  /// Invokes the generated matches member.
+  bool matches(String arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return _toDartBool(raw.callMethodVarArgs('matches'.toJS, args))!;
+  }
+
+  /// Reads the generated run property.
+  Object? get run => unsafe.jsToDart<Object?>(raw.getProperty('run'.toJS));
+
+  /// Reads the generated retry property.
+  Object? get retry => unsafe.jsToDart<Object?>(raw.getProperty('retry'.toJS));
+
+  /// Reads the generated repeat property.
+  Object? get repeat =>
+      unsafe.jsToDart<Object?>(raw.getProperty('repeat'.toJS));
+
+  /// Invokes the generated cancel member.
+  num cancel([Object? arg0 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(arg0, _undefinedArgument)) args.add(unsafe.dartToJs(arg0));
+
+    return _toDartNumber(raw.callMethodVarArgs('cancel'.toJS, args))!;
+  }
+
+  /// Invokes the generated snapshot member.
+  Object? snapshot() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('snapshot'.toJS, const <JSAny?>[]));
+  }
+
+  /// Invokes the generated restore member.
+  void restore(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('restore'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.WorkflowCommand.
+base class GeneratedNgWorkflowCommand extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowCommand.
+  const GeneratedNgWorkflowCommand(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Generated raw facade for ng.WorkflowCommandContext.
+base class GeneratedNgWorkflowCommandContext extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowCommandContext.
+  const GeneratedNgWorkflowCommandContext(super.raw);
+
+  /// Reads the generated workflow property.
+  Object? get workflow =>
+      unsafe.jsToDart<Object?>(raw.getProperty('workflow'.toJS));
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+
+  /// Reads the generated input property.
+  Object? get input => unsafe.jsToDart<Object?>(raw.getProperty('input'.toJS));
+
+  /// Reads the generated command property.
+  Object? get command =>
+      unsafe.jsToDart<Object?>(raw.getProperty('command'.toJS));
+
+  /// Invokes the generated cleanup member.
+  void cleanup(JSFunction arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('cleanup'.toJS, args));
+  }
+
+  /// Reads the generated signal property.
+  AbortSignal get signal =>
+      unsafe.jsToDart<AbortSignal>(raw.getProperty('signal'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowCommandOptions.
+base class GeneratedNgWorkflowCommandOptions extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowCommandOptions.
+  const GeneratedNgWorkflowCommandOptions(super.raw);
+
+  /// Reads the generated concurrency property.
+  String? get concurrency => _toDartString(raw.getProperty('concurrency'.toJS));
+
+  /// Writes the generated concurrency property.
+  set concurrency(String? value) {
+    raw.setProperty('concurrency'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated signal property.
+  AbortSignal? get signal =>
+      unsafe.jsToDart<AbortSignal?>(raw.getProperty('signal'.toJS));
+
+  /// Reads the generated timeout property.
+  num? get timeout => _toDartNumber(raw.getProperty('timeout'.toJS));
+
+  /// Writes the generated timeout property.
+  set timeout(num? value) {
+    raw.setProperty('timeout'.toJS, unsafe.dartToJs(value));
+  }
+}
+
+/// Generated raw facade for ng.WorkflowCommandResult.
+base class GeneratedNgWorkflowCommandResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowCommandResult.
+  const GeneratedNgWorkflowCommandResult(super.raw);
+
+  /// Reads the generated ok property.
+  bool get ok => _toDartBool(raw.getProperty('ok'.toJS))!;
+
+  /// Writes the generated ok property.
+  set ok(bool value) {
+    raw.setProperty('ok'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated diagnostics property.
+  Object? get diagnostics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('diagnostics'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowConcurrencyPolicy.
+base class GeneratedNgWorkflowConcurrencyPolicy extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowConcurrencyPolicy.
+  const GeneratedNgWorkflowConcurrencyPolicy(super.raw);
+}
+
+/// Generated raw facade for ng.WorkflowConfig.
+base class GeneratedNgWorkflowConfig extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowConfig.
+  const GeneratedNgWorkflowConfig(super.raw);
+
+  /// Reads the generated commandTimeout property.
+  num? get commandTimeout =>
+      _toDartNumber(raw.getProperty('commandTimeout'.toJS));
+
+  /// Writes the generated commandTimeout property.
+  set commandTimeout(num? value) {
+    raw.setProperty('commandTimeout'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated concurrency property.
+  String? get concurrency => _toDartString(raw.getProperty('concurrency'.toJS));
+
+  /// Writes the generated concurrency property.
+  set concurrency(String? value) {
+    raw.setProperty('concurrency'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated diagnosticLimit property.
+  num? get diagnosticLimit =>
+      _toDartNumber(raw.getProperty('diagnosticLimit'.toJS));
+
+  /// Writes the generated diagnosticLimit property.
+  set diagnosticLimit(num? value) {
+    raw.setProperty('diagnosticLimit'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated id property.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// Writes the generated id property.
+  set id(String value) {
+    raw.setProperty('id'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated initial property.
+  String get initial => _toDartString(raw.getProperty('initial'.toJS))!;
+
+  /// Writes the generated initial property.
+  set initial(String value) {
+    raw.setProperty('initial'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+
+  /// Reads the generated historyLimit property.
+  num? get historyLimit => _toDartNumber(raw.getProperty('historyLimit'.toJS));
+
+  /// Writes the generated historyLimit property.
+  set historyLimit(num? value) {
+    raw.setProperty('historyLimit'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated migrateSnapshot property.
+  Object? get migrateSnapshot =>
+      unsafe.jsToDart<Object?>(raw.getProperty('migrateSnapshot'.toJS));
+
+  /// Reads the generated transitions property.
+  Object? get transitions =>
+      unsafe.jsToDart<Object?>(raw.getProperty('transitions'.toJS));
+
+  /// Reads the generated commands property.
+  Object? get commands =>
+      unsafe.jsToDart<Object?>(raw.getProperty('commands'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowDiagnostic.
+base class GeneratedNgWorkflowDiagnostic extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowDiagnostic.
+  const GeneratedNgWorkflowDiagnostic(super.raw);
+
+  /// Reads the generated code property.
+  String get code => _toDartString(raw.getProperty('code'.toJS))!;
+
+  /// Writes the generated code property.
+  set code(String value) {
+    raw.setProperty('code'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated message property.
+  String get message => _toDartString(raw.getProperty('message'.toJS))!;
+
+  /// Writes the generated message property.
+  set message(String value) {
+    raw.setProperty('message'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated recoverable property.
+  bool? get recoverable => _toDartBool(raw.getProperty('recoverable'.toJS));
+
+  /// Writes the generated recoverable property.
+  set recoverable(bool? value) {
+    raw.setProperty('recoverable'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated path property.
+  String? get path => _toDartString(raw.getProperty('path'.toJS));
+
+  /// Writes the generated path property.
+  set path(String? value) {
+    raw.setProperty('path'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated command property.
+  String? get command => _toDartString(raw.getProperty('command'.toJS));
+
+  /// Writes the generated command property.
+  set command(String? value) {
+    raw.setProperty('command'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated detail property.
+  Object? get detail =>
+      unsafe.jsToDart<Object?>(raw.getProperty('detail'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowHistoryEntry.
+base class GeneratedNgWorkflowHistoryEntry extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowHistoryEntry.
+  const GeneratedNgWorkflowHistoryEntry(super.raw);
+
+  /// Reads the generated id property.
+  num get id => _toDartNumber(raw.getProperty('id'.toJS))!;
+
+  /// Writes the generated id property.
+  set id(num value) {
+    raw.setProperty('id'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated typeMember property.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+
+  /// Writes the generated typeMember property.
+  set typeMember(String value) {
+    raw.setProperty('type'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated command property.
+  String get command => _toDartString(raw.getProperty('command'.toJS))!;
+
+  /// Writes the generated command property.
+  set command(String value) {
+    raw.setProperty('command'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated input property.
+  Object? get input => unsafe.jsToDart<Object?>(raw.getProperty('input'.toJS));
+
+  /// Reads the generated output property.
+  Object? get output =>
+      unsafe.jsToDart<Object?>(raw.getProperty('output'.toJS));
+
+  /// Reads the generated diagnostics property.
+  Object? get diagnostics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('diagnostics'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowProvider.
+base class GeneratedNgWorkflowProvider extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowProvider.
+  const GeneratedNgWorkflowProvider(super.raw);
+
+  /// Reads the generated $get property.
+  Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowService.
+base class GeneratedNgWorkflowService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowService.
+  const GeneratedNgWorkflowService(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Generated raw facade for ng.WorkflowSnapshot.
+base class GeneratedNgWorkflowSnapshot extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowSnapshot.
+  const GeneratedNgWorkflowSnapshot(super.raw);
+
+  /// Reads the generated version property.
+  num get version => _toDartNumber(raw.getProperty('version'.toJS))!;
+
+  /// Writes the generated version property.
+  set version(num value) {
+    raw.setProperty('version'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated id property.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// Writes the generated id property.
+  set id(String value) {
+    raw.setProperty('id'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated current property.
+  String get current => _toDartString(raw.getProperty('current'.toJS))!;
+
+  /// Writes the generated current property.
+  set current(String value) {
+    raw.setProperty('current'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated data property.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+
+  /// Reads the generated diagnostics property.
+  Object? get diagnostics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('diagnostics'.toJS));
+
+  /// Reads the generated history property.
+  Object? get history =>
+      unsafe.jsToDart<Object?>(raw.getProperty('history'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowSnapshotMigration.
+base class GeneratedNgWorkflowSnapshotMigration extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowSnapshotMigration.
+  const GeneratedNgWorkflowSnapshotMigration(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
 
     return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
   }

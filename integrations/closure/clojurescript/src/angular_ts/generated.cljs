@@ -91,10 +91,17 @@
     "js/ng.LogService"
     "js/ng.Machine"
     "js/ng.MachineConfig"
+    "js/ng.MachineEventMap"
+    "js/ng.MachineHooks"
     "js/ng.MachineMode"
+    "js/ng.MachineModeHooks"
+    "js/ng.MachineNoEvents"
     "js/ng.MachineProvider"
     "js/ng.MachineService"
+    "js/ng.MachineSnapshot"
     "js/ng.MachineTransition"
+    "js/ng.MachineTransitionContext"
+    "js/ng.MachineTransitionHook"
     "js/ng.MachineTransitionMap"
     "js/ng.MachineTransitionResult"
     "js/ng.NativeAnimationOptions"
@@ -209,7 +216,24 @@
     "js/ng.WorkerConfig"
     "js/ng.WorkerConnection"
     "js/ng.WorkerProvider"
-    "js/ng.WorkerService"})
+    "js/ng.WorkerService"
+    "js/ng.Workflow"
+    "js/ng.WorkflowCommand"
+    "js/ng.WorkflowCommandContext"
+    "js/ng.WorkflowCommandMap"
+    "js/ng.WorkflowCommandOptions"
+    "js/ng.WorkflowCommandResult"
+    "js/ng.WorkflowConcurrencyPolicy"
+    "js/ng.WorkflowConfig"
+    "js/ng.WorkflowDiagnostic"
+    "js/ng.WorkflowHistoryEntry"
+    "js/ng.WorkflowMode"
+    "js/ng.WorkflowNoCommands"
+    "js/ng.WorkflowProvider"
+    "js/ng.WorkflowService"
+    "js/ng.WorkflowSnapshot"
+    "js/ng.WorkflowSnapshotMigration"
+    "js/ng.WorkflowStatus"})
 
 (comment
   (def public-type-docs
@@ -299,10 +323,17 @@
      "js/ng.LogService" "Service for logging messages at various levels."
      "js/ng.Machine" "Public AngularTS Machine contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.MachineConfig" "Public AngularTS MachineConfig contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineEventMap" "Public AngularTS MachineEventMap contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineHooks" "Public AngularTS MachineHooks contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.MachineMode" "Public AngularTS MachineMode contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineModeHooks" "Make all properties in T optional"
+     "js/ng.MachineNoEvents" "Public AngularTS MachineNoEvents contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.MachineProvider" "Provides reactive mode machines backed by AngularTS scope proxies."
      "js/ng.MachineService" "Public AngularTS MachineService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineSnapshot" "Public AngularTS MachineSnapshot contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.MachineTransition" "Public AngularTS MachineTransition contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineTransitionContext" "Public AngularTS MachineTransitionContext contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.MachineTransitionHook" "Public AngularTS MachineTransitionHook contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.MachineTransitionMap" "Make all properties in T optional"
      "js/ng.MachineTransitionResult" "Public AngularTS MachineTransitionResult contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NativeAnimationOptions" "Public AngularTS NativeAnimationOptions contract exposed through the global ng namespace for Closure-annotated applications."
@@ -417,7 +448,24 @@
      "js/ng.WorkerConfig" "Public AngularTS WorkerConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WorkerConnection" "Public AngularTS WorkerConnection contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WorkerProvider" "Public AngularTS WorkerProvider contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.WorkerService" "Public AngularTS WorkerService contract exposed through the global ng namespace for Closure-annotated applications."}))
+     "js/ng.WorkerService" "Public AngularTS WorkerService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.Workflow" "Public AngularTS Workflow contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowCommand" "Public AngularTS WorkflowCommand contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowCommandContext" "Public AngularTS WorkflowCommandContext contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowCommandMap" "Public AngularTS WorkflowCommandMap contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowCommandOptions" "Public AngularTS WorkflowCommandOptions contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowCommandResult" "Public AngularTS WorkflowCommandResult contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowConcurrencyPolicy" "Public AngularTS WorkflowConcurrencyPolicy contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowConfig" "Public AngularTS WorkflowConfig contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowDiagnostic" "Public AngularTS WorkflowDiagnostic contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowHistoryEntry" "Public AngularTS WorkflowHistoryEntry contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowMode" "Public AngularTS WorkflowMode contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowNoCommands" "Public AngularTS WorkflowNoCommands contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowProvider" "Public AngularTS WorkflowProvider contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowService" "Public AngularTS WorkflowService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowSnapshot" "Public AngularTS WorkflowSnapshot contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowSnapshotMigration" "Public AngularTS WorkflowSnapshotMigration contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.WorkflowStatus" "Public AngularTS WorkflowStatus contract exposed through the global ng namespace for Closure-annotated applications."}))
 
 (def strict-wrapper-names
   "Extern methods with fully concrete ClojureScript wrapper signatures."
@@ -504,9 +552,10 @@
     "log-service-info"
     "log-service-log"
     "log-service-warn"
-    "machine-can"
     "machine-matches"
     "machine-provider-dollarget"
+    "machine-restore"
+    "machine-snapshot"
     "ng-model-controller-dollarcommit-view-value"
     "ng-model-controller-dollaroverride-model-options"
     "ng-model-controller-dollarprocess-model-value"
@@ -538,6 +587,7 @@
     "ng-module-web-component"
     "ng-module-web-transport"
     "ng-module-websocket"
+    "ng-module-workflow"
     "provide-service-decorator"
     "provide-service-directive"
     "provide-service-factory"
@@ -673,7 +723,10 @@
     "web-transport-connection-create-bidirectional-stream"
     "web-transport-connection-send-text"
     "worker-connection-restart"
-    "worker-connection-terminate"})
+    "worker-connection-terminate"
+    "workflow-cancel"
+    "workflow-matches"
+    "workflow-snapshot"})
 
 (def strict-property-reader-names
   "Extern properties with fully concrete ClojureScript reader signatures."
@@ -863,9 +916,17 @@
     "location-service-hash-prefix"
     "location-service-html5"
     "log-provider-debug"
+    "machine-config-hooks"
     "machine-config-initial"
     "machine-config-transitions"
     "machine-current"
+    "machine-hooks-enter"
+    "machine-hooks-exit"
+    "machine-snapshot-current"
+    "machine-transition-context-from"
+    "machine-transition-context-machine"
+    "machine-transition-context-to"
+    "machine-transition-context-type"
     "native-animation-options-add-class"
     "native-animation-options-animation"
     "native-animation-options-from"
@@ -949,9 +1010,11 @@
     "scope-element-constructor-template"
     "scope-element-injector"
     "scope-element-scope"
+    "scope-event-current-scope"
     "scope-event-default-prevented"
     "scope-event-name"
     "scope-event-stopped"
+    "scope-event-target-scope"
     "scope-service-dollarid"
     "scope-service-dollarparent"
     "scope-service-dollarproxy"
@@ -1058,7 +1121,41 @@
     "worker-config-auto-terminate"
     "worker-config-logger"
     "worker-connection-config"
-    "worker-provider-dollarget"})
+    "worker-provider-dollarget"
+    "workflow-command-context-signal"
+    "workflow-command-context-workflow"
+    "workflow-command-options-concurrency"
+    "workflow-command-options-signal"
+    "workflow-command-options-timeout"
+    "workflow-command-result-diagnostics"
+    "workflow-command-result-ok"
+    "workflow-config-command-timeout"
+    "workflow-config-commands"
+    "workflow-config-concurrency"
+    "workflow-config-diagnostic-limit"
+    "workflow-config-history-limit"
+    "workflow-config-id"
+    "workflow-config-initial"
+    "workflow-config-transitions"
+    "workflow-current"
+    "workflow-diagnostic-code"
+    "workflow-diagnostic-command"
+    "workflow-diagnostic-message"
+    "workflow-diagnostic-path"
+    "workflow-diagnostic-recoverable"
+    "workflow-diagnostics"
+    "workflow-history"
+    "workflow-history-entry-command"
+    "workflow-history-entry-diagnostics"
+    "workflow-history-entry-id"
+    "workflow-history-entry-type"
+    "workflow-id"
+    "workflow-provider-dollarget"
+    "workflow-snapshot-current"
+    "workflow-snapshot-diagnostics"
+    "workflow-snapshot-history"
+    "workflow-snapshot-id"
+    "workflow-snapshot-version"})
 
 (def angular
   "AngularTS global runtime, typed from the generated Closure externs."
@@ -1534,11 +1631,6 @@
   ([^js/ng.LogService target value extra more]
    (.warn target value extra more)))
 
-(defn machine-can
-  "Public Machine.can member exposed by the AngularTS namespace contract.\n\nParams:\n- type: {string}\n\nReturns: {boolean}"
-  ^boolean [^js/ng.Machine target ^string type]
-  (.can target type))
-
 (defn machine-matches
   "Public Machine.matches member exposed by the AngularTS namespace contract.\n\nParams:\n- mode: {string}\n\nReturns: {boolean}"
   ^boolean [^js/ng.Machine target ^string mode]
@@ -1548,6 +1640,16 @@
   "Public MachineProvider.$get member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.MachineService}"
   ^js/ng.MachineService [^js/ng.MachineProvider target]
   (.$get target))
+
+(defn machine-restore
+  "Public Machine.restore member exposed by the AngularTS namespace contract.\n\nParams:\n- snapshot: {!ng.MachineSnapshot<TData>}\n\nReturns: {void}"
+  [^js/ng.Machine target ^js/ng.MachineSnapshot snapshot]
+  (.restore target snapshot))
+
+(defn machine-snapshot
+  "Public Machine.snapshot member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.MachineSnapshot<TData>}"
+  ^js/ng.MachineSnapshot [^js/ng.Machine target]
+  (.snapshot target))
 
 (defn ng-model-controller-dollarcommit-view-value
   "Commit a pending update to the `$modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.\n\nReturns: {void}"
@@ -1655,7 +1757,7 @@
   (.factory target name providerFunction))
 
 (defn ng-module-machine
-  "Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {!ng.MachineConfig<TData>}\n\nReturns: {!ng.NgModule}"
+  "Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {!ng.MachineConfig<TData, TEvents>}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.MachineConfig config]
   (.machine target name config))
 
@@ -1703,6 +1805,11 @@
   "Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- protocols: {(!Array<string>|undefined)}\n- config: {(!ng.WebSocketConfig|undefined)}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Array protocols ^js/ng.WebSocketConfig config]
   (.websocket target name url protocols config))
+
+(defn ng-module-workflow
+  "Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.\n\nParams:\n- name: {string}\n- config: {!Object}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object config]
+  (.workflow target name config))
 
 (defn provide-service-decorator
   "Register a decorator function to modify or replace an existing service.\n\nParams:\n- name: {string}\n- fn: {!ng.Injectable}\n\nReturns: {!ng.ProvideService}"
@@ -1796,7 +1903,7 @@
   (.list target params))
 
 (defn root-scope-service-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name]
    (.$broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value]
@@ -1812,7 +1919,7 @@
   (.$destroy target))
 
 (defn root-scope-service-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name]
    (.$emit target name))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value]
@@ -1893,7 +2000,7 @@
   (.parseAsUrl target expression))
 
 (defn scope-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
    (.$broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value]
@@ -1909,7 +2016,7 @@
   (.$destroy target))
 
 (defn scope-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
    (.$emit target name))
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value]
@@ -1965,7 +2072,7 @@
   (.preventDefault target))
 
 (defn scope-service-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
    (.$broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
@@ -1981,7 +2088,7 @@
   (.$destroy target))
 
 (defn scope-service-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {(!ng.ScopeEvent|undefined)}"
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
    (.$emit target name))
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
@@ -2425,6 +2532,21 @@
   "Public WorkerConnection.terminate member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
   [^js/ng.WorkerConnection target]
   (.terminate target))
+
+(defn workflow-cancel
+  "Public Workflow.cancel member exposed by the AngularTS namespace contract.\n\nParams:\n- command: {(string|undefined)}\n\nReturns: {number}"
+  ^number [^js/ng.Workflow target ^string command]
+  (.cancel target command))
+
+(defn workflow-matches
+  "Public Workflow.matches member exposed by the AngularTS namespace contract.\n\nParams:\n- mode: {string}\n\nReturns: {boolean}"
+  ^boolean [^js/ng.Workflow target ^string mode]
+  (.matches target mode))
+
+(defn workflow-snapshot
+  "Public Workflow.snapshot member exposed by the AngularTS namespace contract.\n\nReturns: {!ng.WorkflowSnapshot<TData>}"
+  ^js/ng.WorkflowSnapshot [^js/ng.Workflow target]
+  (.snapshot target))
 
 (defn anchor-scroll-provider-auto-scrolling-enabled
   "Public AnchorScrollProvider.autoScrollingEnabled member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
@@ -3356,13 +3478,18 @@
   ^boolean [^js/ng.LogProvider target]
   (.-debug target))
 
+(defn machine-config-hooks
+  "Public MachineConfig.hooks member exposed by the AngularTS namespace contract.\n\nType: {(!ng.MachineHooks<TData, TEvents>|undefined)}"
+  ^js/ng.MachineHooks [^js/ng.MachineConfig target]
+  (.-hooks target))
+
 (defn machine-config-initial
   "Public MachineConfig.initial member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.MachineConfig target]
   (.-initial target))
 
 (defn machine-config-transitions
-  "Public MachineConfig.transitions member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, (!Object<string, (function(TData, ?, !ng.Machine<TData>): (boolean|string|undefined)|undefined)>|undefined)>}"
+  "Public MachineConfig.transitions member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, ?>}"
   ^js/Object [^js/ng.MachineConfig target]
   (.-transitions target))
 
@@ -3370,6 +3497,41 @@
   "Public Machine.current member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.Machine target]
   (.-current target))
+
+(defn machine-hooks-enter
+  "Public MachineHooks.enter member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, (function(?): void|undefined)>|undefined)}"
+  ^js/Object [^js/ng.MachineHooks target]
+  (.-enter target))
+
+(defn machine-hooks-exit
+  "Public MachineHooks.exit member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, (function(?): void|undefined)>|undefined)}"
+  ^js/Object [^js/ng.MachineHooks target]
+  (.-exit target))
+
+(defn machine-snapshot-current
+  "Public MachineSnapshot.current member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.MachineSnapshot target]
+  (.-current target))
+
+(defn machine-transition-context-from
+  "Public MachineTransitionContext.from member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.MachineTransitionContext target]
+  (.-from target))
+
+(defn machine-transition-context-machine
+  "Public MachineTransitionContext.machine member exposed by the AngularTS namespace contract.\n\nType: {!ng.Machine<TData, TEvents>}"
+  ^js/ng.Machine [^js/ng.MachineTransitionContext target]
+  (.-machine target))
+
+(defn machine-transition-context-to
+  "Public MachineTransitionContext.to member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.MachineTransitionContext target]
+  (.-to target))
+
+(defn machine-transition-context-type
+  "Public MachineTransitionContext.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.MachineTransitionContext target]
+  (.-type target))
 
 (defn native-animation-options-add-class
   "Public NativeAnimationOptions.addClass member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
@@ -3786,6 +3948,11 @@
   ^js/ng.Scope [^js/ng.ScopeElement target]
   (.-scope target))
 
+(defn scope-event-current-scope
+  "Public ScopeEvent.currentScope member exposed by the AngularTS namespace contract.\n\nType: {(!Object|null)}"
+  ^js/Object [^js/ng.ScopeEvent target]
+  (.-currentScope target))
+
 (defn scope-event-default-prevented
   "Public ScopeEvent.defaultPrevented member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.ScopeEvent target]
@@ -3800,6 +3967,11 @@
   "Public ScopeEvent.stopped member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.ScopeEvent target]
   (.-stopped target))
+
+(defn scope-event-target-scope
+  "Public ScopeEvent.targetScope member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.ScopeEvent target]
+  (.-targetScope target))
 
 (defn scope-service-dollarid
   "Public ScopeService.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
@@ -4335,6 +4507,176 @@
   "Public WorkerProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.LogService, function(?): ?): function((!Object|string), (!ng.WorkerConfig|undefined)): !ng.WorkerConnection|string)>}"
   ^js/Array [^js/ng.WorkerProvider target]
   (.-$get target))
+
+(defn workflow-command-context-signal
+  "Public WorkflowCommandContext.signal member exposed by the AngularTS namespace contract.\n\nType: {!AbortSignal}"
+  ^js/AbortSignal [^js/ng.WorkflowCommandContext target]
+  (.-signal target))
+
+(defn workflow-command-context-workflow
+  "Public WorkflowCommandContext.workflow member exposed by the AngularTS namespace contract.\n\nType: {!ng.Workflow<TData, TEvents, TCommands>}"
+  ^js/ng.Workflow [^js/ng.WorkflowCommandContext target]
+  (.-workflow target))
+
+(defn workflow-command-options-concurrency
+  "Public WorkflowCommandOptions.concurrency member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.WorkflowCommandOptions target]
+  (.-concurrency target))
+
+(defn workflow-command-options-signal
+  "Public WorkflowCommandOptions.signal member exposed by the AngularTS namespace contract.\n\nType: {(!AbortSignal|undefined)}"
+  ^js/AbortSignal [^js/ng.WorkflowCommandOptions target]
+  (.-signal target))
+
+(defn workflow-command-options-timeout
+  "Public WorkflowCommandOptions.timeout member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.WorkflowCommandOptions target]
+  (.-timeout target))
+
+(defn workflow-command-result-diagnostics
+  "Public WorkflowCommandResult.diagnostics member exposed by the AngularTS namespace contract.\n\nType: {(!Array<!ng.WorkflowDiagnostic>|undefined)}"
+  ^js/Array [^js/ng.WorkflowCommandResult target]
+  (.-diagnostics target))
+
+(defn workflow-command-result-ok
+  "Public WorkflowCommandResult.ok member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.WorkflowCommandResult target]
+  (.-ok target))
+
+(defn workflow-config-command-timeout
+  "Public WorkflowConfig.commandTimeout member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.WorkflowConfig target]
+  (.-commandTimeout target))
+
+(defn workflow-config-commands
+  "Public WorkflowConfig.commands member exposed by the AngularTS namespace contract.\n\nType: {(!Object|undefined)}"
+  ^js/Object [^js/ng.WorkflowConfig target]
+  (.-commands target))
+
+(defn workflow-config-concurrency
+  "Public WorkflowConfig.concurrency member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.WorkflowConfig target]
+  (.-concurrency target))
+
+(defn workflow-config-diagnostic-limit
+  "Public WorkflowConfig.diagnosticLimit member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.WorkflowConfig target]
+  (.-diagnosticLimit target))
+
+(defn workflow-config-history-limit
+  "Public WorkflowConfig.historyLimit member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.WorkflowConfig target]
+  (.-historyLimit target))
+
+(defn workflow-config-id
+  "Public WorkflowConfig.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowConfig target]
+  (.-id target))
+
+(defn workflow-config-initial
+  "Public WorkflowConfig.initial member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowConfig target]
+  (.-initial target))
+
+(defn workflow-config-transitions
+  "Public WorkflowConfig.transitions member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, ?>}"
+  ^js/Object [^js/ng.WorkflowConfig target]
+  (.-transitions target))
+
+(defn workflow-current
+  "Public Workflow.current member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.Workflow target]
+  (.-current target))
+
+(defn workflow-diagnostic-code
+  "Public WorkflowDiagnostic.code member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowDiagnostic target]
+  (.-code target))
+
+(defn workflow-diagnostic-command
+  "Public WorkflowDiagnostic.command member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.WorkflowDiagnostic target]
+  (.-command target))
+
+(defn workflow-diagnostic-message
+  "Public WorkflowDiagnostic.message member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowDiagnostic target]
+  (.-message target))
+
+(defn workflow-diagnostic-path
+  "Public WorkflowDiagnostic.path member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.WorkflowDiagnostic target]
+  (.-path target))
+
+(defn workflow-diagnostic-recoverable
+  "Public WorkflowDiagnostic.recoverable member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.WorkflowDiagnostic target]
+  (.-recoverable target))
+
+(defn workflow-diagnostics
+  "Public Workflow.diagnostics member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.WorkflowDiagnostic>}"
+  ^js/Array [^js/ng.Workflow target]
+  (.-diagnostics target))
+
+(defn workflow-history
+  "Public Workflow.history member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.WorkflowHistoryEntry>}"
+  ^js/Array [^js/ng.Workflow target]
+  (.-history target))
+
+(defn workflow-history-entry-command
+  "Public WorkflowHistoryEntry.command member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowHistoryEntry target]
+  (.-command target))
+
+(defn workflow-history-entry-diagnostics
+  "Public WorkflowHistoryEntry.diagnostics member exposed by the AngularTS namespace contract.\n\nType: {(!Array<!ng.WorkflowDiagnostic>|undefined)}"
+  ^js/Array [^js/ng.WorkflowHistoryEntry target]
+  (.-diagnostics target))
+
+(defn workflow-history-entry-id
+  "Public WorkflowHistoryEntry.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.WorkflowHistoryEntry target]
+  (.-id target))
+
+(defn workflow-history-entry-type
+  "Public WorkflowHistoryEntry.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowHistoryEntry target]
+  (.-type target))
+
+(defn workflow-id
+  "Public Workflow.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.Workflow target]
+  (.-id target))
+
+(defn workflow-provider-dollarget
+  "Public WorkflowProvider.$get member exposed by the AngularTS namespace contract.\n\nType: {!Array<(function(!ng.MachineService): !ng.WorkflowService|string)>}"
+  ^js/Array [^js/ng.WorkflowProvider target]
+  (.-$get target))
+
+(defn workflow-snapshot-current
+  "Public WorkflowSnapshot.current member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowSnapshot target]
+  (.-current target))
+
+(defn workflow-snapshot-diagnostics
+  "Public WorkflowSnapshot.diagnostics member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.WorkflowDiagnostic>}"
+  ^js/Array [^js/ng.WorkflowSnapshot target]
+  (.-diagnostics target))
+
+(defn workflow-snapshot-history
+  "Public WorkflowSnapshot.history member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.WorkflowHistoryEntry>}"
+  ^js/Array [^js/ng.WorkflowSnapshot target]
+  (.-history target))
+
+(defn workflow-snapshot-id
+  "Public WorkflowSnapshot.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.WorkflowSnapshot target]
+  (.-id target))
+
+(defn workflow-snapshot-version
+  "Public WorkflowSnapshot.version member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.WorkflowSnapshot target]
+  (.-version target))
 
 (defn module
   "Retrieve or create an AngularTS module."

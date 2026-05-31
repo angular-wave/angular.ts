@@ -1,5 +1,6 @@
 ---
 title: "HTTP Directives: ng-get, ng-post, ng-put, ng-sse"
+linkTitle: "HTTP Directives"
 weight: 280
 description: "Make HTTP requests and stream SSE from HTML using ng-get, ng-post, ng-put, ng-delete, and ng-sse — no JavaScript required for common data-fetching patterns."
 ---

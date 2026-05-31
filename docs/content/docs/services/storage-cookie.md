@@ -1,5 +1,6 @@
 ---
 title: "Cookies And Browser Storage"
+linkTitle: "Cookies"
 weight: 430
 description: "Read and write cookies with $cookie, serialize objects, and use $window.localStorage or sessionStorage for client-side persistence."
 ---

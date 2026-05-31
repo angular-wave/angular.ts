@@ -1,5 +1,6 @@
 ---
 title: "JavaScript-based animations with the AngularTS JS driver"
+linkTitle: "JS Animations"
 weight: 20
 description: "Register JavaScript animation handlers with $animateProvider, implement enter/leave/move hooks with done callbacks, and use the Web Animations API."
 ---

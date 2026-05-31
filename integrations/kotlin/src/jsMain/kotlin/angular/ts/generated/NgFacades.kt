@@ -110,6 +110,7 @@ public external interface NgModule {
     public fun websocket(p0: String = definedExternally, p1: String = definedExternally, p2: Array<dynamic> = definedExternally, p3: dynamic = definedExternally): dynamic
     public fun webTransport(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun worker(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    public fun workflow(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
 }
 
 public external interface PublicLinkFn {
@@ -610,6 +611,10 @@ public external interface MachineService {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
 }
 
+public external interface WorkflowService {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+}
+
 public external interface ParseService {
     public operator fun invoke(p0: String = definedExternally, p1: Function<*> = definedExternally): Function<*>
 }
@@ -1056,29 +1061,161 @@ public external interface ListenerFn {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
 }
 
-public external interface Machine<TData> {
-    public fun can(p0: String = definedExternally): Boolean
+public external interface MachineEventMap
+
+public external interface MachineNoEvents
+
+public external interface Machine<TData, TEvents> {
+    public fun can(p0: dynamic = definedExternally): Boolean
     public var current: String
     public var data: dynamic
     public fun matches(p0: String = definedExternally): Boolean
-    public fun send(p0: String = definedExternally, p1: dynamic = definedExternally): Boolean
+    public fun restore(p0: dynamic = definedExternally): Unit
+    public fun send(p0: dynamic = definedExternally, vararg p1: dynamic): Boolean
+    public fun snapshot(): dynamic
 }
 
-public external interface MachineConfig<TData> {
+public external interface MachineConfig<TData, TEvents> {
     public var data: dynamic
+    public var hooks: dynamic
     public var initial: String
     public var transitions: dynamic
 }
 
+public external interface MachineHooks<TData, TEvents> {
+    public var enter: dynamic
+    public var exit: dynamic
+    public fun transition(p0: dynamic = definedExternally): Unit
+}
+
 public external interface MachineMode
 
-public external interface MachineTransition<TData, TPayload> {
+public external interface MachineModeHooks<TData, TEvents>
+
+public external interface MachineSnapshot<TData> {
+    public var current: String
+    public var data: dynamic
+}
+
+public external interface MachineTransition<TData, TPayload, TEvents> {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
 }
 
-public external interface MachineTransitionMap<TData>
+public external interface MachineTransitionContext<TData, TEvents, TPayload> {
+    public var data: dynamic
+    public var from: String
+    public var machine: dynamic
+    public var payload: dynamic
+    public var to: String
+    public var type: String
+}
+
+public external interface MachineTransitionHook<TData, TEvents> {
+    public operator fun invoke(p0: dynamic = definedExternally): Unit
+}
+
+public external interface MachineTransitionMap<TData, TEvents>
 
 public external interface MachineTransitionResult
+
+public external interface Workflow<TData, TEvents, TCommands> {
+    public fun can(p0: dynamic = definedExternally): Boolean
+    public fun cancel(p0: String = definedExternally): Double
+    public var current: String
+    public var data: dynamic
+    public var diagnostics: Array<dynamic>
+    public var history: Array<dynamic>
+    public var id: String
+    public fun matches(p0: String = definedExternally): Boolean
+    public var repeat: dynamic
+    public fun restore(p0: dynamic = definedExternally): Unit
+    public var retry: dynamic
+    public var run: dynamic
+    public fun send(p0: dynamic = definedExternally, vararg p1: dynamic): Boolean
+    public fun snapshot(): dynamic
+}
+
+public external interface WorkflowCommand<TData, TInput, TOutput, TEvents, TCommands, TName> {
+    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+}
+
+public external interface WorkflowCommandContext<TData, TInput, TEvents, TCommands, TName> {
+    public fun cleanup(p0: Function<*> = definedExternally): Unit
+    public var command: dynamic
+    public var data: dynamic
+    public var input: dynamic
+    public var signal: dynamic
+    public var workflow: dynamic
+}
+
+public external interface WorkflowCommandMap<TData, TEvents>
+
+public external interface WorkflowCommandOptions {
+    public var concurrency: dynamic
+    public var signal: dynamic
+    public var timeout: Double
+}
+
+public external interface WorkflowConcurrencyPolicy
+
+public external interface WorkflowCommandResult<TOutput> {
+    public var diagnostics: Array<dynamic>
+    public var ok: Boolean
+}
+
+public external interface WorkflowConfig<TData, TEvents, TCommands> {
+    public var commands: dynamic
+    public var commandTimeout: Double
+    public var concurrency: dynamic
+    public var data: dynamic
+    public var diagnosticLimit: Double
+    public var historyLimit: Double
+    public var id: String
+    public var initial: String
+    public fun migrateSnapshot(p0: dynamic = definedExternally): dynamic
+    public var transitions: dynamic
+}
+
+public external interface WorkflowDiagnostic {
+    public var code: String
+    public var command: String
+    public var detail: dynamic
+    public var message: String
+    public var path: String
+    public var recoverable: Boolean
+}
+
+public external interface WorkflowHistoryEntry {
+    public var command: String
+    public var diagnostics: Array<dynamic>
+    public var id: Double
+    public var input: dynamic
+    public var output: dynamic
+    public var type: dynamic
+}
+
+public external interface WorkflowMode
+
+public external interface WorkflowNoCommands
+
+public external interface WorkflowProvider {
+    public var `$get`: Array<dynamic>
+}
+
+public external interface WorkflowSnapshot<TData> {
+    public var current: String
+    public var data: dynamic
+    public var diagnostics: Array<dynamic>
+    public var history: Array<dynamic>
+    public var id: String
+    public var version: Double
+}
+
+public external interface WorkflowSnapshotMigration<TData> {
+    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+}
+
+public external interface WorkflowStatus
 
 public external interface NgModelController {
     public var `$asyncValidators`: dynamic

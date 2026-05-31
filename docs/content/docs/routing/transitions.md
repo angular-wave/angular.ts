@@ -1,5 +1,6 @@
 ---
 title: "Routing transitions and lifecycle hooks"
+linkTitle: "Routing Transitions"
 weight: 360
 description: "Understand the AngularTS transition lifecycle and use hooks like onBefore, onStart, onSuccess, and onError for auth guards, analytics, and redirects."
 ---

@@ -22,12 +22,37 @@ import type {
 import type {
   Machine,
   MachineConfig,
+  MachineEventMap,
+  MachineHooks,
   MachineMode,
+  MachineModeHooks,
+  MachineNoEvents,
   MachineService,
+  MachineSnapshot,
   MachineTransition,
+  MachineTransitionContext,
+  MachineTransitionHook,
   MachineTransitionMap,
   MachineTransitionResult,
-} from "./core/machine/machine.ts";
+} from "./services/machine/machine.ts";
+import type {
+  Workflow,
+  WorkflowCommand,
+  WorkflowCommandContext,
+  WorkflowCommandMap,
+  WorkflowCommandOptions,
+  WorkflowConcurrencyPolicy,
+  WorkflowCommandResult,
+  WorkflowConfig,
+  WorkflowDiagnostic,
+  WorkflowHistoryEntry,
+  WorkflowMode,
+  WorkflowNoCommands,
+  WorkflowService,
+  WorkflowSnapshot,
+  WorkflowSnapshotMigration,
+  WorkflowStatus,
+} from "./services/workflow/workflow.ts";
 
 /**
  * Default browser entry point.
@@ -42,7 +67,12 @@ export {
   registerCustomNgModule,
 } from "./runtime/index.ts";
 export { afterRender, queueAfterRender } from "./core/render/after-render.ts";
-export { MachineProvider } from "./core/machine/machine.ts";
+export { defineMachine, MachineProvider } from "./services/machine/machine.ts";
+export {
+  defineCommand,
+  defineWorkflow,
+  WorkflowProvider,
+} from "./services/workflow/workflow.ts";
 
 export type {
   AfterRenderCallback,
@@ -58,12 +88,35 @@ export type {
   FilterRegistrations,
   Machine,
   MachineConfig,
+  MachineEventMap,
+  MachineHooks,
   MachineMode,
+  MachineModeHooks,
+  MachineNoEvents,
   MachineService,
+  MachineSnapshot,
   MachineTransition,
+  MachineTransitionContext,
+  MachineTransitionHook,
   MachineTransitionMap,
   MachineTransitionResult,
   ProviderRegistration,
   ServiceRegistration,
   ServiceRegistrations,
+  Workflow,
+  WorkflowCommand,
+  WorkflowCommandContext,
+  WorkflowCommandMap,
+  WorkflowCommandOptions,
+  WorkflowConcurrencyPolicy,
+  WorkflowCommandResult,
+  WorkflowConfig,
+  WorkflowDiagnostic,
+  WorkflowHistoryEntry,
+  WorkflowMode,
+  WorkflowNoCommands,
+  WorkflowService,
+  WorkflowSnapshot,
+  WorkflowSnapshotMigration,
+  WorkflowStatus,
 };

@@ -1,4 +1,4 @@
 ---
-title: Directives
-weight: 10
+title: "Directive Reference"
+weight: 30
 ---

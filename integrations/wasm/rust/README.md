@@ -21,7 +21,8 @@ generated-bootstrap command, parity check, `wasm-bindgen` bridge generation, and
 browser-tested example apps. The covered Rust facade set now includes core
 module/component/service authoring, scope and Wasm ABI types, `$http`,
 template/cache, storage/cookie, diagnostics/event bus, router/state, realtime
-WebSocket/SSE, and core `$rest` resource APIs.
+WebSocket/SSE, core `$rest` resource APIs, and `$machine` state-machine
+facades.
 
 The bridge still requires Rust-side `#[wasm_bridge]` annotations for
 Wasm-visible controllers, service wrappers, values, and boundary types. The

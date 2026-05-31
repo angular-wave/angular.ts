@@ -538,12 +538,21 @@ ng.NgModule.prototype.controller = function(name, ctlFn) {};
 
 /**
  * Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.
- * @template TData
+ * @template TData, TEvents
  * @param {string} name
- * @param {!ng.MachineConfig<TData>} config
+ * @param {!ng.MachineConfig<TData, TEvents>} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.machine = function(name, config) {};
+
+/**
+ * Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.
+ * @template TData, TEvents, TCommands
+ * @param {string} name
+ * @param {!Object} config
+ * @return {!ng.NgModule}
+ */
+ng.NgModule.prototype.workflow = function(name, config) {};
 
 /**
  * Register a router state during module configuration. This is equivalent to calling `$stateProvider.state(...)` in a config block, but keeps route declarations in the same fluent module API used for components, services, directives, and custom elements. Register a named router state during module configuration. The provided `name` is copied onto the state declaration before it is passed to `$stateProvider`.
@@ -815,7 +824,7 @@ ng.Scope.prototype.$on = function(name, listener) {};
  * Emits an event upward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.Scope.prototype.$emit = function(name, var_args) {};
 
@@ -823,7 +832,7 @@ ng.Scope.prototype.$emit = function(name, var_args) {};
  * Broadcasts an event downward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.Scope.prototype.$broadcast = function(name, var_args) {};
 
@@ -979,7 +988,7 @@ ng.ScopeService.prototype.$on = function(name, listener) {};
  * Emits an event upward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.ScopeService.prototype.$emit = function(name, var_args) {};
 
@@ -987,7 +996,7 @@ ng.ScopeService.prototype.$emit = function(name, var_args) {};
  * Broadcasts an event downward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.ScopeService.prototype.$broadcast = function(name, var_args) {};
 
@@ -3054,9 +3063,15 @@ ng.LogService.prototype.warn = function(var_args) {};
 
 /**
  * Public AngularTS MachineService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(!ng.MachineConfig<?>): !ng.Machine<?>}
+ * @typedef {function(!ng.MachineConfig<?, ?>): !ng.Machine<?, ?>}
  */
 ng.MachineService;
+
+/**
+ * Public AngularTS WorkflowService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!Object): !ng.Workflow<?, ?, ?>}
+ */
+ng.WorkflowService;
 
 /**
  * Parses a string or expression function into a compiled expression.
@@ -3330,7 +3345,7 @@ ng.RootScopeService.prototype.$on = function(name, listener) {};
  * Emits an event upward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.RootScopeService.prototype.$emit = function(name, var_args) {};
 
@@ -3338,7 +3353,7 @@ ng.RootScopeService.prototype.$emit = function(name, var_args) {};
  * Broadcasts an event downward through the scope hierarchy.
  * @param {string} name
  * @param {...?} var_args
- * @return {(!ng.ScopeEvent|undefined)}
+ * @return {!ng.ScopeEvent}
  */
 ng.RootScopeService.prototype.$broadcast = function(name, var_args) {};
 
@@ -5331,8 +5346,20 @@ ng.InvocationDetail.prototype.reply;
 ng.ListenerFn;
 
 /**
+ * Public AngularTS MachineEventMap contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.MachineEventMap = function() {};
+
+/**
+ * Public AngularTS MachineNoEvents contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.MachineNoEvents = function() {};
+
+/**
  * Public AngularTS Machine contract exposed through the global ng namespace for Closure-annotated applications.
- * @template TData
+ * @template TData, TEvents
  * @record
  */
 ng.Machine = function() {};
@@ -5351,15 +5378,16 @@ ng.Machine.prototype.data;
 
 /**
  * Public Machine.send member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {(?|undefined)} payload
+ * @template TType
+ * @param {TType} type
+ * @param {...?} var_args
  * @return {boolean}
  */
-ng.Machine.prototype.send = function(type, payload) {};
+ng.Machine.prototype.send = function(type, var_args) {};
 
 /**
  * Public Machine.can member exposed by the AngularTS namespace contract.
- * @param {string} type
+ * @param {?} type
  * @return {boolean}
  */
 ng.Machine.prototype.can = function(type) {};
@@ -5372,8 +5400,21 @@ ng.Machine.prototype.can = function(type) {};
 ng.Machine.prototype.matches = function(mode) {};
 
 /**
+ * Public Machine.snapshot member exposed by the AngularTS namespace contract.
+ * @return {!ng.MachineSnapshot<TData>}
+ */
+ng.Machine.prototype.snapshot = function() {};
+
+/**
+ * Public Machine.restore member exposed by the AngularTS namespace contract.
+ * @param {!ng.MachineSnapshot<TData>} snapshot
+ * @return {void}
+ */
+ng.Machine.prototype.restore = function(snapshot) {};
+
+/**
  * Public AngularTS MachineConfig contract exposed through the global ng namespace for Closure-annotated applications.
- * @template TData
+ * @template TData, TEvents
  * @record
  */
 ng.MachineConfig = function() {};
@@ -5392,9 +5433,40 @@ ng.MachineConfig.prototype.data;
 
 /**
  * Public MachineConfig.transitions member exposed by the AngularTS namespace contract.
- * @type {!Object<string, (!Object<string, (function(TData, ?, !ng.Machine<TData>): (boolean|string|undefined)|undefined)>|undefined)>}
+ * @type {!Object<string, ?>}
  */
 ng.MachineConfig.prototype.transitions;
+
+/**
+ * Public MachineConfig.hooks member exposed by the AngularTS namespace contract.
+ * @type {(!ng.MachineHooks<TData, TEvents>|undefined)}
+ */
+ng.MachineConfig.prototype.hooks;
+
+/**
+ * Public AngularTS MachineHooks contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TEvents
+ * @record
+ */
+ng.MachineHooks = function() {};
+
+/**
+ * Public MachineHooks.enter member exposed by the AngularTS namespace contract.
+ * @type {(!Object<string, (function(?): void|undefined)>|undefined)}
+ */
+ng.MachineHooks.prototype.enter;
+
+/**
+ * Public MachineHooks.exit member exposed by the AngularTS namespace contract.
+ * @type {(!Object<string, (function(?): void|undefined)>|undefined)}
+ */
+ng.MachineHooks.prototype.exit;
+
+/**
+ * Public MachineHooks.transition member exposed by the AngularTS namespace contract.
+ * @type {(function(?): void|undefined)}
+ */
+ng.MachineHooks.prototype.transition;
 
 /**
  * Public AngularTS MachineMode contract exposed through the global ng namespace for Closure-annotated applications.
@@ -5403,14 +5475,89 @@ ng.MachineConfig.prototype.transitions;
 ng.MachineMode;
 
 /**
+ * Make all properties in T optional
+ * @template TData, TEvents
+ * @record
+ */
+ng.MachineModeHooks = function() {};
+
+/**
+ * Public AngularTS MachineSnapshot contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData
+ * @record
+ */
+ng.MachineSnapshot = function() {};
+
+/**
+ * Public MachineSnapshot.current member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.MachineSnapshot.prototype.current;
+
+/**
+ * Public MachineSnapshot.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.MachineSnapshot.prototype.data;
+
+/**
  * Public AngularTS MachineTransition contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(?, ?, !ng.Machine<?>): (boolean|string|undefined)}
+ * @typedef {function(?, ?, !ng.Machine<?, ?>): (boolean|string|undefined)}
  */
 ng.MachineTransition;
 
 /**
+ * Public AngularTS MachineTransitionContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TEvents, TPayload
+ * @record
+ */
+ng.MachineTransitionContext = function() {};
+
+/**
+ * Public MachineTransitionContext.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.MachineTransitionContext.prototype.type;
+
+/**
+ * Public MachineTransitionContext.from member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.MachineTransitionContext.prototype.from;
+
+/**
+ * Public MachineTransitionContext.to member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.MachineTransitionContext.prototype.to;
+
+/**
+ * Public MachineTransitionContext.payload member exposed by the AngularTS namespace contract.
+ * @type {TPayload}
+ */
+ng.MachineTransitionContext.prototype.payload;
+
+/**
+ * Public MachineTransitionContext.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.MachineTransitionContext.prototype.data;
+
+/**
+ * Public MachineTransitionContext.machine member exposed by the AngularTS namespace contract.
+ * @type {!ng.Machine<TData, TEvents>}
+ */
+ng.MachineTransitionContext.prototype.machine;
+
+/**
+ * Public AngularTS MachineTransitionHook contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?): void}
+ */
+ng.MachineTransitionHook;
+
+/**
  * Make all properties in T optional
- * @template TData
+ * @template TData, TEvents
  * @record
  */
 ng.MachineTransitionMap = function() {};
@@ -5420,6 +5567,440 @@ ng.MachineTransitionMap = function() {};
  * @typedef {(boolean|string|undefined)}
  */
 ng.MachineTransitionResult;
+
+/**
+ * Public AngularTS Workflow contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TEvents, TCommands
+ * @record
+ */
+ng.Workflow = function() {};
+
+/**
+ * Public Workflow.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.Workflow.prototype.id;
+
+/**
+ * Public Workflow.current member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.Workflow.prototype.current;
+
+/**
+ * Public Workflow.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.Workflow.prototype.data;
+
+/**
+ * Public Workflow.diagnostics member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.WorkflowDiagnostic>}
+ */
+ng.Workflow.prototype.diagnostics;
+
+/**
+ * Public Workflow.history member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.WorkflowHistoryEntry>}
+ */
+ng.Workflow.prototype.history;
+
+/**
+ * Public Workflow.send member exposed by the AngularTS namespace contract.
+ * @template TType
+ * @param {TType} type
+ * @param {...?} var_args
+ * @return {boolean}
+ */
+ng.Workflow.prototype.send = function(type, var_args) {};
+
+/**
+ * Public Workflow.can member exposed by the AngularTS namespace contract.
+ * @param {?} type
+ * @return {boolean}
+ */
+ng.Workflow.prototype.can = function(type) {};
+
+/**
+ * Public Workflow.matches member exposed by the AngularTS namespace contract.
+ * @param {string} mode
+ * @return {boolean}
+ */
+ng.Workflow.prototype.matches = function(mode) {};
+
+/**
+ * Public Workflow.run member exposed by the AngularTS namespace contract.
+ * @type {?}
+ */
+ng.Workflow.prototype.run;
+
+/**
+ * Public Workflow.retry member exposed by the AngularTS namespace contract.
+ * @type {?}
+ */
+ng.Workflow.prototype.retry;
+
+/**
+ * Public Workflow.repeat member exposed by the AngularTS namespace contract.
+ * @type {?}
+ */
+ng.Workflow.prototype.repeat;
+
+/**
+ * Public Workflow.cancel member exposed by the AngularTS namespace contract.
+ * @param {(string|undefined)} command
+ * @return {number}
+ */
+ng.Workflow.prototype.cancel = function(command) {};
+
+/**
+ * Public Workflow.snapshot member exposed by the AngularTS namespace contract.
+ * @return {!ng.WorkflowSnapshot<TData>}
+ */
+ng.Workflow.prototype.snapshot = function() {};
+
+/**
+ * Public Workflow.restore member exposed by the AngularTS namespace contract.
+ * @param {?} snapshot
+ * @return {void}
+ */
+ng.Workflow.prototype.restore = function(snapshot) {};
+
+/**
+ * Public AngularTS WorkflowCommand contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.WorkflowCommandContext<?, ?, ?, ?, ?>): ?}
+ */
+ng.WorkflowCommand;
+
+/**
+ * Public AngularTS WorkflowCommandContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TInput, TEvents, TCommands, TName
+ * @record
+ */
+ng.WorkflowCommandContext = function() {};
+
+/**
+ * Public WorkflowCommandContext.workflow member exposed by the AngularTS namespace contract.
+ * @type {!ng.Workflow<TData, TEvents, TCommands>}
+ */
+ng.WorkflowCommandContext.prototype.workflow;
+
+/**
+ * Public WorkflowCommandContext.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.WorkflowCommandContext.prototype.data;
+
+/**
+ * Public WorkflowCommandContext.input member exposed by the AngularTS namespace contract.
+ * @type {TInput}
+ */
+ng.WorkflowCommandContext.prototype.input;
+
+/**
+ * Public WorkflowCommandContext.command member exposed by the AngularTS namespace contract.
+ * @type {TName}
+ */
+ng.WorkflowCommandContext.prototype.command;
+
+/**
+ * Public WorkflowCommandContext.cleanup member exposed by the AngularTS namespace contract.
+ * @param {function(): void} callback
+ * @return {void}
+ */
+ng.WorkflowCommandContext.prototype.cleanup = function(callback) {};
+
+/**
+ * Public WorkflowCommandContext.signal member exposed by the AngularTS namespace contract.
+ * @type {!AbortSignal}
+ */
+ng.WorkflowCommandContext.prototype.signal;
+
+/**
+ * Public AngularTS WorkflowCommandMap contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TEvents
+ * @record
+ */
+ng.WorkflowCommandMap = function() {};
+
+/**
+ * Public AngularTS WorkflowCommandOptions contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkflowCommandOptions = function() {};
+
+/**
+ * Public WorkflowCommandOptions.concurrency member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.WorkflowCommandOptions.prototype.concurrency;
+
+/**
+ * Public WorkflowCommandOptions.signal member exposed by the AngularTS namespace contract.
+ * @type {(!AbortSignal|undefined)}
+ */
+ng.WorkflowCommandOptions.prototype.signal;
+
+/**
+ * Public WorkflowCommandOptions.timeout member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.WorkflowCommandOptions.prototype.timeout;
+
+/**
+ * Public AngularTS WorkflowConcurrencyPolicy contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {string}
+ */
+ng.WorkflowConcurrencyPolicy;
+
+/**
+ * Public AngularTS WorkflowCommandResult contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TOutput
+ * @record
+ */
+ng.WorkflowCommandResult = function() {};
+
+/**
+ * Public WorkflowCommandResult.ok member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.WorkflowCommandResult.prototype.ok;
+
+/**
+ * Public WorkflowCommandResult.diagnostics member exposed by the AngularTS namespace contract.
+ * @type {(!Array<!ng.WorkflowDiagnostic>|undefined)}
+ */
+ng.WorkflowCommandResult.prototype.diagnostics;
+
+/**
+ * Public AngularTS WorkflowConfig contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TEvents, TCommands
+ * @record
+ */
+ng.WorkflowConfig = function() {};
+
+/**
+ * Public WorkflowConfig.commandTimeout member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.WorkflowConfig.prototype.commandTimeout;
+
+/**
+ * Public WorkflowConfig.concurrency member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.WorkflowConfig.prototype.concurrency;
+
+/**
+ * Public WorkflowConfig.diagnosticLimit member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.WorkflowConfig.prototype.diagnosticLimit;
+
+/**
+ * Public WorkflowConfig.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowConfig.prototype.id;
+
+/**
+ * Public WorkflowConfig.initial member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowConfig.prototype.initial;
+
+/**
+ * Public WorkflowConfig.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.WorkflowConfig.prototype.data;
+
+/**
+ * Public WorkflowConfig.historyLimit member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.WorkflowConfig.prototype.historyLimit;
+
+/**
+ * Public WorkflowConfig.migrateSnapshot member exposed by the AngularTS namespace contract.
+ * @type {(function(?): !ng.WorkflowSnapshot<TData>|undefined)}
+ */
+ng.WorkflowConfig.prototype.migrateSnapshot;
+
+/**
+ * Public WorkflowConfig.transitions member exposed by the AngularTS namespace contract.
+ * @type {!Object<string, ?>}
+ */
+ng.WorkflowConfig.prototype.transitions;
+
+/**
+ * Public WorkflowConfig.commands member exposed by the AngularTS namespace contract.
+ * @type {(!Object|undefined)}
+ */
+ng.WorkflowConfig.prototype.commands;
+
+/**
+ * Public AngularTS WorkflowDiagnostic contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkflowDiagnostic = function() {};
+
+/**
+ * Public WorkflowDiagnostic.code member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowDiagnostic.prototype.code;
+
+/**
+ * Public WorkflowDiagnostic.message member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowDiagnostic.prototype.message;
+
+/**
+ * Public WorkflowDiagnostic.recoverable member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.WorkflowDiagnostic.prototype.recoverable;
+
+/**
+ * Public WorkflowDiagnostic.path member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.WorkflowDiagnostic.prototype.path;
+
+/**
+ * Public WorkflowDiagnostic.command member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.WorkflowDiagnostic.prototype.command;
+
+/**
+ * Public WorkflowDiagnostic.detail member exposed by the AngularTS namespace contract.
+ * @type {(?|undefined)}
+ */
+ng.WorkflowDiagnostic.prototype.detail;
+
+/**
+ * Public AngularTS WorkflowHistoryEntry contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkflowHistoryEntry = function() {};
+
+/**
+ * Public WorkflowHistoryEntry.id member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.WorkflowHistoryEntry.prototype.id;
+
+/**
+ * Public WorkflowHistoryEntry.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowHistoryEntry.prototype.type;
+
+/**
+ * Public WorkflowHistoryEntry.command member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowHistoryEntry.prototype.command;
+
+/**
+ * Public WorkflowHistoryEntry.input member exposed by the AngularTS namespace contract.
+ * @type {(?|undefined)}
+ */
+ng.WorkflowHistoryEntry.prototype.input;
+
+/**
+ * Public WorkflowHistoryEntry.output member exposed by the AngularTS namespace contract.
+ * @type {(?|undefined)}
+ */
+ng.WorkflowHistoryEntry.prototype.output;
+
+/**
+ * Public WorkflowHistoryEntry.diagnostics member exposed by the AngularTS namespace contract.
+ * @type {(!Array<!ng.WorkflowDiagnostic>|undefined)}
+ */
+ng.WorkflowHistoryEntry.prototype.diagnostics;
+
+/**
+ * Public AngularTS WorkflowMode contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {string}
+ */
+ng.WorkflowMode;
+
+/**
+ * Public AngularTS WorkflowNoCommands contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkflowNoCommands = function() {};
+
+/**
+ * Public AngularTS WorkflowProvider contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.WorkflowProvider = function() {};
+
+/**
+ * Public WorkflowProvider.$get member exposed by the AngularTS namespace contract.
+ * @type {!Array<(function(!ng.MachineService): !ng.WorkflowService|string)>}
+ */
+ng.WorkflowProvider.prototype.$get;
+
+/**
+ * Public AngularTS WorkflowSnapshot contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData
+ * @record
+ */
+ng.WorkflowSnapshot = function() {};
+
+/**
+ * Public WorkflowSnapshot.version member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.WorkflowSnapshot.prototype.version;
+
+/**
+ * Public WorkflowSnapshot.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowSnapshot.prototype.id;
+
+/**
+ * Public WorkflowSnapshot.current member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.WorkflowSnapshot.prototype.current;
+
+/**
+ * Public WorkflowSnapshot.data member exposed by the AngularTS namespace contract.
+ * @type {TData}
+ */
+ng.WorkflowSnapshot.prototype.data;
+
+/**
+ * Public WorkflowSnapshot.diagnostics member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.WorkflowDiagnostic>}
+ */
+ng.WorkflowSnapshot.prototype.diagnostics;
+
+/**
+ * Public WorkflowSnapshot.history member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.WorkflowHistoryEntry>}
+ */
+ng.WorkflowSnapshot.prototype.history;
+
+/**
+ * Public AngularTS WorkflowSnapshotMigration contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?): !ng.WorkflowSnapshot<?>}
+ */
+ng.WorkflowSnapshotMigration;
+
+/**
+ * Public AngularTS WorkflowStatus contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {string}
+ */
+ng.WorkflowStatus;
 
 /**
  * Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications.
@@ -6149,13 +6730,13 @@ ng.ScopeEvent = function() {};
 
 /**
  * Public ScopeEvent.targetScope member exposed by the AngularTS namespace contract.
- * @type {function(new: ng.Scope, !ng.Scope, !Object)}
+ * @type {!Object}
  */
 ng.ScopeEvent.prototype.targetScope;
 
 /**
  * Public ScopeEvent.currentScope member exposed by the AngularTS namespace contract.
- * @type {(function(new: ng.Scope, !ng.Scope, !Object)|null)}
+ * @type {(!Object|null)}
  */
 ng.ScopeEvent.prototype.currentScope;
 

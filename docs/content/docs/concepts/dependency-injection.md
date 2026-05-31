@@ -1,5 +1,6 @@
 ---
 title: "Dependency injection and the AngularTS injector"
+linkTitle: "Dependency Injection"
 weight: 200
 description: "Understand how the AngularTS injector resolves named tokens, how to annotate dependencies, and how the provider pattern controls the config and run phases."
 ---

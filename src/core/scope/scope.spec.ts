@@ -304,6 +304,7 @@ describe("Scope", () => {
         case "delete":
         case "get":
         case "has":
+        case "includes":
           return ["a"];
         case "forEach":
           return [
@@ -321,6 +322,7 @@ describe("Scope", () => {
         case "add":
         case "delete":
         case "has":
+        case "includes":
           return ["a"];
         case "difference":
         case "intersection":
@@ -353,6 +355,18 @@ describe("Scope", () => {
       expect(scope.set.has("a")).toBeTrue();
       expect(Array.from(scope.map.entries())).toEqual([["a", 1]]);
       expect(Array.from(scope.set.values())).toEqual(["a"]);
+    });
+
+    it("should expose native constructors for native collection values", () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+        set: new Set(["a"]),
+        date: new Date(Date.UTC(2020, 0, 2)),
+      });
+
+      expect(scope.map.constructor).toBe(Map);
+      expect(scope.set.constructor).toBe(Set);
+      expect(scope.date.constructor).toBe(Date);
     });
 
     it("should support every Map prototype method and property through proxies", () => {
@@ -470,6 +484,24 @@ describe("Scope", () => {
       }
     });
 
+    it("should not notify Map watchers for read-only native method calls", async () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const sizes = [];
+
+      scope.$watch("map.size", (value) => sizes.push(value));
+      await wait();
+
+      expect(sizes).toEqual([1]);
+
+      scope.map.forEach(() => {});
+      await wait();
+
+      expect(sizes).toEqual([1]);
+    });
+
     it("should notify Set size and has watchers after mutations", async () => {
       scope = createScope({
         set: new Set(["a"]),
@@ -497,6 +529,24 @@ describe("Scope", () => {
 
       expect(sizes).toEqual([1, 2, 1]);
       expect(hasValues).toEqual([false, true, false]);
+    });
+
+    it("should not notify Set watchers for read-only native method calls", async () => {
+      scope = createScope({
+        set: new Set(["a"]),
+      });
+
+      const sizes = [];
+
+      scope.$watch("set.size", (value) => sizes.push(value));
+      await wait();
+
+      expect(sizes).toEqual([1]);
+
+      scope.set.forEach(() => {});
+      await wait();
+
+      expect(sizes).toEqual([1]);
     });
 
     it("should notify owner-key watchers for native collection mutations", async () => {
@@ -558,6 +608,34 @@ describe("Scope", () => {
       });
     });
 
+    it("should notify state watchers for map state mutations", async () => {
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const values = [];
+
+      scope.$watch("map", (value) => values.push(value));
+      await wait();
+
+      expect(values).toEqual([scope.map]);
+
+      scope.map.set("a", 1);
+      await wait();
+
+      expect(values).toEqual([scope.map]);
+
+      scope.map.set("b", 2);
+      await wait();
+
+      expect(values).toEqual([scope.map, scope.map]);
+
+      scope.map.delete("a");
+      await wait();
+
+      expect(values).toEqual([scope.map, scope.map, scope.map]);
+    });
+
     it("should notify watchers for all observable Set prototype methods", async () => {
       scope = createScope({
         set: new Set(["a"]),
@@ -594,6 +672,95 @@ describe("Scope", () => {
           ["b", "b"],
         ],
       });
+    });
+
+    it("should notify state watchers for set state mutations", async () => {
+      scope = createScope({
+        set: new Set(["a"]),
+      });
+
+      const values = [];
+
+      scope.$watch("set", (value) => values.push(value));
+      await wait();
+
+      expect(values).toEqual([scope.set]);
+
+      scope.set.add("a");
+      await wait();
+
+      expect(values).toEqual([scope.set]);
+
+      scope.set.add("b");
+      await wait();
+
+      expect(values).toEqual([scope.set, scope.set]);
+
+      scope.set.delete("a");
+      await wait();
+
+      expect(values).toEqual([scope.set, scope.set, scope.set]);
+    });
+
+    it("should notify Map watchers for includes()", async () => {
+      const includesMethod =
+        typeof (Map.prototype as Record<string, unknown>).includes === "function"
+          ? "includes"
+          : "has";
+      const includesExpr = `map.${includesMethod}('b')`;
+
+      scope = createScope({
+        map: new Map([["a", 1]]),
+      });
+
+      const includesValues = [];
+
+      scope.$watch(includesExpr, (value) => includesValues.push(value));
+      await wait();
+
+      expect(includesValues).toEqual([scope.map[includesMethod]("b")]);
+
+      scope.map.set("b", 2);
+      await wait();
+
+      expect(includesValues).toEqual([
+        false,
+        true,
+      ]);
+
+      scope.map.delete("b");
+      await wait();
+
+      expect(includesValues).toEqual([false, true, false]);
+    });
+
+    it("should notify Set watchers for includes()", async () => {
+      const includesMethod =
+        typeof (Set.prototype as Record<string, unknown>).includes === "function"
+          ? "includes"
+          : "has";
+      const includesExpr = `set.${includesMethod}('b')`;
+
+      scope = createScope({
+        set: new Set(["a"]),
+      });
+
+      const includesValues = [];
+
+      scope.$watch(includesExpr, (value) => includesValues.push(value));
+      await wait();
+
+      expect(includesValues).toEqual([scope.set[includesMethod]("b")]);
+
+      scope.set.add("b");
+      await wait();
+
+      expect(includesValues).toEqual([false, true]);
+
+      scope.set.delete("b");
+      await wait();
+
+      expect(includesValues).toEqual([false, true, false]);
     });
   });
 
@@ -3506,6 +3673,31 @@ describe("Scope", () => {
         expect(log).toEqual("2>1>");
       });
 
+      it("should continue executing listeners on the same scope when stopPropagation is called", () => {
+        const sequence: string[] = [];
+
+        grandChild.$on("myEvent", () => {
+          sequence.push("before");
+        });
+
+        grandChild.$on("myEvent", (event) => {
+          sequence.push("stop");
+          event.stopPropagation();
+        });
+
+        grandChild.$on("myEvent", () => {
+          sequence.push("after");
+        });
+
+        scope.$on("myEvent", () => {
+          sequence.push("root");
+        });
+
+        grandChild.$emit("myEvent");
+
+        expect(sequence).toEqual(["before", "stop", "after"]);
+      });
+
       it("should forward method arguments", () => {
         child.$on("abc", (event, arg1, arg2) => {
           expect(event.name).toBe("abc");
@@ -3627,6 +3819,41 @@ describe("Scope", () => {
           expect(event.defaultPrevented).toBe(true);
           expect(event.currentScope).toBe(null);
         });
+
+        it("should expose the same event object at each scope in an emit chain", () => {
+          const events: any[] = [];
+
+          child.$on("myEvent", (event) => {
+            events.push(event);
+          });
+
+          grandChild.$on("myEvent", (event) => {
+            events.push(event);
+          });
+
+          scope.$on("myEvent", (event) => {
+            events.push(event);
+          });
+
+          const result = grandChild.$emit("myEvent");
+
+          expect(events.length).toBe(3);
+          expect(events[0]).toBe(result);
+          expect(events[1]).toBe(result);
+          expect(events[2]).toBe(result);
+        });
+
+        it("should return an event object even when no listeners are registered", () => {
+          const child = scope.$new();
+
+          const result = child.$emit("ghost");
+
+          expect(result).toBeDefined();
+          expect(result.name).toBe("ghost");
+          expect(result.targetScope).toEqual(child.$target);
+          expect(result.currentScope).toBeNull();
+          expect(result.defaultPrevented).toBe(false);
+        });
       });
     });
 
@@ -3714,6 +3941,169 @@ describe("Scope", () => {
           expect(log).toBe("23>");
         });
 
+        it("should allow all events on the same scope to run even if stopPropagation is called", () => {
+          const childListeners: number[] = [];
+
+          child2.$on("myEvent", () => childListeners.push(1));
+
+          child2.$on("myEvent", (event) => {
+            childListeners.push(2);
+            event.stopPropagation();
+          });
+
+          child2.$on("myEvent", () => childListeners.push(3));
+
+          scope.$broadcast("myEvent");
+
+          expect(childListeners).toEqual([1, 2, 3]);
+        });
+
+        it("should stop broadcasting to descendants when propagation is stopped", () => {
+          grandChild21.$on("myEvent", (event) => {
+            event.stopPropagation();
+          });
+
+          scope.$broadcast("myEvent");
+
+          expect(log).toBe("0>1>11>2>21>");
+        });
+
+        it("should continue same-scope listeners after one listener throws", () => {
+          const calls: string[] = [];
+
+          child2.$on("myEvent", () => {
+            calls.push("one");
+            throw new Error("broadcastFailure");
+          });
+
+          child2.$on("myEvent", () => {
+            calls.push("two");
+          });
+
+          scope.$broadcast("myEvent");
+
+          expect(calls).toEqual(["one", "two"]);
+          expect(log.includes("2>")).toBe(true);
+        });
+
+      it("should stop broadcasting to sibling branches when propagation is stopped", () => {
+        child1.$on("myEvent", (event) => {
+          event.stopPropagation();
+        });
+
+        scope.$broadcast("myEvent");
+
+          expect(log).toBe("0>1>");
+        });
+
+        it("should continue sibling traversal when a child is destroyed mid-traversal", () => {
+          const eventScope = createScope();
+          const first = eventScope.$new();
+          const second = eventScope.$new();
+          const third = eventScope.$new();
+          const calls: string[] = [];
+
+          first.$on("evt", () => calls.push("first"));
+          second.$on("evt", () => {
+            calls.push("second");
+            second.$destroy();
+          });
+          third.$on("evt", () => calls.push("third"));
+
+          eventScope.$broadcast("evt");
+
+          expect(calls).toEqual(["first", "second", "third"]);
+          expect(second.$handler._destroyed).toBeTrue();
+        });
+
+        it("should not follow a replaced lone child in the same broadcast pass", () => {
+          const eventScope = createScope();
+          const loneChild = eventScope.$new();
+          const calls: string[] = [];
+
+          loneChild.$on("evt", () => {
+            calls.push("original");
+          });
+
+          eventScope.$on("evt", () => {
+            calls.push("root");
+
+            loneChild.$destroy();
+
+            const replacement = eventScope.$new();
+
+            replacement.$on("evt", () => {
+              calls.push("replacement");
+            });
+          });
+
+          eventScope.$broadcast("evt");
+
+          expect(calls).toEqual(["root"]);
+        });
+
+        it("should not follow a replaced child when it is one of multiple siblings", () => {
+          const eventScope = createScope();
+          const first = eventScope.$new();
+          const second = eventScope.$new();
+          const calls: string[] = [];
+
+          first.$on("evt", () => {
+            calls.push("first");
+
+            first.$destroy();
+
+            const replacement = eventScope.$new();
+
+            replacement.$on("evt", () => {
+              calls.push("replacement");
+            });
+          });
+
+          second.$on("evt", () => {
+            calls.push("second");
+          });
+
+          eventScope.$broadcast("evt");
+
+          expect(calls).toEqual(["first", "second"]);
+        });
+
+        it("should not include dynamically added children in the same broadcast pass", () => {
+          const eventScope = createScope();
+          const parent = eventScope.$new();
+          const sibling = eventScope.$new();
+          const calls: string[] = [];
+
+          parent.$on("evt", () => {
+            calls.push("parent");
+
+            const late = parent.$new();
+            late.$on("evt", () => calls.push("late"));
+          });
+
+          sibling.$on("evt", () => calls.push("sibling"));
+
+          eventScope.$broadcast("evt");
+
+          expect(calls).toEqual(["parent", "sibling"]);
+        });
+
+        it("should null out currentScope for broadcast even if propagation is stopped", () => {
+          let resultEvent;
+
+          grandChild21.$on("myEvent", (event) => {
+            event.stopPropagation();
+            resultEvent = event;
+          });
+
+          const result = scope.$broadcast("myEvent");
+
+          expect(result).toBeDefined();
+          expect(result).toBe(resultEvent);
+          expect(result.currentScope).toBe(null);
+        });
+
         it("should not not fire any listeners for other events", () => {
           scope.$broadcast("fooEvent");
           expect(log).toBe("");
@@ -3725,6 +4115,7 @@ describe("Scope", () => {
           expect(result).toBeDefined();
           expect(result.name).toBe("some");
           expect(result.targetScope).toEqual(child1.$target);
+          expect(result.currentScope).toBe(null);
         });
       });
 
@@ -3760,6 +4151,39 @@ describe("Scope", () => {
           expect(event.currentScope).toBe(null);
         });
 
+        it("should have currentScope set to null when a listener throws", () => {
+          let captured;
+          scope.$on("fooEvent", () => {
+            throw new Error("boom");
+          });
+
+          scope.$on("fooEvent", (event) => {
+            captured = event;
+          });
+
+          const result = scope.$broadcast("fooEvent");
+
+          expect(captured).toBe(result);
+          expect(result.currentScope).toBeNull();
+        });
+
+        it("should continue executing listeners on the same scope if one listener throws", () => {
+          const events: string[] = [];
+
+          scope.$on("myEvent", () => {
+            events.push("first");
+            throw new Error("handlerFailure");
+          });
+
+          scope.$on("myEvent", () => {
+            events.push("second");
+          });
+
+          scope.$broadcast("myEvent");
+
+          expect(events).toEqual(["first", "second"]);
+        });
+
         it("should support passing messages as constargs", () => {
           const child = scope.$new();
 
@@ -3773,6 +4197,42 @@ describe("Scope", () => {
           expect(args.length).toBe(5);
           expect(sliceArgs(args, 1)).toEqual(["do", "re", "me", "fa"]);
         });
+      });
+
+      it("should traverse a wide broadcast tree without skipping listeners", () => {
+        const eventScope = createScope();
+        const childCount = 250;
+        const calls: number[] = [];
+
+        for (let i = 0; i < childCount; i++) {
+          const child = eventScope.$new();
+
+          child.$on("evt", () => calls.push(i));
+        }
+
+        eventScope.$broadcast("evt");
+
+        expect(calls.length).toBe(childCount);
+      });
+
+      it("should traverse a deep broadcast tree without dropping branches", () => {
+        const eventScope = createScope();
+        let current = eventScope;
+        const depth = 300;
+
+        for (let i = 0; i < depth; i++) {
+          const next = current.$new();
+
+          next.$on("evt", () => {
+            // intentionally empty
+          });
+
+          current = next;
+        }
+
+        const result = eventScope.$broadcast("evt");
+
+        expect(result.currentScope).toBeNull();
       });
     });
 
@@ -3852,6 +4312,29 @@ describe("Scope", () => {
       expect(scope._children.length).toEqual(1);
       child.$destroy();
       expect(scope._children.length).toEqual(0);
+    });
+
+    it("should tolerate nested broadcast calls from $destroy listeners", () => {
+      const scope = createScope();
+      const parent = scope.$new();
+      const child = parent.$new();
+
+      const events: string[] = [];
+
+      child.$on("cleanup", () => {
+        events.push("cleanup");
+      });
+
+      parent.$on("$destroy", () => {
+        parent.$broadcast("cleanup");
+        events.push("destroyed");
+      });
+
+      parent.$destroy();
+
+      expect(events).toEqual(["cleanup", "destroyed"]);
+      expect(parent.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(parent)).toBeFalse();
     });
 
     it("should keep parent child bookkeeping consistent when destroying a middle child", () => {

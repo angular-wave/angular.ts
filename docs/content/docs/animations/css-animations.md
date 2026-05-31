@@ -1,5 +1,6 @@
 ---
 title: "CSS-based animations with the AngularTS CSS driver"
+linkTitle: "CSS Animations"
 weight: 10
 description: "Write CSS transitions and keyframe animations for AngularTS structural directives using ng-enter, ng-leave, ng-move, and stagger classes."
 ---

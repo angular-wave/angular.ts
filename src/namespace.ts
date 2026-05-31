@@ -65,13 +65,39 @@ import type {
 import type {
   Machine as TMachine,
   MachineConfig as TMachineConfig,
+  MachineEventMap as TMachineEventMap,
+  MachineHooks as TMachineHooks,
   MachineMode as TMachineMode,
+  MachineModeHooks as TMachineModeHooks,
+  MachineNoEvents as TMachineNoEvents,
   MachineProvider as TMachineProvider,
   MachineService as TMachineService,
+  MachineSnapshot as TMachineSnapshot,
   MachineTransition as TMachineTransition,
+  MachineTransitionContext as TMachineTransitionContext,
+  MachineTransitionHook as TMachineTransitionHook,
   MachineTransitionMap as TMachineTransitionMap,
   MachineTransitionResult as TMachineTransitionResult,
-} from "./core/machine/machine.ts";
+} from "./services/machine/machine.ts";
+import type {
+  Workflow as TWorkflow,
+  WorkflowCommand as TWorkflowCommand,
+  WorkflowCommandContext as TWorkflowCommandContext,
+  WorkflowCommandMap as TWorkflowCommandMap,
+  WorkflowCommandOptions as TWorkflowCommandOptions,
+  WorkflowConcurrencyPolicy as TWorkflowConcurrencyPolicy,
+  WorkflowCommandResult as TWorkflowCommandResult,
+  WorkflowConfig as TWorkflowConfig,
+  WorkflowDiagnostic as TWorkflowDiagnostic,
+  WorkflowHistoryEntry as TWorkflowHistoryEntry,
+  WorkflowMode as TWorkflowMode,
+  WorkflowNoCommands as TWorkflowNoCommands,
+  WorkflowProvider as TWorkflowProvider,
+  WorkflowService as TWorkflowService,
+  WorkflowSnapshot as TWorkflowSnapshot,
+  WorkflowSnapshotMigration as TWorkflowSnapshotMigration,
+  WorkflowStatus as TWorkflowStatus,
+} from "./services/workflow/workflow.ts";
 import type {
   SceProvider as TSceProvider,
   SceDelegateProvider as TSceDelegateProvider,
@@ -437,6 +463,8 @@ declare global {
 
     export type MachineService = TMachineService;
 
+    export type WorkflowService = TWorkflowService;
+
     export type ParseService = TParseService;
 
     export type ProvideService = TProvideService;
@@ -551,24 +579,120 @@ declare global {
 
     export type ListenerFn = TListenerFn;
 
-    export type Machine<TData extends object = Record<string, unknown>> =
-      TMachine<TData>;
+    export type MachineEventMap = TMachineEventMap;
 
-    export type MachineConfig<TData extends object = Record<string, unknown>> =
-      TMachineConfig<TData>;
+    export type MachineNoEvents = TMachineNoEvents;
+
+    export type Machine<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TMachine<TData, TEvents>;
+
+    export type MachineConfig<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineConfig<TData, TEvents>;
+
+    export type MachineHooks<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineHooks<TData, TEvents>;
 
     export type MachineMode = TMachineMode;
+
+    export type MachineModeHooks<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineModeHooks<TData, TEvents>;
+
+    export type MachineSnapshot<
+      TData extends object = Record<string, unknown>,
+    > = TMachineSnapshot<TData>;
 
     export type MachineTransition<
       TData extends object = Record<string, unknown>,
       TPayload = unknown,
-    > = TMachineTransition<TData, TPayload>;
+      TEvents extends object = MachineNoEvents,
+    > = TMachineTransition<TData, TPayload, TEvents>;
+
+    export type MachineTransitionContext<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+      TPayload = unknown,
+    > = TMachineTransitionContext<TData, TEvents, TPayload>;
+
+    export type MachineTransitionHook<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineTransitionHook<TData, TEvents>;
 
     export type MachineTransitionMap<
       TData extends object = Record<string, unknown>,
-    > = TMachineTransitionMap<TData>;
+      TEvents extends object = MachineNoEvents,
+    > = TMachineTransitionMap<TData, TEvents>;
 
     export type MachineTransitionResult = TMachineTransitionResult;
+
+    export type Workflow<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+      TCommands extends object = WorkflowNoCommands,
+    > = TWorkflow<TData, TEvents, TCommands>;
+
+    export type WorkflowCommand<
+      TData extends object = Record<string, unknown>,
+      TInput = unknown,
+      TOutput = unknown,
+      TEvents extends object = MachineNoEvents,
+      TCommands extends object = WorkflowNoCommands,
+      TName extends string = string,
+    > = TWorkflowCommand<TData, TInput, TOutput, TEvents, TCommands, TName>;
+
+    export type WorkflowCommandContext<
+      TData extends object = Record<string, unknown>,
+      TInput = unknown,
+      TEvents extends object = MachineNoEvents,
+      TCommands extends object = WorkflowNoCommands,
+      TName extends string = string,
+    > = TWorkflowCommandContext<TData, TInput, TEvents, TCommands, TName>;
+
+    export type WorkflowCommandMap<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+    > = TWorkflowCommandMap<TData, TEvents>;
+
+    export type WorkflowCommandOptions = TWorkflowCommandOptions;
+
+    export type WorkflowConcurrencyPolicy = TWorkflowConcurrencyPolicy;
+
+    export type WorkflowCommandResult<TOutput = unknown> =
+      TWorkflowCommandResult<TOutput>;
+
+    export type WorkflowConfig<
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = MachineNoEvents,
+      TCommands extends object = WorkflowNoCommands,
+    > = TWorkflowConfig<TData, TEvents, TCommands>;
+
+    export type WorkflowDiagnostic = TWorkflowDiagnostic;
+
+    export type WorkflowHistoryEntry = TWorkflowHistoryEntry;
+
+    export type WorkflowMode = TWorkflowMode;
+
+    export type WorkflowNoCommands = TWorkflowNoCommands;
+
+    export type WorkflowProvider = TWorkflowProvider;
+
+    export type WorkflowSnapshot<
+      TData extends object = Record<string, unknown>,
+    > = TWorkflowSnapshot<TData>;
+
+    export type WorkflowSnapshotMigration<
+      TData extends object = Record<string, unknown>,
+    > = TWorkflowSnapshotMigration<TData>;
+
+    export type WorkflowStatus = TWorkflowStatus;
 
     export type NgModelController = TNgModelController;
 

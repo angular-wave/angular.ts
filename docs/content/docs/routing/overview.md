@@ -1,5 +1,6 @@
 ---
 title: "State-based routing in AngularTS applications"
+linkTitle: "Routing"
 weight: 340
 description: "Learn how AngularTS implements state-based routing with states, views, resolves, transitions, and URL matching configured via $stateProvider."
 ---

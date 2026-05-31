@@ -8,6 +8,7 @@ import {
   _provide,
   _router,
   _window,
+  _workflow,
 } from "./injection-tokens.ts";
 import { AnimateProvider } from "./animations/animate.ts";
 import {
@@ -17,7 +18,8 @@ import {
 import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
-import { MachineProvider } from "./core/machine/machine.ts";
+import { MachineProvider } from "./services/machine/machine.ts";
+import { WorkflowProvider } from "./services/workflow/workflow.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
 import { RootScopeProvider } from "./core/scope/scope.ts";
 import {
@@ -169,7 +171,8 @@ export {
 export { ControllerProvider } from "./core/controller/controller.ts";
 export { FilterProvider } from "./core/filter/filter.ts";
 export { InterpolateProvider } from "./core/interpolate/interpolate.ts";
-export { MachineProvider } from "./core/machine/machine.ts";
+export { MachineProvider } from "./services/machine/machine.ts";
+export { WorkflowProvider } from "./services/workflow/workflow.ts";
 export { ParseProvider } from "./core/parse/parse.ts";
 export { RootScopeProvider } from "./core/scope/scope.ts";
 export {
@@ -377,6 +380,7 @@ export const ngCoreProviders: ProviderGroup = {
   [_machine]: MachineProvider,
   $parse: ParseProvider,
   $rootScope: RootScopeProvider,
+  [_workflow]: WorkflowProvider,
 };
 
 /** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */

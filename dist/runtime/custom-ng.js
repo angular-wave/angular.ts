@@ -1,7 +1,9 @@
-import { _compileLifecycle, _provide, _window, _document, _compile, _angular, _filter } from '../injection-tokens.js';
+import { _workflow, _machine, _compileLifecycle, _provide, _window, _document, _compile, _angular, _filter } from '../injection-tokens.js';
 import { CompileLifecycleProvider, CompileProvider } from '../core/compile/compile.js';
 import { FilterProvider } from '../core/filter/filter.js';
 import { InterpolateProvider } from '../core/interpolate/interpolate.js';
+import { MachineProvider } from '../services/machine/machine.js';
+import { WorkflowProvider } from '../services/workflow/workflow.js';
 import { ParseProvider } from '../core/parse/parse.js';
 import { RootScopeProvider } from '../core/scope/scope.js';
 import { ControllerProvider } from '../core/controller/controller.js';
@@ -19,8 +21,10 @@ const coreProviders = {
     $controller: ControllerProvider,
     $exceptionHandler: ExceptionHandlerProvider,
     $interpolate: InterpolateProvider,
+    [_machine]: MachineProvider,
     $parse: ParseProvider,
     $rootScope: RootScopeProvider,
+    [_workflow]: WorkflowProvider,
 };
 /**
  * Registers a custom AngularTS `ng` module from core providers and a caller

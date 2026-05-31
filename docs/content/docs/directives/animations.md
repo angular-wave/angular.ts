@@ -1,5 +1,6 @@
 ---
 title: "Animation Directives: ng-animate-swap and CSS Hooks"
+linkTitle: "Animation Directives"
 weight: 250
 description: "Use ng-animate-swap, ng-animate-children, and CSS class hooks to animate structural directives like ng-if, ng-repeat, and ng-show with the $animate service."
 ---

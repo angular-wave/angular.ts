@@ -81,6 +81,11 @@ function isArray(array) {
     return Array.isArray(array);
 }
 function isInstanceOf(val, type) {
+    if (!isFunction(type))
+        return false;
+    const typePrototype = type.prototype;
+    if (!isObject(typePrototype))
+        return false;
     return val instanceof type;
 }
 /**

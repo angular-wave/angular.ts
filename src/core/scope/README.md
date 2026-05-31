@@ -133,12 +133,34 @@ react when the parent writes `parentValue`.
 The shared `ScopeEvent` object is created at the first scope that handles the
 event and is reused through propagation. `currentScope` is set for each scope
 while its listeners run, then reset to `null` before propagation continues.
-`stopPropagation()` stops later propagation; `preventDefault()` only marks the
-event.
+`stopPropagation()` stops later propagation from the current branch, including
+remaining descendants and sibling branches in `$broadcast`; it does not prevent
+listener execution already queued on the current scope. `preventDefault()`
+only marks the event.
+
+`$broadcast` iterates over a snapshot of child scopes for the current hop, so
+children added or removed during traversal do not affect the active pass. This
+prevents sibling skips when a child is destroyed mid-broadcast and prevents new
+descendants from receiving the same event in the same pass.
 
 Events are separate from `$watch` scheduling. Event listeners run synchronously
 inside `$emit`/`$broadcast`, while watch listeners run from the microtask
 scheduler.
+
+## Production readiness gates
+
+Before treating scope behavior as production-ready, this module should satisfy:
+
+- `$emit` must always return a `ScopeEvent` object with `currentScope` reset to `null`
+  after traversal, even when no listeners are registered on any ancestor.
+- `$emit` and `$broadcast` must reuse a single `ScopeEvent` instance while
+  traversing their chain so listener metadata (`name`, `defaultPrevented`, etc.)
+  remains coherent.
+- `$broadcast` must only traverse child scopes captured at the time a scope begins
+  dispatching in that branch, avoiding listeners added/removed by same-pass
+  listeners from altering active propagation.
+- `$destroy` must keep ancestry usable during destroy delivery and clear scope links
+  only during deferred cleanup so observer callbacks can safely run.
 
 ## Arrays
 
@@ -196,6 +218,51 @@ destroy listeners can still observe enough scope state during `$destroy`
 delivery. `_cleanupDestroyedScope()` then clears child lists, target/proxy
 references, parent/root references for non-root scopes, and reduces
 `_propertyMap` to the small destroyed-scope surface.
+
+## Production Readiness Gate
+
+Treat these checks as mandatory before merging any scope behavior changes.
+
+### Definition of Ready (must all be green)
+
+1. `src/core/scope/scope.ts` changes compile cleanly with no lint/type exceptions.
+2. `src/core/scope/scope.spec.ts` has no skipped/disabled cases in the scope-focused block.
+3. Native collection behavior is explicitly covered for:
+   - `Map` size/value/membership watchers
+   - `Set` membership watchers
+   - `Date` mutator/getter watcher links
+4. Event propagation is explicitly covered for:
+   - `$emit` parent-chain traversal
+   - `$broadcast` child traversal snapshot behavior
+   - stop/protect semantics under child add/remove during dispatch
+5. Destroy lifecycle has explicit coverage for:
+   - child scope detachment
+   - displaced child destruction inside collections
+   - delayed cleanup behavior leaving dispatch paths consistent
+6. Native and non-native collection wrappers return the same values as raw calls
+   for all observed methods in supported runtimes.
+
+### Execution Checklist (run in order)
+
+1. Open a clean working tree and run the focused scope test file.
+2. Verify no skipped/disabled cases exist in `src/core/scope/scope.spec.ts`.
+3. Validate event and destroy edge cases in the same file before touching parser/compile.
+4. Confirm no unrelated watcher-key regressions in neighboring modules (`compile`/`directive`) before merge.
+
+### Open failure policy
+
+- Any yellow/pending scope spec is a hard stop until it is either:
+  - explicitly documented with a tracked rationale and a follow-up issue, or
+  - converted to a deterministic assert/skip rule with runtime feature detection.
+- Failing, flaky, or non-deterministic runs are treated as release blockers for scope.
+
+### Scope production score
+
+Maintain a running score with one point per completed mandatory requirement:
+
+- 0-3: prototype
+- 4-5: pre-release candidate
+- 6+: production candidate only
 
 ## Types And Interfaces
 

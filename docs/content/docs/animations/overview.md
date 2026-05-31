@@ -1,5 +1,6 @@
 ---
 title: "AngularTS animations: CSS and JavaScript drivers overview"
+linkTitle: "Animations"
 weight: 30
 description: "Overview of the AngularTS animation system — the $animate service, CSS and JS drivers, structural directive hooks, and class-based transitions."
 ---

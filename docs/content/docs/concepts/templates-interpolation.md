@@ -1,5 +1,6 @@
 ---
 title: "Templates, interpolation, and expression parsing"
+linkTitle: "Templates"
 weight: 230
 description: "Master the {{ }} interpolation syntax, one-time bindings, filter pipes, and how $interpolate and $parse power programmatic expression evaluation."
 ---

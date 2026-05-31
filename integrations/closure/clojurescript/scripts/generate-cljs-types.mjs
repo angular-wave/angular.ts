@@ -8,9 +8,9 @@ const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 204;
-const expectedStrictWrapperCount = 253;
-const expectedStrictPropertyReaderCount = 382;
+const expectedTypeTagCount = 228;
+const expectedStrictWrapperCount = 258;
+const expectedStrictPropertyReaderCount = 426;
 
 const source = readFileSync(externsPath, "utf8");
 

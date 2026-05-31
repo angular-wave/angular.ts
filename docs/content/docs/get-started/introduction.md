@@ -1,5 +1,6 @@
 ---
 title: "AngularTS: modern evolution of AngularJS"
+linkTitle: "Introduction"
 weight: 10
 description: "AngularTS preserves AngularJS's HTML-first model and dependency injection while adding reactive change detection, TypeScript support, and native browser APIs."
 ---

@@ -24,7 +24,10 @@ Go targets feature parity with the completed Rust/Wasm app-authoring surface.
 The current covered app-authoring surface includes the shared Wasm scope ABI,
 restricted scope helpers, module/component/controller/service metadata, `$http`,
 diagnostics/events, template request/cache, storage/cookie, router/state,
-realtime WebSocket/SSE, and core REST facades.
+realtime WebSocket/SSE, core REST facades, and the machine data/config/runtime
+facade. `MachineProvider` is covered as a config-free provider facade because
+the current machine API keeps all behavior in per-machine `MachineConfig`
+values.
 
 Forms and validation remain the next useful application-level gap. Provider/
 config-time APIs, compile/link internals, browser object aliases, animation,
@@ -66,12 +69,34 @@ reference example makes one necessary.
 | `InjectionTokens` | covered |
 | `InvocationDetail` | covered |
 | `ListenerFn` | covered |
-| `Machine` | deferred |
-| `MachineConfig` | deferred |
-| `MachineMode` | deferred |
-| `MachineTransition` | deferred |
-| `MachineTransitionMap` | deferred |
-| `MachineTransitionResult` | deferred |
+| `Machine` | covered |
+| `MachineConfig` | covered |
+| `MachineEventMap` | covered |
+| `MachineHooks` | covered |
+| `MachineMode` | covered |
+| `MachineModeHooks` | covered |
+| `MachineNoEvents` | covered |
+| `MachineSnapshot` | covered |
+| `MachineTransition` | covered |
+| `MachineTransitionContext` | covered |
+| `MachineTransitionHook` | covered |
+| `MachineTransitionMap` | covered |
+| `MachineTransitionResult` | covered |
+| `Workflow` | deferred |
+| `WorkflowCommand` | deferred |
+| `WorkflowCommandContext` | deferred |
+| `WorkflowCommandMap` | deferred |
+| `WorkflowCommandOptions` | deferred |
+| `WorkflowConcurrencyPolicy` | deferred |
+| `WorkflowCommandResult` | deferred |
+| `WorkflowConfig` | deferred |
+| `WorkflowDiagnostic` | deferred |
+| `WorkflowHistoryEntry` | deferred |
+| `WorkflowMode` | deferred |
+| `WorkflowNoCommands` | deferred |
+| `WorkflowSnapshot` | deferred |
+| `WorkflowSnapshotMigration` | deferred |
+| `WorkflowStatus` | deferred |
 | `ScopeEvent` | covered |
 | `ServiceProvider` | deferred |
 | `Validator` | deferred |
@@ -97,7 +122,8 @@ reference example makes one necessary.
 | `InterpolateProvider` | deferred |
 | `LocationProvider` | deferred |
 | `LogProvider` | deferred |
-| `MachineProvider` | deferred |
+| `MachineProvider` | covered |
+| `WorkflowProvider` | deferred |
 | `ParseProvider` | deferred |
 | `RestProvider` | deferred |
 | `RootScopeProvider` | deferred |
@@ -144,7 +170,8 @@ reference example makes one necessary.
 | `InterpolateService` | deferred |
 | `LocationService` | deferred |
 | `LogService` | covered |
-| `MachineService` | deferred |
+| `MachineService` | covered |
+| `WorkflowService` | deferred |
 | `ParseService` | deferred |
 | `ProvideService` | deferred |
 | `PubSubService` | covered |

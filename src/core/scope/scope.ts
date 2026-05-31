@@ -171,6 +171,10 @@ interface ArraySwapCandidate {
   _length: number;
 }
 
+function isScopeEventStopped(event: ScopeEvent): boolean {
+  return event.stopped;
+}
+
 /**
  * Event object passed to `$emit` and `$broadcast` listeners.
  *
@@ -178,8 +182,8 @@ interface ArraySwapCandidate {
  * control methods.
  */
 export interface ScopeEvent {
-  targetScope: typeof Proxy<ng.Scope>;
-  currentScope: typeof Proxy<ng.Scope> | null;
+  targetScope: ScopeTarget;
+  currentScope: ScopeTarget | null;
   name: string;
   stopPropagation?(): void;
   preventDefault(): void;
@@ -946,10 +950,31 @@ const mapMembershipMutationWatchKeys = getPrototypeMethodNames(
   (key) => !mapMutationMethods.has(key),
 );
 
+if (
+  isFunction(mapPrototype.includes) &&
+  !mapMembershipMutationWatchKeys.includes("includes")
+) {
+  mapMembershipMutationWatchKeys.push("includes");
+}
+
+if (
+  isFunction(mapPrototype.includes) &&
+  !mapValueMutationWatchKeys.includes("includes")
+) {
+  mapValueMutationWatchKeys.push("includes");
+}
+
 const setMutationWatchKeys = getPrototypeMethodNames(
   setPrototype,
   (key) => !setMutationMethods.has(key),
 );
+
+if (
+  isFunction(setPrototype.includes) &&
+  !setMutationWatchKeys.includes("includes")
+) {
+  setMutationWatchKeys.push("includes");
+}
 
 const datePrototype = Date.prototype as Date & Record<string, unknown>;
 
@@ -1256,6 +1281,10 @@ export function isNonScope(target: unknown): boolean {
   for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
     try {
       const ctor = nonScopeConstructors[i] as InstanceConstructor;
+
+      if (!isFunction(ctor)) {
+        continue;
+      }
 
       if (isInstanceOf(objectTarget, ctor)) {
         nonScopeCache.add(objectTarget);
@@ -1881,7 +1910,8 @@ export class Scope {
 
         const hasForeignPropertyListeners =
           this._foreignListeners.has(property) ||
-          (isInstanceOf(parentForeignListeners, Map) &&
+          (isObject(parentForeignListeners) &&
+            isInstanceOf(parentForeignListeners, Map) &&
             parentForeignListeners.has(property));
 
         const hasObjectListeners =
@@ -2240,7 +2270,7 @@ export class Scope {
     }
 
     if (isNativeScopedTarget(target)) {
-      if (isFunction(targetProp)) {
+      if (isFunction(targetProp) && property !== "constructor") {
         return this._getNativeCollectionMethodWrapper(
           target,
           property,
@@ -2482,11 +2512,11 @@ export class Scope {
       return result;
     }
 
-    const hadValues = target.size > 0;
+    const previousSize = target.size;
 
     const result = Reflect.apply(method, target, args) as unknown;
 
-    if (hadValues) {
+    if (target.size !== previousSize) {
       this._scheduleNativeCollectionMutation(target, undefined, true);
     }
 
@@ -2536,11 +2566,11 @@ export class Scope {
       return result;
     }
 
-    const hadValues = target.size > 0;
+    const previousSize = target.size;
 
     const result = Reflect.apply(method, target, args) as unknown;
 
-    if (hadValues) {
+    if (target.size !== previousSize) {
       this._scheduleNativeCollectionMutation(
         target,
         setMutationWatchKeys,
@@ -3919,7 +3949,7 @@ export class Scope {
   }
 
   /** Emits an event upward through the scope hierarchy. */
-  $emit(name: string, ...args: unknown[]): ScopeEvent | undefined {
+  $emit(name: string, ...args: unknown[]): ScopeEvent {
     return this._eventHelper(
       { name, event: undefined, broadcast: false },
       ...args,
@@ -3927,7 +3957,7 @@ export class Scope {
   }
 
   /** Broadcasts an event downward through the scope hierarchy. */
-  $broadcast(name: string, ...args: unknown[]): ScopeEvent | undefined {
+  $broadcast(name: string, ...args: unknown[]): ScopeEvent {
     return this._eventHelper(
       { name, event: undefined, broadcast: true },
       ...args,
@@ -3952,27 +3982,19 @@ export class Scope {
       broadcast: boolean;
     },
     ...args: unknown[]
-  ): ScopeEvent | undefined {
-    if (!broadcast) {
-      if (!this._listeners.has(name)) {
-        if (this.$parent) {
-          return this.$parent.$handler._eventHelper(
-            { name, event, broadcast },
-            ...args,
-          );
-        }
-
-        return undefined;
-      }
-    }
+  ): ScopeEvent {
+    const initialChildCount = this._children.length;
+    const initialChildren =
+      initialChildCount > 0 ? this._children.slice() : undefined;
 
     if (event) {
-      event.currentScope = this.$proxy as unknown as ScopeEvent["currentScope"];
+      event.currentScope = this
+        .$target as unknown as ScopeEvent["currentScope"];
     } else {
       event = {
         name,
-        targetScope: this.$proxy as unknown as ScopeEvent["targetScope"],
-        currentScope: this.$proxy as unknown as ScopeEvent["currentScope"],
+        targetScope: this.$target as unknown as ScopeEvent["targetScope"],
+        currentScope: this.$target as unknown as ScopeEvent["currentScope"],
         stopped: false,
         stopPropagation() {
           assertDefined(event).stopped = true;
@@ -4020,15 +4042,27 @@ export class Scope {
     }
 
     if (broadcast) {
-      const children = this._children;
+      if (initialChildren) {
+        const children = initialChildren;
 
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i];
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i];
 
-        event = child.$handler._eventHelper(
-          { name, event: currentEvent, broadcast },
-          ...args,
-        );
+          const childHandler = child.$handler;
+
+          if (childHandler._destroyed || !this._children.includes(child)) {
+            continue;
+          }
+
+          event = child.$handler._eventHelper(
+            { name, event: currentEvent, broadcast },
+            ...args,
+          );
+
+          if (isScopeEventStopped(currentEvent)) {
+            break;
+          }
+        }
       }
 
       return event;

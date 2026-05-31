@@ -1,5 +1,6 @@
 ---
 title: "Advanced directives: workers, WASM, channels, viewport"
+linkTitle: "Advanced"
 weight: 240
 description: "AngularTS advanced directives for Web Workers, WebAssembly, lazy loading, event channels, DOM references, and accessibility — all declarative in HTML."
 ---
@@ -38,27 +39,68 @@ Initializes scope variables inline in the template. Best suited for simple one-o
 
 > **Tip:** Prefer controllers or services over `ng-init` for any real application logic. `ng-init` is ideal for zero-JS demos and quick prototypes.
 ## DOM reference directives
-### `ng-ref`
-
-Exposes a directive's controller on the parent scope under a named property. Useful for accessing child component APIs from a parent scope.
-
-```html
-<button ng-click="searchInput.$setViewValue('')">Clear</button>
-```
 ### `ng-el`
 
-Binds the native DOM element itself to a scope property, giving you direct access to the element reference.
+Use `ng-el` when you only need the native DOM element. It is the simple DOM
+reference API and is usually the clearest choice for canvas, focus management,
+layout measurement, and pointer-driven UI.
 
 ```html
+<section ng-controller="BoardController as $ctrl">
+  <canvas ng-el="$ctrl.boardEl"></canvas>
+</section>
 ```
 
 ```javascript
-$scope.$watch('myCanvas', function(el) {
-  if (el) {
-    var ctx = el.getContext('2d');
-    ctx.fillRect(0, 0, 400, 300);
-  }
-});
+function BoardController() {
+  this.boardEl = null;
+}
+```
+
+`ng-el="$ctrl.boardEl"` stores the element on the controller. Use this form
+with controller-as syntax.
+
+For simple scope shorthand, pass a bare name:
+
+```html
+<canvas ng-el="boardEl"></canvas>
+```
+
+If the value is omitted, AngularTS uses the element `id`.
+
+```html
+<canvas id="board" ng-el></canvas>
+```
+
+### `ng-ref`
+
+Use `ng-ref` when you need a component or directive controller reference, or
+when you need to assign the reference to a full expression such as
+`$ctrl.child`.
+
+```html
+<search-box ng-ref="$ctrl.search"></search-box>
+<button ng-click="$ctrl.search.clear()">Clear</button>
+```
+
+By default, `ng-ref` reads the component or element-directive controller when
+one exists, and falls back to the DOM element.
+
+`ng-ref-read` is not a standalone directive. It only changes what `ng-ref`
+assigns.
+
+```html
+<canvas ng-ref="$ctrl.boardEl" ng-ref-read="$element"></canvas>
+<my-widget ng-ref="$ctrl.resizeHandle" ng-ref-read="resizeHandle"></my-widget>
+```
+
+Use `ng-ref-read="$element"` only when you specifically need the DOM element
+through an assignable expression. For the common DOM-only case, prefer `ng-el`.
+
+```javascript
+function BoardController() {
+  this.boardEl = null;
+}
 ```
 ## Event and communication directives
 ### `ng-channel`

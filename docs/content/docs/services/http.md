@@ -1,5 +1,6 @@
 ---
 title: "Making HTTP requests with the $http service"
+linkTitle: "HTTP Requests"
 weight: 380
 description: "Send requests with the $http service and configure defaults, transforms, interceptors, and XSRF behavior."
 ---

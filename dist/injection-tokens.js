@@ -30,6 +30,7 @@ const _httpParamSerializer = "$httpParamSerializer";
 const _interpolate = "$interpolate";
 const _location = "$location";
 const _log = "$log";
+const _machine = "$machine";
 const _parse = "$parse";
 const _rest = "$rest";
 const _rootScope = "$rootScope";
@@ -52,6 +53,7 @@ const _webTransport = "$webTransport";
 const _websocket = "$websocket";
 const _worker = "$worker";
 const _wasm = "$wasm";
+const _workflow = "$workflow";
 const _provide = "$provide";
 const _injector = "$injector";
 const _angularProvider = "$angularProvider";
@@ -69,6 +71,7 @@ const _httpParamSerializerProvider = "$httpParamSerializerProvider";
 const _interpolateProvider = "$interpolateProvider";
 const _locationProvider = "$locationProvider";
 const _logProvider = "$logProvider";
+const _machineProvider = "$machineProvider";
 const _parseProvider = "$parseProvider";
 const _restProvider = "$restProvider";
 const _rootScopeProvider = "$rootScopeProvider";
@@ -89,6 +92,7 @@ const _webTransportProvider = "$webTransportProvider";
 const _websocketProvider = "$websocketProvider";
 const _workerProvider = "$workerProvider";
 const _wasmProvider = "$wasmProvider";
+const _workflowProvider = "$workflowProvider";
 const _controllerProvider = "$controllerProvider";
 /**
  * Runtime token registry. Prefer importing individual token constants in source
@@ -120,6 +124,7 @@ const $injectTokens = {
     _interpolate,
     _location,
     _log,
+    _machine,
     _parse,
     _rest,
     _rootScope,
@@ -142,6 +147,7 @@ const $injectTokens = {
     _websocket,
     _worker,
     _wasm,
+    _workflow,
     _provide,
     _injector,
     _angularProvider,
@@ -159,6 +165,7 @@ const $injectTokens = {
     _interpolateProvider,
     _locationProvider,
     _logProvider,
+    _machineProvider,
     _parseProvider,
     _restProvider,
     _rootScopeProvider,
@@ -179,7 +186,8 @@ const $injectTokens = {
     _websocketProvider,
     _workerProvider,
     _wasmProvider,
+    _workflowProvider,
     _controllerProvider,
 };
 
-export { $injectTokens, _anchorScroll, _anchorScrollProvider, _angular, _angularProvider, _animate, _animateCssDriver, _animateJs, _animateJsDriver, _animateProvider, _animateQueue, _animation, _aria, _ariaProvider, _compile, _compileLifecycle, _compileLifecycleProvider, _compileProvider, _controller, _controllerProvider, _cookie, _cookieProvider, _document, _element, _eventBus, _eventBusProvider, _exceptionHandler, _exceptionHandlerProvider, _filter, _filterProvider, _http, _httpParamSerializer, _httpParamSerializerProvider, _httpProvider, _injector, _interpolate, _interpolateProvider, _location, _locationProvider, _log, _logProvider, _parse, _parseProvider, _provide, _rest, _restProvider, _rootElement, _rootScope, _rootScopeProvider, _router, _routerProvider, _sce, _sceDelegate, _sceDelegateProvider, _sceProvider, _scope, _sse, _sseProvider, _state, _stateProvider, _stateRegistry, _stateRegistryProvider, _stream, _streamProvider, _taskTrackerFactory, _templateCache, _templateCacheProvider, _templateFactory, _templateFactoryProvider, _templateRequest, _templateRequestProvider, _transitions, _transitionsProvider, _view, _viewProvider, _wasm, _wasmProvider, _webComponent, _webComponentProvider, _webTransport, _webTransportProvider, _websocket, _websocketProvider, _window, _worker, _workerProvider };
+export { $injectTokens, _anchorScroll, _anchorScrollProvider, _angular, _angularProvider, _animate, _animateCssDriver, _animateJs, _animateJsDriver, _animateProvider, _animateQueue, _animation, _aria, _ariaProvider, _compile, _compileLifecycle, _compileLifecycleProvider, _compileProvider, _controller, _controllerProvider, _cookie, _cookieProvider, _document, _element, _eventBus, _eventBusProvider, _exceptionHandler, _exceptionHandlerProvider, _filter, _filterProvider, _http, _httpParamSerializer, _httpParamSerializerProvider, _httpProvider, _injector, _interpolate, _interpolateProvider, _location, _locationProvider, _log, _logProvider, _machine, _machineProvider, _parse, _parseProvider, _provide, _rest, _restProvider, _rootElement, _rootScope, _rootScopeProvider, _router, _routerProvider, _sce, _sceDelegate, _sceDelegateProvider, _sceProvider, _scope, _sse, _sseProvider, _state, _stateProvider, _stateRegistry, _stateRegistryProvider, _stream, _streamProvider, _taskTrackerFactory, _templateCache, _templateCacheProvider, _templateFactory, _templateFactoryProvider, _templateRequest, _templateRequestProvider, _transitions, _transitionsProvider, _view, _viewProvider, _wasm, _wasmProvider, _webComponent, _webComponentProvider, _webTransport, _webTransportProvider, _websocket, _websocketProvider, _window, _worker, _workerProvider, _workflow, _workflowProvider };

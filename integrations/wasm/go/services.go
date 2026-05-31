@@ -120,6 +120,183 @@ type StorageBackend interface {
 	Remove(key string)
 }
 
+// MachineMode is a mode name used by AngularTS $machine.
+type MachineMode string
+
+// MachineEventMap is event metadata keyed by event type.
+type MachineEventMap map[string]any
+
+// MachineTransitionResult is returned by a machine transition.
+type MachineTransitionResult struct {
+	Mode MachineMode
+}
+
+// NextMode creates a transition result that moves to mode.
+func NextMode(mode MachineMode) MachineTransitionResult {
+	return MachineTransitionResult{Mode: mode}
+}
+
+// Stay keeps the current mode after transition effects have run.
+func Stay() MachineTransitionResult {
+	return MachineTransitionResult{}
+}
+
+// MachineTransition mutates data and optionally returns the next mode.
+type MachineTransition[TData any, TPayload any] func(data *TData, payload TPayload, machine *Machine[TData, TPayload]) MachineTransitionResult
+
+// MachineTransitionMap is keyed by current mode and event type.
+type MachineTransitionMap[TData any, TPayload any] map[MachineMode]map[string]MachineTransition[TData, TPayload]
+
+// MachineTransitionContext is passed to machine hooks.
+type MachineTransitionContext[TData any, TPayload any] struct {
+	Type    string
+	From    MachineMode
+	To      MachineMode
+	Payload TPayload
+	Data    *TData
+	Machine *Machine[TData, TPayload]
+}
+
+// MachineTransitionHook observes a handled transition.
+type MachineTransitionHook[TData any, TPayload any] func(MachineTransitionContext[TData, TPayload])
+
+// MachineModeHooks stores mode-specific hooks.
+type MachineModeHooks[TData any, TPayload any] map[MachineMode]MachineTransitionHook[TData, TPayload]
+
+// MachineHooks stores optional machine transition hooks.
+type MachineHooks[TData any, TPayload any] struct {
+	Enter      MachineModeHooks[TData, TPayload]
+	Exit       MachineModeHooks[TData, TPayload]
+	Transition MachineTransitionHook[TData, TPayload]
+}
+
+// MachineConfig configures a Go-authored machine.
+type MachineConfig[TData any, TPayload any] struct {
+	Initial     MachineMode
+	Data        TData
+	Transitions MachineTransitionMap[TData, TPayload]
+	Hooks       MachineHooks[TData, TPayload]
+}
+
+// WithTransition adds a transition for mode and event type.
+func (c MachineConfig[TData, TPayload]) WithTransition(mode MachineMode, eventType string, transition MachineTransition[TData, TPayload]) MachineConfig[TData, TPayload] {
+	if c.Transitions == nil {
+		c.Transitions = MachineTransitionMap[TData, TPayload]{}
+	}
+	if c.Transitions[mode] == nil {
+		c.Transitions[mode] = map[string]MachineTransition[TData, TPayload]{}
+	}
+	c.Transitions[mode][eventType] = transition
+	return c
+}
+
+// MachineSnapshot captures a machine's current mode and data.
+type MachineSnapshot[TData any] struct {
+	Current MachineMode
+	Data    TData
+}
+
+// Machine is a small Go-native runtime matching AngularTS $machine semantics.
+type Machine[TData any, TPayload any] struct {
+	Current     MachineMode
+	Data        TData
+	Transitions MachineTransitionMap[TData, TPayload]
+	Hooks       MachineHooks[TData, TPayload]
+}
+
+// MachineProvider is the config-free provider facade for AngularTS $machine.
+type MachineProvider struct{}
+
+// ProviderName returns the AngularTS config-time provider token.
+func (MachineProvider) ProviderName() string { return "$machineProvider" }
+
+// ServiceName returns the runtime service token produced by this provider.
+func (MachineProvider) ServiceName() string { return "$machine" }
+
+// NewMachine creates a machine from config.
+func NewMachine[TData any, TPayload any](config MachineConfig[TData, TPayload]) *Machine[TData, TPayload] {
+	return &Machine[TData, TPayload]{
+		Current:     config.Initial,
+		Data:        config.Data,
+		Transitions: config.Transitions,
+		Hooks:       config.Hooks,
+	}
+}
+
+// Can reports whether the current mode handles eventType.
+func (m *Machine[TData, TPayload]) Can(eventType string) bool {
+	transitions := m.Transitions[m.Current]
+	if transitions == nil {
+		return false
+	}
+	_, ok := transitions[eventType]
+	return ok
+}
+
+// Matches reports whether the machine is in mode.
+func (m *Machine[TData, TPayload]) Matches(mode MachineMode) bool {
+	return m.Current == mode
+}
+
+// Send runs a transition. It returns true when a handler exists and ran.
+func (m *Machine[TData, TPayload]) Send(eventType string, payload TPayload) bool {
+	transitions := m.Transitions[m.Current]
+	if transitions == nil {
+		return false
+	}
+	transition, ok := transitions[eventType]
+	if !ok {
+		return false
+	}
+
+	from := m.Current
+	result := transition(&m.Data, payload, m)
+	to := from
+	if result.Mode != "" {
+		to = result.Mode
+	}
+
+	context := MachineTransitionContext[TData, TPayload]{
+		Type:    eventType,
+		From:    from,
+		To:      to,
+		Payload: payload,
+		Data:    &m.Data,
+		Machine: m,
+	}
+
+	if from != to && m.Hooks.Exit != nil {
+		if hook := m.Hooks.Exit[from]; hook != nil {
+			hook(context)
+		}
+	}
+
+	m.Current = to
+
+	if from != to && m.Hooks.Enter != nil {
+		if hook := m.Hooks.Enter[to]; hook != nil {
+			hook(context)
+		}
+	}
+
+	if m.Hooks.Transition != nil {
+		m.Hooks.Transition(context)
+	}
+
+	return true
+}
+
+// Snapshot returns the current mode and data value.
+func (m *Machine[TData, TPayload]) Snapshot() MachineSnapshot[TData] {
+	return MachineSnapshot[TData]{Current: m.Current, Data: m.Data}
+}
+
+// Restore replaces the current mode and data from snapshot.
+func (m *Machine[TData, TPayload]) Restore(snapshot MachineSnapshot[TData]) {
+	m.Current = snapshot.Current
+	m.Data = snapshot.Data
+}
+
 // CookieSameSite is a browser SameSite cookie policy.
 type CookieSameSite string
 
@@ -210,6 +387,9 @@ type RestFactory struct{ value jsValue }
 // RestService is a typed AngularTS REST resource facade.
 type RestService struct{ value jsValue }
 
+// MachineService is the injectable AngularTS $machine facade.
+type MachineService struct{ value jsValue }
+
 func (RootScopeService) TokenName() string        { return "$rootScope" }
 func (HttpService) TokenName() string             { return "$http" }
 func (LogService) TokenName() string              { return "$log" }
@@ -223,6 +403,7 @@ func (StateRegistryService) TokenName() string    { return "$stateRegistry" }
 func (WebSocketService) TokenName() string        { return "$websocket" }
 func (SseService) TokenName() string              { return "$sse" }
 func (RestFactory) TokenName() string             { return "$rest" }
+func (MachineService) TokenName() string          { return "$machine" }
 
 // StateDeclaration is a minimal AngularTS router state declaration.
 type StateDeclaration struct {

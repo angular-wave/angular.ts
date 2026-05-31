@@ -1,5 +1,6 @@
 ---
 title: "Install AngularTS in your project"
+linkTitle: "Install AngularTS"
 weight: 20
 description: "Add AngularTS via a CDN script tag or npm. The package ships TypeScript declarations and supports auto-bootstrap with ng-app or manual bootstrap."
 ---

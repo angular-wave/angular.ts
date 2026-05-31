@@ -28,6 +28,7 @@ func WrapStateRegistryService(value js.Value) StateRegistryService {
 func WrapWebSocketService(value js.Value) WebSocketService { return WebSocketService{value: value} }
 func WrapSseService(value js.Value) SseService             { return SseService{value: value} }
 func WrapRestFactory(value js.Value) RestFactory           { return RestFactory{value: value} }
+func WrapMachineService(value js.Value) MachineService     { return MachineService{value: value} }
 
 func (s RootScopeService) NewChild() js.Value { return s.value.Call("$new") }
 
@@ -194,6 +195,11 @@ func (s RestService) Update(id any, item any) js.Value {
 
 func (s RestService) Delete(id any) js.Value {
 	return s.value.Call("delete", toJS(id))
+}
+
+// CreateFromJS creates an AngularTS machine from a JavaScript-compatible config.
+func (s MachineService) CreateFromJS(config any) js.Value {
+	return s.value.Invoke(toJS(config))
 }
 
 func (s StateDeclaration) toJS() js.Value {

@@ -40,6 +40,8 @@ const knownServices = new Map([
   ["$stateRegistry", "StateRegistryProvider"],
   ["$templateRequest", "TemplateRequestService"],
   ["$transitions", "TransitionService"],
+  ["$workflow", "WorkflowService"],
+  ["workflow", "Workflow"],
 ]);
 
 const imports = [
@@ -57,6 +59,7 @@ const imports = [
   'import type { PubSub } from "../../@types/services/pubsub/pubsub";',
   'import type { SceService } from "../../@types/services/sce/sce";',
   'import type { TemplateRequestService } from "../../@types/services/template-request/template-request";',
+  'import type { Workflow, WorkflowService } from "../../@types/services/workflow/workflow";',
   "",
 ];
 

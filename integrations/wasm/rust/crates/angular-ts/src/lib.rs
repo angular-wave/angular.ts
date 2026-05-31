@@ -26,13 +26,16 @@ pub use services::MemoryStorageBackend;
 pub use services::{
     ConnectionConfig, ConnectionEvent, CookieOptions, CookieSameSite, CookieService,
     CookieStoreOptions, EventBusListener, EventBusService, ExceptionHandlerService, HttpMethod,
-    HttpResponse, HttpResponseStatus, HttpService, LogService, PubSubService,
-    RealtimeProtocolEventDetail, RealtimeProtocolMessage, RequestConfig, RequestShortcutConfig,
-    RestBackend, RestDefinition, RestFactory, RestOptions, RestRequest, RestResponse, RestService,
-    RootScopeService, Service, SseConfig, SseConnection, SseService, StateDeclaration,
-    StateRegistryService, StateResolveArray, StateResolveObject, StateService, StorageBackend,
-    StorageType, SwapModeType, TemplateCacheService, TemplateRequestService, Transition,
-    WebSocketConfig, WebSocketConnection, WebSocketService,
+    HttpResponse, HttpResponseStatus, HttpService, LogService, Machine, MachineConfig,
+    MachineEventMap, MachineHooks, MachineMode, MachineModeHooks, MachineProvider, MachineService,
+    MachineSnapshot, MachineTransition, MachineTransitionContext, MachineTransitionHook,
+    MachineTransitionMap, MachineTransitionResult, PubSubService, RealtimeProtocolEventDetail,
+    RealtimeProtocolMessage, RequestConfig, RequestShortcutConfig, RestBackend, RestDefinition,
+    RestFactory, RestOptions, RestRequest, RestResponse, RestService, RootScopeService, Service,
+    SseConfig, SseConnection, SseService, StateDeclaration, StateRegistryService,
+    StateResolveArray, StateResolveObject, StateService, StorageBackend, StorageType, SwapModeType,
+    TemplateCacheService, TemplateRequestService, Transition, WebSocketConfig, WebSocketConnection,
+    WebSocketService,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};

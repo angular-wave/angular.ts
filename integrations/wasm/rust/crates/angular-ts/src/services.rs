@@ -4,6 +4,7 @@
 //! calls are available on `wasm32` through `wasm-bindgen` extern bindings; host
 //! tests use the portable data types and service token metadata.
 
+use std::collections::BTreeMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashMap;
 
@@ -44,6 +45,394 @@ pub trait StorageBackend {
 
     /// Removes a stored value.
     fn remove(&mut self, key: &str);
+}
+
+/// Machine mode name used by AngularTS `$machine`.
+pub type MachineMode = String;
+
+/// Event name to payload metadata map for Rust-authored machine declarations.
+pub type MachineEventMap = BTreeMap<String, String>;
+
+/// Result returned by a Rust machine transition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MachineTransitionResult {
+    /// Transition to the supplied mode.
+    Mode(MachineMode),
+    /// Keep the current mode after running transition effects.
+    Stay,
+}
+
+impl MachineTransitionResult {
+    /// Creates a transition result that moves to `mode`.
+    pub fn mode(mode: impl Into<String>) -> Self {
+        let mode = mode.into();
+
+        if mode.is_empty() {
+            Self::Stay
+        } else {
+            Self::Mode(mode)
+        }
+    }
+}
+
+impl From<&str> for MachineTransitionResult {
+    fn from(mode: &str) -> Self {
+        Self::mode(mode)
+    }
+}
+
+impl From<String> for MachineTransitionResult {
+    fn from(mode: String) -> Self {
+        Self::mode(mode)
+    }
+}
+
+/// Transition callback for a Rust-authored machine.
+pub type MachineTransition<TData, TPayload = ()> =
+    fn(&mut TData, &TPayload) -> MachineTransitionResult;
+
+/// Transition table keyed by current mode and event type.
+pub type MachineTransitionMap<TData, TPayload = ()> =
+    BTreeMap<MachineMode, BTreeMap<String, MachineTransition<TData, TPayload>>>;
+
+/// Context passed to Rust machine hooks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MachineTransitionContext<'a, TData, TPayload = ()> {
+    event_type: &'a str,
+    from: &'a str,
+    to: &'a str,
+    payload: &'a TPayload,
+    data: &'a TData,
+}
+
+impl<'a, TData, TPayload> MachineTransitionContext<'a, TData, TPayload> {
+    /// Creates a transition context.
+    pub const fn new(
+        event_type: &'a str,
+        from: &'a str,
+        to: &'a str,
+        payload: &'a TPayload,
+        data: &'a TData,
+    ) -> Self {
+        Self {
+            event_type,
+            from,
+            to,
+            payload,
+            data,
+        }
+    }
+
+    /// Event type that triggered the transition.
+    pub const fn event_type(&self) -> &str {
+        self.event_type
+    }
+
+    /// Mode before the transition.
+    pub const fn from(&self) -> &str {
+        self.from
+    }
+
+    /// Mode after the transition.
+    pub const fn to(&self) -> &str {
+        self.to
+    }
+
+    /// Transition payload.
+    pub const fn payload(&self) -> &TPayload {
+        self.payload
+    }
+
+    /// Machine data after transition effects have run.
+    pub const fn data(&self) -> &TData {
+        self.data
+    }
+}
+
+/// Hook callback for a Rust-authored machine transition.
+pub type MachineTransitionHook<TData, TPayload = ()> =
+    for<'a> fn(&MachineTransitionContext<'a, TData, TPayload>);
+
+/// Mode-specific hook map keyed by mode.
+pub type MachineModeHooks<TData, TPayload = ()> =
+    BTreeMap<MachineMode, MachineTransitionHook<TData, TPayload>>;
+
+/// Hook callbacks for a Rust-authored machine.
+#[derive(Clone, Default)]
+pub struct MachineHooks<TData, TPayload = ()> {
+    enter: MachineModeHooks<TData, TPayload>,
+    exit: MachineModeHooks<TData, TPayload>,
+    transition: Option<MachineTransitionHook<TData, TPayload>>,
+}
+
+impl<TData, TPayload> MachineHooks<TData, TPayload> {
+    /// Creates empty machine hooks.
+    pub fn new() -> Self {
+        Self {
+            enter: BTreeMap::new(),
+            exit: BTreeMap::new(),
+            transition: None,
+        }
+    }
+
+    /// Registers an enter hook for `mode`.
+    pub fn on_enter(
+        mut self,
+        mode: impl Into<String>,
+        hook: MachineTransitionHook<TData, TPayload>,
+    ) -> Self {
+        self.enter.insert(mode.into(), hook);
+        self
+    }
+
+    /// Registers an exit hook for `mode`.
+    pub fn on_exit(
+        mut self,
+        mode: impl Into<String>,
+        hook: MachineTransitionHook<TData, TPayload>,
+    ) -> Self {
+        self.exit.insert(mode.into(), hook);
+        self
+    }
+
+    /// Registers a hook that runs after every handled transition.
+    pub const fn on_transition(mut self, hook: MachineTransitionHook<TData, TPayload>) -> Self {
+        self.transition = Some(hook);
+        self
+    }
+
+    /// Enter hooks.
+    pub const fn enter(&self) -> &MachineModeHooks<TData, TPayload> {
+        &self.enter
+    }
+
+    /// Exit hooks.
+    pub const fn exit(&self) -> &MachineModeHooks<TData, TPayload> {
+        &self.exit
+    }
+
+    /// Transition hook, when configured.
+    pub const fn transition(&self) -> Option<MachineTransitionHook<TData, TPayload>> {
+        self.transition
+    }
+}
+
+/// Config for a Rust-authored machine.
+#[derive(Clone)]
+pub struct MachineConfig<TData, TPayload = ()> {
+    initial: MachineMode,
+    data: TData,
+    transitions: MachineTransitionMap<TData, TPayload>,
+    hooks: MachineHooks<TData, TPayload>,
+}
+
+impl<TData, TPayload> MachineConfig<TData, TPayload> {
+    /// Creates a machine config with initial mode and data.
+    pub fn new(initial: impl Into<String>, data: TData) -> Self {
+        Self {
+            initial: initial.into(),
+            data,
+            transitions: BTreeMap::new(),
+            hooks: MachineHooks::new(),
+        }
+    }
+
+    /// Initial mode.
+    pub fn initial(&self) -> &str {
+        &self.initial
+    }
+
+    /// Initial data.
+    pub const fn data(&self) -> &TData {
+        &self.data
+    }
+
+    /// Transition table.
+    pub const fn transitions(&self) -> &MachineTransitionMap<TData, TPayload> {
+        &self.transitions
+    }
+
+    /// Hook config.
+    pub const fn hooks(&self) -> &MachineHooks<TData, TPayload> {
+        &self.hooks
+    }
+
+    /// Adds a transition for a mode and event type.
+    pub fn transition(
+        mut self,
+        mode: impl Into<String>,
+        event_type: impl Into<String>,
+        transition: MachineTransition<TData, TPayload>,
+    ) -> Self {
+        self.transitions
+            .entry(mode.into())
+            .or_default()
+            .insert(event_type.into(), transition);
+        self
+    }
+
+    /// Replaces machine hooks.
+    pub fn with_hooks(mut self, hooks: MachineHooks<TData, TPayload>) -> Self {
+        self.hooks = hooks;
+        self
+    }
+}
+
+/// Serializable snapshot for a machine's current mode and data.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MachineSnapshot<TData> {
+    current: MachineMode,
+    data: TData,
+}
+
+impl<TData> MachineSnapshot<TData> {
+    /// Creates a machine snapshot.
+    pub fn new(current: impl Into<String>, data: TData) -> Self {
+        Self {
+            current: current.into(),
+            data,
+        }
+    }
+
+    /// Snapshot mode.
+    pub fn current(&self) -> &str {
+        &self.current
+    }
+
+    /// Snapshot data.
+    pub const fn data(&self) -> &TData {
+        &self.data
+    }
+
+    /// Consumes the snapshot into its data value.
+    pub fn into_data(self) -> TData {
+        self.data
+    }
+}
+
+/// Small Rust-native machine runtime matching AngularTS `$machine` semantics.
+pub struct Machine<TData, TPayload = ()> {
+    current: MachineMode,
+    data: TData,
+    transitions: MachineTransitionMap<TData, TPayload>,
+    hooks: MachineHooks<TData, TPayload>,
+}
+
+impl<TData, TPayload> Machine<TData, TPayload> {
+    /// Creates a machine from config.
+    pub fn new(config: MachineConfig<TData, TPayload>) -> Self {
+        Self {
+            current: config.initial,
+            data: config.data,
+            transitions: config.transitions,
+            hooks: config.hooks,
+        }
+    }
+
+    /// Current mode.
+    pub fn current(&self) -> &str {
+        &self.current
+    }
+
+    /// Machine data.
+    pub const fn data(&self) -> &TData {
+        &self.data
+    }
+
+    /// Mutable machine data.
+    pub fn data_mut(&mut self) -> &mut TData {
+        &mut self.data
+    }
+
+    /// Returns whether the current mode has a handler for `event_type`.
+    pub fn can(&self, event_type: &str) -> bool {
+        self.transitions
+            .get(&self.current)
+            .is_some_and(|transitions| transitions.contains_key(event_type))
+    }
+
+    /// Returns whether the machine is currently in `mode`.
+    pub fn matches(&self, mode: &str) -> bool {
+        self.current == mode
+    }
+
+    /// Sends an event to the machine. Returns true when a handler ran.
+    pub fn send(&mut self, event_type: &str, payload: TPayload) -> bool {
+        let Some(transition) = self
+            .transitions
+            .get(&self.current)
+            .and_then(|transitions| transitions.get(event_type))
+            .copied()
+        else {
+            return false;
+        };
+
+        let from = self.current.clone();
+        let result = transition(&mut self.data, &payload);
+        let to = match result {
+            MachineTransitionResult::Mode(mode) if !mode.is_empty() => mode,
+            _ => from.clone(),
+        };
+        let context = MachineTransitionContext::new(event_type, &from, &to, &payload, &self.data);
+
+        if from != to {
+            if let Some(hook) = self.hooks.exit.get(&from) {
+                hook(&context);
+            }
+        }
+
+        self.current = to.clone();
+
+        if from != to {
+            if let Some(hook) = self.hooks.enter.get(&to) {
+                hook(&context);
+            }
+        }
+
+        if let Some(hook) = self.hooks.transition {
+            hook(&context);
+        }
+
+        true
+    }
+}
+
+impl<TData: Clone, TPayload> Machine<TData, TPayload> {
+    /// Captures the current mode and cloned data.
+    pub fn snapshot(&self) -> MachineSnapshot<TData> {
+        MachineSnapshot::new(self.current.clone(), self.data.clone())
+    }
+
+    /// Restores the current mode and data from a snapshot.
+    pub fn restore(&mut self, snapshot: MachineSnapshot<TData>) {
+        self.current = snapshot.current;
+        self.data = snapshot.data;
+    }
+}
+
+/// Config-free provider facade for AngularTS `$machine`.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MachineProvider;
+
+impl MachineProvider {
+    /// Provider token used during AngularTS config-time injection.
+    pub const PROVIDER_TOKEN_NAME: &'static str = "$machineProvider";
+
+    /// Runtime service token produced by this provider.
+    pub const SERVICE_TOKEN_NAME: &'static str = "$machine";
+
+    /// Creates a provider facade.
+    pub const fn new() -> Self {
+        Self
+    }
+
+    /// Creates a Rust-native machine from config.
+    pub fn create<TData, TPayload>(
+        &self,
+        config: MachineConfig<TData, TPayload>,
+    ) -> Machine<TData, TPayload> {
+        Machine::new(config)
+    }
 }
 
 /// In-memory storage backend useful for tests and custom Rust stores.
@@ -1551,7 +1940,7 @@ where
 
 #[cfg(not(target_arch = "wasm32"))]
 mod host {
-    use super::{CookieOptions, Service};
+    use super::{CookieOptions, Machine, MachineConfig, Service};
     use std::collections::HashMap;
 
     #[derive(Debug, Clone, Copy)]
@@ -1595,6 +1984,9 @@ mod host {
 
     #[derive(Debug, Clone, Copy)]
     pub struct RestService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct MachineService;
 
     #[derive(Debug, Clone, Default)]
     pub struct CookieService {
@@ -1730,6 +2122,21 @@ mod host {
     impl Service for RestFactory {
         const TOKEN_NAME: &'static str = "$rest";
         const EXPORT_NAME: &'static str = "__ng_service_RestFactory";
+    }
+
+    impl Service for MachineService {
+        const TOKEN_NAME: &'static str = "$machine";
+        const EXPORT_NAME: &'static str = "__ng_service_MachineService";
+    }
+
+    impl MachineService {
+        /// Creates a Rust-native machine from config.
+        pub fn create<TData, TPayload>(
+            &self,
+            config: MachineConfig<TData, TPayload>,
+        ) -> Machine<TData, TPayload> {
+            Machine::new(config)
+        }
     }
 
     impl Service for CookieService {
@@ -2051,6 +2458,16 @@ mod browser {
 
         #[wasm_bindgen(method, js_name = remove)]
         pub fn cookie_remove(this: &CookieService, key: &str, options: &JsValue);
+
+        /// Browser `$machine` service facade.
+        #[wasm_bindgen(typescript_type = "ng.MachineService")]
+        pub type MachineService;
+
+        /// Browser AngularTS machine facade.
+        #[wasm_bindgen(
+            typescript_type = "ng.Machine<Record<string, unknown>, Record<string, unknown>>"
+        )]
+        pub type BrowserMachine;
     }
 
     /// Browser `$exceptionHandler` service facade.
@@ -2418,6 +2835,40 @@ mod browser {
         }
     }
 
+    impl MachineService {
+        /// Creates a JavaScript AngularTS machine from a JavaScript config object.
+        pub fn create_from_js(&self, config: &JsValue) -> Result<BrowserMachine, JsValue> {
+            let service: &Function = self.unchecked_ref();
+            let value = Reflect::apply(service, &JsValue::UNDEFINED, &Array::of1(config))?;
+
+            value.dyn_into::<BrowserMachine>()
+        }
+    }
+
+    impl BrowserMachine {
+        /// Sends an event to the JavaScript AngularTS machine.
+        pub fn send_event(&self, event_type: &str, payload: Option<&JsValue>) -> bool {
+            let machine: &JsValue = self.as_ref();
+            let args = Array::new();
+            args.push(&JsValue::from_str(event_type));
+            if let Some(payload) = payload {
+                args.push(payload);
+            }
+
+            let Ok(send) = Reflect::get(machine, &JsValue::from_str("send")) else {
+                return false;
+            };
+            let Some(send) = send.dyn_ref::<Function>() else {
+                return false;
+            };
+
+            Reflect::apply(send, machine, &args)
+                .ok()
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false)
+        }
+    }
+
     impl RestService {
         /// Fetches a collection and decodes the JSON response.
         pub async fn list_json<T>(&self) -> Result<Vec<T>, JsValue>
@@ -2508,6 +2959,11 @@ mod browser {
         const EXPORT_NAME: &'static str = "__ng_service_RestFactory";
     }
 
+    impl Service for MachineService {
+        const TOKEN_NAME: &'static str = "$machine";
+        const EXPORT_NAME: &'static str = "__ng_service_MachineService";
+    }
+
     impl Service for CookieService {
         const TOKEN_NAME: &'static str = "$cookie";
         const EXPORT_NAME: &'static str = "__ng_service_CookieService";
@@ -2527,16 +2983,16 @@ mod browser {
 #[cfg(target_arch = "wasm32")]
 pub use browser::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, HttpServiceExt,
-    LogService, RestFactory, RestService, RootScopeService, SseConnection, SseService,
-    StateRegistryService, StateService, TemplateCacheService, TemplateRequestService,
+    LogService, MachineService, RestFactory, RestService, RootScopeService, SseConnection,
+    SseService, StateRegistryService, StateService, TemplateCacheService, TemplateRequestService,
     TemplateRequestServiceExt, Transition, WebSocketConnection, WebSocketService,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use host::{
-    CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService, RestFactory,
-    RestService, RootScopeService, SseConnection, SseService, StateRegistryService, StateService,
-    TemplateCacheService, TemplateRequestService, Transition, WebSocketConnection,
-    WebSocketService,
+    CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService,
+    MachineService, RestFactory, RestService, RootScopeService, SseConnection, SseService,
+    StateRegistryService, StateService, TemplateCacheService, TemplateRequestService, Transition,
+    WebSocketConnection, WebSocketService,
 };
 
 /// Public `ng.PubSubService` facade. `$eventBus` uses this runtime shape.
@@ -2558,6 +3014,9 @@ mod tests {
         assert_eq!(WebSocketService::TOKEN_NAME, "$websocket");
         assert_eq!(SseService::TOKEN_NAME, "$sse");
         assert_eq!(RestFactory::TOKEN_NAME, "$rest");
+        assert_eq!(MachineService::TOKEN_NAME, "$machine");
+        assert_eq!(MachineProvider::PROVIDER_TOKEN_NAME, "$machineProvider");
+        assert_eq!(MachineProvider::SERVICE_TOKEN_NAME, "$machine");
         assert_eq!(CookieService::TOKEN_NAME, "$cookie");
         assert_eq!(TemplateCacheService::TOKEN_NAME, "$templateCache");
         assert_eq!(TemplateRequestService::TOKEN_NAME, "$templateRequest");
@@ -2795,5 +3254,98 @@ mod tests {
         assert_eq!(response.data(), &"ok");
         assert_eq!(response.source(), Some("network"));
         assert!(!response.stale());
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct SessionData {
+        starts: u32,
+        last_player: Option<String>,
+    }
+
+    fn start_session(data: &mut SessionData, payload: &String) -> MachineTransitionResult {
+        data.starts += 1;
+        data.last_player = Some(payload.clone());
+        MachineTransitionResult::mode("active")
+    }
+
+    fn refresh_session(data: &mut SessionData, payload: &String) -> MachineTransitionResult {
+        data.last_player = Some(payload.clone());
+        MachineTransitionResult::Stay
+    }
+
+    #[test]
+    fn machine_facade_runs_transitions_hooks_and_snapshots() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        static ENTER_COUNT: AtomicUsize = AtomicUsize::new(0);
+        static EXIT_COUNT: AtomicUsize = AtomicUsize::new(0);
+        static TRANSITION_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+        fn record_enter(context: &MachineTransitionContext<'_, SessionData, String>) {
+            assert_eq!(context.from(), "idle");
+            assert_eq!(context.to(), "active");
+            assert_eq!(context.data().starts, 1);
+            ENTER_COUNT.fetch_add(1, Ordering::SeqCst);
+        }
+
+        fn record_exit(context: &MachineTransitionContext<'_, SessionData, String>) {
+            assert_eq!(context.event_type(), "start");
+            assert_eq!(context.payload(), "ada");
+            EXIT_COUNT.fetch_add(1, Ordering::SeqCst);
+        }
+
+        fn record_transition(context: &MachineTransitionContext<'_, SessionData, String>) {
+            assert!(!context.to().is_empty());
+            TRANSITION_COUNT.fetch_add(1, Ordering::SeqCst);
+        }
+
+        ENTER_COUNT.store(0, Ordering::SeqCst);
+        EXIT_COUNT.store(0, Ordering::SeqCst);
+        TRANSITION_COUNT.store(0, Ordering::SeqCst);
+
+        let config = MachineConfig::new(
+            "idle",
+            SessionData {
+                starts: 0,
+                last_player: None,
+            },
+        )
+        .transition("idle", "start", start_session)
+        .transition("active", "refresh", refresh_session)
+        .with_hooks(
+            MachineHooks::new()
+                .on_exit("idle", record_exit)
+                .on_enter("active", record_enter)
+                .on_transition(record_transition),
+        );
+        let provider = MachineProvider::new();
+        let mut machine = provider.create(config);
+
+        assert!(machine.matches("idle"));
+        assert!(machine.can("start"));
+        assert!(!machine.can("refresh"));
+        assert!(machine.send("start", "ada".to_string()));
+        assert!(machine.matches("active"));
+        assert_eq!(machine.data().starts, 1);
+        assert_eq!(machine.data().last_player.as_deref(), Some("ada"));
+        assert_eq!(ENTER_COUNT.load(Ordering::SeqCst), 1);
+        assert_eq!(EXIT_COUNT.load(Ordering::SeqCst), 1);
+        assert_eq!(TRANSITION_COUNT.load(Ordering::SeqCst), 1);
+
+        assert!(machine.send("refresh", "grace".to_string()));
+        assert!(machine.matches("active"));
+        assert_eq!(machine.data().last_player.as_deref(), Some("grace"));
+        assert_eq!(ENTER_COUNT.load(Ordering::SeqCst), 1);
+        assert_eq!(EXIT_COUNT.load(Ordering::SeqCst), 1);
+        assert_eq!(TRANSITION_COUNT.load(Ordering::SeqCst), 2);
+
+        let snapshot = machine.snapshot();
+        machine.data_mut().starts = 99;
+        machine.restore(snapshot);
+
+        assert_eq!(machine.current(), "active");
+        assert_eq!(machine.data().starts, 1);
+        assert_eq!(machine.data().last_player.as_deref(), Some("grace"));
+        assert!(!machine.send("missing", "nobody".to_string()));
     }
 }

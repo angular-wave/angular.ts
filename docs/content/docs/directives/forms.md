@@ -1,5 +1,6 @@
 ---
 title: "Form Directives and Validation in AngularTS"
+linkTitle: "Form Directives"
 weight: 270
 description: "Complete guide to AngularTS form directives: ng-model, built-in validators, ng-messages, ng-model-options, and form state properties like $valid and $dirty."
 ---

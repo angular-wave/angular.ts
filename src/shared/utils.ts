@@ -131,6 +131,12 @@ export function isInstanceOf<T>(
   type: InstanceConstructor<T>,
 ): val is T;
 export function isInstanceOf(val: unknown, type: InstanceConstructor): boolean {
+  if (!isFunction(type)) return false;
+
+  const typePrototype = (type as { prototype?: unknown }).prototype;
+
+  if (!isObject(typePrototype)) return false;
+
   return val instanceof type;
 }
 

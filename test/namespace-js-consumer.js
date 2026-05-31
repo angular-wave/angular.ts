@@ -41,6 +41,7 @@
  *   LocationProvider: ng.LocationProvider,
  *   LogProvider: ng.LogProvider,
  *   MachineProvider: ng.MachineProvider,
+ *   WorkflowProvider: ng.WorkflowProvider,
  *   ParseProvider: ng.ParseProvider,
  *   RestProvider: ng.RestProvider,
  *   RootScopeProvider: ng.RootScopeProvider,
@@ -91,6 +92,7 @@
  *   LocationService: ng.LocationService,
  *   LogService: ng.LogService,
  *   MachineService: ng.MachineService,
+ *   WorkflowService: ng.WorkflowService,
  *   ParseService: ng.ParseService,
  *   ProvideService: ng.ProvideService,
  *   PubSubService: ng.PubSubService,
@@ -144,10 +146,32 @@
  *   ListenerFn: ng.ListenerFn,
  *   Machine: ng.Machine<{ roomId: string }>,
  *   MachineConfig: ng.MachineConfig<{ roomId: string }>,
+ *   MachineEventMap: ng.MachineEventMap,
+ *   MachineHooks: ng.MachineHooks<{ roomId: string }>,
  *   MachineMode: ng.MachineMode,
+ *   MachineModeHooks: ng.MachineModeHooks<{ roomId: string }>,
+ *   MachineNoEvents: ng.MachineNoEvents,
+ *   MachineSnapshot: ng.MachineSnapshot<{ roomId: string }>,
  *   MachineTransition: ng.MachineTransition<{ roomId: string }, { roomId: string }>,
+ *   MachineTransitionContext: ng.MachineTransitionContext<{ roomId: string }>,
+ *   MachineTransitionHook: ng.MachineTransitionHook<{ roomId: string }>,
  *   MachineTransitionMap: ng.MachineTransitionMap<{ roomId: string }>,
  *   MachineTransitionResult: ng.MachineTransitionResult,
+ *   Workflow: ng.Workflow<{ output: string }>,
+ *   WorkflowCommand: ng.WorkflowCommand<{ output: string }, string, { file: string }>,
+ *   WorkflowCommandContext: ng.WorkflowCommandContext<{ output: string }, string>,
+ *   WorkflowCommandMap: ng.WorkflowCommandMap<{ output: string }>,
+ *   WorkflowCommandOptions: ng.WorkflowCommandOptions,
+ *   WorkflowConcurrencyPolicy: ng.WorkflowConcurrencyPolicy,
+ *   WorkflowCommandResult: ng.WorkflowCommandResult<{ file: string }>,
+ *   WorkflowConfig: ng.WorkflowConfig<{ output: string }>,
+ *   WorkflowDiagnostic: ng.WorkflowDiagnostic,
+ *   WorkflowHistoryEntry: ng.WorkflowHistoryEntry,
+ *   WorkflowMode: ng.WorkflowMode,
+ *   WorkflowNoCommands: ng.WorkflowNoCommands,
+ *   WorkflowSnapshot: ng.WorkflowSnapshot<{ output: string }>,
+ *   WorkflowSnapshotMigration: ng.WorkflowSnapshotMigration<{ output: string }>,
+ *   WorkflowStatus: ng.WorkflowStatus,
  *   NgModelController: ng.NgModelController,
  *   RequestConfig: ng.RequestConfig,
  *   RequestShortcutConfig: ng.RequestShortcutConfig,
@@ -242,10 +266,10 @@ export function batchScopeUpdate($scope) {
 
 /**
  * @param {ng.MachineService} $machine
- * @returns {ng.Machine<{ roomId: string }>}
+ * @returns {ng.Machine<{ roomId: string }, ng.MachineEventMap>}
  */
 export function createSessionMachine($machine) {
-  return $machine({
+  const machine = $machine({
     initial: "setup",
     data: {
       roomId: "",
@@ -254,16 +278,148 @@ export function createSessionMachine($machine) {
       setup: {
         /**
          * @param {{ roomId: string }} data
-         * @param {{ roomId: string }} payload
+         * @param {unknown} payload
          * @returns {ng.MachineTransitionResult}
          */
         join(data, payload) {
-          data.roomId = payload.roomId;
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "roomId" in payload &&
+            typeof payload.roomId === "string"
+          ) {
+            data.roomId = payload.roomId;
+          }
+
           return "waiting";
         },
       },
     },
+    hooks: {
+      enter: {
+        /**
+         * @param {ng.MachineTransitionContext<{ roomId: string }>} context
+         */
+        waiting(context) {
+          context.data.roomId = context.to;
+        },
+      },
+      /**
+       * @param {ng.MachineTransitionContext<{ roomId: string }>} context
+       */
+      transition(context) {
+        context.machine.matches(context.to);
+      },
+    },
   });
+
+  /** @type {ng.MachineSnapshot<{ roomId: string }>} */
+  const snapshot = machine.snapshot();
+
+  machine.restore(snapshot);
+
+  return machine;
+}
+
+/**
+ * @param {ng.NgModule} module
+ * @returns {ng.NgModule}
+ */
+export function registerSessionMachine(module) {
+  /** @type {ng.MachineConfig<{ roomId: string }, ng.MachineEventMap>} */
+  const config = {
+    initial: "setup",
+    data: {
+      roomId: "",
+    },
+    transitions: {
+      setup: {
+        /**
+         * @param {{ roomId: string }} data
+         * @param {unknown} payload
+         * @returns {ng.MachineTransitionResult}
+         */
+        join(data, payload) {
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "roomId" in payload &&
+            typeof payload.roomId === "string"
+          ) {
+            data.roomId = payload.roomId;
+          }
+
+          return "waiting";
+        },
+      },
+    },
+  };
+
+  return module.machine("sessionMachine", config);
+}
+
+/**
+ * @param {ng.WorkflowService} $workflow
+ * @returns {Promise<ng.WorkflowCommandResult>}
+ */
+export function createDocsWorkflow($workflow) {
+  /** @type {ng.Workflow<{ output: string }, ng.MachineEventMap, { build: ng.WorkflowCommand<{ output: string }, string, { file: string }, ng.MachineNoEvents> }>} */
+  const workflow = $workflow({
+    id: "docs-build",
+    initial: "idle",
+    data: {
+      output: "",
+    },
+    transitions: {
+      idle: {
+        start() {
+          return "running";
+        },
+      },
+    },
+    commands: {
+      /**
+       * @param {ng.WorkflowCommandContext<{ output: string }, string>} context
+       * @returns {ng.WorkflowCommandResult<{ file: string }>}
+       */
+      build(context) {
+        context.data.output = context.input;
+        return {
+          ok: true,
+          output: {
+            file: context.data.output,
+          },
+        };
+      },
+    },
+  });
+
+  /** @type {ng.WorkflowSnapshot<{ output: string }>} */
+  const snapshot = workflow.snapshot();
+
+  workflow.restore(snapshot);
+  void workflow.retry("build");
+  void workflow.repeat("build");
+
+  return workflow.run("build", "index.html");
+}
+
+/**
+ * @param {ng.NgModule} module
+ * @returns {ng.NgModule}
+ */
+export function registerDocsWorkflow(module) {
+  /** @type {ng.WorkflowConfig<{ output: string }, ng.MachineEventMap>} */
+  const config = {
+    id: "docs-build",
+    initial: "idle",
+    data: {
+      output: "",
+    },
+    transitions: {},
+  };
+
+  return module.workflow("docsWorkflow", config);
 }
 
 /**

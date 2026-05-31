@@ -1,6 +1,6 @@
 ---
 title: "Directive Guides"
-weight: 30
+weight: 40
 ---
 
 Directives are easier to learn by role than by name. Start here when you want

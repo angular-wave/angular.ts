@@ -1,0 +1,539 @@
+/*
+ Animate Docsy foldable sidebar sections so they expand/collapse smoothly.
+*/
+
+nav.foldable-nav#td-section-nav {
+  ul.foldable {
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-0.08rem);
+    transition:
+      max-height 220ms cubic-bezier(0.2, 0.0, 0.2, 1),
+      opacity 180ms linear,
+      transform 180ms linear;
+  }
+
+  input:checked ~ ul.foldable {
+    max-height: 4000px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .with-child > input:checked ~ label::after {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ul.foldable {
+      transition: none;
+      transform: none;
+    }
+
+    input:checked ~ ul.foldable {
+      max-height: none;
+    }
+  }
+}
+
+/*
+ Sidebar typography tuned to mimic Docusaurus docs navigation rhythm.
+*/
+
+nav.foldable-nav#td-section-nav {
+  &.td-sidebar-nav {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-right: 0;
+    padding-top: 0;
+  }
+
+  .td-sidebar-nav__section {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  --ats-sidebar-nav-section-font-size: 0.9375rem;
+  --ats-sidebar-nav-page-font-size: 0.9375rem;
+  --ats-sidebar-nav-link-padding-vertical: 0.375rem;
+  --ats-sidebar-nav-link-padding-horizontal: 1rem;
+  --ats-sidebar-nav-link-line-height: 1.25;
+  --ats-sidebar-nav-link-radius: 0.25rem;
+  --ats-sidebar-nav-item-gap: 0;
+  --ats-sidebar-nav-link-hover: rgba(0, 0, 0, 0.06);
+  --ats-sidebar-nav-link-active-bg: transparent;
+  --ats-sidebar-nav-link-active-color: #3178c6;
+  --ats-sidebar-nav-accordion-icon-color: var(--bs-body-color);
+  --ats-sidebar-nav-accordion-icon-open-color: var(--ats-sidebar-nav-link-active-color);
+
+  .ul-1 > li {
+    padding-left: 0;
+  }
+
+  .td-sidebar-nav__section-title {
+    margin: 0;
+    line-height: 1.35;
+    font-size: 0.9375rem;
+  }
+
+  > ul.ul-0 {
+    > .td-sidebar-nav__section-title:first-child > .td-sidebar-link__section,
+    > .td-sidebar-nav__section-title:first-child > .td-sidebar-link {
+      display: none;
+    }
+  }
+
+  .td-sidebar-nav__section .td-sidebar-link {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    line-height: var(--ats-sidebar-nav-link-line-height);
+    padding: var(--ats-sidebar-nav-link-padding-vertical) var(--ats-sidebar-nav-link-padding-horizontal) !important;
+    padding-inline-start: var(--ats-sidebar-nav-link-padding-horizontal) !important;
+    padding-inline-end: var(--ats-sidebar-nav-link-padding-horizontal) !important;
+    border-radius: var(--ats-sidebar-nav-link-radius);
+    transition: color 120ms ease;
+    color: var(--bs-body-color);
+    margin: 0;
+  }
+
+  .td-sidebar-link.tree-root {
+    margin-bottom: 0;
+  }
+
+  .td-sidebar-link__section {
+    color: var(--bs-body-color);
+    font-size: var(--ats-sidebar-nav-section-font-size);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .td-sidebar-link__page {
+    color: var(--bs-body-color);
+    font-size: var(--ats-sidebar-nav-page-font-size);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  .td-sidebar-nav-active-item {
+    background-color: transparent !important;
+  }
+
+  .td-sidebar-link:not(.active):focus,
+  .td-sidebar-link:not(.active):hover {
+    color: var(--bs-body-color);
+    background: var(--ats-sidebar-nav-link-hover);
+    text-decoration: none;
+  }
+
+  .td-sidebar-link.active,
+  .td-sidebar-link--active,
+  .td-sidebar-nav__section .td-sidebar-link.active {
+    background: var(--ats-sidebar-nav-link-active-bg);
+    color: var(--ats-sidebar-nav-link-active-color);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .td-sidebar-link.active:hover,
+  .td-sidebar-link.active:focus,
+  .td-sidebar-link.active:focus-visible,
+  .td-sidebar-link--active:hover,
+  .td-sidebar-link--active:focus,
+  .td-sidebar-link--active:focus-visible {
+    background: var(--ats-sidebar-nav-link-active-bg) !important;
+    color: var(--ats-sidebar-nav-link-active-color) !important;
+    text-decoration: none;
+  }
+
+  .td-sidebar-nav__section .active .td-sidebar-nav-active-item,
+  .td-sidebar-link--active .td-sidebar-nav-active-item,
+  .td-sidebar-link.active .td-sidebar-nav-active-item {
+    color: var(--ats-sidebar-nav-link-active-color);
+    background: transparent !important;
+  }
+
+  .td-sidebar-link.active:hover .td-sidebar-nav-active-item,
+  .td-sidebar-link.active:focus .td-sidebar-nav-active-item,
+  .td-sidebar-link.active:focus-visible .td-sidebar-nav-active-item,
+  .td-sidebar-link--active:hover .td-sidebar-nav-active-item,
+  .td-sidebar-link--active:focus .td-sidebar-nav-active-item,
+  .td-sidebar-link--active:focus-visible .td-sidebar-nav-active-item {
+    color: var(--ats-sidebar-nav-link-active-color) !important;
+  }
+
+  .td-sidebar-nav > .td-sidebar-nav__section {
+    padding-left: 0;
+  }
+
+  .td-sidebar-nav__section .ul-1 ul {
+    padding-left: var(--ats-sidebar-nav-link-padding-horizontal);
+  }
+
+  .td-sidebar-nav__section .ul-2 .td-sidebar-link {
+    padding-left: calc(var(--ats-sidebar-nav-link-padding-horizontal) * 2) !important;
+    padding-inline-start: calc(var(--ats-sidebar-nav-link-padding-horizontal) * 2) !important;
+  }
+
+  .ul-1 > li + li {
+    margin-top: 0;
+  }
+
+  .with-child,
+  .without-child {
+    padding-left: 0;
+  }
+
+  .with-child > label {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    width: 100%;
+    gap: 0.25rem;
+    padding-right: var(--ats-sidebar-nav-link-padding-horizontal);
+    padding-top: var(--ats-sidebar-nav-link-padding-vertical);
+    padding-bottom: var(--ats-sidebar-nav-link-padding-vertical);
+    padding-left: var(--ats-sidebar-nav-link-padding-horizontal);
+    border-radius: var(--ats-sidebar-nav-link-radius);
+    min-height: 2rem;
+    border: 0;
+  }
+
+  .with-child > label .td-sidebar-link {
+    flex: 1;
+    width: auto !important;
+    min-width: 0;
+  }
+
+  .with-child > label::before {
+    content: none !important;
+  }
+
+  .with-child > label::after {
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    content: '\f0da';
+    font-size: 0.75rem;
+    width: 0.875rem;
+    min-width: 0.875rem;
+    height: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: static;
+    margin-left: auto;
+    margin-right: calc(var(--ats-sidebar-nav-link-padding-horizontal) * 0.25);
+    line-height: 1;
+    color: var(--ats-sidebar-nav-accordion-icon-color);
+    transform: rotate(0deg);
+    transform-origin: center;
+    transition: transform 0.18s ease, color 0.18s ease;
+    flex-shrink: 0;
+  }
+
+  .with-child > input:checked ~ label::after {
+    transform: rotate(90deg);
+    color: var(--ats-sidebar-nav-accordion-icon-open-color);
+  }
+
+  .with-child > label::after {
+    transform: rotate(0deg);
+  }
+
+  .with-child > label:hover::after,
+  .with-child > label:focus-visible::after,
+  .with-child > input:focus-visible ~ label::after {
+    color: var(--ats-sidebar-nav-accordion-icon-open-color);
+  }
+
+  .with-child > label:hover,
+  .with-child > label:focus-visible,
+  .with-child > label:focus {
+    background: var(--ats-sidebar-nav-link-hover);
+  }
+
+  .with-child > label .td-sidebar-link,
+  .with-child > label .td-sidebar-link:focus,
+  .with-child > label .td-sidebar-link:hover,
+  .with-child > label .td-sidebar-link:focus-visible {
+    background: transparent !important;
+  }
+
+  .with-child > label:hover,
+  .with-child > label:focus-visible,
+  .with-child > label:focus,
+  .with-child.active-path > label:hover,
+  .with-child.active-path > label:focus-visible,
+  .with-child.active-path > label:focus,
+  .td-sidebar-link.active:hover,
+  .td-sidebar-link.active:focus,
+  .td-sidebar-link.active:focus-visible,
+  .td-sidebar-link--active:hover,
+  .td-sidebar-link--active:focus,
+  .td-sidebar-link--active:focus-visible {
+    box-shadow: none !important;
+  }
+
+  .with-child.active-path > label:hover,
+  .with-child.active-path > label:focus-visible,
+  .with-child.active-path > label:focus {
+    background: var(--ats-sidebar-nav-link-active-bg);
+  }
+
+  .with-child.active-path > label,
+  .with-child.active-path > label .td-sidebar-link {
+    color: var(--ats-sidebar-nav-link-active-color);
+  }
+
+  .with-child.active-path > label,
+  .with-child.active-path > label .td-sidebar-link {
+    background-color: var(--ats-sidebar-nav-link-active-bg);
+  }
+
+  .with-child.active-path > label .td-sidebar-link {
+    background-color: transparent !important;
+  }
+
+}
+
+@media (min-width: 768px) {
+  .td-sidebar-nav,
+  nav.foldable-nav#td-section-nav,
+  .td-sidebar {
+    max-height: none !important;
+    overflow-y: visible !important;
+    height: auto !important;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  nav.foldable-nav#td-section-nav {
+    .with-child > label:hover::after {
+      color: var(--ats-sidebar-nav-link-active-color);
+      transition: color 0.3s;
+    }
+  }
+}
+
+/*
+ Make sidebar/docs scrollbars slimmer and more consistent across themes.
+*/
+
+:root {
+  --ats-sidebar-nav-link-active-color: #3178c6;
+  --ats-scrollbar-track: rgba(17, 24, 39, 0.07);
+  --ats-scrollbar-thumb: #cfd4dc;
+  --ats-scrollbar-thumb-hover: #9ca3af;
+  --ats-sidebar-nav-page-meta-link-color: var(--ats-sidebar-nav-link-active-color);
+  --ats-sidebar-nav-page-meta-link-hover-color: var(--ats-sidebar-nav-link-active-color);
+}
+
+[data-bs-theme='dark'] {
+  --ats-scrollbar-track: rgba(255, 255, 255, 0.1);
+  --ats-scrollbar-thumb: #4b5563;
+  --ats-scrollbar-thumb-hover: #6b7280;
+  --ats-sidebar-nav-link-hover: rgba(255, 255, 255, 0.1);
+  --ats-sidebar-nav-link-active-bg: transparent;
+  --ats-sidebar-nav-link-active-color: #3178c6;
+  --ats-sidebar-nav-page-meta-link-color: var(--ats-sidebar-nav-link-active-color);
+  --ats-sidebar-nav-page-meta-link-hover-color: var(--ats-sidebar-nav-link-active-color);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ats-scrollbar-thumb) var(--ats-scrollbar-track);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--ats-scrollbar-thumb);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ats-scrollbar-thumb-hover);
+  }
+}
+
+/* Sidebar-specific scrollbar tuning to keep the narrow look visible on narrow layouts. */
+#td-section-nav,
+.td-sidebar-nav,
+.td-sidebar,
+.td-sidebar__inner {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ats-scrollbar-thumb) var(--ats-scrollbar-track);
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+.td-breadcrumbs {
+  .breadcrumb-item {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: var(--bs-secondary-color);
+  }
+
+  .breadcrumb-item a,
+  .breadcrumb-item a:visited {
+    color: var(--bs-link-color);
+    text-decoration: none;
+  }
+
+  .breadcrumb-item a:hover,
+  .breadcrumb-item a:focus,
+  .breadcrumb-item a:focus-visible {
+    color: var(--ats-sidebar-nav-page-meta-link-hover-color);
+    text-decoration: none;
+  }
+
+  .breadcrumb-item.active {
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+  }
+}
+
+.td-sidebar-toc {
+  .td-page-meta.ms-2.pb-1.pt-2.mb-0 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-top: var(--ats-sidebar-nav-link-padding-vertical);
+    padding-bottom: var(--ats-sidebar-nav-link-padding-vertical);
+    padding-left: var(--ats-sidebar-nav-link-padding-horizontal);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .td-page-meta a,
+  .td-page-meta a:visited {
+    color: var(--ats-sidebar-nav-page-meta-link-color);
+    display: block;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+    text-decoration: none;
+    line-height: 1.35;
+  }
+
+  .td-page-meta a:hover,
+  .td-page-meta a:focus,
+  .td-page-meta a:focus-visible {
+    color: var(--ats-sidebar-nav-page-meta-link-hover-color);
+    text-decoration: none;
+  }
+}
+
+/*
+ Improve docs sidebar behavior on mobile screens.
+*/
+@media (max-width: 767.98px) {
+  :root {
+    --ats-sidebar-mobile-duration: 210ms;
+    --ats-sidebar-mobile-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+    --ats-sidebar-mobile-width: 84vw;
+  }
+
+  .td-sidebar {
+    position: relative;
+  }
+
+  #td-section-nav {
+    background: var(--bs-body-bg);
+    border-right: 1px solid var(--bs-border-color);
+    box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.2);
+    bottom: 0;
+    left: 0 !important;
+    margin: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding-left: 0;
+    padding-right: 0;
+    position: fixed !important;
+    top: 0;
+    right: auto !important;
+    transform: translateX(-110%) !important;
+    transition: transform var(--ats-sidebar-mobile-duration) var(--ats-sidebar-mobile-ease);
+    width: var(--ats-sidebar-mobile-width) !important;
+    z-index: 1080;
+  }
+
+  #td-section-nav.show {
+    transform: translateX(0) !important;
+  }
+
+  .td-sidebar-nav .td-sidebar-link {
+    min-height: 2rem;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .td-sidebar-nav .with-child > label {
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .td-sidebar-nav .ul-1 .with-child > label::before {
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+
+  .td-sidebar-nav .ul-1 ul {
+    padding-left: 1rem;
+  }
+
+  .td-sidebar .btn-link {
+    min-height: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .td-mobile-sidebar-overlay.is-visible {
+    background: rgba(15, 23, 42, 0.35);
+    inset: 0;
+    opacity: 1;
+    pointer-events: auto;
+    position: fixed;
+    z-index: 1070;
+  }
+
+  .td-mobile-sidebar-overlay {
+    background: transparent;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 0.2s ease;
+    z-index: 1070;
+  }
+
+  body.ats-mobile-sidebar-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #td-section-nav {
+      transition: none;
+    }
+  }
+}

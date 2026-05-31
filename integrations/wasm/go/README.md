@@ -47,7 +47,8 @@ parity tracking, and browser tests for Go-owned state flowing through
   scope state after bind, template method calls, and watched updates.
 - Typed service facades now cover `$http`, `$log`, `$exceptionHandler`,
   `$rootScope`, `$eventBus`, template request/cache, storage/cookie,
-  router/state, WebSocket/SSE realtime, and core `$rest` resource APIs.
+  router/state, WebSocket/SSE realtime, core `$rest` resource APIs, and
+  `$machine` state-machine facades.
 - `NG_NAMESPACE_PARITY.md` tracks every published `ng` namespace type and
   `make parity` checks it against `@types/namespace.d.ts`.
 
