@@ -87,6 +87,52 @@ describe("ng-post", () => {
     expect(el.innerText).toBe("Bob");
   });
 
+  it("should attach parameters from an associated form control", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML =
+      '<form>{{ name }} <input name="name" value="Bob" /><button ng-post="/mock/json" type="button">Load</button></form>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await waitUntil(() => scope.name === "Bob");
+    expect(scope.name).toBe("Bob");
+  });
+
+  it("should attach parameters from an external form attribute", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML =
+      '<form id="external">{{ name }} <input name="name" value="Bob" /></form><div ng-post="/mock/json" form="external">Load</div>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("div[ng-post]"), "click");
+    await waitUntil(() => el.querySelector("form").innerText === "Bob ");
+    expect(el.querySelector("form").innerText).toBe("Bob ");
+  });
+
+  it("should attach standalone named input values", async () => {
+    const scope = $rootScope.$new();
+
+    el.innerHTML =
+      '<input ng-post="/mock/json" name="name" value="Bob" />{{ name }}';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("input"), "change");
+    await waitUntil(() => el.textContent === "Bob");
+    expect(el.textContent).toBe("Bob");
+  });
+
+  it("should warn and skip requests when no URL is specified", async () => {
+    const scope = $rootScope.$new();
+
+    spyOn($log, "warn");
+    el.innerHTML = '<button ng-post="">Load</button>';
+    $compile(el)(scope);
+    browserTrigger(el.querySelector("button"), "click");
+    await waitUntil(() => $log.warn.calls.any());
+
+    expect(el.innerText).toBe("Load");
+    expect($log.warn).toHaveBeenCalledWith("ngPost: no URL specified");
+  });
+
   it("should use json encoding by default", async () => {
     const scope = $rootScope.$new();
 

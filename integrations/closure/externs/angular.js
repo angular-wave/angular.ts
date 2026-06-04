@@ -540,7 +540,7 @@ ng.NgModule.prototype.controller = function(name, ctlFn) {};
  * Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.
  * @template TData, TEvents
  * @param {string} name
- * @param {!ng.MachineConfig<TData, TEvents>} config
+ * @param {(!Array<function(): !ng.MachineConfig<TData, TEvents>>|!ng.MachineConfig<TData, TEvents>|function(): !ng.MachineConfig<TData, TEvents>)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.machine = function(name, config) {};
@@ -549,7 +549,7 @@ ng.NgModule.prototype.machine = function(name, config) {};
  * Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.
  * @template TData, TEvents, TCommands
  * @param {string} name
- * @param {!Object} config
+ * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.workflow = function(name, config) {};
@@ -565,8 +565,8 @@ ng.NgModule.prototype.state = function(definition) {};
  * Register a named WebAssembly module as an injectable service. The actual loading is delegated to the `$wasm` provider, so custom runtimes can decide whether WebAssembly support is included.
  * @param {string} name
  * @param {string} src
- * @param {(!Object<string, !Object<string, (!Object|number)>>|undefined)} imports
- * @param {(!ng.WasmOptions|undefined)} opts
+ * @param {(!Array<function(...?): !Object<string, !Object<string, (!Object|number)>>>|!Object<string, !Object<string, (!Object|number)>>|function(...?): !Object<string, !Object<string, (!Object|number)>>|undefined)} imports
+ * @param {(!Array<function(...?): !ng.WasmOptions>|!ng.WasmOptions|function(...?): !ng.WasmOptions|undefined)} opts
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.wasm = function(name, src, imports, opts) {};
@@ -574,8 +574,8 @@ ng.NgModule.prototype.wasm = function(name, src, imports, opts) {};
 /**
  * Register a named Web Worker connection as an injectable service. The actual connection is delegated to the `$worker` provider, so worker support remains provider-driven instead of directive-driven.
  * @param {string} name
- * @param {(!Object|string)} scriptPath
- * @param {(!ng.WorkerConfig|undefined)} config
+ * @param {(!Array<function(...?): (!Object|string)>|!Object|function(...?): (!Object|string)|string)} scriptPath
+ * @param {(!Array<function(...?): !ng.WorkerConfig>|!ng.WorkerConfig|function(...?): !ng.WorkerConfig|undefined)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.worker = function(name, scriptPath, config) {};
@@ -596,7 +596,7 @@ ng.NgModule.prototype.store = function(name, ctor, type, backendOrConfig) {};
  * @param {string} name
  * @param {string} url
  * @param {(function(new: T, ?)|undefined)} entityClass
- * @param {(!ng.RestOptions|undefined)} options
+ * @param {(!Array<function(...?): !ng.RestOptions>|!ng.RestOptions|function(...?): !ng.RestOptions|undefined)} options
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.rest = function(name, url, entityClass, options) {};
@@ -605,7 +605,7 @@ ng.NgModule.prototype.rest = function(name, url, entityClass, options) {};
  * Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.
  * @param {string} name
  * @param {string} url
- * @param {(!ng.SseConfig|undefined)} config
+ * @param {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.sse = function(name, url, config) {};
@@ -614,8 +614,8 @@ ng.NgModule.prototype.sse = function(name, url, config) {};
  * Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.
  * @param {string} name
  * @param {string} url
- * @param {(!Array<string>|undefined)} protocols
- * @param {(!ng.WebSocketConfig|undefined)} config
+ * @param {(!Array<function(...?): !Array<string>>|!Array<string>|function(...?): !Array<string>|undefined)} protocols
+ * @param {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.websocket = function(name, url, protocols, config) {};
@@ -624,7 +624,7 @@ ng.NgModule.prototype.websocket = function(name, url, protocols, config) {};
  * Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.
  * @param {string} name
  * @param {string} url
- * @param {(!ng.WebTransportConfig|undefined)} config
+ * @param {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} config
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.webTransport = function(name, url, config) {};

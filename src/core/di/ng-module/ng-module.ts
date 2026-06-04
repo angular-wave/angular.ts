@@ -82,6 +82,30 @@ type StoreConstructor = new (...args: never[]) => unknown;
 
 type StoreCreator = StoreFactory | StoreConstructor;
 
+type DynamicConfig<T> = T | Injectable<(...args: never[]) => T>;
+
+function isStringOrUrl(value: unknown): boolean {
+  return isString(value) || value instanceof URL;
+}
+
+function isDynamicConfig(
+  value: unknown,
+  isStatic: (value: unknown) => boolean,
+): boolean {
+  return isInjectable(value) || isStatic(value);
+}
+
+function resolveDynamicConfig<T>(
+  value: DynamicConfig<T>,
+  injector: ng.InjectorService,
+): T {
+  if (!isInjectable(value)) {
+    return value;
+  }
+
+  return injector.invoke(value as Injectable<(...args: never[]) => T>) as T;
+}
+
 type InvokeQueueItem =
   | [typeof _provide, "value", [string, unknown]]
   | [typeof _provide, "constant", [string, object | string | number]]
@@ -336,15 +360,21 @@ export class NgModule {
    * with AngularTS scope proxies when assigned to a controller or scope.
    *
    * @param {string} name - Injectable name.
-   * @param {ng.MachineConfig} config - Machine configuration.
+   * @param {ng.MachineConfig|ng.Injectable} config - Machine configuration or
+   * a resolvable config factory.
    * @returns {NgModule}
    */
   machine<
     TData extends object = Record<string, unknown>,
     TEvents extends object = MachineNoEvents,
-  >(name: string, config: MachineConfig<TData, TEvents>): this {
+  >(
+    name: string,
+    config:
+      | MachineConfig<TData, TEvents>
+      | Injectable<() => MachineConfig<TData, TEvents>>,
+  ): this {
     validate(isString, name, "name");
-    validate(isObject, config, "config");
+    validate(isDynamicConfig.bind(null, config, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
@@ -352,11 +382,15 @@ export class NgModule {
         name,
         [
           _machine,
-          ($machine: MachineService) =>
-            $machine({
-              ...config,
-              data: structuredClone(config.data),
-            }),
+          _injector,
+          ($machine: MachineService, $injector: ng.InjectorService) => {
+            const resolvedConfig = resolveDynamicConfig(config, $injector);
+
+            return $machine({
+              ...resolvedConfig,
+              data: structuredClone(resolvedConfig.data),
+            });
+          },
         ],
       ],
     ]);
@@ -372,16 +406,22 @@ export class NgModule {
    * not apply global workflow defaults.
    *
    * @param {string} name - Injectable name.
-   * @param {ng.WorkflowConfig} config - Workflow configuration.
+   * @param {ng.WorkflowConfig|ng.Injectable} config - Workflow configuration
+   * or a resolvable config factory.
    * @returns {NgModule}
    */
   workflow<
     TData extends object = Record<string, unknown>,
     TEvents extends object = MachineNoEvents,
     TCommands extends object = WorkflowNoCommands,
-  >(name: string, config: WorkflowConfig<TData, TEvents, TCommands>): this {
+  >(
+    name: string,
+    config:
+      | WorkflowConfig<TData, TEvents, TCommands>
+      | Injectable<() => WorkflowConfig<TData, TEvents, TCommands>>,
+  ): this {
     validate(isString, name, "name");
-    validate(isObject, config, "config");
+    validate(isDynamicConfig.bind(null, config, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
@@ -389,11 +429,15 @@ export class NgModule {
         name,
         [
           _workflow,
-          ($workflow: WorkflowService) =>
-            $workflow({
-              ...config,
-              data: structuredClone(config.data),
-            }),
+          _injector,
+          ($workflow: WorkflowService, $injector: ng.InjectorService) => {
+            const resolvedConfig = resolveDynamicConfig(config, $injector);
+
+            return $workflow({
+              ...resolvedConfig,
+              data: structuredClone(resolvedConfig.data),
+            });
+          },
         ],
       ],
     ]);
@@ -442,8 +486,10 @@ export class NgModule {
    *
    * @param {string} name - Injectable name used to access the module exports.
    * @param {string} src - URL of the `.wasm` file to fetch and instantiate.
-   * @param {WebAssembly.Imports} [imports] - WebAssembly import object.
-   * @param {WasmOptions} [opts] - WebAssembly provider options.
+   * @param {WebAssembly.Imports|ng.Injectable<(...args: never[]) => WebAssembly.Imports>}
+   *   [imports] WebAssembly import object, optionally produced by DI.
+   * @param {WasmOptions|ng.Injectable<(...args: never[]) => WasmOptions>}
+   *   [opts] WebAssembly options, optionally produced by DI.
    *
    * Supported keys:
    * - **raw**: `boolean`
@@ -455,18 +501,30 @@ export class NgModule {
   wasm(
     name: string,
     src: string,
-    imports: WebAssembly.Imports = {},
-    opts: WasmOptions = {},
+    imports: DynamicConfig<WebAssembly.Imports> = {},
+    opts: DynamicConfig<WasmOptions> = {},
   ): this {
     validate(isString, name, "name");
     validate(isString, src, "src");
-
-    const createWasmService = ($wasm: WasmService) => $wasm(src, imports, opts);
+    validate((value) => isDynamicConfig(value, isObject), imports, "imports");
+    validate((value) => isDynamicConfig(value, isObject), opts, "opts");
 
     this._invokeQueue.push([
       _provide,
       "factory",
-      [name, [_wasm, createWasmService]],
+      [
+        name,
+        [
+          _wasm,
+          _injector,
+          ($wasm: WasmService, $injector: ng.InjectorService) =>
+            $wasm(
+              src,
+              resolveDynamicConfig(imports, $injector),
+              resolveDynamicConfig(opts, $injector),
+            ),
+        ],
+      ],
     ]);
 
     return this;
@@ -479,23 +537,38 @@ export class NgModule {
    * support remains provider-driven instead of directive-driven.
    *
    * @param {string} name - Injectable name.
-   * @param {string | URL} scriptPath - Worker script URL.
-   * @param {WorkerConfig} [config] - Worker connection options.
+   * @param {string|URL|ng.Injectable<(...args: never[]) => string|URL>}
+   *   [scriptPath] Worker script URL, optionally produced by DI.
+   * @param {WorkerConfig|ng.Injectable<(...args: never[]) => WorkerConfig>}
+   *   [config] Worker connection options, optionally produced by DI.
    * @returns {NgModule}
    */
   worker(
     name: string,
-    scriptPath: string | URL,
-    config: WorkerConfig = {},
+    scriptPath: DynamicConfig<string | URL>,
+    config: DynamicConfig<WorkerConfig> = {},
   ): this {
     validate(isString, name, "name");
-    validateRequired(scriptPath, "scriptPath");
+    validate(
+      (value) => isDynamicConfig(value, isStringOrUrl),
+      scriptPath,
+      "scriptPath",
+    );
+    validate((value) => isDynamicConfig(value, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
       [
         name,
-        [_worker, ($worker: WorkerService) => $worker(scriptPath, config)],
+        [
+          _worker,
+          _injector,
+          ($worker: WorkerService, $injector: ng.InjectorService) =>
+            $worker(
+              resolveDynamicConfig(scriptPath, $injector),
+              resolveDynamicConfig(config, $injector),
+            ),
+        ],
       ],
     ]);
 
@@ -541,23 +614,34 @@ export class NgModule {
    * @param {string} name - Service name.
    * @param {string} url - Base URL or URI template.
    * @param {ng.EntityClass<T>} [entityClass] - Optional constructor for mapping JSON.
-   * @param {RestOptions} [options] - Optional RestService options.
+   * @param {RestOptions|ng.Injectable<(...args: never[]) => RestOptions>} [options]
+   *   Optional RestService options, optionally produced by DI.
    * @returns {NgModule}
    */
   rest<T = unknown>(
     name: string,
     url: string,
     entityClass?: EntityClass<T>,
-    options: RestOptions = {},
+    options: DynamicConfig<RestOptions> = {},
   ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
+    validate((value) => isDynamicConfig(value, isObject), options, "options");
     this._invokeQueue.push([
       _provide,
       "factory",
       [
         name,
-        [_rest, ($rest: RestFactory) => $rest<T>(url, entityClass, options)],
+        [
+          _rest,
+          _injector,
+          ($rest: RestFactory, $injector: ng.InjectorService) =>
+            $rest<T>(
+              url,
+              entityClass,
+              resolveDynamicConfig(options, $injector),
+            ),
+        ],
       ],
     ]);
 
@@ -571,16 +655,26 @@ export class NgModule {
    *
    * @param {string} name - Injectable name.
    * @param {string} url - SSE endpoint.
-   * @param {SseConfig} [config] - SSE connection options.
+   * @param {SseConfig|ng.Injectable<(...args: never[]) => SseConfig>} [config]
+   *   SSE connection options, optionally produced by DI.
    * @returns {NgModule}
    */
-  sse(name: string, url: string, config: SseConfig = {}): this {
+  sse(name: string, url: string, config: DynamicConfig<SseConfig> = {}): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
+    validate((value) => isDynamicConfig(value, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
-      [name, [_sse, ($sse: SseService) => $sse(url, config)]],
+      [
+        name,
+        [
+          _sse,
+          _injector,
+          ($sse: SseService, $injector: ng.InjectorService) =>
+            $sse(url, resolveDynamicConfig(config, $injector)),
+        ],
+      ],
     ]);
 
     return this;
@@ -594,18 +688,26 @@ export class NgModule {
    *
    * @param {string} name - Injectable name.
    * @param {string} url - WebSocket endpoint.
-   * @param {string[]} [protocols] - Optional subprotocols.
-   * @param {WebSocketConfig} [config] - WebSocket connection options.
+   * @param {string[]|ng.Injectable<(...args: never[]) => string[]>} [protocols]
+   *   Optional subprotocols, optionally produced by DI.
+   * @param {WebSocketConfig|ng.Injectable<(...args: never[]) => WebSocketConfig>}
+   *   [config] WebSocket connection options, optionally produced by DI.
    * @returns {NgModule}
    */
   websocket(
     name: string,
     url: string,
-    protocols: string[] = [],
-    config: WebSocketConfig = {},
+    protocols: DynamicConfig<string[]> = [],
+    config: DynamicConfig<WebSocketConfig> = {},
   ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
+    validate(
+      (value) => isDynamicConfig(value, isArray),
+      protocols,
+      "protocols",
+    );
+    validate((value) => isDynamicConfig(value, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
@@ -613,7 +715,13 @@ export class NgModule {
         name,
         [
           _websocket,
-          ($websocket: WebSocketService) => $websocket(url, protocols, config),
+          _injector,
+          ($websocket: WebSocketService, $injector: ng.InjectorService) =>
+            $websocket(
+              url,
+              resolveDynamicConfig(protocols, $injector),
+              resolveDynamicConfig(config, $injector),
+            ),
         ],
       ],
     ]);
@@ -629,16 +737,18 @@ export class NgModule {
    *
    * @param {string} name - Injectable name.
    * @param {string} url - WebTransport endpoint.
-   * @param {WebTransportConfig} [config] - WebTransport connection options.
+   * @param {WebTransportConfig|ng.Injectable<(...args: never[]) => WebTransportConfig>}
+   *   [config] WebTransport connection options, optionally produced by DI.
    * @returns {NgModule}
    */
   webTransport(
     name: string,
     url: string,
-    config: WebTransportConfig = {},
+    config: DynamicConfig<WebTransportConfig> = {},
   ): this {
     validate(isString, name, "name");
     validate(isString, url, "url");
+    validate((value) => isDynamicConfig(value, isObject), config, "config");
     this._invokeQueue.push([
       _provide,
       "factory",
@@ -646,7 +756,9 @@ export class NgModule {
         name,
         [
           _webTransport,
-          ($webTransport: WebTransportService) => $webTransport(url, config),
+          _injector,
+          ($webTransport: WebTransportService, $injector: ng.InjectorService) =>
+            $webTransport(url, resolveDynamicConfig(config, $injector)),
         ],
       ],
     ]);

@@ -289,4 +289,32 @@ describe("$machine types", () => {
 
     expect(returnedModule).toBe(module);
   });
+
+  it("typechecks module.machine registration from resolvable config", () => {
+    const module = null as unknown as ng.NgModule;
+
+    const buildMachineConfig = (): ng.MachineConfig<
+      SessionData,
+      SessionEvents
+    > => ({
+      initial: "setup",
+      data: {
+        roomId: "",
+        error: "",
+      },
+      transitions: {
+        setup: {
+          join(data, payload: JoinPayload) {
+            data.roomId = payload.roomId;
+
+            return "waiting";
+          },
+        },
+      },
+    });
+
+    const returnedModule = module.machine("sessionMachine", buildMachineConfig);
+
+    expect(returnedModule).toBe(module);
+  });
 });

@@ -142,6 +142,52 @@ describe("$sse", () => {
     built.close();
   });
 
+  it("serializes all supported SSE query parameter types", async () => {
+    let builtUrl = "";
+
+    const RealEventSource = window.EventSource;
+
+    window.EventSource = function (url) {
+      builtUrl = url;
+
+      this.listeners = {};
+      this.addEventListener = () => {
+        /* empty */
+      };
+      this.close = () => {
+        /* empty */
+      };
+    };
+
+    const source = sse("/mock/events", {
+      params: {
+        name: "alpha",
+        count: 3,
+        active: false,
+        none: undefined,
+        missing: null,
+        payload: { x: 1 },
+        fn: () => "value",
+        huge: 12n,
+      },
+    });
+
+    await wait(20);
+
+    expect(builtUrl).toContain("/mock/events?");
+    expect(builtUrl).toContain("name=alpha");
+    expect(builtUrl).toContain("count=3");
+    expect(builtUrl).toContain("active=false");
+    expect(builtUrl).toContain("none=");
+    expect(builtUrl).toContain("missing=");
+    expect(builtUrl).toContain("payload=%7B%22x%22%3A1%7D");
+    expect(builtUrl).toContain("fn=undefined");
+    expect(builtUrl).toContain("huge=12");
+
+    source.close();
+    window.EventSource = RealEventSource;
+  });
+
   it("should trigger onError when EventSource fails", async () => {
     let errored = false;
 

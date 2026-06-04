@@ -303,6 +303,275 @@ describe("custom runtime", () => {
     expect(JSON.parse(storedValues.get("prefs"))).toEqual({ theme: "dark" });
   });
 
+  it("resolves high-level transport/service options from injectables", () => {
+    class RestProvider {
+      $get = () => (url, entityClass, options) => ({
+        type: "rest",
+        url,
+        entityClass,
+        options,
+      });
+    }
+
+    class SseProvider {
+      $get = () => (url, config) => ({ type: "sse", url, config });
+    }
+
+    class WebSocketProvider {
+      $get = () => (url, protocols, config) => ({
+        type: "websocket",
+        url,
+        protocols,
+        config,
+      });
+    }
+
+    class WebTransportProvider {
+      $get = () => (url, config) => ({
+        type: "webTransport",
+        url,
+        config,
+      });
+    }
+
+    class WorkerProvider {
+      $get = () => (scriptPath, config) => ({
+        type: "worker",
+        scriptPath,
+        config,
+      });
+    }
+
+    class WasmProvider {
+      $get = () => (src, imports, opts) => ({
+        type: "wasm",
+        src,
+        imports,
+        opts,
+      });
+    }
+
+    class PostEntity {}
+
+    const calls = {
+      rest: 0,
+      sse: 0,
+      websocketProtocols: 0,
+      websocketConfig: 0,
+      webTransport: 0,
+      workerScript: 0,
+      workerConfig: 0,
+      wasmImports: 0,
+      wasmOpts: 0,
+    };
+
+    const makeRestOptions = () => {
+      calls.rest++;
+
+      return { cache: true };
+    };
+
+    const makeSseConfig = () => {
+      calls.sse++;
+
+      return { retryDelay: 10 };
+    };
+
+    const makeProtocols = () => {
+      calls.websocketProtocols++;
+
+      return ["json"];
+    };
+
+    const makeWebsocketConfig = () => {
+      calls.websocketConfig++;
+
+      return { maxRetries: 1 };
+    };
+
+    const makeWebTransportConfig = () => {
+      calls.webTransport++;
+
+      return { requireUnreliable: true };
+    };
+
+    const makeWorkerScript = () => {
+      calls.workerScript++;
+
+      return "/workers/bg.js";
+    };
+
+    const makeWorkerConfig = () => {
+      calls.workerConfig++;
+
+      return { autoRestart: true };
+    };
+
+    const makeWasmImports = () => {
+      calls.wasmImports++;
+
+      return { env: { table: { name: "dynamic" } } };
+    };
+
+    const makeWasmOpts = () => {
+      calls.wasmOpts++;
+
+      return { raw: true };
+    };
+
+    const angular = createAngularCustom({
+      ngModule: {
+        providers: {
+          $rest: RestProvider,
+          $sse: SseProvider,
+          $websocket: WebSocketProvider,
+          $webTransport: WebTransportProvider,
+          $worker: WorkerProvider,
+          $wasm: WasmProvider,
+        },
+      },
+    });
+
+    angular
+      .module("app", [])
+      .rest("posts", "/api/posts", PostEntity, makeRestOptions)
+      .sse("notifications", "/events", makeSseConfig)
+      .websocket(
+        "chat",
+        "wss://chat.example.com",
+        makeProtocols,
+        makeWebsocketConfig,
+      )
+      .webTransport(
+        "live",
+        "https://localhost:4433/webtransport",
+        makeWebTransportConfig,
+      )
+      .worker("backgroundWorker", makeWorkerScript, makeWorkerConfig)
+      .wasm("mathLib", "/wasm/math.wasm", makeWasmImports, makeWasmOpts);
+
+    const injector = angular.injector(["ng", "app"]);
+
+    expect(injector.get("posts")).toEqual({
+      type: "rest",
+      url: "/api/posts",
+      entityClass: PostEntity,
+      options: { cache: true },
+    });
+    expect(injector.get("notifications")).toEqual({
+      type: "sse",
+      url: "/events",
+      config: { retryDelay: 10 },
+    });
+    expect(injector.get("chat")).toEqual({
+      type: "websocket",
+      url: "wss://chat.example.com",
+      protocols: ["json"],
+      config: { maxRetries: 1 },
+    });
+    expect(injector.get("live")).toEqual({
+      type: "webTransport",
+      url: "https://localhost:4433/webtransport",
+      config: { requireUnreliable: true },
+    });
+    expect(injector.get("backgroundWorker")).toEqual({
+      type: "worker",
+      scriptPath: "/workers/bg.js",
+      config: { autoRestart: true },
+    });
+    expect(injector.get("mathLib")).toEqual({
+      type: "wasm",
+      src: "/wasm/math.wasm",
+      imports: { env: { table: { name: "dynamic" } } },
+      opts: { raw: true },
+    });
+
+    expect(calls).toEqual({
+      rest: 1,
+      sse: 1,
+      websocketProtocols: 1,
+      websocketConfig: 1,
+      webTransport: 1,
+      workerScript: 1,
+      workerConfig: 1,
+      wasmImports: 1,
+      wasmOpts: 1,
+    });
+  });
+
+  it("resolves named machine and workflow configs from injectables", () => {
+    const appSettings = {
+      initialMachine: "setup",
+      initialWorkflow: "idle",
+    };
+
+    const makeMachineConfig = (settings) => {
+      return {
+        initial: settings.initialMachine,
+        data: {
+          attempt: 1,
+        },
+        transitions: {
+          setup: {
+            start(data) {
+              data.attempt += 1;
+
+              return "started";
+            },
+          },
+          started: {
+            reset(data) {
+              data.attempt = 1;
+
+              return "setup";
+            },
+          },
+        },
+      };
+    };
+
+    const makeWorkflowConfig = (settings) => {
+      return {
+        id: "docs-workflow",
+        initial: settings.initialWorkflow,
+        data: {
+          attempt: 3,
+        },
+        transitions: {
+          idle: {
+            start(data) {
+              data.attempt += 1;
+
+              return "running";
+            },
+          },
+        },
+      };
+    };
+
+    makeMachineConfig.$inject = ["appSettings"];
+    makeWorkflowConfig.$inject = ["appSettings"];
+
+    const angular = createAngularCustom();
+
+    angular
+      .module("app", [])
+      .value("appSettings", appSettings)
+      .machine("sessionMachine", makeMachineConfig)
+      .workflow("docsWorkflow", makeWorkflowConfig);
+
+    const injector = angular.injector(["ng", "app"]);
+
+    const sessionMachine = injector.get("sessionMachine");
+    const docsWorkflow = injector.get("docsWorkflow");
+
+    expect(sessionMachine.current).toBe("setup");
+    expect(sessionMachine.data).toEqual({ attempt: 1 });
+    expect(docsWorkflow.current).toBe("idle");
+    expect(docsWorkflow.data).toEqual({ attempt: 3 });
+    expect(docsWorkflow.id).toBe("docs-workflow");
+  });
+
   it("defines standalone AngularTS custom elements without host bootstrap", async () => {
     class LabelService {
       value = "custom runtime service";

@@ -86,6 +86,7 @@ export default defineConfig({
   webServer: {
     command: "make serve",
     url: baseUrl,
-    reuseExistingServer: process.env.PW_COVERAGE !== "1",
+    reuseExistingServer:
+      process.env.PW_COVERAGE !== "1" || process.env.PW_REUSE_SERVER === "1",
   },
 });

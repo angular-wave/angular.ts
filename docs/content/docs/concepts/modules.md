@@ -187,6 +187,52 @@ app.machine('sessionMachine', {
   transitions: {},
 });
 
+// Register machine/workflow config from DI-backed factories
+app.value('settings', {
+  sessionMode: 'setup',
+});
+
+function machineConfig(settings) {
+  return {
+    initial: settings.sessionMode,
+    data: { roomId: '' },
+    transitions: {
+      setup: {
+        join(data, message) {
+          data.roomId = message.roomId;
+
+          return 'waiting';
+        },
+      },
+    },
+  };
+}
+
+machineConfig.$inject = ['settings'];
+
+app.machine('sessionMachine', machineConfig);
+
+function workflowConfig(settings) {
+  return {
+    id: 'onboarding',
+    initial: 'idle',
+    data: { sessionMode: settings.sessionMode },
+    transitions: {
+      idle: {
+        start(data) {
+          data.sessionMode = 'running';
+
+          return 'running';
+        },
+      },
+    },
+  };
+}
+
+workflowConfig.$inject = ['settings'];
+
+app.workflow('onboardingWorkflow', workflowConfig);
+
 app.wasm('mathLib', '/wasm/math.wasm', {});
 
 // Register a Web Worker connection

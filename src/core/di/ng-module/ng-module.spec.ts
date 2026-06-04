@@ -12,6 +12,7 @@ import {
   _injector,
   _machine,
   _provide,
+  _workflow,
   _rest,
   _sse,
   _stateProvider,
@@ -237,6 +238,260 @@ describe("NgModule", () => {
     ]);
   });
 
+  it("uses defaults when registering websocket with only required arguments", () => {
+    ngModule.websocket("chat", "wss://chat.example.com");
+
+    const websocketRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "chat",
+    );
+    const websocketFactory = websocketRegistration[2][1];
+    const injector = {
+      invoke: jasmine
+        .createSpy("injectorInvoke")
+        .and.callFake((value: any) => value()),
+    };
+    const websocketService = jasmine
+      .createSpy("websocketService")
+      .and.callFake((url, protocols, config) => ({
+        url,
+        protocols,
+        config,
+      }));
+
+    const websocketResult = websocketFactory[2](websocketService, injector);
+
+    expect(injector.invoke as jasmine.Spy).not.toHaveBeenCalled();
+    expect(websocketResult).toEqual({
+      url: "wss://chat.example.com",
+      protocols: [],
+      config: {},
+    });
+  });
+
+  it("accepts URL objects when registering worker script paths", () => {
+    const scriptPath = new URL("https://assets.example.com/bg.js");
+
+    ngModule.worker("workerWithUrl", scriptPath);
+
+    const workerRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "workerWithUrl",
+    );
+    const workerFactory = workerRegistration[2][1];
+    const injector = {
+      invoke: jasmine
+        .createSpy("injectorInvoke")
+        .and.callFake((value: any) => value()),
+    };
+    const workerService = jasmine
+      .createSpy("workerService")
+      .and.callFake((workerUrl, config) => ({
+        workerUrl: String(workerUrl),
+        config,
+      }));
+
+    const workerResult = workerFactory[2](workerService, injector);
+
+    expect(injector.invoke as jasmine.Spy).not.toHaveBeenCalled();
+    expect(workerResult).toEqual({
+      workerUrl: "https://assets.example.com/bg.js",
+      config: {},
+    });
+  });
+
+  it("resolves dynamic wasm and worker configs when invoking the generated provider factories", () => {
+    const resolveWasmImports = jasmine
+      .createSpy("resolveWasmImports")
+      .and.returnValue({
+        env: { table: { name: "dynamic" } },
+      });
+    const resolveWasmOptions = jasmine
+      .createSpy("resolveWasmOptions")
+      .and.returnValue({
+        raw: true,
+      });
+    const resolveWorkerScript = jasmine
+      .createSpy("resolveWorkerScript")
+      .and.returnValue("/workers/bg.js");
+    const resolveWorkerConfig = jasmine
+      .createSpy("resolveWorkerConfig")
+      .and.returnValue({
+        autoRestart: true,
+      });
+
+    ngModule
+      .wasm(
+        "mathLib",
+        "/wasm/math.wasm",
+        resolveWasmImports,
+        resolveWasmOptions,
+      )
+      .worker("backgroundWorker", resolveWorkerScript, resolveWorkerConfig);
+
+    const wasmRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "mathLib",
+    );
+    const workerRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "backgroundWorker",
+    );
+
+    const wasmFactory = wasmRegistration[2][1];
+    const workerFactory = workerRegistration[2][1];
+
+    const injectorInvoke = jasmine
+      .createSpy("injectorInvoke")
+      .and.callFake((value: any) => value());
+    const injector = {
+      invoke: injectorInvoke,
+    };
+
+    const wasmService = jasmine
+      .createSpy("wasmService")
+      .and.callFake((src, imports, opts) => ({
+        src,
+        imports,
+        opts,
+      }));
+    const workerService = jasmine
+      .createSpy("workerService")
+      .and.callFake((scriptPath, config) => ({
+        scriptPath,
+        config,
+      }));
+
+    expect(wasmFactory).toEqual([_wasm, _injector, jasmine.any(Function)]);
+    expect(workerFactory).toEqual([_worker, _injector, jasmine.any(Function)]);
+
+    const wasmResult = wasmFactory[2](wasmService, injector);
+    const workerResult = workerFactory[2](workerService, injector);
+
+    expect(injector.invoke).toHaveBeenCalledTimes(4);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveWasmImports);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveWasmOptions);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveWorkerScript);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveWorkerConfig);
+
+    expect(resolveWasmImports).toHaveBeenCalledTimes(1);
+    expect(resolveWasmOptions).toHaveBeenCalledTimes(1);
+    expect(resolveWorkerScript).toHaveBeenCalledTimes(1);
+    expect(resolveWorkerConfig).toHaveBeenCalledTimes(1);
+
+    expect(wasmResult).toEqual({
+      src: "/wasm/math.wasm",
+      imports: { env: { table: { name: "dynamic" } } },
+      opts: { raw: true },
+    });
+    expect(workerResult).toEqual({
+      scriptPath: "/workers/bg.js",
+      config: { autoRestart: true },
+    });
+    expect(wasmService).toHaveBeenCalledTimes(1);
+    expect(workerService).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves dynamic machine and workflow configs when invoking generated provider factories", () => {
+    const resolveMachineData = {
+      roomId: "resolver",
+    };
+    const resolveMachineConfig = jasmine
+      .createSpy("resolveMachineConfig")
+      .and.returnValue({
+        initial: "setup",
+        data: resolveMachineData,
+        transitions: {
+          setup: {
+            join: jasmine.createSpy("joinTransition"),
+          },
+        },
+      });
+
+    const resolveWorkflowConfig = jasmine
+      .createSpy("resolveWorkflowConfig")
+      .and.returnValue({
+        id: "docs-workflow",
+        initial: "idle",
+        data: { step: 1 },
+        transitions: {},
+      });
+
+    ngModule
+      .machine("sessionMachine", resolveMachineConfig)
+      .workflow("docsWorkflow", resolveWorkflowConfig);
+
+    const machineRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "sessionMachine",
+    );
+    const workflowRegistration = ngModule._invokeQueue.find(
+      (entry) => entry[2][0] === "docsWorkflow",
+    );
+
+    const machineFactory = machineRegistration[2][1];
+    const workflowFactory = workflowRegistration[2][1];
+
+    const injectorInvoke = jasmine
+      .createSpy("injectorInvoke")
+      .and.callFake((value: any) => value());
+    const injector = {
+      invoke: injectorInvoke,
+    };
+
+    const machineService = jasmine
+      .createSpy("machineService")
+      .and.callFake((config) => ({
+        ...config,
+        data: config.data,
+      }));
+    const workflowService = jasmine
+      .createSpy("workflowService")
+      .and.callFake((config) => ({
+        ...config,
+        data: config.data,
+      }));
+
+    expect(machineFactory).toEqual([
+      _machine,
+      _injector,
+      jasmine.any(Function),
+    ]);
+    expect(workflowFactory).toEqual([
+      _workflow,
+      _injector,
+      jasmine.any(Function),
+    ]);
+
+    const machineResult = machineFactory[2](machineService, injector);
+    const workflowResult = workflowFactory[2](workflowService, injector);
+
+    expect(injector.invoke).toHaveBeenCalledTimes(2);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveMachineConfig);
+    expect(injector.invoke).toHaveBeenCalledWith(resolveWorkflowConfig);
+
+    expect(resolveMachineConfig).toHaveBeenCalledTimes(1);
+    expect(resolveWorkflowConfig).toHaveBeenCalledTimes(1);
+
+    expect(machineService).toHaveBeenCalledTimes(1);
+    expect(workflowService).toHaveBeenCalledTimes(1);
+
+    const machineArgs = machineService.calls.mostRecent().args[0];
+    const workflowArgs = workflowService.calls.mostRecent().args[0];
+    const resolvedMachine = resolveMachineConfig.calls.mostRecent().returnValue;
+    const resolvedWorkflow =
+      resolveWorkflowConfig.calls.mostRecent().returnValue;
+
+    expect(machineArgs.data).toEqual(resolveMachineData);
+    expect(machineArgs.data).not.toBe(resolveMachineData);
+    expect(machineResult).toEqual({
+      ...resolvedMachine,
+      data: machineArgs.data,
+    });
+
+    expect(workflowArgs.data).toEqual({ step: 1 });
+    expect(workflowArgs.data).not.toBe(resolvedWorkflow.data);
+    expect(workflowResult).toEqual({
+      ...resolvedWorkflow,
+      data: workflowArgs.data,
+    });
+  });
+
   it("registers named machines through the machine service", () => {
     const angular = new Angular();
 
@@ -312,6 +567,15 @@ describe("NgModule", () => {
         },
       ],
     ]);
+  });
+
+  it("throws when state name and definition name mismatch", () => {
+    expect(() =>
+      ngModule.state("home", {
+        name: "dashboard",
+        url: "/",
+      } as any),
+    ).toThrowError("State name 'dashboard' does not match 'home'");
   });
 
   it("registers module states through the router provider", () => {

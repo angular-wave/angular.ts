@@ -2,7 +2,7 @@
 /// <reference types="jasmine" />
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
-import { UrlMatcher } from "./url-matcher.ts";
+import { compareUrlMatchers, UrlMatcher } from "./url-matcher.ts";
 
 describe("UrlMatcher", () => {
   let router;
@@ -345,6 +345,12 @@ describe("UrlMatcher", () => {
       expect(formatted).toBe(url);
       expect(m3._exec(url.split("?")[0], params)).toEqual(params);
     });
+
+    it("should reject invalid typed query parameters", () => {
+      const m = router._compile("/items?{page:int}");
+
+      expect(m._format({ page: "next" })).toBeNull();
+    });
   });
 
   describe("._append()", () => {
@@ -370,6 +376,32 @@ describe("UrlMatcher", () => {
       const matcher = base._append(router._compile("/{repeat:[0-9]+}?to"));
 
       expect(matcher).not.toBe(base);
+    });
+
+    it("should inherit parent parameters for lookup", () => {
+      const parent = router._compile("/users/:id?from");
+
+      const child = parent._append(router._compile("/details/:tab?to"));
+
+      expect(child._parameter("id").id).toBe("id");
+      expect(child._parameter("from").id).toBe("from");
+      expect(child._parameter("tab").id).toBe("tab");
+      expect(child._parameter("missing")).toBeNull();
+      expect(child._parameter("id", { inherit: false })).toBeNull();
+    });
+
+    it("should compare appended matchers by static and parameter weights", () => {
+      const staticMatcher = router._compile("/users/list");
+      const dynamicMatcher = router._compile("/users/:id");
+      const nestedStaticMatcher = router
+        ._compile("/users")
+        ._append(router._compile("/list"));
+
+      expect(compareUrlMatchers(staticMatcher, dynamicMatcher)).toBeLessThan(0);
+      expect(compareUrlMatchers(dynamicMatcher, staticMatcher)).toBeGreaterThan(
+        0,
+      );
+      expect(compareUrlMatchers(staticMatcher, nestedStaticMatcher)).toBe(0);
     });
 
     it("should respect router.strictMode", () => {

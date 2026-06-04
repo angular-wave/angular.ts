@@ -80,6 +80,37 @@ app.controller('SessionCtrl', function (sessionMachine) {
 });
 ```
 
+You can also provide a resolvable config factory so it can read injectables at
+registration time:
+
+```js
+function sessionMachineConfig(appSettings) {
+  return {
+    initial: appSettings.initialMode,
+    data: {
+      roomId: '',
+      error: '',
+    },
+    transitions: {
+      setup: {
+        join(data, message) {
+          data.roomId = message.roomId;
+
+          return 'waiting';
+        },
+      },
+    },
+  };
+}
+
+sessionMachineConfig.$inject = ['appSettings'];
+
+app.machine('sessionMachine', sessionMachineConfig);
+```
+
+This is useful when defaults depend on environment, user state, or persisted
+configuration.
+
 Named machines are regular DI services. The injector creates one machine
 instance and reuses it for that injectable name.
 

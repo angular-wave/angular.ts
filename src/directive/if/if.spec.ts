@@ -8,6 +8,7 @@ import {
 } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ngIfDirective } from "./if.ts";
 
 describe("ngIf", () => {
   describe("basic", () => {
@@ -341,5 +342,74 @@ describe("ngIf", () => {
         );
       });
     });
+  });
+
+  it("returns a no-op link when ng-if expression is missing", () => {
+    const directive = ngIfDirective({
+      get: () => undefined,
+    } as unknown as ng.InjectorService);
+    const link = directive.compile(document.createElement("div"));
+
+    expect(typeof link).toBe("function");
+    expect(link({}, document.createElement("div"), undefined)).toBeUndefined();
+  });
+
+  it("returns early when transclusion is unavailable", () => {
+    const directive = ngIfDirective({
+      get: () => undefined,
+    } as unknown as ng.InjectorService);
+    const element = createElementFromHTML('<div ng-if="true">Shown</div>');
+    const link = directive.compile(element);
+
+    expect(
+      link(
+        {
+          $watch: () => {},
+        } as unknown as ng.Scope,
+        element,
+        undefined,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("uses animate.enter for animated nodes when condition becomes true", async () => {
+    const root = document.createElement("div");
+    root.id = "if-animate-root";
+    document.body.append(root);
+
+    const localAngular = new Angular();
+    const animate = {
+      enter: jasmine.createSpy("enter").and.callFake(() => ({
+        done: jasmine.createSpy("done"),
+      })),
+      leave: jasmine.createSpy("leave").and.callFake(() => ({
+        done: jasmine.createSpy("done"),
+      })),
+    };
+
+    localAngular.module("if-animate-mock-app", []).value("$animate", animate);
+    const localInjector = localAngular.bootstrap(root, ["if-animate-mock-app"]);
+    const localCompile = localInjector.get("$compile");
+    const localRootScope = localInjector.get("$rootScope");
+
+    localRootScope.shown = false;
+
+    const element = localCompile(
+      '<div ng-if="shown" data-animate="true">Content</div>',
+    )(localRootScope);
+
+    await wait();
+    expect(animate.enter).not.toHaveBeenCalled();
+
+    localRootScope.shown = true;
+    await wait();
+    expect(animate.enter).toHaveBeenCalledTimes(1);
+
+    localRootScope.shown = false;
+    await wait();
+    expect(animate.leave).toHaveBeenCalledTimes(1);
+
+    localRootScope.$destroy();
+    root.remove();
   });
 });

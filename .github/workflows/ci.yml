@@ -117,7 +117,10 @@ jobs:
           restore-keys: |
             deps-${{ runner.os }}-
       - name: Run Playwright tests
-        run: npx playwright test
+        run: make coverage-check
+
+      - name: Run Rust Wasm namespace parity check
+        run: make -C integrations/wasm/rust parity
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -164,6 +167,9 @@ jobs:
 
       - name: Run Kotlin integration check
         run: make -C integrations/kotlin check
+
+      - name: Run Rust Wasm namespace parity check
+        run: make -C integrations/wasm/rust parity
 
       - uses: actions/upload-artifact@v4
         if: always()

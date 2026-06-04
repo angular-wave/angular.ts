@@ -193,6 +193,74 @@ describe("WasmScopeAbi", () => {
     expect(bridgeSynced).toBeTrue();
   });
 
+  it("skips pending sync callbacks after disposal", async () => {
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
+    let bridgeSynced = false;
+
+    scope.onSync(() => {
+      bridgeSynced = true;
+    });
+
+    scope.sync();
+    scope.dispose();
+    scope.dispose();
+
+    const dispose = scope.onSync(() => {
+      bridgeSynced = true;
+    });
+
+    dispose();
+
+    await Promise.resolve();
+
+    expect(bridgeSynced).toBeFalse();
+    expect(scope.isDisposed()).toBeTrue();
+  });
+
+  it("returns failure values for unknown handles", () => {
+    const path = guest.write("count");
+    const value = guest.writeJson(1);
+
+    expect(imports.scope_get(404, path.ptr, path.len)).toBe(0);
+    expect(
+      imports.scope_set(404, path.ptr, path.len, value.ptr, value.len),
+    ).toBe(0);
+    expect(imports.scope_delete(404, path.ptr, path.len)).toBe(0);
+    expect(imports.scope_sync(404)).toBe(0);
+    expect(imports.scope_watch(404, path.ptr, path.len)).toBe(0);
+    expect(imports.scope_unwatch(404)).toBe(0);
+    expect(imports.scope_unbind(404)).toBe(0);
+    expect(imports.buffer_ptr(404)).toBe(0);
+    expect(imports.buffer_len(404)).toBe(0);
+
+    imports.buffer_free(404);
+  });
+
+  it("requires exports before guest-memory callbacks can run", () => {
+    const detachedAbi = new WasmScopeAbi();
+    const detachedScope = detachedAbi.createScope(rootScope, {
+      name: "todoList:main",
+    });
+
+    expect(() => detachedAbi.notifyBind(detachedScope)).toThrowError(
+      "AngularTS Wasm scope ABI exports are not attached",
+    );
+  });
+
+  it("supports direct scope reads, writes, and deletes around empty or missing paths", () => {
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
+
+    expect(scope.get("")).toBe(rootScope);
+    expect(scope.get("missing.value")).toBeUndefined();
+    expect(scope.set("", "ignored")).toBeFalse();
+    expect(scope.delete("missing.value")).toBeFalse();
+
+    expect(scope.set("profile.name", "Ada")).toBeTrue();
+    expect(rootScope.profile.name).toBe("Ada");
+    expect(scope.delete("profile.name")).toBeTrue();
+    expect(rootScope.profile.name).toBeUndefined();
+  });
+
   it("updates the DOM when a Wasm import mutates a bound scope", async () => {
     rootScope.todo = {
       title: "Initial",
@@ -281,6 +349,43 @@ describe("WasmScopeAbi", () => {
     await wait();
 
     expect(updates.length).toBe(1);
+  });
+
+  it("binds watched exports and can emit the initial value", async () => {
+    const updates: any[] = [];
+
+    rootScope.count = 7;
+    exports.ng_scope_on_update = (
+      scopeHandle,
+      pathPtr,
+      pathLen,
+      valuePtr,
+      valueLen,
+    ) => {
+      updates.push({
+        scopeHandle,
+        path: guest.read(pathPtr, pathLen),
+        value: guest.readJson(valuePtr, valueLen),
+      });
+    };
+
+    const scope = abi.createScope(rootScope, { name: "todoList:main" });
+    const dispose = scope.bindExports(exports, {
+      watch: ["count"],
+      initial: true,
+    });
+
+    await wait();
+
+    expect(updates).toEqual([
+      {
+        scopeHandle: scope.handle,
+        path: "count",
+        value: 7,
+      },
+    ]);
+
+    dispose();
   });
 
   it("calls bind and unbind lifecycle exports", () => {

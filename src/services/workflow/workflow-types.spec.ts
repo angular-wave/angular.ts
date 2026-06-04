@@ -523,4 +523,28 @@ describe("$workflow types", () => {
 
     expect(returnedModule).toBe(module);
   });
+
+  it("typechecks module.workflow registration from resolvable config", () => {
+    const module = null as unknown as ng.NgModule;
+
+    const buildWorkflowConfig = (): ng.WorkflowConfig<
+      BuildData,
+      BuildEvents
+    > => ({
+      id: "docs-build",
+      initial: "idle",
+      data: {
+        output: "",
+        error: "",
+      },
+      transitions: {},
+    });
+
+    const returnedModule = module.workflow<BuildData, BuildEvents>(
+      "docsWorkflow",
+      buildWorkflowConfig,
+    );
+
+    expect(returnedModule).toBe(module);
+  });
 });

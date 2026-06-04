@@ -7,7 +7,7 @@ import {
   validateIsString,
   validateRequired,
 } from "./validate.ts";
-import { isString } from "./utils.ts";
+import { isDefined, isString } from "./utils.ts";
 
 describe("validation helpers", () => {
   it("returns valid values", () => {
@@ -39,6 +39,26 @@ describe("validation helpers", () => {
     expect(() => validateIsNumber("x" as any, "count")).toThrowError(
       TypeError,
       'badarg:fail count="x"',
+    );
+    expect(() => validate(isDefined, undefined, "value")).toThrowError(
+      TypeError,
+      "badarg:required value=undefined",
+    );
+  });
+
+  it("allows custom failure reasons", () => {
+    expect(() => validate(() => false, 1, "count", "positive")).toThrowError(
+      TypeError,
+      "badarg:positive count=1",
+    );
+  });
+
+  it("throws when a value is not an instance of the expected constructor", () => {
+    class User {}
+
+    expect(() => validateInstanceOf({}, User, "user")).toThrowError(
+      TypeError,
+      "badarg:fail user={}",
     );
   });
 

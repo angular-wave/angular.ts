@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import {
   access,
   mkdir,
@@ -16,12 +17,6 @@ const reportDir = path.join(rootDir, "coverage");
 const baselinePath = path.join(rootDir, "utils", "coverage-baseline.json");
 const shouldCheckCoverage = process.argv.includes("--check");
 const shouldUpdateBaseline = process.argv.includes("--update-baseline");
-const coverageThresholds = {
-  branches: 70,
-  functions: 78,
-  lines: 80,
-  statements: 80,
-};
 const coverageTestArgs = ["playwright", "test", "src"];
 const coverageMetrics = ["branches", "functions", "lines", "statements"];
 const nycSourceArgs = [
@@ -94,25 +89,7 @@ if (coverageFiles.length > 0) {
     console.log("[coverage] checking thresholds");
     coverageExitCode = Math.max(
       coverageExitCode,
-      await run(
-        "npx",
-        [
-          "nyc",
-          "check-coverage",
-          "--temp-dir",
-          tempDir,
-          ...nycSourceArgs,
-          "--branches",
-          String(coverageThresholds.branches),
-          "--functions",
-          String(coverageThresholds.functions),
-          "--lines",
-          String(coverageThresholds.lines),
-          "--statements",
-          String(coverageThresholds.statements),
-        ],
-        env,
-      ),
+      await checkTouchedFilesCoverage(),
     );
   }
 
@@ -185,6 +162,87 @@ async function validateReport() {
   }
 
   return 0;
+}
+
+function checkTouchedFilesCoverage() {
+  return readSummary().then((summary) => {
+    const touchedFiles = getTouchedSourceFiles();
+    const isInstrumentableSource = (file) => {
+      return (
+        file.endsWith(".ts") &&
+        !file.endsWith(".spec.ts") &&
+        !file.endsWith(".test.ts")
+      );
+    };
+
+    const failures = [];
+
+    for (const file of touchedFiles) {
+      if (!isInstrumentableSource(file)) {
+        continue;
+      }
+
+      const absolute = path.resolve(file);
+      const fileSummary = summary[absolute] || summary[file];
+
+      if (!fileSummary) {
+        // Not collected likely because it is not exercised or intentionally excluded.
+        failures.push(`No coverage collected for touched source file: ${file}`);
+
+        continue;
+      }
+
+      for (const metric of coverageMetrics) {
+        const values = fileSummary[metric];
+
+        if (!values || values.pct !== 100) {
+          failures.push(
+            `Touched file ${file} ${metric}: ${String(values?.pct)}% (target: 100%)`,
+          );
+        }
+      }
+    }
+
+    if (failures.length) {
+      console.error("[coverage] touched source files are not 100% covered");
+      failures.forEach((failure) => console.error(`[coverage] ${failure}`));
+
+      return 1;
+    }
+
+    console.log("[coverage] all touched source files are 100% covered");
+
+    return 0;
+  });
+}
+
+function getTouchedSourceFiles() {
+  try {
+    const output = execSync("git diff --name-only HEAD -- src", {
+      cwd: rootDir,
+      encoding: "utf-8",
+    });
+    const changed = output
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
+      .filter((file) => {
+        const sourceFile = path.join(rootDir, file);
+        return sourceFile.startsWith(path.join(rootDir, "src"));
+      })
+      .map((file) => path.join(rootDir, file));
+
+    return changed;
+  } catch (error) {
+    console.error(
+      `[coverage] failed to discover touched source files for strict check: ${String(
+        error,
+      )}`,
+    );
+
+    return [];
+  }
 }
 
 function invalidSummaryMetrics(summary) {

@@ -4,6 +4,7 @@ import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc, createElementFromHTML } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { ngHideDirective, ngShowDirective } from "./show-hide.ts";
 
 describe("ngShow / ngHide", () => {
   let $scope;
@@ -122,6 +123,17 @@ describe("ngShow / ngHide", () => {
         expect(element.classList.contains("ng-hide")).toBeFalse();
       });
     });
+
+    it("does nothing when ng-show attribute is missing", () => {
+      const directive = ngShowDirective({
+        get: () => undefined,
+      } as unknown as ng.InjectorService);
+      const node = createElementFromHTML("<div>Visible</div>");
+
+      expect(() =>
+        directive.link({} as unknown as ng.Scope, node),
+      ).not.toThrow();
+    });
   });
 
   describe("ngHide", () => {
@@ -199,6 +211,97 @@ describe("ngShow / ngHide", () => {
         await wait();
         expect(element.classList.contains("ng-hide")).toBeTrue();
       });
+    });
+
+    it("does nothing when ng-hide attribute is missing", () => {
+      const directive = ngHideDirective({
+        get: () => undefined,
+      } as unknown as ng.InjectorService);
+      const node = createElementFromHTML("<div>Visible</div>");
+
+      expect(() =>
+        directive.link({} as unknown as ng.Scope, node),
+      ).not.toThrow();
+    });
+
+    it("uses animate methods for animated ng-hide state changes", () => {
+      const animate = {
+        removeClass: jasmine.createSpy("removeClass"),
+        addClass: jasmine.createSpy("addClass"),
+      };
+
+      const directive = ngShowDirective({
+        get: () => animate,
+      } as unknown as ng.InjectorService);
+
+      const node = createElementFromHTML(
+        '<div ng-show="show" data-animate="true"></div>',
+      );
+      let onChange;
+
+      directive.link(
+        {
+          $watch: (_expression: string, callback: (value: boolean) => void) => {
+            onChange = callback;
+            callback(false);
+          },
+        } as unknown as ng.Scope,
+        node,
+      );
+
+      expect(animate.addClass).toHaveBeenCalledWith(
+        node,
+        "ng-hide",
+        jasmine.objectContaining({ tempClasses: "ng-hide-animate" }),
+      );
+
+      onChange(true);
+
+      expect(animate.removeClass).toHaveBeenCalledWith(
+        node,
+        "ng-hide",
+        jasmine.objectContaining({ tempClasses: "ng-hide-animate" }),
+      );
+    });
+
+    it("uses animate methods for animated ng-hide elements", () => {
+      const animate = {
+        removeClass: jasmine.createSpy("removeClass"),
+        addClass: jasmine.createSpy("addClass"),
+      };
+
+      const directive = ngHideDirective({
+        get: () => animate,
+      } as unknown as ng.InjectorService);
+
+      const node = createElementFromHTML(
+        '<div ng-hide="hide" data-animate="true"></div>',
+      );
+      let onChange;
+
+      directive.link(
+        {
+          $watch: (_expression: string, callback: (value: boolean) => void) => {
+            onChange = callback;
+            callback(false);
+          },
+        } as unknown as ng.Scope,
+        node,
+      );
+
+      expect(animate.removeClass).toHaveBeenCalledWith(
+        node,
+        "ng-hide",
+        jasmine.objectContaining({ tempClasses: "ng-hide-animate" }),
+      );
+
+      onChange(true);
+
+      expect(animate.addClass).toHaveBeenCalledWith(
+        node,
+        "ng-hide",
+        jasmine.objectContaining({ tempClasses: "ng-hide-animate" }),
+      );
     });
   });
 });

@@ -96,6 +96,37 @@ app.controller('DocsCtrl', function (docsWorkflow) {
 });
 ```
 
+You can make workflow registration resumable and environment-driven by passing a
+config factory:
+
+```js
+function docsWorkflowConfig(buildConfig) {
+  return {
+    id: buildConfig.workflowId,
+    initial: buildConfig.initialMode,
+    data: {
+      runs: 0,
+      status: buildConfig.initialMode,
+    },
+    transitions: {
+      idle: {
+        start(data) {
+          data.runs += 1;
+          data.status = 'running';
+
+          return 'running';
+        },
+      },
+    },
+    commands: {},
+  };
+}
+
+docsWorkflowConfig.$inject = ['buildConfig'];
+
+app.workflow('docsWorkflow', docsWorkflowConfig);
+```
+
 Named workflows are DI singletons for an injector. Observing scopes can be
 destroyed without destroying the workflow instance.
 

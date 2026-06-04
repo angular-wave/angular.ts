@@ -3,8 +3,10 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc } from "../../shared/dom.ts";
+import { setCacheData } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { createEventDirective, createWindowEventDirective } from "./events.ts";
+import { AFTER_RENDER_EVENT_SCHEDULER_KEY } from "../../core/render/after-render.ts";
 
 describe("event directives", () => {
   let angular;
@@ -398,6 +400,45 @@ describe("event directives", () => {
           passive: true,
         },
       );
+    });
+
+    it("should delegate scheduling to a scope callback when one is present", () => {
+      const directive = createEventDirective(
+        $parse,
+        $exceptionHandler,
+        "ngClick",
+        "click",
+      );
+
+      const scope = {
+        _scheduleCallback: jasmine
+          .createSpy("scheduleCallback")
+          .and.callFake((scheduler: () => void) => {
+            scheduler();
+          }),
+        $on: jasmine.createSpy("$on"),
+      };
+
+      const button = document.createElement("button");
+
+      button.setAttribute("ng-click", "click($event)");
+
+      const scheduler = jasmine.createSpy("afterRenderScheduler");
+
+      setCacheData(button, AFTER_RENDER_EVENT_SCHEDULER_KEY, scheduler);
+
+      const link = directive.compile(button);
+      const clickHandler = jasmine.createSpy("clickHandler");
+
+      scope.click = clickHandler;
+
+      link(scope as any, button);
+
+      button.dispatchEvent(new Event("click"));
+
+      expect(scope._scheduleCallback).toHaveBeenCalledWith(scheduler);
+      expect(clickHandler).toHaveBeenCalled();
+      expect(scheduler).toHaveBeenCalled();
     });
 
     it("should reject passive listeners that also prevent default", () => {

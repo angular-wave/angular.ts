@@ -3,6 +3,7 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { defineCommand, defineWorkflow } from "./workflow.ts";
 import type { WorkflowService } from "./workflow.ts";
 
 describe("$workflow", () => {
@@ -54,6 +55,121 @@ describe("$workflow", () => {
 
     expect(element.querySelector(".mode")?.textContent).toBe("running");
     expect(element.querySelector(".status")?.textContent).toBe("running");
+  });
+
+  it("returns typed workflow and command definitions unchanged", () => {
+    const command = defineCommand(({ input }) => ({
+      ok: true,
+      output: String(input),
+    }));
+    const config = {
+      id: "defined",
+      initial: "idle",
+      data: {
+        value: "",
+      },
+      transitions: {},
+      commands: {
+        publish: command,
+      },
+    };
+
+    expect(defineCommand(command)).toBe(command);
+    expect(defineWorkflow(config)).toBe(config);
+  });
+
+  it("validates workflow configuration at creation time", () => {
+    expect(() => $workflow(null as ng.WorkflowConfig)).toThrowError(
+      "$workflow requires a config object.",
+    );
+    expect(() =>
+      $workflow({
+        id: "",
+        initial: "idle",
+        data: {},
+        transitions: {},
+      }),
+    ).toThrowError("$workflow requires a non-empty id.");
+    expect(() =>
+      $workflow({
+        id: "bad-initial",
+        initial: "",
+        data: {},
+        transitions: {},
+      }),
+    ).toThrowError("$workflow requires a non-empty initial mode.");
+    expect(() =>
+      $workflow({
+        id: "bad-data",
+        initial: "idle",
+        data: null,
+        transitions: {},
+      }),
+    ).toThrowError("$workflow requires a data object.");
+    expect(() =>
+      $workflow({
+        id: "bad-transitions",
+        initial: "idle",
+        data: {},
+        transitions: null,
+      }),
+    ).toThrowError("$workflow requires a transitions object.");
+    expect(() =>
+      $workflow({
+        id: "bad-commands",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        commands: null,
+      }),
+    ).toThrowError("$workflow commands must be an object.");
+    expect(() =>
+      $workflow({
+        id: "bad-concurrency",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        concurrency: "drop",
+      }),
+    ).toThrowError(
+      "$workflow concurrency must be 'allow', 'reject', or 'queue'.",
+    );
+    expect(() =>
+      $workflow({
+        id: "bad-history-limit",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        historyLimit: -1,
+      }),
+    ).toThrowError("$workflow historyLimit must be a non-negative integer.");
+    expect(() =>
+      $workflow({
+        id: "bad-diagnostic-limit",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        diagnosticLimit: Number.POSITIVE_INFINITY,
+      }),
+    ).toThrowError("$workflow diagnosticLimit must be a finite number.");
+    expect(() =>
+      $workflow({
+        id: "bad-timeout",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        commandTimeout: 1.5,
+      }),
+    ).toThrowError("$workflow command timeout must be a non-negative integer.");
+    expect(() =>
+      $workflow({
+        id: "bad-migrate",
+        initial: "idle",
+        data: {},
+        transitions: {},
+        migrateSnapshot: "nope",
+      }),
+    ).toThrowError("$workflow migrateSnapshot must be a function.");
   });
 
   it("runs commands through stable history and diagnostics boundaries", async () => {
@@ -382,6 +498,203 @@ describe("$workflow", () => {
     });
     expect(signal?.aborted).toBe(true);
     expect(cleaned).toBe(true);
+  });
+
+  it("cancels immediately when the provided signal is already aborted", async () => {
+    let ran = false;
+    const controller = new AbortController();
+    const workflow = $workflow({
+      id: "pre-aborted",
+      initial: "idle",
+      data: {},
+      transitions: {},
+      commands: {
+        build() {
+          ran = true;
+
+          return {
+            ok: true,
+          };
+        },
+      },
+    });
+
+    controller.abort();
+
+    const result = await workflow.run("build", undefined, {
+      signal: controller.signal,
+    });
+
+    expect(ran).toBe(false);
+    expect(result).toEqual({
+      ok: false,
+      diagnostics: [
+        jasmine.objectContaining({
+          code: "workflow.commandCancelled",
+          command: "build",
+        }),
+      ],
+    });
+  });
+
+  it("records cleanup failures as diagnostics", async () => {
+    const workflow = $workflow({
+      id: "cleanup-failure",
+      initial: "idle",
+      data: {},
+      transitions: {},
+      commands: {
+        build({ cleanup }) {
+          cleanup(() => {
+            throw new Error("cleanup exploded");
+          });
+
+          return {
+            ok: true,
+          };
+        },
+      },
+    });
+
+    const result = await workflow.run("build");
+
+    expect(result.ok).toBe(true);
+    expect(workflow.diagnostics).toEqual([
+      jasmine.objectContaining({
+        code: "workflow.cleanupFailed",
+        message: "cleanup exploded",
+        command: "build",
+      }),
+    ]);
+  });
+
+  it("protects workflow data and nested commands after a command has finished", async () => {
+    let capturedWorkflow: ng.Workflow;
+    let capturedData: {
+      value: string;
+      nested: {
+        count: number;
+      };
+    };
+    const workflow = $workflow({
+      id: "post-finish-proxy",
+      initial: "idle",
+      data: {
+        value: "initial",
+        nested: {
+          count: 0,
+        },
+      },
+      transitions: {
+        idle: {
+          start(data) {
+            data.value = "running";
+
+            return "running";
+          },
+        },
+      },
+      commands: {
+        capture({ workflow: commandWorkflow, data }) {
+          capturedWorkflow = commandWorkflow;
+          capturedData = data;
+          data.value = "during";
+
+          return {
+            ok: true,
+          };
+        },
+        nested() {
+          return {
+            ok: true,
+          };
+        },
+      },
+    });
+
+    await workflow.run("capture");
+
+    capturedData!.value = "after";
+    capturedData!.nested.count = 1;
+    delete capturedData!.nested.count;
+    Object.defineProperty(capturedData!, "extra", {
+      value: true,
+      configurable: true,
+    });
+    Object.setPrototypeOf(capturedData!, { changed: true });
+
+    const sent = capturedWorkflow!.send("start");
+    const nestedRun = await capturedWorkflow!.run("nested");
+    const nestedRetry = await capturedWorkflow!.retry("nested");
+    const nestedRepeat = await capturedWorkflow!.repeat("nested");
+
+    expect(workflow.current).toBe("idle");
+    expect(workflow.data).toEqual({
+      value: "during",
+      nested: {
+        count: 0,
+      },
+    });
+    expect(sent).toBe(false);
+    expect(nestedRun.diagnostics[0].code).toBe("workflow.commandCancelled");
+    expect(nestedRetry.diagnostics[0].code).toBe("workflow.commandCancelled");
+    expect(nestedRepeat.diagnostics[0].code).toBe("workflow.commandCancelled");
+  });
+
+  it("proxies Map and Set workflow data during commands", async () => {
+    let capturedData: {
+      map: Map<string, { count: number }>;
+      set: Set<string>;
+    };
+    const workflow = $workflow({
+      id: "map-set-proxy",
+      initial: "idle",
+      data: {
+        map: new Map<string, { count: number }>([["item", { count: 1 }]]),
+        set: new Set<string>(["one"]),
+      },
+      transitions: {},
+      commands: {
+        inspect({ data }) {
+          capturedData = data;
+          expect(data.map.size).toBe(1);
+          expect(data.map.get("item")!.count).toBe(1);
+          data.map.get("item")!.count = 2;
+          expect(data.map.has("item")).toBe(true);
+          expect(Array.from(data.map.keys())).toEqual(["item"]);
+          expect(data.map.set("next", { count: 3 })).toBe(data.map);
+          expect(data.map.delete("missing")).toBe(false);
+          expect(data.set.size).toBe(1);
+          expect(data.set.has("one")).toBe(true);
+          expect(data.set.add("two")).toBe(data.set);
+          expect(data.set.delete("missing")).toBe(false);
+
+          return "ok";
+        },
+      },
+    });
+
+    const result = await workflow.run("inspect");
+
+    expect(result).toEqual({
+      ok: true,
+      output: "ok",
+    });
+    expect(workflow.data.map.get("item")!.count).toBe(2);
+    expect(workflow.data.map.get("next")!.count).toBe(3);
+    expect(workflow.data.set.has("two")).toBe(true);
+
+    expect(capturedData!.map.set("late", { count: 4 })).toBe(capturedData!.map);
+    expect(capturedData!.map.delete("item")).toBe(false);
+    capturedData!.map.clear();
+    expect(capturedData!.set.add("late")).toBe(capturedData!.set);
+    expect(capturedData!.set.delete("one")).toBe(false);
+    capturedData!.set.clear();
+
+    expect(workflow.data.map.has("late")).toBe(false);
+    expect(workflow.data.map.has("item")).toBe(true);
+    expect(workflow.data.set.has("late")).toBe(false);
+    expect(workflow.data.set.has("one")).toBe(true);
   });
 
   it("times out commands that ignore abort signals", async () => {

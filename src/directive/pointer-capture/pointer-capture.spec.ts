@@ -120,4 +120,26 @@ describe("ngPointerCapture", () => {
       linked.dispatchEvent(pointerEvent("pointerdown", 11));
     }).not.toThrow();
   });
+
+  it("ignores pointerdown events without pointer id", async () => {
+    element = compileElement("<div ng-pointer-capture></div>");
+    await wait();
+
+    const setPointerCapture = spyOn(element, "setPointerCapture");
+
+    element.dispatchEvent(new Event("pointerdown"));
+
+    expect(setPointerCapture).not.toHaveBeenCalled();
+  });
+
+  it("ignores release requests for untracked pointers", async () => {
+    element = compileElement("<div ng-pointer-capture></div>");
+    await wait();
+
+    const releasePointerCapture = spyOn(element, "releasePointerCapture");
+
+    element.dispatchEvent(pointerEvent("pointerup", 123));
+
+    expect(releasePointerCapture).not.toHaveBeenCalled();
+  });
 });

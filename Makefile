@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-integrations test-types test-namespace-js types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix hugo
+.PHONY: build build-ts check test test-integrations test-types test-namespace-js types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix wasm-parity hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -82,6 +82,7 @@ check: ensure-deps
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types
 	@$(MAKE) test-namespace-js
+	@$(MAKE) wasm-parity
 	@$(MAKE) docs-examples-check
 
 test-types: ensure-deps
@@ -134,6 +135,10 @@ test-integrations: ensure-deps
 	@echo $(INFO) "Playwright integration tests"
 	@$(MAKE) -f integrations/closure/Makefile closure-test
 	@$(MAKE) -C integrations/kotlin check
+	@$(MAKE) wasm-parity
+
+wasm-parity: ensure-deps
+	@$(MAKE) -C integrations/wasm/rust parity
 
 test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"
@@ -141,11 +146,11 @@ test-ui: ensure-deps
 
 coverage: ensure-deps
 	@echo $(INFO) "Playwright coverage"
-	@node ./utils/run-coverage.mjs
-
-coverage-check: ensure-deps
-	@echo $(INFO) "Playwright coverage threshold check"
 	@node ./utils/run-coverage.mjs --check
+
+coverage-check:
+	@echo $(INFO) "Playwright coverage threshold check"
+	@$(MAKE) coverage
 
 coverage-update-baseline: ensure-deps
 	@echo $(INFO) "Playwright coverage baseline update"

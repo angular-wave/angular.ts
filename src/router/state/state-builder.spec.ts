@@ -1,6 +1,8 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { StateBuilder } from "./state-builder.ts";
+import { StateObject } from "./state-object.ts";
+import { getLocals } from "./state-registry.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 
@@ -217,5 +219,154 @@ describe("StateBuilder", function () {
     expect(config.resolvables[1].token).toBe("prefetched");
     expect(config.resolvables[1].data).toBe(false);
     expect(config.resolvables[1].resolved).toBe(true);
+  });
+
+  describe("StateObject", () => {
+    it("identifies state declarations and built state objects", () => {
+      const declaration = { name: "app" };
+      const state = new StateObject(declaration);
+
+      expect(StateObject.isStateDeclaration(declaration)).toBeTrue();
+      expect(StateObject.isStateDeclaration({ name: "other" })).toBeFalse();
+      expect(StateObject.isState(state)).toBeTrue();
+      expect(StateObject.isState(declaration)).toBeFalse();
+      expect(state._state()).toBe(state);
+    });
+
+    it("matches by instance, declaration, and path name", () => {
+      const root = new StateObject({ name: "" });
+      const parent = new StateObject({ name: "app" });
+      const state = new StateObject({ name: "detail" });
+
+      parent.parent = root;
+      parent.path = [root, parent];
+      state.parent = parent;
+      state.path = [root, parent, state];
+
+      expect(state.is(state)).toBeTrue();
+      expect(state.is(state.self)).toBeTrue();
+      expect(state.is("app.detail")).toBeTrue();
+      expect(state.is("detail")).toBeFalse();
+      expect(state.fqn()).toBe("app.detail");
+      expect(String(state)).toBe("app.detail");
+      expect(state.root()).toBe(root);
+    });
+
+    it("returns inherited and filtered parameters", () => {
+      const parentParam = { id: "parent" };
+      const childParam = { id: "child" };
+      const parent = new StateObject({ name: "parent" });
+      const child = new StateObject({ name: "child" });
+
+      parent.params = { parent: parentParam };
+      child.parent = parent;
+      child.params = { child: childParam };
+
+      expect(child.parameters()).toEqual([parentParam, childParam]);
+      expect(child.parameters({ inherit: false })).toEqual([childParam]);
+      expect(child.parameters({ matchingKeys: { child: true } })).toEqual([
+        childParam,
+      ]);
+      expect(child.parameter("child")).toBe(childParam);
+      expect(child.parameter("parent", { inherit: true })).toBe(parentParam);
+      expect(child.parameter("missing", { inherit: true })).toBeUndefined();
+    });
+
+    it("prefers URL parameters over state params", () => {
+      const urlParam = { id: "id", source: "url" };
+      const stateParam = { id: "id", source: "state" };
+      const state = new StateObject({ name: "item" });
+
+      state.params = { id: stateParam };
+      state._url = {
+        _parameter: jasmine.createSpy("_parameter").and.returnValue(urlParam),
+      };
+
+      expect(state.parameter("id")).toBe(urlParam);
+    });
+  });
+
+  describe("StateRegistryProvider", () => {
+    it("queues child states until their parent is registered", () => {
+      const events = [];
+
+      $stateRegistry.onStatesChanged((event, states) => {
+        events.push({ event, names: states.map((state) => state.name) });
+      });
+
+      const child = $stateRegistry.register({
+        name: "queued.child",
+        template: "child",
+      });
+
+      expect($stateRegistry.get("queued.child")).toBeNull();
+      expect($stateRegistry._isQueued("queued.child")).toBeTrue();
+      expect($stateRegistry._queue).toContain(child);
+
+      $stateRegistry.register({ name: "queued", template: "parent" });
+
+      expect($stateRegistry.get("queued")).toBeDefined();
+      expect($stateRegistry.get("queued.child")).toBeDefined();
+      expect($stateRegistry._isQueued("queued.child")).toBeFalse();
+      expect(events.some((event) => event.names.includes("queued.child"))).toBe(
+        true,
+      );
+    });
+
+    it("deregisters a state tree and notifies listeners", () => {
+      const events = [];
+
+      $stateRegistry.register({ name: "removeMe", template: "parent" });
+      $stateRegistry.register({ name: "removeMe.child", template: "child" });
+      $stateRegistry.onStatesChanged((event, states) => {
+        events.push({ event, names: states.map((state) => state.name) });
+      });
+
+      const deregistered = $stateRegistry.deregister("removeMe");
+
+      expect(deregistered.map((state) => state.name)).toEqual([
+        "removeMe.child",
+        "removeMe",
+      ]);
+      expect($stateRegistry.get("removeMe")).toBeNull();
+      expect($stateRegistry.get("removeMe.child")).toBeNull();
+      expect(events).toEqual([
+        {
+          event: "deregistered",
+          names: ["removeMe.child", "removeMe"],
+        },
+      ]);
+    });
+
+    it("throws when deregistering missing states by name or object", () => {
+      expect(() => $stateRegistry.deregister("missing")).toThrowError(
+        "Can't deregister state; not found: missing",
+      );
+      expect(() =>
+        $stateRegistry.deregister({ name: "missingObject" }),
+      ).toThrowError("Can't deregister state; not found: missingObject");
+    });
+
+    it("returns all declarations when get is called without arguments", () => {
+      $stateRegistry.register({ name: "listMe", template: "list" });
+
+      expect(
+        $stateRegistry.get().some((state) => state.name === "listMe"),
+      ).toBe(true);
+    });
+  });
+
+  describe("getLocals", () => {
+    it("returns locals for string tokens only", () => {
+      const symbolToken = Symbol("ignored");
+      const ctx = {
+        getTokens: () => ["user", symbolToken, "count"],
+        getResolvable: (token) => ({
+          data: token === "user" ? "Ada" : 2,
+        }),
+      };
+
+      expect(getLocals(ctx)).toEqual({ user: "Ada", count: 2 });
+    });
   });
 });
