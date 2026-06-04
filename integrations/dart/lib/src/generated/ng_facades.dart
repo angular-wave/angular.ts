@@ -2930,9 +2930,10 @@ base class GeneratedNgMachine extends GeneratedNgFacade {
   }
 
   /// Invokes the generated can member.
-  bool can(Object? arg0) {
+  bool can(Object? arg0, [Object? arg1 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
 
     return _toDartBool(raw.callMethodVarArgs('can'.toJS, args))!;
   }
@@ -2982,6 +2983,22 @@ base class GeneratedNgMachineConfig extends GeneratedNgFacade {
 
   /// Reads the generated hooks property.
   Object? get hooks => unsafe.jsToDart<Object?>(raw.getProperty('hooks'.toJS));
+}
+
+/// Generated raw facade for ng.MachineGuard.
+base class GeneratedNgMachineGuard extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineGuard.
+  const GeneratedNgMachineGuard(super.raw);
+
+  /// Invokes the generated call member.
+  bool call(Object? arg0, Object? arg1, Object? arg2) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+
+    return _toDartBool(_callFunction(raw as JSFunction, args))!;
+  }
 }
 
 /// Generated raw facade for ng.MachineHooks.
@@ -3095,6 +3112,35 @@ base class GeneratedNgMachineTransitionContext extends GeneratedNgFacade {
   /// Reads the generated machine property.
   Object? get machine =>
       unsafe.jsToDart<Object?>(raw.getProperty('machine'.toJS));
+}
+
+/// Generated raw facade for ng.MachineTransitionDefinition.
+base class GeneratedNgMachineTransitionDefinition extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineTransitionDefinition.
+  const GeneratedNgMachineTransitionDefinition(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0, Object? arg1, Object? arg2) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Generated raw facade for ng.MachineTransitionDescriptor.
+base class GeneratedNgMachineTransitionDescriptor extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.MachineTransitionDescriptor.
+  const GeneratedNgMachineTransitionDescriptor(super.raw);
+
+  /// Reads the generated guard property.
+  Object? get guard => unsafe.jsToDart<Object?>(raw.getProperty('guard'.toJS));
+
+  /// Reads the generated target property.
+  Object? get target =>
+      unsafe.jsToDart<Object?>(raw.getProperty('target'.toJS));
 }
 
 /// Generated raw facade for ng.MachineTransitionHook.

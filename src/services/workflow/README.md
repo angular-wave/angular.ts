@@ -7,7 +7,7 @@ state, diagnostics, bounded history, snapshots, restore, retry, and repeat.
 ## Responsibilities
 
 - Create reactive workflows from `$workflow(config)` and `$workflow(scope,
-  config)`.
+config)`.
 - Delegate legal mode transitions to `$machine`.
 - Run named synchronous or asynchronous commands with normalized results.
 - Convert thrown command failures into structured diagnostics.
@@ -68,7 +68,7 @@ Important invariants:
 ## Lifecycle
 
 `$workflow(config)` creates an unbound workflow target. Assigning it to a
-controller or scope property lets scope proxies bind through `_SCOPE_PROXY_BIND`.
+controller or scope property lets scope proxies bind through `SCOPE_PROXY_BIND`.
 `$workflow(scope, config)` immediately returns a scope proxy when the supplied
 scope has a handler.
 
@@ -115,7 +115,7 @@ Command result ordering is intentionally evidence-first:
 
 - `$machine`: owns mode transition behavior, reactive data, and machine
   snapshots.
-- Scope proxy binding: `_SCOPE_PROXY_BIND` registers observing scope handlers.
+- Scope proxy binding: `SCOPE_PROXY_BIND` registers observing scope handlers.
 - Scope scheduling: workflow bindings schedule `current`, `data`,
   `diagnostics`, and `history` changes.
 - `AbortController` and `AbortSignal`: cancellation, timeout, and external

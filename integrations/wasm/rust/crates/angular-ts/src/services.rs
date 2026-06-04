@@ -91,9 +91,110 @@ impl From<String> for MachineTransitionResult {
 pub type MachineTransition<TData, TPayload = ()> =
     fn(&mut TData, &TPayload) -> MachineTransitionResult;
 
+/// Guard callback for a Rust-authored machine transition.
+pub type MachineGuard<TData, TPayload = ()> = fn(&TData, &TPayload) -> bool;
+
+/// Guarded transition descriptor for a Rust-authored machine.
+pub struct MachineTransitionDescriptor<TData, TPayload = ()> {
+    guard: Option<MachineGuard<TData, TPayload>>,
+    target: MachineTransition<TData, TPayload>,
+}
+
+impl<TData, TPayload> Copy for MachineTransitionDescriptor<TData, TPayload> {}
+
+impl<TData, TPayload> Clone for MachineTransitionDescriptor<TData, TPayload> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<TData, TPayload> MachineTransitionDescriptor<TData, TPayload> {
+    /// Creates a descriptor for `target` without a guard.
+    pub const fn new(target: MachineTransition<TData, TPayload>) -> Self {
+        Self {
+            guard: None,
+            target,
+        }
+    }
+
+    /// Creates a descriptor for `target` with `guard`.
+    pub const fn guarded(
+        guard: MachineGuard<TData, TPayload>,
+        target: MachineTransition<TData, TPayload>,
+    ) -> Self {
+        Self {
+            guard: Some(guard),
+            target,
+        }
+    }
+
+    /// Optional guard callback.
+    pub const fn guard(&self) -> Option<MachineGuard<TData, TPayload>> {
+        self.guard
+    }
+
+    /// Transition target callback.
+    pub const fn target(&self) -> MachineTransition<TData, TPayload> {
+        self.target
+    }
+}
+
+/// Bare or guarded transition definition for a Rust-authored machine.
+pub enum MachineTransitionDefinition<TData, TPayload = ()> {
+    /// Function shorthand transition.
+    Transition(MachineTransition<TData, TPayload>),
+    /// Descriptor with an optional guard and target transition.
+    Descriptor(MachineTransitionDescriptor<TData, TPayload>),
+}
+
+impl<TData, TPayload> Copy for MachineTransitionDefinition<TData, TPayload> {}
+
+impl<TData, TPayload> Clone for MachineTransitionDefinition<TData, TPayload> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<TData, TPayload> MachineTransitionDefinition<TData, TPayload> {
+    /// Returns whether the transition can run for the supplied data and payload.
+    pub fn can_run(&self, data: &TData, payload: &TPayload) -> bool {
+        match self {
+            Self::Transition(_) => true,
+            Self::Descriptor(descriptor) => match descriptor.guard {
+                Some(guard) => guard(data, payload),
+                None => true,
+            },
+        }
+    }
+
+    /// Transition target callback.
+    pub const fn target(&self) -> MachineTransition<TData, TPayload> {
+        match self {
+            Self::Transition(target) => *target,
+            Self::Descriptor(descriptor) => descriptor.target,
+        }
+    }
+}
+
+impl<TData, TPayload> From<MachineTransition<TData, TPayload>>
+    for MachineTransitionDefinition<TData, TPayload>
+{
+    fn from(transition: MachineTransition<TData, TPayload>) -> Self {
+        Self::Transition(transition)
+    }
+}
+
+impl<TData, TPayload> From<MachineTransitionDescriptor<TData, TPayload>>
+    for MachineTransitionDefinition<TData, TPayload>
+{
+    fn from(descriptor: MachineTransitionDescriptor<TData, TPayload>) -> Self {
+        Self::Descriptor(descriptor)
+    }
+}
+
 /// Transition table keyed by current mode and event type.
 pub type MachineTransitionMap<TData, TPayload = ()> =
-    BTreeMap<MachineMode, BTreeMap<String, MachineTransition<TData, TPayload>>>;
+    BTreeMap<MachineMode, BTreeMap<String, MachineTransitionDefinition<TData, TPayload>>>;
 
 /// Context passed to Rust machine hooks.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -259,15 +360,44 @@ impl<TData, TPayload> MachineConfig<TData, TPayload> {
 
     /// Adds a transition for a mode and event type.
     pub fn transition(
-        mut self,
+        self,
         mode: impl Into<String>,
         event_type: impl Into<String>,
         transition: MachineTransition<TData, TPayload>,
     ) -> Self {
+        self.transition_definition(
+            mode,
+            event_type,
+            MachineTransitionDefinition::Transition(transition),
+        )
+    }
+
+    /// Adds a guarded transition for a mode and event type.
+    pub fn guarded_transition(
+        self,
+        mode: impl Into<String>,
+        event_type: impl Into<String>,
+        guard: MachineGuard<TData, TPayload>,
+        transition: MachineTransition<TData, TPayload>,
+    ) -> Self {
+        self.transition_definition(
+            mode,
+            event_type,
+            MachineTransitionDescriptor::guarded(guard, transition),
+        )
+    }
+
+    /// Adds a bare or guarded transition definition for a mode and event type.
+    pub fn transition_definition(
+        mut self,
+        mode: impl Into<String>,
+        event_type: impl Into<String>,
+        definition: impl Into<MachineTransitionDefinition<TData, TPayload>>,
+    ) -> Self {
         self.transitions
             .entry(mode.into())
             .or_default()
-            .insert(event_type.into(), transition);
+            .insert(event_type.into(), definition.into());
         self
     }
 
@@ -351,6 +481,14 @@ impl<TData, TPayload> Machine<TData, TPayload> {
             .is_some_and(|transitions| transitions.contains_key(event_type))
     }
 
+    /// Returns whether the current mode has a handler whose guard accepts `payload`.
+    pub fn can_with_payload(&self, event_type: &str, payload: &TPayload) -> bool {
+        self.transitions
+            .get(&self.current)
+            .and_then(|transitions| transitions.get(event_type))
+            .is_some_and(|definition| definition.can_run(&self.data, payload))
+    }
+
     /// Returns whether the machine is currently in `mode`.
     pub fn matches(&self, mode: &str) -> bool {
         self.current == mode
@@ -358,7 +496,7 @@ impl<TData, TPayload> Machine<TData, TPayload> {
 
     /// Sends an event to the machine. Returns true when a handler ran.
     pub fn send(&mut self, event_type: &str, payload: TPayload) -> bool {
-        let Some(transition) = self
+        let Some(definition) = self
             .transitions
             .get(&self.current)
             .and_then(|transitions| transitions.get(event_type))
@@ -367,7 +505,12 @@ impl<TData, TPayload> Machine<TData, TPayload> {
             return false;
         };
 
+        if !definition.can_run(&self.data, &payload) {
+            return false;
+        }
+
         let from = self.current.clone();
+        let transition = definition.target();
         let result = transition(&mut self.data, &payload);
         let to = match result {
             MachineTransitionResult::Mode(mode) if !mode.is_empty() => mode,
@@ -3273,6 +3416,10 @@ mod tests {
         MachineTransitionResult::Stay
     }
 
+    fn allow_named_session(data: &SessionData, payload: &String) -> bool {
+        data.starts == 0 && payload != "blocked"
+    }
+
     #[test]
     fn machine_facade_runs_transitions_hooks_and_snapshots() {
         use std::sync::atomic::{AtomicUsize, Ordering};
@@ -3347,5 +3494,61 @@ mod tests {
         assert_eq!(machine.data().starts, 1);
         assert_eq!(machine.data().last_player.as_deref(), Some("grace"));
         assert!(!machine.send("missing", "nobody".to_string()));
+    }
+
+    #[test]
+    fn machine_facade_supports_guarded_transition_definitions() {
+        let descriptor: MachineTransitionDescriptor<SessionData, String> =
+            MachineTransitionDescriptor::guarded(allow_named_session, start_session);
+        let definition: MachineTransitionDefinition<SessionData, String> = descriptor.into();
+
+        assert!(definition.can_run(
+            &SessionData {
+                starts: 0,
+                last_player: None,
+            },
+            &"ada".to_string(),
+        ));
+        assert!(!definition.can_run(
+            &SessionData {
+                starts: 0,
+                last_player: None,
+            },
+            &"blocked".to_string(),
+        ));
+        assert!(descriptor.guard().is_some());
+        assert_eq!(
+            descriptor.target()(
+                &mut SessionData {
+                    starts: 0,
+                    last_player: None,
+                },
+                &"grace".to_string(),
+            ),
+            MachineTransitionResult::mode("active"),
+        );
+
+        let config = MachineConfig::new(
+            "idle",
+            SessionData {
+                starts: 0,
+                last_player: None,
+            },
+        )
+        .transition_definition("idle", "start", definition);
+        let mut machine = Machine::new(config);
+
+        assert!(machine.can("start"));
+        assert!(!machine.can_with_payload("start", &"blocked".to_string()));
+        assert!(!machine.send("start", "blocked".to_string()));
+        assert!(machine.matches("idle"));
+        assert_eq!(machine.data().starts, 0);
+        assert_eq!(machine.data().last_player, None);
+
+        assert!(machine.can_with_payload("start", &"ada".to_string()));
+        assert!(machine.send("start", "ada".to_string()));
+        assert!(machine.matches("active"));
+        assert_eq!(machine.data().starts, 1);
+        assert_eq!(machine.data().last_player.as_deref(), Some("ada"));
     }
 }

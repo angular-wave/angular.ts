@@ -1,4 +1,4 @@
-/* Version: 0.30.0 - June 4, 2026 05:08:47 */
+/* Version: 0.30.0 - June 5, 2026 02:15:04 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -4121,7 +4121,7 @@
     function isScopeEventStopped(event) {
         return event.stopped;
     }
-    const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
+    const SCOPE_PROXY_BIND = Symbol("ngProxyBind");
     let uid = 0;
     /**
      * Returns the next generated scope/listener id.
@@ -4746,7 +4746,7 @@
         if (!proxy) {
             proxy = new Proxy(target, handler);
             proxiesByHandler.set(handler, proxy);
-            const bind = target[_SCOPE_PROXY_BIND];
+            const bind = target[SCOPE_PROXY_BIND];
             if (isFunction(bind)) {
                 bind.call(target, handler, proxy);
             }
@@ -11089,9 +11089,12 @@
                     let transitionStarted = false;
                     try {
                         const activeMachine = getActiveMachine();
+                        if (!canRunTransition(transition, payload, activeMachine)) {
+                            return false;
+                        }
                         const from = machineTarget.current;
                         transitionStarted = true;
-                        const nextMode = transition(activeMachine.data, payload, activeMachine);
+                        const nextMode = transition._target(activeMachine.data, payload, activeMachine);
                         const to = isNonEmptyString(nextMode) ? nextMode : from;
                         const context = {
                             type,
@@ -11124,11 +11127,13 @@
                     }
                 });
             },
-            can(type) {
+            can(type, payload) {
                 if (!isString(type)) {
                     return false;
                 }
-                return !!getTransition(machineTarget.current, config, type);
+                const transition = getTransition(machineTarget.current, config, type);
+                return (!!transition &&
+                    canRunTransition(transition, payload, getActiveMachine()));
             },
             matches(mode) {
                 return machineTarget.current === mode;
@@ -11150,7 +11155,7 @@
                 });
             },
         };
-        Object.defineProperty(machineTarget, _SCOPE_PROXY_BIND, {
+        Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
             value(handler, proxy) {
                 let binding = bindings.get(handler.$id);
                 if (!binding) {
@@ -11304,9 +11309,30 @@
             return undefined;
         }
         const transition = transitions[type];
-        return isFunction(transition)
-            ? transition
-            : undefined;
+        return resolveMachineTransition(transition);
+    }
+    function resolveMachineTransition(transition) {
+        if (isFunction(transition)) {
+            return {
+                _target: transition,
+            };
+        }
+        if (!isPlainObject(transition) || !hasOwn(transition, "target")) {
+            return undefined;
+        }
+        const descriptor = transition;
+        if (!isFunction(descriptor.target)) {
+            return undefined;
+        }
+        return {
+            _guard: isFunction(descriptor.guard) ? descriptor.guard : undefined,
+            _target: descriptor.target,
+        };
+    }
+    function canRunTransition(transition, payload, machine) {
+        return transition._guard
+            ? transition._guard(machine.data, payload, machine)
+            : true;
     }
     function getModeHook(hooks, mode) {
         if (!hooks || !hasOwn(hooks, mode)) {
@@ -11600,7 +11626,7 @@
                     scheduleWorkflowBindings();
                 },
             };
-            Object.defineProperty(workflowTarget, _SCOPE_PROXY_BIND, {
+            Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
                 value(handler, proxy) {
                     let binding = bindings.get(handler.$id);
                     if (!binding) {

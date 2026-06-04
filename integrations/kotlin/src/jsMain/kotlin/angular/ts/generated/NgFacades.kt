@@ -1066,7 +1066,7 @@ public external interface MachineEventMap
 public external interface MachineNoEvents
 
 public external interface Machine<TData, TEvents> {
-    public fun can(p0: dynamic = definedExternally): Boolean
+    public fun can(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public var current: String
     public var data: dynamic
     public fun matches(p0: String = definedExternally): Boolean
@@ -1080,6 +1080,10 @@ public external interface MachineConfig<TData, TEvents> {
     public var hooks: dynamic
     public var initial: String
     public var transitions: dynamic
+}
+
+public external interface MachineGuard<TData, TPayload, TEvents> {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
 }
 
 public external interface MachineHooks<TData, TEvents> {
@@ -1099,6 +1103,13 @@ public external interface MachineSnapshot<TData> {
 
 public external interface MachineTransition<TData, TPayload, TEvents> {
     public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+}
+
+public external interface MachineTransitionDefinition<TData, TPayload, TEvents>
+
+public external interface MachineTransitionDescriptor<TData, TPayload, TEvents> {
+    public fun guard(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    public fun target(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
 }
 
 public external interface MachineTransitionContext<TData, TEvents, TPayload> {

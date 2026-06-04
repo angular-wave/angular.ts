@@ -205,10 +205,10 @@ type ScopeProxy = ng.Scope;
 
 type ScopeTarget = NonScopeMarked & Record<PropertyKey, unknown>;
 
-export const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
+export const SCOPE_PROXY_BIND = Symbol("ngProxyBind");
 
 export interface ScopeProxyBindable {
-  [_SCOPE_PROXY_BIND]?: (handler: Scope, proxy: ScopeProxy) => void;
+  [SCOPE_PROXY_BIND]?: (handler: Scope, proxy: ScopeProxy) => void;
 }
 
 type ScopeEventListener = {
@@ -1218,7 +1218,7 @@ function getCachedScopeProxy(target: unknown, handler: Scope): unknown {
     proxy = new Proxy(target, handler) as ScopeProxy;
     proxiesByHandler.set(handler, proxy);
 
-    const bind = (target as ScopeProxyBindable)[_SCOPE_PROXY_BIND];
+    const bind = (target as ScopeProxyBindable)[SCOPE_PROXY_BIND];
 
     if (isFunction(bind)) {
       bind.call(target, handler, proxy);

@@ -57,6 +57,7 @@ part of the Gleam public facade.
 | `Machine` | inventory |
 | `MachineConfig` | inventory |
 | `MachineEventMap` | inventory |
+| `MachineGuard` | inventory |
 | `MachineHooks` | inventory |
 | `MachineMode` | alias |
 | `MachineModeHooks` | inventory |
@@ -64,6 +65,8 @@ part of the Gleam public facade.
 | `MachineSnapshot` | inventory |
 | `MachineTransition` | inventory |
 | `MachineTransitionContext` | inventory |
+| `MachineTransitionDefinition` | inventory |
+| `MachineTransitionDescriptor` | inventory |
 | `MachineTransitionHook` | inventory |
 | `MachineTransitionMap` | review |
 | `MachineTransitionResult` | review |

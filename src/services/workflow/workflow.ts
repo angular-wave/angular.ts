@@ -1,5 +1,5 @@
 import {
-  _SCOPE_PROXY_BIND,
+  SCOPE_PROXY_BIND,
   createScope,
   type Scope,
   type ScopeProxyBindable,
@@ -665,7 +665,7 @@ function createWorkflowFactory($machine: MachineService) {
       },
     };
 
-    Object.defineProperty(workflowTarget, _SCOPE_PROXY_BIND, {
+    Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
       value(handler: Scope, proxy: Workflow<TData, TEvents, TCommands>) {
         let binding = bindings.get(handler.$id);
 

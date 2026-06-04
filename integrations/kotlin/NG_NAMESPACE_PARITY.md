@@ -59,12 +59,15 @@ part of the Kotlin public facade.
 | `Machine` | generated |
 | `MachineConfig` | generated |
 | `MachineEventMap` | generated |
+| `MachineGuard` | generated |
 | `MachineHooks` | generated |
 | `MachineMode` | alias |
 | `MachineModeHooks` | generated |
 | `MachineNoEvents` | generated |
 | `MachineSnapshot` | generated |
 | `MachineTransition` | generated |
+| `MachineTransitionDefinition` | generated |
+| `MachineTransitionDescriptor` | generated |
 | `MachineTransitionContext` | generated |
 | `MachineTransitionHook` | generated |
 | `MachineTransitionMap` | review |

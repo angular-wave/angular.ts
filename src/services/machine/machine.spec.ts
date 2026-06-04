@@ -827,7 +827,7 @@ describe("$machine", () => {
     expect(machine.current).toBe("setup");
   });
 
-  it("treats non-function transition entries as missing transitions", () => {
+  it("treats non-function and malformed transition entries as missing transitions", () => {
     const machine = $machine({
       initial: "setup",
       data: {
@@ -836,12 +836,24 @@ describe("$machine", () => {
       transitions: {
         setup: {
           join: "waiting",
+          start: {
+            guard() {
+              return true;
+            },
+          },
+          play: {
+            target: "playing",
+          },
         },
       },
     });
 
     expect(machine.can("join")).toBe(false);
     expect(machine.send("join")).toBe(false);
+    expect(machine.can("start")).toBe(false);
+    expect(machine.send("start")).toBe(false);
+    expect(machine.can("play")).toBe(false);
+    expect(machine.send("play")).toBe(false);
     expect(machine.current).toBe("setup");
     expect(machine.data.count).toBe(0);
   });
@@ -2144,6 +2156,146 @@ describe("$machine", () => {
     expect(machine.can("join")).toBe(true);
     expect(transition).not.toHaveBeenCalled();
     expect(machine.current).toBe("setup");
+  });
+
+  it("runs descriptor transitions without guards", () => {
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        roomId: "",
+      },
+      transitions: {
+        setup: {
+          join: {
+            target(data, payload: { roomId: string }) {
+              data.roomId = payload.roomId;
+
+              return "waiting";
+            },
+          },
+        },
+      },
+    });
+
+    expect(machine.can("join", { roomId: "abc" })).toBe(true);
+    expect(machine.send("join", { roomId: "abc" })).toBe(true);
+    expect(machine.current).toBe("waiting");
+    expect(machine.data.roomId).toBe("abc");
+  });
+
+  it("checks guarded transition availability without running the target", () => {
+    const guard = jasmine.createSpy("guard").and.returnValue(true);
+    const target = jasmine.createSpy("target").and.returnValue("waiting");
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        enabled: true,
+      },
+      transitions: {
+        setup: {
+          join: {
+            guard,
+            target,
+          },
+        },
+      },
+    });
+
+    expect(machine.can("join")).toBe(true);
+    expect(guard).toHaveBeenCalledWith(machine.data, undefined, machine);
+    expect(target).not.toHaveBeenCalled();
+    expect(machine.current).toBe("setup");
+  });
+
+  it("skips guarded transitions when the guard returns false", () => {
+    const target = jasmine.createSpy("target").and.returnValue("waiting");
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        enabled: false,
+      },
+      transitions: {
+        setup: {
+          join: {
+            guard(data) {
+              return data.enabled;
+            },
+            target,
+          },
+        },
+      },
+    });
+
+    expect(machine.can("join")).toBe(false);
+    expect(machine.send("join")).toBe(false);
+    expect(target).not.toHaveBeenCalled();
+    expect(machine.current).toBe("setup");
+  });
+
+  it("passes payloads to transition guards", () => {
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        roomId: "",
+      },
+      transitions: {
+        setup: {
+          join: {
+            guard(_data, payload: { roomId?: string }) {
+              return payload.roomId === "abc";
+            },
+            target(data, payload: { roomId: string }) {
+              data.roomId = payload.roomId;
+
+              return "waiting";
+            },
+          },
+        },
+      },
+    });
+
+    expect(machine.can("join", { roomId: "bad" })).toBe(false);
+    expect(machine.send("join", { roomId: "bad" })).toBe(false);
+    expect(machine.current).toBe("setup");
+    expect(machine.data.roomId).toBe("");
+
+    expect(machine.can("join", { roomId: "abc" })).toBe(true);
+    expect(machine.send("join", { roomId: "abc" })).toBe(true);
+    expect(machine.current).toBe("waiting");
+    expect(machine.data.roomId).toBe("abc");
+  });
+
+  it("runs the guarded transition documentation example", () => {
+    const session = $machine({
+      initial: "setup",
+      data: {
+        roomId: "",
+        inviteCode: "ready",
+      },
+      transitions: {
+        setup: {
+          join: {
+            guard(data, message: { roomId: string }) {
+              return !!data.inviteCode && message.roomId !== "";
+            },
+            target(data, message: { roomId: string }) {
+              data.roomId = message.roomId;
+
+              return "waiting";
+            },
+          },
+        },
+      },
+    });
+
+    expect(session.can("join", { roomId: "" })).toBe(false);
+    expect(session.send("join", { roomId: "" })).toBe(false);
+    expect(session.matches("setup")).toBe(true);
+
+    expect(session.can("join", { roomId: "abc" })).toBe(true);
+    expect(session.send("join", { roomId: "abc" })).toBe(true);
+    expect(session.matches("waiting")).toBe(true);
+    expect(session.data.roomId).toBe("abc");
   });
 
   it("updates can and matches from the current mode", () => {

@@ -1,4 +1,4 @@
-import { createScope, _SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
+import { createScope, SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
 import { isObject, isString, isFunction, hasOwn, isArray, keys, isInstanceOf } from '../../shared/utils.js';
 
 /**
@@ -34,9 +34,12 @@ function createMachine(scopeOrConfig, maybeConfig) {
                 let transitionStarted = false;
                 try {
                     const activeMachine = getActiveMachine();
+                    if (!canRunTransition(transition, payload, activeMachine)) {
+                        return false;
+                    }
                     const from = machineTarget.current;
                     transitionStarted = true;
-                    const nextMode = transition(activeMachine.data, payload, activeMachine);
+                    const nextMode = transition._target(activeMachine.data, payload, activeMachine);
                     const to = isNonEmptyString(nextMode) ? nextMode : from;
                     const context = {
                         type,
@@ -69,11 +72,13 @@ function createMachine(scopeOrConfig, maybeConfig) {
                 }
             });
         },
-        can(type) {
+        can(type, payload) {
             if (!isString(type)) {
                 return false;
             }
-            return !!getTransition(machineTarget.current, config, type);
+            const transition = getTransition(machineTarget.current, config, type);
+            return (!!transition &&
+                canRunTransition(transition, payload, getActiveMachine()));
         },
         matches(mode) {
             return machineTarget.current === mode;
@@ -95,7 +100,7 @@ function createMachine(scopeOrConfig, maybeConfig) {
             });
         },
     };
-    Object.defineProperty(machineTarget, _SCOPE_PROXY_BIND, {
+    Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
         value(handler, proxy) {
             let binding = bindings.get(handler.$id);
             if (!binding) {
@@ -249,9 +254,30 @@ function getTransition(mode, config, type) {
         return undefined;
     }
     const transition = transitions[type];
-    return isFunction(transition)
-        ? transition
-        : undefined;
+    return resolveMachineTransition(transition);
+}
+function resolveMachineTransition(transition) {
+    if (isFunction(transition)) {
+        return {
+            _target: transition,
+        };
+    }
+    if (!isPlainObject(transition) || !hasOwn(transition, "target")) {
+        return undefined;
+    }
+    const descriptor = transition;
+    if (!isFunction(descriptor.target)) {
+        return undefined;
+    }
+    return {
+        _guard: isFunction(descriptor.guard) ? descriptor.guard : undefined,
+        _target: descriptor.target,
+    };
+}
+function canRunTransition(transition, payload, machine) {
+    return transition._guard
+        ? transition._guard(machine.data, payload, machine)
+        : true;
 }
 function getModeHook(hooks, mode) {
     if (!hooks || !hasOwn(hooks, mode)) {

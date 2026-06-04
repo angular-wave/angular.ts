@@ -5,7 +5,7 @@ import { ASTType } from '../parse/ast-type.js';
 function isScopeEventStopped(event) {
     return event.stopped;
 }
-const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
+const SCOPE_PROXY_BIND = Symbol("ngProxyBind");
 let uid = 0;
 /**
  * Returns the next generated scope/listener id.
@@ -630,7 +630,7 @@ function getCachedScopeProxy(target, handler) {
     if (!proxy) {
         proxy = new Proxy(target, handler);
         proxiesByHandler.set(handler, proxy);
-        const bind = target[_SCOPE_PROXY_BIND];
+        const bind = target[SCOPE_PROXY_BIND];
         if (isFunction(bind)) {
             bind.call(target, handler, proxy);
         }
@@ -2766,4 +2766,4 @@ function collectChildIds(child) {
     return ids;
 }
 
-export { RootScopeProvider, Scope, _SCOPE_PROXY_BIND, createScope, getArrayMutationMeta, isNonScope };
+export { RootScopeProvider, SCOPE_PROXY_BIND, Scope, createScope, getArrayMutationMeta, isNonScope };

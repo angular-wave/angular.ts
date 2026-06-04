@@ -93,6 +93,7 @@ remain deferred unless a Rust reference example makes one necessary.
 | `Machine` | covered |
 | `MachineConfig` | covered |
 | `MachineEventMap` | covered |
+| `MachineGuard` | covered |
 | `MachineHooks` | covered |
 | `MachineMode` | covered |
 | `MachineModeHooks` | covered |
@@ -100,6 +101,8 @@ remain deferred unless a Rust reference example makes one necessary.
 | `MachineSnapshot` | covered |
 | `MachineTransition` | covered |
 | `MachineTransitionContext` | covered |
+| `MachineTransitionDefinition` | covered |
+| `MachineTransitionDescriptor` | covered |
 | `MachineTransitionHook` | covered |
 | `MachineTransitionMap` | covered |
 | `MachineTransitionResult` | covered |

@@ -281,6 +281,8 @@ pub type Machine(a, b)
 
 pub type MachineConfig(a, b)
 
+pub type MachineGuard(a, b, c)
+
 pub type MachineHooks(a, b)
 
 pub type MachineMode
@@ -290,6 +292,10 @@ pub type MachineModeHooks(a, b)
 pub type MachineSnapshot(a)
 
 pub type MachineTransition(a, b, c)
+
+pub type MachineTransitionDefinition(a, b, c)
+
+pub type MachineTransitionDescriptor(a, b, c)
 
 pub type MachineTransitionContext(a, b, c)
 

@@ -144,8 +144,43 @@ func Stay() MachineTransitionResult {
 // MachineTransition mutates data and optionally returns the next mode.
 type MachineTransition[TData any, TPayload any] func(data *TData, payload TPayload, machine *Machine[TData, TPayload]) MachineTransitionResult
 
+// MachineGuard decides whether a transition may run.
+type MachineGuard[TData any, TPayload any] func(data *TData, payload TPayload, machine *Machine[TData, TPayload]) bool
+
+// MachineTransitionDescriptor stores a guarded transition target.
+type MachineTransitionDescriptor[TData any, TPayload any] struct {
+	Guard  MachineGuard[TData, TPayload]
+	Target MachineTransition[TData, TPayload]
+}
+
+// NewMachineTransitionDescriptor creates a guarded transition descriptor.
+func NewMachineTransitionDescriptor[TData any, TPayload any](guard MachineGuard[TData, TPayload], target MachineTransition[TData, TPayload]) MachineTransitionDescriptor[TData, TPayload] {
+	return MachineTransitionDescriptor[TData, TPayload]{Guard: guard, Target: target}
+}
+
+// Definition converts the descriptor into a transition definition.
+func (d MachineTransitionDescriptor[TData, TPayload]) Definition() MachineTransitionDefinition[TData, TPayload] {
+	return MachineTransitionDefinition[TData, TPayload]{Guard: d.Guard, Target: d.Target}
+}
+
+// MachineTransitionDefinition stores a bare or guarded transition target.
+type MachineTransitionDefinition[TData any, TPayload any] struct {
+	Guard  MachineGuard[TData, TPayload]
+	Target MachineTransition[TData, TPayload]
+}
+
+// NewMachineTransitionDefinition creates a transition definition from a bare transition.
+func NewMachineTransitionDefinition[TData any, TPayload any](target MachineTransition[TData, TPayload]) MachineTransitionDefinition[TData, TPayload] {
+	return MachineTransitionDefinition[TData, TPayload]{Target: target}
+}
+
+// CanRun reports whether the definition has a target and its guard passes.
+func (d MachineTransitionDefinition[TData, TPayload]) CanRun(data *TData, payload TPayload, machine *Machine[TData, TPayload]) bool {
+	return d.Target != nil && (d.Guard == nil || d.Guard(data, payload, machine))
+}
+
 // MachineTransitionMap is keyed by current mode and event type.
-type MachineTransitionMap[TData any, TPayload any] map[MachineMode]map[string]MachineTransition[TData, TPayload]
+type MachineTransitionMap[TData any, TPayload any] map[MachineMode]map[string]MachineTransitionDefinition[TData, TPayload]
 
 // MachineTransitionContext is passed to machine hooks.
 type MachineTransitionContext[TData any, TPayload any] struct {
@@ -180,13 +215,23 @@ type MachineConfig[TData any, TPayload any] struct {
 
 // WithTransition adds a transition for mode and event type.
 func (c MachineConfig[TData, TPayload]) WithTransition(mode MachineMode, eventType string, transition MachineTransition[TData, TPayload]) MachineConfig[TData, TPayload] {
+	return c.WithTransitionDefinition(mode, eventType, NewMachineTransitionDefinition(transition))
+}
+
+// WithGuardedTransition adds a guarded transition for mode and event type.
+func (c MachineConfig[TData, TPayload]) WithGuardedTransition(mode MachineMode, eventType string, guard MachineGuard[TData, TPayload], transition MachineTransition[TData, TPayload]) MachineConfig[TData, TPayload] {
+	return c.WithTransitionDefinition(mode, eventType, NewMachineTransitionDescriptor(guard, transition).Definition())
+}
+
+// WithTransitionDefinition adds a bare or guarded transition definition.
+func (c MachineConfig[TData, TPayload]) WithTransitionDefinition(mode MachineMode, eventType string, definition MachineTransitionDefinition[TData, TPayload]) MachineConfig[TData, TPayload] {
 	if c.Transitions == nil {
 		c.Transitions = MachineTransitionMap[TData, TPayload]{}
 	}
 	if c.Transitions[mode] == nil {
-		c.Transitions[mode] = map[string]MachineTransition[TData, TPayload]{}
+		c.Transitions[mode] = map[string]MachineTransitionDefinition[TData, TPayload]{}
 	}
-	c.Transitions[mode][eventType] = transition
+	c.Transitions[mode][eventType] = definition
 	return c
 }
 
@@ -229,8 +274,18 @@ func (m *Machine[TData, TPayload]) Can(eventType string) bool {
 	if transitions == nil {
 		return false
 	}
-	_, ok := transitions[eventType]
-	return ok
+	definition, ok := transitions[eventType]
+	return ok && definition.Target != nil
+}
+
+// CanWithPayload reports whether the current mode handles eventType and its guard accepts payload.
+func (m *Machine[TData, TPayload]) CanWithPayload(eventType string, payload TPayload) bool {
+	transitions := m.Transitions[m.Current]
+	if transitions == nil {
+		return false
+	}
+	definition, ok := transitions[eventType]
+	return ok && definition.CanRun(&m.Data, payload, m)
 }
 
 // Matches reports whether the machine is in mode.
@@ -244,13 +299,13 @@ func (m *Machine[TData, TPayload]) Send(eventType string, payload TPayload) bool
 	if transitions == nil {
 		return false
 	}
-	transition, ok := transitions[eventType]
-	if !ok {
+	definition, ok := transitions[eventType]
+	if !ok || !definition.CanRun(&m.Data, payload, m) {
 		return false
 	}
 
 	from := m.Current
-	result := transition(&m.Data, payload, m)
+	result := definition.Target(&m.Data, payload, m)
 	to := from
 	if result.Mode != "" {
 		to = result.Mode

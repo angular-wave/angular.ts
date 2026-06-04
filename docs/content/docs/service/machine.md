@@ -132,22 +132,73 @@ The machine exposes a small template-friendly API:
 session.current; // current mode string
 session.data; // reactive data object
 session.matches('setup'); // true when current mode is setup
-session.can('join'); // true when current mode has a join transition
+session.can('join', payload); // true when current mode can run join
 session.send('join', payload);
 session.snapshot(); // structured clone of { current, data }
 session.restore(snapshot);
 ```
 
-`send(type, payload)` returns `true` when a transition handler exists for the
-current mode and runs. Missing transitions return `false` and do not throw.
+`send(type, payload)` returns `true` when a transition entry exists for the
+current mode, its optional guard passes, and its handler runs. Missing
+transitions and blocked guarded transitions return `false` and do not throw.
+`$machine` does not record diagnostics for blocked or missing transitions; use
+`$workflow` when failures need structured evidence, retry, or recovery.
 
 Transition return values:
 
 - return a mode string to change `current`
-- return `false`, `undefined`, or no value to stay in the current mode
+- return `false`, `undefined`, an empty string, a non-string value, or no value
+  to stay in the current mode
 
-`can(type)` only checks the transition table for the current mode. It does not
-run transition logic.
+`can(type, payload)` checks the transition table and any optional guard for the
+current mode. It does not run the transition target. Guards should be
+side-effect-free because templates may call `can()` repeatedly.
+
+## Guarded Transitions
+
+Use a transition descriptor when a transition has a cheap synchronous condition
+that templates or controllers should be able to ask about through `can()`:
+
+```js
+const session = $machine({
+  initial: 'setup',
+  data: {
+    roomId: '',
+    inviteCode: '',
+  },
+  transitions: {
+    setup: {
+      join: {
+        guard(data, message) {
+          return !!data.inviteCode && message.roomId !== '';
+        },
+        target(data, message) {
+          data.roomId = message.roomId;
+
+          return 'waiting';
+        },
+      },
+    },
+  },
+});
+
+session.can('join', { roomId: 'abc' }); // evaluates guard only
+session.send('join', { roomId: 'abc' }); // runs target when guard passes
+```
+
+The original function shorthand remains valid:
+
+```js
+join(data, message) {
+  data.roomId = message.roomId;
+
+  return 'waiting';
+}
+```
+
+Guards and transitions are synchronous. Put async work, retries, diagnostics,
+and command recovery in [`$workflow`]({{< relref "/docs/service/workflow" >}}),
+then use a machine transition to project the resulting mode/data into the UI.
 
 ## Example: Tic Tac Toe
 
@@ -248,6 +299,8 @@ app.controller('GameCtrl', function ($machine) {
 The transition owns both validation and projection. A valid move mutates
 `data.board`, updates whose turn is next, and returns the next mode. An invalid
 move records `lastError` and returns `false`, leaving `current` unchanged.
+Machine transitions do not roll back data mutations when they return `false` or
+throw.
 
 ### Persist With Transition Hooks
 
@@ -305,8 +358,10 @@ const snapshot = session.snapshot();
 localStorage.setItem('session', JSON.stringify(snapshot));
 ```
 
-A snapshot contains only `current` and `data`. It does not include transitions
-or hooks; those still come from the machine config.
+A snapshot contains only `current` and `data`. It has no version or machine id,
+and it does not include transitions or hooks; those still come from the machine
+config. Use `$workflow` or a workflow supervisor when persisted recovery needs
+versioning, diagnostics, history, retry, or migration.
 
 The clone uses the browser's `structuredClone()` behavior. Values such as
 objects, arrays, Dates, Maps, Sets, typed arrays, and cycles can be cloned.
@@ -379,7 +434,9 @@ hooks.
 
 Hooks run synchronously inside the same `send()` batch. A hook may call
 `machine.send()` to run another valid transition; nested sends are batched with
-the outer transition.
+the outer transition. If a transition or hook throws, the error is rethrown,
+prior data/current mutations are kept, and AngularTS still schedules bound
+scopes for the keys touched by the attempted transition.
 
 ## Scope Ownership
 

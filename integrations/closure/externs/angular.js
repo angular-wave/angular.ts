@@ -5387,10 +5387,12 @@ ng.Machine.prototype.send = function(type, var_args) {};
 
 /**
  * Public Machine.can member exposed by the AngularTS namespace contract.
- * @param {?} type
+ * @template TType
+ * @param {TType} type
+ * @param {(?|undefined)} payload
  * @return {boolean}
  */
-ng.Machine.prototype.can = function(type) {};
+ng.Machine.prototype.can = function(type, payload) {};
 
 /**
  * Public Machine.matches member exposed by the AngularTS namespace contract.
@@ -5442,6 +5444,12 @@ ng.MachineConfig.prototype.transitions;
  * @type {(!ng.MachineHooks<TData, TEvents>|undefined)}
  */
 ng.MachineConfig.prototype.hooks;
+
+/**
+ * Public AngularTS MachineGuard contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?, ?, !ng.Machine<?, ?>): boolean}
+ */
+ng.MachineGuard;
 
 /**
  * Public AngularTS MachineHooks contract exposed through the global ng namespace for Closure-annotated applications.
@@ -5505,6 +5513,34 @@ ng.MachineSnapshot.prototype.data;
  * @typedef {function(?, ?, !ng.Machine<?, ?>): (boolean|string|undefined)}
  */
 ng.MachineTransition;
+
+/**
+ * Public AngularTS MachineTransitionDefinition contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {(!ng.MachineTransitionDescriptor<?, ?, ?>|function(?, ?, !ng.Machine<?, ?>): (boolean|string|undefined))}
+ */
+ng.MachineTransitionDefinition;
+
+/**
+ * Public AngularTS MachineTransitionDescriptor contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData, TPayload, TEvents
+ * @record
+ */
+ng.MachineTransitionDescriptor = function() {};
+
+/**
+ * Public MachineTransitionDescriptor.guard member exposed by the AngularTS namespace contract.
+ * @type {(function(TData, TPayload, !ng.Machine<TData, TEvents>): boolean|undefined)}
+ */
+ng.MachineTransitionDescriptor.prototype.guard;
+
+/**
+ * Public MachineTransitionDescriptor.target member exposed by the AngularTS namespace contract.
+ * @param {TData} data
+ * @param {TPayload} payload
+ * @param {!ng.Machine<TData, TEvents>} machine
+ * @return {(boolean|string|undefined)}
+ */
+ng.MachineTransitionDescriptor.prototype.target = function(data, payload, machine) {};
 
 /**
  * Public AngularTS MachineTransitionContext contract exposed through the global ng namespace for Closure-annotated applications.

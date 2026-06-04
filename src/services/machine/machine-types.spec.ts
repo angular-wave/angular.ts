@@ -266,6 +266,52 @@ describe("$machine types", () => {
     expect(invalidConfig.initial).toBe("setup");
   });
 
+  it("typechecks guarded transition descriptors", () => {
+    const config = defineMachine<SessionData, SessionEvents>({
+      initial: "setup",
+      data: {
+        roomId: "",
+        error: "",
+      },
+      transitions: {
+        setup: {
+          join: {
+            guard(data, payload, machine) {
+              const roomId: string = payload.roomId;
+
+              return data.error === "" && machine.matches("setup") && !!roomId;
+            },
+            target(data, payload) {
+              data.roomId = payload.roomId;
+
+              return "waiting";
+            },
+          },
+          fail: {
+            // @ts-expect-error fail receives a string payload, not JoinPayload.
+            guard(_data, payload: JoinPayload) {
+              return !!payload.roomId;
+            },
+            target(data, reason) {
+              data.error = reason;
+
+              return false;
+            },
+          },
+        },
+      },
+    });
+    const machineService = null as unknown as MachineService;
+    const machine = machineService(config);
+
+    machine.can("join");
+    machine.can("join", { roomId: "abc" });
+    // @ts-expect-error provided join payloads must include a roomId.
+    machine.can("join", { id: "abc" });
+
+    expect(config.initial).toBe("setup");
+  });
+
   it("typechecks module.machine registration", () => {
     const module = null as unknown as ng.NgModule;
     const config: ng.MachineConfig<SessionData, SessionEvents> = {

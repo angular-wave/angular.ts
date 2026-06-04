@@ -9,6 +9,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
+import ts from "typescript";
 import { fileURLToPath } from "node:url";
 
 const rootDir = fileURLToPath(new URL("../", import.meta.url));
@@ -181,6 +182,10 @@ async function checkTouchedFilesCoverage() {
       continue;
     }
 
+    if (!(await hasExecutableTouchedSource(file, changedLines))) {
+      continue;
+    }
+
     const fileCoverage = coverage.get(file);
 
     if (!fileCoverage) {
@@ -340,6 +345,79 @@ function isInstrumentableSource(file) {
     !file.endsWith(".spec.ts") &&
     !file.endsWith(".test.ts")
   );
+}
+
+async function hasExecutableTouchedSource(file, changedLines) {
+  const source = await readFile(file, "utf-8");
+  const lines = source.split(/\r?\n/);
+  const sourceFile = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+
+  for (const line of changedLines) {
+    const lineText = lines[line - 1] ?? "";
+    const trimmed = lineText.trim();
+
+    if (!trimmed || /^[{}()[\];,]+$/.test(trimmed)) {
+      continue;
+    }
+
+    const column = lineText.search(/\S/);
+    const position = sourceFile.getPositionOfLineAndCharacter(
+      line - 1,
+      Math.max(column, 0),
+    );
+    const node = findSmallestNodeAtPosition(sourceFile, position);
+
+    if (!isTypeOnlyNode(node)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function findSmallestNodeAtPosition(node, position) {
+  let match = node;
+
+  node.forEachChild((child) => {
+    if (child.getFullStart() <= position && position < child.getEnd()) {
+      match = findSmallestNodeAtPosition(child, position);
+    }
+  });
+
+  return match;
+}
+
+function isTypeOnlyNode(node) {
+  for (let current = node; current; current = current.parent) {
+    if (
+      ts.isTypeAliasDeclaration(current) ||
+      ts.isInterfaceDeclaration(current) ||
+      ts.isTypeParameterDeclaration(current) ||
+      ts.isTypeReferenceNode(current) ||
+      ts.isImportTypeNode(current) ||
+      ts.isTypeLiteralNode(current)
+    ) {
+      return true;
+    }
+
+    if (
+      ts.isImportDeclaration(current) &&
+      current.importClause?.isTypeOnly === true
+    ) {
+      return true;
+    }
+
+    if (ts.isExportDeclaration(current) && current.isTypeOnly === true) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function readLcov() {

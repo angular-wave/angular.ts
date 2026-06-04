@@ -8,7 +8,7 @@ without tying the machine lifetime to any one scope.
 ## Responsibilities
 
 - Create reactive machines from `$machine(config)` and `$machine(scope, config)`.
-- Expose mode transitions through `send()`, `can()`, and `matches()`.
+- Expose mode transitions through `send()`, guarded `can()`, and `matches()`.
 - Keep `current` and `data` observable when a scope proxy wraps a machine.
 - Coalesce transition updates through the active scope's `$batch()` scheduler.
 - Preserve machine instances across destroyed observing scopes.
@@ -34,7 +34,7 @@ Public methods and values exposed to callers include `current`, `data`,
 
 Each machine is backed by one raw `machineTarget`. The target owns the durable
 `current` mode and the raw `data` object from the config. When a scope proxy
-observes the machine, the target receives `_SCOPE_PROXY_BIND` and stores a
+observes the machine, the target receives `SCOPE_PROXY_BIND` and stores a
 binding for that scope id. The binding records the scope handler and the proxy
 view of the machine for that observer.
 
@@ -42,16 +42,20 @@ The main flow for `send()` is:
 
 1. Validate the event name and find a transition for the current mode.
 2. Pick an active, non-destroyed scope binding when one exists.
-3. Run the transition inside that scope's `$batch()` scheduler.
-4. Apply the returned mode string, or keep the previous mode for `false` and
+3. Evaluate the optional transition guard inside that scope's `$batch()`
+   scheduler.
+4. Run the transition target when the guard passes.
+5. Apply the returned mode string, or keep the previous mode for `false` and
    `undefined`.
-5. Run exit, enter, and transition hooks when appropriate.
-6. Schedule all live scope bindings for `current`, `data`, and discovered data
+6. Run exit, enter, and transition hooks when appropriate.
+7. Schedule all live scope bindings for `current`, `data`, and discovered data
    keys.
 
 Important invariants:
 
 - Missing transitions return `false` and do not run hooks.
+- Guarded transitions return `false` without running the target or hooks when the
+  guard returns `false`.
 - A handled transition returns `true`, including same-mode transitions.
 - The machine must remain usable after every observing scope is destroyed.
 - Restore mutates the existing data object where possible so proxies keep
@@ -63,7 +67,7 @@ Important invariants:
 
 `$machine(config)` creates an unbound target. Assigning that target to a
 controller or scope property lets the scope proxy bind later through
-`_SCOPE_PROXY_BIND`. `$machine(scope, config)` immediately returns a scope
+`SCOPE_PROXY_BIND`. `$machine(scope, config)` immediately returns a scope
 proxy around the machine when the supplied scope has a handler.
 
 Bindings are kept in a map keyed by scope id. Destroyed bindings are removed
@@ -74,6 +78,7 @@ any one scope.
 ## Scheduling And Ordering
 
 - `send()` runs synchronously.
+- `can()` may run a transition guard, but never runs the transition target.
 - Transition work is wrapped in `$batch()` when an active live scope binding is
   available.
 - Nested `machine.send()` calls from hooks are included in the outer batch.
@@ -100,11 +105,12 @@ For same-mode transitions, only `hooks.transition` runs.
 - `MachineBinding`: stores the observing scope handler and the machine proxy
   associated with that scope.
 - `MachineTransitionMap`: maps modes to event handlers.
+- `MachineTransitionDescriptor`: optional guarded form for one event handler.
 - `MachineHooks`: stores exit hooks, enter hooks, and a global transition hook.
 
 ## Integration Points
 
-- Scope proxy binding: `_SCOPE_PROXY_BIND` registers observing scope handlers.
+- Scope proxy binding: `SCOPE_PROXY_BIND` registers observing scope handlers.
 - Scope batching: `$batch()` suppresses intermediate observer flushes while a
   transition runs.
 - Scope scheduling: `_scheduleWatchKeys()` and `_checkListenersForAllKeys()`
@@ -117,6 +123,8 @@ For same-mode transitions, only `hooks.transition` runs.
 ## Edge Cases
 
 - Non-string event names return `false`.
+- Guard functions should be side-effect-free because `can()` may run during
+  template evaluation.
 - Invalid config objects throw during creation.
 - Invalid snapshots throw during restore.
 - Non-empty string transition results change mode; empty strings do not.

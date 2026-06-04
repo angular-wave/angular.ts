@@ -1,5 +1,5 @@
 import {
-  _SCOPE_PROXY_BIND,
+  SCOPE_PROXY_BIND,
   createScope,
   type Scope,
   type ScopeProxyBindable,
@@ -33,9 +33,14 @@ type MachineTransitionTable<
   TData extends object,
   TEvents extends object,
 > = string extends keyof TEvents
-  ? Partial<Record<string, MachineTransition<TData, TEvents[string], TEvents>>>
+  ? Partial<
+      Record<
+        string,
+        MachineTransitionDefinition<TData, TEvents[string], TEvents>
+      >
+    >
   : Partial<{
-      [TType in MachineEventName<TEvents>]: MachineTransition<
+      [TType in MachineEventName<TEvents>]: MachineTransitionDefinition<
         TData,
         TEvents[TType],
         TEvents
@@ -53,6 +58,33 @@ export type MachineTransition<
   payload: TPayload,
   machine: Machine<TData, TEvents>,
 ) => MachineTransitionResult;
+
+export type MachineGuard<
+  TData extends object = Record<string, unknown>,
+  TPayload = unknown,
+  TEvents extends object = MachineNoEvents,
+> = (
+  data: TData,
+  payload: TPayload,
+  machine: Machine<TData, TEvents>,
+) => boolean;
+
+export interface MachineTransitionDescriptor<
+  TData extends object = Record<string, unknown>,
+  TPayload = unknown,
+  TEvents extends object = MachineNoEvents,
+> {
+  guard?: MachineGuard<TData, TPayload, TEvents>;
+  target: MachineTransition<TData, TPayload, TEvents>;
+}
+
+export type MachineTransitionDefinition<
+  TData extends object = Record<string, unknown>,
+  TPayload = unknown,
+  TEvents extends object = MachineNoEvents,
+> =
+  | MachineTransition<TData, TPayload, TEvents>
+  | MachineTransitionDescriptor<TData, TPayload, TEvents>;
 
 export type MachineTransitionMap<
   TData extends object,
@@ -135,7 +167,10 @@ export interface Machine<
     type: TType,
     ...payload: MachineSendPayload<TEvents, TType>
   ): boolean;
-  can(type: MachineEventName<TEvents>): boolean;
+  can<TType extends MachineEventName<TEvents>>(
+    type: TType,
+    payload?: TEvents[TType],
+  ): boolean;
   matches(mode: MachineMode): boolean;
   snapshot(): MachineSnapshot<TData>;
   restore(snapshot: MachineSnapshot<TData>): void;
@@ -171,6 +206,14 @@ interface MachineArgs<TData extends object, TEvents extends object> {
 interface MachineBinding<TData extends object, TEvents extends object> {
   _handler: Scope;
   _proxy: Machine<TData, TEvents>;
+}
+
+interface ResolvedMachineTransition<
+  TData extends object,
+  TEvents extends object,
+> {
+  _guard?: MachineGuard<TData, unknown, TEvents>;
+  _target: MachineTransition<TData, unknown, TEvents>;
 }
 
 /**
@@ -226,11 +269,16 @@ function createMachine<
 
         try {
           const activeMachine = getActiveMachine();
+
+          if (!canRunTransition(transition, payload, activeMachine)) {
+            return false;
+          }
+
           const from = machineTarget.current;
 
           transitionStarted = true;
 
-          const nextMode = transition(
+          const nextMode = transition._target(
             activeMachine.data,
             payload,
             activeMachine,
@@ -273,12 +321,17 @@ function createMachine<
         }
       });
     },
-    can(type: string): boolean {
+    can(type: string, payload?: unknown): boolean {
       if (!isString(type)) {
         return false;
       }
 
-      return !!getTransition(machineTarget.current, config, type);
+      const transition = getTransition(machineTarget.current, config, type);
+
+      return (
+        !!transition &&
+        canRunTransition(transition, payload, getActiveMachine())
+      );
     },
     matches(mode: MachineMode): boolean {
       return machineTarget.current === mode;
@@ -304,7 +357,7 @@ function createMachine<
     },
   };
 
-  Object.defineProperty(machineTarget, _SCOPE_PROXY_BIND, {
+  Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
     value(handler: Scope, proxy: Machine<TData, TEvents>) {
       let binding = bindings.get(handler.$id);
 
@@ -528,7 +581,7 @@ function getTransition<TData extends object, TEvents extends object>(
   mode: MachineMode,
   config: MachineConfig<TData, TEvents>,
   type: string,
-): MachineTransition<TData, unknown, TEvents> | undefined {
+): ResolvedMachineTransition<TData, TEvents> | undefined {
   if (!hasOwn(config.transitions, mode)) {
     return undefined;
   }
@@ -541,9 +594,44 @@ function getTransition<TData extends object, TEvents extends object>(
 
   const transition = (transitions as Record<string, unknown>)[type];
 
-  return isFunction(transition)
-    ? (transition as MachineTransition<TData, unknown, TEvents>)
-    : undefined;
+  return resolveMachineTransition<TData, TEvents>(transition);
+}
+
+function resolveMachineTransition<TData extends object, TEvents extends object>(
+  transition: unknown,
+): ResolvedMachineTransition<TData, TEvents> | undefined {
+  if (isFunction(transition)) {
+    return {
+      _target: transition as MachineTransition<TData, unknown, TEvents>,
+    };
+  }
+
+  if (!isPlainObject(transition) || !hasOwn(transition, "target")) {
+    return undefined;
+  }
+
+  const descriptor = transition as Partial<
+    MachineTransitionDescriptor<TData, unknown, TEvents>
+  >;
+
+  if (!isFunction(descriptor.target)) {
+    return undefined;
+  }
+
+  return {
+    _guard: isFunction(descriptor.guard) ? descriptor.guard : undefined,
+    _target: descriptor.target,
+  };
+}
+
+function canRunTransition<TData extends object, TEvents extends object>(
+  transition: ResolvedMachineTransition<TData, TEvents>,
+  payload: unknown,
+  machine: Machine<TData, TEvents>,
+): boolean {
+  return transition._guard
+    ? transition._guard(machine.data, payload, machine)
+    : true;
 }
 
 function getModeHook<TData extends object, TEvents extends object>(

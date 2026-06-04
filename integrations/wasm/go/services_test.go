@@ -279,3 +279,56 @@ func TestMachineFacadeRunsTransitionsHooksAndSnapshots(t *testing.T) {
 		t.Fatalf("missing transition should return false")
 	}
 }
+
+func TestMachineFacadeSupportsGuardedTransitionDefinitions(t *testing.T) {
+	type sessionData struct {
+		Starts     int
+		LastPlayer string
+	}
+
+	guard := func(data *sessionData, payload string, machine *Machine[sessionData, string]) bool {
+		return data.Starts == 0 && payload != "blocked" && machine.Matches(MachineMode("idle"))
+	}
+	start := func(data *sessionData, payload string, machine *Machine[sessionData, string]) MachineTransitionResult {
+		data.Starts++
+		data.LastPlayer = payload
+		return NextMode(MachineMode("active"))
+	}
+	descriptor := NewMachineTransitionDescriptor(guard, start)
+	definition := descriptor.Definition()
+
+	if !definition.CanRun(&sessionData{}, "ada", &Machine[sessionData, string]{Current: MachineMode("idle")}) {
+		t.Fatalf("expected descriptor guard to allow ada")
+	}
+	if definition.CanRun(&sessionData{}, "blocked", &Machine[sessionData, string]{Current: MachineMode("idle")}) {
+		t.Fatalf("expected descriptor guard to block payload")
+	}
+
+	config := MachineConfig[sessionData, string]{
+		Initial: MachineMode("idle"),
+		Data:    sessionData{},
+	}.WithTransitionDefinition(MachineMode("idle"), "start", definition)
+	machine := NewMachine(config)
+
+	if !machine.Can("start") {
+		t.Fatalf("expected guarded transition to be present")
+	}
+	if machine.CanWithPayload("start", "blocked") {
+		t.Fatalf("expected guarded transition to reject blocked payload")
+	}
+	if machine.Send("start", "blocked") {
+		t.Fatalf("blocked transition should not run")
+	}
+	if !machine.Matches(MachineMode("idle")) || machine.Data.Starts != 0 || machine.Data.LastPlayer != "" {
+		t.Fatalf("blocked transition mutated machine: %#v", machine)
+	}
+	if !machine.CanWithPayload("start", "ada") {
+		t.Fatalf("expected guarded transition to allow ada")
+	}
+	if !machine.Send("start", "ada") {
+		t.Fatalf("expected allowed transition to run")
+	}
+	if !machine.Matches(MachineMode("active")) || machine.Data.Starts != 1 || machine.Data.LastPlayer != "ada" {
+		t.Fatalf("unexpected started machine: %#v", machine)
+	}
+}

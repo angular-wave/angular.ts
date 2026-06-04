@@ -1,4 +1,4 @@
-import { createScope, _SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
+import { createScope, SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
 import { _machine } from '../../injection-tokens.js';
 import { isObject, isString, isFunction, isNumber, hasOwn, isArray, isInstanceOf, isBoolean } from '../../shared/utils.js';
 
@@ -199,7 +199,7 @@ function createWorkflowFactory($machine) {
                 scheduleWorkflowBindings();
             },
         };
-        Object.defineProperty(workflowTarget, _SCOPE_PROXY_BIND, {
+        Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
             value(handler, proxy) {
                 let binding = bindings.get(handler.$id);
                 if (!binding) {

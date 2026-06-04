@@ -66,6 +66,7 @@ import type {
   Machine as TMachine,
   MachineConfig as TMachineConfig,
   MachineEventMap as TMachineEventMap,
+  MachineGuard as TMachineGuard,
   MachineHooks as TMachineHooks,
   MachineMode as TMachineMode,
   MachineModeHooks as TMachineModeHooks,
@@ -75,6 +76,8 @@ import type {
   MachineSnapshot as TMachineSnapshot,
   MachineTransition as TMachineTransition,
   MachineTransitionContext as TMachineTransitionContext,
+  MachineTransitionDefinition as TMachineTransitionDefinition,
+  MachineTransitionDescriptor as TMachineTransitionDescriptor,
   MachineTransitionHook as TMachineTransitionHook,
   MachineTransitionMap as TMachineTransitionMap,
   MachineTransitionResult as TMachineTransitionResult,
@@ -593,6 +596,12 @@ declare global {
       TEvents extends object = MachineNoEvents,
     > = TMachineConfig<TData, TEvents>;
 
+    export type MachineGuard<
+      TData extends object = Record<string, unknown>,
+      TPayload = unknown,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineGuard<TData, TPayload, TEvents>;
+
     export type MachineHooks<
       TData extends object = Record<string, unknown>,
       TEvents extends object = MachineNoEvents,
@@ -614,6 +623,18 @@ declare global {
       TPayload = unknown,
       TEvents extends object = MachineNoEvents,
     > = TMachineTransition<TData, TPayload, TEvents>;
+
+    export type MachineTransitionDefinition<
+      TData extends object = Record<string, unknown>,
+      TPayload = unknown,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineTransitionDefinition<TData, TPayload, TEvents>;
+
+    export type MachineTransitionDescriptor<
+      TData extends object = Record<string, unknown>,
+      TPayload = unknown,
+      TEvents extends object = MachineNoEvents,
+    > = TMachineTransitionDescriptor<TData, TPayload, TEvents>;
 
     export type MachineTransitionContext<
       TData extends object = Record<string, unknown>,
