@@ -1,6 +1,6 @@
 import { _log } from '../../injection-tokens.js';
 import { isRealtimeProtocolMessage } from '../../directive/realtime/protocol.js';
-import { isFunction, isString, isNumber } from '../../shared/utils.js';
+import { isFunction, isString, isInstanceOf, isNumber } from '../../shared/utils.js';
 
 class ManagedWebTransportConnection {
     constructor(url, TransportCtor, transportOptions, config, log) {
@@ -66,7 +66,7 @@ class ManagedWebTransportConnection {
         }
         catch (error) {
             this._handleNativeClose(error);
-            this.ready = Promise.reject(error instanceof Error
+            this.ready = Promise.reject(isInstanceOf(error, Error)
                 ? error
                 : new Error("Failed to open WebTransport", { cause: error }));
             return;
@@ -216,10 +216,10 @@ class ManagedWebTransportConnection {
         if (isString(data)) {
             return this._encoder.encode(data);
         }
-        if (data instanceof Uint8Array) {
+        if (isInstanceOf(data, Uint8Array)) {
             return data;
         }
-        if (data instanceof ArrayBuffer) {
+        if (isInstanceOf(data, ArrayBuffer)) {
             return new Uint8Array(data);
         }
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);

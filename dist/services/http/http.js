@@ -1,6 +1,6 @@
 import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, stringify, assertDefined, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, assertDefined, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -680,7 +680,7 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
     if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
         init.body = normalizeFetchBody(post);
     }
-    if (typeof timeout === "number" && timeout > 0) {
+    if (isNumber(timeout) && timeout > 0) {
         timeoutId = setTimeout(() => {
             timeoutRequest("timeout");
         }, timeout);
@@ -745,8 +745,8 @@ function normalizeFetchBody(post) {
     if (isString(post) ||
         isBlob(post) ||
         isFormData(post) ||
-        post instanceof URLSearchParams ||
-        post instanceof ArrayBuffer ||
+        isInstanceOf(post, URLSearchParams) ||
+        isInstanceOf(post, ArrayBuffer) ||
         ArrayBuffer.isView(post)) {
         return post;
     }

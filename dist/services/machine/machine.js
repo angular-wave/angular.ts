@@ -1,5 +1,5 @@
 import { createScope, _SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
-import { isObject, isString, isFunction, hasOwn, keys } from '../../shared/utils.js';
+import { isObject, isString, isFunction, hasOwn, isArray, keys, isInstanceOf } from '../../shared/utils.js';
 
 /**
  * Provides reactive mode machines backed by AngularTS scope proxies.
@@ -169,13 +169,13 @@ function collectKeys(value, keySet, visited) {
     }
 }
 function collectNativeCollectionKeys(value, keySet) {
-    if (isMapTarget(value)) {
+    if (isInstanceOf(value, Map)) {
         keySet.add("size");
         keySet.add("get");
         keySet.add("has");
         return;
     }
-    if (isSetTarget(value)) {
+    if (isInstanceOf(value, Set)) {
         keySet.add("size");
         keySet.add("has");
     }
@@ -222,7 +222,7 @@ function cloneSnapshotValue(value) {
 }
 function getMachineDataProperty(target, key) {
     if (key === "__proto__") {
-        return Object.prototype.hasOwnProperty.call(target, key)
+        return hasOwn(target, key)
             ? Object.getOwnPropertyDescriptor(target, key)?.value
             : undefined;
     }
@@ -341,27 +341,11 @@ function isNonEmptyString(value) {
     return isString(value) && value !== "";
 }
 function isPlainObject(value) {
-    if (!isObject(value) || Array.isArray(value)) {
+    if (!isObject(value) || isArray(value)) {
         return false;
     }
     const prototype = Reflect.getPrototypeOf(value);
     return prototype === Object.prototype || prototype === null;
-}
-function isMapTarget(value) {
-    try {
-        return value instanceof Map;
-    }
-    catch {
-        return false;
-    }
-}
-function isSetTarget(value) {
-    try {
-        return value instanceof Set;
-    }
-    catch {
-        return false;
-    }
 }
 
 export { MachineProvider, defineMachine };

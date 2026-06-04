@@ -1,4 +1,8 @@
-import { deleteProperty, instantiateWasm } from "../../shared/utils.ts";
+import {
+  deleteProperty,
+  instantiateWasm,
+  isNumber,
+} from "../../shared/utils.ts";
 
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
 
@@ -866,7 +870,7 @@ export class WasmScopeAbi {
 
   /** @internal */
   private _resolveScope(reference: WasmScopeReference): WasmScope | undefined {
-    return typeof reference === "number"
+    return isNumber(reference)
       ? this._scopes.get(reference)
       : this._scopesByName.get(reference);
   }

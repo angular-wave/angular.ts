@@ -2,11 +2,13 @@ import {
   _SCOPE_PROXY_BIND,
   createScope,
   type Scope,
-  type _ScopeProxyBindable,
+  type ScopeProxyBindable,
 } from "../../core/scope/scope.ts";
 import {
   hasOwn,
+  isArray,
   isFunction,
+  isInstanceOf,
   isObject,
   isString,
   keys,
@@ -18,22 +20,22 @@ export type MachineEventMap = Record<string, unknown>;
 
 export type MachineNoEvents = Record<never, never>;
 
-type _MachineEventName<TEvents extends object> = Extract<keyof TEvents, string>;
+type MachineEventName<TEvents extends object> = Extract<keyof TEvents, string>;
 
-type _MachineSendPayload<
+type MachineSendPayload<
   TEvents extends object,
-  TType extends _MachineEventName<TEvents>,
+  TType extends MachineEventName<TEvents>,
 > = undefined extends TEvents[TType]
   ? [payload?: TEvents[TType]]
   : [payload: TEvents[TType]];
 
-type _MachineTransitionTable<
+type MachineTransitionTable<
   TData extends object,
   TEvents extends object,
 > = string extends keyof TEvents
   ? Partial<Record<string, MachineTransition<TData, TEvents[string], TEvents>>>
   : Partial<{
-      [TType in _MachineEventName<TEvents>]: MachineTransition<
+      [TType in MachineEventName<TEvents>]: MachineTransition<
         TData,
         TEvents[TType],
         TEvents
@@ -56,7 +58,7 @@ export type MachineTransitionMap<
   TData extends object,
   TEvents extends object = MachineNoEvents,
 > = Partial<
-  Record<MachineMode, _MachineTransitionTable<TData, TEvents> | undefined>
+  Record<MachineMode, MachineTransitionTable<TData, TEvents> | undefined>
 >;
 
 export interface MachineTransitionContext<
@@ -72,25 +74,25 @@ export interface MachineTransitionContext<
   machine: Machine<TData, TEvents>;
 }
 
-type _MachineTransitionContextUnion<
+type MachineTransitionContextUnion<
   TData extends object,
   TEvents extends object,
 > = string extends keyof TEvents
   ? MachineTransitionContext<TData, TEvents, TEvents[string]>
   : {
-      [TType in _MachineEventName<TEvents>]: MachineTransitionContext<
+      [TType in MachineEventName<TEvents>]: MachineTransitionContext<
         TData,
         TEvents,
         TEvents[TType]
       > & {
         type: TType;
       };
-    }[_MachineEventName<TEvents>];
+    }[MachineEventName<TEvents>];
 
 export type MachineTransitionHook<
   TData extends object = Record<string, unknown>,
   TEvents extends object = MachineNoEvents,
-> = (context: _MachineTransitionContextUnion<TData, TEvents>) => void;
+> = (context: MachineTransitionContextUnion<TData, TEvents>) => void;
 
 export type MachineModeHooks<
   TData extends object = Record<string, unknown>,
@@ -129,11 +131,11 @@ export interface Machine<
 > {
   current: MachineMode;
   data: TData;
-  send<TType extends _MachineEventName<TEvents>>(
+  send<TType extends MachineEventName<TEvents>>(
     type: TType,
-    ...payload: _MachineSendPayload<TEvents, TType>
+    ...payload: MachineSendPayload<TEvents, TType>
   ): boolean;
-  can(type: _MachineEventName<TEvents>): boolean;
+  can(type: MachineEventName<TEvents>): boolean;
   matches(mode: MachineMode): boolean;
   snapshot(): MachineSnapshot<TData>;
   restore(snapshot: MachineSnapshot<TData>): void;
@@ -155,18 +157,18 @@ export interface MachineService {
   ): Machine<TData, TEvents>;
 }
 
-type _MachineTarget<TData extends object, TEvents extends object> = Machine<
+type MachineTarget<TData extends object, TEvents extends object> = Machine<
   TData,
   TEvents
 > &
-  _ScopeProxyBindable;
+  ScopeProxyBindable;
 
-interface _MachineArgs<TData extends object, TEvents extends object> {
+interface MachineArgs<TData extends object, TEvents extends object> {
   _scope?: ng.Scope;
   _config: MachineConfig<TData, TEvents>;
 }
 
-interface _MachineBinding<TData extends object, TEvents extends object> {
+interface MachineBinding<TData extends object, TEvents extends object> {
   _handler: Scope;
   _proxy: Machine<TData, TEvents>;
 }
@@ -200,10 +202,10 @@ function createMachine<
   assertMachineConfig(config);
 
   const rawData = config.data;
-  let activeBinding: _MachineBinding<TData, TEvents> | undefined;
-  const bindings = new Map<number, _MachineBinding<TData, TEvents>>();
+  let activeBinding: MachineBinding<TData, TEvents> | undefined;
+  const bindings = new Map<number, MachineBinding<TData, TEvents>>();
 
-  const machineTarget: _MachineTarget<TData, TEvents> = {
+  const machineTarget: MachineTarget<TData, TEvents> = {
     current: config.initial,
     data: rawData,
     send(type: string, payload?: unknown): boolean {
@@ -242,7 +244,7 @@ function createMachine<
             data: activeMachine.data,
             machine: activeMachine,
           };
-          const hookContext = context as _MachineTransitionContextUnion<
+          const hookContext = context as MachineTransitionContextUnion<
             TData,
             TEvents
           >;
@@ -331,7 +333,7 @@ function createMachine<
     return getActiveBinding()?._proxy ?? machineTarget;
   }
 
-  function getActiveBinding(): _MachineBinding<TData, TEvents> | undefined {
+  function getActiveBinding(): MachineBinding<TData, TEvents> | undefined {
     if (activeBinding && !activeBinding._handler._destroyed) {
       return activeBinding;
     }
@@ -414,7 +416,7 @@ function collectKeys(
 }
 
 function collectNativeCollectionKeys(value: object, keySet: Set<string>): void {
-  if (isMapTarget(value)) {
+  if (isInstanceOf(value, Map)) {
     keySet.add("size");
     keySet.add("get");
     keySet.add("has");
@@ -422,7 +424,7 @@ function collectNativeCollectionKeys(value: object, keySet: Set<string>): void {
     return;
   }
 
-  if (isSetTarget(value)) {
+  if (isInstanceOf(value, Set)) {
     keySet.add("size");
     keySet.add("has");
   }
@@ -495,7 +497,7 @@ function getMachineDataProperty(
   key: string,
 ): unknown {
   if (key === "__proto__") {
-    return Object.prototype.hasOwnProperty.call(target, key)
+    return hasOwn(target, key)
       ? Object.getOwnPropertyDescriptor(target, key)?.value
       : undefined;
   }
@@ -578,7 +580,7 @@ function batch<T>(scope: Scope | undefined, fn: () => T): T {
 function normalizeMachineArgs<TData extends object, TEvents extends object>(
   scopeOrConfig: ng.Scope | MachineConfig<TData, TEvents>,
   maybeConfig?: MachineConfig<TData, TEvents>,
-): _MachineArgs<TData, TEvents> {
+): MachineArgs<TData, TEvents> {
   if (maybeConfig) {
     return {
       _scope: scopeOrConfig as ng.Scope,
@@ -671,27 +673,11 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (!isObject(value) || Array.isArray(value)) {
+  if (!isObject(value) || isArray(value)) {
     return false;
   }
 
   const prototype = Reflect.getPrototypeOf(value);
 
   return prototype === Object.prototype || prototype === null;
-}
-
-function isMapTarget(value: unknown): value is Map<unknown, unknown> {
-  try {
-    return value instanceof Map;
-  } catch {
-    return false;
-  }
-}
-
-function isSetTarget(value: unknown): value is Set<unknown> {
-  try {
-    return value instanceof Set;
-  } catch {
-    return false;
-  }
 }

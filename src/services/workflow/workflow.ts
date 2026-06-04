@@ -2,10 +2,19 @@ import {
   _SCOPE_PROXY_BIND,
   createScope,
   type Scope,
-  type _ScopeProxyBindable,
+  type ScopeProxyBindable,
 } from "../../core/scope/scope.ts";
 import { _machine } from "../../injection-tokens.ts";
-import { hasOwn, isFunction, isObject, isString } from "../../shared/utils.ts";
+import {
+  hasOwn,
+  isArray,
+  isBoolean,
+  isFunction,
+  isInstanceOf,
+  isNumber,
+  isObject,
+  isString,
+} from "../../shared/utils.ts";
 import type {
   MachineConfig,
   MachineMode,
@@ -82,16 +91,16 @@ export type WorkflowCommandMap<
   TEvents extends object = MachineNoEvents,
 > = Record<string, WorkflowCommand<TData, unknown, unknown, TEvents>>;
 
-type _WorkflowCommandDefs<TCommands extends object> = {
+type WorkflowCommandDefs<TCommands extends object> = {
   [TName in keyof TCommands]: (context: never) => unknown;
 };
 
-type _WorkflowCommandName<TCommands extends object> = Extract<
+type WorkflowCommandName<TCommands extends object> = Extract<
   keyof TCommands,
   string
 >;
 
-type _WorkflowCommandParts<TCommand> =
+type WorkflowCommandParts<TCommand> =
   TCommand extends WorkflowCommand<
     infer TData,
     infer TInput,
@@ -103,43 +112,41 @@ type _WorkflowCommandParts<TCommand> =
     ? [TData, TInput, TOutput, TEvents, TCommands, TName]
     : [never, unknown, unknown, never, never, string];
 
-type _WorkflowCommandInput<
+type WorkflowCommandInput<
   TCommands extends object,
-  TName extends _WorkflowCommandName<TCommands>,
-> = _WorkflowCommandParts<TCommands[TName]>[1];
+  TName extends WorkflowCommandName<TCommands>,
+> = WorkflowCommandParts<TCommands[TName]>[1];
 
-type _WorkflowCommandOutput<
+type WorkflowCommandOutput<
   TCommands extends object,
-  TName extends _WorkflowCommandName<TCommands>,
-> = _WorkflowCommandParts<TCommands[TName]>[2];
+  TName extends WorkflowCommandName<TCommands>,
+> = WorkflowCommandParts<TCommands[TName]>[2];
 
-type _WorkflowCommandInputArgs<TInput> = undefined extends TInput
+type WorkflowCommandInputArgs<TInput> = undefined extends TInput
   ? [input?: TInput, options?: WorkflowCommandOptions]
   : [input: TInput, options?: WorkflowCommandOptions];
 
-type _WorkflowCommandOutputUnion<TCommands extends object> =
-  _WorkflowCommandName<TCommands> extends infer TName
-    ? TName extends _WorkflowCommandName<TCommands>
-      ? _WorkflowCommandOutput<TCommands, TName>
+type WorkflowCommandOutputUnion<TCommands extends object> =
+  WorkflowCommandName<TCommands> extends infer TName
+    ? TName extends WorkflowCommandName<TCommands>
+      ? WorkflowCommandOutput<TCommands, TName>
       : never
     : never;
 
-type _WorkflowRun<TCommands extends object> = string extends keyof TCommands
+type WorkflowRun<TCommands extends object> = string extends keyof TCommands
   ? <TOutput = unknown>(
       command: string,
       input?: unknown,
       options?: WorkflowCommandOptions,
     ) => Promise<WorkflowCommandResult<TOutput>>
-  : <TName extends _WorkflowCommandName<TCommands>>(
+  : <TName extends WorkflowCommandName<TCommands>>(
       command: TName,
-      ...input: _WorkflowCommandInputArgs<
-        _WorkflowCommandInput<TCommands, TName>
-      >
+      ...input: WorkflowCommandInputArgs<WorkflowCommandInput<TCommands, TName>>
     ) => Promise<
-      WorkflowCommandResult<_WorkflowCommandOutput<TCommands, TName>>
+      WorkflowCommandResult<WorkflowCommandOutput<TCommands, TName>>
     >;
 
-type _WorkflowReplay<TCommands extends object> = string extends keyof TCommands
+type WorkflowReplay<TCommands extends object> = string extends keyof TCommands
   ? <TOutput = unknown>(
       command?: string,
       options?: WorkflowCommandOptions,
@@ -147,12 +154,12 @@ type _WorkflowReplay<TCommands extends object> = string extends keyof TCommands
   : {
       (
         options?: WorkflowCommandOptions,
-      ): Promise<WorkflowCommandResult<_WorkflowCommandOutputUnion<TCommands>>>;
-      <TName extends _WorkflowCommandName<TCommands>>(
+      ): Promise<WorkflowCommandResult<WorkflowCommandOutputUnion<TCommands>>>;
+      <TName extends WorkflowCommandName<TCommands>>(
         command: TName,
         options?: WorkflowCommandOptions,
       ): Promise<
-        WorkflowCommandResult<_WorkflowCommandOutput<TCommands, TName>>
+        WorkflowCommandResult<WorkflowCommandOutput<TCommands, TName>>
       >;
     };
 
@@ -165,7 +172,7 @@ export interface WorkflowHistoryEntry {
   diagnostics?: WorkflowDiagnostic[];
 }
 
-interface _WorkflowBaseConfig<TData extends object, TEvents extends object> {
+interface WorkflowBaseConfig<TData extends object, TEvents extends object> {
   commandTimeout?: number;
   concurrency?: WorkflowConcurrencyPolicy;
   diagnosticLimit?: number;
@@ -177,20 +184,20 @@ interface _WorkflowBaseConfig<TData extends object, TEvents extends object> {
   transitions: MachineTransitionMap<TData, TEvents>;
 }
 
-type _WorkflowCommandConfig<TCommands extends object> =
+type WorkflowCommandConfig<TCommands extends object> =
   keyof TCommands extends never
     ? {
         commands?: undefined;
       }
     : {
-        commands: TCommands & _WorkflowCommandDefs<TCommands>;
+        commands: TCommands & WorkflowCommandDefs<TCommands>;
       };
 
 export type WorkflowConfig<
   TData extends object = Record<string, unknown>,
   TEvents extends object = MachineNoEvents,
   TCommands extends object = WorkflowNoCommands,
-> = _WorkflowBaseConfig<TData, TEvents> & _WorkflowCommandConfig<TCommands>;
+> = WorkflowBaseConfig<TData, TEvents> & WorkflowCommandConfig<TCommands>;
 
 export interface WorkflowSnapshot<
   TData extends object = Record<string, unknown>,
@@ -225,9 +232,9 @@ export interface Workflow<
   ): boolean;
   can(type: Extract<keyof TEvents, string>): boolean;
   matches(mode: WorkflowMode): boolean;
-  run: _WorkflowRun<TCommands>;
-  retry: _WorkflowReplay<TCommands>;
-  repeat: _WorkflowReplay<TCommands>;
+  run: WorkflowRun<TCommands>;
+  retry: WorkflowReplay<TCommands>;
+  repeat: WorkflowReplay<TCommands>;
   cancel(command?: string): number;
   snapshot(): WorkflowSnapshot<TData>;
   restore(snapshot: unknown): void;
@@ -251,13 +258,13 @@ export interface WorkflowService {
   ): Workflow<TData, TEvents, TCommands>;
 }
 
-type _WorkflowTarget<
+type WorkflowTarget<
   TData extends object,
   TEvents extends object,
   TCommands extends object,
-> = Workflow<TData, TEvents, TCommands> & _ScopeProxyBindable;
+> = Workflow<TData, TEvents, TCommands> & ScopeProxyBindable;
 
-interface _WorkflowArgs<
+interface WorkflowArgs<
   TData extends object,
   TEvents extends object,
   TCommands extends object,
@@ -266,7 +273,7 @@ interface _WorkflowArgs<
   _config: WorkflowConfig<TData, TEvents, TCommands>;
 }
 
-interface _WorkflowBinding<
+interface WorkflowBinding<
   TData extends object,
   TEvents extends object,
   TCommands extends object,
@@ -275,7 +282,7 @@ interface _WorkflowBinding<
   _proxy: Workflow<TData, TEvents, TCommands>;
 }
 
-interface _WorkflowRunState {
+interface WorkflowRunState {
   _cancel: (diagnostic: WorkflowDiagnostic) => void;
   _cancelDiagnostic?: WorkflowDiagnostic;
   _cancelPromise: Promise<WorkflowDiagnostic>;
@@ -346,18 +353,18 @@ function createWorkflowFactory($machine: MachineService) {
       1000,
     );
     const historyLimit = normalizeHistoryLimit(config.historyLimit);
-    const runningCommands = new Set<_WorkflowRunState>();
+    const runningCommands = new Set<WorkflowRunState>();
     const commandQueues = new Map<string, Promise<unknown>>();
     const replayInputs = new Map<number, unknown>();
     const bindings = new Map<
       number,
-      _WorkflowBinding<TData, TEvents, TCommands>
+      WorkflowBinding<TData, TEvents, TCommands>
     >();
-    let activeBinding: _WorkflowBinding<TData, TEvents, TCommands> | undefined;
+    let activeBinding: WorkflowBinding<TData, TEvents, TCommands> | undefined;
     let nextHistoryId = 1;
     let queueGeneration = 0;
 
-    const workflowTarget: _WorkflowTarget<TData, TEvents, TCommands> = {
+    const workflowTarget: WorkflowTarget<TData, TEvents, TCommands> = {
       id: config.id,
       get current() {
         return machine.current;
@@ -741,7 +748,11 @@ function createWorkflowFactory($machine: MachineService) {
 
         commandPromise.catch(() => undefined);
 
-        if (isObject(commandValue) && hasOwn(commandValue, "_workflowCancel")) {
+        if (
+          isObject(commandValue) &&
+          (commandValue as { _workflowCancel?: WorkflowDiagnostic })
+            ._workflowCancel
+        ) {
           const cancelled = commandValue as {
             _workflowCancel: WorkflowDiagnostic;
           };
@@ -817,7 +828,7 @@ function createWorkflowFactory($machine: MachineService) {
     }
 
     function getActiveBinding():
-      | _WorkflowBinding<TData, TEvents, TCommands>
+      | WorkflowBinding<TData, TEvents, TCommands>
       | undefined {
       if (activeBinding && !activeBinding._handler._destroyed) {
         return activeBinding;
@@ -919,10 +930,10 @@ function createWorkflowFactory($machine: MachineService) {
     function createRunState(
       command: string,
       options?: WorkflowCommandOptions,
-    ): _WorkflowRunState {
+    ): WorkflowRunState {
       const controller = new AbortController();
       let cancel!: (diagnostic: WorkflowDiagnostic) => void;
-      const state: _WorkflowRunState = {
+      const state: WorkflowRunState = {
         _cancel(diagnostic) {
           cancel(diagnostic);
         },
@@ -1004,7 +1015,7 @@ function createWorkflowFactory($machine: MachineService) {
     }
 
     function cancelRun(
-      state: _WorkflowRunState,
+      state: WorkflowRunState,
       diagnostic: WorkflowDiagnostic,
       discardResult = false,
     ): void {
@@ -1021,7 +1032,7 @@ function createWorkflowFactory($machine: MachineService) {
       }
     }
 
-    function finishRunState(state: _WorkflowRunState): void {
+    function finishRunState(state: WorkflowRunState): void {
       state._done = true;
       runningCommands.delete(state);
 
@@ -1215,7 +1226,7 @@ function createCommandWorkflow<
   TCommands extends object,
 >(
   workflow: Workflow<TData, TEvents, TCommands>,
-  state: _WorkflowRunState,
+  state: WorkflowRunState,
   data: TData,
 ): Workflow<TData, TEvents, TCommands> {
   return new Proxy(workflow, {
@@ -1255,7 +1266,7 @@ function createCommandWorkflow<
 
 function createWorkflowDataProxy<TData extends object>(
   data: TData,
-  state: _WorkflowRunState,
+  state: WorkflowRunState,
 ): TData {
   const proxies = new WeakMap<object, object>();
 
@@ -1274,7 +1285,7 @@ function createWorkflowDataProxy<TData extends object>(
 
     const proxy = new Proxy(value, {
       get(target, property, receiver) {
-        if (target instanceof Map) {
+        if (isInstanceOf(target, Map)) {
           return getWorkflowMapProperty(
             target,
             property,
@@ -1284,7 +1295,7 @@ function createWorkflowDataProxy<TData extends object>(
           );
         }
 
-        if (target instanceof Set) {
+        if (isInstanceOf(target, Set)) {
           return getWorkflowSetProperty(target, property, receiver, state);
         }
 
@@ -1330,7 +1341,7 @@ function getWorkflowMapProperty(
   target: Map<unknown, unknown>,
   property: string | symbol,
   receiver: unknown,
-  state: _WorkflowRunState,
+  state: WorkflowRunState,
   proxify: (value: unknown) => unknown,
 ): unknown {
   if (property === "size") {
@@ -1374,7 +1385,7 @@ function getWorkflowSetProperty(
   target: Set<unknown>,
   property: string | symbol,
   receiver: unknown,
-  state: _WorkflowRunState,
+  state: WorkflowRunState,
 ): unknown {
   if (property === "size") {
     return target.size;
@@ -1421,9 +1432,9 @@ function isWorkflowDataProxyable(value: unknown): value is object {
   const prototype = Object.getPrototypeOf(value) as object | null;
 
   return (
-    Array.isArray(value) ||
-    value instanceof Map ||
-    value instanceof Set ||
+    isArray(value) ||
+    isInstanceOf(value, Map) ||
+    isInstanceOf(value, Set) ||
     prototype === Object.prototype ||
     prototype === null
   );
@@ -1504,7 +1515,7 @@ function normalizeCommandResult<TOutput>(
 function normalizeDiagnostics(
   diagnostics: WorkflowDiagnostic[] | undefined,
 ): WorkflowDiagnostic[] {
-  if (!Array.isArray(diagnostics)) {
+  if (!isArray(diagnostics)) {
     return [];
   }
 
@@ -1536,7 +1547,7 @@ function normalizeDiagnostics(
 function normalizeOptionalDiagnostics(
   diagnostics: WorkflowDiagnostic[] | undefined,
 ): WorkflowDiagnostic[] | undefined {
-  if (!Array.isArray(diagnostics)) {
+  if (!isArray(diagnostics)) {
     return undefined;
   }
 
@@ -1550,7 +1561,7 @@ function normalizeHistoryValue(value: unknown): unknown {
 function normalizeHistory(
   historyEntries: WorkflowHistoryEntry[] | undefined,
 ): WorkflowHistoryEntry[] {
-  if (!Array.isArray(historyEntries)) {
+  if (!isArray(historyEntries)) {
     return [];
   }
 
@@ -1588,7 +1599,7 @@ function normalizeHistory(
 
   function allocateHistoryId(value: unknown): number {
     if (
-      typeof value === "number" &&
+      isNumber(value) &&
       Number.isInteger(value) &&
       value > 0 &&
       !usedIds.has(value)
@@ -1629,7 +1640,7 @@ function diagnosticFromError(
   command: string,
   code = "workflow.commandFailed",
 ): WorkflowDiagnostic {
-  if (error instanceof Error) {
+  if (isInstanceOf(error, Error)) {
     return createDiagnostic(
       code,
       error.message || "Workflow command failed.",
@@ -1657,7 +1668,7 @@ function normalizeEntryLimit(
     return defaultValue;
   }
 
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  if (!isNumber(value) || !Number.isFinite(value)) {
     throw new Error(`${label} must be a finite number.`);
   }
 
@@ -1782,7 +1793,7 @@ function isAbortSignalLike(value: unknown): value is AbortSignal {
 
   return (
     isObject(value) &&
-    typeof signal.aborted === "boolean" &&
+    isBoolean(signal.aborted) &&
     isFunction(signal.addEventListener) &&
     isFunction(signal.removeEventListener)
   );
@@ -1793,7 +1804,7 @@ function normalizeTimeout(value: unknown): number | undefined {
     return undefined;
   }
 
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  if (!isNumber(value) || !Number.isFinite(value)) {
     throw new Error("$workflow command timeout must be a finite number.");
   }
 
@@ -1860,13 +1871,13 @@ function normalizeDiagnosticDetail(
 
   seen.add(objectValue);
 
-  if (value instanceof Date) {
+  if (isInstanceOf(value, Date)) {
     seen.delete(objectValue);
 
     return value.toISOString();
   }
 
-  if (Array.isArray(value)) {
+  if (isArray(value)) {
     const normalized = value.map((item) =>
       normalizeDiagnosticDetail(item, seen),
     );
@@ -1876,7 +1887,7 @@ function normalizeDiagnosticDetail(
     return normalized;
   }
 
-  if (value instanceof Map) {
+  if (isInstanceOf(value, Map)) {
     const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
       normalizeDiagnosticDetail(key, seen),
       normalizeDiagnosticDetail(entryValue, seen),
@@ -1887,7 +1898,7 @@ function normalizeDiagnosticDetail(
     return normalized;
   }
 
-  if (value instanceof Set) {
+  if (isInstanceOf(value, Set)) {
     const normalized = Array.from(value.values()).map((item) =>
       normalizeDiagnosticDetail(item, seen),
     );
@@ -1918,7 +1929,7 @@ function normalizeDiagnosticDetail(
 }
 
 function formatUnknownMessage(value: unknown): string {
-  if (value instanceof Error) {
+  if (isInstanceOf(value, Error)) {
     return value.message || value.name;
   }
 
@@ -1962,7 +1973,7 @@ function normalizeWorkflowArgs<
 >(
   scopeOrConfig: ng.Scope | WorkflowConfig<TData, TEvents, TCommands>,
   maybeConfig?: WorkflowConfig<TData, TEvents, TCommands>,
-): _WorkflowArgs<TData, TEvents, TCommands> {
+): WorkflowArgs<TData, TEvents, TCommands> {
   if (maybeConfig) {
     return {
       _scope: scopeOrConfig as ng.Scope,
@@ -2056,11 +2067,11 @@ function assertWorkflowSnapshot(snapshot: unknown): void {
     throw new Error("$workflow restore requires a data object.");
   }
 
-  if (!Array.isArray(candidate.diagnostics)) {
+  if (!isArray(candidate.diagnostics)) {
     throw new Error("$workflow restore requires diagnostics.");
   }
 
-  if (!Array.isArray(candidate.history)) {
+  if (!isArray(candidate.history)) {
     throw new Error("$workflow restore requires history.");
   }
 }

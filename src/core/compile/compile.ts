@@ -1323,8 +1323,18 @@ export interface LinkFnRecord {
 
 type LinkContextWithCompileAttributeState = {
   /** @internal */
-  _attr: CompileAttributeState;
+  _attr?: CompileAttributeState;
 };
+
+function hasLinkContextAttr(
+  candidate: unknown,
+): candidate is LinkContextWithCompileAttributeState {
+  return (
+    typeof candidate === "object" &&
+    candidate !== null &&
+    (candidate as { _attr?: CompileAttributeState })._attr !== undefined
+  );
+}
 
 const EMPTY_LINK_FN_RECORDS = Object.freeze([]) as unknown as LinkFnRecord[];
 
@@ -3804,15 +3814,12 @@ export class CompileProvider {
               : [];
 
           if (linkFnRecord._linkCtx !== undefined) {
-            const linkCtx =
-              typeof linkFnRecord._linkCtx === "object" &&
-              linkFnRecord._linkCtx !== null &&
-              "_attr" in linkFnRecord._linkCtx
-                ? ({
-                    ...linkFnRecord._linkCtx,
-                    _attr: attrs,
-                  } as LinkContextWithCompileAttributeState)
-                : linkFnRecord._linkCtx;
+            const linkCtx = hasLinkContextAttr(linkFnRecord._linkCtx)
+              ? ({
+                  ...linkFnRecord._linkCtx,
+                  _attr: attrs,
+                } as LinkContextWithCompileAttributeState)
+              : linkFnRecord._linkCtx;
 
             return linkFnRecord._fn(linkCtx, linkScope, node, ...linkTailArgs);
           }
@@ -5539,7 +5546,10 @@ export class CompileProvider {
 
         function isNodeLinkState(state: unknown): state is NodeLinkState {
           return (
-            !!state && typeof state === "object" && "_templateAttrs" in state
+            !!state &&
+            typeof state === "object" &&
+            (state as { _templateAttrs?: CompileAttributeState })
+              ._templateAttrs !== undefined
           );
         }
 

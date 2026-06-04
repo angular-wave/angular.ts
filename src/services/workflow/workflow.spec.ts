@@ -697,6 +697,76 @@ describe("$workflow", () => {
     expect(workflow.data.set.has("one")).toBe(true);
   });
 
+  it("proxies array workflow data during commands", async () => {
+    let capturedItems: string[] | undefined;
+    const workflow = $workflow({
+      id: "array-proxy",
+      initial: "idle",
+      data: {
+        items: ["one"],
+      },
+      transitions: {},
+      commands: {
+        append({ data }) {
+          capturedItems = data.items;
+          data.items.push("two");
+
+          return data.items.join(",");
+        },
+      },
+    });
+
+    const result = await workflow.run("append");
+
+    expect(result).toEqual({
+      ok: true,
+      output: "one,two",
+    });
+    expect(workflow.data.items).toEqual(["one", "two"]);
+
+    capturedItems!.push("late");
+
+    expect(workflow.data.items).toEqual(["one", "two"]);
+  });
+
+  it("leaves non-plain workflow data values unproxied during commands", async () => {
+    class Counter {
+      constructor(public value: number) {}
+
+      increment(): number {
+        this.value += 1;
+
+        return this.value;
+      }
+    }
+
+    let capturedCounter: Counter | undefined;
+    const workflow = $workflow({
+      id: "class-value-proxy",
+      initial: "idle",
+      data: {
+        counter: new Counter(1),
+      },
+      transitions: {},
+      commands: {
+        increment({ data }) {
+          capturedCounter = data.counter;
+
+          return data.counter.increment();
+        },
+      },
+    });
+
+    const result = await workflow.run("increment");
+
+    expect(result).toEqual({
+      ok: true,
+      output: 2,
+    });
+    expect(capturedCounter).toBeInstanceOf(Counter);
+    expect(workflow.data.counter.value).toBe(2);
+  });
+
   it("times out commands that ignore abort signals", async () => {
     const workflow = $workflow({
       id: "timeout",

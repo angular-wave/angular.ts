@@ -91,7 +91,7 @@ describe("string functions:", () => {
     });
 
     it("returns undefined for non-function values", () => {
-      expect(fnToString("not a function" as unknown as (() => void))).toBe(
+      expect(fnToString("not a function" as unknown as () => void)).toBe(
         "undefined",
       );
     });

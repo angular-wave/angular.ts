@@ -20,520 +20,514 @@ describe("$machine", () => {
     $rootScope = injector.get("$rootScope") as ng.RootScopeService;
   });
 
-  describe("roadmap", () => {
-    it("updates templates after restore replaces Map and Set data", async () => {
-      const element = $compile(
-        '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
-          '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
-          '<span class="size">{{ session.data.selected.size }}</span></section>',
-      )($rootScope);
+  it("updates templates after restore replaces Map and Set data", async () => {
+    const element = $compile(
+      '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
+        '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
+        '<span class="size">{{ session.data.selected.size }}</span></section>',
+    )($rootScope);
 
-      $rootScope.session = $machine({
-        initial: "idle",
-        data: {
-          metadata: new Map([["phase", "idle"]]),
-          selected: new Set<string>(),
-        },
-        transitions: {},
-      });
-
-      await wait();
-
-      expect(element.querySelector(".phase")?.textContent).toBe("idle");
-      expect(element.querySelector(".selected")?.textContent).toBe("false");
-      expect(element.querySelector(".size")?.textContent).toBe("0");
-
-      $rootScope.session.restore({
-        current: "ready",
-        data: {
-          metadata: new Map([["phase", "ready"]]),
-          selected: new Set(["a1"]),
-        },
-      });
-
-      await wait();
-
-      expect(element.querySelector(".phase")?.textContent).toBe("ready");
-      expect(element.querySelector(".selected")?.textContent).toBe("true");
-      expect(element.querySelector(".size")?.textContent).toBe("1");
+    $rootScope.session = $machine({
+      initial: "idle",
+      data: {
+        metadata: new Map([["phase", "idle"]]),
+        selected: new Set<string>(),
+      },
+      transitions: {},
     });
 
-    it("documents transitions that return an unknown mode", () => {
-      const machine = $machine({
-        initial: "setup",
-        data: {},
-        transitions: {
-          setup: {
-            skip() {
-              return "unconfigured";
-            },
-          },
-          configured: {
-            reset() {
-              return "setup";
-            },
-          },
-        },
-      });
+    await wait();
 
-      expect(machine.can("skip")).toBe(true);
-      expect(machine.send("skip")).toBe(true);
-      expect(machine.current).toBe("unconfigured");
-      expect(machine.matches("unconfigured")).toBe(true);
-      expect(machine.can("skip")).toBe(false);
-      expect(machine.can("reset")).toBe(false);
-      expect(machine.send("reset")).toBe(false);
+    expect(element.querySelector(".phase")?.textContent).toBe("idle");
+    expect(element.querySelector(".selected")?.textContent).toBe("false");
+    expect(element.querySelector(".size")?.textContent).toBe("0");
+
+    $rootScope.session.restore({
+      current: "ready",
+      data: {
+        metadata: new Map([["phase", "ready"]]),
+        selected: new Set(["a1"]),
+      },
     });
 
-    it("locks down hook ordering around current mode reads", () => {
-      const calls: string[] = [];
-      const machine = $machine({
-        initial: "setup",
-        data: {},
-        transitions: {
-          setup: {
-            join() {
-              calls.push(`transition:${machine.current}`);
+    await wait();
 
-              return "waiting";
-            },
+    expect(element.querySelector(".phase")?.textContent).toBe("ready");
+    expect(element.querySelector(".selected")?.textContent).toBe("true");
+    expect(element.querySelector(".size")?.textContent).toBe("1");
+  });
+
+  it("documents transitions that return an unknown mode", () => {
+    const machine = $machine({
+      initial: "setup",
+      data: {},
+      transitions: {
+        setup: {
+          skip() {
+            return "unconfigured";
           },
         },
-        hooks: {
-          exit: {
-            setup(context) {
-              calls.push(
-                `exit:${context.from}:${context.to}:${context.machine.current}`,
-              );
-            },
+        configured: {
+          reset() {
+            return "setup";
           },
-          enter: {
-            waiting(context) {
-              calls.push(
-                `enter:${context.from}:${context.to}:${context.machine.current}`,
-              );
-            },
+        },
+      },
+    });
+
+    expect(machine.can("skip")).toBe(true);
+    expect(machine.send("skip")).toBe(true);
+    expect(machine.current).toBe("unconfigured");
+    expect(machine.matches("unconfigured")).toBe(true);
+    expect(machine.can("skip")).toBe(false);
+    expect(machine.can("reset")).toBe(false);
+    expect(machine.send("reset")).toBe(false);
+  });
+
+  it("locks down hook ordering around current mode reads", () => {
+    const calls: string[] = [];
+    const machine = $machine({
+      initial: "setup",
+      data: {},
+      transitions: {
+        setup: {
+          join() {
+            calls.push(`transition:${machine.current}`);
+
+            return "waiting";
           },
-          transition(context) {
+        },
+      },
+      hooks: {
+        exit: {
+          setup(context) {
             calls.push(
-              `hook:${context.from}:${context.to}:${context.machine.current}`,
+              `exit:${context.from}:${context.to}:${context.machine.current}`,
             );
           },
         },
-      });
-
-      expect(machine.send("join")).toBe(true);
-      expect(calls).toEqual([
-        "transition:setup",
-        "exit:setup:waiting:setup",
-        "enter:setup:waiting:waiting",
-        "hook:setup:waiting:waiting",
-      ]);
+        enter: {
+          waiting(context) {
+            calls.push(
+              `enter:${context.from}:${context.to}:${context.machine.current}`,
+            );
+          },
+        },
+        transition(context) {
+          calls.push(
+            `hook:${context.from}:${context.to}:${context.machine.current}`,
+          );
+        },
+      },
     });
 
-    it("documents data ordering when hooks send nested transitions", () => {
-      const machine = $machine({
+    expect(machine.send("join")).toBe(true);
+    expect(calls).toEqual([
+      "transition:setup",
+      "exit:setup:waiting:setup",
+      "enter:setup:waiting:waiting",
+      "hook:setup:waiting:waiting",
+    ]);
+  });
+
+  it("documents data ordering when hooks send nested transitions", () => {
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        log: [] as string[],
+      },
+      transitions: {
+        setup: {
+          join() {
+            return "waiting";
+          },
+        },
+        waiting: {
+          ready(data) {
+            data.log.push("nested-transition");
+
+            return "ready";
+          },
+        },
+      },
+      hooks: {
+        enter: {
+          waiting(context) {
+            context.data.log.push("outer-enter-before");
+            expect(context.machine.send("ready")).toBe(true);
+            context.data.log.push("outer-enter-after");
+          },
+          ready(context) {
+            context.data.log.push("nested-enter");
+          },
+        },
+        transition(context) {
+          context.data.log.push(`transition:${context.from}->${context.to}`);
+        },
+      },
+    });
+
+    expect(machine.send("join")).toBe(true);
+    expect(machine.current).toBe("ready");
+    expect(machine.data.log).toEqual([
+      "outer-enter-before",
+      "nested-transition",
+      "nested-enter",
+      "transition:waiting->ready",
+      "outer-enter-after",
+      "transition:setup->waiting",
+    ]);
+  });
+
+  it("restores after one of several bound scopes is destroyed", async () => {
+    const directiveScopes: ng.Scope[] = [];
+
+    window.angular = new Angular();
+    window.angular
+      .module("machineRoadmapRestoreApp", ["ng"])
+      .directive("machinePanel", () => ({
+        scope: true,
+        template:
+          '<span class="mode">{{ session.current }}</span>' +
+          '<span class="status">{{ session.data.status }}</span>',
+        link(scope: ng.Scope) {
+          directiveScopes.push(scope);
+          scope.session.matches("setup");
+        },
+      }));
+
+    const injector = createInjector(["machineRoadmapRestoreApp"]);
+    const compile = injector.get("$compile") as ng.CompileService;
+    const machine = (injector.get("$machine") as MachineService)({
+      initial: "setup",
+      data: {
+        status: "idle",
+      },
+      transitions: {},
+    });
+    const rootScope = injector.get("$rootScope") as ng.RootScopeService;
+
+    rootScope.session = machine;
+
+    const element = compile(
+      '<section><machine-panel class="first" session="session"></machine-panel>' +
+        '<machine-panel class="second" session="session"></machine-panel></section>',
+    )(rootScope);
+
+    await wait();
+
+    expect(directiveScopes.length).toBe(2);
+    expect(element.querySelector(".first .status")?.textContent).toBe("idle");
+    expect(element.querySelector(".second .status")?.textContent).toBe("idle");
+
+    directiveScopes[0].$destroy();
+
+    machine.restore({
+      current: "ready",
+      data: {
+        status: "restored",
+      },
+    });
+
+    await wait();
+
+    expect(machine.current).toBe("ready");
+    expect(machine.data.status).toBe("restored");
+    expect(element.querySelector(".second .mode")?.textContent).toBe("ready");
+    expect(element.querySelector(".second .status")?.textContent).toBe(
+      "restored",
+    );
+  });
+
+  it("isolates named machine Map and Set data across injectors", () => {
+    window.angular = new Angular();
+    window.angular
+      .module("namedMachineCollectionApp", ["ng"])
+      .machine("sessionMachine", {
         initial: "setup",
         data: {
-          log: [] as string[],
+          metadata: new Map([["phase", "idle"]]),
+          selected: new Set(["a1"]),
         },
         transitions: {
           setup: {
-            join() {
-              return "waiting";
-            },
-          },
-          waiting: {
-            ready(data) {
-              data.log.push("nested-transition");
+            select(data) {
+              data.metadata.set("phase", "selected");
+              data.selected.add("b2");
 
               return "ready";
             },
           },
         },
-        hooks: {
-          enter: {
-            waiting(context) {
-              context.data.log.push("outer-enter-before");
-              expect(context.machine.send("ready")).toBe(true);
-              context.data.log.push("outer-enter-after");
-            },
-            ready(context) {
-              context.data.log.push("nested-enter");
-            },
-          },
-          transition(context) {
-            context.data.log.push(`transition:${context.from}->${context.to}`);
-          },
-        },
       });
 
-      expect(machine.send("join")).toBe(true);
-      expect(machine.current).toBe("ready");
-      expect(machine.data.log).toEqual([
-        "outer-enter-before",
-        "nested-transition",
-        "nested-enter",
-        "transition:waiting->ready",
-        "outer-enter-after",
-        "transition:setup->waiting",
-      ]);
+    const firstInjector = createInjector(["namedMachineCollectionApp"]);
+    const secondInjector = createInjector(["namedMachineCollectionApp"]);
+    const firstMachine = firstInjector.get("sessionMachine") as ng.Machine<{
+      metadata: Map<string, string>;
+      selected: Set<string>;
+    }>;
+    const secondMachine = secondInjector.get("sessionMachine") as ng.Machine<{
+      metadata: Map<string, string>;
+      selected: Set<string>;
+    }>;
+
+    expect(firstMachine.data.metadata).not.toBe(secondMachine.data.metadata);
+    expect(firstMachine.data.selected).not.toBe(secondMachine.data.selected);
+
+    expect(firstMachine.send("select")).toBe(true);
+    expect(firstMachine.current).toBe("ready");
+    expect(firstMachine.data.metadata.get("phase")).toBe("selected");
+    expect(firstMachine.data.selected.has("b2")).toBe(true);
+
+    expect(secondMachine.current).toBe("setup");
+    expect(secondMachine.data.metadata.get("phase")).toBe("idle");
+    expect(secondMachine.data.selected.has("a1")).toBe(true);
+    expect(secondMachine.data.selected.has("b2")).toBe(false);
+  });
+
+  it("round-trips snapshots with cyclic data containing Map and Set values", () => {
+    const metadata = new Map<string, unknown>([["phase", "idle"]]);
+    const selected = new Set<unknown>(["a1"]);
+
+    metadata.set("self", metadata);
+    selected.add(selected);
+
+    const machine = $machine({
+      initial: "setup",
+      data: {
+        metadata,
+        selected,
+      },
+      transitions: {},
     });
 
-    it("restores after one of several bound scopes is destroyed", async () => {
-      const directiveScopes: ng.Scope[] = [];
+    const snapshot = machine.snapshot();
 
-      window.angular = new Angular();
-      window.angular
-        .module("machineRoadmapRestoreApp", ["ng"])
-        .directive("machinePanel", () => ({
-          scope: true,
-          template:
-            '<span class="mode">{{ session.current }}</span>' +
-            '<span class="status">{{ session.data.status }}</span>',
-          link(scope: ng.Scope) {
-            directiveScopes.push(scope);
-            scope.session.matches("setup");
+    expect(snapshot.data.metadata).not.toBe(machine.data.metadata);
+    expect(snapshot.data.metadata.get("phase")).toBe("idle");
+    expect(snapshot.data.metadata.get("self")).toBe(snapshot.data.metadata);
+    expect(snapshot.data.selected).not.toBe(machine.data.selected);
+    expect(snapshot.data.selected.has("a1")).toBe(true);
+    expect(snapshot.data.selected.has(snapshot.data.selected)).toBe(true);
+
+    machine.data.metadata.set("phase", "mutated");
+    machine.data.selected.add("b2");
+
+    machine.restore(snapshot);
+
+    expect(machine.data.metadata).not.toBe(snapshot.data.metadata);
+    expect(machine.data.metadata.get("phase")).toBe("idle");
+    expect(machine.data.metadata.get("self")).toBe(machine.data.metadata);
+    expect(machine.data.selected).not.toBe(snapshot.data.selected);
+    expect(machine.data.selected.has("a1")).toBe(true);
+    expect(machine.data.selected.has("b2")).toBe(false);
+    expect(machine.data.selected.has(machine.data.selected)).toBe(true);
+  });
+
+  it("keeps partial Map and Set mutations when transitions throw", async () => {
+    const error = new Error("transition failed");
+    const element = $compile(
+      '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
+        '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
+        '<span class="mode">{{ session.current }}</span></section>',
+    )($rootScope);
+
+    $rootScope.session = $machine({
+      initial: "setup",
+      data: {
+        metadata: new Map([["phase", "idle"]]),
+        selected: new Set<string>(),
+      },
+      transitions: {
+        setup: {
+          fail(data) {
+            data.metadata.set("phase", "failed");
+            data.selected.add("a1");
+
+            throw error;
           },
-        }));
+          recover(data) {
+            data.metadata.set("phase", "recovered");
 
-      const injector = createInjector(["machineRoadmapRestoreApp"]);
-      const compile = injector.get("$compile") as ng.CompileService;
-      const machine = (injector.get("$machine") as MachineService)({
-        initial: "setup",
-        data: {
-          status: "idle",
-        },
-        transitions: {},
-      });
-      const rootScope = injector.get("$rootScope") as ng.RootScopeService;
-
-      rootScope.session = machine;
-
-      const element = compile(
-        '<section><machine-panel class="first" session="session"></machine-panel>' +
-          '<machine-panel class="second" session="session"></machine-panel></section>',
-      )(rootScope);
-
-      await wait();
-
-      expect(directiveScopes.length).toBe(2);
-      expect(element.querySelector(".first .status")?.textContent).toBe("idle");
-      expect(element.querySelector(".second .status")?.textContent).toBe(
-        "idle",
-      );
-
-      directiveScopes[0].$destroy();
-
-      machine.restore({
-        current: "ready",
-        data: {
-          status: "restored",
-        },
-      });
-
-      await wait();
-
-      expect(machine.current).toBe("ready");
-      expect(machine.data.status).toBe("restored");
-      expect(element.querySelector(".second .mode")?.textContent).toBe("ready");
-      expect(element.querySelector(".second .status")?.textContent).toBe(
-        "restored",
-      );
-    });
-
-    it("isolates named machine Map and Set data across injectors", () => {
-      window.angular = new Angular();
-      window.angular
-        .module("namedMachineCollectionApp", ["ng"])
-        .machine("sessionMachine", {
-          initial: "setup",
-          data: {
-            metadata: new Map([["phase", "idle"]]),
-            selected: new Set(["a1"]),
+            return "setup";
           },
-          transitions: {
-            setup: {
-              select(data) {
-                data.metadata.set("phase", "selected");
-                data.selected.add("b2");
+        },
+      },
+    });
 
-                return "ready";
-              },
-            },
+    await wait();
+
+    expect(() => $rootScope.session.send("fail")).toThrow(error);
+    expect($rootScope.session.current).toBe("setup");
+    expect($rootScope.session.data.metadata.get("phase")).toBe("failed");
+    expect($rootScope.session.data.selected.has("a1")).toBe(true);
+
+    await wait();
+
+    expect(element.querySelector(".phase")?.textContent).toBe("failed");
+    expect(element.querySelector(".selected")?.textContent).toBe("true");
+    expect(element.querySelector(".mode")?.textContent).toBe("setup");
+
+    expect($rootScope.session.send("recover")).toBe(true);
+
+    await wait();
+
+    expect(element.querySelector(".phase")?.textContent).toBe("recovered");
+    expect(element.querySelector(".selected")?.textContent).toBe("true");
+  });
+
+  it("keeps partial Map and Set mutations when hooks throw", async () => {
+    const error = new Error("hook failed");
+    let shouldThrow = true;
+    const element = $compile(
+      '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
+        '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
+        '<span class="mode">{{ session.current }}</span></section>',
+    )($rootScope);
+
+    $rootScope.session = $machine({
+      initial: "setup",
+      data: {
+        metadata: new Map([["phase", "idle"]]),
+        selected: new Set<string>(),
+      },
+      transitions: {
+        setup: {
+          join() {
+            return "waiting";
           },
-        });
-
-      const firstInjector = createInjector(["namedMachineCollectionApp"]);
-      const secondInjector = createInjector(["namedMachineCollectionApp"]);
-      const firstMachine = firstInjector.get("sessionMachine") as ng.Machine<{
-        metadata: Map<string, string>;
-        selected: Set<string>;
-      }>;
-      const secondMachine = secondInjector.get("sessionMachine") as ng.Machine<{
-        metadata: Map<string, string>;
-        selected: Set<string>;
-      }>;
-
-      expect(firstMachine.data.metadata).not.toBe(secondMachine.data.metadata);
-      expect(firstMachine.data.selected).not.toBe(secondMachine.data.selected);
-
-      expect(firstMachine.send("select")).toBe(true);
-      expect(firstMachine.current).toBe("ready");
-      expect(firstMachine.data.metadata.get("phase")).toBe("selected");
-      expect(firstMachine.data.selected.has("b2")).toBe(true);
-
-      expect(secondMachine.current).toBe("setup");
-      expect(secondMachine.data.metadata.get("phase")).toBe("idle");
-      expect(secondMachine.data.selected.has("a1")).toBe(true);
-      expect(secondMachine.data.selected.has("b2")).toBe(false);
-    });
-
-    it("round-trips snapshots with cyclic data containing Map and Set values", () => {
-      const metadata = new Map<string, unknown>([["phase", "idle"]]);
-      const selected = new Set<unknown>(["a1"]);
-
-      metadata.set("self", metadata);
-      selected.add(selected);
-
-      const machine = $machine({
-        initial: "setup",
-        data: {
-          metadata,
-          selected,
         },
-        transitions: {},
-      });
+        waiting: {
+          reset(data) {
+            data.metadata.set("phase", "reset");
 
-      const snapshot = machine.snapshot();
-
-      expect(snapshot.data.metadata).not.toBe(machine.data.metadata);
-      expect(snapshot.data.metadata.get("phase")).toBe("idle");
-      expect(snapshot.data.metadata.get("self")).toBe(snapshot.data.metadata);
-      expect(snapshot.data.selected).not.toBe(machine.data.selected);
-      expect(snapshot.data.selected.has("a1")).toBe(true);
-      expect(snapshot.data.selected.has(snapshot.data.selected)).toBe(true);
-
-      machine.data.metadata.set("phase", "mutated");
-      machine.data.selected.add("b2");
-
-      machine.restore(snapshot);
-
-      expect(machine.data.metadata).not.toBe(snapshot.data.metadata);
-      expect(machine.data.metadata.get("phase")).toBe("idle");
-      expect(machine.data.metadata.get("self")).toBe(machine.data.metadata);
-      expect(machine.data.selected).not.toBe(snapshot.data.selected);
-      expect(machine.data.selected.has("a1")).toBe(true);
-      expect(machine.data.selected.has("b2")).toBe(false);
-      expect(machine.data.selected.has(machine.data.selected)).toBe(true);
-    });
-
-    it("keeps partial Map and Set mutations when transitions throw", async () => {
-      const error = new Error("transition failed");
-      const element = $compile(
-        '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
-          '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
-          '<span class="mode">{{ session.current }}</span></section>',
-      )($rootScope);
-
-      $rootScope.session = $machine({
-        initial: "setup",
-        data: {
-          metadata: new Map([["phase", "idle"]]),
-          selected: new Set<string>(),
+            return "setup";
+          },
         },
-        transitions: {
-          setup: {
-            fail(data) {
-              data.metadata.set("phase", "failed");
-              data.selected.add("a1");
+      },
+      hooks: {
+        enter: {
+          waiting(context) {
+            context.data.metadata.set("phase", "entered");
+            context.data.selected.add("a1");
 
+            if (shouldThrow) {
               throw error;
-            },
-            recover(data) {
-              data.metadata.set("phase", "recovered");
-
-              return "setup";
-            },
+            }
           },
         },
-      });
-
-      await wait();
-
-      expect(() => $rootScope.session.send("fail")).toThrow(error);
-      expect($rootScope.session.current).toBe("setup");
-      expect($rootScope.session.data.metadata.get("phase")).toBe("failed");
-      expect($rootScope.session.data.selected.has("a1")).toBe(true);
-
-      await wait();
-
-      expect(element.querySelector(".phase")?.textContent).toBe("failed");
-      expect(element.querySelector(".selected")?.textContent).toBe("true");
-      expect(element.querySelector(".mode")?.textContent).toBe("setup");
-
-      expect($rootScope.session.send("recover")).toBe(true);
-
-      await wait();
-
-      expect(element.querySelector(".phase")?.textContent).toBe("recovered");
-      expect(element.querySelector(".selected")?.textContent).toBe("true");
+      },
     });
 
-    it("keeps partial Map and Set mutations when hooks throw", async () => {
-      const error = new Error("hook failed");
-      let shouldThrow = true;
-      const element = $compile(
-        '<section><span class="phase">{{ session.data.metadata.get("phase") }}</span>' +
-          '<span class="selected">{{ session.data.selected.has("a1") }}</span>' +
-          '<span class="mode">{{ session.current }}</span></section>',
-      )($rootScope);
+    await wait();
 
-      $rootScope.session = $machine({
-        initial: "setup",
-        data: {
-          metadata: new Map([["phase", "idle"]]),
-          selected: new Set<string>(),
-        },
-        transitions: {
-          setup: {
-            join() {
-              return "waiting";
-            },
-          },
-          waiting: {
-            reset(data) {
-              data.metadata.set("phase", "reset");
+    expect(() => $rootScope.session.send("join")).toThrow(error);
+    expect($rootScope.session.current).toBe("waiting");
+    expect($rootScope.session.data.metadata.get("phase")).toBe("entered");
+    expect($rootScope.session.data.selected.has("a1")).toBe(true);
 
-              return "setup";
-            },
-          },
-        },
-        hooks: {
-          enter: {
-            waiting(context) {
-              context.data.metadata.set("phase", "entered");
-              context.data.selected.add("a1");
+    await wait();
 
-              if (shouldThrow) {
-                throw error;
-              }
-            },
-          },
-        },
-      });
+    expect(element.querySelector(".mode")?.textContent).toBe("waiting");
+    expect(element.querySelector(".phase")?.textContent).toBe("entered");
+    expect(element.querySelector(".selected")?.textContent).toBe("true");
 
-      await wait();
+    shouldThrow = false;
 
-      expect(() => $rootScope.session.send("join")).toThrow(error);
-      expect($rootScope.session.current).toBe("waiting");
-      expect($rootScope.session.data.metadata.get("phase")).toBe("entered");
-      expect($rootScope.session.data.selected.has("a1")).toBe(true);
+    expect($rootScope.session.send("reset")).toBe(true);
 
-      await wait();
+    await wait();
 
-      expect(element.querySelector(".mode")?.textContent).toBe("waiting");
-      expect(element.querySelector(".phase")?.textContent).toBe("entered");
-      expect(element.querySelector(".selected")?.textContent).toBe("true");
+    expect(element.querySelector(".mode")?.textContent).toBe("setup");
+    expect(element.querySelector(".phase")?.textContent).toBe("reset");
+    expect(element.querySelector(".selected")?.textContent).toBe("true");
+  });
 
-      shouldThrow = false;
+  it("updates templates when an enter hook throws after a mode change", async () => {
+    const error = new Error("enter failed");
+    const element = $compile(
+      '<section><span class="mode">{{ session.current }}</span>' +
+        '<span class="status">{{ session.data.status }}</span></section>',
+    )($rootScope);
 
-      expect($rootScope.session.send("reset")).toBe(true);
+    $rootScope.session = $machine({
+      initial: "setup",
+      data: {
+        status: "idle",
+      },
+      transitions: {
+        setup: {
+          join(data) {
+            data.status = "joining";
 
-      await wait();
-
-      expect(element.querySelector(".mode")?.textContent).toBe("setup");
-      expect(element.querySelector(".phase")?.textContent).toBe("reset");
-      expect(element.querySelector(".selected")?.textContent).toBe("true");
-    });
-
-    it("updates templates when an enter hook throws after a mode change", async () => {
-      const error = new Error("enter failed");
-      const element = $compile(
-        '<section><span class="mode">{{ session.current }}</span>' +
-          '<span class="status">{{ session.data.status }}</span></section>',
-      )($rootScope);
-
-      $rootScope.session = $machine({
-        initial: "setup",
-        data: {
-          status: "idle",
-        },
-        transitions: {
-          setup: {
-            join(data) {
-              data.status = "joining";
-
-              return "waiting";
-            },
+            return "waiting";
           },
         },
-        hooks: {
-          enter: {
-            waiting(context) {
-              context.data.status = "entered";
-
-              throw error;
-            },
-          },
-        },
-      });
-
-      await wait();
-
-      expect(() => $rootScope.session.send("join")).toThrow(error);
-      expect($rootScope.session.current).toBe("waiting");
-      expect($rootScope.session.data.status).toBe("entered");
-
-      await wait();
-
-      expect(element.querySelector(".mode")?.textContent).toBe("waiting");
-      expect(element.querySelector(".status")?.textContent).toBe("entered");
-    });
-
-    it("updates templates when a transition hook throws after a mode change", async () => {
-      const error = new Error("transition hook failed");
-      const element = $compile(
-        '<section><span class="mode">{{ session.current }}</span>' +
-          '<span class="status">{{ session.data.status }}</span></section>',
-      )($rootScope);
-
-      $rootScope.session = $machine({
-        initial: "setup",
-        data: {
-          status: "idle",
-        },
-        transitions: {
-          setup: {
-            join(data) {
-              data.status = "joining";
-
-              return "waiting";
-            },
-          },
-        },
-        hooks: {
-          transition(context) {
-            context.data.status = "transitioned";
+      },
+      hooks: {
+        enter: {
+          waiting(context) {
+            context.data.status = "entered";
 
             throw error;
           },
         },
-      });
-
-      await wait();
-
-      expect(() => $rootScope.session.send("join")).toThrow(error);
-      expect($rootScope.session.current).toBe("waiting");
-      expect($rootScope.session.data.status).toBe("transitioned");
-
-      await wait();
-
-      expect(element.querySelector(".mode")?.textContent).toBe("waiting");
-      expect(element.querySelector(".status")?.textContent).toBe(
-        "transitioned",
-      );
+      },
     });
+
+    await wait();
+
+    expect(() => $rootScope.session.send("join")).toThrow(error);
+    expect($rootScope.session.current).toBe("waiting");
+    expect($rootScope.session.data.status).toBe("entered");
+
+    await wait();
+
+    expect(element.querySelector(".mode")?.textContent).toBe("waiting");
+    expect(element.querySelector(".status")?.textContent).toBe("entered");
+  });
+
+  it("updates templates when a transition hook throws after a mode change", async () => {
+    const error = new Error("transition hook failed");
+    const element = $compile(
+      '<section><span class="mode">{{ session.current }}</span>' +
+        '<span class="status">{{ session.data.status }}</span></section>',
+    )($rootScope);
+
+    $rootScope.session = $machine({
+      initial: "setup",
+      data: {
+        status: "idle",
+      },
+      transitions: {
+        setup: {
+          join(data) {
+            data.status = "joining";
+
+            return "waiting";
+          },
+        },
+      },
+      hooks: {
+        transition(context) {
+          context.data.status = "transitioned";
+
+          throw error;
+        },
+      },
+    });
+
+    await wait();
+
+    expect(() => $rootScope.session.send("join")).toThrow(error);
+    expect($rootScope.session.current).toBe("waiting");
+    expect($rootScope.session.data.status).toBe("transitioned");
+
+    await wait();
+
+    expect(element.querySelector(".mode")?.textContent).toBe("waiting");
+    expect(element.querySelector(".status")?.textContent).toBe("transitioned");
   });
 
   it("runs a tic tac toe state machine to a completed game", async () => {
@@ -1663,6 +1657,44 @@ describe("$machine", () => {
       data: {
         status: "idle",
       },
+      transitions: {},
+    });
+    const snapshot = JSON.parse(
+      '{"current":"ready","data":{"status":"ready","__proto__":{"polluted":true}}}',
+    );
+    const originalPrototype = Reflect.getPrototypeOf(machine.data);
+
+    machine.restore(snapshot);
+
+    expect(machine.current).toBe("ready");
+    expect(machine.data.status).toBe("ready");
+    expect(
+      Object.prototype.hasOwnProperty.call(machine.data, "__proto__"),
+    ).toBe(true);
+    expect(machine.data.__proto__).toEqual({
+      polluted: true,
+    });
+    expect(Reflect.getPrototypeOf(machine.data)).toBe(originalPrototype);
+    expect({}.polluted).toBeUndefined();
+  });
+
+  it("updates existing own __proto__ data keys without changing object prototypes", () => {
+    const data = {
+      status: "idle",
+    };
+
+    Object.defineProperty(data, "__proto__", {
+      value: {
+        previous: true,
+      },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const machine = $machine({
+      initial: "setup",
+      data,
       transitions: {},
     });
     const snapshot = JSON.parse(

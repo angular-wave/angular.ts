@@ -1,4 +1,4 @@
-import { isDefined, isString, isNullOrUndefined, isInstanceOf, isNumber, nullObject } from '../../shared/utils.js';
+import { isDefined, isString, isNullOrUndefined, isInstanceOf, isNumber, nullObject, isBoolean } from '../../shared/utils.js';
 import { validateIsString, validateRequired, BADARG } from '../../shared/validate.js';
 
 /**
@@ -190,7 +190,7 @@ function buildOptions(opts = {}) {
     return parts.length ? `;${parts.join(";")}` : "";
 }
 function describeOptionValue(value) {
-    if (isString(value) || isNumber(value) || typeof value === "boolean") {
+    if (isString(value) || isNumber(value) || isBoolean(value)) {
         return String(value);
     }
     if (isInstanceOf(value, Date)) {

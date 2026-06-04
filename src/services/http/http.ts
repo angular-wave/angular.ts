@@ -24,7 +24,9 @@ import {
   isFile,
   isFormData,
   isFunction,
+  isInstanceOf,
   isNullOrUndefined,
+  isNumber,
   isObject,
   isPromiseLike,
   isString,
@@ -1358,7 +1360,7 @@ export function http(
     init.body = normalizeFetchBody(post);
   }
 
-  if (typeof timeout === "number" && timeout > 0) {
+  if (isNumber(timeout) && timeout > 0) {
     timeoutId = setTimeout(() => {
       timeoutRequest("timeout");
     }, timeout);
@@ -1445,8 +1447,8 @@ function normalizeFetchBody(post: unknown): BodyInit | null {
     isString(post) ||
     isBlob(post) ||
     isFormData(post) ||
-    post instanceof URLSearchParams ||
-    post instanceof ArrayBuffer ||
+    isInstanceOf(post, URLSearchParams) ||
+    isInstanceOf(post, ArrayBuffer) ||
     ArrayBuffer.isView(post)
   ) {
     return post as BodyInit;

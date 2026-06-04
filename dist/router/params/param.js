@@ -209,7 +209,8 @@ class Param {
             defaultValue !== undefined &&
             !this.type.is(defaultValue))
             throw new Error(`Default value (${stringify(defaultValue)}) for parameter '${this.id}' is not an instance of ParamType (${String(this.type.name)})`);
-        if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
+        if (defaultValueProvider &&
+            defaultValueProvider._cacheable) {
             this._defaultValueCache = { defaultValue };
         }
         return defaultValue;

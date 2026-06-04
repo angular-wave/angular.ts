@@ -8,7 +8,10 @@ import { dealoc, getInheritedData, setScope } from "../../shared/dom.ts";
 import { kebobString } from "../../shared/strings.ts";
 import {
   deleteProperty,
+  hasOwn,
+  isArray,
   isFunction,
+  isInstanceOf,
   isNumber,
   isObject,
   isString,
@@ -417,12 +420,7 @@ function installScopeElementInputs(
   inputs: InputDefinition[],
 ): void {
   inputs.forEach((input) => {
-    if (
-      Object.prototype.hasOwnProperty.call(
-        elementClass.prototype,
-        input.property,
-      )
-    ) {
+    if (hasOwn(elementClass.prototype, input.property)) {
       return;
     }
 
@@ -655,7 +653,7 @@ function createContext<T extends object>(
     injector,
     root,
     scope,
-    shadowRoot: root instanceof ShadowRoot ? root : undefined,
+    shadowRoot: isInstanceOf(root, ShadowRoot) ? root : undefined,
     dispatch(type: string, detail?: unknown, init: CustomEventInit = {}) {
       return host.dispatchEvent(
         new CustomEvent(type, {
@@ -691,7 +689,7 @@ function upgradeOwnProperties(
   inputs: InputDefinition[],
 ): void {
   inputs.forEach((input) => {
-    if (!Object.prototype.hasOwnProperty.call(host, input.property)) return;
+    if (!hasOwn(host, input.property)) return;
 
     const hostRecord = host as unknown as Record<string, unknown>;
 
@@ -848,7 +846,7 @@ function appendLinkedNodes(
 ): void {
   if (!linked) return;
 
-  if (Array.isArray(linked)) {
+  if (isArray(linked)) {
     linked.forEach((node) => {
       root.appendChild(node);
     });

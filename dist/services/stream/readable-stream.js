@@ -1,4 +1,4 @@
-import { isDefined, fromJson } from '../../shared/utils.js';
+import { isInstanceOf, isDefined, fromJson } from '../../shared/utils.js';
 
 class StreamProvider {
     constructor() {
@@ -13,7 +13,7 @@ class StreamProvider {
     }
 }
 function isReadableStream(value) {
-    return (typeof ReadableStream !== "undefined" && value instanceof ReadableStream);
+    return (typeof ReadableStream !== "undefined" && isInstanceOf(value, ReadableStream));
 }
 async function consumeText(stream, options = {}) {
     const reader = stream.getReader();

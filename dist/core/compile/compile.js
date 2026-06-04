@@ -333,6 +333,11 @@ class CompileLifecycleProvider {
         });
     }
 }
+function hasLinkContextAttr(candidate) {
+    return (typeof candidate === "object" &&
+        candidate !== null &&
+        candidate._attr !== undefined);
+}
 const EMPTY_LINK_FN_RECORDS = Object.freeze([]);
 function readNormalizedElementAttribute(element, normalizedName) {
     const hostElement = getDirectiveHostElement(element);
@@ -1583,9 +1588,7 @@ class CompileProvider {
                             ? [transcludeFn]
                             : [];
                     if (linkFnRecord._linkCtx !== undefined) {
-                        const linkCtx = typeof linkFnRecord._linkCtx === "object" &&
-                            linkFnRecord._linkCtx !== null &&
-                            "_attr" in linkFnRecord._linkCtx
+                        const linkCtx = hasLinkContextAttr(linkFnRecord._linkCtx)
                             ? {
                                 ...linkFnRecord._linkCtx,
                                 _attr: attrs,
@@ -2392,7 +2395,10 @@ class CompileProvider {
                     };
                 }
                 function isNodeLinkState(state) {
-                    return (!!state && typeof state === "object" && "_templateAttrs" in state);
+                    return (!!state &&
+                        typeof state === "object" &&
+                        state
+                            ._templateAttrs !== undefined);
                 }
                 function getNodeLinkPlanCompileNode(nodeLinkPlan, fallback) {
                     const state = nodeLinkPlan?._nodeLinkFnState;

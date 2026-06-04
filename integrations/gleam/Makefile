@@ -1,4 +1,4 @@
-.PHONY: all deps format format-check test generate-namespace generate-injection-tokens generate parity check example-build demo clean
+.PHONY: all deps format format-check test generate-namespace generate-injection-tokens generate generate-check parity check example-build demo clean
 
 GLEAM ?= gleam
 NODE ?= node
@@ -25,9 +25,12 @@ generate-injection-tokens:
 
 generate: generate-namespace generate-injection-tokens
 
-parity:
+generate-check:
 	$(NODE) tool/generate_ng_namespace.mjs --check
 	$(NODE) tool/generate_injection_tokens.mjs --check
+
+parity:
+	$(MAKE) generate-check
 	$(NODE) tool/check_ng_namespace_parity.mjs
 
 check: format-check test parity

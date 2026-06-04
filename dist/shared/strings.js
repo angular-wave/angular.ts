@@ -28,19 +28,26 @@ const FN_LENGTH = 9;
 /** Returns a stable string representation for a function. */
 function functionToString(fn) {
     const fnStr = fnToString(fn);
-    const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
-    const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
+    const toStr = fnStr.replace(/^(function [^ ]+\([^)]*\))/, "$1");
     const fnName = fn.name || "";
     if (fnName && /function \(/.exec(toStr)) {
         return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
     }
     return toStr;
 }
-/** Returns the raw `toString()` value for a function or injectable array. */
 function fnToString(fn) {
-    const _fn = isArray(fn)
-        ? fn.slice(-1)[0]
-        : fn;
+    let _fn;
+    if (isArray(fn)) {
+        const candidate = fn[fn.length - 1];
+        if (isFunction(candidate))
+            _fn = candidate;
+    }
+    else if (isFunction(fn)) {
+        _fn = fn;
+    }
+    else {
+        _fn = undefined;
+    }
     return _fn ? _fn.toString() : "undefined";
 }
 /** Converts arbitrary values into short readable debug strings. */
@@ -67,10 +74,10 @@ function stringify(value) {
             return "undefined";
         if (isNull(item))
             return "null";
-        if (isPromiseLike(item))
-            return "[Promise]";
         if (isRejection(item))
             return String(item._transitionRejection);
+        if (isPromiseLike(item))
+            return "[Promise]";
         if (hasToString(item)) {
             const toStringFn = Reflect.get(item, "toString");
             return toStringFn.call(item);

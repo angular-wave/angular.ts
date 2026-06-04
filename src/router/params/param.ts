@@ -22,6 +22,10 @@ import type { UrlParamConfig } from "./param-factory.ts";
 
 type DefTypeValue = (typeof DefType)[keyof typeof DefType];
 
+type ParamDefaultValueProviderInternal = ParamDefaultValueProvider & {
+  _cacheable?: true;
+};
+
 export interface ParamRuntime {
   /** @internal */
   _injector: ng.InjectorService | undefined;
@@ -347,7 +351,10 @@ export class Param {
         `Default value (${stringify(defaultValue)}) for parameter '${this.id}' is not an instance of ParamType (${String(this.type.name)})`,
       );
 
-    if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
+    if (
+      defaultValueProvider &&
+      (defaultValueProvider as ParamDefaultValueProviderInternal)._cacheable
+    ) {
       this._defaultValueCache = { defaultValue };
     }
 

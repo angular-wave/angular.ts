@@ -1,6 +1,7 @@
 import {
   isArray,
   isNullOrUndefined,
+  isNumber,
   keys,
   isString,
   stringify,
@@ -304,7 +305,7 @@ export function expandExpression(
     let str = stringify(value);
 
     // apply prefix modifier if present
-    if (typeof prefixLength === "number") {
+    if (isNumber(prefixLength)) {
       str = str.substring(0, prefixLength);
     }
 

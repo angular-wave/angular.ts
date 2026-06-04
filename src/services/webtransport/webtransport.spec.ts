@@ -232,6 +232,68 @@ describe("$webTransport", () => {
     );
   });
 
+  it("normalizes constructor failures", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const thrownError = new Error("native open failed");
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: class {
+          constructor() {
+            throw thrownError;
+          }
+        },
+      });
+
+      const failedWithError = webTransport("https://localhost:4433/fail");
+      let readyError;
+
+      try {
+        await failedWithError.ready;
+      } catch (error) {
+        readyError = error;
+      }
+
+      expect(readyError).toBe(thrownError);
+      await failedWithError.closed.catch(() => undefined);
+
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: class {
+          constructor() {
+            throw "native open failed";
+          }
+        },
+      });
+
+      const failedWithValue = webTransport("https://localhost:4433/fail");
+      let wrappedError;
+
+      try {
+        await failedWithValue.ready;
+      } catch (error) {
+        wrappedError = error;
+      }
+
+      expect(wrappedError).toEqual(jasmine.any(Error));
+      expect(wrappedError.message).toBe("Failed to open WebTransport");
+      expect(wrappedError.cause).toBe("native open failed");
+      await failedWithValue.closed.catch(() => undefined);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, "WebTransport", descriptor);
+      } else {
+        delete globalThis.WebTransport;
+      }
+    }
+  });
+
   function track(connection) {
     connections.push(connection);
 

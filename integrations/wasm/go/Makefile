@@ -1,4 +1,4 @@
-.PHONY: check test parity generate example-build browser-test clean
+.PHONY: check test parity generate generate-check example-build browser-test clean
 
 GO ?= go
 PLAYWRIGHT ?= ../../../node_modules/.bin/playwright
@@ -14,6 +14,12 @@ parity:
 
 generate:
 	$(GO) generate ./examples/basic_app
+
+generate-check: generate
+	git diff --exit-code -- \
+		examples/basic_app/.angular-ts/bootstrap.js \
+		examples/basic_app/angular-ts.json \
+		examples/basic_app/scope_sync_gen.go
 
 example-build:
 	GOOS=js GOARCH=wasm $(GO) build -o examples/basic_app/main.wasm ./examples/basic_app

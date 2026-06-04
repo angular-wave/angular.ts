@@ -1757,8 +1757,8 @@
   (.factory target name providerFunction))
 
 (defn ng-module-machine
-  "Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {!ng.MachineConfig<TData, TEvents>}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.MachineConfig config]
+  "Register a named reactive mode machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {(!Array<function(): !ng.MachineConfig<TData, TEvents>>|!ng.MachineConfig<TData, TEvents>|function(): !ng.MachineConfig<TData, TEvents>)}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object config]
   (.machine target name config))
 
 (defn ng-module-provider
@@ -1777,8 +1777,8 @@
   (.service target name serviceFunction))
 
 (defn ng-module-sse
-  "Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!ng.SseConfig|undefined)}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/ng.SseConfig config]
+  "Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object config]
   (.sse target name url config))
 
 (defn ng-module-state
@@ -1787,8 +1787,8 @@
   (.state target definition))
 
 (defn ng-module-wasm
-  "Register a named WebAssembly module as an injectable service. The actual loading is delegated to the `$wasm` provider, so custom runtimes can decide whether WebAssembly support is included.\n\nParams:\n- name: {string}\n- src: {string}\n- imports: {(!Object<string, !Object<string, (!Object|number)>>|undefined)}\n- opts: {(!ng.WasmOptions|undefined)}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string src ^js/Object imports ^js/ng.WasmOptions opts]
+  "Register a named WebAssembly module as an injectable service. The actual loading is delegated to the `$wasm` provider, so custom runtimes can decide whether WebAssembly support is included.\n\nParams:\n- name: {string}\n- src: {string}\n- imports: {(!Array<function(...?): !Object<string, !Object<string, (!Object|number)>>>|!Object<string, !Object<string, (!Object|number)>>|function(...?): !Object<string, !Object<string, (!Object|number)>>|undefined)}\n- opts: {(!Array<function(...?): !ng.WasmOptions>|!ng.WasmOptions|function(...?): !ng.WasmOptions|undefined)}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string src ^js/Object imports ^js/Object opts]
   (.wasm target name src imports opts))
 
 (defn ng-module-web-component
@@ -1797,17 +1797,17 @@
   (.webComponent target name elementClass))
 
 (defn ng-module-web-transport
-  "Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!ng.WebTransportConfig|undefined)}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/ng.WebTransportConfig config]
+  "Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object config]
   (.webTransport target name url config))
 
 (defn ng-module-websocket
-  "Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- protocols: {(!Array<string>|undefined)}\n- config: {(!ng.WebSocketConfig|undefined)}\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Array protocols ^js/ng.WebSocketConfig config]
+  "Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- protocols: {(!Array<function(...?): !Array<string>>|!Array<string>|function(...?): !Array<string>|undefined)}\n- config: {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object protocols ^js/Object config]
   (.websocket target name url protocols config))
 
 (defn ng-module-workflow
-  "Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.\n\nParams:\n- name: {string}\n- config: {!Object}\n\nReturns: {!ng.NgModule}"
+  "Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.\n\nParams:\n- name: {string}\n- config: {(!Array<function(): !Object>|!Object|function(): !Object)}\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object config]
   (.workflow target name config))
 

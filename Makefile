@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-integrations test-types test-namespace-js types public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix wasm-parity hugo
+.PHONY: build build-ts check test test-integrations test-types test-namespace-js types generated-check public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix underscore-property-key-check wasm-parity hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -76,8 +76,13 @@ lint-check: ensure-deps
 lint-fix: ensure-deps
 	@npx eslint ./src --fix
 
+underscore-property-key-check:
+	@node ./utils/check-underscore-property-keys.mjs
+
 check: ensure-deps
 	@$(MAKE) lint-check
+	@$(MAKE) underscore-property-key-check
+	@$(MAKE) generated-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types
@@ -104,6 +109,13 @@ types: ensure-deps
 	@rm -rf @types
 	@./node_modules/.bin/tsc --project tsconfig.types.json
 	@npx prettier ./@types --write --cache --log-level=silent
+
+generated-check: types
+	@$(MAKE) -f integrations/closure/Makefile generate-check
+	@$(MAKE) -C integrations/dart generate-check
+	@$(MAKE) -C integrations/gleam generate-check
+	@$(MAKE) -C integrations/kotlin generate-check
+	@$(MAKE) -C integrations/wasm/go generate-check
 
 public-namespace-api: types
 	@$(MAKE) -f integrations/closure/Makefile closure-generate

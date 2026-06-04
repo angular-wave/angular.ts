@@ -1,6 +1,6 @@
 import { createScope, _SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
 import { _machine } from '../../injection-tokens.js';
-import { isObject, isString, isFunction, hasOwn } from '../../shared/utils.js';
+import { isObject, isString, isFunction, isNumber, hasOwn, isArray, isInstanceOf, isBoolean } from '../../shared/utils.js';
 
 class WorkflowProvider {
     constructor() {
@@ -253,7 +253,9 @@ function createWorkflowFactory($machine) {
                     })),
                 ]));
                 commandPromise.catch(() => undefined);
-                if (isObject(commandValue) && hasOwn(commandValue, "_workflowCancel")) {
+                if (isObject(commandValue) &&
+                    commandValue
+                        ._workflowCancel) {
                     const cancelled = commandValue;
                     if (state._discardResult) {
                         return {
@@ -585,10 +587,10 @@ function createWorkflowDataProxy(data, state) {
         }
         const proxy = new Proxy(value, {
             get(target, property, receiver) {
-                if (target instanceof Map) {
+                if (isInstanceOf(target, Map)) {
                     return getWorkflowMapProperty(target, property, receiver, state, proxify);
                 }
-                if (target instanceof Set) {
+                if (isInstanceOf(target, Set)) {
                     return getWorkflowSetProperty(target, property, receiver, state);
                 }
                 return proxify(Reflect.get(target, property, receiver));
@@ -685,9 +687,9 @@ function isWorkflowDataProxyable(value) {
         return false;
     }
     const prototype = Object.getPrototypeOf(value);
-    return (Array.isArray(value) ||
-        value instanceof Map ||
-        value instanceof Set ||
+    return (isArray(value) ||
+        isInstanceOf(value, Map) ||
+        isInstanceOf(value, Set) ||
         prototype === Object.prototype ||
         prototype === null);
 }
@@ -732,7 +734,7 @@ function normalizeCommandResult(value) {
     };
 }
 function normalizeDiagnostics(diagnostics) {
-    if (!Array.isArray(diagnostics)) {
+    if (!isArray(diagnostics)) {
         return [];
     }
     return diagnostics.map((diagnostic) => isObject(diagnostic)
@@ -753,7 +755,7 @@ function normalizeDiagnostics(diagnostics) {
         : createDiagnostic("workflow.diagnostic", formatUnknownMessage(diagnostic), undefined, true));
 }
 function normalizeOptionalDiagnostics(diagnostics) {
-    if (!Array.isArray(diagnostics)) {
+    if (!isArray(diagnostics)) {
         return undefined;
     }
     return normalizeDiagnostics(diagnostics);
@@ -762,7 +764,7 @@ function normalizeHistoryValue(value) {
     return normalizeDiagnosticDetail(value);
 }
 function normalizeHistory(historyEntries) {
-    if (!Array.isArray(historyEntries)) {
+    if (!isArray(historyEntries)) {
         return [];
     }
     let nextFallbackId = 1;
@@ -791,7 +793,7 @@ function normalizeHistory(historyEntries) {
         return historyEntry;
     });
     function allocateHistoryId(value) {
-        if (typeof value === "number" &&
+        if (isNumber(value) &&
             Number.isInteger(value) &&
             value > 0 &&
             !usedIds.has(value)) {
@@ -817,7 +819,7 @@ function normalizeHistoryType(value) {
     return "command.failed";
 }
 function diagnosticFromError(error, command, code = "workflow.commandFailed") {
-    if (error instanceof Error) {
+    if (isInstanceOf(error, Error)) {
         return createDiagnostic(code, error.message || "Workflow command failed.", command, true, {
             name: error.name,
         });
@@ -831,7 +833,7 @@ function normalizeEntryLimit(value, label, defaultValue) {
     if (value === undefined) {
         return defaultValue;
     }
-    if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (!isNumber(value) || !Number.isFinite(value)) {
         throw new Error(`${label} must be a finite number.`);
     }
     if (!Number.isInteger(value) || value < 0) {
@@ -901,7 +903,7 @@ function validateCommandOptions(command, options) {
 function isAbortSignalLike(value) {
     const signal = value;
     return (isObject(value) &&
-        typeof signal.aborted === "boolean" &&
+        isBoolean(signal.aborted) &&
         isFunction(signal.addEventListener) &&
         isFunction(signal.removeEventListener));
 }
@@ -909,7 +911,7 @@ function normalizeTimeout(value) {
     if (value === undefined) {
         return undefined;
     }
-    if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (!isNumber(value) || !Number.isFinite(value)) {
         throw new Error("$workflow command timeout must be a finite number.");
     }
     if (!Number.isInteger(value) || value < 0) {
@@ -950,16 +952,16 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
         return "[Circular]";
     }
     seen.add(objectValue);
-    if (value instanceof Date) {
+    if (isInstanceOf(value, Date)) {
         seen.delete(objectValue);
         return value.toISOString();
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
         const normalized = value.map((item) => normalizeDiagnosticDetail(item, seen));
         seen.delete(objectValue);
         return normalized;
     }
-    if (value instanceof Map) {
+    if (isInstanceOf(value, Map)) {
         const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
             normalizeDiagnosticDetail(key, seen),
             normalizeDiagnosticDetail(entryValue, seen),
@@ -967,7 +969,7 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
         seen.delete(objectValue);
         return normalized;
     }
-    if (value instanceof Set) {
+    if (isInstanceOf(value, Set)) {
         const normalized = Array.from(value.values()).map((item) => normalizeDiagnosticDetail(item, seen));
         seen.delete(objectValue);
         return normalized;
@@ -984,7 +986,7 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
     return "[Unknown]";
 }
 function formatUnknownMessage(value) {
-    if (value instanceof Error) {
+    if (isInstanceOf(value, Error)) {
         return value.message || value.name;
     }
     if (isString(value)) {
@@ -1073,10 +1075,10 @@ function assertWorkflowSnapshot(snapshot) {
     if (!isObject(candidate.data)) {
         throw new Error("$workflow restore requires a data object.");
     }
-    if (!Array.isArray(candidate.diagnostics)) {
+    if (!isArray(candidate.diagnostics)) {
         throw new Error("$workflow restore requires diagnostics.");
     }
-    if (!Array.isArray(candidate.history)) {
+    if (!isArray(candidate.history)) {
         throw new Error("$workflow restore requires history.");
     }
 }

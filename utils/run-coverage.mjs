@@ -164,56 +164,66 @@ async function validateReport() {
   return 0;
 }
 
-function checkTouchedFilesCoverage() {
-  return readSummary().then((summary) => {
-    const touchedFiles = getTouchedSourceFiles();
-    const isInstrumentableSource = (file) => {
-      return (
-        file.endsWith(".ts") &&
-        !file.endsWith(".spec.ts") &&
-        !file.endsWith(".test.ts")
-      );
-    };
+async function checkTouchedFilesCoverage() {
+  const touchedFiles = getTouchedSourceFiles();
+  const touchedLines = getTouchedSourceLines();
+  const coverage = await readLcov();
+  const failures = [];
 
-    const failures = [];
+  for (const file of touchedFiles) {
+    if (!isInstrumentableSource(file)) {
+      continue;
+    }
 
-    for (const file of touchedFiles) {
-      if (!isInstrumentableSource(file)) {
-        continue;
+    const changedLines = touchedLines.get(file) ?? new Set();
+
+    if (changedLines.size === 0) {
+      continue;
+    }
+
+    const fileCoverage = coverage.get(file);
+
+    if (!fileCoverage) {
+      failures.push(`No coverage collected for touched source file: ${file}`);
+
+      continue;
+    }
+
+    for (const line of changedLines) {
+      const lineHits = fileCoverage.lines.get(line);
+
+      if (lineHits !== undefined && lineHits === 0) {
+        failures.push(`Touched line ${file}:${line} is not covered`);
       }
 
-      const absolute = path.resolve(file);
-      const fileSummary = summary[absolute] || summary[file];
+      const branchHits = fileCoverage.branches.get(line) ?? [];
 
-      if (!fileSummary) {
-        // Not collected likely because it is not exercised or intentionally excluded.
-        failures.push(`No coverage collected for touched source file: ${file}`);
-
-        continue;
+      for (const branch of branchHits) {
+        if (branch === 0) {
+          failures.push(`Touched branch ${file}:${line} is not fully covered`);
+        }
       }
 
-      for (const metric of coverageMetrics) {
-        const values = fileSummary[metric];
+      const functionHits = fileCoverage.functions.get(line) ?? [];
 
-        if (!values || values.pct !== 100) {
-          failures.push(
-            `Touched file ${file} ${metric}: ${String(values?.pct)}% (target: 100%)`,
-          );
+      for (const hits of functionHits) {
+        if (hits === 0) {
+          failures.push(`Touched function ${file}:${line} is not covered`);
         }
       }
     }
+  }
 
-    if (failures.length) {
-      console.error("[coverage] touched source files are not 100% covered");
-      failures.forEach((failure) => console.error(`[coverage] ${failure}`));
+  if (failures.length) {
+    console.error("[coverage] touched source lines are not 100% covered");
+    failures.forEach((failure) => console.error(`[coverage] ${failure}`));
 
-      return 1;
-    }
+    return 1;
+  }
 
-    console.log("[coverage] all touched source files are 100% covered");
+  console.log("[coverage] all touched source lines are 100% covered");
 
-    return 0;
-  });
+  return 0;
 }
 
 function getTouchedSourceFiles() {
@@ -243,6 +253,191 @@ function getTouchedSourceFiles() {
 
     return [];
   }
+}
+
+function getTouchedSourceLines() {
+  try {
+    const output = execSync("git diff --unified=0 HEAD -- src", {
+      cwd: rootDir,
+      encoding: "utf-8",
+    });
+
+    return parseTouchedSourceLines(output);
+  } catch (error) {
+    console.error(
+      `[coverage] failed to discover touched source lines for strict check: ${String(
+        error,
+      )}`,
+    );
+
+    return new Map();
+  }
+}
+
+function parseTouchedSourceLines(diff) {
+  const touched = new Map();
+  let file;
+  let nextLine;
+
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("+++ b/")) {
+      const relative = line.slice("+++ b/".length);
+      file = path.join(rootDir, relative);
+      nextLine = undefined;
+
+      continue;
+    }
+
+    if (line.startsWith("+++ /dev/null")) {
+      file = undefined;
+      nextLine = undefined;
+
+      continue;
+    }
+
+    if (!file) {
+      continue;
+    }
+
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
+
+    if (hunk) {
+      nextLine = Number(hunk[1]);
+
+      continue;
+    }
+
+    if (nextLine === undefined) {
+      continue;
+    }
+
+    if (line.startsWith("+") && !line.startsWith("+++")) {
+      if (!touched.has(file)) {
+        touched.set(file, new Set());
+      }
+
+      touched.get(file).add(nextLine);
+      nextLine += 1;
+
+      continue;
+    }
+
+    if (line.startsWith("-") && !line.startsWith("---")) {
+      continue;
+    }
+
+    if (line.length > 0) {
+      nextLine += 1;
+    }
+  }
+
+  return touched;
+}
+
+function isInstrumentableSource(file) {
+  return (
+    file.endsWith(".ts") &&
+    !file.endsWith(".spec.ts") &&
+    !file.endsWith(".test.ts")
+  );
+}
+
+async function readLcov() {
+  const lcov = await readFile(path.join(reportDir, "lcov.info"), "utf-8");
+  const coverage = new Map();
+  let current;
+  let functionLines = new Map();
+
+  for (const line of lcov.split("\n")) {
+    if (line.startsWith("SF:")) {
+      const sourceFile = line.slice("SF:".length);
+      const file = path.isAbsolute(sourceFile)
+        ? sourceFile
+        : path.join(rootDir, sourceFile);
+      current = {
+        branches: new Map(),
+        functions: new Map(),
+        lines: new Map(),
+      };
+      functionLines = new Map();
+      coverage.set(file, current);
+
+      continue;
+    }
+
+    if (!current) {
+      continue;
+    }
+
+    if (line.startsWith("FN:")) {
+      const payload = line.slice("FN:".length);
+      const comma = payload.indexOf(",");
+
+      if (comma !== -1) {
+        const functionLine = Number(payload.slice(0, comma));
+        const name = payload.slice(comma + 1);
+
+        functionLines.set(name, functionLine);
+      }
+
+      continue;
+    }
+
+    if (line.startsWith("FNDA:")) {
+      const payload = line.slice("FNDA:".length);
+      const comma = payload.indexOf(",");
+
+      if (comma !== -1) {
+        const hits = Number(payload.slice(0, comma));
+        const name = payload.slice(comma + 1);
+        const functionLine = functionLines.get(name);
+
+        if (functionLine !== undefined) {
+          appendCoverageValue(current.functions, functionLine, hits);
+        }
+      }
+
+      continue;
+    }
+
+    if (line.startsWith("DA:")) {
+      const [lineNumber, hits] = line
+        .slice("DA:".length)
+        .split(",", 2)
+        .map(Number);
+
+      current.lines.set(lineNumber, hits);
+
+      continue;
+    }
+
+    if (line.startsWith("BRDA:")) {
+      const [lineNumber, , , taken] = line.slice("BRDA:".length).split(",");
+
+      appendCoverageValue(
+        current.branches,
+        Number(lineNumber),
+        taken === "-" ? 0 : Number(taken),
+      );
+
+      continue;
+    }
+
+    if (line === "end_of_record") {
+      current = undefined;
+      functionLines = new Map();
+    }
+  }
+
+  return coverage;
+}
+
+function appendCoverageValue(map, line, value) {
+  if (!map.has(line)) {
+    map.set(line, []);
+  }
+
+  map.get(line).push(value);
 }
 
 function invalidSummaryMetrics(summary) {

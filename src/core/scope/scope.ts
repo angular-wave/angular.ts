@@ -207,7 +207,7 @@ type ScopeTarget = NonScopeMarked & Record<PropertyKey, unknown>;
 
 export const _SCOPE_PROXY_BIND = Symbol("ngScopeProxyBind");
 
-export interface _ScopeProxyBindable {
+export interface ScopeProxyBindable {
   [_SCOPE_PROXY_BIND]?: (handler: Scope, proxy: ScopeProxy) => void;
 }
 
@@ -1218,7 +1218,7 @@ function getCachedScopeProxy(target: unknown, handler: Scope): unknown {
     proxy = new Proxy(target, handler) as ScopeProxy;
     proxiesByHandler.set(handler, proxy);
 
-    const bind = (target as _ScopeProxyBindable)[_SCOPE_PROXY_BIND];
+    const bind = (target as ScopeProxyBindable)[_SCOPE_PROXY_BIND];
 
     if (isFunction(bind)) {
       bind.call(target, handler, proxy);
@@ -1905,7 +1905,7 @@ export class Scope {
         const hasDirectPropertyListeners = this._watchers.has(property);
 
         const parentForeignListeners = this.$parent
-          ? (Reflect.get(this.$parent, "_foreignListeners") as unknown)
+          ? (this.$parent as { _foreignListeners?: unknown })._foreignListeners
           : undefined;
 
         const hasForeignPropertyListeners =

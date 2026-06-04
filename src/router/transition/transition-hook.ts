@@ -50,7 +50,10 @@ type TransitionHookDoneCallback =
 function isDoneTask(
   doneCallback: TransitionHookDoneCallback,
 ): doneCallback is TransitionHookDoneTask {
-  return "_startTransition" in doneCallback;
+  return (
+    typeof (doneCallback as { _startTransition?: unknown })._startTransition ===
+    "function"
+  );
 }
 
 const defaultOptions: Partial<TransitionHookOptions> = {

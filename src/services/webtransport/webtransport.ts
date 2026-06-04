@@ -3,7 +3,12 @@ import {
   isRealtimeProtocolMessage,
   type RealtimeProtocolMessage,
 } from "../../directive/realtime/protocol.ts";
-import { isFunction, isNumber, isString } from "../../shared/utils.ts";
+import {
+  isFunction,
+  isInstanceOf,
+  isNumber,
+  isString,
+} from "../../shared/utils.ts";
 import type { LogService } from "../log/log.ts";
 
 export type WebTransportBufferInput =
@@ -234,7 +239,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     } catch (error) {
       this._handleNativeClose(error);
       this.ready = Promise.reject(
-        error instanceof Error
+        isInstanceOf(error, Error)
           ? error
           : new Error("Failed to open WebTransport", { cause: error }),
       );
@@ -431,11 +436,11 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       return this._encoder.encode(data);
     }
 
-    if (data instanceof Uint8Array) {
+    if (isInstanceOf(data, Uint8Array)) {
       return data;
     }
 
-    if (data instanceof ArrayBuffer) {
+    if (isInstanceOf(data, ArrayBuffer)) {
       return new Uint8Array(data);
     }
 

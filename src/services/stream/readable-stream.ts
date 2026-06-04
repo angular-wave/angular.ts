@@ -1,4 +1,4 @@
-import { fromJson, isDefined } from "../../shared/utils.ts";
+import { fromJson, isDefined, isInstanceOf } from "../../shared/utils.ts";
 
 export interface StreamReadOptions {
   /** TextDecoder encoding. Defaults to utf-8. */
@@ -76,7 +76,7 @@ export class StreamProvider {
 
 function isReadableStream(value: unknown): value is ReadableStream<Uint8Array> {
   return (
-    typeof ReadableStream !== "undefined" && value instanceof ReadableStream
+    typeof ReadableStream !== "undefined" && isInstanceOf(value, ReadableStream)
   );
 }
 

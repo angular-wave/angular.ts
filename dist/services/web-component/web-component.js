@@ -1,7 +1,7 @@
 import { _injector, _rootScope, _compile, _scope } from '../../injection-tokens.js';
 import { getInheritedData, setScope, dealoc } from '../../shared/dom.js';
 import { kebobString } from '../../shared/strings.js';
-import { isFunction, uppercase, deleteProperty, isNumber, isString, stringify, isObject } from '../../shared/utils.js';
+import { isFunction, hasOwn, uppercase, isInstanceOf, deleteProperty, isNumber, isString, stringify, isObject, isArray } from '../../shared/utils.js';
 
 /** Native custom element base class backed by an AngularTS child scope. */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
@@ -133,7 +133,7 @@ function getScopeElementInputs(elementClass) {
 }
 function installScopeElementInputs(elementClass, inputs) {
     inputs.forEach((input) => {
-        if (Object.prototype.hasOwnProperty.call(elementClass.prototype, input.property)) {
+        if (hasOwn(elementClass.prototype, input.property)) {
             return;
         }
         Object.defineProperty(elementClass.prototype, input.property, {
@@ -288,7 +288,7 @@ function createContext(host, scope, injector, root) {
         injector,
         root,
         scope,
-        shadowRoot: root instanceof ShadowRoot ? root : undefined,
+        shadowRoot: isInstanceOf(root, ShadowRoot) ? root : undefined,
         dispatch(type, detail, init = {}) {
             return host.dispatchEvent(new CustomEvent(type, {
                 bubbles: true,
@@ -313,7 +313,7 @@ function applyInputDefaults(host, inputs) {
 }
 function upgradeOwnProperties(host, inputs) {
     inputs.forEach((input) => {
-        if (!Object.prototype.hasOwnProperty.call(host, input.property))
+        if (!hasOwn(host, input.property))
             return;
         const hostRecord = host;
         const value = hostRecord[input.property];
@@ -415,7 +415,7 @@ function renderTemplate(root, host, scope, template, compile) {
 function appendLinkedNodes(root, linked) {
     if (!linked)
         return;
-    if (Array.isArray(linked)) {
+    if (isArray(linked)) {
         linked.forEach((node) => {
             root.appendChild(node);
         });

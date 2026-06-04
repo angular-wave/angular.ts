@@ -1039,7 +1039,7 @@ class Scope {
             if (valueChanged) {
                 const hasDirectPropertyListeners = this._watchers.has(property);
                 const parentForeignListeners = this.$parent
-                    ? Reflect.get(this.$parent, "_foreignListeners")
+                    ? this.$parent._foreignListeners
                     : undefined;
                 const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
                     (isObject(parentForeignListeners) &&

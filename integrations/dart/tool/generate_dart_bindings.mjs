@@ -247,7 +247,8 @@ function collectBindingTargets(checker, sourceFile, overrides) {
     const publicProperties = checker
       .getPropertiesOfType(type)
       .filter((property) => !isNativeProperty(property))
-      .filter((property) => !property.name.startsWith("__@"));
+      .filter((property) => !property.name.startsWith("__@"))
+      .filter((property) => !property.name.startsWith("_"));
     const generatedProperties = publicProperties.filter(
       (property) => !isSkipped(overrides, typeName, property.name)
     );

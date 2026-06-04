@@ -11,6 +11,16 @@ const checkMode = process.argv.includes("--check");
 const expectedTypeTagCount = 228;
 const expectedStrictWrapperCount = 258;
 const expectedStrictPropertyReaderCount = 426;
+const strictWrapperParamTagOverrides = new Map([
+  ["NgModule.machine.config", "js/Object"],
+  ["NgModule.workflow.config", "js/Object"],
+  ["NgModule.wasm.imports", "js/Object"],
+  ["NgModule.wasm.opts", "js/Object"],
+  ["NgModule.sse.config", "js/Object"],
+  ["NgModule.websocket.protocols", "js/Object"],
+  ["NgModule.websocket.config", "js/Object"],
+  ["NgModule.webTransport.config", "js/Object"],
+]);
 
 const source = readFileSync(externsPath, "utf8");
 
@@ -225,6 +235,14 @@ function parseJsDocParams(jsDoc) {
   return params;
 }
 
+function strictWrapperParamTag(owner, method, param, tag) {
+  return (
+    tag ||
+    strictWrapperParamTagOverrides.get(`${owner}.${method}.${param}`) ||
+    ""
+  );
+}
+
 function parseJsDocParamDocs(jsDoc) {
   const params = [];
   const paramPattern =
@@ -298,7 +316,7 @@ function collectPrototypeMethods(ownerNames) {
       .filter((param) => param !== "var_args")
       .map((param) => ({
         name: param,
-        tag: jsDocParams.get(param) || "",
+        tag: strictWrapperParamTag(owner, method, param, jsDocParams.get(param)),
       }));
     const returnInfo = parseJsDocReturn(jsDoc);
 

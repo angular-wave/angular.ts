@@ -672,26 +672,6 @@ base class GeneratedNgAnimationHandle extends GeneratedNgFacade {
   JSPromise<JSAny?> get finished =>
       raw.getProperty('finished'.toJS) as JSPromise<JSAny?>;
 
-  /// Reads the generated animations property.
-  Object? get animations =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_animations'.toJS));
-
-  /// Reads the generated cleanup property.
-  Object? get cleanup =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_cleanup'.toJS));
-
-  /// Reads the generated donecallbacks property.
-  Object? get donecallbacks =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_doneCallbacks'.toJS));
-
-  /// Reads the generated settled property.
-  Object? get settled =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_settled'.toJS));
-
-  /// Reads the generated status property.
-  Object? get status =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_status'.toJS));
-
   /// Invokes the generated then member.
   JSPromise<JSAny?> then(
       [Object? arg0 = _undefinedArgument, Object? arg1 = _undefinedArgument]) {
@@ -1009,14 +989,6 @@ base class GeneratedNgCompileLifecycleProvider extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.CompileLifecycleProvider.
   const GeneratedNgCompileLifecycleProvider(super.raw);
 
-  /// Reads the generated createdlisteners property.
-  Object? get createdlisteners =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_createdListeners'.toJS));
-
-  /// Reads the generated destroyedlisteners property.
-  Object? get destroyedlisteners =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_destroyedListeners'.toJS));
-
   /// Reads the generated $get property.
   Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));
 
@@ -1043,14 +1015,6 @@ base class GeneratedNgCompileLifecycleProvider extends GeneratedNgFacade {
 base class GeneratedNgCompileLifecycleService extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.CompileLifecycleService.
   const GeneratedNgCompileLifecycleService(super.raw);
-
-  /// Reads the generated createdlisteners property.
-  Object? get createdlisteners =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_createdListeners'.toJS));
-
-  /// Reads the generated destroyedlisteners property.
-  Object? get destroyedlisteners =>
-      unsafe.jsToDart<Object?>(raw.getProperty('_destroyedListeners'.toJS));
 
   /// Reads the generated $get property.
   Object? get $get => unsafe.jsToDart<Object?>(raw.getProperty('\$get'.toJS));

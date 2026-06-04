@@ -16,7 +16,8 @@ const TransitionHookPhase = {
     _ERROR: 4,
 };
 function isDoneTask(doneCallback) {
-    return "_startTransition" in doneCallback;
+    return (typeof doneCallback._startTransition ===
+        "function");
 }
 const defaultOptions = {
     _current: () => undefined,

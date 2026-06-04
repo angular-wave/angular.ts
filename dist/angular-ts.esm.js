@@ -1,4 +1,4 @@
-/* Version: 0.30.0 - May 31, 2026 11:58:33 */
+/* Version: 0.30.0 - June 4, 2026 05:08:51 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -455,6 +455,12 @@ function isFormData(obj) {
  */
 function isBlob(obj) {
     return toString.call(obj) === "[object Blob]";
+}
+/**
+ * Returns whether a value is boolean.
+ */
+function isBoolean(value) {
+    return typeof value === "boolean";
 }
 /**
  * Returns whether a value looks promise-like.
@@ -2549,6 +2555,18 @@ function isInjectable(val) {
     return isFunction(val);
 }
 
+function isStringOrUrl(value) {
+    return isString(value) || value instanceof URL;
+}
+function isDynamicConfig(value, isStatic) {
+    return isInjectable(value) || isStatic(value);
+}
+function resolveDynamicConfig(value, injector) {
+    if (!isInjectable(value)) {
+        return value;
+    }
+    return injector.invoke(value);
+}
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
@@ -2733,12 +2751,13 @@ class NgModule {
      * with AngularTS scope proxies when assigned to a controller or scope.
      *
      * @param {string} name - Injectable name.
-     * @param {ng.MachineConfig} config - Machine configuration.
+     * @param {ng.MachineConfig|ng.Injectable} config - Machine configuration or
+     * a resolvable config factory.
      * @returns {NgModule}
      */
     machine(name, config) {
         validate(isString, name, "name");
-        validate(isObject, config, "config");
+        validate(isDynamicConfig.bind(null, config, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
@@ -2746,10 +2765,14 @@ class NgModule {
                 name,
                 [
                     _machine,
-                    ($machine) => $machine({
-                        ...config,
-                        data: structuredClone(config.data),
-                    }),
+                    _injector,
+                    ($machine, $injector) => {
+                        const resolvedConfig = resolveDynamicConfig(config, $injector);
+                        return $machine({
+                            ...resolvedConfig,
+                            data: structuredClone(resolvedConfig.data),
+                        });
+                    },
                 ],
             ],
         ]);
@@ -2763,12 +2786,13 @@ class NgModule {
      * not apply global workflow defaults.
      *
      * @param {string} name - Injectable name.
-     * @param {ng.WorkflowConfig} config - Workflow configuration.
+     * @param {ng.WorkflowConfig|ng.Injectable} config - Workflow configuration
+     * or a resolvable config factory.
      * @returns {NgModule}
      */
     workflow(name, config) {
         validate(isString, name, "name");
-        validate(isObject, config, "config");
+        validate(isDynamicConfig.bind(null, config, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
@@ -2776,10 +2800,14 @@ class NgModule {
                 name,
                 [
                     _workflow,
-                    ($workflow) => $workflow({
-                        ...config,
-                        data: structuredClone(config.data),
-                    }),
+                    _injector,
+                    ($workflow, $injector) => {
+                        const resolvedConfig = resolveDynamicConfig(config, $injector);
+                        return $workflow({
+                            ...resolvedConfig,
+                            data: structuredClone(resolvedConfig.data),
+                        });
+                    },
                 ],
             ],
         ]);
@@ -2798,8 +2826,10 @@ class NgModule {
      *
      * @param {string} name - Injectable name used to access the module exports.
      * @param {string} src - URL of the `.wasm` file to fetch and instantiate.
-     * @param {WebAssembly.Imports} [imports] - WebAssembly import object.
-     * @param {WasmOptions} [opts] - WebAssembly provider options.
+     * @param {WebAssembly.Imports|ng.Injectable<(...args: never[]) => WebAssembly.Imports>}
+     *   [imports] WebAssembly import object, optionally produced by DI.
+     * @param {WasmOptions|ng.Injectable<(...args: never[]) => WasmOptions>}
+     *   [opts] WebAssembly options, optionally produced by DI.
      *
      * Supported keys:
      * - **raw**: `boolean`
@@ -2811,11 +2841,19 @@ class NgModule {
     wasm(name, src, imports = {}, opts = {}) {
         validate(isString, name, "name");
         validate(isString, src, "src");
-        const createWasmService = ($wasm) => $wasm(src, imports, opts);
+        validate((value) => isDynamicConfig(value, isObject), imports, "imports");
+        validate((value) => isDynamicConfig(value, isObject), opts, "opts");
         this._invokeQueue.push([
             _provide,
             "factory",
-            [name, [_wasm, createWasmService]],
+            [
+                name,
+                [
+                    _wasm,
+                    _injector,
+                    ($wasm, $injector) => $wasm(src, resolveDynamicConfig(imports, $injector), resolveDynamicConfig(opts, $injector)),
+                ],
+            ],
         ]);
         return this;
     }
@@ -2826,19 +2864,26 @@ class NgModule {
      * support remains provider-driven instead of directive-driven.
      *
      * @param {string} name - Injectable name.
-     * @param {string | URL} scriptPath - Worker script URL.
-     * @param {WorkerConfig} [config] - Worker connection options.
+     * @param {string|URL|ng.Injectable<(...args: never[]) => string|URL>}
+     *   [scriptPath] Worker script URL, optionally produced by DI.
+     * @param {WorkerConfig|ng.Injectable<(...args: never[]) => WorkerConfig>}
+     *   [config] Worker connection options, optionally produced by DI.
      * @returns {NgModule}
      */
     worker(name, scriptPath, config = {}) {
         validate(isString, name, "name");
-        validateRequired(scriptPath, "scriptPath");
+        validate((value) => isDynamicConfig(value, isStringOrUrl), scriptPath, "scriptPath");
+        validate((value) => isDynamicConfig(value, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
             [
                 name,
-                [_worker, ($worker) => $worker(scriptPath, config)],
+                [
+                    _worker,
+                    _injector,
+                    ($worker, $injector) => $worker(resolveDynamicConfig(scriptPath, $injector), resolveDynamicConfig(config, $injector)),
+                ],
             ],
         ]);
         return this;
@@ -2875,18 +2920,24 @@ class NgModule {
      * @param {string} name - Service name.
      * @param {string} url - Base URL or URI template.
      * @param {ng.EntityClass<T>} [entityClass] - Optional constructor for mapping JSON.
-     * @param {RestOptions} [options] - Optional RestService options.
+     * @param {RestOptions|ng.Injectable<(...args: never[]) => RestOptions>} [options]
+     *   Optional RestService options, optionally produced by DI.
      * @returns {NgModule}
      */
     rest(name, url, entityClass, options = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
+        validate((value) => isDynamicConfig(value, isObject), options, "options");
         this._invokeQueue.push([
             _provide,
             "factory",
             [
                 name,
-                [_rest, ($rest) => $rest(url, entityClass, options)],
+                [
+                    _rest,
+                    _injector,
+                    ($rest, $injector) => $rest(url, entityClass, resolveDynamicConfig(options, $injector)),
+                ],
             ],
         ]);
         return this;
@@ -2898,16 +2949,25 @@ class NgModule {
      *
      * @param {string} name - Injectable name.
      * @param {string} url - SSE endpoint.
-     * @param {SseConfig} [config] - SSE connection options.
+     * @param {SseConfig|ng.Injectable<(...args: never[]) => SseConfig>} [config]
+     *   SSE connection options, optionally produced by DI.
      * @returns {NgModule}
      */
     sse(name, url, config = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
+        validate((value) => isDynamicConfig(value, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
-            [name, [_sse, ($sse) => $sse(url, config)]],
+            [
+                name,
+                [
+                    _sse,
+                    _injector,
+                    ($sse, $injector) => $sse(url, resolveDynamicConfig(config, $injector)),
+                ],
+            ],
         ]);
         return this;
     }
@@ -2919,13 +2979,17 @@ class NgModule {
      *
      * @param {string} name - Injectable name.
      * @param {string} url - WebSocket endpoint.
-     * @param {string[]} [protocols] - Optional subprotocols.
-     * @param {WebSocketConfig} [config] - WebSocket connection options.
+     * @param {string[]|ng.Injectable<(...args: never[]) => string[]>} [protocols]
+     *   Optional subprotocols, optionally produced by DI.
+     * @param {WebSocketConfig|ng.Injectable<(...args: never[]) => WebSocketConfig>}
+     *   [config] WebSocket connection options, optionally produced by DI.
      * @returns {NgModule}
      */
     websocket(name, url, protocols = [], config = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
+        validate((value) => isDynamicConfig(value, isArray), protocols, "protocols");
+        validate((value) => isDynamicConfig(value, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
@@ -2933,7 +2997,8 @@ class NgModule {
                 name,
                 [
                     _websocket,
-                    ($websocket) => $websocket(url, protocols, config),
+                    _injector,
+                    ($websocket, $injector) => $websocket(url, resolveDynamicConfig(protocols, $injector), resolveDynamicConfig(config, $injector)),
                 ],
             ],
         ]);
@@ -2947,12 +3012,14 @@ class NgModule {
      *
      * @param {string} name - Injectable name.
      * @param {string} url - WebTransport endpoint.
-     * @param {WebTransportConfig} [config] - WebTransport connection options.
+     * @param {WebTransportConfig|ng.Injectable<(...args: never[]) => WebTransportConfig>}
+     *   [config] WebTransport connection options, optionally produced by DI.
      * @returns {NgModule}
      */
     webTransport(name, url, config = {}) {
         validate(isString, name, "name");
         validate(isString, url, "url");
+        validate((value) => isDynamicConfig(value, isObject), config, "config");
         this._invokeQueue.push([
             _provide,
             "factory",
@@ -2960,7 +3027,8 @@ class NgModule {
                 name,
                 [
                     _webTransport,
-                    ($webTransport) => $webTransport(url, config),
+                    _injector,
+                    ($webTransport, $injector) => $webTransport(url, resolveDynamicConfig(config, $injector)),
                 ],
             ],
         ]);
@@ -4583,7 +4651,7 @@ function getObjectListenerTarget(value) {
     }
     return target;
 }
-function isMapTarget$1(target) {
+function isMapTarget(target) {
     try {
         return isInstanceOf(target, Map);
     }
@@ -4591,7 +4659,7 @@ function isMapTarget$1(target) {
         return false;
     }
 }
-function isSetTarget$1(target) {
+function isSetTarget(target) {
     try {
         return isInstanceOf(target, Set);
     }
@@ -4608,7 +4676,7 @@ function isDateTarget(target) {
     }
 }
 function isNativeScopedTarget(target) {
-    return isMapTarget$1(target) || isSetTarget$1(target) || isDateTarget(target);
+    return isMapTarget(target) || isSetTarget(target) || isDateTarget(target);
 }
 function isNativeIteratorTarget(target) {
     try {
@@ -5081,7 +5149,7 @@ class Scope {
             if (valueChanged) {
                 const hasDirectPropertyListeners = this._watchers.has(property);
                 const parentForeignListeners = this.$parent
-                    ? Reflect.get(this.$parent, "_foreignListeners")
+                    ? this.$parent._foreignListeners
                     : undefined;
                 const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
                     (isObject(parentForeignListeners) &&
@@ -5420,10 +5488,10 @@ class Scope {
         }
         const wrapper = (...args) => {
             const rawArgs = unwrapCollectionArgs(args);
-            if (isMapTarget$1(target) && isString(property)) {
+            if (isMapTarget(target) && isString(property)) {
                 return this._applyMapMethod(target, property, method, rawArgs);
             }
-            if (isSetTarget$1(target) && isString(property)) {
+            if (isSetTarget(target) && isString(property)) {
                 return this._applySetMethod(target, property, method, rawArgs);
             }
             if (isDateTarget(target) && isString(property)) {
@@ -5525,7 +5593,7 @@ class Scope {
         if (watchKeys) {
             this._scheduleWatchKeys(watchKeys, seenListenerIds);
         }
-        else if (isMapTarget$1(target)) {
+        else if (isMapTarget(target)) {
             this._scheduleWatchKeys(mapValueMutationWatchKeys, seenListenerIds);
             this._scheduleWatchKeys(mapMembershipMutationWatchKeys, seenListenerIds);
         }
@@ -7526,6 +7594,11 @@ class CompileLifecycleProvider {
         });
     }
 }
+function hasLinkContextAttr(candidate) {
+    return (typeof candidate === "object" &&
+        candidate !== null &&
+        candidate._attr !== undefined);
+}
 const EMPTY_LINK_FN_RECORDS = Object.freeze([]);
 function readNormalizedElementAttribute(element, normalizedName) {
     const hostElement = getDirectiveHostElement(element);
@@ -8776,9 +8849,7 @@ class CompileProvider {
                             ? [transcludeFn]
                             : [];
                     if (linkFnRecord._linkCtx !== undefined) {
-                        const linkCtx = typeof linkFnRecord._linkCtx === "object" &&
-                            linkFnRecord._linkCtx !== null &&
-                            "_attr" in linkFnRecord._linkCtx
+                        const linkCtx = hasLinkContextAttr(linkFnRecord._linkCtx)
                             ? {
                                 ...linkFnRecord._linkCtx,
                                 _attr: attrs,
@@ -9585,7 +9656,10 @@ class CompileProvider {
                     };
                 }
                 function isNodeLinkState(state) {
-                    return (!!state && typeof state === "object" && "_templateAttrs" in state);
+                    return (!!state &&
+                        typeof state === "object" &&
+                        state
+                            ._templateAttrs !== undefined);
                 }
                 function getNodeLinkPlanCompileNode(nodeLinkPlan, fallback) {
                     const state = nodeLinkPlan?._nodeLinkFnState;
@@ -11144,13 +11218,13 @@ function collectKeys(value, keySet, visited) {
     }
 }
 function collectNativeCollectionKeys(value, keySet) {
-    if (isMapTarget(value)) {
+    if (isInstanceOf(value, Map)) {
         keySet.add("size");
         keySet.add("get");
         keySet.add("has");
         return;
     }
-    if (isSetTarget(value)) {
+    if (isInstanceOf(value, Set)) {
         keySet.add("size");
         keySet.add("has");
     }
@@ -11197,7 +11271,7 @@ function cloneSnapshotValue(value) {
 }
 function getMachineDataProperty(target, key) {
     if (key === "__proto__") {
-        return Object.prototype.hasOwnProperty.call(target, key)
+        return hasOwn(target, key)
             ? Object.getOwnPropertyDescriptor(target, key)?.value
             : undefined;
     }
@@ -11316,27 +11390,11 @@ function isNonEmptyString(value) {
     return isString(value) && value !== "";
 }
 function isPlainObject(value) {
-    if (!isObject(value) || Array.isArray(value)) {
+    if (!isObject(value) || isArray(value)) {
         return false;
     }
     const prototype = Reflect.getPrototypeOf(value);
     return prototype === Object.prototype || prototype === null;
-}
-function isMapTarget(value) {
-    try {
-        return value instanceof Map;
-    }
-    catch {
-        return false;
-    }
-}
-function isSetTarget(value) {
-    try {
-        return value instanceof Set;
-    }
-    catch {
-        return false;
-    }
 }
 
 class WorkflowProvider {
@@ -11590,7 +11648,9 @@ function createWorkflowFactory($machine) {
                     })),
                 ]));
                 commandPromise.catch(() => undefined);
-                if (isObject(commandValue) && hasOwn(commandValue, "_workflowCancel")) {
+                if (isObject(commandValue) &&
+                    commandValue
+                        ._workflowCancel) {
                     const cancelled = commandValue;
                     if (state._discardResult) {
                         return {
@@ -11922,10 +11982,10 @@ function createWorkflowDataProxy(data, state) {
         }
         const proxy = new Proxy(value, {
             get(target, property, receiver) {
-                if (target instanceof Map) {
+                if (isInstanceOf(target, Map)) {
                     return getWorkflowMapProperty(target, property, receiver, state, proxify);
                 }
-                if (target instanceof Set) {
+                if (isInstanceOf(target, Set)) {
                     return getWorkflowSetProperty(target, property, receiver, state);
                 }
                 return proxify(Reflect.get(target, property, receiver));
@@ -12022,9 +12082,9 @@ function isWorkflowDataProxyable(value) {
         return false;
     }
     const prototype = Object.getPrototypeOf(value);
-    return (Array.isArray(value) ||
-        value instanceof Map ||
-        value instanceof Set ||
+    return (isArray(value) ||
+        isInstanceOf(value, Map) ||
+        isInstanceOf(value, Set) ||
         prototype === Object.prototype ||
         prototype === null);
 }
@@ -12069,7 +12129,7 @@ function normalizeCommandResult(value) {
     };
 }
 function normalizeDiagnostics(diagnostics) {
-    if (!Array.isArray(diagnostics)) {
+    if (!isArray(diagnostics)) {
         return [];
     }
     return diagnostics.map((diagnostic) => isObject(diagnostic)
@@ -12090,7 +12150,7 @@ function normalizeDiagnostics(diagnostics) {
         : createDiagnostic("workflow.diagnostic", formatUnknownMessage(diagnostic), undefined, true));
 }
 function normalizeOptionalDiagnostics(diagnostics) {
-    if (!Array.isArray(diagnostics)) {
+    if (!isArray(diagnostics)) {
         return undefined;
     }
     return normalizeDiagnostics(diagnostics);
@@ -12099,7 +12159,7 @@ function normalizeHistoryValue(value) {
     return normalizeDiagnosticDetail(value);
 }
 function normalizeHistory(historyEntries) {
-    if (!Array.isArray(historyEntries)) {
+    if (!isArray(historyEntries)) {
         return [];
     }
     let nextFallbackId = 1;
@@ -12128,7 +12188,7 @@ function normalizeHistory(historyEntries) {
         return historyEntry;
     });
     function allocateHistoryId(value) {
-        if (typeof value === "number" &&
+        if (isNumber(value) &&
             Number.isInteger(value) &&
             value > 0 &&
             !usedIds.has(value)) {
@@ -12154,7 +12214,7 @@ function normalizeHistoryType(value) {
     return "command.failed";
 }
 function diagnosticFromError(error, command, code = "workflow.commandFailed") {
-    if (error instanceof Error) {
+    if (isInstanceOf(error, Error)) {
         return createDiagnostic(code, error.message || "Workflow command failed.", command, true, {
             name: error.name,
         });
@@ -12168,7 +12228,7 @@ function normalizeEntryLimit(value, label, defaultValue) {
     if (value === undefined) {
         return defaultValue;
     }
-    if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (!isNumber(value) || !Number.isFinite(value)) {
         throw new Error(`${label} must be a finite number.`);
     }
     if (!Number.isInteger(value) || value < 0) {
@@ -12238,7 +12298,7 @@ function validateCommandOptions(command, options) {
 function isAbortSignalLike(value) {
     const signal = value;
     return (isObject(value) &&
-        typeof signal.aborted === "boolean" &&
+        isBoolean(signal.aborted) &&
         isFunction(signal.addEventListener) &&
         isFunction(signal.removeEventListener));
 }
@@ -12246,7 +12306,7 @@ function normalizeTimeout(value) {
     if (value === undefined) {
         return undefined;
     }
-    if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (!isNumber(value) || !Number.isFinite(value)) {
         throw new Error("$workflow command timeout must be a finite number.");
     }
     if (!Number.isInteger(value) || value < 0) {
@@ -12287,16 +12347,16 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
         return "[Circular]";
     }
     seen.add(objectValue);
-    if (value instanceof Date) {
+    if (isInstanceOf(value, Date)) {
         seen.delete(objectValue);
         return value.toISOString();
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
         const normalized = value.map((item) => normalizeDiagnosticDetail(item, seen));
         seen.delete(objectValue);
         return normalized;
     }
-    if (value instanceof Map) {
+    if (isInstanceOf(value, Map)) {
         const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
             normalizeDiagnosticDetail(key, seen),
             normalizeDiagnosticDetail(entryValue, seen),
@@ -12304,7 +12364,7 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
         seen.delete(objectValue);
         return normalized;
     }
-    if (value instanceof Set) {
+    if (isInstanceOf(value, Set)) {
         const normalized = Array.from(value.values()).map((item) => normalizeDiagnosticDetail(item, seen));
         seen.delete(objectValue);
         return normalized;
@@ -12321,7 +12381,7 @@ function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
     return "[Unknown]";
 }
 function formatUnknownMessage(value) {
-    if (value instanceof Error) {
+    if (isInstanceOf(value, Error)) {
         return value.message || value.name;
     }
     if (isString(value)) {
@@ -12410,10 +12470,10 @@ function assertWorkflowSnapshot(snapshot) {
     if (!isObject(candidate.data)) {
         throw new Error("$workflow restore requires a data object.");
     }
-    if (!Array.isArray(candidate.diagnostics)) {
+    if (!isArray(candidate.diagnostics)) {
         throw new Error("$workflow restore requires diagnostics.");
     }
-    if (!Array.isArray(candidate.history)) {
+    if (!isArray(candidate.history)) {
         throw new Error("$workflow restore requires history.");
     }
 }
@@ -17793,7 +17853,7 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
     if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
         init.body = normalizeFetchBody(post);
     }
-    if (typeof timeout === "number" && timeout > 0) {
+    if (isNumber(timeout) && timeout > 0) {
         timeoutId = setTimeout(() => {
             timeoutRequest("timeout");
         }, timeout);
@@ -17858,8 +17918,8 @@ function normalizeFetchBody(post) {
     if (isString(post) ||
         isBlob(post) ||
         isFormData(post) ||
-        post instanceof URLSearchParams ||
-        post instanceof ArrayBuffer ||
+        isInstanceOf(post, URLSearchParams) ||
+        isInstanceOf(post, ArrayBuffer) ||
         ArrayBuffer.isView(post)) {
         return post;
     }
@@ -25140,7 +25200,8 @@ class Param {
             defaultValue !== undefined &&
             !this.type.is(defaultValue))
             throw new Error(`Default value (${stringify$1(defaultValue)}) for parameter '${this.id}' is not an instance of ParamType (${String(this.type.name)})`);
-        if (defaultValueProvider && "_cacheable" in defaultValueProvider) {
+        if (defaultValueProvider &&
+            defaultValueProvider._cacheable) {
             this._defaultValueCache = { defaultValue };
         }
         return defaultValue;
@@ -25961,19 +26022,26 @@ const FN_LENGTH = 9;
 /** Returns a stable string representation for a function. */
 function functionToString(fn) {
     const fnStr = fnToString(fn);
-    const namedFunctionMatch = /^(function [^ ]+\([^)]*\))/.exec(fnStr);
-    const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
+    const toStr = fnStr.replace(/^(function [^ ]+\([^)]*\))/, "$1");
     const fnName = fn.name || "";
     if (fnName && /function \(/.exec(toStr)) {
         return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
     }
     return toStr;
 }
-/** Returns the raw `toString()` value for a function or injectable array. */
 function fnToString(fn) {
-    const _fn = isArray(fn)
-        ? fn.slice(-1)[0]
-        : fn;
+    let _fn;
+    if (isArray(fn)) {
+        const candidate = fn[fn.length - 1];
+        if (isFunction(candidate))
+            _fn = candidate;
+    }
+    else if (isFunction(fn)) {
+        _fn = fn;
+    }
+    else {
+        _fn = undefined;
+    }
     return _fn ? _fn.toString() : "undefined";
 }
 /** Converts arbitrary values into short readable debug strings. */
@@ -26000,10 +26068,10 @@ function stringify(value) {
             return "undefined";
         if (isNull(item))
             return "null";
-        if (isPromiseLike(item))
-            return "[Promise]";
         if (isRejection(item))
             return String(item._transitionRejection);
+        if (isPromiseLike(item))
+            return "[Promise]";
         if (hasToString(item)) {
             const toStringFn = Reflect.get(item, "toString");
             return toStringFn.call(item);
@@ -26525,7 +26593,8 @@ const TransitionHookPhase = {
     _ERROR: 4,
 };
 function isDoneTask(doneCallback) {
-    return "_startTransition" in doneCallback;
+    return (typeof doneCallback._startTransition ===
+        "function");
 }
 const defaultOptions = {
     _current: () => undefined,
@@ -30838,7 +30907,7 @@ function buildOptions(opts = {}) {
     return parts.length ? `;${parts.join(";")}` : "";
 }
 function describeOptionValue(value) {
-    if (isString(value) || isNumber(value) || typeof value === "boolean") {
+    if (isString(value) || isNumber(value) || isBoolean(value)) {
         return String(value);
     }
     if (isInstanceOf(value, Date)) {
@@ -32204,7 +32273,7 @@ function expandExpression(expression, vars) {
         // PROCESS scalar (string/number/boolean)
         let str = stringify$1(value);
         // apply prefix modifier if present
-        if (typeof prefixLength === "number") {
+        if (isNumber(prefixLength)) {
             str = str.substring(0, prefixLength);
         }
         // empty string handling
@@ -32905,7 +32974,8 @@ class SceDelegateProvider {
                     // If maybeTrusted is a trusted class instance but not of the correct trusted type
                     // then unwrap it and allow it to pass through to the rest of the checks
                     const unwrapTrustedValue = isObject(maybeTrusted)
-                        ? Reflect.get(maybeTrusted, "_unwrapTrustedValue")
+                        ? maybeTrusted
+                            ._unwrapTrustedValue
                         : undefined;
                     if (isFunction(unwrapTrustedValue)) {
                         maybeTrusted = unwrapTrustedValue.call(maybeTrusted);
@@ -33394,7 +33464,7 @@ class StreamProvider {
     }
 }
 function isReadableStream(value) {
-    return (typeof ReadableStream !== "undefined" && value instanceof ReadableStream);
+    return (typeof ReadableStream !== "undefined" && isInstanceOf(value, ReadableStream));
 }
 async function consumeText(stream, options = {}) {
     const reader = stream.getReader();
@@ -33704,7 +33774,7 @@ function getScopeElementInputs(elementClass) {
 }
 function installScopeElementInputs(elementClass, inputs) {
     inputs.forEach((input) => {
-        if (Object.prototype.hasOwnProperty.call(elementClass.prototype, input.property)) {
+        if (hasOwn(elementClass.prototype, input.property)) {
             return;
         }
         Object.defineProperty(elementClass.prototype, input.property, {
@@ -33859,7 +33929,7 @@ function createContext(host, scope, injector, root) {
         injector,
         root,
         scope,
-        shadowRoot: root instanceof ShadowRoot ? root : undefined,
+        shadowRoot: isInstanceOf(root, ShadowRoot) ? root : undefined,
         dispatch(type, detail, init = {}) {
             return host.dispatchEvent(new CustomEvent(type, {
                 bubbles: true,
@@ -33884,7 +33954,7 @@ function applyInputDefaults(host, inputs) {
 }
 function upgradeOwnProperties(host, inputs) {
     inputs.forEach((input) => {
-        if (!Object.prototype.hasOwnProperty.call(host, input.property))
+        if (!hasOwn(host, input.property))
             return;
         const hostRecord = host;
         const value = hostRecord[input.property];
@@ -33986,7 +34056,7 @@ function renderTemplate(root, host, scope, template, compile) {
 function appendLinkedNodes(root, linked) {
     if (!linked)
         return;
-    if (Array.isArray(linked)) {
+    if (isArray(linked)) {
         linked.forEach((node) => {
             root.appendChild(node);
         });
@@ -34069,7 +34139,7 @@ class ManagedWebTransportConnection {
         }
         catch (error) {
             this._handleNativeClose(error);
-            this.ready = Promise.reject(error instanceof Error
+            this.ready = Promise.reject(isInstanceOf(error, Error)
                 ? error
                 : new Error("Failed to open WebTransport", { cause: error }));
             return;
@@ -34219,10 +34289,10 @@ class ManagedWebTransportConnection {
         if (isString(data)) {
             return this._encoder.encode(data);
         }
-        if (data instanceof Uint8Array) {
+        if (isInstanceOf(data, Uint8Array)) {
             return data;
         }
-        if (data instanceof ArrayBuffer) {
+        if (isInstanceOf(data, ArrayBuffer)) {
             return new Uint8Array(data);
         }
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
@@ -34771,7 +34841,7 @@ class WasmScopeAbi {
     }
     /** @internal */
     _resolveScope(reference) {
-        return typeof reference === "number"
+        return isNumber(reference)
             ? this._scopes.get(reference)
             : this._scopesByName.get(reference);
     }

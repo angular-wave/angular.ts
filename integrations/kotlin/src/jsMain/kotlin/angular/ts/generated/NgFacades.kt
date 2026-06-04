@@ -107,7 +107,7 @@ public external interface NgModule {
     public fun value(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun wasm(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
     public fun webComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun websocket(p0: String = definedExternally, p1: String = definedExternally, p2: Array<dynamic> = definedExternally, p3: dynamic = definedExternally): dynamic
+    public fun websocket(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
     public fun webTransport(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun worker(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun workflow(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic

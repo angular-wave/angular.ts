@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isArray, stringify, isString, keys } from '../../shared/utils.js';
+import { isNullOrUndefined, isArray, stringify, isNumber, isString, keys } from '../../shared/utils.js';
 
 /**
  * RFC 6570 Level 4 URI Template expander
@@ -231,7 +231,7 @@ function expandExpression(expression, vars) {
         // PROCESS scalar (string/number/boolean)
         let str = stringify(value);
         // apply prefix modifier if present
-        if (typeof prefixLength === "number") {
+        if (isNumber(prefixLength)) {
             str = str.substring(0, prefixLength);
         }
         // empty string handling

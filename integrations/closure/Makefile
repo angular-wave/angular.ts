@@ -1,4 +1,4 @@
-.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-validate clojurescript-build clojurescript-test clojurescript-package clojurescript-deploy java-generate java-check
+.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-validate clojurescript-build clojurescript-test clojurescript-package clojurescript-deploy java-generate java-check generate-check
 
 CLOSURE_INTEGRATION_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 CLOSURE_REPO_ROOT := $(abspath $(CLOSURE_INTEGRATION_DIR)/../..)
@@ -36,6 +36,8 @@ clojurescript-generate: closure-externs
 
 clojurescript-validate: closure-validate
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/generate-cljs-types.mjs --check
+
+generate-check: clojurescript-validate
 
 clojurescript-build: clojurescript-validate
 	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \

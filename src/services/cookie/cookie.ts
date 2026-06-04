@@ -1,4 +1,5 @@
 import {
+  isBoolean,
   isDefined,
   isInstanceOf,
   isNullOrUndefined,
@@ -280,7 +281,7 @@ function buildOptions(opts: ng.CookieOptions = {}): string {
 }
 
 function describeOptionValue(value: unknown): string {
-  if (isString(value) || isNumber(value) || typeof value === "boolean") {
+  if (isString(value) || isNumber(value) || isBoolean(value)) {
     return String(value);
   }
 

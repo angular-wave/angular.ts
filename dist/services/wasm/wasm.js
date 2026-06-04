@@ -1,4 +1,4 @@
-import { instantiateWasm, deleteProperty } from '../../shared/utils.js';
+import { isNumber, instantiateWasm, deleteProperty } from '../../shared/utils.js';
 
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
 const textEncoder = new TextEncoder();
@@ -434,7 +434,7 @@ class WasmScopeAbi {
     }
     /** @internal */
     _resolveScope(reference) {
-        return typeof reference === "number"
+        return isNumber(reference)
             ? this._scopes.get(reference)
             : this._scopesByName.get(reference);
     }

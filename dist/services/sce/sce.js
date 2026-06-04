@@ -477,7 +477,8 @@ class SceDelegateProvider {
                     // If maybeTrusted is a trusted class instance but not of the correct trusted type
                     // then unwrap it and allow it to pass through to the rest of the checks
                     const unwrapTrustedValue = isObject(maybeTrusted)
-                        ? Reflect.get(maybeTrusted, "_unwrapTrustedValue")
+                        ? maybeTrusted
+                            ._unwrapTrustedValue
                         : undefined;
                     if (isFunction(unwrapTrustedValue)) {
                         maybeTrusted = unwrapTrustedValue.call(maybeTrusted);
