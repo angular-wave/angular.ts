@@ -75,6 +75,93 @@ when a transition, restore, or active-binding lookup sees them. The machine
 itself does not subscribe to scope destruction and does not get destroyed with
 any one scope.
 
+## Lifecycle Contract
+
+- Machine construction is synchronous and does not touch browser APIs.
+- `$machine(config)` creates an unbound runtime object; `$machine(scope,
+  config)` creates a scope proxy immediately when a handler is available.
+- Scope observation is opt-in through assignment to a scope or controller
+  property. A machine can be observed by several scopes over its lifetime.
+- Scope destruction never destroys the machine. Destroyed bindings are removed
+  opportunistically during transition, restore, scheduling, or active-binding
+  lookup.
+- Machines have no explicit `destroy()` method. Callers own references to
+  machine instances and any external resources used by transition hooks.
+
+## Reactivity Contract
+
+- `current` and `data` are reactive when a machine is observed through a scope
+  proxy.
+- Transition and restore scheduling updates `current`, `data`, and discovered
+  nested data keys for every live observing scope.
+- Unbound machines remain plain synchronous objects until assigned to a scope or
+  controller property.
+- Destroyed observing scopes stop receiving updates after opportunistic binding
+  cleanup. The machine's own state remains valid.
+- Transitions and hooks are not event streams. Callers that need durable
+  evidence should use `$workflow`.
+
+## Policy Contract
+
+- `$machine` has no retry, persistence, concurrency, or recovery policy.
+- The only policy-like behavior is transition legality: the current mode,
+  transition table, and optional guard decide whether `send()` can run.
+- Guard policy is evaluated synchronously during `can()` and `send()`.
+- Transition targets decide mode changes by returning a non-empty mode string or
+  staying in the current mode with `false`, `undefined`, an empty string, or a
+  non-string value.
+- Persistence timing, side effects, migrations, and external recovery remain
+  application-, `$workflow`-, or supervisor-owned.
+
+## Dependency Replacement Contract
+
+- `$machine` replaces small finite-state, game-flow, wizard-flow, and UI mode
+  helper libraries that applications often add for legal transition handling.
+- It builds on AngularTS scope proxies and plain synchronous JavaScript objects,
+  not a browser runtime API.
+- AngularTS adds template reactivity, guarded transition typing, batching around
+  observed transitions, deterministic hooks, and snapshot/restore.
+- `$machine` intentionally does not replace async command orchestration,
+  diagnostics, retries, persistence policy, or distributed state engines.
+- Applications can keep using plain functions and objects in transition targets;
+  hooks remain the escape hatch for app-owned side effects.
+
+## Composition Contract
+
+- `$machine` is a primitive.
+- `$workflow` builds on `$machine` for legal mode transitions and reactive data.
+- Workflow supervisors may persist or recover machine state indirectly through
+  workflow snapshots.
+- `$machine` must not depend on `$workflow`, storage, workers, service workers,
+  router, HTTP, or realtime services.
+- Application-owned adapters compose through transition targets and hooks, but
+  external resource ownership stays outside `$machine`.
+
+## Failure Contract
+
+- Invalid machine configs throw synchronously during construction.
+- Invalid restore snapshots throw synchronously from `restore()`.
+- Non-string event names, missing transitions, missing targets, and failed
+  guards return `false`.
+- Transition targets and hooks are not caught by `$machine`; thrown exceptions
+  propagate to the caller after live scope bindings are scheduled when a
+  transition had started.
+- `$machine` does not append diagnostics. Use `$workflow` when transition or
+  command failures need structured evidence, retry, or recovery.
+
+## Recovery Contract
+
+- `snapshot()` returns only `{ current, data }` and excludes transitions, guards,
+  hooks, scope bindings, active binding selection, and external effects.
+- Snapshot data is cloned with `structuredClone()`. Non-cloneable values throw
+  the native structured clone error.
+- `restore(snapshot)` replaces `current` and mutates existing plain-object data
+  where possible so scope proxies keep object identity.
+- Restore removes data keys missing from the snapshot, merges nested plain
+  objects, replaces non-plain values, and does not run hooks.
+- `$machine` owns no durable persistence policy. Callers persist snapshots
+  through storage services, workflow supervisors, or application code.
+
 ## Scheduling And Ordering
 
 - `send()` runs synchronously.
@@ -120,6 +207,15 @@ For same-mode transitions, only `hooks.transition` runs.
 - `module.machine(name, config)`: registers named machines as DI singletons
   through the module layer.
 
+## Native Interop
+
+- `$machine` is a pure AngularTS runtime abstraction and has no native browser
+  object underneath it.
+- The relevant native boundary is `structuredClone()` for snapshots and restore
+  value replacement.
+- External side effects in transition hooks remain application-owned. `$machine`
+  does not wrap storage, network, workers, timers, or rendering APIs.
+
 ## Edge Cases
 
 - Non-string event names return `false`.
@@ -164,6 +260,18 @@ transition.
 
 `MachineBinding`
 : Internal record for one observing scope handler and its machine proxy.
+
+## Test Harness
+
+- `machine.spec.ts` is the deterministic runtime harness and covers transitions,
+  guards, hooks, snapshots, restore, scope binding, destroyed scopes, and
+  collection data.
+- `machine-types.spec.ts` is the public TypeScript contract harness for strict
+  event and payload typing.
+- `machine.test.ts` is the browser-facing harness for examples and template
+  integration.
+- Tic tac toe coverage acts as the real workflow-style fixture for game-state
+  behavior and persistence examples.
 
 ## Testing Notes
 

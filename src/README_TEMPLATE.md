@@ -5,6 +5,12 @@ responsibility]. The implementation in `[primary-file].ts` is centered on
 [core design idea or primitive]. [One sentence about the most important
 boundary, invariant, or integration point.]
 
+For services that wrap browser APIs or own long-lived runtime state, apply the
+standard in `src/services/SERVICE_CONTRACTS.md`. Contract sections describe
+behavior; they do not require shared base interfaces or generic lifecycle APIs.
+Services should turn Web Platform primitives into reactive, policy-driven app
+primitives when doing so removes operational boilerplate from application code.
+
 ## Responsibilities
 
 - [Primary responsibility.]
@@ -46,6 +52,60 @@ Important invariants:
 updated, and destroyed. Include ownership rules for parent/child relationships,
 DOM nodes, listeners, subscriptions, caches, or injected services.]
 
+## Lifecycle Contract
+
+- [When construction happens and whether it touches browser APIs immediately.]
+- [Which method starts, connects, registers, or activates the runtime resource.]
+- [Which method stops, closes, unregisters, aborts, or disposes it.]
+- [What remains usable after scope/controller destruction.]
+- [Whether restart, reconnect, or repeated registration is supported.]
+
+## Reactivity Contract
+
+- [Which runtime properties are scope-reactive.]
+- [When those properties update and whether updates are batched/scheduled.]
+- [Which events remain subscription-only or native-only.]
+- [What happens to reactive state after observing scopes are destroyed.]
+
+## Policy Contract
+
+- [Default operational policy, if any.]
+- [Configuration fields that override the default policy.]
+- [When policy is evaluated and whether it can change at runtime.]
+- [How policy decisions surface in state, results, callbacks, or diagnostics.]
+- [Which policy choices remain application-owned.]
+
+## Dependency Replacement Contract
+
+- [Common dependency, helper library, or boilerplate pattern this replaces.]
+- [Web Platform primitive or AngularTS primitive it builds on.]
+- [Lifecycle, policy, reactivity, diagnostics, or recovery behavior it adds.]
+- [What this component intentionally does not replace.]
+- [Native escape hatch or custom adapter path.]
+
+## Composition Contract
+
+- [Lower-level AngularTS primitives this builds on.]
+- [Higher-level AngularTS primitives that may build on this.]
+- [Dependencies this component must not take.]
+- [Whether this is a primitive, adapter, policy layer, or orchestration layer.]
+- [How application-owned adapters compose with it.]
+
+## Failure Contract
+
+- [Which failures throw synchronously as configuration/programming errors.]
+- [Which runtime/browser failures reject promises, return failed results, or
+  append diagnostics.]
+- [Stable diagnostic or error codes exposed to callers.]
+- [Whether failures are recoverable and how that is indicated.]
+
+## Recovery Contract
+
+- [Whether this component supports snapshot/restore or durable recovery.]
+- [Snapshot shape, version, migration rules, and intentionally excluded state.]
+- [What restore cancels, invalidates, or leaves running.]
+- [Which persistence policy, if any, owns durable storage.]
+
 ## Scheduling And Ordering
 
 [Use this section when the component defers work, batches updates, uses
@@ -55,6 +115,18 @@ microtasks, uses DOM events, or depends on compile/link/controller ordering.]
 - [Which operations are deferred or batched.]
 - [How callbacks are ordered.]
 - [How exceptions are reported.]
+
+## Native Interop
+
+- [Native browser/runtime object wrapped by this component, if any.]
+- [Escape hatch for callers that need the native primitive.]
+- [Interop boundaries that remain application-owned.]
+
+## Test Harness
+
+- [Deterministic fake backend/container/connection/parser used by unit tests.]
+- [Real browser/runtime integration tests and cleanup requirements.]
+- [Fixtures or example apps that should keep working across releases.]
 
 ## Data Structures
 

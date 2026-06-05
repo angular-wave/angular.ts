@@ -77,6 +77,99 @@ scope bindings are removed during scheduling and active-binding lookup. The
 workflow instance is not owned by any one observing scope and can keep running
 after an observer is destroyed.
 
+## Lifecycle Contract
+
+- Workflow construction is synchronous and creates an internal `$machine`; it
+  does not start commands or touch browser APIs by itself.
+- `$workflow(config)` creates an unbound runtime object; `$workflow(scope,
+  config)` creates a scope proxy immediately when a handler is available.
+- Commands start only through `run()`, `retry()`, or `repeat()`.
+- Scope destruction never destroys the workflow, cancels commands, or clears
+  diagnostics/history. Destroyed bindings are removed opportunistically.
+- `restore(snapshot)` is the hard lifecycle recovery boundary: it cancels
+  running commands, clears queues, invalidates queued continuations, and
+  replaces workflow mode/data/evidence with snapshot state.
+
+## Reactivity Contract
+
+- `id`, `current`, `data`, `diagnostics`, and `history` are reactive when a
+  workflow is observed through a scope proxy.
+- `send()` schedules workflow bindings after delegating to `$machine`.
+- Command completion, failure, timeout, cancellation, cleanup diagnostics,
+  retry, repeat, and restore schedule live observing scopes.
+- Destroyed observing scopes stop receiving updates after opportunistic binding
+  cleanup. Workflow commands and recovery state continue independently.
+- Command progress is represented through bounded diagnostics and history, not
+  an unbounded event stream.
+
+## Policy Contract
+
+- Default command policy favors explicit command calls and bounded evidence.
+- `concurrency` controls whether duplicate command runs are allowed, rejected,
+  or queued.
+- Timeout and cancellation policies use `AbortController` and `AbortSignal`.
+- `retry()` and `repeat()` use recorded command evidence and live replay inputs
+  where available.
+- Diagnostics and history limits bound retained evidence.
+- Snapshot migration policy is configured per workflow and evaluated during
+  restore.
+- Durable persistence, multi-workflow recovery, and cross-service orchestration
+  remain supervisor- or application-owned.
+
+## Dependency Replacement Contract
+
+- `$workflow` replaces ad hoc async command orchestration, local retry/cancel
+  helpers, command history arrays, diagnostic plumbing, and scattered
+  promise-state flags.
+- It builds on `$machine`, `AbortController`, `AbortSignal`, promises, and
+  structured clone behavior.
+- AngularTS adds reactive command evidence, stable diagnostics, bounded history,
+  timeout/cancellation cleanup, retry/repeat, and versioned snapshot/restore.
+- `$workflow` intentionally does not replace durable persistence, background
+  execution, service-worker queues, distributed workflow engines, or
+  exactly-once side-effect semantics.
+- Commands remain the custom adapter path for HTTP, storage, workers, service
+  workers, timers, and application-specific side effects.
+
+## Composition Contract
+
+- `$workflow` is an orchestration primitive built on `$machine`.
+- Workflow supervisors may build on `$workflow` for persistence policy,
+  recovery policy, and multi-workflow coordination.
+- Browser services such as `$rest`, `$worker`, `$websocket`, and future
+  `$serviceWorker` can be used inside commands as activity boundaries.
+- `$workflow` must not depend on supervisor, service worker, storage, REST,
+  router, or realtime services.
+- Application-owned adapters compose through command handlers and command
+  context cleanup/abort hooks.
+
+## Failure Contract
+
+- Invalid workflow configs throw synchronously during construction.
+- Unknown commands, invalid command names, invalid command options, concurrency
+  rejection, timeout, cancellation, command throws, and cleanup throws resolve
+  as failed `WorkflowCommandResult` values with stable diagnostics.
+- Invalid workflow transitions append `workflow.invalidTransition`
+  diagnostics.
+- Invalid restore snapshots throw synchronously unless a configured migration
+  returns a valid v1 snapshot.
+- Command failures are evidence-first: diagnostics and history record what
+  happened; workflow data mutations are not rolled back.
+
+## Recovery Contract
+
+- `snapshot()` returns a versioned workflow snapshot containing id, current
+  mode, cloned data, bounded diagnostics, bounded history, and command metadata.
+- Snapshot data uses `structuredClone()`; diagnostics and history values are
+  JSON-normalized projections.
+- Snapshot restore requires version `1` and matching workflow id after optional
+  migration.
+- Restore cancels active commands, runs cleanups, clears command queues, and
+  prevents stale async continuations from appending history or writing through
+  workflow-provided data/context.
+- `$workflow` does not own durable persistence. Supervisors or application code
+  own load/save policy for workflow snapshots.
+
 ## Scheduling And Ordering
 
 - `send()` delegates to the machine synchronously and schedules workflow
@@ -126,6 +219,16 @@ Command result ordering is intentionally evidence-first:
   JSON-safe projections.
 - `module.workflow(name, config)`: registers named workflows as DI singletons
   through the module layer.
+
+## Native Interop
+
+- `$workflow` is a pure AngularTS runtime abstraction built on `$machine`.
+- Native browser primitives used directly are `AbortController`, `AbortSignal`,
+  promises, and `structuredClone()`.
+- Browser side effects belong in commands or workflow activities. The command
+  context passes an abort signal and cleanup registration so callers can wire
+  HTTP, storage, workers, timers, or service workers without `$workflow`
+  depending on those services.
 
 ## Edge Cases
 
@@ -179,6 +282,18 @@ failures, cleanup failures, timeout, cancellation, and restore issues.
 `WorkflowRunState`
 : Internal record for one active command's cancellation, cleanup, and stale
 write guards.
+
+## Test Harness
+
+- `workflow.spec.ts` is the deterministic runtime harness and covers commands,
+  diagnostics, history, retry, repeat, restore, cancellation, concurrency,
+  timeouts, cleanup, and scope binding.
+- `workflow-types.spec.ts` is the public TypeScript contract harness for strict
+  events, commands, inputs, and outputs.
+- `workflow.test.ts` is the browser-facing harness for examples and template
+  integration.
+- Add supervisor and persistence fixtures outside `$workflow`; workflow tests
+  should keep the command/runtime contract independent of durable storage.
 
 ## Testing Notes
 

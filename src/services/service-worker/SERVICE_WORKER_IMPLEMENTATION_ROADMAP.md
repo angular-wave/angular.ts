@@ -5,6 +5,11 @@ Complete slices in order. Keep the first implementation focused on service
 worker lifecycle and app-to-worker messaging. Do not fold service workers into
 `$worker`, and do not make `$rest` depend on service workers.
 
+Use `src/services/SERVICE_CONTRACTS.md` as the stability gate for every slice
+that adds runtime behavior. The service worker README must explicitly document
+its lifecycle, reactivity, policy, failure, recovery, scheduling, native
+interop, and test harness contracts before the service is marked stable.
+
 ## Goal
 
 Add a small AngularTS service worker abstraction for applications that want
@@ -14,6 +19,17 @@ exchange through dependency injection.
 The service should wrap browser service worker lifecycle APIs. It should not
 generate service worker scripts, own application cache policy, or replace the
 existing REST cache backend seam.
+
+The service should expose useful lifecycle state reactively and provide
+sensible defaults for registration/update observation while leaving risky user
+experience policy, such as when to activate a waiting worker or reload the
+page, explicit.
+
+The dependency-replacement target for v1 is service-worker registration,
+update, controller-change, and messaging glue. It is not a Workbox replacement
+for precache generation. It should compose with `$rest`, `$workflow`, and future
+supervisors through explicit adapters rather than becoming a hidden dependency
+of those services.
 
 ## Non-Goals
 
