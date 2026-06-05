@@ -10,12 +10,19 @@ and dependency-replacement boundaries.
 
 ## Related Roadmaps
 
+- `src/DESIGN_PHILOSOPHY.md`: AngularTS doctrine and decision filter for
+  public API, reactivity, policy, ownership, and documentation.
 - `src/PUBLIC_API_SURFACE_ROADMAP.md`: curated public namespace and exposed
   type shrinkage.
 - `src/core/di/PROVIDER_SURFACE_ROADMAP.md`: provider classification,
   migration, and internal recipe redesign.
+- `src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md`: primary app-owned
+  reactivity refactor that separates runtime reactivity from `$rootScope` and
+  DOM scopes.
 - `src/services/SERVICE_POLICY_REAPPLICATION_ROADMAP.md`: service config,
   policy hardening, reactivity, failure, and recovery backfill.
+- `src/core/di/ng-module/MODEL_IMPLEMENTATION_ROADMAP.md`: `app.model(...)`
+  reactive model service primitive.
 - `src/DOCUMENTATION_REQUIREMENT.md`: level-9 documentation requirement for
   every changed public API.
 
@@ -29,12 +36,59 @@ vertical module slices after the global public-surface decisions are made.
 
 The implementation order is:
 
-1. Make global decisions.
-2. Execute vertical module slices.
-3. Redesign provider internals after patterns are proven.
-4. Clean up the public surface in a compatibility window.
+1. Introduce app-owned reactivity through internal `AppContext`.
+2. Make global public-surface decisions.
+3. Execute vertical module slices.
+4. Redesign provider internals after patterns are proven.
+5. Clean up the public surface in a compatibility window.
 
-## Phase 1: Global Decisions First
+## Phase 0: App-Owned Reactivity First
+
+The first primary refactor is `AppContext`.
+
+`$rootScope` should remain the root of UI scopes, but it should not own the
+entire reactive runtime. Reactivity must be detached from DOM and elements so
+models, machines, workflows, workers, realtime connections, and browser service
+state can exist as app-owned primitives.
+
+`AppContext` remains singleton and can manage multiple bootstrapped
+`$rootScope` trees. Models registered with the root app context are visible to
+all root scopes managed by that context.
+Those models survive destruction of root contexts while `AppContext` remains
+alive, and newly attached roots can observe the surviving models.
+
+See:
+
+```text
+src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md
+```
+
+Acceptance:
+
+- app context owns `$rootScope` creation
+- app context can own multiple `$rootScope` records
+- context-wide models are visible to every root scope managed by the context
+- context-wide models survive root destruction and can be observed by later
+  roots attached to the same context
+- destroying a root removes that root's observations without destroying
+  context-wide model data
+- app context exposes internal root attach/destroy hooks and generation
+  metadata for diagnostics and service integration
+- DOM-related schedulers are root-owned
+- model schedulers are app-context-owned
+- root-owned scheduler failures are isolated from sibling roots
+- app context can exist and schedule model work with zero root records
+- app-owned reactive proxies can exist without DOM or elements
+- `$rootScope` remains the UI scope root
+- scope event propagation remains compatible
+- downstream services are classified as app-owned, view-owned, or not
+  applicable
+- Wasm integrations keep root-owned bridges for template/scope work and
+  app-owned modules for non-DOM runtime work
+- `app.model(...)` can be implemented as an app-owned reactive service
+- `app.model(...)` does not reserve framework keys on user model objects
+
+## Phase 1: Global Decisions
 
 These decisions unblock every later slice. They should be documented before
 runtime behavior changes.
@@ -260,6 +314,28 @@ Exit criteria:
 - policy override is typed and tested
 - users do not need application-owned reconnect loops in examples
 - native escape hatch and cleanup behavior are explicit
+
+### Pilot D: Reactive Model Primitive
+
+Candidate:
+
+- `app.model(...)`
+
+Purpose:
+
+- provide a first-party answer for small shared reactive state
+- prove `NgModule` can expose state primitives without provider objects
+- prove scope-proxy-backed injectable services
+- reduce pressure to reach for external state-store dependencies
+
+Exit criteria:
+
+- model declaration is typed and chainable
+- injected value is a reactive proxy
+- model instances are isolated per injector
+- docs distinguish models from `$scope`, `$eventBus`, `$machine`, and
+  `$workflow`
+- executable or testable sample shows shared state without manual pub/sub
 
 ## Phase 3: Provider Redesign After Evidence
 

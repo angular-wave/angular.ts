@@ -18,6 +18,9 @@ Provider-specific migration work is tracked in
 `src/core/di/PROVIDER_SURFACE_ROADMAP.md`. Service-by-service config and
 reactivity backfill is tracked in
 `src/services/SERVICE_POLICY_REAPPLICATION_ROADMAP.md`.
+App-owned reactivity is tracked in
+`src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md` and must lead model and
+service reactive-state work.
 
 Documentation completeness for public API work is defined in
 `src/DOCUMENTATION_REQUIREMENT.md`. Every slice that changes exposed types,
@@ -31,6 +34,7 @@ provider objects and implementation-only types to:
 
 - `NgModule` declaration methods
 - service-owned config types
+- `app.model(...)` for shared reactive model services
 - `app.configure(...)` for built-in service config
 - `app.use(plugin, config)` for third-party modules
 - runtime service types users actually inject or hold
@@ -70,6 +74,8 @@ needs it, it is internal.
 Keep public:
 
 - app authoring types: `NgModule`, `Component`, `Directive`, `Injectable`
+- app authoring methods: `component`, `directive`, `controller`, `model`,
+  `configure`, `use`
 - runtime services: `HttpService`, `LocationService`, `MachineService`
 - runtime objects: `Machine`, `Workflow`, `RestService`
 - service config types: `HttpConfig`, `LocationConfig`, `CookieConfig`
@@ -92,6 +98,27 @@ Move internal or legacy:
 These are intentional stoppages. When a slice reaches one of these points,
 implementation must pause long enough to record the design decision in the
 roadmap, inventory, docs, or migration notes before changing public behavior.
+
+### Stoppage 0: App-Owned Reactivity Does Not Exist
+
+Stop when:
+
+- a slice wants to add `app.model(...)`, app-level reactive service state,
+  service-owned diagnostics, reactive connection status, workflow supervisor
+  snapshots, or persistent reactive state before internal `AppContext` exists.
+
+Decide:
+
+- how app-owned reactive proxies are created
+- how `$rootScope` is created by app context
+- how app lifetime differs from UI scope lifetime
+- how app-owned proxies are destroyed
+- which downstream services are app-owned, view-owned, or not reactive
+
+Unlock:
+
+- `src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md` has an accepted
+  ownership contract and downstream dependency map.
 
 ### Stoppage 1: Public Inventory Does Not Exist
 

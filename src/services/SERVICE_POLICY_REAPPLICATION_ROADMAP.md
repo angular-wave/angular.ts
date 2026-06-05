@@ -15,6 +15,14 @@ The global execution sequence is defined in
 vertical module slices after the global inventory and config/plugin decisions
 exist.
 
+Reactive service state depends on the app-owned reactivity refactor in
+`src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md`. Services should not add
+new app-level reactive state until the app context ownership contract exists.
+
+Shared reactive application state is tracked separately in
+`src/core/di/ng-module/MODEL_IMPLEMENTATION_ROADMAP.md`; it is an `NgModule`
+authoring primitive, not a service-policy provider migration.
+
 Provider-surface cleanup is tracked separately in
 `src/core/di/PROVIDER_SURFACE_ROADMAP.md`. Service policy backfill should prefer
 `NgModule` declarations and declarative service config over direct provider
@@ -350,6 +358,8 @@ Contract decisions:
 - `$anchorScroll`: scroll target resolution, timing, browser ownership.
 - `$wasm`: module loading policy, scope bridge lifecycle, native instance
   interop, cleanup.
+- `$wasm`: ownership split between template/root-owned scope bridges and
+  app-owned non-DOM runtime modules.
 - web components: custom element registration, attribute/property/event
   synchronization, teardown.
 
@@ -358,6 +368,8 @@ Acceptance:
 - Each service has contract documentation or a shared runtime README.
 - Tests cover browser event synchronization and cleanup paths.
 - Native interop boundaries are explicit.
+- Wasm docs classify `ng-wasm`, `$wasm.scope(scope)`, and app-owned Wasm module
+  usage separately.
 
 Verification:
 
@@ -385,6 +397,8 @@ Rules:
 - Do not add reactive state.
 - Do not add policy objects unless the service already has configurable policy.
 - Do document dependency replacement and composition role.
+- `$eventBus` scope lifecycle hardening is tracked in
+  `src/services/pubsub/EVENTBUS_IMPLEMENTATION_ROADMAP.md`.
 
 Acceptance:
 
