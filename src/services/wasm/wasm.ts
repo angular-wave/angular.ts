@@ -2,6 +2,7 @@ import {
   deleteProperty,
   instantiateWasm,
   isNumber,
+  isProxy,
 } from "../../shared/utils.ts";
 
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
@@ -947,11 +948,15 @@ function writeScopePath(
 
     const next = Object.create(null) as Record<string, unknown>;
 
-    current[key] = next;
+    if (!writeSafeScopeProperty(current, key, next)) {
+      return false;
+    }
     current = next;
   }
 
-  current[keys[keys.length - 1]] = value;
+  if (!writeSafeScopeProperty(current, keys[keys.length - 1], value)) {
+    return false;
+  }
 
   return true;
 }
@@ -983,5 +988,32 @@ function scopePathKeys(path: string): string[] {
 }
 
 function isSafeScopePath(keys: string[]): boolean {
-  return keys.every((key) => !UNSAFE_SCOPE_PATH_KEYS.has(key));
+  return keys.every((key) => !isUnsafeScopePathKey(key));
+}
+
+function isUnsafeScopePathKey(key: string): boolean {
+  return UNSAFE_SCOPE_PATH_KEYS.has(key);
+}
+
+function writeSafeScopeProperty(
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): boolean {
+  if (isUnsafeScopePathKey(key)) {
+    return false;
+  }
+
+  if (isProxy(target)) {
+    return target.$handler.set(target.$target, key, value, target);
+  }
+
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
+
+  return true;
 }
