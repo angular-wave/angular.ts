@@ -945,7 +945,7 @@ function writeScopePath(
       continue;
     }
 
-    const next: Record<string, unknown> = {};
+    const next = Object.create(null) as Record<string, unknown>;
 
     current[key] = next;
     current = next;
