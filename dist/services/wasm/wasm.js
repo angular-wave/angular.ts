@@ -1,4 +1,4 @@
-import { isNumber, instantiateWasm, deleteProperty } from '../../shared/utils.js';
+import { isNumber, instantiateWasm, deleteProperty, isProxy } from '../../shared/utils.js';
 
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
 const textEncoder = new TextEncoder();
@@ -487,11 +487,15 @@ function writeScopePath(scope, path, value) {
             current = existing;
             continue;
         }
-        const next = {};
-        current[key] = next;
+        const next = Object.create(null);
+        if (!writeSafeScopeProperty(current, key, next)) {
+            return false;
+        }
         current = next;
     }
-    current[keys[keys.length - 1]] = value;
+    if (!writeSafeScopeProperty(current, keys[keys.length - 1], value)) {
+        return false;
+    }
     return true;
 }
 function deleteScopePath(scope, path) {
@@ -513,7 +517,25 @@ function scopePathKeys(path) {
     return path.split(".").filter(Boolean);
 }
 function isSafeScopePath(keys) {
-    return keys.every((key) => !UNSAFE_SCOPE_PATH_KEYS.has(key));
+    return keys.every((key) => !isUnsafeScopePathKey(key));
+}
+function isUnsafeScopePathKey(key) {
+    return UNSAFE_SCOPE_PATH_KEYS.has(key);
+}
+function writeSafeScopeProperty(target, key, value) {
+    if (isUnsafeScopePathKey(key)) {
+        return false;
+    }
+    if (isProxy(target)) {
+        return target.$handler.set(target.$target, key, value, target);
+    }
+    Object.defineProperty(target, key, {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true,
+    });
+    return true;
 }
 
 export { WasmProvider, WasmScope, WasmScopeAbi };
