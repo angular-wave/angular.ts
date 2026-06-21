@@ -1,4 +1,4 @@
-.PHONY: all check test parity bridge-typecheck build-tool scope-bridge-build-tool example-check example-build wasm-check scope-bridge-check scope-bridge-build scope-bridge-wasm-check browser-test clean
+.PHONY: all root-types check test parity bridge-typecheck build-tool scope-bridge-build-tool example-check example-build wasm-check scope-bridge-check scope-bridge-build scope-bridge-wasm-check browser-test clean
 
 CARGO ?= cargo
 NODE ?= node
@@ -7,13 +7,16 @@ TSC ?= ../../../node_modules/.bin/tsc
 
 all: check
 
+root-types:
+	$(MAKE) -C ../../../ types
+
 check: parity bridge-typecheck
 	$(CARGO) check --workspace
 
 test: parity bridge-typecheck
 	$(CARGO) test --workspace
 
-parity:
+parity: root-types
 	$(NODE) tool/check-ng-namespace-parity.mjs
 
 bridge-typecheck:

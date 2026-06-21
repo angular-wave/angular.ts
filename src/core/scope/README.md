@@ -5,6 +5,11 @@ observation, scope events, and scope teardown. The implementation in
 `scope.ts` is centered on JavaScript `Proxy` handlers: model objects remain raw
 data, and scope behavior is layered around them through cached proxies.
 
+The level-9 roadmap moves top-level reactivity ownership above `$rootScope`.
+See `src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md` for the primary
+AppContext refactor that keeps `$rootScope` as the UI scope root while making
+reactivity available to app-owned services and models without DOM ownership.
+
 ## Responsibilities
 
 - Create root, inherited, isolate, and transcluded scopes.
