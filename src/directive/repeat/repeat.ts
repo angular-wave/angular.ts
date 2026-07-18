@@ -31,6 +31,10 @@ import {
 } from "../../core/scope/scope.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import { NodeType } from "../../shared/node.ts";
+import {
+  getCompiledFragmentRecord,
+  type CompiledFragmentRecord,
+} from "../../core/compile/incremental-fragment.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 
@@ -138,6 +142,7 @@ interface RepeatBlock {
   _id: string;
   _scope?: RepeatScope;
   _clone?: RepeatClone;
+  _fragment?: CompiledFragmentRecord;
   _value?: unknown;
   _usesPositionLocals?: boolean;
 }
@@ -355,19 +360,6 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     return isFunction(
       (value as { [Symbol.iterator]?: unknown })[Symbol.iterator],
     );
-  }
-
-  function removeBlockNodes(nodes: Node[]): void {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-
-      if (node.nodeType === NodeType._ELEMENT_NODE) {
-        removeElement(node as Element);
-      } else {
-        removeElementData(node as Element & Record<string, unknown>);
-        node.parentNode?.removeChild(node);
-      }
-    }
   }
 
   function removeNodeRange(firstNode: Node, lastNode: Node): void {
@@ -779,6 +771,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
           }
 
           blockToLink._clone = normalizedClone;
+          blockToLink._fragment = getCompiledFragmentRecord(cloneNodes[0]);
           blockToLink._value = valueToLink;
           blockMap[blockToLink._id] = blockToLink;
         }
@@ -1127,6 +1120,10 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 }
 
                 removeNodeRangeFast(firstNode, lastNode);
+
+                for (let i = 0; i < lastBlockOrder.length; i++) {
+                  lastBlockOrder[i]._fragment?.dispose();
+                }
                 lastBlockMap = nullObject();
                 lastBlockOrder = [];
               }
@@ -1151,10 +1148,17 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 : undefined;
 
               if (hasAnimate && elementsToRemove) {
-                getAnimate().leave(elementsToRemove);
+                const leavingFragment = block._fragment;
+
+                getAnimate()
+                  .leave(elementsToRemove)
+                  .done((completed: boolean) => {
+                    if (completed) leavingFragment?.dispose();
+                  });
               } else {
                 block._scope?.$destroy();
-                removeBlockNodes(blockNodes);
+
+                assertDefined(block._fragment).dispose();
               }
 
               if (blockNodes.length && blockNodes[0].parentNode) {

@@ -35,7 +35,7 @@ export const SwapMode = {
 /**
  * Union type representing all possible DOM insertion modes.
  */
-export type SwapModeType = keyof typeof SwapMode;
+export type SwapMode = keyof typeof SwapMode;
 
 export interface RealtimeProtocolMessage {
   /** Plain value used as swap content when `html` is omitted. */
@@ -45,7 +45,7 @@ export interface RealtimeProtocolMessage {
   /** Optional CSS selector that overrides the directive target for this message. */
   target?: string;
   /** Optional swap mode that overrides the directive swap mode for this message. */
-  swap?: SwapModeType;
+  swap?: SwapMode;
 }
 
 export interface RealtimeProtocolEventDetail<T = unknown, TSource = unknown> {
@@ -55,13 +55,6 @@ export interface RealtimeProtocolEventDetail<T = unknown, TSource = unknown> {
   url?: string;
   error?: unknown;
 }
-
-export type SseProtocolMessage = RealtimeProtocolMessage;
-
-export type SseProtocolEventDetail<T = unknown> = RealtimeProtocolEventDetail<
-  T,
-  ng.SseConnection
->;
 
 export function isRealtimeProtocolMessage(
   data: unknown,

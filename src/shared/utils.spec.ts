@@ -69,6 +69,7 @@ import {
   parseKeyValue,
   setHashKey,
   shallowCopy,
+  shouldHandleViewRetentionPause,
   simpleCompare,
   sliceArgs,
   snakeCase,
@@ -104,6 +105,36 @@ describe("utility functions", () => {
 
   afterEach(() => {
     dealoc(element);
+  });
+
+  describe("shouldHandleViewRetentionPause()", () => {
+    it("should handle missing and non-object payloads as the default scheduler mode", () => {
+      expect(shouldHandleViewRetentionPause([])).toBeTrue();
+      expect(shouldHandleViewRetentionPause(["payload"])).toBeTrue();
+    });
+
+    it("should read mode payloads from either listener argument shape", () => {
+      const event = { name: "$viewRetentionPause" };
+
+      expect(
+        shouldHandleViewRetentionPause([{ _pause: "schedulers" }]),
+      ).toBeTrue();
+      expect(
+        shouldHandleViewRetentionPause([event, { _pause: "schedulers" }]),
+      ).toBeTrue();
+      expect(
+        shouldHandleViewRetentionPause([{ _pause: "background" }]),
+      ).toBeFalse();
+      expect(
+        shouldHandleViewRetentionPause([event, { _pause: "background" }]),
+      ).toBeFalse();
+      expect(
+        shouldHandleViewRetentionPause(
+          [event, { _pause: "background" }],
+          "background",
+        ),
+      ).toBeTrue();
+    });
   });
 
   describe("hashKey()", () => {
@@ -1272,6 +1303,9 @@ describe("utility functions", () => {
 
       const proxy = { [isProxySymbol]: true, $target: target };
 
+      expect(isProxySymbol).toBe(
+        Symbol.for("@angular-wave/angular.ts/isProxy"),
+      );
       expect(isProxy(proxy)).toBe(true);
       expect(deProxy(proxy)).toBe(target);
       expect(deProxy(target)).toBe(target);
@@ -1517,7 +1551,7 @@ describe("utility functions", () => {
       try {
         await expectAsync(
           instantiateWasm("/missing.wasm"),
-        ).toBeRejectedWithError("fetch failed");
+        ).toBeRejectedWithError("WebAssembly fetch failed");
       } finally {
         window.fetch = originalFetch;
       }

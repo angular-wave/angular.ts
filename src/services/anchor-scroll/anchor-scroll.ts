@@ -1,4 +1,3 @@
-import { _location, _rootScope } from "../../injection-tokens.ts";
 import {
   getNodeName,
   isFunction,
@@ -22,141 +21,228 @@ export interface AnchorScrollService {
   yOffset?: number | (() => number) | Element;
 }
 
-export class AnchorScrollProvider {
-  autoScrollingEnabled: boolean;
+/**
+ * Declarative configuration accepted by
+ * `NgModule.config({ $anchorScroll: ... })`.
+ */
+export interface AnchorScrollConfig {
+  /**
+   * Whether `$anchorScroll` automatically reacts to URL hash changes.
+   */
+  autoScrolling?: boolean;
+}
 
-  constructor() {
-    this.autoScrollingEnabled = true;
+type AnchorScrollWindow = Window &
+  Pick<typeof globalThis, "Element" | "HTMLElement">;
+
+interface AnchorScrollInstance {
+  destroy(): void;
+  setAutoScrolling(enabled: boolean): void;
+}
+
+/** @internal */
+export interface AnchorScrollRuntimeState {
+  autoScrollingEnabled: boolean;
+  destroyed: boolean;
+  readonly instances: Set<AnchorScrollInstance>;
+}
+
+/** @internal */
+export function createAnchorScrollRuntimeState(): AnchorScrollRuntimeState {
+  return {
+    autoScrollingEnabled: true,
+    destroyed: false,
+    instances: new Set(),
+  };
+}
+
+/** @internal */
+export function applyAnchorScrollConfiguration(
+  state: AnchorScrollRuntimeState,
+  config: AnchorScrollConfig,
+): void {
+  if (state.destroyed) {
+    throw new Error("Anchor-scroll runtime has already been disposed.");
   }
 
-  $get = [
-    _location,
-    _rootScope,
-    /** Creates the runtime anchor-scroll service. */
-    ($location: ng.LocationService, $rootScope: ng.Scope) => {
-      // Helper function to get first anchor from a NodeList
-      // (using `Array#some()` instead of `angular#forEach()` since it's more performant
-      //  and working in all supported browsers.)
-      /** Returns the first anchor element from a queried node list. */
-      function getFirstAnchor(
-        list: NodeListOf<HTMLElement>,
-      ): HTMLAnchorElement | undefined {
-        for (let i = 0; i < list.length; i++) {
-          const el = list[i];
+  if (config.autoScrolling === undefined) return;
 
-          if (getNodeName(el) === "a") {
-            return el as HTMLAnchorElement;
-          }
-        }
+  const enabled = config.autoScrolling;
 
-        return undefined;
+  state.autoScrollingEnabled = enabled;
+  state.instances.forEach((instance) => {
+    instance.setAutoScrolling(enabled);
+  });
+}
+
+/** @internal */
+export function createAnchorScrollService(
+  state: AnchorScrollRuntimeState,
+  $location: ng.LocationService,
+  $rootScope: ng.Scope,
+  runtimeDocument: Document,
+  runtimeWindow: AnchorScrollWindow,
+): AnchorScrollService {
+  if (state.destroyed) {
+    throw new Error("Anchor-scroll runtime has already been disposed.");
+  }
+
+  let destroyed = false;
+  let removeLocationListener: (() => void) | undefined;
+  let removeDestroyListener: (() => void) | undefined;
+  const pendingLoadListeners = new Set<EventListener>();
+
+  function getFirstAnchor(
+    list: NodeListOf<HTMLElement>,
+  ): HTMLAnchorElement | undefined {
+    for (let i = 0; i < list.length; i++) {
+      const element = list[i];
+
+      if (getNodeName(element) === "a") {
+        return element as HTMLAnchorElement;
       }
+    }
 
-      function getYOffset(): number {
-        // Figure out a better way to configure this other than bolting on a property onto a function
-        let offset = scroll.yOffset;
+    return undefined;
+  }
 
-        if (isFunction(offset)) {
-          offset = offset();
-        } else if (isInstanceOf(offset, Element)) {
-          const style = window.getComputedStyle(offset);
+  function getYOffset(): number {
+    let offset = scroll.yOffset;
 
-          if (style.position !== "fixed") {
-            offset = 0;
-          } else {
-            offset = offset.getBoundingClientRect().bottom;
-          }
-        } else if (!isNumber(offset)) {
-          offset = 0;
-        }
+    if (isFunction(offset)) {
+      offset = offset();
+    } else if (isInstanceOf(offset, runtimeWindow.Element)) {
+      const style = runtimeWindow.getComputedStyle(offset);
 
-        return offset;
-      }
+      offset =
+        style.position === "fixed" ? offset.getBoundingClientRect().bottom : 0;
+    } else if (!isNumber(offset)) {
+      offset = 0;
+    }
 
-      /** Scrolls to a specific element or to the top of the page. */
-      function scrollTo(elem?: HTMLElement): void {
-        if (elem) {
-          const rect = elem.getBoundingClientRect();
+    return offset;
+  }
 
-          elem.scrollIntoView();
+  function scrollTo(element?: HTMLElement): void {
+    if (!element) {
+      runtimeWindow.scrollTo(0, 0);
 
-          const offset = getYOffset();
+      return;
+    }
 
-          if (offset) {
-            // `offset` is how many pixels we want the element to appear below the top of the viewport.
-            //
-            // `scrollIntoView()` does not always align the element at the top (e.g. near the bottom
-            // of the page). Therefore, we measure the element’s actual position after scrolling and
-            // only adjust by the difference needed to reach the desired offset.
-            window.scrollBy(0, rect.top - offset);
-          }
-        } else {
-          window.scrollTo(0, 0);
-        }
-      }
+    const rect = element.getBoundingClientRect();
 
-      const scroll: ng.AnchorScrollService = (hashOrElement) => {
-        // Direct element scrolling
-        if (isInstanceOf(hashOrElement, HTMLElement)) {
-          scrollTo(hashOrElement);
+    element.scrollIntoView();
 
-          return;
-        }
-        // Allow numeric hashes
-        const hash = isString(hashOrElement)
-          ? hashOrElement
-          : isNumber(hashOrElement)
-            ? hashOrElement.toString()
-            : $location.getHash();
+    const offset = getYOffset();
 
-        let elm;
+    if (offset) runtimeWindow.scrollBy(0, rect.top - offset);
+  }
 
-        // empty hash, scroll to the top of the page
-        if (!hash) {
-          scrollTo();
-        }
-        // element with given id
-        else if ((elm = document.getElementById(hash))) scrollTo(elm);
-        // first anchor with given name :-D
-        else if ((elm = getFirstAnchor(document.getElementsByName(hash))))
-          scrollTo(elm);
-        // no element and hash === 'top', scroll to the top of the page
-        else if (hash === "top") scrollTo();
-      };
+  const scroll: AnchorScrollService = (hashOrElement) => {
+    if (isInstanceOf(hashOrElement, runtimeWindow.HTMLElement)) {
+      scrollTo(hashOrElement);
 
-      // does not scroll when user clicks on anchor link that is currently on
-      // (no url change, no $location.getHash() change), browser native does scroll
-      if (this.autoScrollingEnabled) {
-        $rootScope.$on(
-          "$locationChangeSuccess",
-          (_e: ng.ScopeEvent, newVal: string, oldVal: string) => {
-            const newUrl = urlResolve(newVal);
+      return;
+    }
 
-            const ordUrl = urlResolve(oldVal);
+    const hash = isString(hashOrElement)
+      ? hashOrElement
+      : isNumber(hashOrElement)
+        ? hashOrElement.toString()
+        : $location.getHash();
 
-            if (newUrl.hash === ordUrl.hash && newUrl.hash === "") return;
+    let element: HTMLElement | undefined;
 
-            const action = () => {
-              scroll(newUrl.hash);
-            };
+    if (!hash) {
+      scrollTo();
+    } else if ((element = runtimeDocument.getElementById(hash) ?? undefined)) {
+      scrollTo(element);
+    } else if (
+      (element = getFirstAnchor(runtimeDocument.getElementsByName(hash)))
+    ) {
+      scrollTo(element);
+    } else if (hash === "top") {
+      scrollTo();
+    }
+  };
 
-            if (document.readyState === "complete") {
-              // Force the action to be run async for consistent behavior
-              // from the action's point of view
-              // i.e. it will definitely run after the current event stack.
-              queueMicrotask(() => {
-                action();
-              });
-            } else {
-              window.addEventListener("load", () => {
-                action();
-              });
-            }
-          },
-        );
-      }
+  function clearPendingLoadListeners(): void {
+    pendingLoadListeners.forEach((listener) => {
+      runtimeWindow.removeEventListener("load", listener);
+    });
+    pendingLoadListeners.clear();
+  }
 
-      return scroll;
+  function scheduleScroll(hash: string): void {
+    if (runtimeDocument.readyState === "complete") {
+      runtimeWindow.queueMicrotask(() => {
+        if (!destroyed) scroll(hash);
+      });
+
+      return;
+    }
+
+    const listener: EventListener = () => {
+      pendingLoadListeners.delete(listener);
+
+      if (!destroyed) scroll(hash);
+    };
+
+    pendingLoadListeners.add(listener);
+    runtimeWindow.addEventListener("load", listener, { once: true });
+  }
+
+  const instance: AnchorScrollInstance = {
+    setAutoScrolling(enabled) {
+      removeLocationListener?.();
+      removeLocationListener = undefined;
+      clearPendingLoadListeners();
+
+      if (!enabled || destroyed) return;
+
+      removeLocationListener = $rootScope.$on(
+        "$locationChangeSuccess",
+        (_event: ng.ScopeEvent, newValue: string, oldValue: string) => {
+          const newUrl = urlResolve(newValue);
+          const oldUrl = urlResolve(oldValue);
+
+          if (newUrl.hash === oldUrl.hash && newUrl.hash === "") return;
+
+          scheduleScroll(newUrl.hash);
+        },
+      );
     },
-  ];
+    destroy() {
+      if (destroyed) return;
+
+      destroyed = true;
+      removeLocationListener?.();
+      removeLocationListener = undefined;
+      removeDestroyListener?.();
+      removeDestroyListener = undefined;
+      clearPendingLoadListeners();
+      state.instances.delete(instance);
+    },
+  };
+
+  state.instances.add(instance);
+  instance.setAutoScrolling(state.autoScrollingEnabled);
+  removeDestroyListener = $rootScope.$on("$destroy", () => {
+    instance.destroy();
+  });
+
+  return scroll;
+}
+
+/** @internal */
+export function destroyAnchorScrollRuntimeState(
+  state: AnchorScrollRuntimeState,
+): void {
+  if (state.destroyed) return;
+
+  state.destroyed = true;
+  [...state.instances].forEach((instance) => {
+    instance.destroy();
+  });
 }

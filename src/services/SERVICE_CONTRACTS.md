@@ -77,6 +77,11 @@ Services that own mutable reactive state must define:
 Services that own operational browser mechanics must document their default
 policy and any configurable policy knobs.
 
+Service-local policy remains service config. A shared `Policy` primitive is used
+only when the decision is runtime, cross-cutting, and consistency-sensitive.
+Candidate shared primitives are tracked in
+`src/POLICY_PRIMITIVE_CANDIDATES.md`.
+
 Policy examples include:
 
 - reconnect and retry behavior
@@ -252,6 +257,9 @@ Each browser-facing or long-lived service should have:
 
 Real browser tests must clean up registrations, connections, timers, workers,
 storage, and subscriptions they create.
+
+Use `src/services/SERVICE_TEST_CHECKLIST.md` when implementing or hardening a
+service slice. The checklist is the executable form of this contract.
 
 ## Stability Gate
 

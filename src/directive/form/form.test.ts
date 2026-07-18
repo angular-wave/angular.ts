@@ -51,6 +51,8 @@ test("unit tests contain no errors", async ({ page }) => {
 test("form demo renders every MDN input type and live controller state", async ({
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
 

@@ -46,7 +46,7 @@ export type NgEventDirectiveName = `ng${Capitalize<NgEventName>}`;
 
 type EventDirectiveFactory = ng.DirectiveFactory;
 
-interface EventPolicy {
+interface EventBehavior {
   _prevent: boolean;
   _stop: boolean;
   _listenerOptions?: AddEventListenerOptions;
@@ -113,17 +113,17 @@ export function createEventDirective(
 
       if (!isString(expression)) return () => undefined;
 
-      const eventPolicy = readEventPolicy(element);
+      const eventBehavior = readEventBehavior(element);
 
       const fn = $parse(expression);
 
       return (scope: ng.Scope, element: Element): void => {
         const handler = (event: Event): void => {
-          if (eventPolicy._prevent) {
+          if (eventBehavior._prevent) {
             event.preventDefault();
           }
 
-          if (eventPolicy._stop) {
+          if (eventBehavior._stop) {
             event.stopPropagation();
           }
 
@@ -136,22 +136,22 @@ export function createEventDirective(
           }
         };
 
-        if (eventPolicy._listenerOptions) {
+        if (eventBehavior._listenerOptions) {
           element.addEventListener(
             eventName,
             handler,
-            eventPolicy._listenerOptions,
+            eventBehavior._listenerOptions,
           );
         } else {
           element.addEventListener(eventName, handler);
         }
 
         scope.$on("$destroy", () => {
-          if (eventPolicy._listenerOptions) {
+          if (eventBehavior._listenerOptions) {
             element.removeEventListener(
               eventName,
               handler,
-              eventPolicy._listenerOptions,
+              eventBehavior._listenerOptions,
             );
           } else {
             element.removeEventListener(eventName, handler);
@@ -162,7 +162,7 @@ export function createEventDirective(
   };
 }
 
-function readEventPolicy(element: Element): EventPolicy {
+function readEventBehavior(element: Element): EventBehavior {
   const prevent = hasNormalizedAttr(element, "eventPrevent");
   const stop = hasNormalizedAttr(element, "eventStop");
   const capture = hasNormalizedAttr(element, "eventCapture");

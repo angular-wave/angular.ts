@@ -1,9 +1,4 @@
-import {
-  _compile,
-  _injector,
-  _rootScope,
-  _scope,
-} from "../../injection-tokens.ts";
+import { _scope } from "../../injection-tokens.ts";
 import { dealoc, getInheritedData, setScope } from "../../shared/dom.ts";
 import { kebobString } from "../../shared/strings.ts";
 import {
@@ -19,7 +14,7 @@ import {
   uppercase,
 } from "../../shared/utils.ts";
 
-type WebComponentInputType =
+export type WebComponentInputType =
   | StringConstructor
   | NumberConstructor
   | BooleanConstructor
@@ -190,6 +185,12 @@ export interface WebComponentService {
   ): ng.Scope & T;
 }
 
+/** Application-wide defaults for scoped custom elements. */
+export interface WebComponentConfig {
+  /** Defaults merged into every `appComponent(...)` declaration. */
+  defaults?: Partial<AppComponentOptions>;
+}
+
 interface InputDefinition {
   attribute: string;
   default?: unknown;
@@ -210,6 +211,16 @@ interface ScopeElementDefinition {
   injector: ng.InjectorService;
   inputs: InputDefinition[];
   options: AppComponentOptions;
+  state: WebComponentRuntimeState;
+}
+
+/** @internal */
+export interface WebComponentRuntimeState {
+  defaults: Partial<AppComponentOptions>;
+  readonly definitions: Set<AnyScopeElementConstructor>;
+  readonly hosts: Set<HTMLElement>;
+  readonly scopes: Set<ng.Scope>;
+  destroyed: boolean;
 }
 
 const scopeElementDefinitions = new WeakMap<
@@ -240,74 +251,140 @@ const scopeElementReflectingAttributes = new WeakMap<
   Set<string>
 >();
 
-/** Provider for scoped custom element integration. */
-export class WebComponentProvider {
-  /** Default options merged into every app component definition. */
-  defaults: Partial<AppComponentOptions> = {};
+/** @internal */
+export function createWebComponentRuntimeState(): WebComponentRuntimeState {
+  return {
+    defaults: {},
+    definitions: new Set(),
+    hosts: new Set(),
+    scopes: new Set(),
+    destroyed: false,
+  };
+}
 
-  $get = [
-    _injector,
-    _rootScope,
-    _compile,
-    (
-      injector: ng.InjectorService,
-      rootScope: ng.Scope,
-      compile: ng.CompileService,
-    ): WebComponentService => {
-      const createElementScope = <T extends object = Record<string, unknown>>(
-        host: HTMLElement,
-        initialState: T = {} as T,
-        options: ElementScopeOptions = {},
-      ): ng.Scope & T => {
-        const parentScope = (options.parentScope ??
-          getInheritedData(host, _scope) ??
-          getInheritedData(host.parentNode ?? host, _scope) ??
-          rootScope) as ng.Scope;
+/** @internal */
+export function applyWebComponentConfiguration(
+  state: WebComponentRuntimeState,
+  config: WebComponentConfig,
+): void {
+  if (config.defaults !== undefined) {
+    state.defaults = {
+      ...state.defaults,
+      ...config.defaults,
+    };
+  }
+}
 
-        const scope = options.isolate
-          ? parentScope.$newIsolate(initialState as ng.Scope)
-          : parentScope.$new(initialState as ng.Scope);
+/** @internal */
+export function destroyWebComponentRuntimeState(
+  state: WebComponentRuntimeState,
+): void {
+  if (state.destroyed) return;
 
-        setScope(host, scope);
+  state.destroyed = true;
 
-        return scope as ng.Scope & T;
-      };
+  for (const host of Array.from(state.hosts)) {
+    const timer = scopeElementDestroyTimers.get(host);
 
-      return {
+    if (timer) {
+      clearTimeout(timer);
+      scopeElementDestroyTimers.delete(host);
+    }
+
+    disconnectScopeElement(host);
+  }
+
+  for (const scope of Array.from(state.scopes)) {
+    if (!scope.$handler._destroyed) scope.$destroy();
+  }
+
+  for (const definition of state.definitions) {
+    scopeElementDefinitions.delete(definition);
+    scopeElementInputs.delete(definition);
+  }
+
+  state.definitions.clear();
+  state.hosts.clear();
+  state.scopes.clear();
+}
+
+/** @internal */
+export function createWebComponentService(
+  injector: ng.InjectorService,
+  rootScope: ng.Scope,
+  compile: ng.CompileService,
+  state: WebComponentRuntimeState,
+): WebComponentService {
+  const assertActive = (): void => {
+    if (state.destroyed) {
+      throw new Error("Cannot use $webComponent after runtime teardown");
+    }
+  };
+
+  const createElementScope = <T extends object = Record<string, unknown>>(
+    host: HTMLElement,
+    initialState: T = {} as T,
+    options: ElementScopeOptions = {},
+  ): ng.Scope & T => {
+    assertActive();
+
+    const parentScope = (options.parentScope ??
+      getInheritedData(host, _scope) ??
+      getInheritedData(host.parentNode ?? host, _scope) ??
+      rootScope) as ng.Scope;
+
+    const scope = options.isolate
+      ? parentScope.$newIsolate(initialState as ng.Scope)
+      : parentScope.$new(initialState as ng.Scope);
+
+    state.scopes.add(scope);
+    scope.$on("$destroy", () => {
+      state.scopes.delete(scope);
+    });
+    setScope(host, scope);
+
+    return scope as ng.Scope & T;
+  };
+
+  return {
+    createElementScope,
+    defineAppComponent: <T extends object = Record<string, unknown>>(
+      name: string,
+      options: AppComponentOptions<T>,
+    ) => {
+      assertActive();
+
+      const mergedOptions = {
+        ...state.defaults,
+        ...options,
+      } as AppComponentOptions<T>;
+
+      return defineAppComponent(
+        name,
+        mergedOptions,
+        injector,
+        compile,
         createElementScope,
-        defineAppComponent: <T extends object = Record<string, unknown>>(
-          name: string,
-          options: AppComponentOptions<T>,
-        ) => {
-          const mergedOptions = {
-            ...this.defaults,
-            ...options,
-          } as AppComponentOptions<T>;
-
-          return defineAppComponent(
-            name,
-            mergedOptions,
-            injector,
-            compile,
-            createElementScope,
-          );
-        },
-        defineElement: <T extends object = Record<string, unknown>>(
-          name: string,
-          elementClass: ScopeElementConstructor<T>,
-        ) => {
-          return defineScopeElement(
-            name,
-            elementClass,
-            resolveScopeElementOptions(elementClass),
-            injector,
-            compile,
-            createElementScope,
-          );
-        },
-      };
+        state,
+      );
     },
-  ];
+    defineElement: <T extends object = Record<string, unknown>>(
+      name: string,
+      elementClass: ScopeElementConstructor<T>,
+    ) => {
+      assertActive();
+
+      return defineScopeElement(
+        name,
+        elementClass,
+        resolveScopeElementOptions(elementClass),
+        injector,
+        compile,
+        createElementScope,
+        state,
+      );
+    },
+  };
 }
 
 function defineAppComponent<T extends object>(
@@ -316,6 +393,7 @@ function defineAppComponent<T extends object>(
   injector: ng.InjectorService,
   compile: ng.CompileService,
   createElementScope: WebComponentService["createElementScope"],
+  state: WebComponentRuntimeState,
 ): CustomElementConstructor {
   class AngularTsAppComponent extends ScopeElement<T> {
     static template = options.template;
@@ -363,6 +441,7 @@ function defineAppComponent<T extends object>(
     injector,
     compile,
     createElementScope,
+    state,
   );
 }
 
@@ -373,6 +452,7 @@ function defineScopeElement<T extends object>(
   injector: ng.InjectorService,
   compile: ng.CompileService,
   createElementScope: WebComponentService["createElementScope"],
+  state: WebComponentRuntimeState,
 ): CustomElementConstructor {
   const existing = customElements.get(name);
 
@@ -386,8 +466,10 @@ function defineScopeElement<T extends object>(
     injector,
     inputs,
     options: options as AppComponentOptions,
+    state,
   });
   scopeElementInputs.set(elementClass as AnyScopeElementConstructor, inputs);
+  state.definitions.add(elementClass as AnyScopeElementConstructor);
   installScopeElementInputs(elementClass as ScopeElementConstructor, inputs);
 
   customElements.define(name, elementClass);
@@ -496,6 +578,8 @@ function syncScopeElementAttribute(
 
   const definition = getScopeElementDefinition(host);
 
+  if (!definition) return;
+
   const input = definition.inputs.find(
     (candidate) => candidate.attribute === attribute,
   );
@@ -519,6 +603,8 @@ function connectScopeElement(host: HTMLElement): void {
 
   const definition = getScopeElementDefinition(host);
 
+  if (!definition) return;
+
   const options = definition.options;
 
   const renderRoot = resolveRenderRoot(host, options.shadow);
@@ -538,6 +624,7 @@ function connectScopeElement(host: HTMLElement): void {
   element.root = renderRoot;
   scopeElementScopes.set(host, scope);
   scopeElementContexts.set(host, context);
+  definition.state.hosts.add(host);
   applyInputDefaults(host, definition.inputs);
   upgradeOwnProperties(host, definition.inputs);
   applyAttributes(host, definition.inputs, scope);
@@ -561,6 +648,8 @@ function disconnectScopeElement(host: HTMLElement): void {
   cleanup?.();
   scopeElementCleanupFns.delete(host);
 
+  const definition = getScopeElementDefinition(host);
+  const context = scopeElementContexts.get(host);
   const element = host as ScopeElement;
 
   element.disconnected?.();
@@ -569,25 +658,19 @@ function disconnectScopeElement(host: HTMLElement): void {
     scope.$destroy();
   }
 
-  const definition = getScopeElementDefinition(host);
-
   scopeElementScopes.delete(host);
   scopeElementContexts.delete(host);
-  clearRenderedContent(resolveRenderRoot(host, definition.options.shadow));
+  definition?.state.hosts.delete(host);
+
+  if (context) clearRenderedContent(context.root);
 }
 
-function getScopeElementDefinition(host: HTMLElement): ScopeElementDefinition {
-  const definition = scopeElementDefinitions.get(
+function getScopeElementDefinition(
+  host: HTMLElement,
+): ScopeElementDefinition | undefined {
+  return scopeElementDefinitions.get(
     host.constructor as AnyScopeElementConstructor,
   );
-
-  if (!definition) {
-    throw new Error(
-      `Custom element ${host.localName} was not registered with $webComponent`,
-    );
-  }
-
-  return definition;
 }
 
 function getScopeElementContext(

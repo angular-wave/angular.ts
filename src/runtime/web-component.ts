@@ -1,20 +1,43 @@
+import type { RuntimeModule } from "../angular-runtime.ts";
 import {
-  AngularRuntime,
-  type AngularRuntimeOptions,
-} from "../angular-runtime.ts";
-import { _rootScope, _webComponent } from "../injection-tokens.ts";
+  _compile,
+  _injector,
+  _rootScope,
+  _webComponent,
+} from "../injection-tokens.ts";
+import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
+import { createAngular, type AngularComposition } from "./index.ts";
 import {
-  registerCustomNgModule,
-  type CustomNgModuleOptions,
-} from "./custom-ng.ts";
-import {
-  WebComponentProvider,
+  createWebComponentRuntimeState,
+  createWebComponentService,
+  destroyWebComponentRuntimeState,
   type AppComponentOptions,
 } from "../services/web-component/web-component.ts";
 
-interface CustomAngularRuntimeOptions extends AngularRuntimeOptions {
-  ngModule?: CustomNgModuleOptions;
-}
+/** Register scoped custom-element support in a custom AngularTS runtime. */
+export const webComponentModule: RuntimeModule = (angular) => {
+  const runtime = angular as ng.Angular & {
+    _composition: RuntimeComposition;
+  };
+  const state = createWebComponentRuntimeState();
+
+  runtime._composition.platform.addDisposer(() => {
+    destroyWebComponentRuntimeState(state);
+  });
+
+  return angular
+    .module("ng.webComponent", [])
+    .factory(_webComponent, [
+      _injector,
+      _rootScope,
+      _compile,
+      (
+        $injector: ng.InjectorService,
+        $rootScope: ng.Scope,
+        $compile: ng.CompileService,
+      ) => createWebComponentService($injector, $rootScope, $compile, state),
+    ]);
+};
 
 /** Configuration for the application module that owns the custom element. */
 export interface AngularElementModuleOptions {
@@ -29,9 +52,7 @@ export interface AngularElementModuleOptions {
 /** Options for a standalone AngularTS-backed custom element runtime. */
 export interface AngularElementOptions<
   T extends object = Record<string, unknown>,
-> extends AngularRuntimeOptions {
-  /** Custom runtime `ng` module configuration. */
-  ngModule?: CustomAngularRuntimeOptions["ngModule"];
+> extends AngularComposition {
   /** Application module that registers the custom element. */
   elementModule?: AngularElementModuleOptions;
   /** App component definition passed to `$webComponent.defineAppComponent`. */
@@ -57,7 +78,7 @@ export interface AngularElementDefinition {
 /**
  * Defines a standalone AngularTS-backed custom element.
  *
- * The helper creates a custom runtime, installs the `$webComponent` provider,
+ * The helper creates a custom runtime, installs the web-component module,
  * creates a small application module, and eagerly
  * builds an injector so the native custom element can be consumed by any host
  * framework without calling `angular.bootstrap`.
@@ -65,22 +86,14 @@ export interface AngularElementDefinition {
 export function defineAngularElement<
   T extends object = Record<string, unknown>,
 >(name: string, options: AngularElementOptions<T>): AngularElementDefinition {
-  const { component, elementModule, ngModule, ...runtimeOptions } = options;
+  const { component, elementModule, modules, ...composition } = options;
 
-  const ngModuleOptions = ngModule ?? {};
-
-  const angular = createAngularElementRuntime({
-    ...runtimeOptions,
-    ngModule: {
-      ...ngModuleOptions,
-      providers: {
-        [_webComponent]: WebComponentProvider,
-        ...(ngModuleOptions.providers ?? {}),
-      },
-    },
+  const angular = createAngular({
+    ...composition,
+    modules: Array.from(new Set([...(modules ?? []), webComponentModule])),
   }) as unknown as ng.Angular;
 
-  const ngModuleName = ngModuleOptions.name ?? "ng";
+  const ngModuleName = composition.name ?? "ng";
 
   const elementModuleName =
     elementModule?.name ?? defaultElementModuleName(name);
@@ -95,9 +108,8 @@ export function defineAngularElement<
 
   const injector = angular.injector([ngModuleName, elementModuleName]);
 
-  (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope = injector.get(
-    _rootScope,
-  ) as ng.Scope;
+  (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope =
+    injector.get(_rootScope);
 
   const element = customElements.get(name);
 
@@ -117,19 +129,6 @@ export function defineAngularElement<
 
 /** Alias for callers that prefer factory-style naming. */
 export const createAngularElement = defineAngularElement;
-
-function createAngularElementRuntime(
-  options: CustomAngularRuntimeOptions,
-): AngularRuntime {
-  const angular = new AngularRuntime({
-    registerBuiltins: false,
-    ...options,
-  });
-
-  registerCustomNgModule(angular as unknown as ng.Angular, options.ngModule);
-
-  return angular;
-}
 
 function defaultElementModuleName(name: string): string {
   return `ngElement:${name}`;

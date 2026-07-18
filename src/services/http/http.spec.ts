@@ -5,15 +5,79 @@ import { createScope } from "../../core/scope/scope.ts";
 import { hashKey, isObject } from "../../shared/utils.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { http } from "./http.ts";
+import {
+  applyHttpConfiguration,
+  createHttpService,
+  createHttpRuntimeConfiguration,
+  http,
+} from "./http.ts";
+
+describe("HTTP runtime configuration", () => {
+  it("merges defaults and appends interceptor and XSRF policy", () => {
+    const configuration = createHttpRuntimeConfiguration();
+    const interceptor = () => ({});
+
+    applyHttpConfiguration(configuration, {
+      defaults: {
+        headers: {
+          common: { Authorization: "Bearer token" },
+          post: { "X-Mode": "configured" },
+        },
+        withCredentials: true,
+      },
+      interceptors: [interceptor],
+      xsrfTrustedOrigins: ["https://api.example.com"],
+    });
+
+    expect(configuration.defaults.headers.common).toEqual({
+      Accept: "application/json, text/plain, */*",
+      Authorization: "Bearer token",
+    });
+    expect(configuration.defaults.headers.post).toEqual({
+      "Content-Type": "application/json;charset=utf-8",
+      "X-Mode": "configured",
+    });
+    expect(configuration.defaults.withCredentials).toBeTrue();
+    expect(configuration.interceptors).toEqual([interceptor]);
+    expect(configuration.xsrfTrustedOrigins).toEqual([
+      "https://api.example.com",
+    ]);
+  });
+
+  it("resolves a default serializer token while constructing the service", () => {
+    const configuration = createHttpRuntimeConfiguration();
+    const serializer = () => "serialized";
+    const injector = {
+      get: jasmine.createSpy("get").and.returnValue(serializer),
+    };
+
+    configuration.defaults.paramSerializer = "configuredSerializer";
+    createHttpService(injector, {}, {}, {}, {}, configuration);
+
+    expect(injector.get).toHaveBeenCalledOnceWith("configuredSerializer");
+    expect(configuration.defaults.paramSerializer).toBe(serializer);
+  });
+});
 
 describe("$http", function () {
   let $http, $injector, requests, response, $rootScope;
+  let httpConfigModule;
+  let securityId = 0;
 
   beforeEach(function () {
     window.angular = new Angular();
+    securityId += 1;
+    httpConfigModule = window.angular.module(
+      `httpSecurityCompat${securityId}`,
+      [],
+    );
+    httpConfigModule.config({
+      $security: {
+        allowInsecureOrigins: [window.location.origin],
+      },
+    });
     requests = [];
-    $injector = createInjector(["ng"]);
+    $injector = createInjector(["ng", `httpSecurityCompat${securityId}`]);
     $http = $injector.get("$http");
     $rootScope = $injector.get("$rootScope");
   });
@@ -27,6 +91,31 @@ describe("$http", function () {
 
     expect(result).toBeDefined();
     expect(result.then).toBeDefined();
+  });
+
+  it("rejects invalid request configurations and URLs", async function () {
+    await expectAsync($http(null)).toBeRejectedWithError(/badreq/);
+    await expectAsync($http({ url: {} })).toBeRejectedWithError(/badreq/);
+  });
+
+  it("resolves a configured default parameter serializer through DI", async function () {
+    httpConfigModule.config({
+      $http: {
+        defaults: {
+          paramSerializer: "$httpParamSerializer",
+        },
+      },
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
+    const configuredHttp = injector.get("$http");
+
+    const result = await configuredHttp.get("/mock/hello", {
+      params: { configured: true },
+    });
+
+    expect(result.config.paramSerializer(result.config.params)).toBe(
+      "configured=true",
+    );
   });
 
   it("makes a fetch request to given URL", async function () {
@@ -335,6 +424,31 @@ describe("$http", function () {
       response = r;
     });
     expect(response.config.withCredentials).toBe(true);
+  });
+
+  it("normalizes headers and transforms removed by request interceptors", async function () {
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          () => ({
+            request(config) {
+              config.headers = undefined;
+              config.transformRequest = undefined;
+              config.transformResponse = undefined;
+
+              return config;
+            },
+          }),
+        ],
+      },
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
+    const configuredHttp = injector.get("$http");
+
+    const result = await configuredHttp.get("/mock/hello");
+
+    expect(result.data).toBe("Hello");
+    expect(result.config.headers).toEqual({});
   });
 
   it("allows transforming requests with functions", async function () {
@@ -847,20 +961,18 @@ describe("$http", function () {
   });
 
   it("allows substituting param serializer through DI", async function () {
-    const injector = createInjector([
-      "ng",
-      function ($provide) {
-        $provide.factory("mySpecialSerializer", function () {
-          return function (params) {
-            return Object.keys(params)
-              .map(function (k) {
-                return `${k}=${params[k]}lol`;
-              })
-              .join("&");
-          };
-        });
-      },
-    ]);
+    window.angular
+      .module("specialSerializer", [])
+      .factory("mySpecialSerializer", function () {
+        return function (params) {
+          return Object.keys(params)
+            .map(function (k) {
+              return `${k}=${params[k]}lol`;
+            })
+            .join("&");
+        };
+      });
+    const injector = createInjector(["ng", "specialSerializer"]);
 
     await injector.invoke(async function ($http, $rootScope) {
       await $http({
@@ -991,15 +1103,101 @@ describe("$http", function () {
     expect(response.config.data).toBe("data");
   });
 
+  it("supports shorthand methods when options are omitted", async function () {
+    const getResponse = await $http.get("/mock/hello");
+    const postResponse = await $http.post("/mock/hello", "data");
+
+    expect(getResponse.config.method).toBe("GET");
+    expect(postResponse.config.method).toBe("POST");
+  });
+
+  it("uses request, configured, and internal caches", async function () {
+    const requestCache = new Map();
+
+    const first = await $http.get("/mock/hello", { cache: requestCache });
+    const second = await $http.get("/mock/hello", { cache: requestCache });
+
+    expect(second.data).toBe(first.data);
+    expect(Array.isArray(requestCache.get("/mock/hello"))).toBeTrue();
+
+    const configuredCache = new Map();
+
+    $http.defaults.cache = configuredCache;
+    await $http.get("/mock/hello");
+    expect(configuredCache.has("/mock/hello")).toBeTrue();
+
+    $http.defaults.cache = undefined;
+    await $http.get("/mock/hello", { cache: true });
+    const internallyCached = await $http.get("/mock/hello", { cache: true });
+
+    expect(internallyCached.data).toBe("Hello");
+  });
+
+  it("shares pending cached requests and removes failed responses", async function () {
+    const cache = new Map();
+    const first = $http.get("/mock/hello", { cache });
+    const second = $http.get("/mock/hello", { cache });
+
+    const responses = await Promise.all([first, second]);
+
+    expect(responses.map((item) => item.data)).toEqual(["Hello", "Hello"]);
+
+    await expectAsync($http.get("/mock/401", { cache })).toBeRejected();
+    expect(cache.has("/mock/401")).toBeFalse();
+  });
+
+  it("serves direct cache values and normalizes invalid cached statuses", async function () {
+    const valueCache = new Map([["/mock/value", "cached"]]);
+    const valueResponse = await $http.get("/mock/value", {
+      cache: valueCache,
+    });
+
+    expect(valueResponse.data).toBe("cached");
+    expect(valueResponse.status).toBe(200);
+
+    const statusCache = new Map([
+      ["/mock/status", [-2, "failed", {}, "Invalid", "error"]],
+    ]);
+
+    await expectAsync(
+      $http.get("/mock/status", { cache: statusCache }),
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        status: 0,
+      }),
+    );
+  });
+
+  it("rejects when a malformed pending cache entry cannot be resolved", async function () {
+    const pending = Promise.withResolvers();
+    const cache = new Map([["/mock/malformed", pending.promise]]);
+    const request = $http.get("/mock/malformed", { cache });
+
+    pending.reject(undefined);
+
+    await expectAsync(request).toBeRejected();
+  });
+
+  it("adds XSRF cookies with default and request header names", async function () {
+    document.cookie = "XSRF-TOKEN=secret; path=/";
+
+    const defaultResponse = await $http.get("/mock/hello");
+    const customResponse = await $http.get("/mock/hello", {
+      xsrfHeaderName: "X-CUSTOM-XSRF",
+    });
+
+    expect(defaultResponse.config.headers["X-XSRF-TOKEN"]).toBe("secret");
+    expect(customResponse.config.headers["X-CUSTOM-XSRF"]).toBe("secret");
+
+    document.cookie = "XSRF-TOKEN=; Max-Age=0; path=/";
+  });
+
   it("allows attaching interceptor factories", async function () {
     const interceptorFactorySpy = jasmine.createSpy();
-
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(interceptorFactorySpy);
-      },
-    ]);
+    httpConfigModule.config({
+      $http: { interceptors: [interceptorFactorySpy] },
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
 
@@ -1008,13 +1206,12 @@ describe("$http", function () {
 
   it("uses DI to instantiate interceptors", async function () {
     const interceptorFactorySpy = jasmine.createSpy();
-
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(["$rootScope", interceptorFactorySpy]);
+    httpConfigModule.config({
+      $http: {
+        interceptors: [["$rootScope", interceptorFactorySpy]],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     const $rootScope = injector.get("$rootScope");
@@ -1025,13 +1222,13 @@ describe("$http", function () {
   it("allows referencing existing interceptor factories", async function () {
     const interceptorFactorySpy = jasmine.createSpy().and.returnValue({});
 
-    const injector = createInjector([
-      "ng",
-      function ($provide, $httpProvider) {
-        $provide.factory("myInterceptor", interceptorFactorySpy);
-        $httpProvider.interceptors.push("myInterceptor");
-      },
-    ]);
+    window.angular
+      .module("existingInterceptor", [])
+      .factory("myInterceptor", interceptorFactorySpy)
+      .config({
+        $http: { interceptors: ["myInterceptor"] },
+      });
+    const injector = createInjector(["ng", "existingInterceptor"]);
 
     $http = injector.get("$http");
 
@@ -1039,20 +1236,22 @@ describe("$http", function () {
   });
 
   it("allows intercepting requests", async function () {
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(function () {
-          return {
-            request(config) {
-              config.params.intercepted = true;
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          function () {
+            return {
+              request(config) {
+                config.params.intercepted = true;
 
-              return config;
-            },
-          };
-        });
+                return config;
+              },
+            };
+          },
+        ],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     $rootScope = injector.get("$rootScope");
@@ -1071,20 +1270,22 @@ describe("$http", function () {
   });
 
   it("allows returning promises from request intercepts", async function () {
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(function () {
-          return {
-            request(config) {
-              config.params.intercepted = true;
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          function () {
+            return {
+              request(config) {
+                config.params.intercepted = true;
 
-              return Promise.resolve(config);
-            },
-          };
-        });
+                return Promise.resolve(config);
+              },
+            };
+          },
+        ],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     $rootScope = injector.get("$rootScope");
@@ -1102,18 +1303,20 @@ describe("$http", function () {
   });
 
   it("allows intercepting responses", async function () {
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(() => ({
-          response(response) {
-            response.intercepted = true;
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          () => ({
+            response(response) {
+              response.intercepted = true;
 
-            return response;
-          },
-        }));
+              return response;
+            },
+          }),
+        ],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     $rootScope = injector.get("$rootScope");
@@ -1130,22 +1333,19 @@ describe("$http", function () {
 
   it("allows intercepting request errors", async function () {
     const requestErrorSpy = jasmine.createSpy();
-
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(() => ({
-          request(config) {
-            throw "fail";
-          },
-        }));
-        $httpProvider.interceptors.push(() => {
-          return {
-            requestError: requestErrorSpy,
-          };
-        });
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          () => ({
+            request() {
+              throw "fail";
+            },
+          }),
+          () => ({ requestError: requestErrorSpy }),
+        ],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     $rootScope = injector.get("$rootScope");
@@ -1161,20 +1361,19 @@ describe("$http", function () {
 
   it("allows intercepting response errors", async function () {
     const responseErrorSpy = jasmine.createSpy();
-
-    const injector = createInjector([
-      "ng",
-      function ($httpProvider) {
-        $httpProvider.interceptors.push(() => ({
-          responseError: responseErrorSpy,
-        }));
-        $httpProvider.interceptors.push(() => ({
-          response() {
-            throw "fail";
-          },
-        }));
+    httpConfigModule.config({
+      $http: {
+        interceptors: [
+          () => ({ responseError: responseErrorSpy }),
+          () => ({
+            response() {
+              throw "fail";
+            },
+          }),
+        ],
       },
-    ]);
+    });
+    const injector = createInjector(["ng", httpConfigModule.name]);
 
     $http = injector.get("$http");
     $rootScope = injector.get("$rootScope");
@@ -1286,6 +1485,329 @@ describe("$http", function () {
 
     await wait();
     expect(loadSpy).toHaveBeenCalled();
+  });
+
+  it("calls object event listeners", async function () {
+    const listener = {
+      handleEvent: jasmine.createSpy("handleEvent"),
+    };
+
+    await $http.get("/mock/hello", {
+      eventHandlers: { load: listener },
+    });
+
+    expect(listener.handleEvent).toHaveBeenCalledWith(jasmine.any(Event));
+  });
+});
+
+function getRequestHeader(request, headerName) {
+  const headers = request.headers;
+
+  if (headers instanceof Headers) {
+    return headers.get(headerName);
+  }
+
+  return headers?.[headerName];
+}
+
+describe("$http security policy", () => {
+  let fetchEnv;
+
+  let $http;
+
+  let requestDecision;
+
+  beforeEach(() => {
+    fetchEnv = installFakeFetch();
+
+    requestDecision = {
+      type: "allow",
+    };
+
+    window.angular = new Angular();
+    const module = window.angular.module("defaultSecurityPolicyModule", []);
+
+    module.value("$security", {
+      check: () => requestDecision,
+    });
+
+    const $injector = createInjector(["ng", "defaultSecurityPolicyModule"]);
+    $http = $injector.get("$http");
+  });
+
+  afterEach(() => {
+    fetchEnv.restore();
+  });
+
+  it("attaches jwt credentials when request policy allows", async () => {
+    requestDecision = {
+      type: "allow",
+      credentials: {
+        headers: { Authorization: "Bearer abc123" },
+      },
+    };
+
+    const result = $http.get("/mock/hello");
+    await wait();
+
+    expect(fetchEnv.requests.length).toBe(1);
+    expect(getRequestHeader(fetchEnv.requests[0], "Authorization")).toBe(
+      "Bearer abc123",
+    );
+
+    fetchEnv.requests[0].respond(200, "OK", '{"ok":true}');
+
+    const response = await result;
+    expect(response.status).toBe(200);
+    expect(response.config.headers.Authorization).toBe("Bearer abc123");
+  });
+
+  it("denies request policy decisions before fetch", async () => {
+    requestDecision = {
+      type: "deny",
+      reason: "blocked",
+      status: 403,
+    };
+
+    let error;
+
+    try {
+      await $http.get("/mock/hello");
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(403);
+    expect(error.statusText).toBe("blocked");
+    expect(fetchEnv.requests.length).toBe(0);
+  });
+
+  it("uses the default deny response shape when policy omits status details", async () => {
+    requestDecision = {
+      type: "deny",
+    };
+
+    let error;
+
+    try {
+      await $http.get("/mock/hello");
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(403);
+    expect(error.statusText).toBe("Request denied by security policy");
+    expect(fetchEnv.requests.length).toBe(0);
+  });
+
+  it("redirects request policy decisions before fetch", async () => {
+    requestDecision = {
+      type: "redirect",
+      reason: "login required",
+      status: 302,
+      target: "/login",
+    };
+
+    let error;
+
+    try {
+      await $http.get("/mock/hello");
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(302);
+    expect(error.statusText).toBe("login required");
+    expect(fetchEnv.requests.length).toBe(0);
+  });
+
+  it("uses the default redirect response shape when policy omits status details", async () => {
+    requestDecision = {
+      type: "redirect",
+      target: "/login",
+    };
+
+    let error;
+
+    try {
+      await $http.get("/mock/hello");
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(302);
+    expect(error.statusText).toBe("Request redirected by security policy");
+    expect(fetchEnv.requests.length).toBe(0);
+  });
+
+  it("attaches custom header credentials when request policy allows", async () => {
+    requestDecision = {
+      type: "allow",
+      credentials: {
+        headers: {
+          "X-Auth-Token": "custom-token",
+        },
+        withCredentials: true,
+      },
+    };
+
+    const result = $http.get("/mock/hello");
+
+    await wait();
+
+    expect(fetchEnv.requests.length).toBe(1);
+    expect(getRequestHeader(fetchEnv.requests[0], "X-Auth-Token")).toBe(
+      "custom-token",
+    );
+    expect(fetchEnv.requests[0].init.credentials).toBe("include");
+
+    fetchEnv.requests[0].respond(200, "OK", "{}");
+
+    const response = await result;
+
+    expect(response.config.headers["X-Auth-Token"]).toBe("custom-token");
+    expect(response.config.withCredentials).toBeTrue();
+  });
+
+  it("attaches basic credentials when request policy allows", async () => {
+    requestDecision = {
+      type: "allow",
+      credentials: {
+        headers: { Authorization: "Basic encoded" },
+      },
+    };
+
+    const result = $http.get("/mock/hello");
+
+    await wait();
+
+    expect(fetchEnv.requests.length).toBe(1);
+    expect(getRequestHeader(fetchEnv.requests[0], "Authorization")).toBe(
+      "Basic encoded",
+    );
+
+    fetchEnv.requests[0].respond(200, "OK", "{}");
+
+    const response = await result;
+
+    expect(response.config.headers.Authorization).toBe("Basic encoded");
+  });
+});
+
+describe("$http security policy via app.config", () => {
+  let fetchEnv;
+  let injectorId = 0;
+
+  afterEach(() => {
+    fetchEnv?.restore();
+  });
+
+  function createConfiguredHttp(config) {
+    injectorId += 1;
+    const moduleName = `httpSecurityConfiguredModule${injectorId}`;
+
+    window.angular = new Angular();
+    const module = window.angular.module(moduleName, []);
+    module.config({ $security: config });
+
+    fetchEnv = installFakeFetch();
+
+    return createInjector(["ng", moduleName]).get("$http");
+  }
+
+  it("denies insecure requests by default when configured centrally", async () => {
+    const $http = createConfiguredHttp({
+      fallback: "allow",
+      allowInsecureOrigins: [],
+    });
+
+    let error;
+
+    try {
+      await $http({
+        method: "GET",
+        url: "http://example.invalid/resource",
+        withCredentials: true,
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(401);
+    expect(error.statusText).toBe("insecure transport blocked");
+    expect(fetchEnv.requests.length).toBe(0);
+  });
+
+  it("honors the configured insecure origin allowlist", async () => {
+    const $http = createConfiguredHttp({
+      fallback: "allow",
+      allowInsecureOrigins: ["http://example.invalid"],
+    });
+
+    const resultPromise = $http({
+      method: "GET",
+      url: "http://example.invalid/resource",
+      withCredentials: true,
+    });
+
+    await wait();
+    expect(fetchEnv.requests.length).toBe(1);
+    fetchEnv.requests[0].respond(200, "OK", "{}");
+
+    const result = await resultPromise;
+
+    expect(result.status).toBe(200);
+    expect(result.data).toEqual({});
+  });
+
+  it("attaches configured jwt credentials through app.config()", async () => {
+    const $http = createConfiguredHttp({
+      fallback: "deny",
+      allowInsecureOrigins: [window.location.origin],
+      credentials: {
+        bearer: "configured-token",
+      },
+    });
+
+    const resultPromise = $http.get("/mock/hello");
+
+    await wait();
+    expect(fetchEnv.requests.length).toBe(1);
+    expect(getRequestHeader(fetchEnv.requests[0], "Authorization")).toBe(
+      "Bearer configured-token",
+    );
+    fetchEnv.requests[0].respond(200, "OK", "{}");
+
+    const result = await resultPromise;
+
+    expect(result.status).toBe(200);
+  });
+
+  it("enables cookie session requests through app.config()", async () => {
+    const $http = createConfiguredHttp({
+      fallback: "deny",
+      allowInsecureOrigins: [window.location.origin],
+      credentials: {
+        cookie: true,
+      },
+    });
+
+    const resultPromise = $http.get("/mock/hello");
+
+    await wait();
+    expect(fetchEnv.requests.length).toBe(1);
+    expect(fetchEnv.requests[0].init.credentials).toBe("include");
+    expect(getRequestHeader(fetchEnv.requests[0], "Cookie")).toBeNull();
+    fetchEnv.requests[0].respond(200, "OK", "{}");
+
+    const result = await resultPromise;
+
+    expect(result.status).toBe(200);
   });
 });
 
@@ -1805,14 +2327,11 @@ describe("http", () => {
 //     let $rootScope;
 //     let $sce;
 
-//     beforeEach(
-//       module(($sceDelegateProvider) => {
-//         // Setup a special trusted url that we can use in testing JSONP requests
-//         $sceDelegateProvider.trustedResourceUrlList([
-//           "http://special.trusted.resource.com/**",
-//         ]);
-//       }),
-//     );
+//     app.config({
+//       $sceDelegate: {
+//         trustedResourceUrlList: ["http://special.trusted.resource.com/**"],
+//       },
+//     });
 
 //     beforeEach(inject([
 //       "$httpBackend",

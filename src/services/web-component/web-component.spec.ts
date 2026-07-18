@@ -3,7 +3,12 @@
 import { Angular } from "../../angular.ts";
 import { dealoc, getScope } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { ScopeElement } from "./web-component.ts";
+import {
+  createWebComponentRuntimeState,
+  createWebComponentService,
+  destroyWebComponentRuntimeState,
+  ScopeElement,
+} from "./web-component.ts";
 
 let nextId = 0;
 
@@ -92,6 +97,172 @@ describe("$webComponent", () => {
       expect(scope.$parent.$id).toBe($rootScope.$id);
       expect(getScope(host)).toBe(scope);
     });
+  });
+
+  it("creates detached isolate element scopes with the root as parent", () => {
+    const angular = new Angular();
+
+    angular.bootstrap(app, []).invoke(($webComponent, $rootScope) => {
+      const host = document.createElement("section");
+      const scope = $webComponent.createElementScope(
+        host,
+        { title: "isolated" },
+        { isolate: true },
+      );
+
+      expect(scope.title).toBe("isolated");
+      expect(scope.$parent.$id).toBe($rootScope.$id);
+    });
+  });
+
+  it("applies typed app-wide defaults to app components", async () => {
+    const tagName = nextTagName("default-shadow-card");
+    const moduleName = nextModuleName();
+    const angular = new Angular();
+
+    angular
+      .module(moduleName, [])
+      .config({
+        $webComponent: {
+          defaults: {
+            shadow: true,
+          },
+        },
+      })
+      .appComponent(tagName, {
+        scope: { title: "configured" },
+        template: "<span>{{title}}</span>",
+      });
+
+    angular.bootstrap(app, [moduleName]);
+
+    const element = document.createElement(tagName);
+
+    app.appendChild(element);
+    await wait();
+    await wait();
+
+    expect(element.shadowRoot?.textContent).toContain("configured");
+  });
+
+  it("releases runtime-owned custom element state during teardown", async () => {
+    const tagName = nextTagName("runtime-owned-card");
+    const angular = new Angular();
+    let injector;
+    let rootScope;
+    let compile;
+
+    angular
+      .bootstrap(app, [])
+      .invoke((_$injector_, _$rootScope_, _$compile_) => {
+        injector = _$injector_;
+        rootScope = _$rootScope_;
+        compile = _$compile_;
+      });
+
+    const state = createWebComponentRuntimeState();
+    const service = createWebComponentService(
+      injector,
+      rootScope,
+      compile,
+      state,
+    );
+    const events = [];
+
+    service.defineAppComponent(tagName, {
+      shadow: true,
+      inputs: { title: String },
+      template: "<span>runtime owned</span>",
+      connected() {
+        return () => events.push("cleanup");
+      },
+      disconnected() {
+        events.push("disconnected");
+      },
+    });
+
+    const element = document.createElement(tagName);
+
+    app.appendChild(element);
+    await wait();
+    await wait();
+
+    const scope = getScope(element);
+
+    destroyWebComponentRuntimeState(state);
+    destroyWebComponentRuntimeState(state);
+
+    expect(events).toEqual(["cleanup", "disconnected"]);
+    expect(scope.$handler._destroyed).toBeTrue();
+    expect(element.shadowRoot.textContent).toBe("");
+    expect(() =>
+      service.createElementScope(document.createElement("div")),
+    ).toThrowError("Cannot use $webComponent after runtime teardown");
+
+    element.setAttribute("title", "stale");
+    element.remove();
+    app.appendChild(element);
+    await wait();
+
+    expect(element.scope).toBe(scope);
+    expect(state.hosts.has(element)).toBeFalse();
+  });
+
+  it("cancels pending disconnect teardown during runtime destruction", async () => {
+    const tagName = nextTagName("pending-destroy-card");
+    const angular = new Angular();
+    let injector;
+    let rootScope;
+    let compile;
+
+    angular
+      .bootstrap(app, [])
+      .invoke((_$injector_, _$rootScope_, _$compile_) => {
+        injector = _$injector_;
+        rootScope = _$rootScope_;
+        compile = _$compile_;
+      });
+
+    const state = createWebComponentRuntimeState();
+    const service = createWebComponentService(
+      injector,
+      rootScope,
+      compile,
+      state,
+    );
+
+    service.defineAppComponent(tagName, { template: "ready" });
+    const element = document.createElement(tagName);
+    app.appendChild(element);
+    await wait();
+
+    element.remove();
+    destroyWebComponentRuntimeState(state);
+
+    expect(state.hosts.size).toBe(0);
+  });
+
+  it("ignores scopes that were already destroyed during runtime teardown", () => {
+    const state = createWebComponentRuntimeState();
+    const destroyedScope = { $handler: { _destroyed: true } };
+    state.scopes.add(destroyedScope);
+
+    destroyWebComponentRuntimeState(state);
+
+    expect(state.scopes.size).toBe(0);
+  });
+
+  it("destroys active scopes that are not connected to a host", () => {
+    const state = createWebComponentRuntimeState();
+    const scope = {
+      $handler: { _destroyed: false },
+      $destroy: jasmine.createSpy("$destroy"),
+    };
+
+    state.scopes.add(scope);
+    destroyWebComponentRuntimeState(state);
+
+    expect(scope.$destroy).toHaveBeenCalledOnceWith();
   });
 
   it("destroys the owned scope after disconnect", async () => {

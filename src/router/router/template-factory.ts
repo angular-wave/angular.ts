@@ -1,15 +1,13 @@
-import { _injector, _templateRequest } from "../../injection-tokens.ts";
 import {
   isArray,
   isDefined,
   isFunction,
   isNullOrUndefined,
-  isObject,
   isString,
   keys,
 } from "../../shared/utils.ts";
 import { annotate } from "../../core/di/di.ts";
-import { DirectiveSuffix } from "../../core/compile/compile.ts";
+import type { CompileRegistry } from "../../core/compile/compile.ts";
 import { kebobString } from "../../shared/strings.ts";
 import type { ResolveContext } from "../resolve/resolve-context.ts";
 import type { RawParams } from "../params/interface.ts";
@@ -62,28 +60,23 @@ function componentElementName(camelCase: string): string {
 /**
  * Resolves route templates and components from state view declarations.
  */
-export class TemplateFactoryProvider {
+export class TemplateFactoryService {
   /** @internal */
-  _templateRequest: ng.TemplateRequestService | undefined;
+  _templateRequest: ng.TemplateRequestService;
   /** @internal */
-  _injector: ng.InjectorService | undefined;
+  _compileRegistry: CompileRegistry;
+  /** @internal */
+  _injector: ng.InjectorService;
 
-  /**
-   * Wires template request and injector services into the factory.
-   */
-  $get = [
-    _templateRequest,
-    _injector,
-    (
-      $templateRequest: ng.TemplateRequestService,
-      $injector: ng.InjectorService,
-    ): TemplateFactoryProvider => {
-      this._templateRequest = $templateRequest;
-      this._injector = $injector;
-
-      return this;
-    },
-  ];
+  constructor(
+    compileRegistry: CompileRegistry,
+    $templateRequest: ng.TemplateRequestService,
+    $injector: ng.InjectorService,
+  ) {
+    this._compileRegistry = compileRegistry;
+    this._templateRequest = $templateRequest;
+    this._injector = $injector;
+  }
 
   /**
    * Resolves a state's view config into either concrete template HTML or a component name.
@@ -96,7 +89,7 @@ export class TemplateFactoryProvider {
     const { template, templateUrl, component } = config;
 
     if (isDefined(template)) {
-      return asTemplate(TemplateFactoryProvider._fromString(template, params));
+      return asTemplate(TemplateFactoryService._fromString(template, params));
     }
 
     if (isDefined(templateUrl)) {
@@ -153,7 +146,10 @@ export class TemplateFactoryProvider {
     bindings?: Record<string, string>,
   ): string {
     bindings = bindings ?? {};
-    const componentBindings = getComponentBindings(this._injector, component);
+    const componentBindings = getComponentBindings(
+      this._compileRegistry,
+      component,
+    );
 
     const attrs: string[] = [];
 
@@ -170,10 +166,6 @@ export class TemplateFactoryProvider {
 
   /** @internal */
   _getTemplateRequest(): ng.TemplateRequestService {
-    if (!this._templateRequest) {
-      throw new Error("$templateRequest is not available");
-    }
-
     return this._templateRequest;
   }
 }
@@ -222,42 +214,24 @@ function componentAttributeTemplate(
  * Reads the binding declarations for a named component directive.
  */
 function getComponentBindings(
-  $injector: ng.InjectorService | undefined,
+  compileRegistry: CompileRegistry,
   name: string,
 ): BindingTuple[] {
-  const cmpDefs = $injector?.get(name + DirectiveSuffix) as
-    | ng.Directive[]
-    | undefined;
+  const componentBindings = compileRegistry.getComponentBindings(name);
 
-  if (!cmpDefs?.length) {
+  if (!componentBindings?.length) {
     throw new Error(`Unable to find component named '${name}'`);
   }
 
   const bindings: BindingTuple[] = [];
 
-  cmpDefs.forEach((def) => {
-    const defBindings = getBindings(def);
-
-    defBindings.forEach((binding) => {
+  componentBindings.forEach((definition) => {
+    scopeBindings(definition).forEach((binding) => {
       bindings.push(binding);
     });
   });
 
   return bindings;
-}
-
-function getBindings(def: ng.Directive): BindingTuple[] {
-  const componentBindings = def.bindToController;
-
-  if (
-    isObject(componentBindings) &&
-    isObject(def.scope) &&
-    !keys(def.scope).length
-  ) {
-    return scopeBindings(componentBindings);
-  }
-
-  return [];
 }
 
 function scopeBindings(bindingsObj: Record<string, string>): BindingTuple[] {

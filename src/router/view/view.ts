@@ -1,32 +1,47 @@
-import {
-  _compile,
-  _compileLifecycle,
-  _controller,
-  _injector,
-  _router,
-  _templateFactory,
-  _transitions,
-} from "../../injection-tokens.ts";
-import { setCacheData } from "../../shared/dom.ts";
+import { dealoc, removeElement, setCacheData } from "../../shared/dom.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { assign, assertDefined, isString } from "../../shared/utils.ts";
-import type {
-  CompileControllerLifecycleRecord,
-  CompileLifecycleProvider,
-} from "../../core/compile/compile.ts";
+import type { CompileControllerLifecycleRecord } from "../../core/compile/compile.ts";
+import type { CompiledFragmentRecord } from "../../core/compile/incremental-fragment.ts";
 import {
   registerViewControllerCallbacks,
   type ViewControllerInstance,
 } from "../directives/view-controller-hooks.ts";
-import { ResolveContext } from "../resolve/resolve-context.ts";
+import {
+  createResolveInvocationLocals,
+  ResolveContext,
+} from "../resolve/resolve-context.ts";
 import { kebobString } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { ViewDeclaration } from "../state/interface.ts";
+import type {
+  StateRetentionEvictionContext,
+  StateRetentionEvictionPolicy,
+  ViewDeclaration,
+} from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { TemplateFactoryProvider } from "../router/template-factory.ts";
-import type { RouterProvider } from "../router.ts";
-import { getLocals } from "../state/state-registry.ts";
+import type { TemplateFactoryService } from "../router/template-factory.ts";
+import type { RouterRuntimeState } from "../router.ts";
+import { createRetentionEvictionPolicyInvocationLocals } from "../invocation-context.ts";
+import { createRouterViewControllerInvocationLocals } from "./invocation-context.ts";
+
+interface CompileLifecycleSource {
+  onControllerCreated(
+    listener: (record: CompileControllerLifecycleRecord) => void,
+  ): () => void;
+}
+
+/** Dependencies used by router composition to initialize one view service. */
+export interface ViewServiceDependencies {
+  compileLifecycle: CompileLifecycleSource;
+  templateFactory: TemplateFactoryService;
+  routerState: RouterRuntimeState;
+  transitions: ng.TransitionsService;
+  compile: ng.CompileService;
+  controller: ng.ControllerService;
+  rootScope: ng.Scope;
+  injector: ng.InjectorService;
+}
 export { normalizeNgViewTarget } from "../state/view-target.ts";
 
 export interface ViewContext {
@@ -57,7 +72,7 @@ export interface ViewConfig {
   _id: number;
   _path: PathNode[];
   _viewDecl: ViewDeclaration;
-  _factory: TemplateFactoryProvider;
+  _factory: TemplateFactoryService;
   _component: string | undefined;
   _template: string | undefined;
   _loaded: boolean;
@@ -65,6 +80,51 @@ export interface ViewConfig {
   _fillPlan: ViewFillPlan;
   _targetKey: string;
   _depth: number;
+  _retention?: ViewRetentionAssignment;
+}
+
+/** @internal */
+export interface ViewRetentionAssignment {
+  _mode: "destroy" | "keep-alive";
+  _key: string;
+  _max?: number;
+  _pause?: "none" | "background" | "schedulers";
+  _evict?: "lru" | "oldest" | StateRetentionEvictionPolicy;
+  _state: string;
+}
+
+/** @internal */
+export interface RetainedViewEntry {
+  _key: string;
+  _config: ViewConfig;
+  _element: HTMLElement;
+  _nodes: Node[];
+  _fragment?: CompiledFragmentRecord;
+  _scope: ng.Scope;
+  _animation: NgViewAnimData;
+  _createdAt: number;
+  _lastUsed: number;
+}
+
+/** @internal */
+export type ViewRetentionDiagnosticKind = "retained" | "restored" | "destroyed";
+
+/** @internal */
+export type ViewRetentionDestroyReason =
+  | "evicted"
+  | "mode-destroy"
+  | "replaced"
+  | "root-destroy";
+
+/** @internal */
+export interface ViewRetentionDiagnostic {
+  _kind: ViewRetentionDiagnosticKind;
+  _key: string;
+  _state: string | undefined;
+  _targetKey: string | undefined;
+  _cacheSize: number;
+  _max?: number;
+  _reason?: ViewRetentionDestroyReason;
 }
 
 /** @internal */
@@ -154,7 +214,7 @@ function viewDeclDepth(viewDecl: ViewDeclaration): number {
 export function createViewConfig(
   path: PathNode[],
   viewDecl: ViewDeclaration,
-  factory: TemplateFactoryProvider,
+  factory: TemplateFactoryService,
 ): ViewConfig {
   return {
     _id: nextViewId++,
@@ -168,6 +228,7 @@ export function createViewConfig(
     _fillPlan: createViewFillPlan(viewDecl, undefined),
     _targetKey: viewDeclTargetKey(viewDecl),
     _depth: viewDeclDepth(viewDecl),
+    _retention: undefined,
   };
 }
 
@@ -204,6 +265,7 @@ export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
 
   config._controller = config._viewDecl.controller;
   assign(config, viewResult);
+  config._loaded = true;
   config._fillPlan = createViewFillPlan(config._viewDecl, config._component);
 
   return config;
@@ -251,17 +313,17 @@ export class ViewService {
   /** @internal */
   _viewConfigsByTarget: Map<string, ViewConfig[]>;
   /** @internal */
-  _templateFactory: TemplateFactoryProvider | undefined;
+  _templateFactory: TemplateFactoryService;
   /** @internal */
-  _compile: ng.CompileService | undefined;
+  _compile: ng.CompileService;
   /** @internal */
-  _controller: ng.ControllerService | undefined;
+  _controller: ng.ControllerService;
   /** @internal */
-  _injector: ng.InjectorService | undefined;
+  _injector: ng.InjectorService;
   /** @internal */
   _rootContext: StateObject | null | undefined;
   /** @internal */
-  _transitions: ng.TransitionService | undefined;
+  _transitions: ng.TransitionsService;
   /** @internal */
   _componentContexts: Map<string, ComponentViewContext>;
   /** @internal */
@@ -270,62 +332,56 @@ export class ViewService {
   _filledHosts: WeakSet<HTMLElement>;
   /** @internal */
   _deregisterCompileLifecycle: (() => void) | undefined;
+  /** @internal */
+  _deregisterRootDestroy: (() => void) | undefined;
+  /** @internal */
+  _retainedViews: Map<string, RetainedViewEntry>;
+  /** @internal */
+  _retainedViewClock: number;
+  /** @internal */
+  _retentionDiagnostics: ViewRetentionDiagnostic[];
 
   /**
-   * Creates an empty view registry ready to track active `ng-view` instances.
+   * Creates a fully initialized view registry for one router runtime.
    */
-  constructor() {
+  constructor(dependencies: ViewServiceDependencies) {
     this._ngViews = [];
     this._viewConfigs = [];
     this._viewConfigsByTarget = new Map();
-    this._templateFactory = undefined;
-    this._compile = undefined;
-    this._controller = undefined;
-    this._injector = undefined;
-    this._rootContext = undefined;
-    this._transitions = undefined;
+    this._templateFactory = dependencies.templateFactory;
+    this._compile = dependencies.compile;
+    this._controller = dependencies.controller;
+    this._injector = dependencies.injector;
+    this._rootContext = dependencies.routerState._currentState ?? null;
+    this._transitions = dependencies.transitions;
     this._componentContexts = new Map();
     this._nextComponentContextId = 0;
     this._filledHosts = new WeakSet();
     this._deregisterCompileLifecycle = undefined;
+    this._deregisterRootDestroy = undefined;
+    this._retainedViews = new Map();
+    this._retainedViewClock = 0;
+    this._retentionDiagnostics = [];
+    this._deregisterCompileLifecycle =
+      dependencies.compileLifecycle.onControllerCreated((record) => {
+        this._componentControllerCreated(record);
+      });
+    this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
+      this._destroyRetainedViews();
+      this._deregisterCompileLifecycle?.();
+      this._deregisterCompileLifecycle = undefined;
+      this._deregisterRootDestroy = undefined;
+    });
   }
 
-  /**
-   * Returns the singleton view service instance.
-   */
-  $get = [
-    _templateFactory,
-    _router,
-    _compileLifecycle,
-    _transitions,
-    _compile,
-    _controller,
-    _injector,
-    (
-      $templateFactory: TemplateFactoryProvider,
-      $routerState: RouterProvider,
-      $compileLifecycle: CompileLifecycleProvider,
-      $transitions: ng.TransitionService,
-      $compile: ng.CompileService,
-      $controller: ng.ControllerService,
-      $injector: ng.InjectorService,
-    ): ViewService => {
-      this._templateFactory = $templateFactory;
-      this._compile = $compile;
-      this._controller = $controller;
-      this._injector = $injector;
-      this._rootViewContext($routerState._currentState ?? null);
-      this._transitions = $transitions;
-      this._deregisterCompileLifecycle?.();
-      this._deregisterCompileLifecycle = $compileLifecycle.onControllerCreated(
-        (record) => {
-          this._componentControllerCreated(record);
-        },
-      );
-
-      return this;
-    },
-  ];
+  /** @internal */
+  destroy(): void {
+    this._destroyRetainedViews();
+    this._deregisterCompileLifecycle?.();
+    this._deregisterCompileLifecycle = undefined;
+    this._deregisterRootDestroy?.();
+    this._deregisterRootDestroy = undefined;
+  }
 
   /** @internal */
   _fillView(options: ViewFillOptions): void {
@@ -373,7 +429,9 @@ export class ViewService {
       (host as HTMLIFrameElement).contentDocument ?? host.childNodes,
     );
 
-    const locals = resolveContext ? getLocals(resolveContext) : undefined;
+    const locals = resolveContext
+      ? createResolveInvocationLocals(resolveContext)
+      : undefined;
 
     const targetScope = scope.$target as Record<string, unknown>;
 
@@ -385,7 +443,7 @@ export class ViewService {
       const controllerConfig = assertDefined(config);
       const controllerInstance = assertDefined(this._controller)(
         controller,
-        assign({}, locals, { $scope: scope, $element: host }),
+        createRouterViewControllerInvocationLocals(locals, scope, host),
       ) as ViewControllerInstance;
 
       setCacheData(host, "$ngControllerController", controllerInstance);
@@ -455,14 +513,206 @@ export class ViewService {
     record.element.removeAttribute(COMPONENT_CONTEXT_ATTR);
     this._componentContexts.delete(id);
 
-    if (!this._transitions) return;
-
     registerViewControllerCallbacks(
       this._transitions,
       record.controller as Record<string, unknown>,
       context.scope,
       context.config,
     );
+  }
+
+  /** @internal */
+  _restoreRetainedView(config: ViewConfig): RetainedViewEntry | undefined {
+    const retention = config._retention;
+
+    if (retention?._mode !== "keep-alive") return undefined;
+
+    const retained = this._retainedViews.get(retention._key);
+
+    if (!retained) return undefined;
+
+    this._retainedViews.delete(retention._key);
+    retained._lastUsed = ++this._retainedViewClock;
+    retained._config = config;
+    this._recordRetentionDiagnostic("restored", retained, {
+      _cacheSize: this._retainedViews.size,
+    });
+
+    return retained;
+  }
+
+  /** @internal */
+  _retainView(
+    entry: Omit<RetainedViewEntry, "_createdAt" | "_lastUsed">,
+  ): void {
+    const retention = entry._config._retention;
+
+    if (retention?._mode !== "keep-alive") {
+      this._destroyRetainedView(entry, "mode-destroy");
+
+      return;
+    }
+
+    const existing = this._retainedViews.get(retention._key);
+
+    if (existing) {
+      this._destroyRetainedView(existing, "replaced");
+    }
+
+    const clock = ++this._retainedViewClock;
+
+    this._retainedViews.set(retention._key, {
+      ...entry,
+      _createdAt: clock,
+      _lastUsed: clock,
+    });
+    this._recordRetentionDiagnostic("retained", entry, {
+      _cacheSize: this._retainedViews.size,
+      _max: retention._max,
+    });
+
+    this._evictRetainedViews(retention._max, retention._evict);
+  }
+
+  /** @internal */
+  _destroyRetainedView(
+    entry: Pick<RetainedViewEntry, "_element" | "_scope"> &
+      Partial<Pick<RetainedViewEntry, "_key" | "_config" | "_fragment">>,
+    reason?: ViewRetentionDestroyReason,
+  ): void {
+    if (!entry._scope.$handler._destroyed) {
+      entry._scope.$destroy();
+    }
+
+    if (entry._fragment && !entry._fragment.disposed) {
+      entry._fragment.dispose();
+    } else if (entry._element.parentNode) {
+      removeElement(entry._element);
+    } else {
+      dealoc(entry._element);
+    }
+
+    const key = entry._key;
+    const config = entry._config;
+
+    if (key && config) {
+      this._recordRetentionDiagnostic(
+        "destroyed",
+        { _key: key, _config: config },
+        {
+          _cacheSize: this._retainedViews.size,
+          _reason: reason,
+        },
+      );
+    }
+  }
+
+  /** @internal */
+  _destroyRetainedViews(): void {
+    this._retainedViews.forEach((entry) => {
+      this._destroyRetainedView(entry, "root-destroy");
+    });
+    this._retainedViews.clear();
+  }
+
+  /** @internal */
+  _evictRetainedViews(
+    max: number | undefined,
+    evict: ViewRetentionAssignment["_evict"],
+  ): void {
+    if (max === undefined || max < 0) return;
+
+    while (this._retainedViews.size > max) {
+      const selected =
+        this._selectPolicyRetainedView(max, evict) ??
+        this._selectOrderedRetainedView(evict === "oldest" ? "oldest" : "lru");
+
+      if (!selected) return;
+
+      this._retainedViews.delete(selected._key);
+      this._destroyRetainedView(selected, "evicted");
+    }
+  }
+
+  /** @internal */
+  _recordRetentionDiagnostic(
+    kind: ViewRetentionDiagnosticKind,
+    entry: Pick<RetainedViewEntry, "_key" | "_config">,
+    options: {
+      _cacheSize: number;
+      _max?: number;
+      _reason?: ViewRetentionDestroyReason;
+    },
+  ): void {
+    this._retentionDiagnostics.push({
+      _kind: kind,
+      _key: entry._key,
+      _state: entry._config._retention?._state,
+      _targetKey: entry._config._targetKey,
+      _cacheSize: options._cacheSize,
+      _max: options._max,
+      _reason: options._reason,
+    });
+  }
+
+  /** @internal */
+  _selectPolicyRetainedView(
+    max: number,
+    evict: ViewRetentionAssignment["_evict"],
+  ): RetainedViewEntry | undefined {
+    if (!evict || evict === "lru" || evict === "oldest") return undefined;
+
+    for (const entry of this._retainedViews.values()) {
+      const state =
+        entry._config._path[entry._config._path.length - 1].state.self;
+
+      const context: StateRetentionEvictionContext = {
+        state,
+        key: entry._key,
+        size: this._retainedViews.size,
+        max,
+      };
+
+      const result = this._injector.invoke(
+        evict,
+        undefined,
+        createRetentionEvictionPolicyInvocationLocals(context),
+        "retention eviction policy",
+      );
+
+      if (!isString(result)) continue;
+
+      const selected = this._retainedViews.get(result);
+
+      if (selected) return selected;
+    }
+
+    return undefined;
+  }
+
+  /** @internal */
+  _selectOrderedRetainedView(
+    evict: "lru" | "oldest",
+  ): RetainedViewEntry | undefined {
+    let selected: RetainedViewEntry | undefined;
+
+    this._retainedViews.forEach((entry) => {
+      if (!selected) {
+        selected = entry;
+
+        return;
+      }
+
+      const left = evict === "oldest" ? entry._createdAt : entry._lastUsed;
+      const right =
+        evict === "oldest" ? selected._createdAt : selected._lastUsed;
+
+      if (left < right) {
+        selected = entry;
+      }
+    });
+
+    return selected;
   }
 
   /**
@@ -498,6 +748,15 @@ export class ViewService {
    */
   /** @internal */
   _activateViewConfig(viewConfig: ViewConfig): void {
+    const existingTargetConfigs =
+      this._viewConfigsByTarget.get(viewConfig._targetKey) ?? [];
+
+    existingTargetConfigs.slice().forEach((existing) => {
+      if (existing !== viewConfig && existing._depth === viewConfig._depth) {
+        this._deactivateViewConfig(existing);
+      }
+    });
+
     this._viewConfigs.push(viewConfig);
 
     let targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);

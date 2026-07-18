@@ -1,4 +1,3 @@
-import { _injector } from "../injection-tokens.ts";
 import type { Injectable } from "../interface.ts";
 import {
   assign,
@@ -37,7 +36,7 @@ export type AnimationLifecycleCallback = (
   context: AnimationContext,
 ) => void;
 
-export interface NativeAnimationOptions extends KeyframeAnimationOptions {
+export interface AnimationOptions extends KeyframeAnimationOptions {
   animation?: string;
   keyframes?: Keyframe[] | PropertyIndexedKeyframes;
   enter?: Keyframe[] | PropertyIndexedKeyframes;
@@ -53,12 +52,10 @@ export interface NativeAnimationOptions extends KeyframeAnimationOptions {
   onCancel?: AnimationLifecycleCallback;
 }
 
-export type AnimationOptions = NativeAnimationOptions;
-
 export type AnimationPresetHandler = (
   element: Element,
   context: AnimationContext,
-  options: NativeAnimationOptions,
+  options: AnimationOptions,
 ) => AnimationResult;
 
 export interface AnimationPreset {
@@ -199,55 +196,44 @@ export interface AnimateService {
     element: Element,
     parent?: ParentNode | null,
     after?: ChildNode | null,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
   move(
     element: Element,
     parent: ParentNode | null,
     after?: ChildNode | null,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
-  leave(element: Element, options?: NativeAnimationOptions): AnimationHandle;
+  leave(element: Element, options?: AnimationOptions): AnimationHandle;
   addClass(
     element: Element,
     className: string,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
   removeClass(
     element: Element,
     className: string,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
   setClass(
     element: Element,
     add: string,
     remove: string,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
   animate(
     element: Element,
     from: Record<string, string | number>,
     to?: Record<string, string | number>,
     className?: string,
-    options?: NativeAnimationOptions,
+    options?: AnimationOptions,
   ): AnimationHandle;
   transition(update: () => void | Promise<void>): Promise<void>;
 }
 
 type PresetRegistration = AnimationPreset | Injectable<() => AnimationPreset>;
 
-export interface AnimateProvider {
-  /** @internal */
-  _registeredAnimations: Partial<Record<string, PresetRegistration>>;
-  /** @internal */
-  _customAnimationNames: Set<string>;
-  register(name: string, preset: PresetRegistration): void;
-  $get: [string, ($injector: ng.InjectorService) => AnimateService];
-}
-
 const DEFAULT_DURATION = 150;
-
-const DEFAULT_EASING = "cubic-bezier(0.2, 0, 0, 1)";
 
 const CSS_ANIMATION_PROPERTIES: Record<AnimationPhase, string> = {
   enter: "--ng-enter-animation",
@@ -265,327 +251,322 @@ const CSS_BUILT_IN_PRESETS = new Set([
   "scale",
   "slide-start",
   "slide-end",
+  "collapse",
+  "expand",
 ]);
 
-const BUILT_IN_PRESETS: Record<string, AnimationPreset> = {
-  // CSS-defined presets live in css/angular.css. Height presets stay here
-  // because they need runtime measurements before each animation.
-  collapse: {
-    enter: expandHeight,
-    leave: collapseHeight,
-    options: { duration: 200, easing: DEFAULT_EASING, fill: "both" },
-  },
-  expand: {
-    enter: expandHeight,
-    leave: collapseHeight,
-    options: { duration: 200, easing: DEFAULT_EASING, fill: "both" },
-  },
-};
+/** @internal */
+export class AnimationRegistry {
+  private readonly _registrations = new Map<string, PresetRegistration>();
+  private _destroyed = false;
 
-AnimateProvider.$inject = [] as string[];
+  register(name: string, preset: PresetRegistration): void {
+    this.assertActive();
 
-export function AnimateProvider(this: AnimateProvider): void {
-  /** @internal */
-  this._registeredAnimations = { ...BUILT_IN_PRESETS };
-  /** @internal */
-  this._customAnimationNames = new Set();
-
-  this.register = (name: string, preset: PresetRegistration): void => {
     if (!name || !isString(name)) {
       throw $animateError("noname", "Animation name must be a string.");
     }
 
     const normalizedName = normalizeAnimationName(name);
 
-    this._registeredAnimations[normalizedName] = preset;
-    this._customAnimationNames.add(normalizedName);
+    this._registrations.set(normalizedName, preset);
+  }
+
+  get(name: string): PresetRegistration | undefined {
+    this.assertActive();
+
+    return this._registrations.get(name);
+  }
+
+  has(name: string): boolean {
+    this.assertActive();
+
+    return this._registrations.has(name);
+  }
+
+  destroy(): void {
+    if (this._destroyed) return;
+
+    this._destroyed = true;
+    this._registrations.clear();
+  }
+
+  private assertActive(): void {
+    if (this._destroyed) {
+      throw new Error("Animation registry has already been disposed.");
+    }
+  }
+}
+
+/** @internal */
+export function createAnimateService(
+  registry: AnimationRegistry,
+  $injector: ng.InjectorService,
+): AnimateService {
+  const resolvedPresets = new Map<
+    string,
+    { registration: PresetRegistration; preset: AnimationPreset }
+  >();
+
+  const activeHandles = new WeakMap<Element, AnimationHandle>();
+
+  const resolvePreset = (element: Element, options?: AnimationOptions) => {
+    const name = animationNameFor(element, options);
+
+    if (!name) return undefined;
+
+    const registration = registry.get(name);
+
+    if (!registration) return undefined;
+
+    const resolved = resolvedPresets.get(name);
+
+    if (resolved?.registration === registration) {
+      return resolved.preset;
+    }
+
+    const preset =
+      isFunction(registration) || Array.isArray(registration)
+        ? $injector.invoke(registration)
+        : registration;
+
+    resolvedPresets.set(name, { registration, preset });
+
+    return preset;
   };
 
-  this.$get = [
-    _injector,
-    ($injector: ng.InjectorService): AnimateService => {
-      const resolvedPresets = new Map<string, AnimationPreset>();
+  const run = (
+    phase: AnimationPhase,
+    element: Element,
+    options: AnimationOptions = {},
+    contextOverrides: Partial<AnimationContext> = {},
+    cleanup?: (ok: boolean) => void,
+  ): AnimationHandle => {
+    const controller = new AbortController();
 
-      const activeHandles = new WeakMap<Element, AnimationHandle>();
+    activeHandles.get(element)?.cancel();
+    activeHandles.delete(element);
 
-      const resolvePreset = (
-        element: Element,
-        options?: NativeAnimationOptions,
-      ) => {
-        const name = animationNameFor(element, options);
+    const context: AnimationContext = {
+      phase,
+      signal: controller.signal,
+      ...contextOverrides,
+    };
 
-        if (!name) return undefined;
+    const tempClasses = splitOptionClasses(options.tempClasses);
 
-        if (resolvedPresets.has(name)) {
-          return {
-            preset: assertDefined(resolvedPresets.get(name)),
-            custom: this._customAnimationNames.has(name),
-          };
+    const elementClassList = element.classList;
+
+    if (tempClasses.length) {
+      elementClassList.add(...tempClasses);
+    }
+
+    const animationName = animationNameFor(element, options);
+
+    const cssPresetClass =
+      animationName && !registry.has(animationName)
+        ? cssPresetClassFor(animationName)
+        : undefined;
+
+    const finishCleanup = (ok: boolean): void => {
+      if (tempClasses.length) {
+        elementClassList.remove(...tempClasses);
+      }
+
+      if (cssPresetClass) {
+        elementClassList.remove(cssPresetClass);
+      }
+
+      if (ok) {
+        options.onDone?.(element, context);
+      } else {
+        options.onCancel?.(element, context);
+      }
+
+      cleanup?.(ok);
+    };
+
+    if (shouldSkipAnimation(element, options)) {
+      finishCleanup(true);
+
+      return new AnimationHandle(undefined, controller);
+    }
+
+    options.onStart?.(element, context);
+
+    if (cssPresetClass) {
+      elementClassList.add(cssPresetClass);
+    }
+
+    const resolvedPreset = resolvePreset(element, options);
+
+    const preset = resolvedPreset;
+
+    const handler = preset?.[phase];
+
+    let result: AnimationResult | AnimationResult[];
+
+    let animationCleanup: (() => void) | undefined;
+
+    const cssPresetCleanup = animationName
+      ? prepareCssPreset(element, animationName, phase)
+      : undefined;
+
+    if (isFunction(handler)) {
+      result = handler(element, context, options);
+    } else {
+      const optionKeyframes = keyframesForPhase(phase, options);
+
+      const keyframes = optionKeyframes ?? handler;
+
+      const cssAnimation = keyframes
+        ? undefined
+        : cssAnimationForPhase(element, phase);
+
+      if (keyframes) {
+        result = element.animate(
+          keyframes,
+          animationOptionsFor(preset, options),
+        );
+      } else if (cssAnimation) {
+        const cssResult = runCssAnimation(element, cssAnimation);
+
+        if (animationName && isAutoHeightPreset(animationName)) {
+          applyCssAnimationTiming(cssResult.animations, options);
         }
+        result = cssResult.animations;
+        animationCleanup = cssResult.cleanup;
+      } else {
+        const styleKeyframes = keyframesFromStyles(context.from, context.to);
 
-        const registration = this._registeredAnimations[name];
+        result = styleKeyframes
+          ? element.animate(
+              styleKeyframes,
+              animationOptionsFor(preset, options),
+            )
+          : undefined;
+      }
+    }
 
-        if (!registration) return undefined;
+    const handle = new AnimationHandle(result, controller, (ok) => {
+      animationCleanup?.();
+      cssPresetCleanup?.();
+      finishCleanup(ok);
+    });
 
-        const preset = (
-          isFunction(registration) || Array.isArray(registration)
-            ? $injector.invoke(
-                registration as Injectable<() => AnimationPreset>,
-              )
-            : registration
-        ) as AnimationPreset;
-
-        resolvedPresets.set(name, preset);
-
-        return {
-          preset,
-          custom: this._customAnimationNames.has(name),
-        };
-      };
-
-      const run = (
-        phase: AnimationPhase,
-        element: Element,
-        options: NativeAnimationOptions = {},
-        contextOverrides: Partial<AnimationContext> = {},
-        cleanup?: (ok: boolean) => void,
-      ): AnimationHandle => {
-        const controller = new AbortController();
-
-        activeHandles.get(element)?.cancel();
+    activeHandles.set(element, handle);
+    handle.done(() => {
+      if (activeHandles.get(element) === handle) {
         activeHandles.delete(element);
+      }
+    });
 
-        const context: AnimationContext = {
-          phase,
-          signal: controller.signal,
-          ...contextOverrides,
-        };
+    return handle;
+  };
 
-        const tempClasses = splitOptionClasses(options.tempClasses);
-
-        const elementClassList = element.classList;
-
-        if (tempClasses.length) {
-          elementClassList.add(...tempClasses);
-        }
-
-        const animationName = animationNameFor(element, options);
-
-        const cssPresetClass =
-          animationName && !this._registeredAnimations[animationName]
-            ? cssPresetClassFor(animationName)
-            : undefined;
-
-        const finishCleanup = (ok: boolean): void => {
-          if (tempClasses.length) {
-            elementClassList.remove(...tempClasses);
-          }
-
-          if (cssPresetClass) {
-            elementClassList.remove(cssPresetClass);
-          }
-
-          if (ok) {
-            options.onDone?.(element, context);
-          } else {
-            options.onCancel?.(element, context);
-          }
-
-          cleanup?.(ok);
-        };
-
-        if (shouldSkipAnimation(element, options)) {
-          finishCleanup(true);
-
-          return new AnimationHandle(undefined, controller);
-        }
-
-        options.onStart?.(element, context);
-
-        if (cssPresetClass) {
-          elementClassList.add(cssPresetClass);
-        }
-
-        const resolvedPreset = resolvePreset(element, options);
-
-        const preset = resolvedPreset?.preset;
-
-        const handler = preset?.[phase];
-
-        let result: AnimationResult | AnimationResult[];
-
-        let animationCleanup: (() => void) | undefined;
-
-        if (isFunction(handler)) {
-          result = handler(element, context, options);
-        } else {
-          const optionKeyframes = keyframesForPhase(phase, options);
-
-          const customKeyframes =
-            resolvedPreset?.custom && handler ? handler : undefined;
-
-          const keyframes = optionKeyframes ?? customKeyframes;
-
-          const cssAnimation = keyframes
-            ? undefined
-            : cssAnimationForPhase(element, phase);
-
-          const presetKeyframes =
-            !cssAnimation && !resolvedPreset?.custom ? handler : undefined;
-
-          if (keyframes) {
-            result = element.animate(
-              keyframes,
-              animationOptionsFor(preset, options),
-            );
-          } else if (cssAnimation) {
-            const cssResult = runCssAnimation(element, cssAnimation);
-
-            result = cssResult.animations;
-            animationCleanup = cssResult.cleanup;
-          } else if (presetKeyframes) {
-            result = element.animate(
-              presetKeyframes,
-              animationOptionsFor(preset, options),
-            );
-          } else {
-            const styleKeyframes = keyframesFromStyles(
-              context.from,
-              context.to,
-            );
-
-            result = styleKeyframes
-              ? element.animate(
-                  styleKeyframes,
-                  animationOptionsFor(preset, options),
-                )
-              : undefined;
-          }
-        }
-
-        const handle = new AnimationHandle(result, controller, (ok) => {
-          animationCleanup?.();
-          finishCleanup(ok);
-        });
-
-        activeHandles.set(element, handle);
-        handle.done(() => {
-          if (activeHandles.get(element) === handle) {
-            activeHandles.delete(element);
-          }
-        });
-
-        return handle;
-      };
-
-      return {
-        cancel(handle?: AnimationHandle): void {
-          handle?.cancel();
-        },
-
-        define: (name, preset): void => {
-          this.register(name, preset);
-          resolvedPresets.delete(normalizeAnimationName(name));
-        },
-
-        enter: (element, parent, after, options) => {
-          domInsert(element, assertDefined(parent ?? after?.parentNode), after);
-
-          return run("enter", element, options);
-        },
-
-        move: (element, parent, after, options) => {
-          domInsert(element, assertDefined(parent ?? after?.parentNode), after);
-
-          return run("move", element, options);
-        },
-
-        leave: (element, options) =>
-          run("leave", element, options, {}, (ok) => {
-            if (ok) removeElement(element);
-          }),
-
-        addClass: (element, className, options) => {
-          const nextOptions = { ...options, addClass: className };
-
-          element.classList.add(...splitClasses(className));
-
-          return run("addClass", element, nextOptions, {
-            className,
-            addClass: className,
-          });
-        },
-
-        removeClass: (element, className, options) => {
-          const nextOptions = { ...options, removeClass: className };
-
-          element.classList.remove(...splitClasses(className));
-
-          return run("removeClass", element, nextOptions, {
-            className,
-            removeClass: className,
-          });
-        },
-
-        setClass: (element, add, remove, options) => {
-          const nextOptions = {
-            ...options,
-            addClass: add,
-            removeClass: remove,
-          };
-
-          element.classList.add(...splitClasses(add));
-          element.classList.remove(...splitClasses(remove));
-
-          return run("setClass", element, nextOptions, {
-            addClass: add,
-            removeClass: remove,
-          });
-        },
-
-        animate: (element, from, to, className, options) => {
-          const toStyles = to ?? {};
-
-          if (className) element.classList.add(...splitClasses(className));
-
-          assign((element as HTMLElement).style, from);
-
-          return run(
-            "animate",
-            element,
-            { ...options, from, to: toStyles },
-            { from, to: toStyles, className },
-            () => {
-              assign((element as HTMLElement).style, toStyles);
-            },
-          );
-        },
-
-        async transition(update): Promise<void> {
-          type ViewTransitionStarter = (
-            callback: () => void | Promise<void>,
-          ) => {
-            finished: Promise<void>;
-          };
-          const startViewTransition = Reflect.get(
-            document,
-            "startViewTransition",
-          ) as unknown;
-
-          if (!isFunction(startViewTransition)) {
-            await update();
-
-            return;
-          }
-
-          await (startViewTransition as ViewTransitionStarter).call(
-            document,
-            update,
-          ).finished;
-        },
-      };
+  return {
+    cancel(handle?: AnimationHandle): void {
+      handle?.cancel();
     },
-  ];
+
+    define: (name, preset): void => {
+      registry.register(name, preset);
+    },
+
+    enter: (element, parent, after, options) => {
+      domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+
+      return run("enter", element, options);
+    },
+
+    move: (element, parent, after, options) => {
+      domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+
+      return run("move", element, options);
+    },
+
+    leave: (element, options) =>
+      run("leave", element, options, {}, (ok) => {
+        if (ok) removeElement(element);
+      }),
+
+    addClass: (element, className, options) => {
+      const nextOptions = { ...options, addClass: className };
+
+      element.classList.add(...splitClasses(className));
+
+      return run("addClass", element, nextOptions, {
+        className,
+        addClass: className,
+      });
+    },
+
+    removeClass: (element, className, options) => {
+      const nextOptions = { ...options, removeClass: className };
+
+      element.classList.remove(...splitClasses(className));
+
+      return run("removeClass", element, nextOptions, {
+        className,
+        removeClass: className,
+      });
+    },
+
+    setClass: (element, add, remove, options) => {
+      const nextOptions = {
+        ...options,
+        addClass: add,
+        removeClass: remove,
+      };
+
+      element.classList.add(...splitClasses(add));
+      element.classList.remove(...splitClasses(remove));
+
+      return run("setClass", element, nextOptions, {
+        addClass: add,
+        removeClass: remove,
+      });
+    },
+
+    animate: (element, from, to, className, options) => {
+      const toStyles = to ?? {};
+
+      if (className) element.classList.add(...splitClasses(className));
+
+      assign((element as HTMLElement).style, from);
+
+      return run(
+        "animate",
+        element,
+        { ...options, from, to: toStyles },
+        { from, to: toStyles, className },
+        () => {
+          assign((element as HTMLElement).style, toStyles);
+        },
+      );
+    },
+
+    async transition(update): Promise<void> {
+      type ViewTransitionStarter = (callback: () => void | Promise<void>) => {
+        finished: Promise<void>;
+      };
+      const startViewTransition = Reflect.get(
+        document,
+        "startViewTransition",
+      ) as unknown;
+
+      if (!isFunction(startViewTransition)) {
+        await update();
+
+        return;
+      }
+
+      await (startViewTransition as ViewTransitionStarter).call(
+        document,
+        update,
+      ).finished;
+    },
+  };
 }
 
 function splitClasses(className: string): string[] {
@@ -610,9 +591,44 @@ function cssPresetClassFor(name: string): string | undefined {
     : undefined;
 }
 
+function prepareCssPreset(
+  element: Element,
+  name: string,
+  phase: AnimationPhase,
+): (() => void) | undefined {
+  if (
+    !isAutoHeightPreset(name) ||
+    (phase !== "enter" && phase !== "leave") ||
+    !(element instanceof HTMLElement)
+  ) {
+    return undefined;
+  }
+
+  const property = "--ng-animate-auto-height";
+  const previousHeight = element.style.getPropertyValue(property);
+  const height =
+    phase === "enter"
+      ? element.scrollHeight
+      : element.offsetHeight || element.scrollHeight;
+
+  element.style.setProperty(property, `${String(height)}px`);
+
+  return () => {
+    if (previousHeight) {
+      element.style.setProperty(property, previousHeight);
+    } else {
+      element.style.removeProperty(property);
+    }
+  };
+}
+
+function isAutoHeightPreset(name: string): boolean {
+  return name === "collapse" || name === "expand";
+}
+
 function animationNameFor(
   element: Element,
-  options?: NativeAnimationOptions,
+  options?: AnimationOptions,
 ): string | undefined {
   const explicit = options?.animation;
 
@@ -630,7 +646,7 @@ function animationNameFor(
 
 function keyframesForPhase(
   phase: AnimationPhase,
-  options: NativeAnimationOptions,
+  options: AnimationOptions,
 ): Keyframe[] | PropertyIndexedKeyframes | undefined {
   if (options.keyframes) return options.keyframes;
 
@@ -654,7 +670,7 @@ function keyframesFromStyles(
 
 function animationOptionsFor(
   preset: AnimationPreset | undefined,
-  options: NativeAnimationOptions,
+  options: AnimationOptions,
 ): KeyframeAnimationOptions {
   const defaults = preset?.options ?? {};
 
@@ -749,9 +765,40 @@ function runCssAnimation(
   };
 }
 
+function applyCssAnimationTiming(
+  animations: Animation[],
+  options: AnimationOptions,
+): void {
+  const timing: OptionalEffectTiming = {};
+  const timingKeys = [
+    "delay",
+    "direction",
+    "duration",
+    "easing",
+    "endDelay",
+    "fill",
+    "iterationStart",
+    "iterations",
+  ] as const;
+
+  timingKeys.forEach((key) => {
+    const value = options[key];
+
+    if (value !== undefined) {
+      Object.assign(timing, { [key]: value });
+    }
+  });
+
+  if (Object.keys(timing).length === 0) return;
+
+  animations.forEach((animation) => {
+    animation.effect?.updateTiming(timing);
+  });
+}
+
 function shouldSkipAnimation(
   element: Element,
-  options: NativeAnimationOptions,
+  options: AnimationOptions,
 ): boolean {
   if (!("animate" in element)) return true;
 
@@ -760,102 +807,4 @@ function shouldSkipAnimation(
   if (options.duration === 0) return true;
 
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function expandHeight(
-  element: Element,
-  context: AnimationContext,
-  options: NativeAnimationOptions,
-): AnimationResult {
-  const target = element as HTMLElement;
-
-  const previousOverflow = target.style.overflow;
-
-  const previousHeight = target.style.height;
-
-  const previousOpacity = target.style.opacity;
-
-  const height = `${String(target.scrollHeight)}px`;
-
-  target.style.overflow = "hidden";
-
-  const animation = target.animate(
-    [
-      { height: "0px", opacity: 0 },
-      { height, opacity: 1 },
-    ],
-    animationOptionsFor(BUILT_IN_PRESETS.expand, options),
-  );
-
-  cleanupHeightAnimation(target, context, animation, {
-    height: previousHeight,
-    opacity: previousOpacity,
-    overflow: previousOverflow,
-  });
-
-  return animation;
-}
-
-function collapseHeight(
-  element: Element,
-  context: AnimationContext,
-  options: NativeAnimationOptions,
-): AnimationResult {
-  const target = element as HTMLElement;
-
-  const previousOverflow = target.style.overflow;
-
-  const previousHeight = target.style.height;
-
-  const previousOpacity = target.style.opacity;
-
-  const height = `${String(target.offsetHeight || target.scrollHeight)}px`;
-
-  target.style.height = height;
-  target.style.overflow = "hidden";
-
-  const animation = target.animate(
-    [
-      { height, opacity: 1 },
-      { height: "0px", opacity: 0 },
-    ],
-    animationOptionsFor(BUILT_IN_PRESETS.collapse, options),
-  );
-
-  cleanupHeightAnimation(target, context, animation, {
-    height: previousHeight,
-    opacity: previousOpacity,
-    overflow: previousOverflow,
-  });
-
-  return animation;
-}
-
-function cleanupHeightAnimation(
-  element: HTMLElement,
-  context: AnimationContext,
-  animation: Animation,
-  previous: { height: string; opacity: string; overflow: string },
-): void {
-  let cleaned = false;
-
-  const cleanup = () => {
-    if (cleaned) return;
-
-    cleaned = true;
-    element.style.height = previous.height;
-    element.style.opacity = previous.opacity;
-    element.style.overflow = previous.overflow;
-  };
-
-  context.signal.addEventListener("abort", cleanup, { once: true });
-  void animation.finished
-    .then(() => {
-      cleanup();
-
-      return undefined;
-    })
-    .catch(() => {
-      cleanup();
-    });
 }

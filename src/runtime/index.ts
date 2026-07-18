@@ -1,21 +1,37 @@
 import {
   AngularRuntime,
   type AngularRuntimeOptions,
+  type RuntimeModule,
 } from "../angular-runtime.ts";
 import {
-  registerCustomNgModule,
-  type CustomNgModuleOptions,
+  registerComposedNgModule,
+  type DirectiveRegistrations,
+  type FilterRegistrations,
+  type ProviderRegistration,
+  type ServiceRegistrations,
 } from "./custom-ng.ts";
 
-export interface CustomAngularRuntimeOptions extends AngularRuntimeOptions {
-  /** Configuration for the custom `ng` module. */
-  ngModule?: CustomNgModuleOptions;
+/** Declarative inputs for a tree-shakable AngularTS runtime. */
+export interface AngularComposition {
+  /** Treat this runtime as a sub-application of the current host runtime. */
+  subapp?: AngularRuntimeOptions["subapp"];
+  /** Framework modules included by the composed `ng` module. */
+  modules?: readonly RuntimeModule[];
+  /** Name of the composed root module. Defaults to `ng`. */
+  name?: string;
+  /** Additional application modules required by the composed root module. */
+  requires?: string[];
+  /** Additional providers registered in the composed root module. */
+  providers?: ProviderRegistration;
+  /** Services registered in the composed root module. */
+  services?: ServiceRegistrations;
+  /** Filters registered in the composed root module. */
+  filters?: FilterRegistrations;
+  /** Directives registered in the composed root module. */
+  directives?: DirectiveRegistrations;
 }
 
-/**
- * Creates an AngularTS runtime with no built-in modules.
- */
-export function createAngularBare(
+function createBareRuntime(
   options: AngularRuntimeOptions = {},
 ): AngularRuntime {
   return new AngularRuntime({
@@ -25,22 +41,30 @@ export function createAngularBare(
 }
 
 /**
- * Creates an AngularTS runtime with a custom `ng` module.
+ * Creates a tree-shakable AngularTS runtime from the requested composition.
  */
-export function createAngularCustom(
-  options: CustomAngularRuntimeOptions = {},
+export function createAngular(
+  options: AngularComposition = {},
 ): AngularRuntime {
-  const angular = createAngularBare(options);
+  const { modules = [], subapp, ...moduleOptions } = options;
+  const angular = createBareRuntime({ subapp });
+  const moduleNames = modules.map(
+    (registerModule) => registerModule(angular).name,
+  );
+  const requires = Array.from(
+    new Set([...moduleNames, ...(moduleOptions.requires ?? [])]),
+  );
 
-  registerCustomNgModule(angular as unknown as ng.Angular, options.ngModule);
+  registerComposedNgModule(angular as unknown as ng.Angular, {
+    ...moduleOptions,
+    requires,
+  });
 
   return angular;
 }
 
-export { AngularRuntime, registerCustomNgModule };
-export { coreProviders } from "./custom-ng.ts";
+export { AngularRuntime };
 export type {
-  CustomNgModuleOptions,
   DirectiveRegistration,
   DirectiveRegistrations,
   FilterRegistration,
@@ -52,5 +76,5 @@ export type {
 export type {
   AngularRuntimeConstructorInput,
   AngularRuntimeOptions,
-  BuiltinNgModuleRegistrar,
+  RuntimeModule,
 } from "../angular-runtime.ts";

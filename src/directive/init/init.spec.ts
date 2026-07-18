@@ -131,14 +131,10 @@ describe("ngInit", () => {
   });
 
   it("should be evaluated after ngController", async () => {
-    window.angular.module("test1", ["ng"]);
-    createInjector([
-      "ng",
-      ($controllerProvider) =>
-        $controllerProvider.register("TestCtrl", () => {
-          /* empty */
-        }),
-    ]).invoke((_$rootScope_: any, _$compile_: any) => {
+    window.angular
+      .module("test1", ["ng"])
+      .controller("TestCtrl", (): undefined => undefined);
+    createInjector(["test1"]).invoke((_$rootScope_: any, _$compile_: any) => {
       $rootScope = _$rootScope_;
       $compile = _$compile_;
     });

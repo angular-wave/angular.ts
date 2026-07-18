@@ -19,7 +19,6 @@ import {
   getRealtimeProtocolContent,
   isRealtimeProtocolMessage,
   type RealtimeProtocolMessage,
-  type SwapModeType,
 } from "../realtime/protocol.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 import { getNormalizedAttr } from "../../shared/dom.ts";
@@ -212,11 +211,9 @@ export function ngWebTransportDirective(
         return { $message: JSON.parse(text), $text: text };
       }
 
-      function parseSwapMode(
-        value: string | undefined,
-      ): SwapModeType | undefined {
+      function parseSwapMode(value: string | undefined): SwapMode | undefined {
         if (isString(value) && value in SwapMode) {
-          return value as SwapModeType;
+          return value as SwapMode;
         }
 
         return undefined;
@@ -319,13 +316,10 @@ export function ngWebTransportDirective(
       async function readIncomingStreams(
         nextConnection: ng.WebTransportConnection,
       ): Promise<void> {
-        const streams = nextConnection.transport.incomingUnidirectionalStreams;
-
-        if (!streams) {
-          throw new Error(
-            "WebTransport incoming unidirectional streams are not available",
-          );
-        }
+        const streams = nextConnection.transport
+          .incomingUnidirectionalStreams as ReadableStream<
+          ReadableStream<Uint8Array>
+        >;
 
         streamReader = streams.getReader();
 

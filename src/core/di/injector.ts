@@ -4,7 +4,6 @@ import {
   assertArgFn,
   assertNotHasOwnProperty,
   callFunction,
-  entries,
   isArray,
   isFunction,
   isInstanceOf,
@@ -21,7 +20,6 @@ import {
 } from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
 import { validateArray } from "../../shared/validate.ts";
-import type { CookieService } from "../../services/cookie/cookie.ts";
 import type {
   Constructor,
   Injectable,
@@ -31,17 +29,25 @@ import type { RuntimeFunction } from "../../shared/utils.ts";
 import type {
   PersistentStoreConfig,
   ProviderCache,
+  ProviderRegistry,
   StorageLike,
 } from "./interface.ts";
+import { isProviderRegistrationCommand } from "./interface.ts";
+import { createServiceDecorationInvocationLocals } from "./invocation-context.ts";
+import type { NgModule } from "./ng-module/ng-module.ts";
 const $injectorError = createErrorFactory(_injector);
+// Module registry commands mutate runtime-owned registries shared by its injectors.
+const appliedRuntimeCommands = new WeakSet<object>();
 
 type Dynamic = ReturnType<typeof JSON.parse>;
 
-type InjectableFunction = (...args: Dynamic[]) => unknown;
+export type InjectableFunction = (...args: Dynamic[]) => unknown;
 
-type RunBlock = Injectable<InjectableFunction>;
+export type RunBlock = Injectable<InjectableFunction>;
 
 export type ModuleLike = string | RunBlock;
+
+export type ModuleResolver = (name: string) => NgModule;
 
 /**
  *
@@ -52,22 +58,14 @@ export type ModuleLike = string | RunBlock;
 export function createInjector(
   modulesToLoad: ModuleLike[],
   strictDi = false,
+  configure?: (registry: ProviderRegistry) => void,
+  resolveModule: ModuleResolver = (name) => window.angular.module(name),
 ): InjectorService {
   assert(isArray(modulesToLoad), "modules required");
 
   const loadedModules = new Map<unknown, boolean>();
 
-  const providerCache: ProviderCache = {
-    $provide: {
-      provider: supportObject(provider),
-      factory: supportObject(factory),
-      service: supportObject(service),
-      value: supportObject(value),
-      constant: supportObject(constant),
-      store,
-      decorator,
-    },
-  };
+  const providerCache: ProviderCache = {};
 
   const providerInjector = (providerCache.$injector = new ProviderInjector(
     providerCache,
@@ -83,9 +81,21 @@ export function createInjector(
 
   let instanceInjector: InjectorService = protoInstanceInjector;
 
+  const providerRegistry: ProviderRegistry = {
+    provider,
+    factory,
+    service,
+    value,
+    constant,
+    store,
+    decorator,
+  };
+
+  configure?.(providerRegistry);
+
   const runBlocks = loadModules(modulesToLoad);
 
-  instanceInjector = protoInstanceInjector.get(_injector) as InjectorService;
+  instanceInjector = protoInstanceInjector.get(_injector);
 
   runBlocks.forEach((fn) => {
     if (fn) instanceInjector.invoke(fn);
@@ -100,7 +110,7 @@ export function createInjector(
   return instanceInjector;
 
   ////////////////////////////////////
-  // $provide methods
+  // Provider registry methods
   ////////////////////////////////////
 
   /**
@@ -164,11 +174,16 @@ export function createInjector(
    */
   function service(
     name: string,
-    constructor: Injectable<Constructor>,
+    constructor:
+      | Injectable<Constructor>
+      | Injectable<(...args: Dynamic[]) => unknown>,
   ): ServiceProvider {
     return factory(name, [
       _injector,
-      ($injector: InjectorService) => $injector.instantiate(constructor),
+      ($injector: InjectorService) =>
+        $injector.instantiate(
+          constructor as Parameters<typeof $injector.instantiate>[0],
+        ),
     ]);
   }
 
@@ -176,7 +191,7 @@ export function createInjector(
    * Register a fixed value as a service.
    * @param {String} name
    * @param {any} val
-   * @returns {ng.ServiceProvider}
+   * @returns {ServiceProvider}
    */
   function value(name: string, val: unknown): ServiceProvider {
     return (providerCache[name + providerSuffix] = {
@@ -202,9 +217,9 @@ export function createInjector(
     serviceName: string,
     decorFn: Injectable<InjectableFunction>,
   ): void {
-    const origProvider = providerInjector.get(
+    const origProvider = providerInjector.get<ServiceProvider>(
       serviceName + providerSuffix,
-    ) as ServiceProvider;
+    );
 
     const origGet = origProvider.$get as Parameters<
       typeof instanceInjector.invoke
@@ -216,9 +231,11 @@ export function createInjector(
         origProvider,
       );
 
-      return instanceInjector.invoke(decorFn, null, {
-        $delegate: origInstance,
-      });
+      return instanceInjector.invoke(
+        decorFn,
+        null,
+        createServiceDecorationInvocationLocals(origInstance),
+      );
     };
   }
 
@@ -259,7 +276,7 @@ export function createInjector(
           case "cookie": {
             const instance: unknown = $injector.instantiate(ctor);
 
-            const $cookie = $injector.get(_cookie) as CookieService;
+            const $cookie = $injector.get(_cookie);
 
             const serialize = backendOrConfig?.serialize ?? JSON.stringify;
 
@@ -358,7 +375,7 @@ export function createInjector(
 
       try {
         if (isString(module)) {
-          const moduleFn = window.angular.module(module);
+          const moduleFn = resolveModule(module);
 
           instanceInjector._modules[module] = moduleFn;
 
@@ -371,17 +388,41 @@ export function createInjector(
           );
 
           invokeQueue.forEach((invokeArgs) => {
+            if (isProviderRegistrationCommand(invokeArgs)) {
+              invokeArgs.register(providerRegistry);
+
+              return;
+            }
+
             const [, invokeName] = invokeArgs;
 
-            const providerInstance = providerInjector.get(
-              invokeArgs[0],
-            ) as Record<string, (...args: unknown[]) => unknown>;
+            const invocationTarget = invokeArgs[0];
+
+            if (
+              !isString(invocationTarget) &&
+              appliedRuntimeCommands.has(invokeArgs)
+            ) {
+              return;
+            }
+
+            const providerInstance = isString(invocationTarget)
+              ? providerInjector.get<
+                  Record<string, (...args: unknown[]) => unknown>
+                >(invocationTarget)
+              : (invocationTarget as unknown as Record<
+                  string,
+                  (...args: unknown[]) => unknown
+                >);
 
             callFunction(
               providerInstance[invokeName],
               providerInstance,
               ...(invokeArgs[2] as unknown[]),
             );
+
+            if (!isString(invocationTarget)) {
+              appliedRuntimeCommands.add(invokeArgs);
+            }
           });
         } else if (isFunction(module)) {
           moduleRunBlocks.push(
@@ -417,27 +458,4 @@ export function createInjector(
 
     return moduleRunBlocks;
   }
-}
-
-/**
- * Wraps a delegate function to support object-style arguments.
- *
- * @template V
- * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
- * @returns {(key: string | Record<string, V>, value?: V) => any}
- */
-function supportObject<V, R>(
-  delegate: (key: string, value: V) => R,
-): (key: string | Record<string, V>, value?: V) => R | undefined {
-  return function (key: string | Record<string, V>, value?: V): R | undefined {
-    if (isObject(key)) {
-      entries(key).forEach(([k, v]) => {
-        delegate(k, v);
-      });
-
-      return undefined;
-    } else {
-      return delegate(key, value as V);
-    }
-  };
 }

@@ -1,10 +1,8 @@
 import {
   SCOPE_PROXY_BIND,
-  createScope,
   type Scope,
   type ScopeProxyBindable,
 } from "../../core/scope/scope.ts";
-import { _machine } from "../../injection-tokens.ts";
 import {
   hasOwn,
   isArray,
@@ -15,271 +13,499 @@ import {
   isObject,
   isString,
 } from "../../shared/utils.ts";
-import type {
-  MachineConfig,
-  MachineMode,
-  MachineNoEvents,
-  MachineService,
-  MachineTransitionMap,
-} from "../machine/machine.ts";
-
-export type WorkflowMode = MachineMode;
-
-export type WorkflowStatus = WorkflowMode;
-
 export type WorkflowNoCommands = Record<never, never>;
 
-export type WorkflowConcurrencyPolicy = "allow" | "reject" | "queue";
+type WorkflowEmptyData = Record<never, never>;
 
-export interface WorkflowDiagnostic {
-  code: string;
-  message: string;
-  recoverable?: boolean;
-  path?: string;
-  command?: string;
-  detail?: unknown;
+/** Input and output carried by a workflow command. */
+export interface WorkflowCommandContract {
+  input: unknown;
+  output: unknown;
 }
 
-export type WorkflowCommandResult<TOutput = unknown> =
+/** Labeled type contract carried by a workflow definition and instance. */
+export interface WorkflowContract {
+  data: object;
+  commands: object;
+  state: string;
+}
+
+type DefaultWorkflowContract = {
+  data: object;
+  commands: WorkflowNoCommands;
+  state: string;
+};
+
+type WorkflowContractOf<
+  TData extends object,
+  TCommands extends object,
+  TState extends string = string,
+> = {
+  data: TData;
+  commands: TCommands;
+  state: TState;
+};
+
+type WorkflowInstance<
+  TData extends object,
+  TCommands extends object,
+  TState extends string = string,
+> = Workflow<WorkflowContractOf<TData, TCommands, TState>>;
+
+type WorkflowConfiguration<
+  TData extends object,
+  TCommands extends object,
+  TState extends string = string,
+> = WorkflowConfig<WorkflowContractOf<TData, TCommands, TState>>;
+
+export type WorkflowConcurrencyMode = "parallel" | "reject" | "queue";
+
+export interface WorkflowDiagnostic {
+  readonly code: string;
+  readonly message: string;
+  readonly recoverable?: boolean;
+  readonly path?: string;
+  readonly command?: string;
+  readonly detail?: unknown;
+}
+
+export type WorkflowResult<TOutput = unknown> =
   | {
-      ok: true;
-      output?: TOutput;
-      diagnostics?: WorkflowDiagnostic[];
+      readonly ok: true;
+      readonly status: "completed";
+      readonly output: TOutput;
+      readonly diagnostics?: readonly WorkflowDiagnostic[];
     }
   | {
-      ok: false;
-      diagnostics: WorkflowDiagnostic[];
+      readonly ok: false;
+      readonly status: WorkflowFailureStatus;
+      readonly diagnostics: readonly WorkflowDiagnostic[];
     };
 
-export interface WorkflowCommandOptions {
-  concurrency?: WorkflowConcurrencyPolicy;
-  signal?: AbortSignal;
-  timeout?: number;
+/** @inline */
+type WorkflowFailureStatus = "failed" | "cancelled" | "timeout" | "rejected";
+
+const WORKFLOW_COMMAND_CANCELLATION = Symbol("workflow.command.cancellation");
+
+class WorkflowCommandRejectionError extends Error {
+  constructor(readonly diagnostic: WorkflowDiagnostic) {
+    super(diagnostic.message);
+    this.name = "WorkflowCommandRejectionError";
+  }
+}
+
+interface WorkflowCommandCancellation {
+  readonly [WORKFLOW_COMMAND_CANCELLATION]: WorkflowDiagnostic;
 }
 
 export interface WorkflowCommandContext<
-  TData extends object = Record<string, unknown>,
+  TContract extends WorkflowContract = DefaultWorkflowContract,
   TInput = unknown,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
-  TName extends string = string,
 > {
-  workflow: Workflow<TData, TEvents, TCommands>;
-  data: TData;
-  input: TInput;
-  command: TName;
+  readonly data: Readonly<TContract["data"]>;
+  readonly input: TInput;
+  readonly command: string;
   cleanup(callback: () => void): void;
-  signal: AbortSignal;
+  /** Stop the command with a controlled, recorded diagnostic. */
+  reject(diagnostic: WorkflowDiagnostic): never;
+  readonly signal: AbortSignal;
 }
 
-export type WorkflowCommand<
-  TData extends object = Record<string, unknown>,
-  TInput = unknown,
-  TOutput = unknown,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
-  TName extends string = string,
-> = (
-  context: WorkflowCommandContext<TData, TInput, TEvents, TCommands, TName>,
-) =>
-  | WorkflowCommandResult<TOutput>
-  | TOutput
-  | Promise<WorkflowCommandResult<TOutput> | TOutput>;
+type WorkflowCommandHandlerResult<TOutput> = TOutput | Promise<TOutput>;
 
-export type WorkflowCommandMap<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-> = Record<string, WorkflowCommand<TData, unknown, unknown, TEvents>>;
-
-type WorkflowCommandDefs<TCommands extends object> = {
-  [TName in keyof TCommands]: (context: never) => unknown;
+type DefaultWorkflowCommandContract = {
+  input: unknown;
+  output: unknown;
 };
+
+export type WorkflowCommand<
+  TContract extends WorkflowContract = DefaultWorkflowContract,
+  TCommand extends WorkflowCommandContract = DefaultWorkflowCommandContract,
+> = (
+  context: WorkflowCommandContext<TContract, TCommand["input"]>,
+) => WorkflowCommandHandlerResult<TCommand["output"]>;
 
 type WorkflowCommandName<TCommands extends object> = Extract<
   keyof TCommands,
   string
 >;
 
-type WorkflowCommandParts<TCommand> =
-  TCommand extends WorkflowCommand<
-    infer TData,
-    infer TInput,
-    infer TOutput,
-    infer TEvents,
-    infer TCommands,
-    infer TName
-  >
-    ? [TData, TInput, TOutput, TEvents, TCommands, TName]
-    : [never, unknown, unknown, never, never, string];
-
+/** @inline */
 type WorkflowCommandInput<
   TCommands extends object,
   TName extends WorkflowCommandName<TCommands>,
-> = WorkflowCommandParts<TCommands[TName]>[1];
+> = TCommands[TName] extends WorkflowCommandContract
+  ? TCommands[TName]["input"]
+  : unknown;
 
+/** @inline */
 type WorkflowCommandOutput<
   TCommands extends object,
   TName extends WorkflowCommandName<TCommands>,
-> = WorkflowCommandParts<TCommands[TName]>[2];
+> = TCommands[TName] extends WorkflowCommandContract
+  ? TCommands[TName]["output"]
+  : unknown;
 
+/** @inline */
 type WorkflowCommandInputArgs<TInput> = undefined extends TInput
-  ? [input?: TInput, options?: WorkflowCommandOptions]
-  : [input: TInput, options?: WorkflowCommandOptions];
+  ? [input?: TInput]
+  : [input: TInput];
 
-type WorkflowCommandOutputUnion<TCommands extends object> =
-  WorkflowCommandName<TCommands> extends infer TName
-    ? TName extends WorkflowCommandName<TCommands>
-      ? WorkflowCommandOutput<TCommands, TName>
-      : never
+export type WorkflowSupervisorWorkflowMap = Record<string, unknown>;
+
+type WorkflowLifecycleTargetState<TTarget> = TTarget extends string
+  ? TTarget
+  : TTarget extends { to: infer TState extends string }
+    ? TState
     : never;
 
-type WorkflowRun<TCommands extends object> = string extends keyof TCommands
-  ? <TOutput = unknown>(
-      command: string,
-      input?: unknown,
-      options?: WorkflowCommandOptions,
-    ) => Promise<WorkflowCommandResult<TOutput>>
-  : <TName extends WorkflowCommandName<TCommands>>(
-      command: TName,
-      ...input: WorkflowCommandInputArgs<WorkflowCommandInput<TCommands, TName>>
-    ) => Promise<
-      WorkflowCommandResult<WorkflowCommandOutput<TCommands, TName>>
-    >;
+type WorkflowCommandStates<TCommand> = TCommand extends {
+  from: infer TFrom;
+  pending: infer TPending;
+  success: infer TSuccess;
+  failure: infer TFailure;
+}
+  ?
+      | Extract<
+          TFrom extends readonly (infer TState)[] ? TState : TFrom,
+          string
+        >
+      | WorkflowLifecycleTargetState<TPending>
+      | WorkflowLifecycleTargetState<TSuccess>
+      | WorkflowLifecycleTargetState<TFailure>
+      | (TCommand extends { cancelled: infer TCancelled }
+          ? WorkflowLifecycleTargetState<TCancelled>
+          : never)
+      | (TCommand extends { timeout: infer TTimeout }
+          ? WorkflowLifecycleTargetState<TTimeout>
+          : never)
+  : never;
 
-type WorkflowReplay<TCommands extends object> = string extends keyof TCommands
-  ? <TOutput = unknown>(
-      command?: string,
-      options?: WorkflowCommandOptions,
-    ) => Promise<WorkflowCommandResult<TOutput>>
-  : {
-      (
-        options?: WorkflowCommandOptions,
-      ): Promise<WorkflowCommandResult<WorkflowCommandOutputUnion<TCommands>>>;
-      <TName extends WorkflowCommandName<TCommands>>(
-        command: TName,
-        options?: WorkflowCommandOptions,
-      ): Promise<
-        WorkflowCommandResult<WorkflowCommandOutput<TCommands, TName>>
-      >;
-    };
+type WorkflowStateFromDefinition<TDefinition> = TDefinition extends {
+  initial: infer TInitial extends string;
+  commands: infer TCommands extends object;
+}
+  ?
+      | TInitial
+      | {
+          [TName in keyof TCommands]: WorkflowCommandStates<TCommands[TName]>;
+        }[keyof TCommands]
+  : string;
+
+export type WorkflowFromDefinition<TDefinition> =
+  TDefinition extends Workflow<infer TContract>
+    ? Workflow<TContract>
+    : TDefinition extends WorkflowConfig<infer TContract>
+      ? Workflow<TContract>
+      : Workflow;
+
+type WorkflowSupervisorWorkflowName<TWorkflows extends object> = Extract<
+  keyof TWorkflows,
+  string
+>;
+
+export type WorkflowSupervisorSnapshotMap<TWorkflows extends object> = {
+  [TWorkflowName in keyof TWorkflows &
+    string]: TWorkflows[TWorkflowName] extends {
+    snapshot(): infer TSnapshot extends WorkflowSnapshot;
+  }
+    ? TSnapshot
+    : TWorkflows[TWorkflowName] extends WorkflowConfig<infer TContract>
+      ? WorkflowSnapshot<TContract>
+      : WorkflowSnapshot;
+};
 
 export interface WorkflowHistoryEntry {
-  id: number;
-  type: "command.started" | "command.completed" | "command.failed";
-  command: string;
-  input?: unknown;
-  output?: unknown;
-  diagnostics?: WorkflowDiagnostic[];
+  readonly id: number;
+  readonly type: "command.started" | "command.completed" | "command.failed";
+  readonly command: string;
+  readonly input?: unknown;
+  readonly output?: unknown;
+  readonly diagnostics?: readonly WorkflowDiagnostic[];
 }
 
-interface WorkflowBaseConfig<TData extends object, TEvents extends object> {
+declare const WORKFLOW_CONTRACT: unique symbol;
+
+/** @inline */
+interface WorkflowLifecycleContext<TContract extends WorkflowContract, TInput> {
+  readonly command: string;
+  readonly input: TInput;
+  readonly data: TContract["data"];
+}
+
+/** @inline */
+interface WorkflowSuccessContext<
+  TContract extends WorkflowContract,
+  TInput,
+  TOutput,
+> extends WorkflowLifecycleContext<TContract, TInput> {
+  readonly output: TOutput;
+}
+
+/** @inline */
+interface WorkflowFailureContext<
+  TContract extends WorkflowContract,
+  TInput,
+> extends WorkflowLifecycleContext<TContract, TInput> {
+  readonly diagnostic: WorkflowDiagnostic;
+  readonly diagnostics: readonly WorkflowDiagnostic[];
+}
+
+/** @inline */
+type WorkflowLifecycleTarget<TState extends string, TContext> =
+  | TState
+  | {
+      to: TState;
+      update?(context: TContext): void;
+    };
+
+export interface WorkflowCommandDefinition<
+  TContract extends WorkflowContract = DefaultWorkflowContract,
+  TCommand extends WorkflowCommandContract = DefaultWorkflowCommandContract,
+> {
+  from: TContract["state"] | readonly TContract["state"][];
+  pending: WorkflowLifecycleTarget<
+    TContract["state"],
+    WorkflowLifecycleContext<TContract, TCommand["input"]>
+  >;
+  execute?: WorkflowCommand<TContract, TCommand>;
+  success: WorkflowLifecycleTarget<
+    TContract["state"],
+    WorkflowSuccessContext<TContract, TCommand["input"], TCommand["output"]>
+  >;
+  failure: WorkflowLifecycleTarget<
+    TContract["state"],
+    WorkflowFailureContext<TContract, TCommand["input"]>
+  >;
+  cancelled?: WorkflowLifecycleTarget<
+    TContract["state"],
+    WorkflowFailureContext<TContract, TCommand["input"]>
+  >;
+  timeout?: WorkflowLifecycleTarget<
+    TContract["state"],
+    WorkflowFailureContext<TContract, TCommand["input"]>
+  >;
+  concurrency?: WorkflowConcurrencyMode;
   commandTimeout?: number;
-  concurrency?: WorkflowConcurrencyPolicy;
-  diagnosticLimit?: number;
-  id: string;
-  initial: WorkflowMode;
-  data: TData;
-  historyLimit?: number;
-  migrateSnapshot?: WorkflowSnapshotMigration<TData>;
-  transitions: MachineTransitionMap<TData, TEvents>;
+  retry?: number;
 }
 
-type WorkflowCommandConfig<TCommands extends object> =
-  keyof TCommands extends never
-    ? {
-        commands?: undefined;
-      }
-    : {
-        commands: TCommands & WorkflowCommandDefs<TCommands>;
-      };
+type WorkflowCommandConfig<TContract extends WorkflowContract> = {
+  [TName in keyof TContract["commands"]]: WorkflowCommandDefinition<
+    TContract,
+    TContract["commands"][TName] extends WorkflowCommandContract
+      ? TContract["commands"][TName]
+      : DefaultWorkflowCommandContract
+  >;
+};
 
 export type WorkflowConfig<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
-> = WorkflowBaseConfig<TData, TEvents> & WorkflowCommandConfig<TCommands>;
+  TContract extends WorkflowContract = DefaultWorkflowContract,
+> = {
+  diagnosticLimit?: number;
+  id: string;
+  initial: TContract["state"];
+  historyLimit?: number;
+  migrateSnapshot?: (snapshot: unknown) => WorkflowSnapshot<TContract>;
+} & (keyof TContract["data"] extends never
+  ? { readonly data?: TContract["data"] }
+  : { readonly data: TContract["data"] }) & {
+    readonly [WORKFLOW_CONTRACT]?: TContract;
+    commands: WorkflowCommandConfig<TContract>;
+  };
+
+type WorkflowInferredDefinition = {
+  diagnosticLimit?: number;
+  id: string;
+  initial: string;
+  historyLimit?: number;
+  data?: object;
+  commands: Record<string, object>;
+};
+
+type WorkflowDataFromDefinition<TDefinition> = TDefinition extends {
+  data: infer TData extends object;
+}
+  ? TData
+  : WorkflowEmptyData;
+
+type WorkflowCommandMapFromDefinition<TDefinition> = TDefinition extends {
+  commands: infer TCommands extends object;
+}
+  ? {
+      [TName in keyof TCommands]: TCommands[TName] extends {
+        execute: (context: infer TContext) => infer TOutput;
+      }
+        ? {
+            input: TContext extends { input: infer TInput } ? TInput : unknown;
+            output: Awaited<TOutput>;
+          }
+        : { input: undefined; output: undefined };
+    }
+  : WorkflowNoCommands;
 
 export interface WorkflowSnapshot<
-  TData extends object = Record<string, unknown>,
+  TContract extends WorkflowContract = DefaultWorkflowContract,
 > {
-  version: 1;
-  id: string;
-  current: WorkflowMode;
-  data: TData;
-  diagnostics: WorkflowDiagnostic[];
-  history: WorkflowHistoryEntry[];
+  readonly version: 1;
+  readonly id: string;
+  readonly state: TContract["state"];
+  readonly data: TContract["data"];
+  readonly diagnostics: readonly WorkflowDiagnostic[];
+  readonly history: readonly WorkflowHistoryEntry[];
 }
 
-export type WorkflowSnapshotMigration<
-  TData extends object = Record<string, unknown>,
-> = (snapshot: unknown) => WorkflowSnapshot<TData>;
-
 export interface Workflow<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
+  TContract extends WorkflowContract = DefaultWorkflowContract,
 > {
-  id: string;
-  current: WorkflowMode;
-  data: TData;
-  diagnostics: WorkflowDiagnostic[];
-  history: WorkflowHistoryEntry[];
-  send<TType extends Extract<keyof TEvents, string>>(
-    type: TType,
-    ...payload: undefined extends TEvents[TType]
-      ? [payload?: TEvents[TType]]
-      : [payload: TEvents[TType]]
-  ): boolean;
-  can(type: Extract<keyof TEvents, string>): boolean;
-  matches(mode: WorkflowMode): boolean;
-  run: WorkflowRun<TCommands>;
-  retry: WorkflowReplay<TCommands>;
-  repeat: WorkflowReplay<TCommands>;
-  cancel(command?: string): number;
-  snapshot(): WorkflowSnapshot<TData>;
+  readonly id: string;
+  readonly state: TContract["state"];
+  readonly data: TContract["data"];
+  readonly diagnostics: readonly WorkflowDiagnostic[];
+  readonly history: readonly WorkflowHistoryEntry[];
+  can(command: WorkflowCommandName<TContract["commands"]>): boolean;
+  run<TName extends WorkflowCommandName<TContract["commands"]>>(
+    command: TName,
+    ...input: WorkflowCommandInputArgs<
+      WorkflowCommandInput<TContract["commands"], TName>
+    >
+  ): Promise<
+    WorkflowResult<WorkflowCommandOutput<TContract["commands"], TName>>
+  >;
+  cancel(command?: WorkflowCommandName<TContract["commands"]>): number;
+  snapshot(): WorkflowSnapshot<TContract>;
   restore(snapshot: unknown): void;
 }
 
 export interface WorkflowService {
-  <
-    TData extends object = Record<string, unknown>,
-    TEvents extends object = MachineNoEvents,
-    TCommands extends object = WorkflowNoCommands,
-  >(
-    config: WorkflowConfig<TData, TEvents, TCommands>,
-  ): Workflow<TData, TEvents, TCommands>;
-  <
-    TData extends object = Record<string, unknown>,
-    TEvents extends object = MachineNoEvents,
-    TCommands extends object = WorkflowNoCommands,
-  >(
-    scope: ng.Scope,
-    config: WorkflowConfig<TData, TEvents, TCommands>,
-  ): Workflow<TData, TEvents, TCommands>;
+  <TContract extends WorkflowContract>(
+    config: WorkflowConfig<TContract>,
+  ): Workflow<TContract>;
+  <const TDefinition extends WorkflowInferredDefinition>(
+    config: TDefinition,
+  ): Workflow<
+    WorkflowContractOf<
+      WorkflowDataFromDefinition<TDefinition>,
+      WorkflowCommandMapFromDefinition<TDefinition>,
+      WorkflowStateFromDefinition<TDefinition>
+    >
+  >;
+}
+
+export type WorkflowSupervisorStatus =
+  | "idle"
+  | "persisting"
+  | "recovering"
+  | "failed";
+
+export interface WorkflowSupervisorDiagnostic {
+  readonly code: string;
+  readonly message: string;
+  readonly recoverable?: boolean;
+  readonly workflow?: string;
+  readonly command?: string;
+  readonly detail?: unknown;
+}
+
+export interface WorkflowSupervisorSnapshot<
+  TWorkflowSnapshots extends Record<string, WorkflowSnapshot> = Record<
+    string,
+    WorkflowSnapshot
+  >,
+> {
+  readonly version: 1;
+  readonly id: string;
+  readonly status: WorkflowSupervisorStatus;
+  readonly workflows: TWorkflowSnapshots;
+  readonly diagnostics: readonly WorkflowSupervisorDiagnostic[];
+  readonly updatedAt: number;
+}
+
+export interface WorkflowSupervisorPersistence<
+  TSnapshot extends WorkflowSupervisorSnapshot = WorkflowSupervisorSnapshot,
+> {
+  load(id: string): Promise<TSnapshot | undefined>;
+  save(id: string, snapshot: TSnapshot): Promise<void>;
+}
+
+/** Built-in IndexedDB persistence selected by a workflow supervisor. */
+export interface WorkflowSupervisorPersistenceConfig {
+  type: "indexeddb";
+  database?: string;
+  store?: string;
+  version?: number;
+  indexedDB?: IDBFactory;
+}
+
+export type WorkflowSupervisorConfig<
+  TWorkflows extends WorkflowSupervisorWorkflowMap =
+    WorkflowSupervisorWorkflowMap,
+> = {
+  id: string;
+  workflows: TWorkflows;
+} & (
+  | {
+      persistence:
+        | "indexeddb"
+        | WorkflowSupervisorPersistenceConfig
+        | WorkflowSupervisorPersistence<
+            WorkflowSupervisorSnapshot<
+              WorkflowSupervisorSnapshotMap<TWorkflows>
+            >
+          >;
+      /** Persist a fresh supervisor snapshot after each completed command. */
+      autoPersist?: boolean;
+      /** Restore persisted state and retry recoverable commands on startup. */
+      autoRecover?: boolean;
+    }
+  | {
+      persistence?: undefined;
+      autoPersist?: false;
+      autoRecover?: false;
+    }
+);
+
+export interface WorkflowSupervisor<
+  TWorkflows extends WorkflowSupervisorWorkflowMap =
+    WorkflowSupervisorWorkflowMap,
+> {
+  readonly id: string;
+  readonly status: WorkflowSupervisorStatus;
+  readonly diagnostics: readonly WorkflowSupervisorDiagnostic[];
+  readonly ready: Promise<
+    | WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+    | undefined
+  >;
+  workflow<TWorkflowName extends WorkflowSupervisorWorkflowName<TWorkflows>>(
+    name: TWorkflowName,
+  ): WorkflowFromDefinition<TWorkflows[TWorkflowName]>;
+  cancelAll(): number;
+  snapshot(): WorkflowSupervisorSnapshot<
+    WorkflowSupervisorSnapshotMap<TWorkflows>
+  >;
+  restore(snapshot: unknown): void;
+  persist(): Promise<
+    WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+  >;
+  recover(): Promise<
+    | WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+    | undefined
+  >;
 }
 
 type WorkflowTarget<
   TData extends object,
-  TEvents extends object,
   TCommands extends object,
-> = Workflow<TData, TEvents, TCommands> & ScopeProxyBindable;
-
-interface WorkflowArgs<
-  TData extends object,
-  TEvents extends object,
-  TCommands extends object,
-> {
-  _scope?: ng.Scope;
-  _config: WorkflowConfig<TData, TEvents, TCommands>;
-}
+  TState extends string,
+> = WorkflowInstance<TData, TCommands, TState> & ScopeProxyBindable;
 
 interface WorkflowBinding<
   TData extends object,
-  TEvents extends object,
   TCommands extends object,
+  TState extends string,
 > {
   _handler: Scope;
-  _proxy: Workflow<TData, TEvents, TCommands>;
+  _proxy: WorkflowInstance<TData, TCommands, TState>;
 }
 
 interface WorkflowRunState {
@@ -293,58 +519,900 @@ interface WorkflowRunState {
   _done: boolean;
 }
 
-export class WorkflowProvider {
-  $get = [
-    _machine,
-    ($machine: MachineService): WorkflowService =>
-      createWorkflowFactory($machine) as WorkflowService,
-  ];
+/** @internal */
+export function createWorkflowService(): WorkflowService {
+  return createWorkflowFactory() as WorkflowService;
 }
 
 export function defineWorkflow<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
+  const TDefinition extends WorkflowInferredDefinition,
 >(
-  config: WorkflowConfig<TData, TEvents, TCommands>,
-): WorkflowConfig<TData, TEvents, TCommands> {
-  return config;
+  config: TDefinition,
+): WorkflowConfig<
+  WorkflowContractOf<
+    WorkflowDataFromDefinition<TDefinition>,
+    WorkflowCommandMapFromDefinition<TDefinition>,
+    WorkflowStateFromDefinition<TDefinition>
+  >
+> &
+  TDefinition;
+export function defineWorkflow<
+  TContract extends WorkflowContract = DefaultWorkflowContract,
+>(config: WorkflowConfig<TContract>): WorkflowConfig<TContract>;
+export function defineWorkflow(
+  config: WorkflowConfig | WorkflowInferredDefinition,
+): WorkflowConfig | WorkflowInferredDefinition {
+  return config.data === undefined ? { ...config, data: {} } : config;
 }
 
-export function defineCommand<
-  TData extends object = Record<string, unknown>,
-  TInput = unknown,
-  TOutput = unknown,
-  TEvents extends object = MachineNoEvents,
-  TCommands extends object = WorkflowNoCommands,
-  TName extends string = string,
+export function createWorkflowSupervisor<
+  TWorkflows extends WorkflowSupervisorWorkflowMap,
 >(
-  command: WorkflowCommand<TData, TInput, TOutput, TEvents, TCommands, TName>,
-): WorkflowCommand<TData, TInput, TOutput, TEvents, TCommands, TName> {
-  return command;
+  $workflow: WorkflowService,
+  config: WorkflowSupervisorConfig<TWorkflows>,
+): WorkflowSupervisor<TWorkflows> {
+  const workflows = createWorkflowSupervisorRegistry($workflow, config);
+  const persistence = resolveWorkflowSupervisorPersistence(config.persistence);
+  const exposedWorkflows = new Map<string, Workflow>();
+  const diagnostics: WorkflowSupervisorDiagnostic[] = [];
+  let status: WorkflowSupervisorStatus = "idle";
+
+  function snapshot(): WorkflowSupervisorSnapshot<
+    WorkflowSupervisorSnapshotMap<TWorkflows>
+  > {
+    const workflowSnapshots: Record<string, WorkflowSnapshot> = {};
+
+    for (const [name, workflow] of workflows) {
+      workflowSnapshots[name] = workflow.snapshot();
+    }
+
+    return {
+      version: 1,
+      id: config.id,
+      status,
+      workflows: workflowSnapshots as WorkflowSupervisorSnapshotMap<TWorkflows>,
+      diagnostics: normalizeWorkflowSupervisorDiagnostics(diagnostics),
+      updatedAt: Date.now(),
+    };
+  }
+
+  function appendSupervisorDiagnostic(
+    diagnostic: WorkflowSupervisorDiagnostic,
+  ): WorkflowSupervisorDiagnostic {
+    diagnostics.push(diagnostic);
+
+    return diagnostic;
+  }
+
+  function createMissingWorkflowDiagnostic(
+    workflowName: unknown,
+    command?: string,
+  ): WorkflowSupervisorDiagnostic {
+    const formattedWorkflow = isString(workflowName) ? workflowName : "";
+    const workflow =
+      isString(workflowName) && workflowName ? workflowName : undefined;
+
+    return {
+      code: "workflowSupervisor.missingWorkflow",
+      message: formattedWorkflow
+        ? `Workflow supervisor '${config.id}' does not have workflow '${formattedWorkflow}'.`
+        : `Workflow supervisor '${config.id}' requires a workflow name.`,
+      recoverable: true,
+      workflow,
+      command,
+      detail: normalizeDiagnosticDetail({
+        supervisor: config.id,
+        workflow: workflowName,
+      }),
+    };
+  }
+
+  function createUnknownSnapshotWorkflowDiagnostic(
+    workflowName: string,
+  ): WorkflowSupervisorDiagnostic {
+    return {
+      code: "workflowSupervisor.unknownSnapshotWorkflow",
+      message: `Workflow supervisor '${config.id}' snapshot includes unknown workflow '${workflowName}'.`,
+      recoverable: true,
+      workflow: workflowName,
+      detail: normalizeDiagnosticDetail({
+        supervisor: config.id,
+        workflow: workflowName,
+      }),
+    };
+  }
+
+  function createPersistenceDiagnostic(
+    code: string,
+    action: "load" | "save",
+    error: unknown,
+  ): WorkflowSupervisorDiagnostic {
+    return {
+      code,
+      message: `Workflow supervisor '${config.id}' failed to ${action} persisted snapshot: ${formatUnknownMessage(error)}`,
+      recoverable: true,
+      detail: normalizeDiagnosticDetail({
+        supervisor: config.id,
+        action,
+        error: formatUnknownMessage(error),
+      }),
+    };
+  }
+
+  function createRecoveryDiagnostic(
+    workflowName: string,
+    command: string,
+    result: Extract<WorkflowResult, { ok: false }>,
+  ): WorkflowSupervisorDiagnostic {
+    return {
+      code: "workflowSupervisor.recoveryCommandFailed",
+      message: `Workflow supervisor '${config.id}' recovery retry failed for workflow '${workflowName}' command '${command}'.`,
+      recoverable: result.diagnostics.some(
+        (diagnostic) => diagnostic.recoverable === true,
+      ),
+      workflow: workflowName,
+      command,
+      detail: normalizeDiagnosticDetail({
+        supervisor: config.id,
+        workflow: workflowName,
+        command,
+        diagnostics: result.diagnostics,
+      }),
+    };
+  }
+
+  function findRecoverableFailedCommand(
+    workflow: Workflow,
+  ): WorkflowHistoryEntry | undefined {
+    for (let index = workflow.history.length - 1; index >= 0; index -= 1) {
+      const entry = workflow.history[index];
+
+      if (entry.type !== "command.failed") {
+        continue;
+      }
+
+      if (
+        !entry.diagnostics?.some(
+          (diagnostic) => diagnostic.recoverable === true,
+        )
+      ) {
+        continue;
+      }
+
+      return entry;
+    }
+
+    return undefined;
+  }
+
+  function recoverWorkflowCommand(
+    workflow: Workflow,
+    entry: WorkflowHistoryEntry,
+  ): Promise<WorkflowResult> {
+    return runWorkflowCommand(workflow, entry.command, entry.input);
+  }
+
+  function restore(snapshotInput: unknown): void {
+    const restoredSnapshot = normalizeWorkflowSupervisorSnapshot(snapshotInput);
+
+    if (restoredSnapshot.id !== config.id) {
+      throw new Error(
+        "$workflowSupervisor restore snapshot id must match supervisor id.",
+      );
+    }
+
+    const supervisorDiagnostics = [...restoredSnapshot.diagnostics];
+
+    for (const [name, workflowSnapshot] of Object.entries(
+      restoredSnapshot.workflows,
+    )) {
+      const workflow = workflows.get(name);
+
+      if (!workflow) {
+        supervisorDiagnostics.push(
+          createUnknownSnapshotWorkflowDiagnostic(name),
+        );
+
+        continue;
+      }
+
+      workflow.restore(workflowSnapshot);
+    }
+
+    status = restoredSnapshot.status;
+    replaceArray(diagnostics, supervisorDiagnostics);
+  }
+
+  async function persist(): Promise<
+    WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+  > {
+    const supervisorSnapshot = snapshot();
+
+    if (!persistence) {
+      return supervisorSnapshot;
+    }
+
+    status = "persisting";
+
+    try {
+      await persistence.save(config.id, supervisorSnapshot);
+      status = "idle";
+
+      return supervisorSnapshot;
+    } catch (error) {
+      status = "failed";
+      appendSupervisorDiagnostic(
+        createPersistenceDiagnostic(
+          "workflowSupervisor.persistenceSaveFailed",
+          "save",
+          error,
+        ),
+      );
+
+      throw error;
+    }
+  }
+
+  async function restorePersisted(): Promise<
+    | WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+    | undefined
+  > {
+    if (!persistence) {
+      return undefined;
+    }
+
+    status = "recovering";
+
+    try {
+      const persistedSnapshot = await persistence.load(config.id);
+
+      if (!persistedSnapshot) {
+        status = "idle";
+
+        return undefined;
+      }
+
+      restore(persistedSnapshot);
+      status = "idle";
+
+      return snapshot();
+    } catch (error) {
+      status = "failed";
+      appendSupervisorDiagnostic(
+        createPersistenceDiagnostic(
+          "workflowSupervisor.persistenceLoadFailed",
+          "load",
+          error,
+        ),
+      );
+
+      throw error;
+    }
+  }
+
+  async function persistAfterCommand<TOutput>(
+    result: WorkflowResult<TOutput>,
+  ): Promise<WorkflowResult<TOutput>> {
+    try {
+      await persist();
+    } catch {
+      return result;
+    }
+
+    return result;
+  }
+
+  function getWorkflowOrThrow(name: string): Workflow {
+    const workflow = getWorkflowOrRecordDiagnostic(name);
+
+    if (!workflow) {
+      throw new Error(
+        `$workflowSupervisor workflow '${name}' is not registered.`,
+      );
+    }
+
+    if (config.autoPersist !== true) {
+      return workflow;
+    }
+
+    let exposedWorkflow = exposedWorkflows.get(name);
+
+    if (!exposedWorkflow) {
+      exposedWorkflow = new Proxy(workflow, {
+        get(target, property, receiver) {
+          if (property === "run") {
+            return (command: string, input?: unknown) =>
+              runWorkflowCommand(target, command, input).then(
+                persistAfterCommand,
+              );
+          }
+
+          return Reflect.get(target, property, receiver) as unknown;
+        },
+      });
+      exposedWorkflows.set(name, exposedWorkflow);
+    }
+
+    return exposedWorkflow;
+  }
+
+  function getWorkflowOrRecordDiagnostic(
+    workflowName: unknown,
+    command?: string,
+  ): Workflow | undefined {
+    if (!isString(workflowName) || !workflowName) {
+      appendSupervisorDiagnostic(
+        createMissingWorkflowDiagnostic(workflowName, command),
+      );
+
+      return undefined;
+    }
+
+    const workflow = workflows.get(workflowName);
+
+    if (!workflow) {
+      appendSupervisorDiagnostic(
+        createMissingWorkflowDiagnostic(workflowName, command),
+      );
+
+      return undefined;
+    }
+
+    return workflow;
+  }
+
+  async function recover(): Promise<
+    | WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>
+    | undefined
+  > {
+    status = "recovering";
+
+    const restored = await restorePersisted();
+    let recovered = false;
+    let failed = false;
+
+    for (const [workflowName, workflow] of workflows) {
+      const entry = findRecoverableFailedCommand(workflow);
+
+      if (!entry) continue;
+
+      recovered = true;
+
+      const result = await recoverWorkflowCommand(workflow, entry);
+
+      if (!result.ok) {
+        failed = true;
+        appendSupervisorDiagnostic(
+          createRecoveryDiagnostic(workflowName, entry.command, result),
+        );
+      }
+    }
+
+    status = failed ? "failed" : "idle";
+
+    return restored || recovered ? snapshot() : undefined;
+  }
+
+  const supervisor: WorkflowSupervisor<TWorkflows> = {
+    id: config.id,
+    get status() {
+      return status;
+    },
+    diagnostics,
+    ready:
+      config.autoRecover === true
+        ? recover().catch(() => undefined)
+        : Promise.resolve(undefined),
+    workflow(name) {
+      return getWorkflowOrThrow(name) as WorkflowFromDefinition<
+        TWorkflows[typeof name]
+      >;
+    },
+    cancelAll() {
+      let cancelled = 0;
+
+      for (const workflow of workflows.values()) {
+        cancelled += workflow.cancel();
+      }
+
+      return cancelled;
+    },
+    snapshot,
+    restore,
+    persist,
+    recover,
+  };
+
+  return supervisor;
 }
 
-function createWorkflowFactory($machine: MachineService) {
+function createWorkflowSupervisorRegistry<
+  TWorkflows extends WorkflowSupervisorWorkflowMap,
+>(
+  $workflow: WorkflowService,
+  config: WorkflowSupervisorConfig<TWorkflows>,
+): Map<string, Workflow> {
+  assertWorkflowSupervisorConfig(config);
+
+  const registry = new Map<string, Workflow>();
+  const workflowEntries = normalizeWorkflowSupervisorEntries(
+    (config as { workflows?: unknown }).workflows,
+  );
+
+  if (!workflowEntries.length) {
+    throw new Error("$workflowSupervisor requires at least one workflow.");
+  }
+
+  for (const [name, definition] of workflowEntries) {
+    if (!isString(name) || !name) {
+      throw new Error(
+        "$workflowSupervisor workflow names must be non-empty strings.",
+      );
+    }
+
+    if (registry.has(name)) {
+      throw new Error(`$workflowSupervisor duplicate workflow name '${name}'.`);
+    }
+
+    registry.set(name, createWorkflowSupervisorWorkflow($workflow, definition));
+  }
+
+  return registry;
+}
+
+function assertWorkflowSupervisorConfig(config: unknown): void {
+  if (!isObject(config)) {
+    throw new Error("$workflowSupervisor requires a config object.");
+  }
+
+  const id = (config as { id?: unknown }).id;
+
+  if (!isString(id) || !id) {
+    throw new Error("$workflowSupervisor requires a non-empty id.");
+  }
+
+  for (const option of ["autoPersist", "autoRecover"] as const) {
+    const value = (config as Record<string, unknown>)[option];
+
+    if (value !== undefined && !isBoolean(value)) {
+      throw new Error(`$workflowSupervisor ${option} must be a boolean.`);
+    }
+  }
+
+  const typedConfig = config as {
+    autoPersist?: boolean;
+    autoRecover?: boolean;
+    persistence?: unknown;
+  };
+
+  if (
+    (typedConfig.autoPersist === true || typedConfig.autoRecover === true) &&
+    typedConfig.persistence === undefined
+  ) {
+    throw new Error(
+      "$workflowSupervisor autoPersist and autoRecover require persistence.",
+    );
+  }
+}
+
+function normalizeWorkflowSupervisorEntries(
+  workflows: unknown,
+): Array<[string, unknown]> {
+  if (isArray(workflows)) {
+    return workflows.map(normalizeWorkflowSupervisorEntry);
+  }
+
+  if (!isObject(workflows)) {
+    throw new Error("$workflowSupervisor requires workflows.");
+  }
+
+  return Object.entries(workflows);
+}
+
+function normalizeWorkflowSupervisorEntry(entry: unknown): [string, unknown] {
+  if (isArray(entry)) {
+    return [entry[0] as string, entry[1]];
+  }
+
+  if (isObject(entry)) {
+    const record = entry as {
+      config?: unknown;
+      name?: unknown;
+      workflow?: unknown;
+    };
+
+    if (hasOwn(record, "workflow")) {
+      return [record.name as string, record.workflow];
+    }
+
+    if (hasOwn(record, "config")) {
+      return [record.name as string, record.config];
+    }
+  }
+
+  throw new Error(
+    "$workflowSupervisor workflow entries must be tuples or objects.",
+  );
+}
+
+function createWorkflowSupervisorWorkflow(
+  $workflow: WorkflowService,
+  definition: unknown,
+): Workflow {
+  if (isWorkflowInstance(definition)) {
+    return definition;
+  }
+
+  if (!isObject(definition)) {
+    throw new Error(
+      "$workflowSupervisor workflow must be a workflow instance or config object.",
+    );
+  }
+
+  return $workflow(definition as WorkflowConfig);
+}
+
+function isWorkflowInstance(value: unknown): value is Workflow {
+  const workflow = value as Partial<Workflow> | undefined;
+
+  return (
+    isObject(workflow) &&
+    isString(workflow.id) &&
+    isString(workflow.state) &&
+    isObject(workflow.data) &&
+    isArray(workflow.diagnostics) &&
+    isArray(workflow.history) &&
+    isFunction(workflow.can) &&
+    isFunction(workflow.run) &&
+    isFunction(workflow.cancel) &&
+    isFunction(workflow.snapshot) &&
+    isFunction(workflow.restore)
+  );
+}
+
+function normalizeWorkflowSupervisorSnapshot(
+  snapshot: unknown,
+): WorkflowSupervisorSnapshot {
+  assertWorkflowSupervisorSnapshot(snapshot);
+
+  const diagnostics = normalizeWorkflowSupervisorDiagnostics(
+    snapshot.diagnostics,
+  );
+
+  return {
+    version: 1,
+    id: snapshot.id,
+    status: normalizeRestoredSupervisorStatus(snapshot.status, diagnostics),
+    workflows: snapshot.workflows,
+    diagnostics,
+    updatedAt: snapshot.updatedAt,
+  };
+}
+
+function normalizeRestoredSupervisorStatus(
+  status: WorkflowSupervisorStatus,
+  diagnostics: WorkflowSupervisorDiagnostic[],
+): WorkflowSupervisorStatus {
+  if (status === "failed") {
+    return "failed";
+  }
+
+  if (status === "persisting" || status === "recovering") {
+    return diagnostics.some((diagnostic) => diagnostic.recoverable === false)
+      ? "failed"
+      : "idle";
+  }
+
+  return status;
+}
+
+function assertWorkflowSupervisorSnapshot(
+  snapshot: unknown,
+): asserts snapshot is WorkflowSupervisorSnapshot {
+  if (!isObject(snapshot)) {
+    throw new Error("$workflowSupervisor restore requires a snapshot object.");
+  }
+
+  const candidate = snapshot as Partial<WorkflowSupervisorSnapshot>;
+
+  if (candidate.version !== 1) {
+    throw new Error(
+      "$workflowSupervisor restore requires a version 1 snapshot.",
+    );
+  }
+
+  if (!isString(candidate.id) || !candidate.id) {
+    throw new Error("$workflowSupervisor restore requires a non-empty id.");
+  }
+
+  if (!isWorkflowSupervisorStatus(candidate.status)) {
+    throw new Error("$workflowSupervisor restore requires a valid status.");
+  }
+
+  if (!isObject(candidate.workflows) || isArray(candidate.workflows)) {
+    throw new Error("$workflowSupervisor restore requires workflows.");
+  }
+
+  if (!isArray(candidate.diagnostics)) {
+    throw new Error("$workflowSupervisor restore requires diagnostics.");
+  }
+
+  if (!isNumber(candidate.updatedAt) || !Number.isFinite(candidate.updatedAt)) {
+    throw new Error("$workflowSupervisor restore requires updatedAt.");
+  }
+}
+
+function isWorkflowSupervisorStatus(
+  value: unknown,
+): value is WorkflowSupervisorStatus {
+  return (
+    value === "idle" ||
+    value === "persisting" ||
+    value === "recovering" ||
+    value === "failed"
+  );
+}
+
+function normalizeWorkflowSupervisorDiagnostics(
+  supervisorDiagnostics: unknown,
+): WorkflowSupervisorDiagnostic[] {
+  /* istanbul ignore next: restore validation enforces diagnostics arrays before normalization. */
+  if (!isArray(supervisorDiagnostics)) {
+    return [];
+  }
+
+  return supervisorDiagnostics.map((diagnostic) => {
+    if (!isObject(diagnostic)) {
+      return {
+        code: "workflowSupervisor.diagnostic",
+        message: formatUnknownMessage(diagnostic),
+        recoverable: true,
+      };
+    }
+
+    const candidate = diagnostic as Partial<WorkflowSupervisorDiagnostic>;
+
+    return {
+      code: isString(candidate.code)
+        ? candidate.code
+        : "workflowSupervisor.diagnostic",
+      message: isString(candidate.message)
+        ? candidate.message
+        : "Workflow supervisor diagnostic.",
+      recoverable: isBoolean(candidate.recoverable)
+        ? candidate.recoverable
+        : undefined,
+      workflow: isString(candidate.workflow) ? candidate.workflow : undefined,
+      command: isString(candidate.command) ? candidate.command : undefined,
+      detail: normalizeDiagnosticDetail(candidate.detail),
+    };
+  });
+}
+
+function createIndexedDbWorkflowSupervisorPersistence<
+  TSnapshot extends WorkflowSupervisorSnapshot = WorkflowSupervisorSnapshot,
+>(
+  config: Omit<WorkflowSupervisorPersistenceConfig, "type">,
+): WorkflowSupervisorPersistence<TSnapshot> {
+  const database = normalizeWorkflowSupervisorIndexedDbName(
+    config.database,
+    "database",
+    "angular-ts-workflows",
+  );
+  const store = normalizeWorkflowSupervisorIndexedDbName(
+    config.store,
+    "store",
+    "supervisorSnapshots",
+  );
+  const version = normalizeWorkflowSupervisorIndexedDbVersion(config.version);
+  const indexedDBFactory = config.indexedDB ?? globalThis.indexedDB;
+
+  return {
+    async load(id) {
+      const databaseHandle = await openWorkflowSupervisorIndexedDb(
+        indexedDBFactory,
+        database,
+        store,
+        version,
+      );
+
+      try {
+        const transaction = databaseHandle.transaction(store, "readonly");
+        const objectStore = transaction.objectStore(store);
+        const value = await workflowSupervisorIdbRequest<TSnapshot | undefined>(
+          objectStore.get(id) as IDBRequest<TSnapshot | undefined>,
+        );
+
+        await workflowSupervisorIdbTransaction(transaction);
+
+        return value;
+      } finally {
+        databaseHandle.close();
+      }
+    },
+    async save(id, snapshot) {
+      const databaseHandle = await openWorkflowSupervisorIndexedDb(
+        indexedDBFactory,
+        database,
+        store,
+        version,
+      );
+
+      try {
+        const transaction = databaseHandle.transaction(store, "readwrite");
+        const objectStore = transaction.objectStore(store);
+
+        await workflowSupervisorIdbRequest(objectStore.put(snapshot, id));
+        await workflowSupervisorIdbTransaction(transaction);
+      } finally {
+        databaseHandle.close();
+      }
+    },
+  };
+}
+
+function resolveWorkflowSupervisorPersistence<
+  TSnapshot extends WorkflowSupervisorSnapshot,
+>(
+  persistence:
+    | "indexeddb"
+    | WorkflowSupervisorPersistenceConfig
+    | WorkflowSupervisorPersistence<TSnapshot>
+    | undefined,
+): WorkflowSupervisorPersistence<TSnapshot> | undefined {
+  if (persistence === undefined) return undefined;
+
+  if (persistence === "indexeddb") {
+    return createIndexedDbWorkflowSupervisorPersistence<TSnapshot>({});
+  }
+
+  if (isWorkflowSupervisorPersistenceConfig(persistence)) {
+    return createIndexedDbWorkflowSupervisorPersistence<TSnapshot>(persistence);
+  }
+
+  if (isWorkflowSupervisorPersistence(persistence)) {
+    return persistence;
+  }
+
+  throw new Error(
+    "$workflowSupervisor persistence must be 'indexeddb', an IndexedDB config, or a persistence adapter.",
+  );
+}
+
+function isWorkflowSupervisorPersistenceConfig(
+  value: unknown,
+): value is WorkflowSupervisorPersistenceConfig {
+  return isObject(value) && (value as { type?: unknown }).type === "indexeddb";
+}
+
+function isWorkflowSupervisorPersistence<
+  TSnapshot extends WorkflowSupervisorSnapshot,
+>(value: unknown): value is WorkflowSupervisorPersistence<TSnapshot> {
+  if (!isObject(value)) return false;
+
+  const candidate = value as {
+    load?: unknown;
+    save?: unknown;
+  };
+
+  return isFunction(candidate.load) && isFunction(candidate.save);
+}
+
+function normalizeWorkflowSupervisorIndexedDbName(
+  value: unknown,
+  field: "database" | "store",
+  fallback: string,
+): string {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (!isString(value) || !value) {
+    throw new Error(
+      `$workflowSupervisor IndexedDB ${field} must be non-empty.`,
+    );
+  }
+
+  return value;
+}
+
+function normalizeWorkflowSupervisorIndexedDbVersion(value: unknown): number {
+  if (value === undefined) {
+    return 1;
+  }
+
+  if (!isNumber(value) || !Number.isInteger(value) || value < 1) {
+    throw new Error(
+      "$workflowSupervisor IndexedDB version must be a positive integer.",
+    );
+  }
+
+  return value;
+}
+
+function openWorkflowSupervisorIndexedDb(
+  indexedDBFactory: IDBFactory | undefined,
+  database: string,
+  store: string,
+  version: number,
+): Promise<IDBDatabase> {
+  if (!indexedDBFactory) {
+    return Promise.reject(
+      new Error(
+        "$workflowSupervisor IndexedDB persistence requires indexedDB.",
+      ),
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = indexedDBFactory.open(database, version);
+
+    request.onupgradeneeded = () => {
+      const databaseHandle = request.result;
+
+      if (!databaseHandle.objectStoreNames.contains(store)) {
+        databaseHandle.createObjectStore(store);
+      }
+    };
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("IndexedDB open failed."));
+    };
+    request.onblocked = () => {
+      reject(new Error("IndexedDB open was blocked."));
+    };
+  });
+}
+
+function workflowSupervisorIdbRequest<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("IndexedDB request failed."));
+    };
+  });
+}
+
+function workflowSupervisorIdbTransaction(
+  transaction: IDBTransaction,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(transaction.error ?? new Error("IndexedDB transaction failed."));
+    };
+    transaction.onabort = () => {
+      reject(transaction.error ?? new Error("IndexedDB transaction aborted."));
+    };
+  });
+}
+
+function createWorkflowFactory() {
   return function createWorkflow<
     TData extends object,
-    TEvents extends object = MachineNoEvents,
     TCommands extends object = WorkflowNoCommands,
+    TState extends string = string,
   >(
-    scopeOrConfig: ng.Scope | WorkflowConfig<TData, TEvents, TCommands>,
-    maybeConfig?: WorkflowConfig<TData, TEvents, TCommands>,
-  ): Workflow<TData, TEvents, TCommands> {
-    const { _scope: scope, _config: config } = normalizeWorkflowArgs(
-      scopeOrConfig,
-      maybeConfig,
-    );
+    config: WorkflowConfiguration<TData, TCommands, TState>,
+  ): WorkflowInstance<TData, TCommands, TState> {
+    if (!isObject(config)) {
+      throw new Error("$workflow requires a config object.");
+    }
 
+    const data = defaultWorkflowData(config.data);
+
+    config = {
+      ...config,
+      data,
+    } as unknown as WorkflowConfiguration<TData, TCommands, TState>;
     assertWorkflowConfig(config);
 
-    const machine = $machine({
-      initial: config.initial,
-      data: config.data,
-      transitions: config.transitions,
-    } as MachineConfig<TData, TEvents>);
     const diagnostics: WorkflowDiagnostic[] = [];
     const history: WorkflowHistoryEntry[] = [];
     const diagnosticLimit = normalizeEntryLimit(
@@ -355,147 +1423,98 @@ function createWorkflowFactory($machine: MachineService) {
     const historyLimit = normalizeHistoryLimit(config.historyLimit);
     const runningCommands = new Set<WorkflowRunState>();
     const commandQueues = new Map<string, Promise<unknown>>();
-    const replayInputs = new Map<number, unknown>();
     const bindings = new Map<
       number,
-      WorkflowBinding<TData, TEvents, TCommands>
+      WorkflowBinding<TData, TCommands, TState>
     >();
-    let activeBinding: WorkflowBinding<TData, TEvents, TCommands> | undefined;
+    let state = config.initial;
     let nextHistoryId = 1;
     let queueGeneration = 0;
 
-    const workflowTarget: WorkflowTarget<TData, TEvents, TCommands> = {
+    const workflowTarget: WorkflowTarget<TData, TCommands, TState> = {
       id: config.id,
-      get current() {
-        return machine.current;
+      get state() {
+        return state;
       },
       get data() {
-        return machine.data;
+        return data;
       },
       diagnostics,
       history,
-      send(type: string, payload?: unknown): boolean {
-        const handled = machine.send(
-          type as Extract<keyof TEvents, string>,
-          payload as never,
-        );
+      can(command: string): boolean {
+        const definition = getCommand(config, command);
 
-        if (handled) {
-          scheduleWorkflowBindings();
-        } else {
-          appendDiagnostics(
-            createDiagnostic(
-              "workflow.invalidTransition",
-              `Workflow mode '${machine.current}' cannot handle transition '${type}'.`,
-              undefined,
-              true,
-              {
-                current: machine.current,
-                type,
-                payload,
-              },
-            ),
-          );
-          scheduleWorkflowBindings();
+        if (!definition || !isCommandAllowedFrom(definition, state)) {
+          return false;
         }
 
-        return handled;
-      },
-      can(type: string): boolean {
-        return machine.can(type as Extract<keyof TEvents, string>);
-      },
-      matches(mode: WorkflowMode): boolean {
-        return machine.matches(mode);
+        return !(
+          (definition.concurrency ?? "reject") === "reject" &&
+          isCommandRunning(command)
+        );
       },
       async run<TOutput = unknown>(
         command: string,
         input?: unknown,
-        options?: WorkflowCommandOptions,
-      ): Promise<WorkflowCommandResult<TOutput>> {
+      ): Promise<WorkflowResult<TOutput>> {
         if (!isString(command) || !command) {
-          return failCommand<TOutput>(
-            "workflow.invalidCommand",
-            command,
-            input,
-            [
-              createDiagnostic(
-                "workflow.invalidCommand",
-                "Workflow command name must be a non-empty string.",
-                command,
-                true,
-              ),
-            ],
-          );
+          return failCommand<TOutput>(command, input, [
+            createDiagnostic(
+              "workflow.invalidCommand",
+              "Workflow command name must be a non-empty string.",
+              command,
+              true,
+            ),
+          ]);
         }
 
-        const handler = getCommand(config, command);
+        const definition = getCommand(config, command);
 
-        if (!handler) {
-          return failCommand<TOutput>(
-            "workflow.missingCommand",
-            command,
-            input,
-            [
-              createDiagnostic(
-                "workflow.missingCommand",
-                `Workflow command '${command}' is not configured.`,
-                command,
-                true,
-              ),
-            ],
-          );
+        if (!definition) {
+          return failCommand<TOutput>(command, input, [
+            createDiagnostic(
+              "workflow.missingCommand",
+              `Workflow command '${command}' is not configured.`,
+              command,
+              true,
+            ),
+          ]);
         }
 
-        const policy = options?.concurrency ?? config.concurrency ?? "allow";
-        const optionDiagnostic = validateCommandOptions(command, options);
+        const mode = definition.concurrency ?? "reject";
 
-        if (optionDiagnostic) {
-          return failCommand<TOutput>(
-            "workflow.invalidCommandOptions",
-            command,
-            input,
-            [optionDiagnostic],
-          );
+        if (mode === "reject" && isCommandRunning(command)) {
+          return failCommand<TOutput>(command, input, [
+            createDiagnostic(
+              "workflow.commandRunning",
+              `Workflow command '${command}' is already running.`,
+              command,
+              true,
+            ),
+          ]);
         }
 
-        if (policy === "reject" && isCommandRunning(command)) {
-          return failCommand<TOutput>(
-            "workflow.commandRunning",
-            command,
-            input,
-            [
-              createDiagnostic(
-                "workflow.commandRunning",
-                `Workflow command '${command}' is already running.`,
-                command,
-                true,
-              ),
-            ],
-          );
-        }
-
-        if (policy === "queue") {
+        if (mode === "queue") {
           const generation = queueGeneration;
           const previous = commandQueues.get(command) ?? Promise.resolve();
-          const queued = previous
-            .catch(() => undefined)
-            .then(() => {
-              if (generation !== queueGeneration) {
-                return {
-                  ok: false,
-                  diagnostics: [
-                    createDiagnostic(
-                      "workflow.commandCancelled",
-                      `Workflow command '${command}' was cancelled.`,
-                      command,
-                      true,
-                    ),
-                  ],
-                } satisfies WorkflowCommandResult<TOutput>;
-              }
+          const queued = previous.then(() => {
+            if (generation !== queueGeneration) {
+              return {
+                ok: false,
+                status: "cancelled",
+                diagnostics: [
+                  createDiagnostic(
+                    "workflow.commandCancelled",
+                    `Workflow command '${command}' was cancelled.`,
+                    command,
+                    true,
+                  ),
+                ],
+              } satisfies WorkflowResult<TOutput>;
+            }
 
-              return executeCommand<TOutput>(command, input, handler, options);
-            });
+            return executeCommand<TOutput>(command, input, definition);
+          });
           const tail = queued.finally(() => {
             if (commandQueues.get(command) === tail) {
               commandQueues.delete(command);
@@ -507,97 +1526,7 @@ function createWorkflowFactory($machine: MachineService) {
           return queued;
         }
 
-        return executeCommand(command, input, handler, options);
-      },
-      retry<TOutput = unknown>(
-        command?: string | WorkflowCommandOptions,
-        options?: WorkflowCommandOptions,
-      ): Promise<WorkflowCommandResult<TOutput>> {
-        const replay = normalizeReplayArgs(command, options);
-
-        if (replay.invalidCommand) {
-          return Promise.resolve(
-            failWithoutHistory<TOutput>([
-              createDiagnostic(
-                "workflow.invalidCommand",
-                "Workflow command name must be a non-empty string.",
-                undefined,
-                true,
-              ),
-            ]),
-          );
-        }
-
-        const retryEntry = findRetryEntry(replay.command);
-
-        if (!retryEntry) {
-          return Promise.resolve(
-            failWithoutHistory<TOutput>([
-              createDiagnostic(
-                "workflow.noFailedCommand",
-                isString(replay.command) && replay.command
-                  ? `Workflow command '${replay.command}' has no failed run to retry.`
-                  : "Workflow has no failed command to retry.",
-                isString(replay.command) && replay.command
-                  ? replay.command
-                  : undefined,
-                true,
-              ),
-            ]),
-          );
-        }
-
-        return runWorkflowCommand<TOutput>(
-          workflowTarget,
-          retryEntry.command,
-          getReplayInput(retryEntry),
-          replay.options,
-        );
-      },
-      repeat<TOutput = unknown>(
-        command?: string | WorkflowCommandOptions,
-        options?: WorkflowCommandOptions,
-      ): Promise<WorkflowCommandResult<TOutput>> {
-        const replay = normalizeReplayArgs(command, options);
-
-        if (replay.invalidCommand) {
-          return Promise.resolve(
-            failWithoutHistory<TOutput>([
-              createDiagnostic(
-                "workflow.invalidCommand",
-                "Workflow command name must be a non-empty string.",
-                undefined,
-                true,
-              ),
-            ]),
-          );
-        }
-
-        const repeatEntry = findRepeatEntry(replay.command);
-
-        if (!repeatEntry) {
-          return Promise.resolve(
-            failWithoutHistory<TOutput>([
-              createDiagnostic(
-                "workflow.noCompletedCommand",
-                isString(replay.command) && replay.command
-                  ? `Workflow command '${replay.command}' has no completed run to repeat.`
-                  : "Workflow has no completed command to repeat.",
-                isString(replay.command) && replay.command
-                  ? replay.command
-                  : undefined,
-                true,
-              ),
-            ]),
-          );
-        }
-
-        return runWorkflowCommand<TOutput>(
-          workflowTarget,
-          repeatEntry.command,
-          getReplayInput(repeatEntry),
-          replay.options,
-        );
+        return executeCommand(command, input, definition);
       },
       cancel(command?: string): number {
         if (command !== undefined && (!isString(command) || !command)) {
@@ -611,26 +1540,31 @@ function createWorkflowFactory($machine: MachineService) {
             continue;
           }
 
-          cancelRun(
-            state,
-            createDiagnostic(
-              "workflow.commandCancelled",
-              `Workflow command '${state._command}' was cancelled.`,
-              state._command,
-              true,
-            ),
-          );
-          cancelled += 1;
+          if (
+            cancelRun(
+              state,
+              createDiagnostic(
+                "workflow.commandCancelled",
+                `Workflow command '${state._command}' was cancelled.`,
+                state._command,
+                true,
+              ),
+            )
+          ) {
+            cancelled += 1;
+          }
         }
 
         return cancelled;
       },
-      snapshot(): WorkflowSnapshot<TData> {
+      snapshot(): WorkflowSnapshot<
+        WorkflowContractOf<TData, TCommands, TState>
+      > {
         return {
           version: 1,
           id: config.id,
-          current: machine.current,
-          data: structuredClone(machine.data),
+          state,
+          data: structuredClone(data),
           diagnostics: structuredClone(diagnostics),
           history: structuredClone(history),
         };
@@ -647,10 +1581,8 @@ function createWorkflowFactory($machine: MachineService) {
         queueGeneration += 1;
         commandQueues.clear();
         cancelRunningCommands(false);
-        machine.restore({
-          current: restoredSnapshot.current,
-          data: restoredSnapshot.data,
-        });
+        state = restoredSnapshot.state;
+        replaceWorkflowData(data, restoredSnapshot.data);
         replaceArray(
           diagnostics,
           normalizeDiagnostics(restoredSnapshot.diagnostics),
@@ -658,7 +1590,6 @@ function createWorkflowFactory($machine: MachineService) {
         trimDiagnostics();
         replaceArray(history, normalizeHistory(restoredSnapshot.history));
         trimHistory();
-        resetReplayInputs();
         nextHistoryId =
           history.reduce((max, entry) => Math.max(max, entry.id), 0) + 1;
         scheduleWorkflowBindings();
@@ -666,7 +1597,7 @@ function createWorkflowFactory($machine: MachineService) {
     };
 
     Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
-      value(handler: Scope, proxy: Workflow<TData, TEvents, TCommands>) {
+      value(handler: Scope, proxy: WorkflowInstance<TData, TCommands, TState>) {
         let binding = bindings.get(handler.$id);
 
         if (!binding) {
@@ -676,179 +1607,236 @@ function createWorkflowFactory($machine: MachineService) {
           };
           bindings.set(handler.$id, binding);
         }
-
-        activeBinding = binding;
       },
     });
-
-    if (scope?.$handler) {
-      return createScope(workflowTarget, scope.$handler as Scope) as Workflow<
-        TData,
-        TEvents,
-        TCommands
-      >;
-    }
 
     return workflowTarget;
 
     async function executeCommand<TOutput>(
       command: string,
       input: unknown,
-      handler: WorkflowCommand<TData, unknown, unknown, TEvents, TCommands>,
-      options?: WorkflowCommandOptions,
-    ): Promise<WorkflowCommandResult<TOutput>> {
+      definition: WorkflowCommandDefinition<
+        WorkflowContractOf<TData, TCommands, TState>
+      >,
+    ): Promise<WorkflowResult<TOutput>> {
+      if (!isCommandAllowedFrom(definition, state)) {
+        return failCommand<TOutput>(command, input, [
+          createDiagnostic(
+            "workflow.commandNotAllowed",
+            `Workflow command '${command}' cannot run from state '${state}'.`,
+            command,
+            true,
+            { command, state },
+          ),
+        ]);
+      }
+
       appendHistory({
         type: "command.started",
         command,
         input,
       });
 
-      const state = createRunState(command, options);
+      const runState = createRunState(command, definition.commandTimeout);
 
       try {
-        const cancelDiagnostic = state._cancelDiagnostic;
+        applyLifecycleTarget(definition.pending, {
+          command,
+          input,
+          data,
+        });
+
+        const cancelDiagnostic = runState._cancelDiagnostic;
 
         if (cancelDiagnostic) {
-          return failCommand<TOutput>(cancelDiagnostic.code, command, input, [
-            cancelDiagnostic,
-          ]);
+          applyFailureLifecycle(definition, command, input, [cancelDiagnostic]);
+
+          return failCommand<TOutput>(command, input, [cancelDiagnostic]);
         }
 
-        const commandPromise = Promise.resolve(
-          (() => {
-            const data = createWorkflowDataProxy(machine.data, state);
+        const retries = normalizeRetryCount(definition.retry);
+        let attempt = 0;
+        let commandValue: TOutput | undefined;
 
-            return handler({
-              workflow: createCommandWorkflow(getActiveWorkflow(), state, data),
-              cleanup(callback) {
-                if (!isFunction(callback)) {
-                  return;
-                }
-
-                state._cleanups.push(callback);
-              },
-              data,
-              input,
+        while (attempt <= retries) {
+          try {
+            commandValue = await executeCommandAttempt<TOutput>(
               command,
-              signal: state._controller.signal,
-            });
-          })(),
-        );
-        const commandValue = (await Promise.race([
-          commandPromise,
-          state._cancelPromise.then((diagnostic) => ({
-            _workflowCancel: diagnostic,
-          })),
-        ])) as
-          | WorkflowCommandResult<TOutput>
-          | TOutput
-          | {
-              _workflowCancel: WorkflowDiagnostic;
-            };
+              input,
+              definition,
+              runState,
+            );
+            break;
+          } catch (error) {
+            if (
+              runState._cancelDiagnostic ||
+              error instanceof WorkflowCommandRejectionError ||
+              attempt >= retries
+            ) {
+              throw error;
+            }
 
-        commandPromise.catch(() => undefined);
-
-        if (
-          isObject(commandValue) &&
-          (commandValue as { _workflowCancel?: WorkflowDiagnostic })
-            ._workflowCancel
-        ) {
-          const cancelled = commandValue as {
-            _workflowCancel: WorkflowDiagnostic;
-          };
-
-          if (state._discardResult) {
-            return {
-              ok: false,
-              diagnostics: [cancelled._workflowCancel],
-            };
+            attempt += 1;
           }
-
-          return failCommand<TOutput>(
-            cancelled._workflowCancel.code,
-            command,
-            input,
-            [cancelled._workflowCancel],
-          );
         }
 
-        const result = normalizeCommandResult<TOutput>(
-          commandValue as WorkflowCommandResult<TOutput> | TOutput,
-        );
+        applyLifecycleTarget(definition.success, {
+          command,
+          input,
+          data,
+          output: commandValue,
+        });
 
-        if (result.diagnostics?.length) {
-          appendDiagnostics(...result.diagnostics);
-        }
+        const result: WorkflowResult<TOutput> = {
+          ok: true,
+          status: "completed",
+          output: commandValue as TOutput,
+          diagnostics: undefined,
+        };
 
-        appendHistory(
-          result.ok
-            ? {
-                type: "command.completed",
-                command,
-                input,
-                output: result.output,
-                diagnostics: result.diagnostics,
-              }
-            : {
-                type: "command.failed",
-                command,
-                input,
-                diagnostics: result.diagnostics,
-              },
-        );
+        appendHistory({
+          type: "command.completed",
+          command,
+          input,
+          output: result.output,
+          diagnostics: result.diagnostics,
+        });
 
         return result;
       } catch (error) {
-        if (state._cancelDiagnostic) {
-          if (state._discardResult) {
+        if (runState._cancelDiagnostic) {
+          if (runState._discardResult) {
             return {
               ok: false,
-              diagnostics: [state._cancelDiagnostic],
+              status: commandStatusFromDiagnostics([
+                runState._cancelDiagnostic,
+              ]),
+              diagnostics: [runState._cancelDiagnostic],
             };
           }
 
-          return failCommand<TOutput>(
-            state._cancelDiagnostic.code,
-            command,
-            input,
-            [state._cancelDiagnostic],
-          );
+          applyFailureLifecycle(definition, command, input, [
+            runState._cancelDiagnostic,
+          ]);
+
+          return failCommand<TOutput>(command, input, [
+            runState._cancelDiagnostic,
+          ]);
         }
 
-        return failCommand<TOutput>("workflow.commandFailed", command, input, [
-          diagnosticFromError(error, command),
-        ]);
+        if (error instanceof WorkflowCommandRejectionError) {
+          const diagnostic = error.diagnostic;
+
+          applyFailureLifecycle(definition, command, input, [diagnostic]);
+
+          return failCommand<TOutput>(command, input, [diagnostic], "rejected");
+        }
+
+        const commandDiagnostics = [diagnosticFromError(error, command)];
+
+        applyFailureLifecycle(definition, command, input, commandDiagnostics);
+
+        return failCommand<TOutput>(command, input, commandDiagnostics);
       } finally {
-        finishRunState(state);
+        finishRunState(runState);
       }
     }
 
-    function getActiveWorkflow(): Workflow<TData, TEvents, TCommands> {
-      return getActiveBinding()?._proxy ?? workflowTarget;
+    async function executeCommandAttempt<TOutput>(
+      command: string,
+      input: unknown,
+      definition: WorkflowCommandDefinition<
+        WorkflowContractOf<TData, TCommands, TState>
+      >,
+      runState: WorkflowRunState,
+    ): Promise<TOutput> {
+      const commandPromise = Promise.resolve(
+        definition.execute
+          ? invokeWorkflowCommand(definition.execute, {
+              cleanup(callback) {
+                if (isFunction(callback)) {
+                  runState._cleanups.push(callback);
+                }
+              },
+              reject(diagnostic) {
+                throw new WorkflowCommandRejectionError(
+                  normalizeDiagnostic(diagnostic),
+                );
+              },
+              data: createReadonlyWorkflowData(data),
+              input,
+              command,
+              signal: runState._controller.signal,
+            })
+          : undefined,
+      );
+      const commandValue = (await Promise.race([
+        commandPromise,
+        runState._cancelPromise.then(
+          (diagnostic) =>
+            ({
+              [WORKFLOW_COMMAND_CANCELLATION]: diagnostic,
+            }) satisfies WorkflowCommandCancellation,
+        ),
+      ])) as TOutput | WorkflowCommandCancellation;
+
+      commandPromise.catch(() => undefined);
+
+      if (
+        isObject(commandValue) &&
+        WORKFLOW_COMMAND_CANCELLATION in commandValue
+      ) {
+        throw new WorkflowCommandRejectionError(
+          commandValue[WORKFLOW_COMMAND_CANCELLATION],
+        );
+      }
+
+      return commandValue;
     }
 
-    function getActiveBinding():
-      | WorkflowBinding<TData, TEvents, TCommands>
-      | undefined {
-      if (activeBinding && !activeBinding._handler._destroyed) {
-        return activeBinding;
+    function applyLifecycleTarget<TContext>(
+      target: WorkflowLifecycleTarget<TState, TContext>,
+      context: TContext,
+    ): void {
+      if (isString(target)) {
+        state = target;
+      } else {
+        state = target.to;
+        target.update?.(context);
       }
 
-      for (const [scopeId, binding] of bindings) {
-        if (binding._handler._destroyed) {
-          bindings.delete(scopeId);
+      scheduleWorkflowBindings();
+    }
 
-          continue;
-        }
+    function applyFailureLifecycle(
+      definition: WorkflowCommandDefinition<
+        WorkflowContractOf<TData, TCommands, TState>
+      >,
+      command: string,
+      input: unknown,
+      commandDiagnostics: WorkflowDiagnostic[],
+    ): void {
+      const status = commandStatusFromDiagnostics(commandDiagnostics);
+      const target =
+        status === "timeout"
+          ? (definition.timeout ?? definition.failure)
+          : status === "cancelled"
+            ? (definition.cancelled ?? definition.failure)
+            : definition.failure;
 
-        activeBinding = binding;
-
-        return binding;
+      try {
+        applyLifecycleTarget(target, {
+          command,
+          input,
+          data,
+          diagnostic: commandDiagnostics[0],
+          diagnostics: commandDiagnostics,
+        });
+      } catch (error) {
+        commandDiagnostics.push(
+          diagnosticFromError(error, command, "workflow.lifecycleUpdateFailed"),
+        );
       }
-
-      activeBinding = undefined;
-
-      return undefined;
     }
 
     function scheduleWorkflowBindings(): void {
@@ -860,12 +1848,13 @@ function createWorkflowFactory($machine: MachineService) {
         }
 
         binding._handler._scheduleWatchKeys([
-          "current",
+          "state",
           "data",
           "diagnostics",
           "history",
         ]);
-        binding._handler._checkListenersForAllKeys(machine.data as never);
+        binding._handler._checkListenersForAllKeys(workflowTarget as never);
+        binding._handler._checkListenersForAllKeys(data as never);
         binding._handler._checkListenersForAllKeys(diagnostics as never);
         binding._handler._checkListenersForAllKeys(history as never);
       }
@@ -887,20 +1876,14 @@ function createWorkflowFactory($machine: MachineService) {
         id: nextHistoryId++,
         type: entry.type,
         command: entry.command,
+        input: normalizeHistoryValue(entry.input),
+        ...(hasOwn(entry, "output")
+          ? { output: normalizeHistoryValue(entry.output) }
+          : {}),
+        ...(entry.diagnostics
+          ? { diagnostics: normalizeDiagnostics(entry.diagnostics) }
+          : {}),
       };
-
-      if (hasOwn(entry, "input")) {
-        historyEntry.input = normalizeHistoryValue(entry.input);
-        replayInputs.set(historyEntry.id, entry.input);
-      }
-
-      if (hasOwn(entry, "output")) {
-        historyEntry.output = normalizeHistoryValue(entry.output);
-      }
-
-      if (entry.diagnostics) {
-        historyEntry.diagnostics = normalizeDiagnostics(entry.diagnostics);
-      }
 
       history.push(historyEntry);
       trimHistory();
@@ -910,11 +1893,7 @@ function createWorkflowFactory($machine: MachineService) {
     }
 
     function trimHistory(): void {
-      const removed = trimArray(history, historyLimit);
-
-      for (const entry of removed) {
-        replayInputs.delete(entry.id);
-      }
+      trimArray(history, historyLimit);
     }
 
     function isCommandRunning(command: string): boolean {
@@ -929,7 +1908,7 @@ function createWorkflowFactory($machine: MachineService) {
 
     function createRunState(
       command: string,
-      options?: WorkflowCommandOptions,
+      commandTimeout?: number,
     ): WorkflowRunState {
       const controller = new AbortController();
       let cancel!: (diagnostic: WorkflowDiagnostic) => void;
@@ -946,46 +1925,11 @@ function createWorkflowFactory($machine: MachineService) {
         _discardResult: false,
         _done: false,
       };
-      const timeout = normalizeTimeout(
-        options?.timeout ?? config.commandTimeout,
-      );
+      const timeout = normalizeTimeout(commandTimeout);
       let timeoutId: number | undefined;
 
-      if (options?.signal) {
-        if (options.signal.aborted) {
-          cancelRun(
-            state,
-            createDiagnostic(
-              "workflow.commandCancelled",
-              `Workflow command '${command}' was cancelled.`,
-              command,
-              true,
-            ),
-          );
-        } else {
-          const abortHandler = () => {
-            cancelRun(
-              state,
-              createDiagnostic(
-                "workflow.commandCancelled",
-                `Workflow command '${command}' was cancelled.`,
-                command,
-                true,
-              ),
-            );
-          };
-
-          options.signal.addEventListener("abort", abortHandler, {
-            once: true,
-          });
-          state._cleanups.push(() =>
-            options.signal?.removeEventListener("abort", abortHandler),
-          );
-        }
-      }
-
       if (timeout !== undefined) {
-        timeoutId = window.setTimeout(() => {
+        timeoutId = globalThis.setTimeout(() => {
           cancelRun(
             state,
             createDiagnostic(
@@ -1005,7 +1949,7 @@ function createWorkflowFactory($machine: MachineService) {
 
       if (timeoutId !== undefined) {
         state._cleanups.push(() => {
-          window.clearTimeout(timeoutId);
+          globalThis.clearTimeout(timeoutId);
         });
       }
 
@@ -1018,9 +1962,9 @@ function createWorkflowFactory($machine: MachineService) {
       state: WorkflowRunState,
       diagnostic: WorkflowDiagnostic,
       discardResult = false,
-    ): void {
+    ): boolean {
       if (state._done || state._cancelDiagnostic) {
-        return;
+        return false;
       }
 
       state._discardResult = discardResult;
@@ -1030,6 +1974,8 @@ function createWorkflowFactory($machine: MachineService) {
       if (!state._controller.signal.aborted) {
         state._controller.abort(diagnostic);
       }
+
+      return true;
     }
 
     function finishRunState(state: WorkflowRunState): void {
@@ -1059,7 +2005,7 @@ function createWorkflowFactory($machine: MachineService) {
       scheduleWorkflowBindings();
     }
 
-    function cancelRunningCommands(recordResult = true): void {
+    function cancelRunningCommands(recordResult: boolean): void {
       for (const state of runningCommands) {
         cancelRun(
           state,
@@ -1074,72 +2020,18 @@ function createWorkflowFactory($machine: MachineService) {
       }
     }
 
-    function findRetryEntry(
-      command?: string,
-    ): WorkflowHistoryEntry | undefined {
-      for (let index = history.length - 1; index >= 0; index -= 1) {
-        const entry = history[index];
-
-        if (entry.type !== "command.failed") {
-          continue;
-        }
-
-        if (isString(command) && command && entry.command !== command) {
-          continue;
-        }
-
-        return entry;
-      }
-
-      return undefined;
-    }
-
-    function findRepeatEntry(
-      command?: string,
-    ): WorkflowHistoryEntry | undefined {
-      for (let index = history.length - 1; index >= 0; index -= 1) {
-        const entry = history[index];
-
-        if (entry.type !== "command.completed") {
-          continue;
-        }
-
-        if (isString(command) && command && entry.command !== command) {
-          continue;
-        }
-
-        return entry;
-      }
-
-      return undefined;
-    }
-
-    function getReplayInput(entry: WorkflowHistoryEntry): unknown {
-      return replayInputs.has(entry.id)
-        ? replayInputs.get(entry.id)
-        : entry.input;
-    }
-
-    function resetReplayInputs(): void {
-      replayInputs.clear();
-
-      for (const entry of history) {
-        if (hasOwn(entry, "input")) {
-          replayInputs.set(entry.id, entry.input);
-        }
-      }
-    }
-
     function normalizeWorkflowSnapshot(
       snapshot: unknown,
-    ): WorkflowSnapshot<TData> {
+    ): WorkflowSnapshot<WorkflowContractOf<TData, TCommands, TState>> {
       if (
         isObject(snapshot) &&
         (snapshot as { version?: unknown }).version === 1
       ) {
         assertWorkflowSnapshot(snapshot);
 
-        return snapshot as WorkflowSnapshot<TData>;
+        return snapshot as WorkflowSnapshot<
+          WorkflowContractOf<TData, TCommands, TState>
+        >;
       }
 
       if (config.migrateSnapshot) {
@@ -1150,17 +2042,15 @@ function createWorkflowFactory($machine: MachineService) {
         return migrated;
       }
 
-      assertWorkflowSnapshot(snapshot);
-
-      return snapshot as WorkflowSnapshot<TData>;
+      throw new Error("$workflow restore requires a version 1 snapshot.");
     }
 
     function failCommand<TOutput = unknown>(
-      code: string,
       command: unknown,
       input: unknown,
       commandDiagnostics: WorkflowDiagnostic[],
-    ): WorkflowCommandResult<TOutput> {
+      status?: WorkflowFailureStatus,
+    ): WorkflowResult<TOutput> {
       appendDiagnostics(...commandDiagnostics);
 
       if (isString(command) && command) {
@@ -1176,27 +2066,7 @@ function createWorkflowFactory($machine: MachineService) {
 
       return {
         ok: false,
-        diagnostics: commandDiagnostics.length
-          ? commandDiagnostics
-          : [
-              createDiagnostic(
-                code,
-                "Workflow command failed.",
-                isString(command) ? command : undefined,
-                true,
-              ),
-            ],
-      };
-    }
-
-    function failWithoutHistory<TOutput = unknown>(
-      commandDiagnostics: WorkflowDiagnostic[],
-    ): WorkflowCommandResult<TOutput> {
-      appendDiagnostics(...commandDiagnostics);
-      scheduleWorkflowBindings();
-
-      return {
-        ok: false,
+        status: status ?? commandStatusFromDiagnostics(commandDiagnostics),
         diagnostics: commandDiagnostics,
       };
     }
@@ -1207,68 +2077,31 @@ function runWorkflowCommand<TOutput>(
   workflow: unknown,
   command: string,
   input?: unknown,
-  options?: WorkflowCommandOptions,
-): Promise<WorkflowCommandResult<TOutput>> {
+): Promise<WorkflowResult<TOutput>> {
   const runner = workflow as {
     run<TCommandOutput = unknown>(
       command: string,
       input?: unknown,
-      options?: WorkflowCommandOptions,
-    ): Promise<WorkflowCommandResult<TCommandOutput>>;
+    ): Promise<WorkflowResult<TCommandOutput>>;
   };
 
-  return runner.run<TOutput>(command, input, options);
+  return runner.run<TOutput>(command, input);
 }
 
-function createCommandWorkflow<
-  TData extends object,
-  TEvents extends object,
-  TCommands extends object,
+function invokeWorkflowCommand<
+  TInput,
+  TOutput,
+  TContract extends WorkflowContract,
 >(
-  workflow: Workflow<TData, TEvents, TCommands>,
-  state: WorkflowRunState,
-  data: TData,
-): Workflow<TData, TEvents, TCommands> {
-  return new Proxy(workflow, {
-    get(target, property, receiver) {
-      if (property === "data") {
-        return data;
-      }
-
-      if (property === "send") {
-        return (...args: unknown[]) =>
-          state._done
-            ? false
-            : (target.send as (...sendArgs: unknown[]) => boolean)(...args);
-      }
-
-      if (property === "run" || property === "retry" || property === "repeat") {
-        return (...args: unknown[]) =>
-          state._done
-            ? Promise.resolve({
-                ok: false,
-                diagnostics: [
-                  createDiagnostic(
-                    "workflow.commandCancelled",
-                    `Workflow command '${state._command}' was cancelled.`,
-                    state._command,
-                    true,
-                  ),
-                ],
-              })
-            : (target[property] as (...runArgs: unknown[]) => unknown)(...args);
-      }
-
-      return Reflect.get(target, property, receiver) as unknown;
-    },
-  });
+  handler: WorkflowCommand<TContract, { input: TInput; output: TOutput }>,
+  context: WorkflowCommandContext<TContract, TInput>,
+): WorkflowCommandHandlerResult<TOutput> {
+  return handler(context);
 }
 
-function createWorkflowDataProxy<TData extends object>(
-  data: TData,
-  state: WorkflowRunState,
-): TData {
+function createReadonlyWorkflowData<TData extends object>(data: TData): TData {
   const proxies = new WeakMap<object, object>();
+  const targets = new WeakMap<object, object>();
 
   return proxify(data) as TData;
 
@@ -1286,94 +2119,94 @@ function createWorkflowDataProxy<TData extends object>(
     const proxy = new Proxy(value, {
       get(target, property, receiver) {
         if (isInstanceOf(target, Map)) {
-          return getWorkflowMapProperty(
+          return getReadonlyWorkflowMapProperty(
             target,
             property,
-            receiver,
-            state,
             proxify,
+            unproxify,
           );
         }
 
         if (isInstanceOf(target, Set)) {
-          return getWorkflowSetProperty(target, property, receiver, state);
+          return getReadonlyWorkflowSetProperty(
+            target,
+            property,
+            proxify,
+            unproxify,
+          );
         }
 
         return proxify(Reflect.get(target, property, receiver));
       },
-      set(target, property, nextValue, receiver) {
-        if (state._done) {
-          return true;
-        }
-
-        return Reflect.set(target, property, nextValue, receiver);
+      set() {
+        throwReadonlyWorkflowDataError();
       },
-      deleteProperty(target, property) {
-        if (state._done) {
-          return true;
-        }
-
-        return Reflect.deleteProperty(target, property);
+      deleteProperty() {
+        throwReadonlyWorkflowDataError();
       },
-      defineProperty(target, property, descriptor) {
-        if (state._done) {
-          return true;
-        }
-
-        return Reflect.defineProperty(target, property, descriptor);
+      defineProperty() {
+        throwReadonlyWorkflowDataError();
       },
-      setPrototypeOf(target, prototype) {
-        if (state._done) {
-          return true;
-        }
-
-        return Reflect.setPrototypeOf(target, prototype);
+      setPrototypeOf() {
+        throwReadonlyWorkflowDataError();
       },
     });
 
     proxies.set(value, proxy);
+    targets.set(proxy, value);
 
     return proxy;
   }
+
+  function unproxify(value: unknown): unknown {
+    return isObject(value) ? (targets.get(value) ?? value) : value;
+  }
 }
 
-function getWorkflowMapProperty(
+function getReadonlyWorkflowMapProperty(
   target: Map<unknown, unknown>,
   property: string | symbol,
-  receiver: unknown,
-  state: WorkflowRunState,
   proxify: (value: unknown) => unknown,
+  unproxify: (value: unknown) => unknown,
 ): unknown {
   if (property === "size") {
     return target.size;
   }
 
   if (property === "get") {
-    return (key: unknown) => proxify(target.get(key));
+    return (key: unknown) => proxify(target.get(unproxify(key)));
   }
 
-  if (property === "set") {
-    return (key: unknown, value: unknown) => {
-      if (state._done) {
-        return receiver;
-      }
+  if (property === "has") {
+    return (key: unknown) => target.has(unproxify(key));
+  }
 
-      target.set(key, value);
+  if (property === "keys") {
+    return () => mapReadonlyIterator(target.keys(), proxify);
+  }
 
-      return receiver;
+  if (property === "values") {
+    return () => mapReadonlyIterator(target.values(), proxify);
+  }
+
+  if (property === "entries" || property === Symbol.iterator) {
+    return () => mapReadonlyEntries(target.entries(), proxify);
+  }
+
+  if (property === "forEach") {
+    return (callback: (value: unknown, key: unknown) => void) => {
+      target.forEach((value, key) => {
+        callback(proxify(value), proxify(key));
+      });
     };
   }
 
-  if (property === "delete") {
-    return (key: unknown) => (state._done ? false : target.delete(key));
+  if (property === "set" || property === "delete" || property === "clear") {
+    return throwReadonlyWorkflowDataError;
   }
 
-  if (property === "clear") {
-    return () => {
-      if (!state._done) {
-        target.clear();
-      }
-    };
+  if (property === "constructor") {
+    return target.constructor;
   }
 
   const value = Reflect.get(target, property, target) as unknown;
@@ -1381,47 +2214,77 @@ function getWorkflowMapProperty(
   return isFunction(value) ? value.bind(target) : value;
 }
 
-function getWorkflowSetProperty(
+function getReadonlyWorkflowSetProperty(
   target: Set<unknown>,
   property: string | symbol,
-  receiver: unknown,
-  state: WorkflowRunState,
+  proxify: (value: unknown) => unknown,
+  unproxify: (value: unknown) => unknown,
 ): unknown {
   if (property === "size") {
     return target.size;
   }
 
-  if (property === "add") {
-    return (value: unknown) => {
-      if (state._done) {
-        return receiver;
-      }
-
-      target.add(value);
-
-      return receiver;
-    };
-  }
-
-  if (property === "delete") {
-    return (value: unknown) => (state._done ? false : target.delete(value));
-  }
-
-  if (property === "clear") {
-    return () => {
-      if (!state._done) {
-        target.clear();
-      }
-    };
+  if (property === "add" || property === "delete" || property === "clear") {
+    return throwReadonlyWorkflowDataError;
   }
 
   if (property === "has") {
-    return (value: unknown) => target.has(value);
+    return (value: unknown) => target.has(unproxify(value));
+  }
+
+  if (
+    property === "keys" ||
+    property === "values" ||
+    property === Symbol.iterator
+  ) {
+    return () => mapReadonlyIterator(target.values(), proxify);
+  }
+
+  if (property === "entries") {
+    return () => mapReadonlyEntries(target.entries(), proxify);
+  }
+
+  if (property === "forEach") {
+    return (callback: (value: unknown, key: unknown) => void) => {
+      target.forEach((value) => {
+        const readonlyValue = proxify(value);
+
+        callback(readonlyValue, readonlyValue);
+      });
+    };
+  }
+
+  if (property === "constructor") {
+    return target.constructor;
   }
 
   const value = Reflect.get(target, property, target) as unknown;
 
   return isFunction(value) ? value.bind(target) : value;
+}
+
+function* mapReadonlyIterator(
+  iterator: IterableIterator<unknown>,
+  proxify: (value: unknown) => unknown,
+): IterableIterator<unknown> {
+  for (const value of iterator) {
+    yield proxify(value);
+  }
+}
+
+function* mapReadonlyEntries(
+  iterator: IterableIterator<[unknown, unknown]>,
+  proxify: (value: unknown) => unknown,
+): IterableIterator<[unknown, unknown]> {
+  for (const [key, value] of iterator) {
+    yield [proxify(key), proxify(value)];
+  }
+}
+
+function throwReadonlyWorkflowDataError(): never {
+  throw new TypeError(
+    "Workflow command data is readonly; mutate data in a lifecycle update.",
+  );
 }
 
 function isWorkflowDataProxyable(value: unknown): value is object {
@@ -1442,78 +2305,65 @@ function isWorkflowDataProxyable(value: unknown): value is object {
 
 function getCommand<
   TData extends object,
-  TEvents extends object = MachineNoEvents,
   TCommands extends object = WorkflowNoCommands,
+  TState extends string = string,
 >(
-  config: WorkflowConfig<TData, TEvents, TCommands>,
+  config: WorkflowConfiguration<TData, TCommands, TState>,
   command: string,
-): WorkflowCommand<TData, unknown, unknown, TEvents, TCommands> | undefined {
-  if (!config.commands || !hasOwn(config.commands, command)) {
+):
+  | WorkflowCommandDefinition<WorkflowContractOf<TData, TCommands, TState>>
+  | undefined {
+  if (!hasOwn(config.commands, command)) {
     return undefined;
   }
 
-  const handler = (config.commands as Record<string, unknown>)[command];
+  const definition = (config.commands as Record<string, unknown>)[command];
 
-  return isFunction(handler)
-    ? (handler as WorkflowCommand<TData, unknown, unknown, TEvents, TCommands>)
-    : undefined;
+  return definition as WorkflowCommandDefinition<
+    WorkflowContractOf<TData, TCommands, TState>
+  >;
 }
 
-function normalizeCommandResult<TOutput>(
-  value: WorkflowCommandResult<TOutput> | TOutput,
-): WorkflowCommandResult<TOutput> {
-  if (isObject(value) && hasOwn(value, "ok")) {
-    const result = value as {
-      ok: unknown;
-      output?: TOutput;
-      diagnostics?: WorkflowDiagnostic[];
-    };
-    const ok = result.ok;
+function isCommandAllowedFrom(
+  definition: { from: string | readonly string[] },
+  state: string,
+): boolean {
+  return isArray(definition.from)
+    ? definition.from.includes(state)
+    : definition.from === state;
+}
 
-    if (ok === true) {
-      return {
-        ok: true,
-        output: result.output,
-        diagnostics: normalizeOptionalDiagnostics(result.diagnostics),
-      };
+function commandStatusFromDiagnostics(
+  diagnostics: WorkflowDiagnostic[],
+): WorkflowFailureStatus {
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.code === "workflow.commandTimeout") {
+      return "timeout";
     }
-
-    if (ok === false) {
-      return {
-        ok: false,
-        diagnostics: normalizeOptionalDiagnostics(result.diagnostics) ?? [
-          createDiagnostic(
-            "workflow.commandFailed",
-            "Workflow command failed.",
-            undefined,
-            true,
-          ),
-        ],
-      };
-    }
-
-    return {
-      ok: false,
-      diagnostics: [
-        createDiagnostic(
-          "workflow.invalidCommandResult",
-          "Workflow command result must use ok: true or ok: false.",
-          undefined,
-          true,
-          value,
-        ),
-      ],
-    };
   }
 
-  return {
-    ok: true,
-    output: value as TOutput,
-  };
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.code === "workflow.commandCancelled") {
+      return "cancelled";
+    }
+  }
+
+  for (const diagnostic of diagnostics) {
+    if (
+      diagnostic.code === "workflow.invalidCommand" ||
+      diagnostic.code === "workflow.missingCommand" ||
+      diagnostic.code === "workflow.commandNotAllowed" ||
+      diagnostic.code === "workflow.commandRunning"
+    ) {
+      return "rejected";
+    }
+  }
+
+  return "failed";
 }
 
 function normalizeDiagnostics(
-  diagnostics: WorkflowDiagnostic[] | undefined,
+  diagnostics: readonly WorkflowDiagnostic[] | undefined,
 ): WorkflowDiagnostic[] {
   if (!isArray(diagnostics)) {
     return [];
@@ -1544,14 +2394,10 @@ function normalizeDiagnostics(
   );
 }
 
-function normalizeOptionalDiagnostics(
-  diagnostics: WorkflowDiagnostic[] | undefined,
-): WorkflowDiagnostic[] | undefined {
-  if (!isArray(diagnostics)) {
-    return undefined;
-  }
-
-  return normalizeDiagnostics(diagnostics);
+function normalizeDiagnostic(
+  diagnostic: WorkflowDiagnostic,
+): WorkflowDiagnostic {
+  return normalizeDiagnostics([diagnostic])[0];
 }
 
 function normalizeHistoryValue(value: unknown): unknown {
@@ -1559,12 +2405,8 @@ function normalizeHistoryValue(value: unknown): unknown {
 }
 
 function normalizeHistory(
-  historyEntries: WorkflowHistoryEntry[] | undefined,
+  historyEntries: readonly WorkflowHistoryEntry[],
 ): WorkflowHistoryEntry[] {
-  if (!isArray(historyEntries)) {
-    return [];
-  }
-
   let nextFallbackId = 1;
   const usedIds = new Set<number>();
 
@@ -1573,28 +2415,23 @@ function normalizeHistory(
       ? (entry as Partial<WorkflowHistoryEntry>)
       : {};
     const id = allocateHistoryId(candidate.id);
-    const historyEntry: WorkflowHistoryEntry = {
+    return {
       id,
       type: normalizeHistoryType(candidate.type),
       command:
         isString(candidate.command) && candidate.command
           ? candidate.command
           : "unknown",
+      ...(hasOwn(candidate, "input")
+        ? { input: normalizeHistoryValue(candidate.input) }
+        : {}),
+      ...(hasOwn(candidate, "output")
+        ? { output: normalizeHistoryValue(candidate.output) }
+        : {}),
+      ...(hasOwn(candidate, "diagnostics")
+        ? { diagnostics: normalizeDiagnostics(candidate.diagnostics) }
+        : {}),
     };
-
-    if (hasOwn(candidate, "input")) {
-      historyEntry.input = normalizeHistoryValue(candidate.input);
-    }
-
-    if (hasOwn(candidate, "output")) {
-      historyEntry.output = normalizeHistoryValue(candidate.output);
-    }
-
-    if (hasOwn(candidate, "diagnostics")) {
-      historyEntry.diagnostics = normalizeDiagnostics(candidate.diagnostics);
-    }
-
-    return historyEntry;
   });
 
   function allocateHistoryId(value: unknown): number {
@@ -1608,10 +2445,6 @@ function normalizeHistory(
       nextFallbackId = Math.max(nextFallbackId, value + 1);
 
       return value;
-    }
-
-    while (usedIds.has(nextFallbackId)) {
-      nextFallbackId += 1;
     }
 
     const id = nextFallbackId;
@@ -1680,10 +2513,6 @@ function normalizeEntryLimit(
 }
 
 function trimArray<T>(target: T[], limit: number): T[] {
-  if (!Number.isFinite(limit) || limit < 0) {
-    return [];
-  }
-
   const deleteCount = target.length - limit;
 
   if (deleteCount <= 0) {
@@ -1691,112 +2520,6 @@ function trimArray<T>(target: T[], limit: number): T[] {
   }
 
   return target.splice(0, deleteCount);
-}
-
-function normalizeReplayArgs(
-  command?: string | WorkflowCommandOptions,
-  options?: WorkflowCommandOptions,
-): {
-  command?: string;
-  invalidCommand?: boolean;
-  options?: WorkflowCommandOptions;
-} {
-  if (isString(command)) {
-    if (!command) {
-      return {
-        invalidCommand: true,
-        options,
-      };
-    }
-
-    return {
-      command,
-      options,
-    };
-  }
-
-  if (isObject(command)) {
-    return {
-      options: command,
-    };
-  }
-
-  return {
-    options,
-  };
-}
-
-function validateCommandOptions(
-  command: string,
-  options: WorkflowCommandOptions | undefined,
-): WorkflowDiagnostic | undefined {
-  if (options === undefined) {
-    return undefined;
-  }
-
-  if (!isObject(options)) {
-    return createDiagnostic(
-      "workflow.invalidCommandOptions",
-      "Workflow command options must be an object.",
-      command,
-      true,
-    );
-  }
-
-  const concurrency = options.concurrency as unknown;
-
-  if (
-    concurrency !== undefined &&
-    concurrency !== "allow" &&
-    concurrency !== "reject" &&
-    concurrency !== "queue"
-  ) {
-    return createDiagnostic(
-      "workflow.invalidCommandOptions",
-      "Workflow command concurrency must be 'allow', 'reject', or 'queue'.",
-      command,
-      true,
-      {
-        concurrency,
-      },
-    );
-  }
-
-  try {
-    normalizeTimeout(options.timeout);
-  } catch (error) {
-    return diagnosticFromError(
-      error,
-      command,
-      "workflow.invalidCommandOptions",
-    );
-  }
-
-  if (options.signal !== undefined && !isAbortSignalLike(options.signal)) {
-    return createDiagnostic(
-      "workflow.invalidCommandOptions",
-      "Workflow command signal must be an AbortSignal.",
-      command,
-      true,
-    );
-  }
-
-  return undefined;
-}
-
-function isAbortSignalLike(value: unknown): value is AbortSignal {
-  const signal = value as {
-    aborted?: unknown;
-    addEventListener?: unknown;
-    removeEventListener?: unknown;
-  };
-
-  return (
-    isObject(value) &&
-    isBoolean(signal.aborted) &&
-    isFunction(signal.addEventListener) &&
-    isFunction(signal.removeEventListener)
-  );
 }
 
 function normalizeTimeout(value: unknown): number | undefined {
@@ -1817,11 +2540,15 @@ function normalizeTimeout(value: unknown): number | undefined {
   return value;
 }
 
+function normalizeRetryCount(value: unknown): number {
+  return normalizeEntryLimit(value, "$workflow command retry", 0);
+}
+
 function createDiagnostic(
   code: string,
   message: string,
-  command?: string,
-  recoverable = true,
+  command: string | undefined,
+  recoverable: boolean,
   detail?: unknown,
 ): WorkflowDiagnostic {
   return {
@@ -1908,24 +2635,18 @@ function normalizeDiagnosticDetail(
     return normalized;
   }
 
-  if (isObject(value)) {
-    const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, unknown> = {};
 
-    for (const key of Object.keys(value)) {
-      normalized[key] = normalizeDiagnosticDetail(
-        (value as Record<string, unknown>)[key],
-        seen,
-      );
-    }
-
-    seen.delete(objectValue);
-
-    return normalized;
+  for (const key of Object.keys(value)) {
+    normalized[key] = normalizeDiagnosticDetail(
+      (value as Record<string, unknown>)[key],
+      seen,
+    );
   }
 
   seen.delete(objectValue);
 
-  return "[Unknown]";
+  return normalized;
 }
 
 function formatUnknownMessage(value: unknown): string {
@@ -1966,66 +2687,82 @@ function replaceArray<T>(target: T[], source: T[]): void {
   target.splice(0, target.length, ...structuredClone(source));
 }
 
-function normalizeWorkflowArgs<
-  TData extends object,
-  TEvents extends object,
-  TCommands extends object,
->(
-  scopeOrConfig: ng.Scope | WorkflowConfig<TData, TEvents, TCommands>,
-  maybeConfig?: WorkflowConfig<TData, TEvents, TCommands>,
-): WorkflowArgs<TData, TEvents, TCommands> {
-  if (maybeConfig) {
-    return {
-      _scope: scopeOrConfig as ng.Scope,
-      _config: maybeConfig,
-    };
+function replaceWorkflowData<TData extends object>(
+  target: TData,
+  source: TData,
+): void {
+  const restored = structuredClone(source);
+
+  if (isArray(target) && isArray(restored)) {
+    target.splice(0, target.length, ...restored);
+
+    return;
   }
 
-  return {
-    _config: scopeOrConfig as WorkflowConfig<TData, TEvents, TCommands>,
-  };
+  if (isInstanceOf(target, Map) && isInstanceOf(restored, Map)) {
+    target.clear();
+
+    for (const [key, value] of restored) {
+      target.set(key, value);
+    }
+
+    return;
+  }
+
+  if (isInstanceOf(target, Set) && isInstanceOf(restored, Set)) {
+    target.clear();
+
+    for (const value of restored) {
+      target.add(value);
+    }
+
+    return;
+  }
+
+  for (const key of Reflect.ownKeys(target)) {
+    Reflect.deleteProperty(target, key);
+  }
+
+  Object.assign(target, restored);
+}
+
+function defaultWorkflowData<TData extends object>(
+  data: TData | undefined,
+): TData {
+  if (data === undefined) {
+    return {} as TData;
+  }
+
+  return data;
 }
 
 function assertWorkflowConfig<
   TData extends object,
-  TEvents extends object,
   TCommands extends object,
->(config: WorkflowConfig<TData, TEvents, TCommands>): void {
-  if (!isObject(config)) {
-    throw new Error("$workflow requires a config object.");
-  }
-
+  TState extends string,
+>(config: WorkflowConfiguration<TData, TCommands, TState>): void {
   if (!isString(config.id) || !config.id) {
     throw new Error("$workflow requires a non-empty id.");
   }
 
   if (!isString(config.initial) || !config.initial) {
-    throw new Error("$workflow requires a non-empty initial mode.");
+    throw new Error("$workflow requires a non-empty initial state.");
   }
 
   if (!isObject(config.data)) {
     throw new Error("$workflow requires a data object.");
   }
 
-  if (!isObject(config.transitions)) {
-    throw new Error("$workflow requires a transitions object.");
-  }
-
-  if (config.commands !== undefined && !isObject(config.commands)) {
+  if (!isObject(config.commands) || isArray(config.commands)) {
     throw new Error("$workflow commands must be an object.");
   }
 
-  const concurrency = config.concurrency as unknown;
+  for (const [command, value] of Object.entries(config.commands)) {
+    if (!command) {
+      throw new Error("$workflow command names must be non-empty strings.");
+    }
 
-  if (
-    concurrency !== undefined &&
-    concurrency !== "allow" &&
-    concurrency !== "reject" &&
-    concurrency !== "queue"
-  ) {
-    throw new Error(
-      "$workflow concurrency must be 'allow', 'reject', or 'queue'.",
-    );
+    assertWorkflowCommandDefinition(command, value);
   }
 
   normalizeHistoryLimit(config.historyLimit);
@@ -2034,8 +2771,6 @@ function assertWorkflowConfig<
     "$workflow diagnosticLimit",
     1000,
   );
-  normalizeTimeout(config.commandTimeout);
-
   if (
     config.migrateSnapshot !== undefined &&
     !isFunction(config.migrateSnapshot)
@@ -2044,23 +2779,100 @@ function assertWorkflowConfig<
   }
 }
 
+function assertWorkflowCommandDefinition(
+  command: string,
+  value: unknown,
+): asserts value is WorkflowCommandDefinition {
+  if (!isObject(value) || isArray(value)) {
+    throw new Error(
+      `$workflow command '${command}' must be a lifecycle definition.`,
+    );
+  }
+
+  const definition = value as Partial<WorkflowCommandDefinition>;
+
+  if (
+    !(isString(definition.from) && definition.from.length > 0) &&
+    !(
+      isArray(definition.from) &&
+      definition.from.length > 0 &&
+      definition.from.every((state) => isString(state) && state.length > 0)
+    )
+  ) {
+    throw new Error(
+      `$workflow command '${command}' requires a non-empty from state.`,
+    );
+  }
+
+  assertWorkflowLifecycleTarget(command, "pending", definition.pending);
+  assertWorkflowLifecycleTarget(command, "success", definition.success);
+  assertWorkflowLifecycleTarget(command, "failure", definition.failure);
+
+  if (definition.cancelled !== undefined) {
+    assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
+  }
+
+  if (definition.timeout !== undefined) {
+    assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
+  }
+
+  if (definition.execute !== undefined && !isFunction(definition.execute)) {
+    throw new Error(
+      `$workflow command '${command}' execute must be a function.`,
+    );
+  }
+
+  const concurrency = (value as { concurrency?: unknown }).concurrency;
+
+  if (
+    concurrency !== undefined &&
+    concurrency !== "parallel" &&
+    concurrency !== "reject" &&
+    concurrency !== "queue"
+  ) {
+    throw new Error(
+      `$workflow command '${command}' concurrency must be 'parallel', 'reject', or 'queue'.`,
+    );
+  }
+
+  normalizeTimeout(definition.commandTimeout);
+  normalizeRetryCount(definition.retry);
+}
+
+function assertWorkflowLifecycleTarget(
+  command: string,
+  lifecycle: string,
+  value: unknown,
+): void {
+  if (isString(value) && value) {
+    return;
+  }
+
+  const target = value as { to?: unknown; update?: unknown };
+
+  if (
+    isObject(value) &&
+    isString(target.to) &&
+    target.to.length > 0 &&
+    (target.update === undefined || isFunction(target.update))
+  ) {
+    return;
+  }
+
+  throw new Error(
+    `$workflow command '${command}' ${lifecycle} must target a non-empty state.`,
+  );
+}
+
 function assertWorkflowSnapshot(snapshot: unknown): void {
-  if (!isObject(snapshot)) {
-    throw new Error("$workflow restore requires a snapshot object.");
-  }
-
   const candidate = snapshot as Partial<WorkflowSnapshot>;
-
-  if (candidate.version !== 1) {
-    throw new Error("$workflow restore requires a version 1 snapshot.");
-  }
 
   if (!isString(candidate.id) || !candidate.id) {
     throw new Error("$workflow restore requires a non-empty id.");
   }
 
-  if (!isString(candidate.current) || !candidate.current) {
-    throw new Error("$workflow restore requires a non-empty current mode.");
+  if (!isString(candidate.state) || !candidate.state) {
+    throw new Error("$workflow restore requires a non-empty state.");
   }
 
   if (!isObject(candidate.data)) {

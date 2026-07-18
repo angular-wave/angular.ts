@@ -3,12 +3,19 @@
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { defaultHttpResponseTransform } from "./http.ts";
+import {
+  applyTemplateRequestConfig,
+  createTemplateRequestHttpOptions,
+  createTemplateRequestService,
+} from "../template-request/template-request.ts";
 
 describe("$templateRequest", () => {
   let module,
     $rootScope,
     $templateRequest,
     $templateCache,
+    $http,
     $sce,
     angular,
     errors;
@@ -28,49 +35,74 @@ describe("$templateRequest", () => {
     $rootScope = injector.get("$rootScope");
     $templateRequest = injector.get("$templateRequest");
     $templateCache = injector.get("$templateCache");
+    $http = injector.get("$http");
     $sce = injector.get("$sce");
   });
 
-  describe("provider", () => {
+  it("keeps default options when configuration has no HTTP options", () => {
+    const options = createTemplateRequestHttpOptions();
+
+    expect(applyTemplateRequestConfig(options, {})).toBe(options);
+  });
+
+  it("removes a lone default response transform", async () => {
+    const cache = new Map();
+    const http = {
+      defaults: { transformResponse: defaultHttpResponseTransform },
+      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
+    };
+    const request = createTemplateRequestService(cache, http, {});
+
+    await expectAsync(request("/template.html")).toBeResolvedTo("template");
+
+    expect(http.get).toHaveBeenCalledOnceWith("/template.html", {
+      cache,
+      transformResponse: null,
+    });
+    expect(cache.get("/template.html")).toBe("template");
+  });
+
+  it("uses null when HTTP has no default response transform", async () => {
+    const cache = new Map();
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
+    };
+    const request = createTemplateRequestService(cache, http, {});
+
+    await request("/plain-template.html");
+
+    expect(http.get).toHaveBeenCalledOnceWith("/plain-template.html", {
+      cache,
+      transformResponse: null,
+    });
+  });
+
+  describe("configuration", () => {
     describe("httpOptions", () => {
-      it("should default to { headers: { Accept: 'text/html' } } and fallback to default $http options", () => {
-        angular.module("test", [
-          "ng",
-          ($templateRequestProvider) => {
-            expect($templateRequestProvider.httpOptions).toEqual({
-              headers: { Accept: "text/html" },
-            });
-          },
-        ]);
+      it("should default to { headers: { Accept: 'text/html' } } and fallback to default $http options", async () => {
+        spyOn($http, "get").and.callThrough();
 
-        createInjector(["test"]).invoke(
-          async ($templateRequest, $http, $templateCache) => {
-            spyOn($http, "get").and.callThrough();
-
-            $templateRequest("/public/test.html");
-            expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
-              cache: $templateCache,
-              transformResponse: [],
-              headers: { Accept: "text/html" },
-            });
-            await wait();
-          },
-        );
+        $templateRequest("/public/test.html");
+        expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
+          cache: $templateCache,
+          transformResponse: [],
+          headers: { Accept: "text/html" },
+        });
+        await wait();
       });
 
       it("should be configurable", () => {
         function someTransform() {}
 
-        angular.module("test", [
-          "ng",
-          ($templateRequestProvider) => {
-            // Configure the template request service to provide  specific headers and transforms
-            $templateRequestProvider.httpOptions = {
+        angular.module("test", ["ng"]).config({
+          $templateRequest: {
+            httpOptions: {
               headers: { Accept: "moo" },
               transformResponse: [someTransform],
-            };
+            },
           },
-        ]);
+        });
 
         createInjector(["test"]).invoke(
           ($templateRequest, $http, $templateCache) => {
@@ -88,27 +120,25 @@ describe("$templateRequest", () => {
       });
 
       it("should be allow you to override the cache", () => {
-        const httpOptions = {};
+        const customCache = new Map();
 
-        angular.module("test", [
-          "ng",
-          ($templateRequestProvider) => {
-            $templateRequestProvider.httpOptions = httpOptions;
+        angular.module("test", ["ng"]).config({
+          $templateRequest: {
+            httpOptions: {
+              cache: customCache,
+            },
           },
-        ]);
+        });
 
         createInjector(["test"]).invoke(($templateRequest, $http) => {
           spyOn($http, "get").and.callThrough();
-
-          const customCache = new Map();
-
-          httpOptions.cache = customCache;
 
           $templateRequest("/public/test.html");
 
           expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
             cache: customCache,
             transformResponse: [],
+            headers: { Accept: "text/html" },
           });
         });
       });
@@ -183,14 +213,7 @@ describe("$templateRequest", () => {
   });
 
   it("should use custom response transformers (array)", async () => {
-    module.config(($httpProvider) => {
-      $httpProvider.defaults.transformResponse.push((data) => `${data}!!`);
-    });
-    const injector = createInjector(["test"]);
-
-    $rootScope = injector.get("$rootScope");
-    $templateRequest = injector.get("$templateRequest");
-    $templateCache = injector.get("$templateCache");
+    $http.defaults.transformResponse.push((data) => `${data}!!`);
 
     const spy = jasmine.createSpy("success");
 
@@ -199,16 +222,9 @@ describe("$templateRequest", () => {
   });
 
   it("should use custom response transformers (function)", async () => {
-    module.config(($httpProvider) => {
-      $httpProvider.defaults.transformResponse = function (data) {
-        return `${data}!!`;
-      };
-    });
-    const injector = createInjector(["test"]);
-
-    $rootScope = injector.get("$rootScope");
-    $templateRequest = injector.get("$templateRequest");
-    $templateCache = injector.get("$templateCache");
+    $http.defaults.transformResponse = function (data) {
+      return `${data}!!`;
+    };
     const spy = jasmine.createSpy("success");
 
     await $templateRequest("/mock/jsoninterpolation").then(spy);

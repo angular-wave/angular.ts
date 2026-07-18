@@ -6,7 +6,7 @@ import { wait } from "../../shared/test-utils.ts";
 
 describe("ngTransclude", () => {
   let $compile;
-  let $compileProvider;
+  let compileRegistry;
   let $rootScope;
   let element;
 
@@ -15,14 +15,10 @@ describe("ngTransclude", () => {
 
     dealoc(app);
     window.angular = new Angular();
+    compileRegistry = window.angular._composition.compileRegistry;
     window.angular.module("test", []);
 
-    const injector = window.angular.bootstrap(app, [
-      "test",
-      function (_$compileProvider_) {
-        $compileProvider = _$compileProvider_;
-      },
-    ]);
+    const injector = window.angular.bootstrap(app, ["test"]);
 
     injector.invoke((_$compile_, _$rootScope_) => {
       $compile = _$compile_;
@@ -35,7 +31,7 @@ describe("ngTransclude", () => {
   });
 
   it("should read data-ng-transclude from the host element", async () => {
-    $compileProvider.directive("slotHost", () => ({
+    compileRegistry.directive("slotHost", () => ({
       restrict: "E",
       scope: {},
       transclude: {
@@ -60,7 +56,7 @@ describe("ngTransclude", () => {
   });
 
   it("should read data-ng-transclude-slot from ng-transclude elements", async () => {
-    $compileProvider.directive("slotHost", () => ({
+    compileRegistry.directive("slotHost", () => ({
       restrict: "E",
       scope: {},
       transclude: {

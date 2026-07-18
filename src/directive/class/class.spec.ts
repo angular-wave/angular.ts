@@ -437,12 +437,11 @@ describe("ngClass", () => {
   it("should always reevaluate filters with non-primitive inputs within literals", async () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("test", []);
+    window.angular
+      .module("test", [])
+      .filter("foo", () => (value) => value.a || value.b);
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "test",
-      ($filterProvider) => {
-        $filterProvider.register("foo", () => (o) => o.a || o.b);
-      },
     ]);
 
     injector.invoke(async ($rootScope, $compile) => {
@@ -713,14 +712,12 @@ describe("toClassString", () => {
 //     module("ngAnimate");
 //     module("ngAnimateMock");
 
-//     module(($animateProvider) => {
-//       $animateProvider.register(".crazy", () => ({
+//     module.animation(".crazy", () => ({
 //         enter(element, done) {
 //           element.data("state", "crazy-enter");
 //           done();
 //         },
 //       }));
-//     });
 //     inject(
 //       ($compile, $rootScope, $browser, $rootElement, $animate, $document) => {
 //         $animate.enabled(true);

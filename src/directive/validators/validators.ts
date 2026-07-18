@@ -158,69 +158,68 @@ export const requiredDirective: [
   ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
-    link:
-      /** Wires required-state observation into the ngModel validator set. */
-      (scope: ng.Scope, elm: Element, ctrl?: ValidatingNgModelController) => {
-        if (!ctrl) return;
-        const ngRequired = readValidatorAttr(elm, "ngRequired");
-        // For boolean attributes like required, presence means true
-        const ngRequiredGetter = ngRequired ? $parse(ngRequired) : undefined;
-        let value: unknown = ngRequiredGetter
-          ? Boolean(ngRequiredGetter(scope))
-          : hasValidatorAttr(elm, "required");
+    /** Wires required-state observation into the ngModel validator set. */
+    link: (
+      scope: ng.Scope,
+      elm: Element,
+      ctrl?: ValidatingNgModelController,
+    ) => {
+      if (!ctrl) return;
+      const ngRequired = readValidatorAttr(elm, "ngRequired");
+      // For boolean attributes like required, presence means true
+      const ngRequiredGetter = ngRequired ? $parse(ngRequired) : undefined;
+      let value: unknown = ngRequiredGetter
+        ? Boolean(ngRequiredGetter(scope))
+        : hasValidatorAttr(elm, "required");
 
-        const syncNativeRequired = (required: boolean) => {
-          if (elm instanceof Element) {
-            setNormalizedAttr(elm, "required", required);
-          }
-          const nativeControl = elm as Element & {
-            willValidate?: boolean;
-            validity?: ValidityState;
-          };
-
-          ctrl.$setNativeValidity(
-            !nativeControl.willValidate ||
-              nativeControl.validity?.valid !== false,
-          );
-        };
-
-        if (!ngRequired) {
-          // force truthy in case we are on non input element
-          // (input elements do this automatically for boolean attributes like required)
-          setNormalizedAttr(elm, "required", true);
+      const syncNativeRequired = (required: boolean) => {
+        if (elm instanceof Element) {
+          setNormalizedAttr(elm, "required", required);
         }
-
-        syncNativeRequired(Boolean(value));
-
-        ctrl.$validators.required = (
-          _modelValue: unknown,
-          viewValue: unknown,
-        ) => {
-          return !value || !ctrl.$isEmpty(viewValue);
+        const nativeControl = elm as Element & {
+          willValidate?: boolean;
+          validity?: ValidityState;
         };
 
-        const setRequiredValue = (nextValue: unknown) => {
-          if (value !== nextValue) {
-            value = nextValue;
-            syncNativeRequired(Boolean(value));
-            ctrl.$validate();
-          }
-        };
+        ctrl.$setNativeValidity(
+          !nativeControl.willValidate ||
+            nativeControl.validity?.valid !== false,
+        );
+      };
 
-        if (ngRequiredGetter && ngRequired) {
-          scope.$watch(ngRequired, (nextValue) => {
-            setRequiredValue(Boolean(nextValue));
-          });
-        } else {
-          observeValidatorAttr(scope, elm, "required", (newVal?: string) => {
-            setRequiredValue(
-              elm instanceof Element
-                ? hasNormalizedAttr(elm, "required")
-                : newVal,
-            );
-          });
+      if (!ngRequired) {
+        // force truthy in case we are on non input element
+        // (input elements do this automatically for boolean attributes like required)
+        setNormalizedAttr(elm, "required", true);
+      }
+
+      syncNativeRequired(Boolean(value));
+
+      ctrl.$validators.required = (
+        _modelValue: unknown,
+        viewValue: unknown,
+      ) => {
+        return !value || !ctrl.$isEmpty(viewValue);
+      };
+
+      const setRequiredValue = (nextValue: unknown) => {
+        if (value !== nextValue) {
+          value = nextValue;
+          syncNativeRequired(Boolean(value));
+          ctrl.$validate();
         }
-      },
+      };
+
+      if (ngRequiredGetter && ngRequired) {
+        scope.$watch(ngRequired, (nextValue) => {
+          setRequiredValue(Boolean(nextValue));
+        });
+      } else {
+        observeValidatorAttr(scope, elm, "required", () => {
+          setRequiredValue(hasNormalizedAttr(elm, "required"));
+        });
+      }
+    },
   }),
 ];
 
@@ -403,45 +402,48 @@ export const maxlengthDirective: [
   ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
-    link:
-      /** Watches maxlength changes and keeps the validator in sync. */
-      (scope: ng.Scope, elm: Element, ctrl?: ValidatingNgModelController) => {
-        if (!ctrl) return;
-        const maxlengthAttr = readValidatorAttr(elm, "maxlength");
-        const ngMaxlength = readValidatorAttr(elm, "ngMaxlength");
+    /** Watches maxlength changes and keeps the validator in sync. */
+    link: (
+      scope: ng.Scope,
+      elm: Element,
+      ctrl?: ValidatingNgModelController,
+    ) => {
+      if (!ctrl) return;
+      const maxlengthAttr = readValidatorAttr(elm, "maxlength");
+      const ngMaxlength = readValidatorAttr(elm, "ngMaxlength");
 
-        let maxlength =
-          maxlengthAttr ?? (ngMaxlength && $parse(ngMaxlength)(scope));
+      let maxlength =
+        maxlengthAttr ?? (ngMaxlength && $parse(ngMaxlength)(scope));
 
-        let maxlengthParsed = parseLength(maxlength);
+      let maxlengthParsed = parseLength(maxlength);
 
-        observeValidatorAttr(scope, elm, "maxlength", (newValue?: string) => {
-          if (maxlength !== newValue) {
-            maxlengthParsed = parseLength(newValue);
-            maxlength = newValue;
-            ctrl.$validate();
-          }
-        });
-        ctrl.$validators.maxlength = function (
-          _modelValue: unknown,
-          viewValue: unknown,
-        ) {
-          const valid =
-            maxlengthParsed < 0 ||
-            ctrl.$isEmpty(viewValue) ||
-            (isString(viewValue) && viewValue.length <= maxlengthParsed);
+      observeValidatorAttr(scope, elm, "maxlength", (newValue?: string) => {
+        if (maxlength !== newValue) {
+          maxlengthParsed = parseLength(newValue);
+          maxlength = newValue;
+          ctrl.$validate();
+        }
+      });
+      ctrl.$validators.maxlength = function (
+        _modelValue: unknown,
+        viewValue: unknown,
+      ) {
+        const valid =
+          maxlengthParsed < 0 ||
+          ctrl.$isEmpty(viewValue) ||
+          (isString(viewValue) && viewValue.length <= maxlengthParsed);
 
-          setNativeCustomValidityIssue(
-            ctrl,
-            "maxlength",
-            valid
-              ? null
-              : `Value must be at most ${String(maxlengthParsed)} characters.`,
-          );
+        setNativeCustomValidityIssue(
+          ctrl,
+          "maxlength",
+          valid
+            ? null
+            : `Value must be at most ${String(maxlengthParsed)} characters.`,
+        );
 
-          return valid;
-        };
-      },
+        return valid;
+      };
+    },
   }),
 ];
 

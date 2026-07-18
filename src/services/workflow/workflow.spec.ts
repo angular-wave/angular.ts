@@ -1,2186 +1,1915 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
+import {
+  getCompiledFragmentRecord,
+  scheduleCompiledFragmentDomWork,
+} from "../../core/compile/incremental-fragment.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { defineCommand, defineWorkflow } from "./workflow.ts";
-import type { WorkflowService } from "./workflow.ts";
+import {
+  createWorkflowService,
+  createWorkflowSupervisor,
+  defineWorkflow,
+} from "./workflow.ts";
+import {
+  createWorkflowWorkerClient,
+  createWorkflowWorkerHost,
+} from "./worker-adapter.ts";
+import { createWorkflowUiFragmentHost } from "./workflow-ui-fragment.ts";
+
+function command(overrides = {}) {
+  return {
+    from: "idle",
+    pending: "running",
+    execute: ({ input }) => input,
+    success: "complete",
+    failure: "failed",
+    ...overrides,
+  };
+}
+
+function workflowConfig(id = "build", overrides = {}) {
+  return {
+    id,
+    initial: "idle",
+    data: { output: "", attempts: 0 },
+    commands: {
+      build: command({
+        execute: ({ input }) => String(input),
+        success: {
+          to: "complete",
+          update({ data, output }) {
+            data.output = output;
+          },
+        },
+      }),
+    },
+    ...overrides,
+  };
+}
+
+function createWorkflowWorkerTestConnection(host) {
+  const listeners = new Set();
+  const dispatch = (data) => {
+    const event = { data };
+
+    for (const listener of listeners) listener(data, event);
+  };
+
+  return {
+    dispatch,
+    post(data) {
+      void host.handle(data, dispatch);
+    },
+    onMessage(listener) {
+      listeners.add(listener);
+
+      return () => listeners.delete(listener);
+    },
+    restart() {},
+    terminate() {},
+  };
+}
+
+function deleteIndexedDbDatabase(database) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(database);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () =>
+      reject(request.error ?? new Error("IndexedDB delete failed."));
+    request.onblocked = () => resolve();
+  });
+}
 
 describe("$workflow", () => {
-  let $compile: ng.CompileService;
-  let $rootScope: ng.RootScopeService;
-  let $workflow: WorkflowService;
+  let $compile;
+  let $rootScope;
+  let $workflow;
 
   beforeEach(() => {
     window.angular = new Angular();
 
     const injector = createInjector(["ng"]);
 
-    $compile = injector.get("$compile") as ng.CompileService;
-    $rootScope = injector.get("$rootScope") as ng.RootScopeService;
-    $workflow = injector.get("$workflow") as WorkflowService;
+    $compile = injector.get("$compile");
+    $rootScope = injector.get("$rootScope");
+    $workflow = injector.get("$workflow");
   });
 
-  it("creates a reactive workflow on top of machine transitions", async () => {
-    const element = $compile(
-      '<section><span class="mode">{{ build.current }}</span>' +
-        '<span class="status">{{ build.data.status }}</span></section>',
-    )($rootScope);
+  it("creates declarative workflows and preserves definition identity", () => {
+    const definition = workflowConfig();
 
-    $rootScope.build = $workflow({
-      id: "docs-build",
-      initial: "idle",
-      data: {
-        status: "idle",
-      },
-      transitions: {
-        idle: {
-          start(data) {
-            data.status = "running";
-
-            return "running";
-          },
+    expect(defineWorkflow(definition)).toBe(definition);
+    expect(createWorkflowService()(definition).state).toBe("idle");
+    expect(
+      defineWorkflow({
+        id: "empty-data",
+        initial: "idle",
+        commands: {
+          reset: command({ execute: undefined }),
         },
-      },
+      }).data,
+    ).toEqual({});
+  });
+
+  it("owns pending, success, and data update lifecycles", async () => {
+    let release;
+    const gate = new Promise((resolve) => {
+      release = resolve;
     });
+    const workflow = $workflow(
+      workflowConfig("publish", {
+        commands: {
+          publish: command({
+            async execute({ input, signal }) {
+              expect(signal.aborted).toBeFalse();
+              await gate;
 
-    await wait();
-
-    expect(element.querySelector(".mode")?.textContent).toBe("idle");
-    expect(element.querySelector(".status")?.textContent).toBe("idle");
-
-    $rootScope.build.send("start");
-
-    await wait();
-
-    expect(element.querySelector(".mode")?.textContent).toBe("running");
-    expect(element.querySelector(".status")?.textContent).toBe("running");
-  });
-
-  it("returns typed workflow and command definitions unchanged", () => {
-    const command = defineCommand(({ input }) => ({
-      ok: true,
-      output: String(input),
-    }));
-    const config = {
-      id: "defined",
-      initial: "idle",
-      data: {
-        value: "",
-      },
-      transitions: {},
-      commands: {
-        publish: command,
-      },
-    };
-
-    expect(defineCommand(command)).toBe(command);
-    expect(defineWorkflow(config)).toBe(config);
-  });
-
-  it("validates workflow configuration at creation time", () => {
-    expect(() => $workflow(null as ng.WorkflowConfig)).toThrowError(
-      "$workflow requires a config object.",
-    );
-    expect(() =>
-      $workflow({
-        id: "",
-        initial: "idle",
-        data: {},
-        transitions: {},
-      }),
-    ).toThrowError("$workflow requires a non-empty id.");
-    expect(() =>
-      $workflow({
-        id: "bad-initial",
-        initial: "",
-        data: {},
-        transitions: {},
-      }),
-    ).toThrowError("$workflow requires a non-empty initial mode.");
-    expect(() =>
-      $workflow({
-        id: "bad-data",
-        initial: "idle",
-        data: null,
-        transitions: {},
-      }),
-    ).toThrowError("$workflow requires a data object.");
-    expect(() =>
-      $workflow({
-        id: "bad-transitions",
-        initial: "idle",
-        data: {},
-        transitions: null,
-      }),
-    ).toThrowError("$workflow requires a transitions object.");
-    expect(() =>
-      $workflow({
-        id: "bad-commands",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        commands: null,
-      }),
-    ).toThrowError("$workflow commands must be an object.");
-    expect(() =>
-      $workflow({
-        id: "bad-concurrency",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        concurrency: "drop",
-      }),
-    ).toThrowError(
-      "$workflow concurrency must be 'allow', 'reject', or 'queue'.",
-    );
-    expect(() =>
-      $workflow({
-        id: "bad-history-limit",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        historyLimit: -1,
-      }),
-    ).toThrowError("$workflow historyLimit must be a non-negative integer.");
-    expect(() =>
-      $workflow({
-        id: "bad-diagnostic-limit",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        diagnosticLimit: Number.POSITIVE_INFINITY,
-      }),
-    ).toThrowError("$workflow diagnosticLimit must be a finite number.");
-    expect(() =>
-      $workflow({
-        id: "bad-timeout",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        commandTimeout: 1.5,
-      }),
-    ).toThrowError("$workflow command timeout must be a non-negative integer.");
-    expect(() =>
-      $workflow({
-        id: "bad-migrate",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        migrateSnapshot: "nope",
-      }),
-    ).toThrowError("$workflow migrateSnapshot must be a function.");
-  });
-
-  it("runs commands through stable history and diagnostics boundaries", async () => {
-    const workflow = $workflow({
-      id: "docs-build",
-      initial: "idle",
-      data: {
-        output: "",
-      },
-      transitions: {},
-      commands: {
-        build({ data, input }) {
-          data.output = String(input);
-
-          return {
-            ok: true,
-            output: {
-              file: data.output,
+              return { file: input };
             },
-          };
-        },
-        fail() {
-          throw new Error("build failed");
-        },
-      },
-    });
-
-    const result = await workflow.run("build", "index.html");
-
-    expect(result.ok).toBe(true);
-    expect(workflow.data.output).toBe("index.html");
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.completed",
-    ]);
-    expect(workflow.history[1].output).toEqual({ file: "index.html" });
-
-    const failure = await workflow.run("fail");
-
-    expect(failure.ok).toBe(false);
-    expect(failure.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "workflow.commandFailed",
-        message: "build failed",
-        recoverable: true,
-        command: "fail",
-      }),
-    );
-    expect(workflow.diagnostics.length).toBe(1);
-    expect(workflow.history[3]).toEqual(
-      jasmine.objectContaining({
-        type: "command.failed",
-        command: "fail",
-      }),
-    );
-  });
-
-  it("normalizes async command success, rejected promises, and malformed results", async () => {
-    const workflow = $workflow({
-      id: "agent-task",
-      initial: "idle",
-      data: {
-        value: "",
-      },
-      transitions: {},
-      commands: {
-        async resolve({ data, input }) {
-          await Promise.resolve();
-          data.value = String(input);
-
-          return {
-            ok: true,
-            output: {
-              value: data.value,
+            success: {
+              to: "complete",
+              update({ data, output, command: name, input }) {
+                data.output = output.file;
+                expect(name).toBe("publish");
+                expect(input).toBe("index.html");
+              },
             },
-          };
+          }),
         },
-        async reject({ data }) {
-          data.value = "partial";
+      }),
+    );
 
-          throw new Error("remote step failed");
-        },
-        malformed() {
-          return {
-            ok: "yes",
-          };
-        },
-      },
-    });
+    expect(workflow.can("publish")).toBeTrue();
 
-    const success = await workflow.run("resolve", "ready");
+    const running = workflow.run("publish", "index.html");
 
-    expect(success).toEqual({
+    expect(workflow.state).toBe("running");
+    expect(workflow.can("publish")).toBeFalse();
+    release();
+
+    await expectAsync(running).toBeResolvedTo({
       ok: true,
-      output: {
-        value: "ready",
-      },
+      status: "completed",
+      output: { file: "index.html" },
       diagnostics: undefined,
     });
-    expect(workflow.data.value).toBe("ready");
+    expect(workflow.state).toBe("complete");
+    expect(workflow.data.output).toBe("index.html");
+    expect(workflow.history.map(({ type }) => type)).toEqual([
+      "command.started",
+      "command.completed",
+    ]);
+  });
 
-    const rejected = await workflow.run("reject");
-
-    expect(rejected.ok).toBe(false);
-    expect(workflow.data.value).toBe("partial");
-    expect(rejected.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "workflow.commandFailed",
-        message: "remote step failed",
-        command: "reject",
+  it("normalizes failures and applies declared failure updates", async () => {
+    const workflow = $workflow(
+      workflowConfig("failure", {
+        data: { output: "", error: "" },
+        commands: {
+          publish: command({
+            execute() {
+              throw new Error("network unavailable");
+            },
+            failure: {
+              to: "failed",
+              update({ data, diagnostic, diagnostics }) {
+                data.error = diagnostic.message;
+                expect(diagnostics).toEqual([diagnostic]);
+              },
+            },
+          }),
+        },
       }),
     );
 
-    const malformed = await workflow.run("malformed");
+    const result = await workflow.run("publish");
 
-    expect(malformed.ok).toBe(false);
-    expect(malformed.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "workflow.invalidCommandResult",
+    expect(result.ok).toBeFalse();
+    expect(result.status).toBe("failed");
+    expect(result.diagnostics[0].message).toBe("network unavailable");
+    expect(workflow.state).toBe("failed");
+    expect(workflow.data.error).toBe("network unavailable");
+  });
+
+  it("records controlled rejections through the same failure lifecycle", async () => {
+    const workflow = $workflow(
+      workflowConfig("rejection", {
+        commands: {
+          validate: command({
+            execute({ reject }) {
+              return reject({
+                code: "docs.missingTitle",
+                message: "Missing title.",
+                recoverable: true,
+              });
+            },
+          }),
+        },
       }),
     );
+
+    const result = await workflow.run("validate");
+
+    expect(result.status).toBe("rejected");
+    expect(workflow.state).toBe("failed");
+    expect(workflow.diagnostics[0].code).toBe("docs.missingTitle");
   });
 
-  it("records overlapping async command completions in resolution order", async () => {
-    let resolveSlow: (() => void) | undefined;
-    let resolveFast: (() => void) | undefined;
-    const workflow = $workflow({
-      id: "concurrent",
-      initial: "idle",
-      data: {
-        value: "",
-      },
-      transitions: {},
-      commands: {
-        async slow({ data }) {
-          await new Promise<void>((resolve) => {
-            resolveSlow = resolve;
-          });
-          data.value = "slow";
-
-          return {
-            ok: true,
-            output: "slow",
-          };
+  it("keeps command data readonly and lifecycle data mutable", async () => {
+    const observed = {};
+    const workflow = $workflow(
+      workflowConfig("readonly", {
+        data: {
+          output: "draft",
+          nested: { count: 0 },
+          list: ["one"],
+          map: new Map([["one", { count: 0 }]]),
+          objectKey: { id: 1 },
+          objectMap: new Map(),
+          nullPrototype: Object.assign(Object.create(null), { value: 1 }),
+          set: new Set([{ count: 0 }]),
+          timestamp: new Date("2024-01-01T00:00:00.000Z"),
         },
-        async fast({ data }) {
-          await new Promise<void>((resolve) => {
-            resolveFast = resolve;
-          });
-          data.value = "fast";
+        commands: {
+          inspect: command({
+            execute({ data }) {
+              observed.mapSize = data.map.size;
+              observed.mapHas = data.map.has("one");
+              observed.mapKeys = [...data.map.keys()];
+              observed.mapValues = [...data.map.values()].map(
+                (value) => value.count,
+              );
+              observed.mapEntries = [...data.map.entries()].length;
+              observed.mapIterator = [...data.map].length;
+              observed.mapForEach = [];
+              data.map.forEach((value, key) => {
+                observed.mapForEach.push([key, value.count]);
+              });
+              observed.setSize = data.set.size;
+              observed.setHas = data.set.has([...data.set][0]);
+              observed.setKeys = [...data.set.keys()].length;
+              observed.setValues = [...data.set.values()].length;
+              observed.setEntries = [...data.set.entries()].length;
+              observed.setForEach = [];
+              data.set.forEach((value, key) => {
+                observed.setForEach.push(value === key);
+              });
+              observed.objectMapHas = data.objectMap.has(data.objectKey);
+              observed.objectMapGet = data.objectMap.get(data.objectKey)?.id;
+              observed.objectMapMissing = data.objectMap.has({ id: 1 });
+              observed.mapTag = data.map[Symbol.toStringTag];
+              observed.mapConstructor = data.map.constructor.name;
+              observed.mapString = data.map.toString();
+              observed.setTag = data.set[Symbol.toStringTag];
+              observed.setConstructor = data.set.constructor.name;
+              observed.setString = data.set.toString();
+              observed.nullPrototype = data.nullPrototype.value;
+              observed.timestamp = data.timestamp.getUTCFullYear();
 
-          return {
-            ok: true,
-            output: "fast",
-          };
+              const mutations = [
+                () => {
+                  data.output = "changed";
+                },
+                () => {
+                  data.nested.count = 1;
+                },
+                () => data.list.push("two"),
+                () => data.map.set("two", 2),
+                () => data.map.delete("one"),
+                () => data.map.clear(),
+                () => {
+                  data.map.get("one").count = 1;
+                },
+                () => {
+                  for (const value of data.map.values()) value.count = 1;
+                },
+                () => data.set.add("two"),
+                () => data.set.delete("one"),
+                () => data.set.clear(),
+                () => {
+                  for (const value of data.set) value.count = 1;
+                },
+                () => {
+                  delete data.nested.count;
+                },
+                () => Object.defineProperty(data.nested, "next", { value: 1 }),
+                () => Object.setPrototypeOf(data.nested, null),
+              ];
+
+              return mutations.map((mutate) => {
+                try {
+                  mutate();
+
+                  return false;
+                } catch (error) {
+                  return error instanceof TypeError;
+                }
+              });
+            },
+            success: {
+              to: "complete",
+              update({ data, output }) {
+                data.output = output.every(Boolean) ? "protected" : "broken";
+              },
+            },
+          }),
         },
-      },
-    });
-
-    const slow = workflow.run("slow");
-    const fast = workflow.run("fast");
-
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.started",
-    ]);
-
-    resolveFast?.();
-    await fast;
-
-    expect(workflow.data.value).toBe("fast");
-    expect(workflow.history.map((entry) => entry.command)).toEqual([
-      "slow",
-      "fast",
-      "fast",
-    ]);
-
-    resolveSlow?.();
-    await slow;
-
-    expect(workflow.data.value).toBe("slow");
-    expect(workflow.history.map((entry) => entry.command)).toEqual([
-      "slow",
-      "fast",
-      "fast",
-      "slow",
-    ]);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.started",
-      "command.completed",
-      "command.completed",
-    ]);
-  });
-
-  it("rejects concurrent commands when configured", async () => {
-    let resolveBuild: (() => void) | undefined;
-    const workflow = $workflow({
-      id: "concurrency-reject",
-      concurrency: "reject",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        async build() {
-          await new Promise<void>((resolve) => {
-            resolveBuild = resolve;
-          });
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const first = workflow.run("build");
-    const second = await workflow.run("build");
-
-    expect(second).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandRunning",
-          command: "build",
-        }),
-      ],
-    });
-
-    resolveBuild?.();
-
-    expect((await first).ok).toBe(true);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.failed",
-      "command.completed",
-    ]);
-  });
-
-  it("queues concurrent commands when configured", async () => {
-    let resolveFirst: (() => void) | undefined;
-    const started: string[] = [];
-    const workflow = $workflow({
-      id: "concurrency-queue",
-      concurrency: "queue",
-      initial: "idle",
-      data: {
-        values: [] as string[],
-      },
-      transitions: {},
-      commands: {
-        async build({ data, input }) {
-          started.push(String(input));
-
-          if (input === "first") {
-            await new Promise<void>((resolve) => {
-              resolveFirst = resolve;
-            });
-          }
-
-          data.values.push(String(input));
-
-          return {
-            ok: true,
-            output: String(input),
-          };
-        },
-      },
-    });
-
-    const first = workflow.run("build", "first");
-    const second = workflow.run("build", "second");
-
-    await wait();
-
-    expect(started).toEqual(["first"]);
-
-    resolveFirst?.();
-
-    expect((await first).ok).toBe(true);
-    expect((await second).ok).toBe(true);
-    expect(started).toEqual(["first", "second"]);
-    expect(workflow.data.values).toEqual(["first", "second"]);
-  });
-
-  it("cancels running commands and runs registered cleanup callbacks", async () => {
-    let cleaned = false;
-    let signal: AbortSignal | undefined;
-    const workflow = $workflow({
-      id: "cancel",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        async build({ cleanup, signal: commandSignal }) {
-          signal = commandSignal;
-          cleanup(() => {
-            cleaned = true;
-          });
-
-          await new Promise(() => undefined);
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const running = workflow.run("build");
-
-    await wait();
-
-    expect(workflow.cancel("build")).toBe(1);
-
-    const result = await running;
-
-    expect(result).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandCancelled",
-          command: "build",
-        }),
-      ],
-    });
-    expect(signal?.aborted).toBe(true);
-    expect(cleaned).toBe(true);
-  });
-
-  it("cancels immediately when the provided signal is already aborted", async () => {
-    let ran = false;
-    const controller = new AbortController();
-    const workflow = $workflow({
-      id: "pre-aborted",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        build() {
-          ran = true;
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    controller.abort();
-
-    const result = await workflow.run("build", undefined, {
-      signal: controller.signal,
-    });
-
-    expect(ran).toBe(false);
-    expect(result).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandCancelled",
-          command: "build",
-        }),
-      ],
-    });
-  });
-
-  it("records cleanup failures as diagnostics", async () => {
-    const workflow = $workflow({
-      id: "cleanup-failure",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        build({ cleanup }) {
-          cleanup(() => {
-            throw new Error("cleanup exploded");
-          });
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const result = await workflow.run("build");
-
-    expect(result.ok).toBe(true);
-    expect(workflow.diagnostics).toEqual([
-      jasmine.objectContaining({
-        code: "workflow.cleanupFailed",
-        message: "cleanup exploded",
-        command: "build",
       }),
-    ]);
-  });
-
-  it("protects workflow data and nested commands after a command has finished", async () => {
-    let capturedWorkflow: ng.Workflow;
-    let capturedData: {
-      value: string;
-      nested: {
-        count: number;
-      };
-    };
-    const workflow = $workflow({
-      id: "post-finish-proxy",
-      initial: "idle",
-      data: {
-        value: "initial",
-        nested: {
-          count: 0,
-        },
-      },
-      transitions: {
-        idle: {
-          start(data) {
-            data.value = "running";
-
-            return "running";
-          },
-        },
-      },
-      commands: {
-        capture({ workflow: commandWorkflow, data }) {
-          capturedWorkflow = commandWorkflow;
-          capturedData = data;
-          data.value = "during";
-
-          return {
-            ok: true,
-          };
-        },
-        nested() {
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    await workflow.run("capture");
-
-    capturedData!.value = "after";
-    capturedData!.nested.count = 1;
-    delete capturedData!.nested.count;
-    Object.defineProperty(capturedData!, "extra", {
-      value: true,
-      configurable: true,
-    });
-    Object.setPrototypeOf(capturedData!, { changed: true });
-
-    const sent = capturedWorkflow!.send("start");
-    const nestedRun = await capturedWorkflow!.run("nested");
-    const nestedRetry = await capturedWorkflow!.retry("nested");
-    const nestedRepeat = await capturedWorkflow!.repeat("nested");
-
-    expect(workflow.current).toBe("idle");
-    expect(workflow.data).toEqual({
-      value: "during",
-      nested: {
-        count: 0,
-      },
-    });
-    expect(sent).toBe(false);
-    expect(nestedRun.diagnostics[0].code).toBe("workflow.commandCancelled");
-    expect(nestedRetry.diagnostics[0].code).toBe("workflow.commandCancelled");
-    expect(nestedRepeat.diagnostics[0].code).toBe("workflow.commandCancelled");
-  });
-
-  it("proxies Map and Set workflow data during commands", async () => {
-    let capturedData: {
-      map: Map<string, { count: number }>;
-      set: Set<string>;
-    };
-    const workflow = $workflow({
-      id: "map-set-proxy",
-      initial: "idle",
-      data: {
-        map: new Map<string, { count: number }>([["item", { count: 1 }]]),
-        set: new Set<string>(["one"]),
-      },
-      transitions: {},
-      commands: {
-        inspect({ data }) {
-          capturedData = data;
-          expect(data.map.size).toBe(1);
-          expect(data.map.get("item")!.count).toBe(1);
-          data.map.get("item")!.count = 2;
-          expect(data.map.has("item")).toBe(true);
-          expect(Array.from(data.map.keys())).toEqual(["item"]);
-          expect(data.map.set("next", { count: 3 })).toBe(data.map);
-          expect(data.map.delete("missing")).toBe(false);
-          expect(data.set.size).toBe(1);
-          expect(data.set.has("one")).toBe(true);
-          expect(data.set.add("two")).toBe(data.set);
-          expect(data.set.delete("missing")).toBe(false);
-
-          return "ok";
-        },
-      },
-    });
+    );
+    workflow.data.objectMap.set(workflow.data.objectKey, { id: 2 });
 
     const result = await workflow.run("inspect");
 
-    expect(result).toEqual({
-      ok: true,
-      output: "ok",
+    expect(result.ok).toBeTrue();
+    expect(result.output.every(Boolean)).toBeTrue();
+    expect(workflow.data.output).toBe("protected");
+    expect(workflow.data.nested.count).toBe(0);
+    expect(workflow.data.map.get("one").count).toBe(0);
+    expect([...workflow.data.set][0].count).toBe(0);
+    expect(observed).toEqual({
+      mapSize: 1,
+      mapHas: true,
+      mapKeys: ["one"],
+      mapValues: [0],
+      mapEntries: 1,
+      mapIterator: 1,
+      mapForEach: [["one", 0]],
+      setSize: 1,
+      setHas: true,
+      setKeys: 1,
+      setValues: 1,
+      setEntries: 1,
+      setForEach: [true],
+      objectMapHas: true,
+      objectMapGet: 2,
+      objectMapMissing: false,
+      mapTag: "Map",
+      mapConstructor: "Map",
+      mapString: "[object Map]",
+      setTag: "Set",
+      setConstructor: "Set",
+      setString: "[object Set]",
+      nullPrototype: 1,
+      timestamp: 2024,
     });
-    expect(workflow.data.map.get("item")!.count).toBe(2);
-    expect(workflow.data.map.get("next")!.count).toBe(3);
-    expect(workflow.data.set.has("two")).toBe(true);
-
-    expect(capturedData!.map.set("late", { count: 4 })).toBe(capturedData!.map);
-    expect(capturedData!.map.delete("item")).toBe(false);
-    capturedData!.map.clear();
-    expect(capturedData!.set.add("late")).toBe(capturedData!.set);
-    expect(capturedData!.set.delete("one")).toBe(false);
-    capturedData!.set.clear();
-
-    expect(workflow.data.map.has("late")).toBe(false);
-    expect(workflow.data.map.has("item")).toBe(true);
-    expect(workflow.data.set.has("late")).toBe(false);
-    expect(workflow.data.set.has("one")).toBe(true);
   });
 
-  it("proxies array workflow data during commands", async () => {
-    let capturedItems: string[] | undefined;
-    const workflow = $workflow({
-      id: "array-proxy",
-      initial: "idle",
-      data: {
-        items: ["one"],
-      },
-      transitions: {},
-      commands: {
-        append({ data }) {
-          capturedItems = data.items;
-          data.items.push("two");
-
-          return data.items.join(",");
+  it("supports immediate state commands without execute", async () => {
+    const workflow = $workflow(
+      workflowConfig("immediate", {
+        commands: {
+          reset: command({
+            pending: "resetting",
+            execute: undefined,
+            success: "idle",
+          }),
         },
-      },
-    });
-
-    const result = await workflow.run("append");
-
-    expect(result).toEqual({
-      ok: true,
-      output: "one,two",
-    });
-    expect(workflow.data.items).toEqual(["one", "two"]);
-
-    capturedItems!.push("late");
-
-    expect(workflow.data.items).toEqual(["one", "two"]);
-  });
-
-  it("leaves non-plain workflow data values unproxied during commands", async () => {
-    class Counter {
-      constructor(public value: number) {}
-
-      increment(): number {
-        this.value += 1;
-
-        return this.value;
-      }
-    }
-
-    let capturedCounter: Counter | undefined;
-    const workflow = $workflow({
-      id: "class-value-proxy",
-      initial: "idle",
-      data: {
-        counter: new Counter(1),
-      },
-      transitions: {},
-      commands: {
-        increment({ data }) {
-          capturedCounter = data.counter;
-
-          return data.counter.increment();
-        },
-      },
-    });
-
-    const result = await workflow.run("increment");
-
-    expect(result).toEqual({
-      ok: true,
-      output: 2,
-    });
-    expect(capturedCounter).toBeInstanceOf(Counter);
-    expect(workflow.data.counter.value).toBe(2);
-  });
-
-  it("times out commands that ignore abort signals", async () => {
-    const workflow = $workflow({
-      id: "timeout",
-      commandTimeout: 1,
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        async build() {
-          await new Promise(() => undefined);
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const result = await workflow.run("build");
-
-    expect(result).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandTimeout",
-          command: "build",
-        }),
-      ],
-    });
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.failed",
-    ]);
-  });
-
-  it("returns diagnostics for invalid runtime command options", async () => {
-    const workflow = $workflow({
-      id: "invalid-options",
-      initial: "idle",
-      data: {
-        runs: 0,
-      },
-      transitions: {},
-      commands: {
-        build({ data }) {
-          data.runs += 1;
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const invalidConcurrency = await workflow.run("build", undefined, {
-      concurrency: "drop",
-    } as ng.WorkflowCommandOptions);
-    const invalidTimeout = await workflow.run("build", undefined, {
-      timeout: -1,
-    });
-    const invalidSignal = await workflow.run("build", undefined, {
-      signal: {} as AbortSignal,
-    });
-
-    expect(invalidConcurrency).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.invalidCommandOptions",
-          command: "build",
-        }),
-      ],
-    });
-    expect(invalidTimeout.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "workflow.invalidCommandOptions",
-        command: "build",
       }),
     );
-    expect(invalidSignal.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "workflow.invalidCommandOptions",
-        command: "build",
+
+    await expectAsync(workflow.run("reset")).toBeResolvedTo({
+      ok: true,
+      status: "completed",
+      output: undefined,
+      diagnostics: undefined,
+    });
+    expect(workflow.state).toBe("idle");
+  });
+
+  it("rejects commands outside their declared source states", async () => {
+    const workflow = $workflow(workflowConfig());
+
+    await workflow.run("build", "one");
+    const result = await workflow.run("build", "two");
+
+    expect(result.status).toBe("rejected");
+    expect(result.diagnostics[0].code).toBe("workflow.commandNotAllowed");
+    expect(workflow.state).toBe("complete");
+  });
+
+  it("enforces reject and queue concurrency declarations", async () => {
+    const releases = [];
+    const workflow = $workflow(
+      workflowConfig("concurrency", {
+        commands: {
+          reject: command({
+            from: ["idle", "running"],
+            concurrency: "reject",
+            execute: () => new Promise((resolve) => releases.push(resolve)),
+          }),
+          queue: command({
+            from: ["complete", "running"],
+            pending: "running",
+            success: "complete",
+            concurrency: "queue",
+            execute: ({ input }) =>
+              new Promise((resolve) => releases.push(() => resolve(input))),
+          }),
+        },
       }),
     );
-    expect(workflow.data.runs).toBe(0);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.failed",
-      "command.failed",
-      "command.failed",
-    ]);
-  });
 
-  it("removes external abort listeners after command completion", async () => {
-    let abortHandler: EventListener | undefined;
-    let removedHandler: EventListener | undefined;
-    const signal = {
-      aborted: false,
-      addEventListener(_type: string, handler: EventListener) {
-        abortHandler = handler;
-      },
-      removeEventListener(_type: string, handler: EventListener) {
-        removedHandler = handler;
-      },
-    } as AbortSignal;
-    const workflow = $workflow({
-      id: "abort-listener-cleanup",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        build() {
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
+    const first = workflow.run("reject");
+    const rejected = await workflow.run("reject");
 
-    const result = await workflow.run("build", undefined, { signal });
+    expect(rejected.status).toBe("rejected");
+    releases.shift()("first");
+    await first;
 
-    expect(result.ok).toBe(true);
-    expect(abortHandler).toBeDefined();
-    expect(removedHandler).toBe(abortHandler);
-  });
-
-  it("restore cancels running and queued commands without polluting restored state", async () => {
-    let resolveFirst: (() => void) | undefined;
-    const started: string[] = [];
-    const workflow = $workflow({
-      id: "restore-cancels-work",
-      concurrency: "queue",
-      initial: "idle",
-      data: {
-        items: new Map<string, string>([["current", "initial"]]),
-        value: "initial",
-      },
-      transitions: {},
-      commands: {
-        async build({ data, input }) {
-          started.push(String(input));
-
-          if (input === "first") {
-            await new Promise<void>((resolve) => {
-              resolveFirst = resolve;
-            });
-          }
-
-          data.value = String(input);
-          data.items.set("late", String(input));
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-    const snapshot = workflow.snapshot();
-    const first = workflow.run("build", "first");
-    const second = workflow.run("build", "second");
+    const queuedFirst = workflow.run("queue", "one");
+    const queuedSecond = workflow.run("queue", "two");
 
     await wait();
-
-    expect(started).toEqual(["first"]);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-    ]);
-
-    workflow.restore(snapshot);
-
-    const firstResult = await first;
-    const secondResult = await second;
-
-    resolveFirst?.();
+    releases.shift()();
+    await queuedFirst;
     await wait();
+    releases.shift()();
+    await expectAsync(queuedSecond).toBeResolvedTo(
+      jasmine.objectContaining({ ok: true, output: "two" }),
+    );
+  });
 
-    expect(firstResult).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandCancelled",
-          command: "build",
-        }),
-      ],
-    });
-    expect(secondResult).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.commandCancelled",
-          command: "build",
-        }),
-      ],
-    });
-    expect(started).toEqual(["first"]);
-    expect(workflow.current).toBe("idle");
-    expect(workflow.data.value).toBe("initial");
-    expect(workflow.data.items.get("current")).toBe("initial");
-    expect(workflow.data.items.has("late")).toBe(false);
+  it("automatically retries failed execution according to the declaration", async () => {
+    let attempts = 0;
+    const workflow = $workflow(
+      workflowConfig("retry", {
+        commands: {
+          publish: command({
+            retry: 2,
+            execute() {
+              attempts += 1;
+              if (attempts < 3) throw new Error("temporary");
+
+              return "published";
+            },
+          }),
+        },
+      }),
+    );
+
+    const result = await workflow.run("publish");
+
+    expect(result).toEqual(
+      jasmine.objectContaining({ ok: true, output: "published" }),
+    );
+    expect(attempts).toBe(3);
+    expect(workflow.diagnostics).toEqual([]);
+  });
+
+  it("cancels commands and applies the cancelled lifecycle", async () => {
+    let cleaned = false;
+    let observedSignal;
+    const workflow = $workflow(
+      workflowConfig("cancel", {
+        commands: {
+          publish: command({
+            execute({ cleanup, signal }) {
+              observedSignal = signal;
+              cleanup(() => {
+                cleaned = true;
+              });
+
+              return new Promise(() => undefined);
+            },
+            cancelled: "cancelled",
+          }),
+        },
+      }),
+    );
+    const running = workflow.run("publish");
+
+    expect(workflow.cancel("publish")).toBe(1);
+    expect(workflow.cancel("publish")).toBe(0);
+    expect(workflow.cancel("missing")).toBe(0);
+
+    const result = await running;
+
+    expect(result.status).toBe("cancelled");
+    expect(workflow.state).toBe("cancelled");
+    expect(observedSignal.aborted).toBeTrue();
+    expect(cleaned).toBeTrue();
+  });
+
+  it("times out commands and applies the timeout lifecycle", async () => {
+    const workflow = $workflow(
+      workflowConfig("timeout", {
+        commands: {
+          publish: command({
+            commandTimeout: 0,
+            execute: () => new Promise(() => undefined),
+            timeout: "timed-out",
+          }),
+        },
+      }),
+    );
+
+    const result = await workflow.run("publish");
+
+    expect(result.status).toBe("timeout");
+    expect(workflow.state).toBe("timed-out");
+  });
+
+  it("falls back to failure states for undeclared cancellation and timeout targets", async () => {
+    let workflow;
+
+    workflow = $workflow(
+      workflowConfig("fallback-lifecycles", {
+        commands: {
+          cancelDuringPending: command({
+            pending: {
+              to: "running",
+              update() {
+                workflow.cancel("cancelDuringPending");
+              },
+            },
+          }),
+          timeout: command({
+            from: "failed",
+            commandTimeout: 0,
+            execute: () => new Promise(() => undefined),
+          }),
+        },
+      }),
+    );
+
+    expect((await workflow.run("cancelDuringPending")).status).toBe(
+      "cancelled",
+    );
+    expect(workflow.state).toBe("failed");
+    expect((await workflow.run("timeout")).status).toBe("timeout");
+    expect(workflow.state).toBe("failed");
+  });
+
+  it("cancels active and queued work when restoring", async () => {
+    let release;
+    const workflow = $workflow(
+      workflowConfig("restore-running", {
+        commands: {
+          build: command({
+            from: ["idle", "running"],
+            concurrency: "queue",
+            execute({ cleanup }) {
+              cleanup(() => {
+                throw new Error("discarded cleanup");
+              });
+
+              return new Promise((_resolve, reject) => {
+                release = () => reject(new Error("late operation failure"));
+              });
+            },
+          }),
+        },
+      }),
+    );
+    const initial = workflow.snapshot();
+    const running = workflow.run("build", "one");
+    const queued = workflow.run("build", "two");
+
+    await wait();
+    workflow.restore(initial);
+    const runningResult = await running;
+    const queuedResult = await queued;
+
+    release?.();
+    await wait();
+    expect(runningResult.status).toBe("cancelled");
+    expect(queuedResult.status).toBe("cancelled");
     expect(workflow.diagnostics).toEqual([]);
     expect(workflow.history).toEqual([]);
   });
 
-  it("bounds history with a configurable limit", async () => {
-    const workflow = $workflow({
-      id: "bounded-history",
-      historyLimit: 3,
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        ping({ input }) {
-          return {
-            ok: true,
-            output: input,
-          };
-        },
-      },
-    });
-
-    await workflow.run("ping", "one");
-    await workflow.run("ping", "two");
-    await workflow.run("ping", "three");
-
-    expect(workflow.history.map((entry) => entry.command)).toEqual([
-      "ping",
-      "ping",
-      "ping",
-    ]);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.completed",
-      "command.started",
-      "command.completed",
-    ]);
-    expect(workflow.history[0].output).toBe("two");
-  });
-
-  it("returns stable diagnostics for invalid or missing commands", async () => {
-    const workflow = $workflow({
-      id: "diagnostics",
-      initial: "idle",
-      data: {},
-      transitions: {},
-    });
-
-    const invalid = await workflow.run("");
-    const missing = await workflow.run("publish");
-
-    expect(invalid).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.invalidCommand",
-          recoverable: true,
-        }),
-      ],
-    });
-    expect(missing).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.missingCommand",
-          command: "publish",
-          recoverable: true,
-        }),
-      ],
-    });
-    expect(workflow.history).toEqual([
-      jasmine.objectContaining({
-        type: "command.failed",
-        command: "publish",
-      }),
-    ]);
-  });
-
-  it("does not treat empty replay or cancel command names as wildcards", async () => {
-    let resolveBuild: (() => void) | undefined;
-    const workflow = $workflow({
-      id: "empty-command-boundaries",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        async build() {
-          await new Promise<void>((resolve) => {
-            resolveBuild = resolve;
-          });
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const running = workflow.run("build");
-    const retry = await workflow.retry("");
-    const repeat = await workflow.repeat("");
-
-    expect(workflow.cancel("")).toBe(0);
-    expect(retry).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.invalidCommand",
-        }),
-      ],
-    });
-    expect(repeat).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.invalidCommand",
-        }),
-      ],
-    });
-
-    resolveBuild?.();
-
-    expect((await running).ok).toBe(true);
-  });
-
-  it("returns stable diagnostics for invalid transitions without throwing", () => {
-    const workflow = $workflow({
-      id: "transition-diagnostics",
-      initial: "idle",
-      data: {},
-      transitions: {
-        running: {
-          stop() {
-            return "idle";
-          },
-        },
-      },
-    });
-
-    expect(workflow.send("stop")).toBe(false);
-    expect(workflow.current).toBe("idle");
-    expect(workflow.diagnostics).toEqual([
-      jasmine.objectContaining({
-        code: "workflow.invalidTransition",
-        recoverable: true,
-        detail: {
-          current: "idle",
-          type: "stop",
-          payload: undefined,
-        },
-      }),
-    ]);
-  });
-
-  it("bounds diagnostics with a configurable limit", async () => {
-    const workflow = $workflow({
-      id: "bounded-diagnostics",
-      diagnosticLimit: 2,
-      initial: "idle",
-      data: {},
-      transitions: {
-        idle: {},
-      },
-      commands: {
-        fail({ input }) {
-          return {
-            ok: false,
-            diagnostics: [
-              {
-                code: `docs.${String(input)}`,
-                message: String(input),
+  it("records cleanup and lifecycle update failures", async () => {
+    const workflow = $workflow(
+      workflowConfig("cleanup", {
+        commands: {
+          publish: command({
+            execute({ cleanup }) {
+              cleanup(() => {
+                throw new Error("cleanup failed");
+              });
+              throw new Error("execution failed");
+            },
+            failure: {
+              to: "failed",
+              update() {
+                throw new Error("lifecycle failed");
               },
-            ],
-          };
+            },
+          }),
         },
-      },
-    });
+      }),
+    );
+
+    const result = await workflow.run("publish");
+
+    expect(result.diagnostics.map(({ code }) => code)).toContain(
+      "workflow.lifecycleUpdateFailed",
+    );
+    expect(workflow.diagnostics.map(({ code }) => code)).toContain(
+      "workflow.cleanupFailed",
+    );
+    expect(workflow.state).toBe("failed");
+  });
+
+  it("bounds diagnostics and history", async () => {
+    const workflow = $workflow(
+      workflowConfig("bounded", {
+        diagnosticLimit: 1,
+        historyLimit: 2,
+        commands: {
+          fail: command({
+            from: ["idle", "failed"],
+            pending: "running",
+            execute({ input }) {
+              throw new Error(String(input));
+            },
+          }),
+        },
+      }),
+    );
 
     await workflow.run("fail", "one");
     await workflow.run("fail", "two");
-    workflow.send("missing");
 
-    expect(workflow.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
-      "docs.two",
-      "workflow.invalidTransition",
-    ]);
+    expect(workflow.diagnostics.length).toBe(1);
+    expect(workflow.diagnostics[0].message).toBe("two");
+    expect(workflow.history.length).toBe(2);
   });
 
-  it("retries the latest failed command with the original input", async () => {
-    let attempts = 0;
-    const workflow = $workflow({
-      id: "publish",
-      initial: "idle",
-      data: {
-        file: "",
-        published: false,
-      },
-      transitions: {},
-      commands: {
-        publish({ data, input }) {
-          attempts += 1;
-          data.file = String(input);
+  it("returns stable diagnostics for invalid and missing commands", async () => {
+    const workflow = $workflow(workflowConfig());
 
-          if (attempts === 1) {
-            throw new Error("network unavailable");
-          }
-
-          data.published = true;
-
-          return {
-            ok: true,
-            output: {
-              file: data.file,
-            },
-          };
-        },
-      },
-    });
-
-    const failure = await workflow.run("publish", "index.html");
-    const retry = await workflow.retry();
-
-    expect(failure.ok).toBe(false);
-    expect(retry).toEqual({
-      ok: true,
-      output: {
-        file: "index.html",
-      },
-      diagnostics: undefined,
-    });
-    expect(workflow.data.published).toBe(true);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.failed",
-      "command.started",
-      "command.completed",
-    ]);
-    expect(workflow.history[2].input).toBe("index.html");
-    expect(workflow.diagnostics[0].message).toBe("network unavailable");
+    expect((await workflow.run("")).status).toBe("rejected");
+    expect((await workflow.run("missing")).status).toBe("rejected");
+    expect(workflow.can("missing")).toBeFalse();
+    expect(workflow.cancel("")).toBe(0);
   });
 
-  it("keeps public history JSON-safe while retrying live original inputs", async () => {
-    let attempts = 0;
-    const workflow = $workflow({
-      id: "history-json",
-      initial: "idle",
-      data: {
-        values: [] as string[],
+  it("validates declarative workflow definitions", () => {
+    const invalidConfigs = [
+      null,
+      { ...workflowConfig(), id: "" },
+      { ...workflowConfig(), initial: "" },
+      { ...workflowConfig(), data: null },
+      { ...workflowConfig(), commands: [] },
+      { ...workflowConfig(), commands: { "": command() } },
+      { ...workflowConfig(), commands: { build: null } },
+      { ...workflowConfig(), commands: { build: command({ from: [] }) } },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ pending: "" }) },
       },
-      transitions: {},
-      commands: {
-        publish({ data, input }) {
-          attempts += 1;
-
-          if (!(input instanceof Map)) {
-            throw new Error("expected original map input");
-          }
-
-          data.values.push(String(input.get("file")));
-
-          if (attempts === 1) {
-            throw new Error("retry me");
-          }
-
-          return {
-            ok: true,
-            output: {
-              file: input.get("file"),
-              callback() {
-                return "ignored";
-              },
-            },
-          };
-        },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ success: { to: "", update() {} } }) },
       },
-    });
-    const input = new Map<string, unknown>([
-      ["file", "index.html"],
-      [
-        "metadata",
-        {
-          created: new Date("2024-01-01T00:00:00.000Z"),
-        },
-      ],
-    ]);
-    input.set("self", input);
+      {
+        ...workflowConfig(),
+        commands: { build: command({ failure: { to: "failed", update: 1 } }) },
+      },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ execute: [] }) },
+      },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ concurrency: "serial" }) },
+      },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ commandTimeout: -1 }) },
+      },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ commandTimeout: Number.NaN }) },
+      },
+      {
+        ...workflowConfig(),
+        commands: { build: command({ retry: Number.NaN }) },
+      },
+      { ...workflowConfig(), historyLimit: Number.POSITIVE_INFINITY },
+      { ...workflowConfig(), diagnosticLimit: -1 },
+      { ...workflowConfig(), migrateSnapshot: true },
+    ];
 
-    const failure = await workflow.run("publish", input);
-    const retry = await workflow.retry("publish");
-    const snapshot = workflow.snapshot();
-
-    expect(failure.ok).toBe(false);
-    expect(retry.ok).toBe(true);
-    expect(workflow.data.values).toEqual(["index.html", "index.html"]);
-    expect(workflow.history[0].input).toEqual([
-      ["file", "index.html"],
-      ["metadata", { created: "2024-01-01T00:00:00.000Z" }],
-      ["self", "[Circular]"],
-    ]);
-    expect(workflow.history[3].output).toEqual({
-      file: "index.html",
-      callback: "[Function]",
-    });
-    expect(() => JSON.stringify(workflow.history)).not.toThrow();
-    expect(() => JSON.stringify(snapshot)).not.toThrow();
+    for (const config of invalidConfigs) {
+      expect(() => $workflow(config)).toThrow();
+    }
   });
 
-  it("returns a recoverable diagnostic when there is no failed command to retry", async () => {
-    const workflow = $workflow({
-      id: "retry-empty",
-      initial: "idle",
-      data: {},
-      transitions: {},
-    });
+  it("snapshots, restores, and migrates workflow state", async () => {
+    const workflow = $workflow(workflowConfig("snapshot"));
 
-    const result = await workflow.retry("publish");
-
-    expect(result).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.noFailedCommand",
-          command: "publish",
-          recoverable: true,
-        }),
-      ],
-    });
-    expect(workflow.history).toEqual([]);
-  });
-
-  it("repeats the latest completed command with the original input", async () => {
-    const workflow = $workflow({
-      id: "repeat",
-      initial: "idle",
-      data: {
-        files: [] as string[],
-      },
-      transitions: {},
-      commands: {
-        publish({ data, input }) {
-          data.files.push(String(input));
-
-          return {
-            ok: true,
-            output: {
-              file: String(input),
-            },
-          };
-        },
-      },
-    });
-
-    const first = await workflow.run("publish", "index.html");
-    const repeated = await workflow.repeat();
-
-    expect(first.ok).toBe(true);
-    expect(repeated).toEqual({
-      ok: true,
-      output: {
-        file: "index.html",
-      },
-      diagnostics: undefined,
-    });
-    expect(workflow.data.files).toEqual(["index.html", "index.html"]);
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.completed",
-      "command.started",
-      "command.completed",
-    ]);
-    expect(workflow.history[2].input).toBe("index.html");
-  });
-
-  it("returns a recoverable diagnostic when there is no completed command to repeat", async () => {
-    const workflow = $workflow({
-      id: "repeat-empty",
-      initial: "idle",
-      data: {},
-      transitions: {},
-    });
-
-    const result = await workflow.repeat("publish");
-
-    expect(result).toEqual({
-      ok: false,
-      diagnostics: [
-        jasmine.objectContaining({
-          code: "workflow.noCompletedCommand",
-          command: "publish",
-          recoverable: true,
-        }),
-      ],
-    });
-    expect(workflow.history).toEqual([]);
-  });
-
-  it("uses configured repair commands without deleting failure evidence", async () => {
-    const workflow = $workflow({
-      id: "repair",
-      initial: "idle",
-      data: {
-        title: "",
-        repaired: false,
-      },
-      transitions: {
-        idle: {
-          validate(data) {
-            return data.title ? "complete" : "failed";
-          },
-        },
-        failed: {
-          reset() {
-            return "idle";
-          },
-          complete() {
-            return "complete";
-          },
-        },
-      },
-      commands: {
-        validate({ workflow: currentWorkflow }) {
-          currentWorkflow.send("validate");
-
-          return currentWorkflow.matches("complete")
-            ? { ok: true }
-            : {
-                ok: false,
-                diagnostics: [
-                  {
-                    code: "docs.missingTitle",
-                    message: "Missing title.",
-                    recoverable: true,
-                  },
-                ],
-              };
-        },
-        repair({ data, workflow: currentWorkflow, input }) {
-          data.title = String(input);
-          data.repaired = true;
-          currentWorkflow.send("complete");
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    const failure = await workflow.run("validate");
-    const reset = workflow.send("reset");
-    const secondFailure = await workflow.run("validate");
-    const repair = await workflow.run("repair", "Guide");
-
-    expect(failure.ok).toBe(false);
-    expect(reset).toBe(true);
-    expect(secondFailure.ok).toBe(false);
-    expect(repair.ok).toBe(true);
-    expect(workflow.current).toBe("complete");
-    expect(workflow.data).toEqual({
-      title: "Guide",
-      repaired: true,
-    });
-    expect(workflow.diagnostics[0]).toEqual(
-      jasmine.objectContaining({
-        code: "docs.missingTitle",
-      }),
-    );
-    expect(workflow.history.map((entry) => entry.type)).toEqual([
-      "command.started",
-      "command.failed",
-      "command.started",
-      "command.failed",
-      "command.started",
-      "command.completed",
-    ]);
-  });
-
-  it("keeps diagnostics safe to serialize as JSON", async () => {
-    const detail: Record<string, unknown> = {
-      code: 1n,
-      callback() {
-        return "ignored";
-      },
-    };
-
-    detail.self = detail;
-
-    const workflow = $workflow({
-      id: "serializable",
-      initial: "idle",
-      data: {},
-      transitions: {},
-      commands: {
-        inspect() {
-          return {
-            ok: false,
-            diagnostics: [
-              {
-                code: "docs.invalid",
-                message: "Invalid docs.",
-                detail,
-              },
-            ],
-          };
-        },
-      },
-    });
-
-    await workflow.run("inspect");
-
-    expect(() => JSON.stringify(workflow.diagnostics)).not.toThrow();
-    expect(JSON.parse(JSON.stringify(workflow.diagnostics))[0].detail).toEqual({
-      code: "1",
-      callback: "[Function]",
-      self: "[Circular]",
-    });
-  });
-
-  it("snapshots and restores workflow JSON state", async () => {
-    const workflow = $workflow({
-      id: "repairable",
-      initial: "idle",
-      data: {
-        count: 0,
-      },
-      transitions: {
-        idle: {
-          start(data) {
-            data.count += 1;
-
-            return "running";
-          },
-        },
-      },
-      commands: {
-        diagnose() {
-          return {
-            ok: false,
-            diagnostics: [
-              {
-                code: "docs.missingTitle",
-                message: "Missing title.",
-                recoverable: true,
-              },
-            ],
-          };
-        },
-      },
-    });
-
-    workflow.send("start");
-    await workflow.run("diagnose");
+    await workflow.run("build", "index.html");
 
     const snapshot = workflow.snapshot();
 
-    expect(snapshot).toEqual(
-      jasmine.objectContaining({
-        version: 1,
-        id: "repairable",
-        current: "running",
-      }),
-    );
-    expect(snapshot.diagnostics[0].code).toBe("docs.missingTitle");
-
-    workflow.data.count = 99;
+    workflow.data.output = "changed";
     workflow.restore(snapshot);
+    expect(workflow.state).toBe("complete");
+    expect(workflow.data.output).toBe("index.html");
 
-    expect(workflow.current).toBe("running");
-    expect(workflow.data.count).toBe(1);
-    expect(workflow.diagnostics[0].code).toBe("docs.missingTitle");
-  });
-
-  it("restores failed, repaired, and complete workflow snapshots", async () => {
-    const workflow = $workflow({
-      id: "snapshot-cycle",
-      initial: "idle",
-      data: {
-        title: "",
-      },
-      transitions: {
-        idle: {
-          fail() {
-            return "failed";
-          },
-        },
-        failed: {
-          complete() {
-            return "complete";
-          },
-        },
-      },
-      commands: {
-        validate({ workflow: currentWorkflow }) {
-          currentWorkflow.send("fail");
-
+    const migrated = $workflow(
+      workflowConfig("migrated", {
+        migrateSnapshot() {
           return {
-            ok: false,
-            diagnostics: [
-              {
-                code: "docs.missingTitle",
-                message: "Missing title.",
-                recoverable: true,
-              },
-            ],
+            ...snapshot,
+            id: "migrated",
           };
         },
-        repair({ data, workflow: currentWorkflow, input }) {
-          data.title = String(input);
-          currentWorkflow.send("complete");
-
-          return {
-            ok: true,
-          };
-        },
-      },
-    });
-
-    await workflow.run("validate");
-    const failedSnapshot = workflow.snapshot();
-
-    await workflow.run("repair", "Guide");
-    const completeSnapshot = workflow.snapshot();
-
-    workflow.restore(failedSnapshot);
-
-    expect(workflow.current).toBe("failed");
-    expect(workflow.data.title).toBe("");
-    expect(workflow.diagnostics[0].code).toBe("docs.missingTitle");
-
-    await workflow.run("repair", "Recovered");
-    const repairedSnapshot = workflow.snapshot();
-
-    workflow.restore(completeSnapshot);
-
-    expect(workflow.current).toBe("complete");
-    expect(workflow.data.title).toBe("Guide");
-
-    workflow.restore(repairedSnapshot);
-
-    expect(workflow.current).toBe("complete");
-    expect(workflow.data.title).toBe("Recovered");
-  });
-
-  it("rejects malformed or mismatched workflow snapshots", () => {
-    const workflow = $workflow({
-      id: "restore-target",
-      initial: "idle",
-      data: {},
-      transitions: {},
-    });
-
-    expect(() =>
-      workflow.restore({
-        version: 2,
-        id: "restore-target",
-        current: "idle",
-        data: {},
-        diagnostics: [],
-        history: [],
       }),
-    ).toThrowError("$workflow restore requires a version 1 snapshot.");
+    );
+
+    migrated.restore({ version: 0 });
+    expect(migrated.state).toBe("complete");
+  });
+
+  it("rejects malformed and mismatched snapshots", () => {
+    const workflow = $workflow(workflowConfig("snapshot-errors"));
+
+    for (const snapshot of [
+      null,
+      {},
+      { version: 1 },
+      { version: 1, id: "x" },
+      { version: 1, id: "x", state: "idle" },
+      { version: 1, id: "x", state: "idle", data: {} },
+      {
+        version: 1,
+        id: "x",
+        state: "idle",
+        data: {},
+        diagnostics: [],
+      },
+    ]) {
+      expect(() => workflow.restore(snapshot)).toThrow();
+    }
 
     expect(() =>
       workflow.restore({
-        version: 1,
-        id: "other-workflow",
-        current: "idle",
-        data: {},
-        diagnostics: [],
-        history: [],
+        ...workflow.snapshot(),
+        id: "other",
       }),
     ).toThrowError("$workflow restore snapshot id must match workflow id.");
   });
 
-  it("migrates older workflow snapshots before restore", () => {
-    const workflow = $workflow({
-      id: "migrated",
-      initial: "idle",
-      data: {
-        title: "",
-      },
-      transitions: {},
-      migrateSnapshot(snapshot) {
-        const oldSnapshot = snapshot as {
-          state: string;
-          title: string;
-        };
+  it("normalizes restored diagnostics and history", () => {
+    const workflow = $workflow(workflowConfig("normalized-restore"));
+    const circular = {};
 
-        return {
-          version: 1,
-          id: "migrated",
-          current: oldSnapshot.state,
-          data: {
-            title: oldSnapshot.title,
-          },
-          diagnostics: [],
-          history: [],
-        };
-      },
-    });
-
-    workflow.restore({
-      version: 0,
-      state: "complete",
-      title: "Guide",
-    });
-
-    expect(workflow.current).toBe("complete");
-    expect(workflow.data.title).toBe("Guide");
-  });
-
-  it("normalizes restored diagnostics and history entries", async () => {
-    const circularInput: Record<string, unknown> = {
-      file: "index.html",
-    };
-
-    circularInput.self = circularInput;
-
-    const workflow = $workflow({
-      id: "restore-normalized",
-      initial: "idle",
-      data: {
-        value: "",
-      },
-      transitions: {},
-      commands: {
-        publish({ data, input }) {
-          data.value = String(input);
-
-          return {
-            ok: true,
-            output: {
-              file: data.value,
-            },
-          };
-        },
-      },
-    });
-
+    circular.self = circular;
     workflow.restore({
       version: 1,
-      id: "restore-normalized",
-      current: "idle",
-      data: {
-        value: "",
-      },
+      id: "normalized-restore",
+      state: "idle",
+      data: { output: "restored", attempts: 0 },
       diagnostics: [
+        "plain failure",
         {
-          code: 7,
-          message: null,
+          code: 1,
+          message: false,
+          path: 2,
+          command: 3,
           detail: {
-            value: 1n,
-            callback() {
-              return "ignored";
-            },
+            bigint: 1n,
+            symbol: Symbol("detail"),
+            callback() {},
+            date: new Date("2024-01-01T00:00:00.000Z"),
+            map: new Map([["key", "value"]]),
+            set: new Set(["value"]),
+            circular,
           },
         },
-        "plain failure",
+        {
+          code: "workflow.path",
+          message: "Path diagnostic.",
+          path: "data.output",
+          command: "build",
+        },
       ],
       history: [
         {
-          id: "bad",
+          id: 2,
+          type: "command.started",
+          command: "build",
+          input: { file: "one" },
+        },
+        {
+          id: 2,
           type: "unknown",
           command: "",
-          input: circularInput,
-          output: new Set(["created"]),
-          diagnostics: ["bad history"],
-        },
-        {
-          id: 4,
-          type: "command.completed",
-          command: "publish",
-          input: "restored.html",
+          output: { file: "two" },
+          diagnostics: [false],
         },
         {
           id: 4,
           type: "command.failed",
-          command: "duplicate",
+          command: "build",
+          diagnostics: null,
         },
-        {
-          id: 4.5,
-          type: "command.failed",
-          command: "fractional",
-        },
+        null,
       ],
     });
 
-    const repeat = await workflow.repeat("publish");
-
-    expect(workflow.diagnostics).toEqual([
-      jasmine.objectContaining({
-        code: "workflow.diagnostic",
-        message: "Workflow diagnostic.",
-        detail: {
-          value: "1",
-          callback: "[Function]",
-        },
-      }),
+    expect(workflow.diagnostics[0]).toEqual(
       jasmine.objectContaining({
         code: "workflow.diagnostic",
         message: "plain failure",
-        recoverable: true,
-      }),
-    ]);
-    expect(workflow.history[0]).toEqual(
-      jasmine.objectContaining({
-        id: 1,
-        type: "command.failed",
-        command: "unknown",
-        input: {
-          file: "index.html",
-          self: "[Circular]",
-        },
-        output: ["created"],
-        diagnostics: [
-          jasmine.objectContaining({
-            message: "bad history",
-          }),
-        ],
       }),
     );
+    expect(workflow.diagnostics[1].detail).toEqual(
+      jasmine.objectContaining({
+        bigint: "1",
+        symbol: "Symbol(detail)",
+        callback: "[Function]",
+        date: "2024-01-01T00:00:00.000Z",
+        map: [["key", "value"]],
+        set: ["value"],
+      }),
+    );
+    expect(workflow.diagnostics[1].detail.circular.self).toBe("[Circular]");
+    expect(workflow.history.map(({ id }) => id)).toEqual([2, 3, 4, 5]);
     expect(workflow.history[1]).toEqual(
-      jasmine.objectContaining({
-        id: 4,
-        type: "command.completed",
-        command: "publish",
-        input: "restored.html",
-      }),
+      jasmine.objectContaining({ type: "command.failed", command: "unknown" }),
     );
-    expect(workflow.history[2]).toEqual(
-      jasmine.objectContaining({
-        id: 5,
-        type: "command.failed",
-        command: "duplicate",
-      }),
-    );
-    expect(workflow.history[3]).toEqual(
-      jasmine.objectContaining({
-        id: 6,
-        type: "command.failed",
-        command: "fractional",
-      }),
-    );
-    expect(repeat.ok).toBe(true);
-    expect(workflow.data.value).toBe("restored.html");
-    expect(workflow.history[4].id).toBe(7);
-    expect(workflow.history[5].id).toBe(8);
+  });
+
+  it("restores array, map, and set workflow data in place", () => {
+    const arrayWorkflow = $workflow({
+      id: "array-data",
+      initial: "idle",
+      data: ["one"],
+      commands: {},
+    });
+    const mapWorkflow = $workflow({
+      id: "map-data",
+      initial: "idle",
+      data: new Map([["one", 1]]),
+      commands: {},
+    });
+    const setWorkflow = $workflow({
+      id: "set-data",
+      initial: "idle",
+      data: new Set(["one"]),
+      commands: {},
+    });
+
+    for (const [workflow, data] of [
+      [arrayWorkflow, ["two"]],
+      [mapWorkflow, new Map([["two", 2]])],
+      [setWorkflow, new Set(["two"])],
+    ]) {
+      workflow.restore({ ...workflow.snapshot(), data });
+    }
+
+    expect(arrayWorkflow.data).toEqual(["two"]);
+    expect([...mapWorkflow.data]).toEqual([["two", 2]]);
+    expect([...setWorkflow.data]).toEqual(["two"]);
+  });
+
+  it("defaults omitted workflow data", () => {
+    const workflow = $workflow({
+      id: "default-data",
+      initial: "idle",
+      commands: {},
+    });
+
+    expect(workflow.data).toEqual({});
+  });
+
+  it("normalizes non-error command failures", async () => {
+    const values = [new Error(""), 42, true, 1n, Symbol(), () => undefined, {}];
+    const messages = [];
+
+    for (const [index, value] of values.entries()) {
+      const workflow = $workflow(
+        workflowConfig(`unknown-error-${String(index)}`, {
+          commands: {
+            build: command({
+              execute() {
+                throw value;
+              },
+            }),
+          },
+        }),
+      );
+
+      messages.push((await workflow.run("build")).diagnostics[0].message);
+    }
+
+    expect(messages).toEqual([
+      "Workflow command failed.",
+      "42",
+      "true",
+      "1",
+      "Symbol()",
+      "[Function]",
+      "Workflow diagnostic.",
+    ]);
+  });
+
+  it("reactively propagates lifecycle state and data into templates", async () => {
+    const workflow = $workflow(workflowConfig("reactive"));
+
+    $rootScope.workflow = workflow;
+
+    const element = $compile(
+      '<section><span class="state">{{ workflow.state }}</span>' +
+        '<span class="output">{{ workflow.data.output }}</span></section>',
+    )($rootScope);
+
+    await wait();
+    expect(element.querySelector(".state").textContent).toBe("idle");
+
+    await workflow.run("build", "bundle.js");
+    await wait();
+    expect(element.querySelector(".state").textContent).toBe("complete");
+    expect(element.querySelector(".output").textContent).toBe("bundle.js");
+  });
+
+  it("forgets destroyed reactive workflow bindings", async () => {
+    const workflow = $workflow(workflowConfig("destroyed-binding"));
+    const scope = $rootScope.$new();
+
+    scope.workflow = workflow;
+    $compile("<span>{{ workflow.state }}</span>")(scope);
+    await wait();
+    scope.$destroy();
+
+    await workflow.run("build", "after-destroy.js");
+    expect(workflow.state).toBe("complete");
   });
 
   it("registers named workflows as singleton injectables", async () => {
-    window.angular.module("workflowNamedApp", ["ng"]).workflow("docsWorkflow", {
-      id: "docs",
-      initial: "idle",
-      data: {
-        runs: 0,
-      },
-      transitions: {
-        idle: {
-          start(data) {
-            data.runs += 1;
+    const app = window.angular.module("workflow-app", []);
 
-            return "running";
-          },
-        },
-      },
-    });
-
-    const injector = createInjector(["workflowNamedApp"]);
-    const first = injector.get("docsWorkflow");
-    const second = injector.get("docsWorkflow");
-
-    expect(first).toBe(second);
-    expect(first.send("start")).toBe(true);
-    expect(second.current).toBe("running");
-    expect(second.data.runs).toBe(1);
-  });
-
-  it("keeps named workflows alive after one observing directive scope is destroyed", async () => {
-    const directiveScopes: ng.Scope[] = [];
-
-    window.angular = new Angular();
-    window.angular
-      .module("workflowDirectiveApp", ["ng"])
-      .workflow("sessionWorkflow", {
-        id: "session",
-        initial: "setup",
-        data: {
-          status: "idle",
-        },
-        transitions: {
-          setup: {
-            wait(data) {
-              data.status = "waiting";
-
-              return "waiting";
+    app
+      .workflow("buildWorkflow", {
+        initial: "idle",
+        data: { output: "" },
+        commands: {
+          build: command({
+            execute: ({ input }) => input,
+            success: {
+              to: "complete",
+              update({ data, output }) {
+                data.output = output;
+              },
             },
-          },
+          }),
         },
       })
-      .directive("workflowPanel", () => ({
-        scope: true,
-        template:
-          '<span class="mode">{{ session.current }}</span>' +
-          '<span class="status">{{ session.data.status }}</span>',
-        link(scope: ng.Scope) {
-          directiveScopes.push(scope);
-          scope.session.matches("setup");
-        },
-      }));
+      .workflow("emptyWorkflow", {
+        initial: "idle",
+        commands: {},
+      })
+      .machine("emptyMachine", {
+        initial: "idle",
+        states: { idle: {} },
+      })
+      .workflowSupervisor("defaultSupervisor", {
+        workflows: { empty: workflowConfig("supervised-empty") },
+      });
 
-    const injector = createInjector(["workflowDirectiveApp"]);
-    const compile = injector.get("$compile") as ng.CompileService;
-    const workflow = injector.get("sessionWorkflow") as ng.Workflow<{
-      status: string;
-    }>;
-    const rootScope = injector.get("$rootScope") as ng.RootScopeService;
+    const injector = createInjector(["ng", "workflow-app"]);
+    const first = injector.get("buildWorkflow");
+    const second = injector.get("buildWorkflow");
+    const emptyWorkflow = injector.get("emptyWorkflow");
+    const emptyMachine = injector.get("emptyMachine");
+    const defaultSupervisor = injector.get("defaultSupervisor");
 
-    rootScope.session = workflow;
-
-    const element = compile(
-      '<section><workflow-panel class="first" session="session"></workflow-panel>' +
-        '<workflow-panel class="second" session="session"></workflow-panel></section>',
-    )(rootScope);
-
-    await wait();
-
-    expect(directiveScopes.length).toBe(2);
-    expect(element.querySelector(".first .status")?.textContent).toBe("idle");
-    expect(element.querySelector(".second .status")?.textContent).toBe("idle");
-
-    directiveScopes[0].$destroy();
-
-    workflow.send("wait");
-
-    await wait();
-
-    expect(workflow.current).toBe("waiting");
-    expect(element.querySelector(".second .mode")?.textContent).toBe("waiting");
-    expect(element.querySelector(".second .status")?.textContent).toBe(
-      "waiting",
-    );
+    expect(first).toBe(second);
+    await first.run("build", "app.js");
+    expect(first.data.output).toBe("app.js");
+    expect(emptyWorkflow.data).toEqual({});
+    expect(emptyMachine.data).toEqual({});
+    expect(defaultSupervisor.id).toBe("defaultSupervisor");
   });
 
-  describe("documentation examples", () => {
-    it("runs the create workflow example", async () => {
-      const build = $workflow({
-        id: "docs-build",
-        initial: "idle",
-        data: {
-          status: "idle",
-          output: "",
+  describe("supervision", () => {
+    it("validates supervisor declarations and workflow entries", () => {
+      const invalidConfigs = [
+        null,
+        {},
+        { id: "", workflows: { build: workflowConfig() } },
+        { id: "invalid", workflows: null },
+        { id: "invalid", workflows: [] },
+        { id: "invalid", workflows: [["", workflowConfig()]] },
+        {
+          id: "invalid",
+          workflows: [
+            ["build", workflowConfig()],
+            ["build", workflowConfig()],
+          ],
         },
-        transitions: {
-          idle: {
-            start(data) {
-              data.status = "running";
-
-              return "running";
-            },
-          },
-          running: {
-            complete(data, output) {
-              data.status = "complete";
-              data.output = output;
-
-              return "complete";
-            },
-            fail(data, reason) {
-              data.status = reason;
-
-              return "failed";
-            },
-          },
+        { id: "invalid", workflows: [["build", null]] },
+        { id: "invalid", workflows: [42] },
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          autoPersist: "yes",
         },
-        commands: {
-          build({ workflow, data, input }) {
-            workflow.send("start");
-            data.output = String(input);
-            workflow.send("complete", data.output);
-
-            return {
-              ok: true,
-              output: {
-                file: data.output,
-              },
-            };
-          },
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          autoRecover: true,
         },
-      });
-
-      const result = await build.run("build", "index.html");
-
-      expect(result).toEqual({
-        ok: true,
-        output: {
-          file: "index.html",
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          persistence: {},
         },
-        diagnostics: undefined,
-      });
-      expect(build.current).toBe("complete");
-      expect(build.data).toEqual({
-        status: "complete",
-        output: "index.html",
-      });
-    });
-
-    it("runs the named injectable workflow example", () => {
-      window.angular
-        .module("workflowDocsNamedApp", ["ng"])
-        .workflow("docsWorkflow", {
-          id: "docs",
-          initial: "idle",
-          data: {
-            runs: 0,
-          },
-          transitions: {
-            idle: {
-              start(data) {
-                data.runs += 1;
-
-                return "running";
-              },
-            },
-          },
-        });
-
-      const injector = createInjector(["workflowDocsNamedApp"]);
-      const docsWorkflow = injector.get("docsWorkflow");
-
-      expect(docsWorkflow.send("start")).toBe(true);
-      expect(docsWorkflow.current).toBe("running");
-      expect(docsWorkflow.data.runs).toBe(1);
-    });
-
-    it("runs the command diagnostics example", async () => {
-      const workflow = $workflow({
-        id: "diagnostics-example",
-        initial: "idle",
-        data: {},
-        transitions: {},
-        commands: {
-          publish() {
-            return {
-              ok: false,
-              diagnostics: [
-                {
-                  code: "docs.publishFailed",
-                  message: "Publish failed.",
-                  recoverable: true,
-                },
-              ],
-            };
-          },
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          persistence: 1,
         },
-      });
-
-      const result = await workflow.run("publish", "index.html");
-
-      expect(result.ok).toBe(false);
-      expect(result.diagnostics[0]).toEqual(
-        jasmine.objectContaining({
-          code: "docs.publishFailed",
-          message: "Publish failed.",
-        }),
-      );
-      expect(JSON.stringify(workflow.diagnostics)).toBe(
-        '[{"code":"docs.publishFailed","message":"Publish failed.","recoverable":true}]',
-      );
-    });
-
-    it("runs the snapshot and restore example", async () => {
-      const key = "docsWorkflow";
-      const workflow = $workflow({
-        id: "docs-build",
-        initial: "idle",
-        data: {
-          title: "",
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          persistence: { type: "indexeddb", database: "" },
         },
-        transitions: {
-          idle: {
-            fail() {
-              return "failed";
-            },
-          },
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          persistence: { type: "indexeddb", store: 1 },
         },
-        commands: {
-          validate({ workflow: currentWorkflow }) {
-            currentWorkflow.send("fail");
-
-            return {
-              ok: false,
-              diagnostics: [
-                {
-                  code: "docs.missingTitle",
-                  message: "Missing title.",
-                  recoverable: true,
-                },
-              ],
-            };
-          },
+        {
+          id: "invalid",
+          workflows: { build: workflowConfig() },
+          persistence: { type: "indexeddb", version: 0 },
         },
-      });
+      ];
 
-      try {
-        await workflow.run("validate");
-
-        const snapshot = workflow.snapshot();
-
-        localStorage.setItem(key, JSON.stringify(snapshot));
-
-        const restored = JSON.parse(localStorage.getItem(key) ?? "null");
-
-        workflow.data.title = "mutated";
-        workflow.restore(restored);
-
-        expect(workflow.current).toBe("failed");
-        expect(workflow.data.title).toBe("");
-        expect(workflow.diagnostics[0].code).toBe("docs.missingTitle");
-      } finally {
-        localStorage.removeItem(key);
+      for (const config of invalidConfigs) {
+        expect(() => createWorkflowSupervisor($workflow, config)).toThrow();
       }
     });
 
-    it("runs the retry and repeat examples", async () => {
-      let attempts = 0;
-      const workflow = $workflow({
-        id: "retry-repeat",
-        initial: "idle",
-        data: {
-          files: [] as string[],
-        },
-        transitions: {},
-        commands: {
-          publish({ data, input }) {
-            attempts += 1;
-
-            if (attempts === 1) {
-              throw new Error("offline");
-            }
-
-            data.files.push(String(input));
-
-            return {
-              ok: true,
-              output: {
-                file: String(input),
-              },
-            };
-          },
-        },
+    it("accepts tuple and object workflow registry entries", () => {
+      const existing = $workflow(workflowConfig("existing"));
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "entry-shapes",
+        workflows: [
+          ["tuple", workflowConfig("tuple")],
+          { name: "instance", workflow: existing },
+          { name: "config", config: workflowConfig("object-config") },
+        ],
       });
 
-      await workflow.run("publish", "index.html");
-
-      const retryResult = await workflow.retry("publish");
-      const repeatResult = await workflow.repeat("publish");
-
-      expect(retryResult.ok).toBe(true);
-      expect(repeatResult.ok).toBe(true);
-      expect(workflow.data.files).toEqual(["index.html", "index.html"]);
+      expect(supervisor.workflow("tuple").id).toBe("tuple");
+      expect(supervisor.workflow("instance")).toBe(existing);
+      expect(supervisor.workflow("config").id).toBe("object-config");
     });
 
-    it("runs the repair command example", async () => {
-      const workflow = $workflow({
-        id: "repairable-docs",
-        initial: "idle",
-        data: {
-          title: "",
-        },
-        transitions: {
-          idle: {
-            validate(data) {
-              return data.title ? "complete" : "failed";
+    it("creates, snapshots, restores, and cancels workflows", async () => {
+      let release;
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "pipeline",
+        workflows: {
+          build: workflowConfig("build"),
+          publish: workflowConfig("publish", {
+            commands: {
+              publish: command({
+                execute: () =>
+                  new Promise((resolve) => {
+                    release = resolve;
+                  }),
+              }),
             },
-          },
-          failed: {
-            complete() {
-              return "complete";
-            },
-          },
-        },
-        commands: {
-          validate({ workflow: currentWorkflow }) {
-            currentWorkflow.send("validate");
-
-            return currentWorkflow.matches("complete")
-              ? { ok: true }
-              : {
-                  ok: false,
-                  diagnostics: [
-                    {
-                      code: "docs.missingTitle",
-                      message: "Missing title.",
-                      recoverable: true,
-                    },
-                  ],
-                };
-          },
-          repair({ workflow: currentWorkflow, data, input }) {
-            data.title = String(input);
-            currentWorkflow.send("complete");
-
-            return {
-              ok: true,
-            };
-          },
+          }),
         },
       });
 
-      const validation = await workflow.run("validate");
-      const repair = await workflow.run("repair", "Guide");
+      await supervisor.workflow("build").run("build", "one");
+      const running = supervisor.workflow("publish").run("publish");
+      const snapshot = supervisor.snapshot();
 
-      expect(validation.ok).toBe(false);
-      expect(repair.ok).toBe(true);
-      expect(workflow.current).toBe("complete");
-      expect(workflow.data.title).toBe("Guide");
-      expect(workflow.diagnostics[0].code).toBe("docs.missingTitle");
+      expect(supervisor.cancelAll()).toBe(1);
+      await running;
+      supervisor.restore(snapshot);
+      expect(supervisor.workflow("build").data.output).toBe("one");
+      expect(() => supervisor.workflow("missing")).toThrow();
+      expect(() => supervisor.workflow(null)).toThrow();
+      release?.();
+    });
+
+    it("normalizes restored supervisor state and unknown workflows", () => {
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "restore-supervisor",
+        workflows: { build: workflowConfig("restore-build") },
+      });
+      const base = supervisor.snapshot();
+
+      supervisor.restore({
+        ...base,
+        status: "recovering",
+        workflows: {
+          ...base.workflows,
+          unknown: base.workflows.build,
+        },
+        diagnostics: [
+          "plain",
+          {
+            code: 1,
+            message: false,
+            recoverable: false,
+            workflow: 2,
+            command: 3,
+          },
+          {
+            code: "known",
+            message: "Known diagnostic.",
+            workflow: "build",
+            command: "build",
+            detail: 1n,
+          },
+        ],
+      });
+
+      expect(supervisor.status).toBe("failed");
+      expect(supervisor.diagnostics.map(({ code }) => code)).toContain(
+        "workflowSupervisor.unknownSnapshotWorkflow",
+      );
+      expect(supervisor.diagnostics[0].message).toBe("plain");
+      supervisor.restore({ ...base, status: "recovering" });
+      expect(supervisor.status).toBe("idle");
+      supervisor.restore({ ...base, status: "failed" });
+      expect(supervisor.status).toBe("failed");
+      expect(() => supervisor.restore({ ...base, id: "other" })).toThrow();
+
+      for (const snapshot of [
+        null,
+        {},
+        { version: 1 },
+        { version: 1, id: "restore-supervisor" },
+        { version: 1, id: "restore-supervisor", status: "unknown" },
+        {
+          version: 1,
+          id: "restore-supervisor",
+          status: "idle",
+          workflows: [],
+        },
+        {
+          version: 1,
+          id: "restore-supervisor",
+          status: "idle",
+          workflows: {},
+          diagnostics: null,
+        },
+        {
+          version: 1,
+          id: "restore-supervisor",
+          status: "idle",
+          workflows: {},
+          diagnostics: [],
+          updatedAt: Number.NaN,
+        },
+      ]) {
+        expect(() => supervisor.restore(snapshot)).toThrow();
+      }
+    });
+
+    it("persists automatically after commands", async () => {
+      const saved = [];
+      const persistence = {
+        async load() {
+          return undefined;
+        },
+        async save(_id, snapshot) {
+          saved.push(snapshot);
+        },
+      };
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "persisted",
+        workflows: { build: workflowConfig("persisted-build") },
+        persistence,
+        autoPersist: true,
+      });
+
+      await supervisor.workflow("build").run("build", "main.js");
+
+      expect(saved.length).toBe(1);
+      expect(saved[0].workflows.build.data.output).toBe("main.js");
+    });
+
+    it("handles absent and failing persistence adapters", async () => {
+      const transient = createWorkflowSupervisor($workflow, {
+        id: "transient",
+        workflows: { build: workflowConfig("transient-build") },
+      });
+
+      expect((await transient.persist()).id).toBe("transient");
+      expect(await transient.recover()).toBeUndefined();
+
+      const saveError = new Error("save failed");
+      const failingSave = createWorkflowSupervisor($workflow, {
+        id: "failing-save",
+        workflows: { build: workflowConfig("failing-save-build") },
+        persistence: {
+          async load() {
+            return undefined;
+          },
+          async save() {
+            throw saveError;
+          },
+        },
+        autoPersist: true,
+      });
+
+      expect(failingSave.workflow("build").id).toBe("failing-save-build");
+      await failingSave.workflow("build").run("build", "ignored.js");
+      expect(failingSave.status).toBe("failed");
+      expect(failingSave.diagnostics.at(-1).code).toBe(
+        "workflowSupervisor.persistenceSaveFailed",
+      );
+      await expectAsync(failingSave.persist()).toBeRejectedWith(saveError);
+
+      const loadError = new Error("load failed");
+      const failingLoad = createWorkflowSupervisor($workflow, {
+        id: "failing-load",
+        workflows: { build: workflowConfig("failing-load-build") },
+        persistence: {
+          async load() {
+            throw loadError;
+          },
+          async save() {},
+        },
+      });
+
+      await expectAsync(failingLoad.recover()).toBeRejectedWith(loadError);
+      expect(failingLoad.status).toBe("failed");
+      expect(failingLoad.diagnostics.at(-1).code).toBe(
+        "workflowSupervisor.persistenceLoadFailed",
+      );
+
+      const autoRecovering = createWorkflowSupervisor($workflow, {
+        id: "auto-failing-load",
+        workflows: { build: workflowConfig("auto-failing-load-build") },
+        persistence: {
+          async load() {
+            throw loadError;
+          },
+          async save() {},
+        },
+        autoRecover: true,
+      });
+
+      expect(await autoRecovering.ready).toBeUndefined();
+      expect(autoRecovering.status).toBe("failed");
+
+      const emptyPersistence = createWorkflowSupervisor($workflow, {
+        id: "empty-persistence",
+        workflows: { build: workflowConfig("empty-persistence-build") },
+        persistence: {
+          async load() {
+            return undefined;
+          },
+          async save() {},
+        },
+      });
+
+      expect(await emptyPersistence.recover()).toBeUndefined();
+      expect(emptyPersistence.status).toBe("idle");
+
+      const namelessError = createWorkflowSupervisor($workflow, {
+        id: "nameless-error",
+        workflows: { build: workflowConfig("nameless-error-build") },
+        persistence: {
+          async load() {
+            throw new Error("");
+          },
+          async save() {},
+        },
+      });
+
+      await expectAsync(namelessError.recover()).toBeRejected();
+      expect(namelessError.diagnostics.at(-1).message).toContain("Error");
+    });
+
+    it("records recovery failures and ignores non-recoverable history", async () => {
+      const seed = createWorkflowSupervisor($workflow, {
+        id: "failed-recovery",
+        workflows: {
+          build: workflowConfig("failed-recovery-build", {
+            commands: {
+              build: command({
+                from: ["idle", "failed"],
+                execute({ reject }) {
+                  reject({
+                    code: "build.retry",
+                    message: "retry failed",
+                    recoverable: true,
+                  });
+                },
+              }),
+            },
+          }),
+        },
+      });
+
+      await seed.workflow("build").run("build");
+      const persisted = seed.snapshot();
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "failed-recovery",
+        workflows: {
+          build: workflowConfig("failed-recovery-build", {
+            commands: {
+              build: command({
+                from: ["idle", "failed"],
+                execute() {
+                  throw new Error("still unavailable");
+                },
+              }),
+            },
+          }),
+        },
+        persistence: {
+          async load() {
+            return persisted;
+          },
+          async save() {},
+        },
+      });
+
+      const recovered = await supervisor.recover();
+
+      expect(recovered.status).toBe("failed");
+      expect(supervisor.diagnostics.at(-1).code).toBe(
+        "workflowSupervisor.recoveryCommandFailed",
+      );
+
+      const nonRecoverable = createWorkflowSupervisor($workflow, {
+        id: "non-recoverable",
+        workflows: {
+          build: workflowConfig("non-recoverable-build", {
+            commands: {
+              build: command({
+                from: ["idle", "failed"],
+                execute({ reject }) {
+                  reject({
+                    code: "build.permanent",
+                    message: "permanent failure",
+                    recoverable: false,
+                  });
+                },
+              }),
+            },
+          }),
+        },
+      });
+
+      await nonRecoverable.workflow("build").run("build");
+      expect(await nonRecoverable.recover()).toBeUndefined();
+    });
+
+    it("restores persisted state and reruns recoverable commands", async () => {
+      const seed = createWorkflowSupervisor($workflow, {
+        id: "recovery",
+        workflows: {
+          build: workflowConfig("recovery-build", {
+            commands: {
+              build: command({
+                from: ["idle", "failed"],
+                execute({ input, reject }) {
+                  return reject({
+                    code: "build.retry",
+                    message: String(input),
+                    recoverable: true,
+                  });
+                },
+              }),
+            },
+          }),
+        },
+      });
+
+      await seed.workflow("build").run("build", "retry.js");
+      const persisted = seed.snapshot();
+      let attempts = 0;
+      const persistence = {
+        async load() {
+          return persisted;
+        },
+        async save() {},
+      };
+      const supervisor = createWorkflowSupervisor($workflow, {
+        id: "recovery",
+        workflows: {
+          build: workflowConfig("recovery-build", {
+            commands: {
+              build: command({
+                from: ["idle", "failed"],
+                execute({ input }) {
+                  attempts += 1;
+
+                  return input;
+                },
+              }),
+            },
+          }),
+        },
+        persistence,
+        autoRecover: true,
+      });
+
+      await supervisor.ready;
+      expect(attempts).toBe(1);
+      expect(supervisor.workflow("build").state).toBe("complete");
+    });
+
+    it("persists through the built-in IndexedDB adapter", async () => {
+      const database = `angular-ts-workflow-${String(Math.random())}`;
+
+      try {
+        const first = createWorkflowSupervisor($workflow, {
+          id: "indexed",
+          workflows: { build: workflowConfig("indexed-build") },
+          persistence: { type: "indexeddb", database, version: 2 },
+        });
+
+        await first.workflow("build").run("build", "db.js");
+        await first.persist();
+
+        const second = createWorkflowSupervisor($workflow, {
+          id: "indexed",
+          workflows: { build: workflowConfig("indexed-build") },
+          persistence: { type: "indexeddb", database, version: 2 },
+        });
+
+        await second.recover();
+        expect(second.workflow("build").data.output).toBe("db.js");
+      } finally {
+        await deleteIndexedDbDatabase(database);
+      }
+    });
+
+    it("selects built-in IndexedDB persistence by name", async () => {
+      const id = `indexed-name-${String(Math.random())}`;
+
+      try {
+        const supervisor = createWorkflowSupervisor($workflow, {
+          id,
+          workflows: { build: workflowConfig(`${id}-build`) },
+          persistence: "indexeddb",
+        });
+
+        await supervisor.persist();
+        expect((await supervisor.recover()).id).toBe(id);
+      } finally {
+        await deleteIndexedDbDatabase("angular-ts-workflows");
+      }
+    });
+
+    it("reports IndexedDB persistence failures", async () => {
+      const persistenceFor = (id, indexedDBFactory) =>
+        createWorkflowSupervisor($workflow, {
+          id,
+          workflows: { build: workflowConfig(`${id}-build`) },
+          persistence: {
+            type: "indexeddb",
+            database: `${id}-database`,
+            indexedDB: indexedDBFactory,
+          },
+        });
+      const openFailureFactory = (event, error = null) => ({
+        open() {
+          const request = { error };
+
+          queueMicrotask(() => request[event]?.());
+
+          return request;
+        },
+      });
+      const transactionFailureFactory = (stage, error = null) => ({
+        open() {
+          const transaction = {
+            error,
+            objectStore() {
+              return {
+                put() {
+                  const request = { error };
+
+                  queueMicrotask(() => {
+                    if (stage === "request") request.onerror?.();
+                    else request.onsuccess?.();
+                  });
+
+                  return request;
+                },
+              };
+            },
+          };
+          Object.defineProperty(transaction, "oncomplete", {
+            set(callback) {
+              queueMicrotask(() => {
+                if (stage === "transaction-error") transaction.onerror?.();
+                else if (stage === "transaction-abort") transaction.onabort?.();
+                else callback();
+              });
+            },
+          });
+          const database = {
+            close() {},
+            objectStoreNames: { contains: () => true },
+            transaction: () => transaction,
+          };
+          const request = { error: null, result: database };
+
+          queueMicrotask(() => request.onsuccess?.());
+
+          return request;
+        },
+      });
+
+      const supervisors = [
+        persistenceFor("missing-indexeddb", false),
+        persistenceFor(
+          "open-error",
+          openFailureFactory("onerror", new Error("open")),
+        ),
+        persistenceFor("open-error-fallback", openFailureFactory("onerror")),
+        persistenceFor("open-blocked", openFailureFactory("onblocked")),
+        persistenceFor(
+          "request-error",
+          transactionFailureFactory("request", new Error("request")),
+        ),
+        persistenceFor(
+          "request-error-fallback",
+          transactionFailureFactory("request"),
+        ),
+        persistenceFor(
+          "transaction-error",
+          transactionFailureFactory(
+            "transaction-error",
+            new Error("transaction"),
+          ),
+        ),
+        persistenceFor(
+          "transaction-error-fallback",
+          transactionFailureFactory("transaction-error"),
+        ),
+        persistenceFor(
+          "transaction-abort",
+          transactionFailureFactory("transaction-abort", new Error("abort")),
+        ),
+        persistenceFor(
+          "transaction-abort-fallback",
+          transactionFailureFactory("transaction-abort"),
+        ),
+      ];
+
+      for (const supervisor of supervisors) {
+        await expectAsync(supervisor.persist()).toBeRejected();
+        expect(supervisor.status).toBe("failed");
+      }
+    });
+  });
+
+  describe("worker transport", () => {
+    it("runs, snapshots, and restores hosted workflows", async () => {
+      const workflow = $workflow(workflowConfig("worker"));
+      const host = createWorkflowWorkerHost({
+        workflows: { build: workflow },
+      });
+      const client = createWorkflowWorkerClient(
+        createWorkflowWorkerTestConnection(host),
+      );
+      const snapshots = [];
+      const stop = client.onSnapshot((snapshot) => snapshots.push(snapshot));
+
+      expect(client.latestSnapshot).toBeUndefined();
+
+      const result = await client.run("build", "build", "worker.js");
+
+      expect(result.ok).toBeTrue();
+      expect(snapshots.at(-1).build.data.output).toBe("worker.js");
+
+      const snapshot = await client.snapshot();
+      workflow.data.output = "changed";
+      await client.restore(snapshot);
+      expect(workflow.data.output).toBe("worker.js");
+      expect(client.latestSnapshot.build.data.output).toBe("worker.js");
+      stop();
+      client.dispose();
+    });
+
+    it("returns command failures for missing workflow and command names", async () => {
+      const host = createWorkflowWorkerHost({
+        workflows: { build: $workflow(workflowConfig("worker-errors")) },
+      });
+      const responses = [];
+
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "missing-workflow",
+          operation: "run",
+          workflow: "missing",
+          command: "build",
+        },
+        (message) => responses.push(message),
+      );
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "empty-workflow",
+          operation: "run",
+          workflow: "",
+          command: "build",
+        },
+        (message) => responses.push(message),
+      );
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "missing-command",
+          operation: "run",
+          workflow: "build",
+        },
+        (message) => responses.push(message),
+      );
+
+      const results = responses.filter(
+        (message) => message.type === "angular-ts:workflow-worker:response",
+      );
+
+      expect(results[0].result.status).toBe("rejected");
+      expect(results[1].result.status).toBe("rejected");
+      expect(results[2].result.status).toBe("rejected");
+    });
+
+    it("handles worker protocol validation, errors, and snapshot publication policy", async () => {
+      const workflow = $workflow(workflowConfig("worker-protocol"));
+      const host = createWorkflowWorkerHost({
+        workflows: { build: workflow },
+        publishSnapshots: false,
+      });
+      const messages = [];
+
+      for (const message of [
+        null,
+        {},
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "",
+          operation: "run",
+        },
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "invalid-operation",
+          operation: "cancel",
+        },
+      ]) {
+        await host.handle(message, (response) => messages.push(response));
+      }
+
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "restore-invalid",
+          operation: "restore",
+          snapshot: [],
+        },
+        (response) => messages.push(response),
+      );
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "restore-wrapper",
+          operation: "restore",
+          snapshot: { workflows: { unknown: workflow.snapshot() } },
+        },
+        (response) => messages.push(response),
+      );
+      await host.handle(
+        {
+          type: "angular-ts:workflow-worker:request",
+          id: "run",
+          operation: "run",
+          workflow: "build",
+          command: "build",
+          input: "worker.js",
+        },
+        (response) => messages.push(response),
+      );
+
+      expect(messages.some((message) => message.ok === false)).toBeTrue();
+      expect(
+        messages.some(
+          (message) => message.type === "angular-ts:workflow-worker:snapshot",
+        ),
+      ).toBeFalse();
+      expect(() =>
+        createWorkflowWorkerHost({ workflows: { "": workflow } }),
+      ).toThrow();
+    });
+
+    it("rejects worker client failures and pending requests", async () => {
+      let listener;
+      const posted = [];
+      const connection = {
+        post(message) {
+          posted.push(message);
+        },
+        onMessage(callback) {
+          listener = callback;
+
+          return () => undefined;
+        },
+      };
+      const client = createWorkflowWorkerClient(connection);
+      const failed = client.run("build", "build");
+
+      listener({
+        type: "angular-ts:workflow-worker:response",
+        id: "unknown",
+        ok: true,
+      });
+      listener({
+        type: "angular-ts:workflow-worker:response",
+        id: posted[0].id,
+        ok: false,
+      });
+      await expectAsync(failed).toBeRejected();
+
+      const pending = client.snapshot();
+
+      client.dispose();
+      await expectAsync(pending).toBeRejected();
+    });
+
+    it("validates hosts and rejects pending requests when disposed", async () => {
+      expect(() => createWorkflowWorkerHost(null)).toThrow();
+      expect(() => createWorkflowWorkerHost({ workflows: [] })).toThrow();
+      expect(() =>
+        createWorkflowWorkerHost({ workflows: { invalid: {} } }),
+      ).toThrow();
+      expect(() => createWorkflowWorkerClient({})).toThrow();
+      expect(() => createWorkflowWorkerClient(null)).toThrow();
+
+      const workflow = $workflow(workflowConfig("dispose"));
+      const host = createWorkflowWorkerHost({ workflows: { build: workflow } });
+      const connection = createWorkflowWorkerTestConnection(host);
+      const client = createWorkflowWorkerClient(connection);
+
+      client.dispose();
+      await expectAsync(client.run("build", "build")).toBeRejected();
+    });
+
+    it("normalizes worker host transport errors", async () => {
+      const thrown = [new Error(""), "string failure", 2, false, {}];
+      const messages = [];
+
+      for (const [index, value] of thrown.entries()) {
+        const base = $workflow(workflowConfig(`worker-throw-${String(index)}`));
+        const workflow = {
+          ...base,
+          state: base.state,
+          data: base.data,
+          diagnostics: base.diagnostics,
+          history: base.history,
+          async run() {
+            throw value;
+          },
+        };
+        const host = createWorkflowWorkerHost({
+          workflows: { build: workflow },
+        });
+
+        await host.handle(
+          {
+            type: "angular-ts:workflow-worker:request",
+            id: `throw-${String(index)}`,
+            operation: "run",
+            workflow: "build",
+            command: "build",
+          },
+          (message) => messages.push(message),
+        );
+      }
+
+      expect(messages.map(({ error }) => error.message)).toEqual([
+        "Error",
+        "string failure",
+        "2",
+        "false",
+        "Workflow worker request failed.",
+      ]);
+    });
+
+    it("ignores unrelated worker client messages", () => {
+      let listener;
+      const client = createWorkflowWorkerClient({
+        post() {},
+        onMessage(callback) {
+          listener = callback;
+
+          return () => undefined;
+        },
+      });
+
+      listener(null);
+      listener({ type: "angular-ts:workflow-worker:response" });
+      listener({ type: "angular-ts:workflow-worker:snapshot", snapshot: [] });
+      expect(client.latestSnapshot).toBeUndefined();
+      client.dispose();
+    });
+  });
+
+  describe("incremental UI fragments", () => {
+    it("renders and disposes workflow-owned fragments", async () => {
+      const workflow = $workflow(workflowConfig("fragment"));
+      const target = document.createElement("div");
+
+      $rootScope.workflow = workflow;
+
+      const host = createWorkflowUiFragmentHost({
+        compile: $compile,
+        scope: $rootScope,
+        target,
+      });
+      const fragment = host.render(
+        '<p class="progress">{{ workflow.state }}:{{ workflow.data.output }}</p>',
+      );
+
+      await workflow.run("build", "fragment.js");
+      await wait();
+      expect(target.querySelector(".progress").textContent).toBe(
+        "complete:fragment.js",
+      );
+
+      const node = fragment.nodes[0];
+
+      fragment.dispose();
+      expect(fragment.disposed).toBeTrue();
+      expect(getCompiledFragmentRecord(node)).toBeUndefined();
+    });
+
+    it("tracks, replaces, and disposes hosted fragments", () => {
+      const target = document.createElement("div");
+      const scope = $rootScope.$new();
+      const host = createWorkflowUiFragmentHost({
+        compile: $compile,
+        scope,
+        target,
+      });
+      const first = host.render(document.createElement("p"));
+      const second = host.render("<strong>next</strong>");
+
+      expect(host.current).toBe(second);
+      expect(first.disposed).toBeTrue();
+      scope.$destroy();
+      expect(host.current).toBeNull();
+      host.dispose();
+      expect(() => host.render("<p>late</p>")).toThrow();
+    });
+
+    it("requires compilation to return a compiled fragment", () => {
+      const host = createWorkflowUiFragmentHost({
+        compile: () => () => document.createTextNode("plain"),
+        scope: $rootScope,
+        target: document.createElement("div"),
+      });
+
+      expect(() => host.render("ignored")).toThrowError(
+        "Workflow UI fragment host requires a compiled fragment.",
+      );
+      host.dispose();
+    });
+
+    it("accepts linked node arrays", () => {
+      const target = document.createElement("div");
+      const linked = $compile("<p>array</p>")($rootScope);
+      const host = createWorkflowUiFragmentHost({
+        compile: () => () => [linked],
+        scope: $rootScope,
+        target,
+      });
+
+      expect(host.render("ignored").nodes[0].textContent).toBe("array");
+      host.dispose();
+    });
+
+    it("ignores late DOM work after fragment disposal", async () => {
+      const target = document.createElement("div");
+      const host = createWorkflowUiFragmentHost({
+        compile: $compile,
+        scope: $rootScope,
+        target,
+      });
+      const fragment = host.render("<p>late</p>");
+      let ran = false;
+
+      scheduleCompiledFragmentDomWork(fragment, () => {
+        ran = true;
+      });
+      fragment.dispose();
+
+      expect(ran).toBeFalse();
     });
   });
 });

@@ -3,13 +3,17 @@
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import {
+  createWebTransportRuntimeConfiguration,
+  destroyWebTransportRuntimeConfiguration,
+} from "./webtransport.ts";
 
 const decoder = new TextDecoder();
 
 const encoder = new TextEncoder();
 
 describe("$webTransport", () => {
-  let webTransport, webTransportProvider, el;
+  let angular, webTransport, el;
 
   const connections = [];
 
@@ -17,28 +21,130 @@ describe("$webTransport", () => {
     el = document.getElementById("app");
     el.innerHTML = "";
 
-    const angular = new Angular();
+    angular = new Angular();
 
-    angular.module("default", []).config(($webTransportProvider) => {
-      webTransportProvider = $webTransportProvider;
-    });
-
-    angular.bootstrap(el, ["default"]).invoke((_$webTransport_) => {
+    angular.bootstrap(el, []).invoke((_$webTransport_) => {
       webTransport = _$webTransport_;
     });
   });
 
   afterEach(() => {
     connections.splice(0).forEach((connection) => connection.close());
+    angular._composition.destroy();
     dealoc(el);
-  });
-
-  it("should be available as provider", () => {
-    expect(webTransportProvider).toBeDefined();
   });
 
   it("should be available as a service", () => {
     expect(webTransport).toBeDefined();
+  });
+
+  it("allows runtime configuration teardown to be repeated", () => {
+    const configuration = createWebTransportRuntimeConfiguration();
+    const connection = { close: jasmine.createSpy("close") };
+    configuration.connections.add(connection);
+
+    destroyWebTransportRuntimeConfiguration(configuration);
+    destroyWebTransportRuntimeConfiguration(configuration);
+
+    expect(connection.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes owned connections when the runtime is destroyed", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const instances = [];
+
+    class MockWebTransport {
+      constructor() {
+        this.closeCalls = 0;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.closeCalls++;
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = webTransport("https://localhost:4433/runtime-owned");
+
+      await connection.ready;
+      angular._composition.destroy();
+      await connection.closed;
+
+      expect(instances[0].closeCalls).toBe(1);
+      expect(() =>
+        webTransport("https://localhost:4433/after-destroy"),
+      ).toThrowError(
+        "Cannot create a WebTransport connection after runtime teardown",
+      );
+    } finally {
+      restoreWebTransport(descriptor);
+    }
+  });
+
+  it("does not close explicitly closed connections twice", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const instances = [];
+
+    class MockWebTransport {
+      constructor() {
+        this.closeCalls = 0;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.closeCalls++;
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = webTransport("https://localhost:4433/user-closed");
+
+      await connection.ready;
+      connection.close();
+      await connection.closed;
+      angular._composition.destroy();
+
+      expect(instances[0].closeCalls).toBe(1);
+    } finally {
+      restoreWebTransport(descriptor);
+    }
   });
 
   it("connects to the Go WebTransport backend and echoes datagrams", async () => {
@@ -294,6 +400,255 @@ describe("$webTransport", () => {
     }
   });
 
+  it("reconnects with a deterministic fake native transport", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const attempts = [];
+    const instances = [];
+
+    class MockWebTransport {
+      constructor(url, options) {
+        this.url = url;
+        this.options = options;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+
+      createBidirectionalStream() {
+        return Promise.resolve({
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        });
+      }
+
+      createUnidirectionalStream() {
+        return Promise.resolve(new WritableStream());
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(
+        webTransport("https://localhost:4433/realtime", {
+          maxRetries: 1,
+          reconnect: true,
+          retryDelay: 5,
+          onReconnect: ({ attempt }) => {
+            attempts.push(attempt);
+          },
+        }),
+      );
+
+      await connection.ready;
+      instances[0].resolveClosed();
+      await wait(30);
+
+      expect(instances.length).toBe(2);
+      expect(attempts).toEqual([1]);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, "WebTransport", descriptor);
+      } else {
+        delete globalThis.WebTransport;
+      }
+    }
+  });
+
+  it("does not reconnect fake native transport without reconnect policy", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const instances = [];
+
+    class MockWebTransport {
+      constructor() {
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+
+      createBidirectionalStream() {
+        return Promise.resolve({
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        });
+      }
+
+      createUnidirectionalStream() {
+        return Promise.resolve(new WritableStream());
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(webTransport("https://localhost:4433/realtime"));
+
+      await connection.ready;
+      instances[0].resolveClosed();
+      await connection.closed;
+      await wait(30);
+
+      expect(instances.length).toBe(1);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, "WebTransport", descriptor);
+      } else {
+        delete globalThis.WebTransport;
+      }
+    }
+  });
+
+  it("should apply app configured defaults when opening runtime connections", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const configuredEl = document.createElement("div");
+    const configuredAngular = new Angular();
+    const attempts = [];
+    const instances = [];
+    let configuredWebTransport;
+
+    class MockWebTransport {
+      constructor(url, options) {
+        this.url = url;
+        this.options = options;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+
+      createBidirectionalStream() {
+        return Promise.resolve({
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        });
+      }
+
+      createUnidirectionalStream() {
+        return Promise.resolve(new WritableStream());
+      }
+    }
+
+    document.body.appendChild(configuredEl);
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      configuredAngular.module("configuredWebTransportDefaults", []).config({
+        $webTransport: {
+          defaults: {
+            allowPooling: true,
+            congestionControl: "low-latency",
+            maxRetries: 1,
+            reconnect: true,
+            retryDelay: 5,
+          },
+        },
+      });
+
+      configuredAngular
+        .bootstrap(configuredEl, ["configuredWebTransportDefaults"])
+        .invoke((_$webTransport_) => {
+          configuredWebTransport = _$webTransport_;
+        });
+
+      const connection = configuredWebTransport(
+        "https://localhost:4433/configured",
+        {
+          onReconnect: ({ attempt }) => attempts.push(attempt),
+        },
+      );
+
+      await connection.ready;
+
+      expect(instances[0].options).toEqual({
+        allowPooling: true,
+        congestionControl: "low-latency",
+      });
+
+      instances[0].resolveClosed();
+      await wait(30);
+
+      expect(instances.length).toBe(2);
+      expect(attempts).toEqual([1]);
+
+      const localConnection = configuredWebTransport(
+        "https://localhost:4433/local",
+        {
+          allowPooling: false,
+          reconnect: false,
+        },
+      );
+
+      await localConnection.ready;
+
+      expect(instances[2].options).toEqual({
+        allowPooling: false,
+        congestionControl: "low-latency",
+      });
+
+      localConnection.close();
+      connection.close();
+    } finally {
+      configuredAngular._composition.destroy();
+      if (descriptor) {
+        Object.defineProperty(globalThis, "WebTransport", descriptor);
+      } else {
+        delete globalThis.WebTransport;
+      }
+      dealoc(configuredEl);
+    }
+  });
+
   function track(connection) {
     connections.push(connection);
 
@@ -338,8 +693,8 @@ describe("ngWebTransport", () => {
         data-config="transportConfig"
         data-as="session"
         data-transform="text"
-        data-on-open="opened = true"
-        data-on-message="messages.push($message)"
+        on-open="opened = true"
+        on-message="messages.push($message)"
       ></div>
     `);
 
@@ -364,7 +719,7 @@ describe("ngWebTransport", () => {
         data-config="transportConfig"
         data-as="session"
         data-transform="json"
-        data-on-message="events.push($message.kind)"
+        on-message="events.push($message.kind)"
       ></div>
     `);
 
@@ -394,7 +749,7 @@ describe("ngWebTransport", () => {
         data-config="transportConfig"
         data-as="session"
         data-transform="json"
-        data-on-message="events.push($message.kind + ':' + $message.value)"
+        on-message="events.push($message.kind + ':' + $message.value)"
       ></div>
     `);
 
@@ -418,7 +773,7 @@ describe("ngWebTransport", () => {
         data-config="transportConfig"
         data-as="session"
         data-transform="json"
-        data-on-error="errors.push($error.name + ':' + $text)"
+        on-error="errors.push($error.name + ':' + $text)"
       ></div>
     `);
 
@@ -447,7 +802,7 @@ describe("ngWebTransport", () => {
         data-reconnect="true"
         data-retry-delay="10"
         data-max-retries="1"
-        data-on-reconnect="reconnects.push($attempt)"
+        on-reconnect="reconnects.push($attempt)"
       ></div>
     `);
 
@@ -530,6 +885,38 @@ describe("ngWebTransport", () => {
     expect(swapped).toBe(true);
   });
 
+  it("uses a valid host swap mode when the message omits one", async () => {
+    const { url, config } = await webTransportTestConfig();
+
+    $scope.transportUrl = url;
+    $scope.transportConfig = config;
+
+    compileDirective('<div id="host-swap-feed"></div>');
+    compileDirective(`
+      <div
+        ng-web-transport="transportUrl"
+        data-config="transportConfig"
+        data-as="session"
+        data-transform="json"
+        data-swap="textContent"
+      ></div>
+    `);
+
+    await eventually(() => $scope.session);
+    track($scope.session);
+    await $scope.session.sendText(
+      JSON.stringify({
+        html: "Host swap",
+        target: "#host-swap-feed",
+      }),
+    );
+    await eventually(
+      () => el.querySelector("#host-swap-feed").textContent === "Host swap",
+    );
+
+    expect(el.querySelector("#host-swap-feed").textContent).toBe("Host swap");
+  });
+
   it("uses $animate for realtime protocol swaps when animate is enabled", async () => {
     const { url, config } = await webTransportTestConfig();
 
@@ -579,6 +966,14 @@ describe("ngWebTransport", () => {
     return connection;
   }
 });
+
+function restoreWebTransport(descriptor) {
+  if (descriptor) {
+    Object.defineProperty(globalThis, "WebTransport", descriptor);
+  } else {
+    delete globalThis.WebTransport;
+  }
+}
 
 async function webTransportTestConfig(config = {}) {
   const response = await fetch("http://localhost:3000/webtransport/cert-hash");

@@ -10,13 +10,13 @@
         class Demo {
           constructor(echo) {
             this.echo = echo;
-            this.echo.config.onMessage = (e) => {
-              window.alert(e.echo);
-            };
+            this.dispose = this.echo.onMessage((data) => {
+              window.alert(data.echo);
+            });
           }
 
           test() {
-            this.echo.post("test");
+            this.echo.postMessage("test");
           }
         }
         window.angular
@@ -32,4 +32,3 @@
     </div>
   </body>
 </html>
-s

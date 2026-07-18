@@ -7,9 +7,21 @@ transclusion. The implementation in `compile.ts` is centered on a two-phase
 pipeline: compile-time planning builds node/link executors, and link-time
 execution binds those plans to a concrete scope and DOM node list.
 
+Incremental DOM compilation is implemented through private, root-owned compiled
+fragment records. The records let structural directives, router views,
+realtime swaps, streamed content, and workflow UI replace bounded DOM without
+re-bootstrap or leaked fragment state.
+
+The current public API decision is intentionally conservative: AngularTS does
+not expose a public fragment handle or `$compile.fragment(...)` API yet.
+Framework services and directives consume the internal fragment contract while
+users continue to work through declarative streams, workflows, routes,
+directives, and `$compile(...)` where already supported.
+
 ## Responsibilities
 
-- Register directives and components through `CompileProvider`.
+- Register directives and components through the runtime-owned compile
+  registry used by `NgModule.directive()` and `NgModule.component()`.
 - Normalize directive definitions into internal directive records.
 - Match element and attribute directives by normalized names and restrictions.
 - Sort and apply directives by priority, name, and registration index.
@@ -25,14 +37,15 @@ execution binds those plans to a concrete scope and DOM node list.
 
 ## Public Surface
 
-- `CompileProvider`: provider behind `$compileProvider`; registers directives,
-  components, strict binding mode, and property security contexts.
+- `NgModule.directive()` and `NgModule.component()`: public registration paths
+  for directives and components.
+- `NgModule.config({ $compile: ... })`: public path for strict binding mode and
+  property security contexts.
 - `CompileAttributeState`: compiler-only normalized attribute metadata used for
   interpolation writes and template bookkeeping. It is not passed to directive
   `compile` or link callbacks.
-- `DirectiveSuffix`: suffix used for directive factory providers.
 - `CompileFn`: public `$compile` entry point type.
-- `PublicLinkFn`: link function returned by `$compile`.
+- `LinkFn`: link function returned by `$compile`.
 - `TranscludeFn`: public transclusion function shape passed to directive link
   functions.
 - `BoundTranscludeFn` and `SlotTranscludeFn`: internal transclusion function
@@ -52,7 +65,7 @@ helpers; directive authors should read static attributes from DOM helpers.
 
 The compiler separates template planning from link execution. `$compile(...)`
 turns a string, node, or node list into a stable template node list and returns
-a `PublicLinkFn`. That public link function clones nodes when needed, attaches
+a `LinkFn`. That public link function clones nodes when needed, attaches
 scope metadata, and runs a `TemplateLinkExecutor`.
 
 The main flow is:
@@ -84,12 +97,44 @@ Important invariants:
 - Destroyed scopes or controllers must not receive delayed binding or
   transclusion updates.
 
+## Incremental Fragments
+
+`incremental-fragment.ts` defines the private lifecycle boundary beneath the
+public `$compile(...)` API. Every linked fragment records its owning app root,
+parent scope, linked nodes, child fragments, optional child scopes, cleanup
+callbacks, pending async work, and lifecycle diagnostics.
+
+The contract is internal. Applications continue to use templates, directives,
+components, routes, streams, workflows, and `$compile(...)`; no public fragment
+handle is exposed.
+
+Fragment ownership follows these rules:
+
+- Existing nodes passed to `$compile(node)` are borrowed and remain in the DOM
+  when their root is destroyed.
+- Nodes created from markup or transclusion clones are owned and removed when
+  their fragment is explicitly disposed by a view or DOM integration.
+- Nested public links attach to the nearest owning parent fragment.
+- Root destruction disposes every live fragment in reverse creation order while
+  preserving the last rendered DOM snapshot.
+- Fragment disposal recursively releases child fragments, async work,
+  disposers, child scopes, node ownership, and retained references.
+- Delayed templates, route loads, animation completions, view transitions, and
+  realtime swaps must check lifecycle ownership before committing DOM work.
+- Disposing a DOM fragment never destroys app-owned models, machines,
+  workflows, or service runtimes.
+
+The compiler keeps compact records on the common public-link path. Optional
+child fragment, disposer, child scope, and async-work collections are allocated
+only when used. Single-node links avoid iterable materialization.
+
 ## Lifecycle
 
-Directive factories are registered on `CompileProvider.directive()` and are
-instantiated lazily through `${name}Directive` providers. Component definitions
-are converted into element directives with isolated bindings, controller
-aliases, optional templates, and optional transclusion.
+Directive factories are queued by `NgModule.directive()` and registered with
+the owning runtime's `CompileRegistry` when the module loads. The registry
+instantiates definitions lazily when the compiler first matches their name.
+Component definitions are converted into element directives with isolated
+bindings, controller aliases, optional templates, and optional transclusion.
 
 During compilation, each node may receive an internal normalized attribute state
 object plus a directive list. Directive `compile` functions run once for the
@@ -131,6 +176,8 @@ requests.
 - `LinkFnRecord`: stored pre/post link function plus `require`, directive name,
   isolate-scope flag, and contextual link state.
 - `DelayedTemplateLinkState`: stores queued link operations for `templateUrl`.
+- `CompiledFragmentRecord`: private root-owned record for linked node lifecycle,
+  nested ownership, async cancellation, and deterministic disposal.
 - `DirectiveBindingChangeState` and `OnChangesQueueState`: batch and deliver
   `$onChanges` records.
 - `CompileAttributeState`: compiler-only state that records normalized names back
@@ -138,7 +185,7 @@ requests.
 
 ## Integration Points
 
-- `$injector` and `$provide`: instantiate directive factories and publish
+- `$injector` and the internal provider registry: instantiate directive factories and publish
   `${name}Directive` providers.
 - `$interpolate`: creates text and attribute interpolation functions.
 - `$parse`: evaluates binding expressions, event expressions, property
@@ -184,18 +231,24 @@ Attribute observation is element-owned. Clone construction copies only recorded
 attribute-name metadata; observer callbacks are registered against the linked
 element and removed through their disposer functions.
 
+Root destruction actively disposes all registered fragments. Structural
+transclusion snapshots concrete clone nodes so multi-root and delayed nested
+content are removed together. Router teardown invalidates unresolved view
+loads. Realtime teardown cancels active animations, removes temporary anchors,
+disposes uncommitted payloads, and rejects late view-transition callbacks.
+
 ## Types And Interfaces
 
 `CompileFn`
 : Public `$compile` service shape. Accepts markup or DOM nodes and returns a
-`PublicLinkFn`.
+`LinkFn`.
 
-`PublicLinkFn`
+`LinkFn`
 : Runtime link function that binds a compiled template to a scope.
 
-`CompileProvider`
-: Provider that owns directive/component registration and creates the `$compile`
-service.
+`CompileRegistry`
+: Internal runtime-owned directive/component registry and `$compile` service
+factory. Applications use module declarations rather than this type directly.
 
 `CompileAttributeState`
 : Internal normalized attribute metadata for interpolation writes, DOM writes
@@ -234,3 +287,11 @@ available.
   linking, controller lookup, and cleanup.
 - Changes to `CompileAttributeState` should test normalized names, DOM writes,
   boolean attributes, class helper delegation, and template replacement merges.
+- `incremental-fragment.spec.ts` covers ownership, borrowed nodes, nested
+  fragments, deterministic root teardown, async cancellation, retention-aware
+  scheduling, replacement, and late callback rejection.
+- Incremental lifecycle changes must run structural directive, router view,
+  realtime swap, and workflow UI suites together.
+- `make benchmark-compile` and `make benchmark-link` update the committed
+  compiler baselines, including multi-root, stream chunk, and workflow UI
+  fragment cases.

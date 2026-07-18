@@ -13,11 +13,9 @@
       import { defineAngularElement } from "/src/runtime/web-component.ts";
 
       defineAngularElement("aw-status-card", {
-        ngModule: {
-          directives: {
-            ngClass: classDirective,
-            ngClick: ngClickDirective,
-          },
+        directives: {
+          ngClass: classDirective,
+          ngClick: ngClickDirective,
         },
         component: {
           shadow: true,

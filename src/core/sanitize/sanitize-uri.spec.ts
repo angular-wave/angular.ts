@@ -1,19 +1,22 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { SCE_CONTEXTS, SceDelegateProvider } from "../../services/sce/sce.js";
+import {
+  SCE_CONTEXTS,
+  SceDelegateConfiguration,
+} from "../../services/sce/sce.js";
 
 describe("sanitizeUri", () => {
   let sanitizeHref;
 
   let sanitizeImg;
 
-  let sceDelegateProvider;
+  let sceDelegateConfig;
 
   let testUrl;
 
   beforeEach(() => {
-    sceDelegateProvider = new SceDelegateProvider();
-    const sceDelegate = sceDelegateProvider.$get[3](
+    sceDelegateConfig = new SceDelegateConfiguration();
+    const sceDelegate = sceDelegateConfig.createService(
       { has: () => false },
       window,
       (error) => {
@@ -148,12 +151,11 @@ describe("sanitizeUri", () => {
       let returnVal;
 
       expect(
-        sceDelegateProvider.imgSrcSanitizationTrustedUrlList() instanceof
-          RegExp,
+        sceDelegateConfig.imgSrcSanitizationTrustedUrlList() instanceof RegExp,
       ).toBe(true);
       returnVal =
-        sceDelegateProvider.imgSrcSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sceDelegateProvider);
+        sceDelegateConfig.imgSrcSanitizationTrustedUrlList(/javascript:/);
+      expect(returnVal).toBe(sceDelegateConfig);
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeImg(testUrl)).toBe("javascript:doEvilStuff()");
@@ -252,11 +254,11 @@ describe("sanitizeUri", () => {
       let returnVal;
 
       expect(
-        sceDelegateProvider.aHrefSanitizationTrustedUrlList() instanceof RegExp,
+        sceDelegateConfig.aHrefSanitizationTrustedUrlList() instanceof RegExp,
       ).toBe(true);
       returnVal =
-        sceDelegateProvider.aHrefSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sceDelegateProvider);
+        sceDelegateConfig.aHrefSanitizationTrustedUrlList(/javascript:/);
+      expect(returnVal).toBe(sceDelegateConfig);
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeHref(testUrl)).toBe("javascript:doEvilStuff()");

@@ -11,7 +11,7 @@ import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
-type ModelOptionValue =
+export type ModelOptionValue =
   | string
   | boolean
   | number
@@ -68,7 +68,7 @@ class NgModelOptionsController {
 }
 
 /**
- * A container for the options set by the {@link ngModelOptions} directive
+ * A container for the options set by the `ng-model-options` directive.
  */
 export class ModelOptions {
   static $nonscope = true;

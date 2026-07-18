@@ -54,7 +54,11 @@
               <input name="name" placeholder="Referenced form value" />
             </form>
             <div class="demo-actions">
-              <button ng-post="/mock/posthtml" target="#output" form="$ngForm">
+              <button
+                ng-post="/mock/posthtml"
+                data-target="#output"
+                form="$ngForm"
+              >
                 Post referenced form
               </button>
             </div>
@@ -66,7 +70,7 @@
           <input
             name="name"
             ng-post="/mock/posthtml"
-            target="#output"
+            data-target="#output"
             trigger="keyup"
             placeholder="Type to post..."
           />

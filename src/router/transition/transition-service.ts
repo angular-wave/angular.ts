@@ -1,9 +1,6 @@
-import {
-  _exceptionHandlerProvider,
-  _routerProvider,
-} from "../../injection-tokens.ts";
+import type { SecurityPolicy } from "../../services/security/security.ts";
 import type { TargetState } from "../state/target-state.ts";
-import type { RouterProvider } from "../router.ts";
+import type { RouterRuntimeState } from "../router.ts";
 import { Transition } from "./transition.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { registerHook, type RegisteredHooks } from "./hook-registry.ts";
@@ -13,11 +10,11 @@ import type {
   HookMatchCriteria,
   HookRegOptions,
   HookRegistry,
-  TransitionOptions,
+  InternalTransitionOptions,
 } from "./interface.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 import type { TransitionHookPhaseValue } from "./transition-hook.ts";
-import type { StateProvider } from "../state/state-service.ts";
+import type { StateRuntime } from "../state/state-service.ts";
 import type { ViewService } from "../view/view.ts";
 import { defineCoreTransitionEvents } from "./transition-events.ts";
 import {
@@ -26,7 +23,8 @@ import {
   treeChangesCleanup,
 } from "./transition-hooks.ts";
 
-export const defaultTransOpts: TransitionOptions = {
+/** @internal */
+export const defaultTransOpts: InternalTransitionOptions = {
   location: true,
   relative: undefined,
   inherit: false,
@@ -36,11 +34,7 @@ export const defaultTransOpts: TransitionOptions = {
 };
 
 /**
- * The runtime service instance returned from `TransitionProvider.$get`.
- *
- * Note: In this codebase, `$get` returns the provider instance (`return this;`),
- * so the "service" surface includes both the public HookRegistry API and
- * a set of internal fields/methods used by built-in hook registrations.
+ * Internal transition runtime used by the public `$transitions` service.
  */
 export interface TransitionService extends HookRegistry {
   /**
@@ -71,31 +65,29 @@ export interface TransitionService extends HookRegistry {
   ): DeregisterFn;
 
   /** @internal Wire hooks that require runtime services. */
-  _initRuntimeHooks(
-    stateService: StateProvider,
-    viewService: ViewService,
-  ): void;
+  _initRuntimeHooks(stateService: StateRuntime, viewService: ViewService): void;
 
   /** @internal view service */
   /** @internal */
   _view: ViewService;
 
   /** @internal */
-  _stateService: StateProvider;
+  _stateService: StateRuntime;
 
   /** @internal */
-  _routerState: RouterProvider;
+  _routerState: RouterRuntimeState;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
+
+  /** @internal */
+  _security: SecurityPolicy;
 }
 
 /**
  * Central registry and factory for transition events, hooks, and transition instances.
  */
-export class TransitionProvider implements TransitionService {
-  static $inject = [_routerProvider, _exceptionHandlerProvider] as const;
-
+export class TransitionRuntime implements TransitionService {
   /** @internal */
   _transitionCount: number;
   /** @internal */
@@ -103,39 +95,35 @@ export class TransitionProvider implements TransitionService {
   /** @internal */
   _registeredHooks: RegisteredHooks;
   /** @internal */
-  _routerState: RouterProvider;
+  _routerState: RouterRuntimeState;
+  /** @internal */
+  _security: SecurityPolicy;
   /** @internal */
   _view!: ViewService;
   /** @internal */
-  _stateService!: StateProvider;
+  _stateService!: StateRuntime;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   constructor(
-    routerState: RouterProvider,
-    $exceptionHandler: ng.ExceptionHandlerProvider,
+    routerState: RouterRuntimeState,
+    $exceptionHandler: ng.ExceptionHandlerService,
+    securityPolicy: SecurityPolicy,
   ) {
     this._transitionCount = 0;
     this._eventTypes = [];
     this._registeredHooks = {};
     this._routerState = routerState;
+    this._security = securityPolicy;
     defineCoreTransitionEvents(this);
     this._registerCoreTransitionHooks();
-    this._exceptionHandler = $exceptionHandler.handler;
+    this._exceptionHandler = $exceptionHandler;
     routerState._successfulTransitionCleanup = treeChangesCleanup;
-  }
-
-  /**
-   * Wires runtime services into the transition service and registers the
-   * hooks that depend on state/url/view services.
-   */
-  $get(): this {
-    return this;
   }
 
   /** @internal */
   _initRuntimeHooks(
-    stateService: StateProvider,
+    stateService: StateRuntime,
     viewService: ViewService,
   ): void {
     this._view = viewService;

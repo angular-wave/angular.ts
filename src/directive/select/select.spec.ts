@@ -73,38 +73,37 @@ describe("select", () => {
     dealoc(document.getElementById("app"));
     errors = [];
     window.angular = new Angular();
-    window.angular
+    const myModule = window.angular
       .module("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errors.push(exception.message);
         };
       });
+    myModule
+      .directive("spyOnWriteValue", () => ({
+        require: "select",
+        link: {
+          pre(scope, element, ctrl) {
+            selectCtrl = ctrl;
+            renderSpy = jasmine.createSpy("renderSpy");
+            selectCtrl._ngModelCtrl.$render = renderSpy.and.callFake(
+              selectCtrl._ngModelCtrl.$render,
+            );
+            spyOn(selectCtrl, "_writeValue").and.callThrough();
+          },
+        },
+      }))
+      .directive("myOptions", () => ({
+        scope: { myOptions: "=" },
+        replace: true,
+        template:
+          '<option value="{{ option.value }}" ng-repeat="option in myOptions">' +
+          "{{ options.label }}" +
+          "</option>",
+      }));
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "myModule",
-      ($compileProvider) => {
-        $compileProvider.directive("spyOnWriteValue", () => ({
-          require: "select",
-          link: {
-            pre(scope, element, ctrl) {
-              selectCtrl = ctrl;
-              renderSpy = jasmine.createSpy("renderSpy");
-              selectCtrl._ngModelCtrl.$render = renderSpy.and.callFake(
-                selectCtrl._ngModelCtrl.$render,
-              );
-              spyOn(selectCtrl, "_writeValue").and.callThrough();
-            },
-          },
-        }));
-        $compileProvider.directive("myOptions", () => ({
-          scope: { myOptions: "=" },
-          replace: true,
-          template:
-            '<option value="{{ option.value }}" ng-repeat="option in myOptions">' +
-            "{{ options.label }}" +
-            "</option>",
-        }));
-      },
     ]);
     injector.invoke((_$rootScope_, _$compile_) => {
       scope = _$rootScope_.$new(); // create a child scope because the root scope can't be $destroy-ed

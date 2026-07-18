@@ -6,8 +6,12 @@ import {
   _parse,
   _templateRequest,
 } from "../../injection-tokens.ts";
-import { isDefined, isInstanceOf } from "../../shared/utils.ts";
-import { getNormalizedAttr, removeElement } from "../../shared/dom.ts";
+import { assertDefined, isDefined, isInstanceOf } from "../../shared/utils.ts";
+import { getNormalizedAttr } from "../../shared/dom.ts";
+import {
+  getCompiledFragmentRecordFromNodes,
+  type CompiledFragmentRecord,
+} from "../../core/compile/incremental-fragment.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -81,12 +85,19 @@ export function ngIncludeDirective(
 
         let previousElement: HTMLElement | null;
 
+        let previousFragment: CompiledFragmentRecord | null;
+
         let currentElement: HTMLElement | null;
+
+        let currentFragment: CompiledFragmentRecord | null;
 
         const cleanupLastIncludeContent = () => {
           if (previousElement) {
-            removeElement(previousElement);
+            if (previousFragment && !previousFragment.disposed) {
+              previousFragment.dispose();
+            }
             previousElement = null;
+            previousFragment = null;
           }
 
           if (currentScope) {
@@ -95,18 +106,27 @@ export function ngIncludeDirective(
           }
 
           if (currentElement) {
+            const leavingFragment = currentFragment;
             const animate = getAnimateForNode(getAnimate, currentElement);
 
             if (animate) {
               animate.leave(currentElement).done((response: boolean) => {
-                if (response) previousElement = null;
+                if (response) {
+                  leavingFragment?.dispose();
+                  previousElement = null;
+                  previousFragment = null;
+                }
               });
             } else {
-              removeElement(currentElement);
+              if (leavingFragment && !leavingFragment.disposed) {
+                leavingFragment.dispose();
+              }
             }
 
             previousElement = currentElement;
+            previousFragment = currentFragment;
             currentElement = null;
+            currentFragment = null;
           }
         };
 
@@ -156,6 +176,9 @@ export function ngIncludeDirective(
 
                 currentScope = newScope;
                 currentElement = clone;
+                currentFragment = assertDefined(
+                  getCompiledFragmentRecordFromNodes(clone),
+                );
                 currentScope.$emit("$includeContentLoaded", src);
                 onloadFn?.(scope);
 

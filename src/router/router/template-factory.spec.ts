@@ -5,7 +5,7 @@ import { waitUntil } from "../../shared/test-utils.ts";
 
 describe("templateFactory", () => {
   let $injector: any,
-    $templateFactory: any,
+    templateFactory: any,
     $sce,
     $scope: any,
     $compile: any,
@@ -26,53 +26,46 @@ describe("templateFactory", () => {
     $injector = window.angular.bootstrap(document.getElementById("app")!, [
       "defaultModule",
     ]);
-    $injector.invoke(
-      (_$templateFactory_: any, _$sce_: any, $rootScope: any) => {
-        $templateFactory = _$templateFactory_;
-        $sce = _$sce_;
-        $scope = $rootScope;
-      },
-    );
+    $injector.invoke((_$state_: any, _$sce_: any, $rootScope: any) => {
+      templateFactory = _$state_._viewService._templateFactory;
+      $sce = _$sce_;
+      $scope = $rootScope;
+    });
   });
 
-  it("exists", () => {
-    expect($injector.get("$templateFactory")).toBeDefined();
+  it("is owned by the state runtime", () => {
+    expect(templateFactory).toBeDefined();
   });
 
   describe("template URL behavior", () => {
     it("fetches relative URLs correctly", async () => {
-      const res = await $templateFactory._fromUrl("/mock/hello");
+      const res = await templateFactory._fromUrl("/mock/hello");
 
       expect(await res).toEqual("Hello");
     });
 
     it("fetches cross-domain URLs without SCE restrictions", async () => {
       const url = "http://evil.com/views/view.html";
+      const fetch = spyOn(window, "fetch").and.resolveTo(
+        new Response("Cross-domain template"),
+      );
 
-      let templateData;
+      const templateData = await templateFactory._fromUrl(url);
 
-      try {
-        templateData = await $templateFactory._fromUrl(url);
-      } catch (e) {
-        templateData = null; // fetch failed (404, network, etc.)
-      }
-
-      // Angular.ts trusts the URL, so no SCE errors should occur
-      expect(templateData !== undefined).toBe(true);
+      expect(fetch).toHaveBeenCalledWith(url, jasmine.any(Object));
+      expect(templateData).toBe("Cross-domain template");
     });
 
     it("allows URLs marked as trusted explicitly (optional, passes through)", async () => {
       const url = "http://example.com/trusted.html";
+      const fetch = spyOn(window, "fetch").and.resolveTo(
+        new Response("Trusted template"),
+      );
 
-      let templateData;
+      const templateData = await templateFactory._fromUrl(url);
 
-      try {
-        templateData = await $templateFactory._fromUrl(url);
-      } catch (e) {
-        templateData = null;
-      }
-
-      expect(templateData !== undefined).toBe(true);
+      expect(fetch).toHaveBeenCalledWith(url, jasmine.any(Object));
+      expect(templateData).toBe("Trusted template");
     });
   });
 
@@ -89,14 +82,13 @@ describe("templateFactory", () => {
       ]);
       $injector.invoke(
         (
-          _$templateFactory_: any,
           _$sce_: any,
           $rootScope: any,
           _$stateRegistry_: any,
           _$state_: any,
           _$compile_: any,
         ) => {
-          $templateFactory = _$templateFactory_;
+          templateFactory = _$state_._viewService._templateFactory;
           $sce = _$sce_;
           $scope = $rootScope;
           $stateRegistry = _$stateRegistry_;

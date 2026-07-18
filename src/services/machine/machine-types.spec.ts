@@ -1,14 +1,18 @@
 /// <reference types="jasmine" />
-import { defineMachine } from "./machine.ts";
 import type {
   Machine,
   MachineConfig,
-  MachineEventMap,
-  MachineHooks,
+  MachineContract,
+  MachineDataOf,
+  MachineEventNamesOf,
+  MachineEventsOf,
+  MachineStatesOf,
+  MachineSendResult,
+  MachineSendStatus,
   MachineService,
   MachineSnapshot,
-  MachineTransitionContext,
-  MachineTransitionResult,
+  MachineStateDefinition,
+  MachineStateMap,
 } from "./machine.ts";
 
 interface SessionData {
@@ -16,351 +20,178 @@ interface SessionData {
   error: string;
 }
 
-interface JoinPayload {
-  roomId: string;
-}
-
 interface SessionEvents {
-  join: JoinPayload;
-  fail: string;
+  join: { roomId: string };
   reset: undefined;
 }
 
-describe("$machine types", () => {
-  it("typechecks strict machine definitions by default", () => {
-    const machineService = null as unknown as MachineService;
-    const strictConfig = defineMachine<SessionData, SessionEvents>({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      } satisfies SessionData,
-      transitions: {
-        setup: {
-          join(data, payload) {
-            data.roomId = payload.roomId;
+interface SessionMachine extends MachineContract {
+  data: SessionData;
+  events: SessionEvents;
+  state: "setup" | "waiting" | "playing";
+}
 
-            return "waiting";
+describe("$machine contract types", () => {
+  it("carries data, event, and state types through one labeled contract", () => {
+    const config: MachineConfig<SessionMachine> = {
+      initial: "setup",
+      data: { roomId: "", error: "" },
+      states: {
+        setup: {
+          on: {
+            join: {
+              to({ payload, from, data }) {
+                payload.roomId.toUpperCase();
+                const source: SessionMachine["state"] = from;
+                // @ts-expect-error target resolvers receive readonly data.
+                data.roomId = payload.roomId;
+
+                return source === "setup" ? "waiting" : source;
+              },
+              update({ data, payload, machine }) {
+                data.roomId = payload.roomId;
+                machine.data.error = "";
+              },
+            },
           },
         },
         waiting: {
-          reset(data) {
-            data.roomId = "";
-            data.error = "";
-
-            return "setup";
+          on: {
+            reset: {
+              to: "setup",
+              update({ data }) {
+                data.roomId = "";
+              },
+            },
           },
         },
+        playing: {},
       },
       hooks: {
-        transition(context) {
-          if (context.type === "join") {
-            const roomId: string = context.payload.roomId;
-
-            void roomId;
-          }
-        },
-      },
-    });
-    const configWithUnknownTransition = defineMachine<
-      SessionData,
-      SessionEvents
-    >({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          // @ts-expect-error strict machine definitions reject unknown transition keys.
-          missing() {
-            return "setup";
+        enter: {
+          waiting({ data, type }) {
+            data.error = type;
           },
         },
       },
-    });
-    const configWithWrongPayload = defineMachine<SessionData, SessionEvents>({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          // @ts-expect-error join receives JoinPayload, not a string.
-          join(_data, _payload: string) {
-            return "waiting";
-          },
-        },
-      },
-    });
-    const strictMachine = machineService(strictConfig);
-    const noEventMachine = machineService(
-      defineMachine({
-        initial: "idle",
-        data: {},
-        transitions: {},
-      }),
-    );
+      policy(context) {
+        context.payload;
+        // @ts-expect-error policy data is readonly.
+        context.data.error = "denied";
 
-    strictMachine.send("join", { roomId: "abc" });
-    strictMachine.send("reset");
-    // @ts-expect-error join requires a roomId payload.
-    strictMachine.send("join", { id: "abc" });
-    // @ts-expect-error strict machines reject unknown event names.
-    strictMachine.send("missing");
-    // @ts-expect-error machines without typed events expose no sends by default.
-    noEventMachine.send("start");
-
-    expect(strictConfig.initial).toBe("setup");
-    expect(configWithUnknownTransition.initial).toBe("setup");
-    expect(configWithWrongPayload.initial).toBe("setup");
-  });
-
-  it("typechecks dynamic machine event maps with unknown payloads", () => {
-    const machineService = null as unknown as MachineService;
-    const config = defineMachine<SessionData, MachineEventMap>({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          join(data, payload) {
-            // @ts-expect-error dynamic event payload is unknown until narrowed.
-            data.roomId = payload.roomId;
-
-            if (
-              typeof payload === "object" &&
-              payload !== null &&
-              "roomId" in payload &&
-              typeof payload.roomId === "string"
-            ) {
-              data.roomId = payload.roomId;
-            }
-
-            return "waiting";
-          },
-        },
-      },
-      hooks: {
-        transition(context) {
-          // @ts-expect-error dynamic hook payload is unknown until narrowed.
-          context.payload.roomId;
-        },
-      },
-    });
-    const machine = machineService(config);
-
-    machine.send("anything", { roomId: "abc" });
-    machine.can("anything");
-
-    expect(config.initial).toBe("setup");
-  });
-
-  it("typechecks the public TypeScript machine contract", () => {
-    const hooks: MachineHooks<SessionData, SessionEvents> = {
-      enter: {
-        waiting(context: MachineTransitionContext<SessionData>) {
-          context.data.error = "";
-          context.machine.matches(context.to);
-        },
-      },
-      transition(context) {
-        const snapshot: MachineSnapshot<SessionData> =
-          context.machine.snapshot();
-
-        context.machine.restore(snapshot);
+        return context.to === "playing" ? "deny" : "allow";
       },
     };
-    const config: MachineConfig<SessionData, SessionEvents> = {
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          join(data, payload: JoinPayload): MachineTransitionResult {
-            data.roomId = payload.roomId;
+    const service = null as unknown as MachineService;
+    const machine = service(config);
 
-            return "waiting";
-          },
-        },
-        waiting: {
-          fail(data, reason: string): MachineTransitionResult {
-            data.error = reason;
-
-            return false;
-          },
-          reset(data) {
-            data.roomId = "";
-            data.error = "";
-
-            return "setup";
-          },
-        },
-      },
-      hooks,
-    };
-    const machineService = null as unknown as MachineService;
-    const scope = null as unknown as ng.Scope;
-    const machine: Machine<SessionData, SessionEvents> = machineService(config);
-    const scopedMachine: Machine<SessionData, SessionEvents> = machineService(
-      scope,
-      config,
-    );
-    const namespaceMachine: ng.Machine<SessionData, SessionEvents> = machine;
-    const namespaceConfig: ng.MachineConfig<SessionData, SessionEvents> =
-      config;
-    const namespaceSnapshot: ng.MachineSnapshot<SessionData> =
-      namespaceMachine.snapshot();
-
-    namespaceMachine.restore(namespaceSnapshot);
-    scopedMachine.send("join", { roomId: "abc" });
-    scopedMachine.send("reset");
-    scopedMachine.send("fail", "room_unavailable");
-    // @ts-expect-error join requires a roomId payload.
-    scopedMachine.send("join", { id: "abc" });
-    // @ts-expect-error typed machines reject unknown event names.
-    scopedMachine.send("missing");
-    expect(namespaceConfig.initial).toBe("setup");
-  });
-
-  it("typechecks typed transition maps", () => {
-    const validConfig: MachineConfig<SessionData, SessionEvents> = {
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          join(data, payload) {
-            data.roomId = payload.roomId;
-
-            return "waiting";
-          },
-        },
-      },
-    };
-    const invalidConfig: MachineConfig<SessionData, SessionEvents> = {
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          // @ts-expect-error typed transition maps reject unknown event names.
-          missing() {
-            return "setup";
-          },
-        },
-      },
-    };
-
-    expect(validConfig.initial).toBe("setup");
-    expect(invalidConfig.initial).toBe("setup");
-  });
-
-  it("typechecks guarded transition descriptors", () => {
-    const config = defineMachine<SessionData, SessionEvents>({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          join: {
-            guard(data, payload, machine) {
-              const roomId: string = payload.roomId;
-
-              return data.error === "" && machine.matches("setup") && !!roomId;
-            },
-            target(data, payload) {
-              data.roomId = payload.roomId;
-
-              return "waiting";
-            },
-          },
-          fail: {
-            // @ts-expect-error fail receives a string payload, not JoinPayload.
-            guard(_data, payload: JoinPayload) {
-              return !!payload.roomId;
-            },
-            target(data, reason) {
-              data.error = reason;
-
-              return false;
-            },
-          },
-        },
-      },
-    });
-    const machineService = null as unknown as MachineService;
-    const machine = machineService(config);
-
-    machine.can("join");
+    machine.send("join", { roomId: "abc" });
+    machine.send("reset");
     machine.can("join", { roomId: "abc" });
-    // @ts-expect-error provided join payloads must include a roomId.
-    machine.can("join", { id: "abc" });
+    machine.matches("playing");
+    // @ts-expect-error unknown events are rejected.
+    machine.send("unknown");
+    // @ts-expect-error join requires its payload.
+    machine.send("join");
+    // @ts-expect-error mode names are closed by the contract.
+    machine.matches("finished");
 
-    expect(config.initial).toBe("setup");
+    expect(machine.state).toBe("setup");
   });
 
-  it("typechecks module.machine registration", () => {
-    const module = null as unknown as ng.NgModule;
-    const config: ng.MachineConfig<SessionData, SessionEvents> = {
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
-      },
-      transitions: {
-        setup: {
-          join(data, payload: JoinPayload) {
-            data.roomId = payload.roomId;
+  it("types snapshots, results, and extraction helpers from the contract", () => {
+    const machine = null as unknown as Machine<SessionMachine>;
+    const snapshot: MachineSnapshot<SessionMachine> = machine.snapshot();
+    const result: MachineSendResult<SessionMachine["state"]> = machine.send(
+      "join",
+      { roomId: "abc" },
+    );
+    const status: MachineSendStatus = result.status;
+    const data: MachineDataOf<typeof machine> = snapshot.data;
+    const events = null as unknown as MachineEventsOf<typeof machine>;
+    const eventName: MachineEventNamesOf<typeof machine> = "join";
+    const mode: MachineStatesOf<typeof machine> = snapshot.state;
 
-            return "waiting";
-          },
-        },
+    events.join.roomId.toUpperCase();
+    data.roomId.toUpperCase();
+    // @ts-expect-error extracted event names remain closed.
+    const invalidEvent: MachineEventNamesOf<typeof machine> = "missing";
+    // @ts-expect-error snapshot states remain closed.
+    const invalidMode: MachineStatesOf<typeof machine> = "finished";
+
+    void status;
+    void eventName;
+    void mode;
+    void invalidEvent;
+    void invalidMode;
+  });
+
+  it("supports stateless contracts without data ceremony", () => {
+    interface ToggleMachine extends MachineContract {
+      data: Record<never, never>;
+      events: { toggle: undefined };
+      state: "off" | "on";
+    }
+
+    const config: MachineConfig<ToggleMachine> = {
+      initial: "off",
+      states: {
+        off: { on: { toggle: { to: "on" } } },
+        on: { on: { toggle: { to: "off" } } },
       },
     };
+    const service = null as unknown as MachineService;
+    const machine = service(config);
 
-    const returnedModule = module.machine("sessionMachine", config);
-
-    expect(returnedModule).toBe(module);
+    machine.send("toggle");
+    expect(machine.state).toBe("off");
   });
 
-  it("typechecks module.machine registration from resolvable config", () => {
-    const module = null as unknown as ng.NgModule;
-
-    const buildMachineConfig = (): ng.MachineConfig<
-      SessionData,
-      SessionEvents
-    > => ({
-      initial: "setup",
-      data: {
-        roomId: "",
-        error: "",
+  it("keeps state definition and map contracts available for reusable state trees", () => {
+    const setup: MachineStateDefinition<SessionMachine, "setup"> = {
+      on: {
+        join: { to: "waiting" },
       },
-      transitions: {
-        setup: {
-          join(data, payload: JoinPayload) {
-            data.roomId = payload.roomId;
+    };
+    const states: MachineStateMap<SessionMachine> = {
+      setup,
+      waiting: {},
+      playing: {},
+    };
 
-            return "waiting";
+    // @ts-expect-error setup transitions cannot use an unknown target.
+    setup.on!.join!.to = "finished";
+    expect(states.setup).toBe(setup);
+  });
+
+  it("infers ordinary inline machine state and event names", () => {
+    const service = null as unknown as MachineService;
+    const machine = service({
+      initial: "idle",
+      data: { count: 0 },
+      states: {
+        idle: {
+          on: {
+            start: {
+              to: "running",
+              update({ data }) {
+                data.count += 1;
+              },
+            },
           },
         },
+        running: {},
       },
     });
 
-    const returnedModule = module.machine("sessionMachine", buildMachineConfig);
+    machine.data.count.toFixed();
+    machine.send("start");
+    machine.matches("running");
+    // @ts-expect-error inferred event names reject unknown events.
+    machine.send("stop");
+    // @ts-expect-error inferred states reject unknown states.
+    machine.matches("stopped");
 
-    expect(returnedModule).toBe(module);
+    expect(machine.state).toBe("idle");
   });
 });

@@ -1,4 +1,4 @@
-import { _filter, _injector } from "../../injection-tokens.ts";
+import { _filter } from "../../injection-tokens.ts";
 import { deProxy, isFunction, nullObject } from "../../shared/utils.ts";
 import { validateRequired } from "../../shared/validate.ts";
 import type { FilterService } from "../../filters/filter.ts";
@@ -61,24 +61,11 @@ export type ParseService = (
 
 const lexer = new Lexer();
 
-export class ParseProvider {
-  $get: [string, ($injector: ng.InjectorService) => ParseService];
-
-  constructor() {
-    const cache = nullObject();
-
-    this.$get = [
-      _injector,
-      ($injector: ng.InjectorService): ParseService =>
-        createParseService($injector, cache),
-    ];
-  }
-}
-
-function createParseService(
+/** @internal */
+export function createParseService(
   $injector: ng.InjectorService,
-  cache: Partial<Record<string, CompiledExpression>>,
 ): ParseService {
+  const cache: Partial<Record<string, CompiledExpression>> = nullObject();
   const parser = new Parser(lexer, createLazyFilter($injector));
 
   return (exp, interceptorFn) => {
@@ -96,7 +83,7 @@ function createLazyFilter($injector: ng.InjectorService): FilterService {
   let $filter: FilterService | undefined;
 
   return (name: string) => {
-    $filter ??= $injector.get(_filter) as FilterService;
+    $filter ??= $injector.get(_filter);
 
     return $filter(name);
   };

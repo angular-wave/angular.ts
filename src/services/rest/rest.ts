@@ -1,4 +1,3 @@
-import { _http } from "../../injection-tokens.ts";
 import {
   isArray,
   isDefined,
@@ -8,20 +7,13 @@ import {
 import { expandUriTemplate } from "./rfc.ts";
 import { HttpRestBackend } from "./http-rest-backend.ts";
 import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
+import {
+  normalizePolicyDecision,
+  type Policy,
+  type PolicyContext,
+} from "../../core/policy/policy.ts";
 
 export { HttpRestBackend } from "./http-rest-backend.ts";
-
-/** Resource definition registered with {@link RestProvider.rest}. */
-export interface RestDefinition<T = unknown> {
-  /** Informational name for the resource definition. */
-  name: string;
-  /** Base URL or RFC 6570 URI template for the resource. */
-  url: string;
-  /** Constructor for mapping JSON objects to entity instances. */
-  entityClass?: EntityClass<T>;
-  /** Extra REST options merged into each request for this resource. */
-  options?: RestOptions;
-}
 
 /** Constructor type for mapping JSON objects to entity instances. */
 /**
@@ -100,6 +92,18 @@ export type RestCacheStrategy =
   | "network-first"
   | "stale-while-revalidate";
 
+export interface RestCachePolicyContext extends PolicyContext<"rest.cache"> {
+  readonly method: HttpMethod;
+  readonly url: string;
+  readonly collectionUrl?: string;
+  readonly id?: unknown;
+  readonly params?: Readonly<Record<string, unknown>>;
+  readonly options?: Readonly<Record<string, unknown>>;
+  readonly cacheKey: string;
+}
+
+export type RestCachePolicy = Policy<RestCachePolicyContext, RestCacheStrategy>;
+
 /**
  * Async cache store used by {@link CachedRestBackend}.
  *
@@ -153,8 +157,10 @@ export interface CachedRestBackendOptions {
   network: RestBackend;
   /** Async cache store, such as IndexedDB, Cache API, or memory. */
   cache: RestCacheStore;
-  /** Read strategy used for cacheable GET requests. */
-  strategy: RestCacheStrategy;
+  /** Default read strategy used for cacheable GET requests. */
+  strategy?: RestCacheStrategy;
+  /** Runtime policy used to choose the read strategy for each cacheable request. */
+  policy?: RestCachePolicy;
   /** Notified after a stale-while-revalidate refresh succeeds. */
   onRevalidate?: (event: RestRevalidateEvent) => void;
 }
@@ -163,6 +169,12 @@ export interface CachedRestBackendOptions {
 export interface RestOptions extends Record<string, unknown> {
   /** Optional backend used instead of the default HTTP backend. */
   backend?: RestBackend;
+}
+
+/** Service configuration for app-level REST defaults. */
+export interface RestConfig {
+  /** Default options applied to every `$rest(...)` service created by this app. */
+  defaults?: RestOptions;
 }
 
 /**
@@ -196,17 +208,25 @@ function stableSerialize(value: unknown): string {
   return value === undefined ? "undefined" : JSON.stringify(value);
 }
 
+const DEFAULT_REST_CACHE_STRATEGY: RestCacheStrategy = "network-first";
+
+function createStaticRestCachePolicy(
+  strategy: RestCacheStrategy,
+): RestCachePolicy {
+  return () => strategy;
+}
+
 /**
  * Composes a network backend with an async cache store.
  *
- * `GET` requests use the configured {@link RestCacheStrategy}. Write requests
+ * `GET` requests use the configured {@link RestCachePolicy}. Write requests
  * are sent to the network backend first, then matching cached collection and
  * entity entries are invalidated after successful writes.
  */
 export class CachedRestBackend implements RestBackend {
   private readonly _network: RestBackend;
   private readonly _cache: RestCacheStore;
-  private readonly _strategy: RestCacheStrategy;
+  private readonly _policy: RestCachePolicy;
   private readonly _onRevalidate?: (event: RestRevalidateEvent) => void;
 
   /**
@@ -216,7 +236,11 @@ export class CachedRestBackend implements RestBackend {
   constructor(options: CachedRestBackendOptions) {
     this._network = options.network;
     this._cache = options.cache;
-    this._strategy = options.strategy;
+    this._policy =
+      options.policy ??
+      createStaticRestCachePolicy(
+        options.strategy ?? DEFAULT_REST_CACHE_STRATEGY,
+      );
     this._onRevalidate = options.onRevalidate;
   }
 
@@ -236,41 +260,53 @@ export class CachedRestBackend implements RestBackend {
       return response;
     }
 
-    switch (this._strategy) {
+    const cacheKey = createRestCacheKey(request);
+    const decision = await this._policy({
+      operation: "rest.cache",
+      method: request.method,
+      url: request.url,
+      collectionUrl: request.collectionUrl,
+      id: request.id,
+      params: request.params,
+      options: request.options,
+      cacheKey,
+    });
+
+    const strategy = normalizePolicyDecision(decision).type;
+
+    switch (strategy) {
       case "cache-first":
-        return this._cacheFirst(request);
+        return this._cacheFirst(request, cacheKey);
       case "network-first":
-        return this._networkFirst(request);
+        return this._networkFirst(request, cacheKey);
       case "stale-while-revalidate":
-        return this._staleWhileRevalidate(request);
+        return this._staleWhileRevalidate(request, cacheKey);
     }
 
-    throw new Error(
-      `Unsupported REST cache strategy: ${String(this._strategy)}`,
-    );
+    throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
   }
 
-  private async _cacheFirst<T>(request: RestRequest): Promise<RestResponse<T>> {
-    const key = createRestCacheKey(request);
-
-    const cached = await this._cache.get<T>(key);
+  private async _cacheFirst<T>(
+    request: RestRequest,
+    cacheKey: string,
+  ): Promise<RestResponse<T>> {
+    const cached = await this._cache.get<T>(cacheKey);
 
     if (isDefined(cached)) {
       return { ...cached, source: "cache" };
     }
 
-    return this._fetchAndCache(request, key);
+    return this._fetchAndCache(request, cacheKey);
   }
 
   private async _networkFirst<T>(
     request: RestRequest,
+    cacheKey: string,
   ): Promise<RestResponse<T>> {
-    const key = createRestCacheKey(request);
-
     try {
-      return await this._fetchAndCache(request, key);
+      return await this._fetchAndCache(request, cacheKey);
     } catch (error) {
-      const cached = await this._cache.get<T>(key);
+      const cached = await this._cache.get<T>(cacheKey);
 
       if (isDefined(cached)) {
         return { ...cached, source: "cache", stale: true };
@@ -282,15 +318,14 @@ export class CachedRestBackend implements RestBackend {
 
   private async _staleWhileRevalidate<T>(
     request: RestRequest,
+    cacheKey: string,
   ): Promise<RestResponse<T>> {
-    const key = createRestCacheKey(request);
-
-    const cached = await this._cache.get<T>(key);
+    const cached = await this._cache.get<T>(cacheKey);
 
     if (isDefined(cached)) {
-      void this._fetchAndCache<T>(request, key).then(
+      void this._fetchAndCache<T>(request, cacheKey).then(
         (response) => {
-          this._onRevalidate?.({ key, request, response });
+          this._onRevalidate?.({ key: cacheKey, request, response });
 
           return undefined;
         },
@@ -300,7 +335,7 @@ export class CachedRestBackend implements RestBackend {
       return { ...cached, source: "cache", stale: true };
     }
 
-    return this._fetchAndCache(request, key);
+    return this._fetchAndCache(request, cacheKey);
   }
 
   private async _fetchAndCache<T>(
@@ -365,22 +400,11 @@ export class RestService<T = unknown, ID = unknown> {
     this._options = options;
   }
 
-  /**
-   * Expand an RFC 6570 URI template with the provided parameters.
-   *
-   * @param template - URI template such as `/api/{org}/repos/{repo}`.
-   * @param params - Values used for URI template expansion.
-   * @returns The expanded URL.
-   */
-  buildUrl(template: string, params: Record<string, unknown>): string {
-    return expandUriTemplate(template, params);
-  }
-
   /** @internal */
-  private _mapEntity(data: unknown): unknown {
-    if (!data) return data;
+  private _mapEntity(data: unknown): T | null {
+    if (isNullOrUndefined(data)) return null;
 
-    return this._entityClass ? new this._entityClass(data) : data;
+    return this._entityClass ? new this._entityClass(data) : (data as T);
   }
 
   /**
@@ -390,13 +414,15 @@ export class RestService<T = unknown, ID = unknown> {
    * `$http` as query params. Non-array responses resolve to an empty array.
    */
   async list(params: Record<string, unknown> = {}): Promise<T[]> {
-    const url = this.buildUrl(this._baseUrl, params);
+    const url = expandUriTemplate(this._baseUrl, params);
 
     const resp = await this._request<unknown[]>("GET", url, null, params, url);
 
     if (!isArray(resp.data)) return [];
 
-    return resp.data.map((data) => this._mapEntity(data) as T);
+    return resp.data
+      .map((data) => this._mapEntity(data))
+      .filter((data): data is T => data !== null);
   }
 
   /**
@@ -407,13 +433,13 @@ export class RestService<T = unknown, ID = unknown> {
    * @returns The mapped entity, raw response value, or `null` when empty.
    * @throws Error when `id` is null or undefined.
    */
-  async get(id: ID, params: Record<string, unknown> = {}): Promise<unknown> {
+  async get(id: ID, params: Record<string, unknown> = {}): Promise<T | null> {
     if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
-    const url = this.buildUrl(`${this._baseUrl}/${String(id)}`, params);
+    const url = expandUriTemplate(`${this._baseUrl}/${String(id)}`, params);
 
-    const collectionUrl = this.buildUrl(this._baseUrl, params);
+    const collectionUrl = expandUriTemplate(this._baseUrl, params);
 
-    const resp = await this._request<unknown>(
+    const resp = await this._request<T>(
       "GET",
       url,
       null,
@@ -422,7 +448,7 @@ export class RestService<T = unknown, ID = unknown> {
       id,
     );
 
-    return this._mapEntity(resp.data) ?? null;
+    return this._mapEntity(resp.data);
   }
 
   /**
@@ -432,9 +458,9 @@ export class RestService<T = unknown, ID = unknown> {
    * @returns The server representation, mapped through `entityClass` when set.
    * @throws Error when `item` is null or undefined.
    */
-  async create(item: T): Promise<unknown> {
+  async create(item: T): Promise<T | null> {
     if (isNullOrUndefined(item)) throw new Error(`badarg:item ${String(item)}`);
-    const resp = await this._request<unknown>(
+    const resp = await this._request<T>(
       "POST",
       this._baseUrl,
       item,
@@ -453,44 +479,34 @@ export class RestService<T = unknown, ID = unknown> {
    * @returns The updated entity, raw value, or `null` when the request fails.
    * @throws Error when `id` is null or undefined.
    */
-  async update(id: ID, item: Partial<T>): Promise<unknown> {
+  async update(id: ID, item: Partial<T>): Promise<T | null> {
     if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
     const url = `${this._baseUrl}/${String(id)}`;
 
-    try {
-      const resp = await this._request<unknown>(
-        "PUT",
-        url,
-        item,
-        {},
-        this._baseUrl,
-        id,
-      );
+    const resp = await this._request<T>(
+      "PUT",
+      url,
+      item,
+      {},
+      this._baseUrl,
+      id,
+    );
 
-      return this._mapEntity(resp.data) ?? null;
-    } catch {
-      return null;
-    }
+    return this._mapEntity(resp.data);
   }
 
   /**
    * Delete a resource by ID.
    *
    * @param id - Resource identifier appended to the base URL.
-   * @returns `true` when the request succeeds, otherwise `false`.
+   * @returns A promise that fulfills when the request succeeds.
    * @throws Error when `id` is null or undefined.
    */
-  async delete(id: ID): Promise<boolean> {
+  async delete(id: ID): Promise<void> {
     if (isNullOrUndefined(id)) throw new Error(`badarg:id ${String(id)}`);
     const url = `${this._baseUrl}/${String(id)}`;
 
-    try {
-      await this._request("DELETE", url, null, {}, this._baseUrl, id);
-
-      return true;
-    } catch {
-      return false;
-    }
+    await this._request("DELETE", url, null, {}, this._baseUrl, id);
   }
 
   /** @internal */
@@ -526,42 +542,20 @@ export type RestFactory = <T = unknown, ID = unknown>(
   options?: RestOptions,
 ) => RestService<T, ID>;
 
-export class RestProvider {
-  $get: [string, ($http: HttpService) => RestFactory];
+/** @internal */
+export function createRestFactory(
+  $http: HttpService,
+  defaults: RestOptions = {},
+): RestFactory {
+  return (baseUrl, entityClass, options = {}) => {
+    const mergedOptions = { ...defaults, ...options };
+    const { backend, ...requestOptions } = mergedOptions;
 
-  constructor() {
-    this.$get = [
-      _http,
-      ($http: HttpService): RestFactory => {
-        return (baseUrl, entityClass, options = {}) => {
-          const { backend, ...requestOptions } = options;
-
-          return new RestService(
-            backend ?? new HttpRestBackend($http),
-            baseUrl,
-            entityClass,
-            requestOptions,
-          );
-        };
-      },
-    ];
-  }
-
-  /**
-   * Accept a REST resource definition during provider configuration.
-   *
-   * Named injectable resources are registered by {@link NgModule.rest}; the
-   * provider exposes the runtime `$rest` factory.
-   */
-  rest<T>(
-    name: string,
-    url: string,
-    entityClass?: EntityClass<T>,
-    options: RestOptions = {},
-  ): void {
-    void name;
-    void url;
-    void entityClass;
-    void options;
-  }
+    return new RestService(
+      backend ?? new HttpRestBackend($http),
+      baseUrl,
+      entityClass,
+      requestOptions,
+    );
+  };
 }

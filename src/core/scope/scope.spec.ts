@@ -4,7 +4,7 @@ import { wait } from "../../shared/test-utils.ts";
 import { createScope, getArrayMutationMeta, isNonScope } from "./scope.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
-import { isDefined, isProxy, sliceArgs } from "../../shared/utils.ts";
+import { deProxy, isDefined, isProxy, sliceArgs } from "../../shared/utils.ts";
 
 describe("Scope", () => {
   let scope;
@@ -37,6 +37,17 @@ describe("Scope", () => {
     $parse = injector.get("$parse");
     $rootScope = injector.get("$rootScope");
     scope = $rootScope;
+  });
+
+  it("propagates replaced runtime dependencies to child scopes", () => {
+    const child = scope.$new();
+    const parse = jasmine.createSpy("parse");
+    const exceptionHandler = jasmine.createSpy("exceptionHandler");
+
+    scope.$handler._setRuntimeDependencies({ parse, exceptionHandler });
+
+    expect(child.$handler._parse).toBe(parse);
+    expect(child.$handler._exceptionHandler).toBe(exceptionHandler);
   });
 
   function prototypeMethodKeys(prototype) {
@@ -2381,7 +2392,7 @@ describe("Scope", () => {
         expect(scope.$$watchersCount).toBe(3);
 
         child1.$destroy();
-        expect(child1.$$watchersCount).toBe(1);
+        expect(child1.$$watchersCount).toBe(0);
         expect(scope.$$watchersCount).toBe(1);
       });
 
@@ -2631,6 +2642,24 @@ describe("Scope", () => {
         firstPush("A");
 
         expect(scope.items).toEqual(["A"]);
+      });
+
+      it("schedules a multi-key array watcher once per mutation", async () => {
+        scope.items = [1];
+        const listener = jasmine.createSpy("listener");
+
+        scope.$watch("items", listener);
+        await wait();
+        listener.calls.reset();
+
+        const rawItems = deProxy(scope.items);
+
+        scope.$handler._objectListeners.set(rawItems, ["items", "items"]);
+
+        scope.items.unshift(2);
+        await wait();
+
+        expect(listener).toHaveBeenCalledTimes(1);
       });
 
       describe("array mutation regressions", () => {
@@ -2957,6 +2986,41 @@ describe("Scope", () => {
 
         expect(latest).toBe(3);
       });
+
+      it("should rebind foreign listeners when the foreign proxy parent changes", async () => {
+        const scope1 = createScope();
+
+        const scope2 = createScope({ b: 2 });
+
+        const scope3 = createScope({ b: 5 });
+
+        const values = [];
+
+        scope1.service = scope2;
+        scope1.$watch("service.b", (value) => {
+          values.push(value);
+        });
+
+        await wait();
+
+        expect(values).toEqual([2]);
+        expect(scope2.$handler._foreignListeners.get("b").length).toBe(1);
+
+        scope1.service = scope3;
+
+        await wait();
+
+        expect(values).toEqual([2, 5]);
+        expect(scope2.$handler._foreignListeners.has("b")).toBeFalse();
+        expect(scope3.$handler._foreignListeners.get("b").length).toBe(1);
+
+        scope2.b = 3;
+        scope3.b = 6;
+
+        await wait();
+
+        expect(values).toEqual([2, 5, 6]);
+      });
     });
 
     describe("$watch", () => {
@@ -3059,6 +3123,45 @@ describe("Scope", () => {
 
             await wait();
             expect(logs).toEqual([{ newVal: scope.obj }]);
+          });
+
+          it("should notify object watchers when deleting a proxied child property", async () => {
+            scope.obj = {};
+
+            await wait();
+
+            logs = [];
+            scope.obj.child = { name: "John" };
+
+            await wait();
+
+            expect(logs).toEqual([{ newVal: scope.obj }]);
+            expect(scope.obj.child.$handler).toBeDefined();
+
+            logs = [];
+            delete scope.obj.child;
+
+            await wait();
+
+            expect(logs).toEqual([{ newVal: scope.obj }]);
+            expect(scope.obj.child).toBeUndefined();
+          });
+
+          it("should fall back to object owner listeners when deleting a proxied child without direct watchers", () => {
+            const handler = scope.$handler;
+            const rawTarget = {
+              child: createScope({ name: "John" }),
+            };
+
+            handler._objectListeners.set(rawTarget, ["obj"]);
+            spyOn(handler, "_scheduleObjectOwnerListeners").and.callThrough();
+
+            expect(handler.deleteProperty(rawTarget, "child")).toBeTrue();
+
+            expect(rawTarget.child).toBeUndefined();
+            expect(
+              handler._scheduleObjectOwnerListeners,
+            ).toHaveBeenCalledOnceWith(rawTarget);
           });
 
           it("should not infinitely digest when current value is NaN", async () => {
@@ -3575,7 +3678,7 @@ describe("Scope", () => {
 
           scope.$broadcast("abc");
           expect(listener1).toHaveBeenCalled();
-          expect(listener2).toHaveBeenCalled();
+          expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).not.toHaveBeenCalled();
           expect(listener4).toHaveBeenCalled();
 
@@ -3586,7 +3689,7 @@ describe("Scope", () => {
 
           scope.$broadcast("abc");
           expect(listener1).toHaveBeenCalled();
-          expect(listener2).toHaveBeenCalled();
+          expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).not.toHaveBeenCalled();
           expect(listener4).toHaveBeenCalled();
         });
@@ -4303,6 +4406,19 @@ describe("Scope", () => {
       expect(scope.$handler._watchers.size).toEqual(0);
     });
 
+    it("should default internal destroy to broadcasting destroy events", () => {
+      const scope = createScope();
+
+      const onDestroy = jasmine.createSpy("internal destroy default");
+
+      scope.$on("$destroy", onDestroy);
+
+      scope.$handler._destroy();
+
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+      expect(scope.$handler._destroyed).toBeTrue();
+    });
+
     it("should remove children from parent scopes", async () => {
       const scope = createScope();
 
@@ -4516,7 +4632,8 @@ describe("Scope", () => {
       expect(handler._propertyMap._children.length).toBe(0);
       expect(handler._watchers).not.toBe(sharedWatchers);
       expect(handler._watchers.size).toBe(0);
-      expect(scope.$handler._watchers.get("test").length).toBe(1);
+      expect(grandChild.$handler._destroyed).toBeTrue();
+      expect(scope.$handler._watchers.has("test")).toBeFalse();
     });
 
     it("should not rehydrate cleared caches for destroyed-scope inspection reads", async () => {
@@ -4579,6 +4696,21 @@ describe("Scope", () => {
       expect(child.$handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.current.replacement).toBeTrue();
+    });
+
+    it("should not traverse displaced non-scope binary values", () => {
+      const scope = createScope();
+      const bytes = new Proxy(new Uint8Array([1, 2, 3]), {
+        ownKeys() {
+          throw new Error("binary values must not be traversed");
+        },
+      });
+
+      scope.frame = bytes;
+
+      expect(() => {
+        scope.frame = new Uint8Array([4, 5, 6]);
+      }).not.toThrow();
     });
 
     it("should destroy direct child scopes removed by shrinking an array length", () => {
@@ -5562,6 +5694,188 @@ describe("Scope optimizations", () => {
   });
 
   describe("internal nested listener stats", () => {
+    it("should resolve nested foreign proxy parents from simple dotted paths", () => {
+      const foreign = createScope({
+        profile: {
+          name: "John",
+        },
+      });
+      const target = {
+        user: foreign.$target,
+      };
+
+      scope.$handler._foreignProxyTargets.set(foreign.$target, foreign);
+
+      expect(
+        scope.$handler._resolveForeignProxyParent("user.profile.name", target),
+      ).toBe(foreign.profile);
+    });
+
+    it("should ignore unsupported nested foreign proxy parent paths", () => {
+      const foreign = createScope({
+        profile: {
+          name: "John",
+        },
+      });
+      const target = {
+        user: foreign.$target,
+      };
+
+      scope.$handler._foreignProxyTargets.set(foreign.$target, foreign);
+
+      expect(
+        scope.$handler._resolveForeignProxyParent("user[0].name", target),
+      ).toBeUndefined();
+      expect(
+        scope.$handler._resolveForeignProxyParent(
+          "user.invalid-name.value",
+          target,
+        ),
+      ).toBeUndefined();
+      expect(
+        scope.$handler._resolveForeignProxyParent("user.missing.name", target),
+      ).toBeUndefined();
+    });
+
+    it("should register nested watchers against direct external proxy parents", async () => {
+      const foreign = createScope({
+        profile: {
+          name: "John",
+        },
+      });
+      const consumer = createScope({});
+      const observed = [];
+
+      consumer.$target.profile = foreign.profile;
+      consumer.$watch("profile.name", (value) => {
+        observed.push(value);
+      });
+
+      await wait();
+
+      expect(observed).toEqual(["John"]);
+      expect(
+        foreign.profile.$handler._foreignListeners.get("name").length,
+      ).toBe(1);
+
+      foreign.profile.name = "Jane";
+
+      await wait();
+
+      expect(observed).toEqual(["John", "Jane"]);
+    });
+
+    it("should parse escaped computed members in array watch expressions", async () => {
+      const observed = [];
+
+      scope.user = {
+        'a"b': "first",
+      };
+
+      const unwatch = scope.$watch('[user["a\\"b"]]', (value) => {
+        observed.push(value[0]);
+      });
+
+      await wait();
+
+      expect(observed).toEqual(["first"]);
+
+      scope.user['a"b'] = "second";
+
+      await wait();
+
+      expect(observed).toEqual(["first", "second"]);
+
+      expect(unwatch()).toBeUndefined();
+    });
+
+    it("should ignore non-dotted computed array elements for foreign dependency tracking", async () => {
+      const observed = [];
+
+      scope.items = ["first", "second"];
+      scope.index = 0;
+
+      const unwatch = scope.$watch("[items[index]]", (value) => {
+        observed.push(value[0]);
+      });
+
+      await wait();
+
+      expect(observed[observed.length - 1]).toBe("first");
+
+      scope.items[0] = "updated";
+
+      await wait();
+
+      expect(observed[observed.length - 1]).toBe("updated");
+      expect(unwatch()).toBeUndefined();
+    });
+
+    it("should release foreign dependencies for logical expression watchers", async () => {
+      const primary = createScope({
+        profile: {
+          name: "",
+        },
+      });
+      const fallback = createScope({
+        profile: {
+          name: "Fallback",
+        },
+      });
+      const consumer = createScope({});
+      const observed = [];
+
+      consumer.primary = primary;
+      consumer.fallback = fallback;
+
+      const unwatch = consumer.$watch(
+        "primary.profile.name || fallback.profile.name",
+        (value) => {
+          observed.push(value);
+        },
+      );
+
+      expect(
+        primary.profile.$handler._foreignListeners.get("name").length,
+      ).toBe(1);
+      expect(
+        fallback.profile.$handler._foreignListeners.get("name").length,
+      ).toBe(1);
+
+      fallback.profile.name = "Next";
+
+      await wait();
+
+      expect(observed).toEqual(["Next"]);
+
+      expect(unwatch()).toBeUndefined();
+      expect(
+        primary.profile.$handler._foreignListeners.has("name"),
+      ).toBeFalse();
+      expect(
+        fallback.profile.$handler._foreignListeners.has("name"),
+      ).toBeFalse();
+    });
+
+    it("should release dependency bookkeeping for simple watcher deregistration", () => {
+      const unwatch = scope.$watch("plainValue", () => {
+        /* empty */
+      });
+
+      expect(unwatch()).toBeTrue();
+    });
+
+    it("should release dependency bookkeeping for assignment watcher deregistration", () => {
+      scope.sourceValue = "updated";
+
+      const unwatch = scope.$watch("plainValue = sourceValue", () => {
+        /* empty */
+      });
+
+      expect(scope.plainValue).toBe("updated");
+      expect(unwatch()).toBeTrue();
+    });
+
     it("should track nested watcher registrations without scanning watcher maps", () => {
       expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
       expect(scope.$handler._hasNestedListenerCandidates()).toBeFalse();

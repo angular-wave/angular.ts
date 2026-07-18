@@ -1,20 +1,11 @@
-import {
-  _exceptionHandlerProvider,
-  _injector,
-  _router,
-  _routerProvider,
-  _rootScope,
-  _stateRegistry,
-  _stateRegistryProvider,
-  _transitionsProvider,
-  _view,
-} from "../../injection-tokens.ts";
 import { defaults } from "../../shared/common.ts";
 import {
   isDefined,
   isArray,
   isNullOrUndefined,
   isObject,
+  isFunction,
+  isInstanceOf,
   createErrorFactory,
   isString,
   assertDefined,
@@ -22,30 +13,46 @@ import {
 import { PathNode } from "../path/path-node.ts";
 import {
   defaultTransOpts,
-  type TransitionProvider,
+  type TransitionRuntime,
 } from "../transition/transition-service.ts";
 import { Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
+import {
+  createTransitionErrorPolicyInvocationLocals,
+  createTransitionPolicyInvocationLocals,
+} from "../invocation-context.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
+import {
+  getTransitionRetryPolicyFromStateName,
+  transitionToState,
+} from "./state-transition.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { ViewService } from "../view/view.ts";
-import type { TransitionOptions } from "../transition/interface.ts";
+import type {
+  InternalTransitionOptions,
+  TransitionOptions,
+} from "../transition/interface.ts";
 import type {
   HrefOptions,
   LazyStateLoader,
   LazyStateLoadResult,
+  RouteMap,
+  ParamsOf,
+  StateRetryPolicy,
   StateDeclaration,
   StateOrName,
+  StateTransitionFallbackTarget,
   StateTransitionResult,
   TransitionPromise,
+  StateErrorBoundaryPolicy,
+  StateTransitionErrorPolicyContext,
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
-import type { StateRegistryProvider } from "./state-registry.ts";
-import type { RouterProvider } from "../router.ts";
-import { transitionToState } from "./state-transition.ts";
+import type { StateRegistryRuntime } from "./state-registry.ts";
+import type { RouterRuntimeState } from "../router.ts";
 
-const stateProviderError = createErrorFactory("$stateProvider");
+const stateRuntimeError = createErrorFactory("$state");
 
 export interface LazyStateRegistration {
   prefix: string;
@@ -54,27 +61,53 @@ export interface LazyStateRegistration {
   loaded: boolean;
 }
 
-/**
- * Provides services related to ng-router states.
- *
- * This API is located at `$state`.
- */
-export class StateProvider {
+function diagnosticStateName(stateOrName: StateOrName): string {
+  return isString(stateOrName) ? stateOrName : stateOrName.name;
+}
+
+/** @internal */
+export type StateTransitionPolicyDiagnosticKind = "retry" | "fallback";
+
+/** @internal */
+export type StateTransitionPolicyDiagnosticDecision =
+  | "retry"
+  | "blocked"
+  | "redirected"
+  | "skipped";
+
+/** @internal */
+export interface StateTransitionPolicyDiagnostic {
+  _kind: StateTransitionPolicyDiagnosticKind;
+  _decision: StateTransitionPolicyDiagnosticDecision;
+  _from: string | undefined;
+  _to: string | undefined;
+  _policyState: string | undefined;
+  _attempt?: number;
+  _target?: string;
+  _reason?: string;
+}
+
+/** @internal */
+export class StateRuntime {
   /** @internal */
-  _routerState: RouterProvider;
+  _routerState: RouterRuntimeState;
   /** @internal */
-  _transitionService: TransitionProvider;
+  _transitionService: TransitionRuntime;
   /** @internal */
-  _stateRegistry: StateRegistryProvider;
+  _stateRegistry: StateRegistryRuntime;
   /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
   _lazyStates: LazyStateRegistration[];
   /** @internal */
   _defaultErrorHandler: ng.ExceptionHandlerService;
+  /** @internal */
+  _policyDiagnostics: StateTransitionPolicyDiagnostic[];
+  /** @internal */
+  _viewService!: ViewService;
 
   /** @internal */
-  _getRegistry(): StateRegistryProvider {
+  _getRegistry(): StateRegistryRuntime {
     return this._stateRegistry;
   }
 
@@ -101,63 +134,48 @@ export class StateProvider {
     return this._routerState._currentState;
   }
 
-  /* @ignore */
-  static $inject = [
-    _stateRegistryProvider,
-    _routerProvider,
-    _transitionsProvider,
-    _exceptionHandlerProvider,
-  ];
-
   constructor(
-    stateRegistry: StateRegistryProvider,
-    routerState: RouterProvider,
-    transitionService: TransitionProvider,
-    exceptionHandlerProvider: ng.ExceptionHandlerProvider,
+    stateRegistry: StateRegistryRuntime,
+    routerState: RouterRuntimeState,
+    transitionService: TransitionRuntime,
+    exceptionHandler: ng.ExceptionHandlerService,
   ) {
     this._routerState = routerState;
     this._transitionService = transitionService;
     this._stateRegistry = stateRegistry;
     this._$injector = undefined;
     this._lazyStates = [];
+    this._policyDiagnostics = [];
 
-    this._defaultErrorHandler = exceptionHandlerProvider.handler;
+    this._defaultErrorHandler = exceptionHandler;
   }
 
-  $get = [
-    _injector,
-    _stateRegistry,
-    _router,
-    _rootScope,
-    _view,
-    /**
-     * @param {ng.InjectorService} $injector
-     * @param {StateRegistryProvider} $stateRegistry
-     * @param {RouterProvider} routerState
-     * @param {ng.RootScopeService} $rootScope
-     * @param viewService
-     * @returns {StateProvider}
-     */
-    (
-      $injector: ng.InjectorService,
-      $stateRegistry: StateRegistryProvider,
-      routerState: RouterProvider,
-      $rootScope: ng.RootScopeService,
-      viewService: ViewService,
-    ) => {
-      this._stateRegistry = $stateRegistry;
-      this._routerState = routerState;
-      routerState._stateService = this;
-      $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) => {
-        routerState._sync(evt);
-      });
-      this._transitionService._initRuntimeHooks(this, viewService);
-      this._$injector = $injector;
-      this._routerState._injector = $injector;
+  /** @internal */
+  _recordPolicyDiagnostic(diagnostic: StateTransitionPolicyDiagnostic): void {
+    this._policyDiagnostics.push(diagnostic);
+  }
 
-      return this;
-    },
-  ];
+  /** @internal */
+  _initRuntime(
+    $injector: ng.InjectorService,
+    $location: ng.LocationService,
+    $stateRegistry: StateRegistryRuntime,
+    $rootScope: ng.Scope,
+    viewService: ViewService,
+  ): this {
+    this._routerState._initRuntime($location, $injector);
+    this._stateRegistry = $stateRegistry;
+    this._viewService = viewService;
+    this._routerState._stateService = this;
+    $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) => {
+      this._routerState._sync(evt);
+    });
+    this._transitionService._initRuntimeHooks(this, viewService);
+    this._$injector = $injector;
+    this._routerState._injector = $injector;
+
+    return this;
+  }
 
   /**
    * Register a router state.
@@ -184,13 +202,13 @@ export class StateProvider {
     );
 
     if (!stateDefinition.name) {
-      throw stateProviderError("stateinvalid", `'name' required`);
+      throw stateRuntimeError("stateinvalid", `'name' required`);
     }
 
     try {
       this._getRegistry().register(stateDefinition);
     } catch (err) {
-      throw stateProviderError("stateinvalid", (err as Error).message);
+      throw stateRuntimeError("stateinvalid", (err as Error).message);
     }
 
     return this;
@@ -231,6 +249,9 @@ export class StateProvider {
     const routerState = this._routerState;
 
     const latest = routerState._lastStartedTransition;
+    const retryPolicy = this._getTransitionRetryPolicyFromStateName(
+      toState.name(),
+    );
 
     const lazy = this._findLazyState(toState);
 
@@ -238,9 +259,37 @@ export class StateProvider {
       return Rejection.invalid(toState.error())._toPromise();
     }
 
-    lazy.promise ??= this._loadLazyRegistration(lazy, toState);
+    let attempts = 1;
 
-    await lazy.promise;
+    for (;;) {
+      lazy.promise ??= this._loadLazyRegistration(lazy, toState);
+
+      try {
+        await lazy.promise;
+        break;
+      } catch (error) {
+        const shouldRetry = await this._shouldRetryLazyLoad(
+          retryPolicy,
+          attempts,
+          error,
+          toState.name(),
+        );
+
+        lazy.promise = undefined;
+
+        if (!shouldRetry) {
+          const recovered = await this._recoverLazyLoadFailure(toState, error);
+
+          if (recovered) {
+            return recovered;
+          }
+
+          throw error;
+        }
+
+        attempts += 1;
+      }
+    }
 
     if (routerState._lastStartedTransition !== latest) {
       return Rejection.superseded()._toPromise();
@@ -261,6 +310,368 @@ export class StateProvider {
       target.params(),
       target.options(),
     );
+  }
+
+  _getStatePolicyFromStateName<TPolicy>(
+    stateName: StateOrName,
+    readPolicy: (state: StateDeclaration) => TPolicy | undefined,
+  ):
+    | {
+        state: StateDeclaration;
+        policy: TPolicy;
+      }
+    | undefined {
+    const stateNameString = diagnosticStateName(stateName);
+
+    if (stateNameString) {
+      const tokens = stateNameString.split(".");
+
+      for (let i = tokens.length; i > 0; i--) {
+        const candidateName = tokens.slice(0, i).join(".");
+        const state = this._stateRegistry.get(candidateName);
+
+        if (!state) continue;
+
+        const policy = readPolicy(state);
+
+        if (policy !== undefined) {
+          return {
+            state,
+            policy,
+          };
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  _getTransitionFallbackFromStateName(stateName: StateOrName):
+    | {
+        state: StateDeclaration;
+        target: StateTransitionFallbackTarget;
+      }
+    | undefined {
+    const routeFallback = this._getStatePolicyFromStateName(
+      stateName,
+      (state) => state.policy?.transition?.fallbackTo,
+    );
+
+    if (routeFallback) {
+      return {
+        state: routeFallback.state,
+        target: routeFallback.policy,
+      };
+    }
+
+    return this._routerState._fallbackTo !== undefined
+      ? {
+          state: this._stateRegistry._root.self,
+          target: this._routerState._fallbackTo,
+        }
+      : undefined;
+  }
+
+  _getTransitionErrorBoundaryPolicyFromStateName(stateName: StateOrName):
+    | {
+        state: StateDeclaration;
+        policy:
+          | string
+          | { state?: string; params?: RawParams }
+          | TargetState
+          | StateErrorBoundaryPolicy
+          | undefined;
+      }
+    | undefined {
+    const routePolicy = this._getStatePolicyFromStateName(
+      stateName,
+      (state) => {
+        return (
+          state.policy?.transition?.error ??
+          state.policy?.transition?.errorBoundary
+        );
+      },
+    );
+
+    if (routePolicy) return routePolicy;
+
+    const routerPolicy =
+      this._routerState._error ?? this._routerState._errorBoundary;
+
+    return routerPolicy !== undefined
+      ? {
+          state: this._stateRegistry._root.self,
+          policy: routerPolicy,
+        }
+      : undefined;
+  }
+
+  _buildLazyFallbackTarget(
+    toState: TargetState,
+    target: StateTransitionFallbackTarget,
+  ): TargetState | undefined {
+    if (isString(target)) {
+      return this.target(target, toState.params(), toState.options());
+    }
+
+    if (
+      isObject(target) &&
+      (Object.hasOwn(target, "state") || Object.hasOwn(target, "params"))
+    ) {
+      const redirect = target as { state?: string; params?: RawParams };
+
+      return this.target(
+        redirect.state ?? toState.name(),
+        redirect.params ?? toState.params(),
+        toState.options(),
+      );
+    }
+
+    return undefined;
+  }
+
+  async _buildLazyErrorBoundaryTarget(
+    toState: TargetState,
+    policyState: StateDeclaration,
+    policy:
+      | string
+      | { state?: string; params?: RawParams }
+      | TargetState
+      | StateErrorBoundaryPolicy
+      | undefined,
+    error: unknown,
+  ): Promise<TargetState | undefined> {
+    if (isString(policy)) {
+      return this.target(policy, toState.params(), toState.options());
+    }
+
+    if (isInstanceOf(policy, TargetState)) {
+      return policy;
+    }
+
+    if (
+      isObject(policy) &&
+      (Object.hasOwn(policy, "state") || Object.hasOwn(policy, "params"))
+    ) {
+      const redirect = policy as { state?: string; params?: RawParams };
+
+      return this.target(
+        redirect.state ?? toState.name(),
+        redirect.params ?? toState.params(),
+        toState.options(),
+      );
+    }
+
+    if (!isFunction(policy)) {
+      return undefined;
+    }
+
+    const from = this._routerState._current ?? this._stateRegistry._root.self;
+    const to =
+      this._routerState._currentState?.self ?? this._stateRegistry._root.self;
+    const context: StateTransitionErrorPolicyContext = {
+      operation: "error",
+      transition: undefined,
+      from,
+      to,
+      state: policyState,
+      error,
+    };
+
+    const result = await Promise.resolve(
+      this._routerState._injector?.invoke(
+        policy,
+        undefined,
+        createTransitionErrorPolicyInvocationLocals(context),
+        "route error boundary policy",
+      ),
+    );
+
+    if (isInstanceOf(result, TargetState)) {
+      return result;
+    }
+
+    if (isString(result)) {
+      return this.target(result, toState.params(), toState.options());
+    }
+
+    if (
+      isObject(result) &&
+      (Object.hasOwn(result, "state") || Object.hasOwn(result, "params"))
+    ) {
+      const redirect = result as { state?: string; params?: RawParams };
+
+      return this.target(
+        redirect.state ?? toState.name(),
+        redirect.params ?? toState.params(),
+        toState.options(),
+      );
+    }
+
+    if (result === undefined) {
+      return undefined;
+    }
+
+    throw new Error(
+      "Route error boundary policy must return TargetState, redirect target, or undefined.",
+    );
+  }
+
+  async _recoverLazyLoadFailure(
+    toState: TargetState,
+    error: unknown,
+  ): Promise<StateTransitionResult | undefined> {
+    const errorPolicy = this._getTransitionErrorBoundaryPolicyFromStateName(
+      toState.name(),
+    );
+
+    if (errorPolicy) {
+      const errorTarget = await this._buildLazyErrorBoundaryTarget(
+        toState,
+        errorPolicy.state,
+        errorPolicy.policy,
+        error,
+      );
+
+      if (errorTarget?.valid() && errorTarget.name() !== toState.name()) {
+        return this.transitionTo(
+          errorTarget.identifier(),
+          errorTarget.params(),
+          errorTarget.options(),
+        );
+      }
+    }
+
+    const fallback = this._getTransitionFallbackFromStateName(toState.name());
+
+    if (!fallback) return undefined;
+
+    const fallbackTarget = this._buildLazyFallbackTarget(
+      toState,
+      fallback.target,
+    );
+
+    if (!fallbackTarget?.valid()) {
+      this._recordPolicyDiagnostic({
+        _kind: "fallback",
+        _decision: "skipped",
+        _from: this._routerState._current?.name,
+        _to: toState.name() as string | undefined,
+        _policyState: fallback.state.name,
+        _reason: "invalid-target",
+      });
+
+      return undefined;
+    }
+
+    if (fallbackTarget.name() === toState.name()) {
+      this._recordPolicyDiagnostic({
+        _kind: "fallback",
+        _decision: "skipped",
+        _from: this._routerState._current?.name,
+        _to: toState.name() as string | undefined,
+        _policyState: fallback.state.name,
+        _target: fallbackTarget.name() as string,
+        _reason: "same-target",
+      });
+
+      return undefined;
+    }
+
+    this._recordPolicyDiagnostic({
+      _kind: "fallback",
+      _decision: "redirected",
+      _from: this._routerState._current?.name,
+      _to: toState.name() as string | undefined,
+      _policyState: fallback.state.name,
+      _target: fallbackTarget.name() as string,
+    });
+
+    return this.transitionTo(
+      fallbackTarget.identifier(),
+      fallbackTarget.params(),
+      fallbackTarget.options(),
+    );
+  }
+
+  _getTransitionRetryPolicyFromStateName(stateName: StateOrName):
+    | {
+        state: StateDeclaration;
+        policy: boolean | number | StateRetryPolicy;
+      }
+    | undefined {
+    return getTransitionRetryPolicyFromStateName(this, stateName);
+  }
+
+  async _shouldRetryLazyLoad(
+    retryPolicy:
+      | {
+          state: StateDeclaration;
+          policy: boolean | number | StateRetryPolicy;
+        }
+      | undefined,
+    attempt: number,
+    error: unknown,
+    targetName: StateOrName,
+  ): Promise<boolean> {
+    if (!retryPolicy) return false;
+
+    let decision: unknown = retryPolicy.policy;
+
+    if (typeof decision !== "boolean" && typeof decision !== "number") {
+      if (isFunction(retryPolicy.policy)) {
+        const from =
+          this._routerState._current ?? this._stateRegistry._root.self;
+        const to =
+          this._routerState._currentState?.self ??
+          this._stateRegistry._root.self;
+
+        const context = {
+          operation: "retry",
+          attempt,
+          from,
+          to,
+          state: retryPolicy.state,
+          transition: undefined,
+          error,
+        };
+
+        const resolved = this._routerState._injector?.invoke(
+          retryPolicy.policy,
+          undefined,
+          createTransitionPolicyInvocationLocals(context),
+          "route retry policy",
+        );
+        decision = await Promise.resolve(resolved);
+      }
+    }
+
+    if (typeof decision !== "boolean" && typeof decision !== "number") {
+      throw new Error("Route retry policy must return boolean or number.");
+    }
+
+    const maxAttempts = this._normalizeRetryPolicy(decision);
+    const allowed = !!maxAttempts && attempt < maxAttempts;
+
+    this._recordPolicyDiagnostic({
+      _kind: "retry",
+      _decision: allowed ? "retry" : "blocked",
+      _from: this._routerState._current?.name,
+      _to: diagnosticStateName(targetName),
+      _policyState: retryPolicy.state.name,
+      _attempt: attempt,
+    });
+
+    return allowed;
+  }
+
+  _normalizeRetryPolicy(value: boolean | number): number | undefined {
+    if (value === true) return 2;
+    if (value === false) return 0;
+
+    if (!Number.isFinite(value) || value < 1) return 0;
+
+    return Math.trunc(value);
   }
 
   /** @internal */
@@ -289,62 +700,6 @@ export class StateProvider {
     });
 
     return this;
-  }
-
-  /**
-   * Reloads the current state
-   *
-   * A method that force reloads the current state, or a partial state hierarchy.
-   * All resolves are re-resolved, and components reinstantiated.
-   *
-   * #### Example:
-   * ```js
-   * let app = angular.module('app', []);
-   *
-   * app.controller('ctrl', function ($scope, $state) {
-   *   $scope.reload = function(){
-   *     $state.reload();
-   *   }
-   * });
-   * ```
-   *
-   * Note: `reload()` is just an alias for:
-   *
-   * ```js
-   * $state.transitionTo($state.current, $state.params, {
-   *   reload: true, inherit: false
-   * });
-   * ```
-   *
-   * @param {string | StateDeclaration | StateObject} [reloadState] A state name or a state object.
-   *    If present, this state and all its children will be reloaded, but ancestors will not reload.
-   *
-   * #### Example:
-   * ```js
-   * //assuming app application consists of 3 states: 'contacts', 'contacts.detail', 'contacts.detail.item'
-   * //and current state is 'contacts.detail.item'
-   * let app = angular.module('app', []);
-   *
-   * app.controller('ctrl', function ($scope, $state) {
-   *   $scope.reload = function(){
-   *     //will reload 'contact.detail' and nested 'contact.detail.item' states
-   *     $state.reload('contact.detail');
-   *   }
-   * });
-   * ```
-   *
-   * @returns A promise representing the state of the new transition. See [[StateService.go]]
-   */
-
-  reload(reloadState?: string | StateDeclaration | StateObject) {
-    const current = this._routerState._current;
-
-    if (!current) throw new Error("No current state");
-
-    return this.transitionTo(current, this._routerState._params, {
-      reload: isDefined(reloadState) ? reloadState : true,
-      inherit: false,
-    });
   }
 
   /**
@@ -378,7 +733,7 @@ export class StateProvider {
    * - `$state.go('^.sibling')` - if current state is `home.child`, will go to the `home.sibling` state
    * - `$state.go('.child.grandchild')` - if current state is home, will go to the `home.child.grandchild` state
    *
-   * @param {*} [params] A map of the parameters that will be sent to the state, will populate $stateParams.
+   * @param {*} [params] A map of the parameters that will be sent to the state and exposed on `$state.params`.
    *
    *    Any parameters that are not specified will be inherited from current parameter values (because of `inherit: true`).
    *    This allows, for example, going to a sibling state that shares parameters defined by a parent state.
@@ -392,14 +747,14 @@ export class StateProvider {
     to: StateOrName,
     params?: RawParams,
     options?: TransitionOptions,
-  ): TransitionPromise | Promise<StateTransitionResult> {
+  ): TransitionPromise {
     const defautGoOpts = { relative: this.$current, inherit: true };
 
     const transOpts = defaults(
       options,
       defautGoOpts,
       defaultTransOpts,
-    ) as TransitionOptions;
+    ) as InternalTransitionOptions;
 
     return this.transitionTo(to, params, transOpts);
   }
@@ -419,30 +774,38 @@ export class StateProvider {
     params: RawParams = {},
     options: TransitionOptions = {},
   ): TargetState {
+    const internalOptions: InternalTransitionOptions = { ...options };
+
     // If we're reloading, find the state object to reload from
-    if (isObject(options.reload) && !options.reload.name)
+    if (isObject(internalOptions.reload) && !internalOptions.reload.name)
       throw new Error("Invalid reload state object");
     const reg = this._getRegistry();
 
-    options.reloadState =
-      options.reload === true
-        ? reg.root()
-        : options.reload
-          ? reg._matcher.find(options.reload, options.relative)
+    internalOptions.reloadState =
+      internalOptions.reload === true
+        ? reg._root
+        : internalOptions.reload
+          ? reg._matcher.find(internalOptions.reload, internalOptions.relative)
           : undefined;
 
-    if (options.reload && !options.reloadState)
+    if (internalOptions.reload && !internalOptions.reloadState)
       throw new Error(
         `No such reload state '${
-          isString(options.reload)
-            ? options.reload
-            : isObject(options.reload) && "name" in options.reload
-              ? options.reload.name
-              : String(options.reload)
+          isString(internalOptions.reload)
+            ? internalOptions.reload
+            : isObject(internalOptions.reload) &&
+                "name" in internalOptions.reload
+              ? internalOptions.reload.name
+              : String(internalOptions.reload)
         }'`,
       );
 
-    return new TargetState(this._getRegistry(), identifier, params, options);
+    return new TargetState(
+      this._getRegistry(),
+      identifier,
+      params,
+      internalOptions,
+    );
   }
 
   getCurrentPath(): PathNode[] {
@@ -452,137 +815,33 @@ export class StateProvider {
 
     return latestSuccess
       ? latestSuccess._treeChanges.to
-      : [new PathNode(this._getRegistry().root())];
+      : [new PathNode(this._getRegistry()._root)];
   }
 
-  /**
-   * Low-level method for transitioning to a new state.
-   *
-   * The [[go]] method (which uses `transitionTo` internally) is recommended in most situations.
-   *
-   * #### Example:
-   * ```js
-   * let app = angular.module('app', []);
-   *
-   * app.controller('ctrl', function ($scope, $state) {
-   *   $scope.changeState = function () {
-   *     $state.transitionTo('contact.detail');
-   *   };
-   * });
-   * ```
-   *
-   * @param {StateOrName} to State name or state object.
-   * @param {RawParams} toParams A map of the parameters that will be sent to the state,
-   *      will populate $stateParams.
-   * @param {TransitionOptions} options Transition options
-   *
-   * @returns A promise representing the state of the new transition. See [[go]]
-   */
-
+  /** @internal */
   transitionTo(
     to: StateOrName,
     toParams: RawParams = {},
     options: TransitionOptions = {},
-  ): TransitionPromise | Promise<StateTransitionResult> {
+  ): TransitionPromise {
     return transitionToState(this, to, toParams, options);
   }
 
   /**
-     * Checks if the current state *is* the provided state
-     *
-     * Similar to [[includes]] but only checks for the full state name.
-     * If params is supplied then it will be tested for strict equality against the current
-     * active params object, so all params must match with none missing and no extras.
-     *
-     * #### Example:
-     * ```js
-     * $state.$current.name = 'contacts.details.item';
-     *
-     * // absolute name
-     * $state.is('contact.details.item'); // returns true
-     * $state.is(contactDetailItemStateObject); // returns true
-     * ```
-     *
-     * // relative name (. and ^), typically from a template
-     * // E.g. from the 'contacts.details' template
-     * ```html
-     * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
-     * ```
-     * @param {StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
-     * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
-    to test against the current active state.
-     * @param {{ relative: StateOrName | undefined; } | undefined} [options] An options object. The options are:
-    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-    test relative to `options.relative` state (or name).
-     * @returns {boolean | undefined} Returns true if it is the state.
-     */
-  is(
+   * Checks whether the current state matches a state, ancestor, or glob.
+   * Set `exact` to require the current state itself instead of an ancestor.
+   */
+  matches(
     stateOrName: StateOrName,
     params?: RawParams,
-    options?: { relative: StateOrName | undefined },
-  ): boolean | undefined {
+    options?: { exact?: boolean; relative?: StateOrName },
+  ): boolean {
     const relative = options?.relative ?? this.$current;
 
-    const state = this._stateRegistry._matcher.find(stateOrName, relative);
-
-    if (!isDefined(state)) return undefined;
-
-    if (this.$current !== state) return false;
-
-    if (!params) return true;
-    const schema = state.parameters({ inherit: true, matchingKeys: params });
-
-    return Param.equals(
-      schema,
-      Param.values(schema, params),
-      this._routerState._params,
-    );
-  }
-
-  /**
-     * Checks if the current state *includes* the provided state
-     *
-     * A method to determine if the current active state is equal to or is the child of the
-     * state stateName. If any params are passed then they will be tested for a match as well.
-     * Not all the parameters need to be passed, just the ones you'd like to test for equality.
-     *
-     * #### Example when `$state.$current.name === 'contacts.details.item'`
-     * ```js
-     * // Using partial names
-     * $state.includes("contacts"); // returns true
-     * $state.includes("contacts.details"); // returns true
-     * $state.includes("contacts.details.item"); // returns true
-     * $state.includes("contacts.list"); // returns false
-     * $state.includes("about"); // returns false
-     * ```
-     *
-     * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
-     * ```js
-     * $state.includes("*.details.*.*"); // returns true
-     * $state.includes("*.details.**"); // returns true
-     * $state.includes("**.item.**"); // returns true
-     * $state.includes("*.details.item.url"); // returns true
-     * $state.includes("*.details.*.url"); // returns true
-     * $state.includes("*.details.*"); // returns false
-     * $state.includes("item.**"); // returns false
-     * ```
-     * @param {StateOrName} stateOrName A partial name, relative name, glob pattern,
-    or state object to be searched for within the current state name.
-     * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`,
-    that you'd like to test against the current active state.
-     * @param {TransitionOptions} [options] An options object. The options are:
-    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-    test relative to `options.relative` state (or name).
-     * @returns {boolean | undefined} Returns true if it does include the state
-     */
-  includes(
-    stateOrName: StateOrName,
-    params?: RawParams,
-    options?: TransitionOptions,
-  ): boolean | undefined {
-    const relative = options?.relative ?? this.$current;
-
-    const glob = isString(stateOrName) && Glob.fromString(stateOrName);
+    const glob =
+      !options?.exact && isString(stateOrName)
+        ? Glob.fromString(stateOrName)
+        : undefined;
 
     if (glob) {
       const currentName = this.$current?.name;
@@ -592,11 +851,15 @@ export class StateProvider {
     }
     const state = this._stateRegistry._matcher.find(stateOrName, relative);
 
-    const include = this.$current?.includes;
+    if (!isDefined(state)) return false;
 
-    if (!isDefined(state) || !include) return undefined;
+    if (options?.exact) {
+      if (this.$current !== state) return false;
+    } else {
+      const include = this.$current?.includes;
 
-    if (!isDefined(include[state.name])) return false;
+      if (!include || !isDefined(include[state.name])) return false;
+    }
 
     if (!params) return true;
     const schema = state.parameters({
@@ -655,44 +918,108 @@ export class StateProvider {
   }
 
   /**
-   * Sets or gets the default [[transitionTo]] error handler.
-   *
-   * The error handler is called when a [[Transition]] is rejected or when any error occurred during the Transition.
-   * This includes errors caused by resolves and transition hooks.
-   *
-   * Note:
-   * This handler does not receive certain Transition rejections.
-   * Redirected and Ignored Transitions are not considered to be errors by [[StateService.transitionTo]].
-   *
-   * The built-in default error handler logs the error to the console.
-   *
-   * You can provide your own custom handler.
-   *
-   * #### Example:
-   * ```js
-   * stateService.defaultErrorHandler(function() {
-   *   // Do not log transitionTo errors
-   * });
-   * ```
-   * @param {ng.ExceptionHandlerService | undefined} [handler] a global error handler function
-   * @returns the current global error handler
-   */
-  defaultErrorHandler(handler?: ng.ExceptionHandlerService) {
-    return (this._defaultErrorHandler = handler ?? this._defaultErrorHandler);
-  }
-
-  /**
    * @param {StateOrName} stateOrName
    * @param {undefined} [base]
    */
+  get(): StateDeclaration[];
+  get(
+    stateOrName: StateOrName,
+    base?: StateOrName,
+  ): StateDeclaration | undefined;
   get(stateOrName?: StateOrName, base?: StateOrName) {
     const reg = this._stateRegistry;
 
     if (arguments.length === 0) return reg.get();
+    if (stateOrName === undefined) return undefined;
 
     return reg.get(stateOrName, base ?? this.$current);
   }
 }
+
+/**
+ * `$state` facade with an optional public route map. Supplying the route map
+ * narrows route names and params without exposing internal router state
+ * records.
+ */
+type RequiredRouteParamKeys<TParams extends Record<string, unknown>> =
+  string extends keyof TParams
+    ? never
+    : {
+        [TKey in keyof TParams]-?: Record<never, never> extends Pick<
+          TParams,
+          TKey
+        >
+          ? never
+          : TKey;
+      }[keyof TParams];
+
+type RouteParamArgs<
+  TRouteMap extends RouteMap,
+  TRouteName extends Extract<keyof TRouteMap, string>,
+  TOptions,
+> =
+  RequiredRouteParamKeys<ParamsOf<TRouteMap, TRouteName>> extends never
+    ? [params?: ParamsOf<TRouteMap, TRouteName>, options?: TOptions]
+    : [params: ParamsOf<TRouteMap, TRouteName>, options?: TOptions];
+
+export type StateService<TRouteMap extends RouteMap = Record<string, never>> = {
+  /** The latest successful state parameters. */
+  readonly params: RawParams;
+
+  /** The current state declaration, when navigation has selected one. */
+  readonly current: StateDeclaration | undefined;
+
+  /** Overload for typed route names and params. */
+  go<TRouteName extends Extract<keyof TRouteMap, string>>(
+    to: TRouteName,
+    ...args: RouteParamArgs<TRouteMap, TRouteName, TransitionOptions>
+  ): TransitionPromise;
+
+  /** Untyped overload used when no route map is supplied. */
+  go(
+    to: TRouteMap extends Record<string, never>
+      ? StateOrName
+      : Exclude<StateOrName, string>,
+    params?: RawParams,
+    options?: TransitionOptions,
+  ): TransitionPromise;
+
+  /** Overload for typed route names and params. */
+  href<TRouteName extends Extract<keyof TRouteMap, string>>(
+    stateOrName: TRouteName,
+    ...args: RouteParamArgs<TRouteMap, TRouteName, HrefOptions>
+  ): string | null;
+
+  /** Untyped overload used when no route map is supplied. */
+  href(
+    stateOrName: TRouteMap extends Record<string, never>
+      ? StateOrName
+      : Exclude<StateOrName, string>,
+    params?: RawParams,
+    options?: HrefOptions,
+  ): string | null;
+
+  /** Build a target that can be returned from a transition hook. */
+  target(
+    identifier: StateOrName,
+    params?: RawParams,
+    options?: TransitionOptions,
+  ): TargetState;
+
+  /** Get all states or a matching public state declaration. */
+  get(): StateDeclaration[];
+  get(
+    stateOrName?: StateOrName,
+    base?: StateOrName,
+  ): StateDeclaration | undefined;
+
+  /** Check whether the current state matches a state, ancestor, or glob. */
+  matches(
+    stateOrName: StateOrName,
+    params?: RawParams,
+    options?: { exact?: boolean; relative?: StateOrName },
+  ): boolean;
+};
 
 function normalizeStateDeclaration(
   nameOrDefinition: string | StateDeclaration,
@@ -700,7 +1027,7 @@ function normalizeStateDeclaration(
 ): StateDeclaration {
   if (isString(nameOrDefinition)) {
     if (!isObject(definition)) {
-      throw stateProviderError("stateinvalid", `'definition' required`);
+      throw stateRuntimeError("stateinvalid", `'definition' required`);
     }
 
     const namedDefinition = definition as StateDeclaration;
@@ -709,7 +1036,7 @@ function normalizeStateDeclaration(
       isDefined(namedDefinition.name) &&
       namedDefinition.name !== nameOrDefinition
     ) {
-      throw stateProviderError(
+      throw stateRuntimeError(
         "stateinvalid",
         `State name '${namedDefinition.name}' does not match '${nameOrDefinition}'`,
       );

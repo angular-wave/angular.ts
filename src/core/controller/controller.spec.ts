@@ -2,9 +2,10 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
+import { ControllerRegistry } from "./controller.ts";
 
 describe("$controller", () => {
-  let $controllerProvider;
+  let controllerRegistry;
 
   let $controller;
 
@@ -12,12 +13,8 @@ describe("$controller", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    injector = createInjector([
-      "ng",
-      function (_$controllerProvider_) {
-        $controllerProvider = _$controllerProvider_;
-      },
-    ]);
+    controllerRegistry = window.angular._composition.controllerRegistry;
+    injector = createInjector(["ng"]);
 
     injector.invoke((_$controller_) => {
       $controller = _$controller_;
@@ -61,12 +58,8 @@ describe("$controller", () => {
       });
 
       it("injects dependencies to controller functions", function () {
-        const injector = createInjector([
-          "ng",
-          function ($provide) {
-            $provide.constant("aDep", 42);
-          },
-        ]);
+        window.angular.module("controllerDependency", []).constant("aDep", 42);
+        const injector = createInjector(["ng", "controllerDependency"]);
 
         const $controller = injector.get("$controller");
 
@@ -82,12 +75,10 @@ describe("$controller", () => {
       it("allows registering controllers at config time", function () {
         function MyController() {}
 
-        const injector = createInjector([
-          "ng",
-          function ($controllerProvider) {
-            $controllerProvider.register("MyController", MyController);
-          },
-        ]);
+        window.angular
+          .module("controllerConfig", ["ng"])
+          .controller("MyController", MyController);
+        const injector = createInjector(["controllerConfig"]);
 
         const $controller = injector.get("$controller");
 
@@ -101,15 +92,8 @@ describe("$controller", () => {
         function MyController() {}
         function MyOtherController() {}
 
-        const injector = createInjector([
-          "ng",
-          function ($controllerProvider) {
-            $controllerProvider.register({
-              MyController,
-              MyOtherController,
-            });
-          },
-        ]);
+        controllerRegistry.register({ MyController, MyOtherController });
+        const injector = createInjector(["ng"]);
 
         const $controller = injector.get("$controller");
 
@@ -155,7 +139,7 @@ describe("$controller", () => {
 
       let ctrl;
 
-      $controllerProvider.register("FooCtrl", FooCtrl);
+      controllerRegistry.register("FooCtrl", FooCtrl);
       ctrl = $controller("FooCtrl", { $scope: scope });
 
       expect(scope.foo).toBe("bar");
@@ -173,7 +157,7 @@ describe("$controller", () => {
 
       const BoundFooCtrl = FooCtrl.bind(null);
 
-      $controllerProvider.register("FooCtrl", ["$scope", BoundFooCtrl]);
+      controllerRegistry.register("FooCtrl", ["$scope", BoundFooCtrl]);
       $controller("FooCtrl", { $scope: scope });
 
       expect(scope.foo).toBe("bar");
@@ -192,7 +176,7 @@ describe("$controller", () => {
 
       let ctrl;
 
-      $controllerProvider.register({ FooCtrl, BarCtrl });
+      controllerRegistry.register({ FooCtrl, BarCtrl });
 
       ctrl = $controller("FooCtrl", { $scope: scope });
       expect(scope.foo).toBe("foo");
@@ -212,7 +196,7 @@ describe("$controller", () => {
 
       let ctrl;
 
-      $controllerProvider.register("FooCtrl", ["$scope", FooCtrl]);
+      controllerRegistry.register("FooCtrl", ["$scope", FooCtrl]);
       ctrl = $controller("FooCtrl", { $scope: scope });
 
       expect(scope.foo).toBe("bar");
@@ -221,22 +205,22 @@ describe("$controller", () => {
 
     it('should throw an exception if a controller is called "hasOwnProperty"', () => {
       expect(() => {
-        $controllerProvider.register("hasOwnProperty", ($scope) => {});
+        controllerRegistry.register("hasOwnProperty", ($scope) => {});
       }).toThrowError(/badname/);
     });
 
     it("should allow checking the availability of a controller", () => {
-      $controllerProvider.register("FooCtrl", () => {
+      controllerRegistry.register("FooCtrl", () => {
         /* empty */
       });
-      $controllerProvider.register("BarCtrl", [
+      controllerRegistry.register("BarCtrl", [
         "dep1",
         "dep2",
         () => {
           /* empty */
         },
       ]);
-      $controllerProvider.register({
+      controllerRegistry.register({
         BazCtrl: () => {
           /* empty */
         },
@@ -249,12 +233,12 @@ describe("$controller", () => {
         ],
       });
 
-      expect($controllerProvider.has("FooCtrl")).toBe(true);
-      expect($controllerProvider.has("BarCtrl")).toBe(true);
-      expect($controllerProvider.has("BazCtrl")).toBe(true);
-      expect($controllerProvider.has("QuxCtrl")).toBe(true);
+      expect(controllerRegistry.has("FooCtrl")).toBe(true);
+      expect(controllerRegistry.has("BarCtrl")).toBe(true);
+      expect(controllerRegistry.has("BazCtrl")).toBe(true);
+      expect(controllerRegistry.has("QuxCtrl")).toBe(true);
 
-      expect($controllerProvider.has("UnknownCtrl")).toBe(false);
+      expect(controllerRegistry.has("UnknownCtrl")).toBe(false);
     });
 
     it("should throw ctrlfmt if name contains spaces", () => {
@@ -317,7 +301,7 @@ describe("$controller", () => {
     it("should publish controller instance into scope", () => {
       const scope = {};
 
-      $controllerProvider.register("FooCtrl", function () {
+      controllerRegistry.register("FooCtrl", function () {
         this.mark = "foo";
       });
 
@@ -330,7 +314,7 @@ describe("$controller", () => {
     it("should allow controllers with dots", () => {
       const scope = {};
 
-      $controllerProvider.register("a.b.FooCtrl", function () {
+      controllerRegistry.register("a.b.FooCtrl", function () {
         this.mark = "foo";
       });
 
@@ -341,7 +325,7 @@ describe("$controller", () => {
     });
 
     it("should throw an error if $scope is not provided", () => {
-      $controllerProvider.register("a.b.FooCtrl", function () {
+      controllerRegistry.register("a.b.FooCtrl", function () {
         this.mark = "foo";
       });
 
@@ -374,7 +358,7 @@ describe("$controller", () => {
     it("should allow identifiers containing `$`", () => {
       const scope = {};
 
-      $controllerProvider.register("FooCtrl", function () {
+      controllerRegistry.register("FooCtrl", function () {
         this.mark = "foo";
       });
 
@@ -423,7 +407,7 @@ describe("$controller", () => {
           return { mark: "returned" };
         }
 
-        $controllerProvider.register("MyController", MyController);
+        controllerRegistry.register("MyController", MyController);
 
         const init = $controller("MyController as vm", { $scope: scope }, true);
 
@@ -448,7 +432,7 @@ describe("$controller", () => {
           return 123;
         }
 
-        $controllerProvider.register("MyController", MyController);
+        controllerRegistry.register("MyController", MyController);
 
         const init = $controller("MyController as vm", { $scope: scope }, true);
 
@@ -510,7 +494,7 @@ describe("$controller", () => {
           this.mark = "foo";
         }
 
-        $controllerProvider.register("FooCtrl", FooCtrl);
+        controllerRegistry.register("FooCtrl", FooCtrl);
 
         const ctrl = $controller(
           "FooCtrl as foo",
@@ -546,7 +530,7 @@ describe("$controller", () => {
           this.ok = true;
         }
 
-        $controllerProvider.register("FooCtrl", FooCtrl);
+        controllerRegistry.register("FooCtrl", FooCtrl);
 
         expect(() => {
           const ctrl = $controller("FooCtrl");
@@ -556,12 +540,8 @@ describe("$controller", () => {
       });
 
       it("should allow locals to override injectable dependencies", () => {
-        const injector = createInjector([
-          "ng",
-          function ($provide) {
-            $provide.constant("aDep", 1);
-          },
-        ]);
+        window.angular.module("controllerLocal", []).constant("aDep", 1);
+        const injector = createInjector(["ng", "controllerLocal"]);
 
         const $controller = injector.get("$controller");
 
@@ -578,8 +558,26 @@ describe("$controller", () => {
     describe("registration constraints", () => {
       it("should throw when registering a non-callable controller definition", () => {
         expect(() => {
-          $controllerProvider.register("BadCtrl", {});
+          controllerRegistry.register("BadCtrl", {});
         }).toThrowError(/ctrlreg/);
+      });
+
+      it("rejects access after registry disposal", () => {
+        const registry = new ControllerRegistry();
+
+        registry.register("Example", () => undefined);
+        registry.destroy();
+        registry.destroy();
+
+        expect(() => registry.get("Example")).toThrowError(
+          "Controller registry has already been disposed.",
+        );
+        expect(() => registry.has("Example")).toThrowError(
+          "Controller registry has already been disposed.",
+        );
+        expect(() => registry.register("Other", () => undefined)).toThrowError(
+          "Controller registry has already been disposed.",
+        );
       });
     });
   });

@@ -4,38 +4,49 @@ import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("channel", () => {
-  let $compile: any, $scope: any, element, angular: any;
+  let $compile: any, $eventBus: ng.EventBusService, $scope: any, element;
 
   beforeEach(() => {
-    dealoc(document.getElementById("app"));
-    angular = new Angular();
+    const root = document.getElementById("app")!;
+
+    dealoc(root);
+    const angular = new Angular();
 
     angular.module("myModule", ["ng"]);
     angular
-      .bootstrap(document.getElementById("app"), ["myModule"])
-      .invoke((_$compile_: any, _$rootScope_: any) => {
-        $compile = _$compile_;
-        $scope = _$rootScope_;
-      });
+      .bootstrap(root, ["myModule"])
+      .invoke(
+        (
+          _$compile_: any,
+          _$eventBus_: ng.EventBusService,
+          _$rootScope_: any,
+        ) => {
+          $compile = _$compile_;
+          $eventBus = _$eventBus_;
+          $scope = _$rootScope_;
+        },
+      );
 
-    spyOn(angular.$eventBus, "subscribe").and.callThrough();
+    spyOn($eventBus, "subscribe").and.callThrough();
   });
 
   it("should subscribe to the specified angular.$eventBus channel", () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 
-    expect(angular.$eventBus.subscribe).toHaveBeenCalledWith(
+    expect($eventBus.subscribe).toHaveBeenCalledWith(
       "testChannel",
       jasmine.any(Function),
+      $scope,
     );
   });
 
   it("should support normalized data-ng-channel aliases", () => {
     element = $compile('<div data-ng-channel="testChannel"></div>')($scope);
 
-    expect(angular.$eventBus.subscribe).toHaveBeenCalledWith(
+    expect($eventBus.subscribe).toHaveBeenCalledWith(
       "testChannel",
       jasmine.any(Function),
+      $scope,
     );
   });
 
@@ -44,19 +55,40 @@ describe("channel", () => {
 
     expect(element.innerHTML).toBe("");
 
-    angular.$eventBus.publish("testChannel", "New Content");
+    $eventBus.publish("testChannel", "New Content");
     await wait(10);
 
     expect(element.innerHTML).toBe("New Content");
   });
 
-  it("should unsubscribe from the angular.$eventBus when the scope is destroyed", () => {
-    angular.$eventBus.reset();
+  it("should serialize non-string values when angular.$eventBus emits a value", async () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
-    expect(angular.$eventBus.getCount("testChannel")).toEqual(1);
+
+    $eventBus.publish("testChannel", { status: "ready" });
+    await wait(10);
+
+    expect(element.innerHTML).toBe('{"status":"ready"}');
+  });
+
+  it("should unsubscribe from the angular.$eventBus when the scope is destroyed", () => {
+    $eventBus.reset();
+    element = $compile('<div ng-channel="testChannel"></div>')($scope);
+    expect($eventBus.getCount("testChannel")).toEqual(1);
     $scope.$destroy();
 
-    expect(angular.$eventBus.getCount("testChannel")).toEqual(0);
+    expect($eventBus.getCount("testChannel")).toEqual(0);
+  });
+
+  it("should not update after publish is queued and scope is destroyed", async () => {
+    element = $compile('<div ng-channel="testChannel"></div>')($scope);
+
+    $eventBus.publish("testChannel", "Queued Content");
+    $scope.$destroy();
+
+    await wait();
+
+    expect(element.innerHTML).toBe("");
+    expect($eventBus.getCount("testChannel")).toEqual(0);
   });
 
   it("should handle templates when angular.$eventBus emits a value", async () => {
@@ -66,7 +98,7 @@ describe("channel", () => {
     await wait();
     expect(element.textContent).toBe(" ");
 
-    angular.$eventBus.publish("testChannel", {
+    $eventBus.publish("testChannel", {
       a: { firstName: "John", lastName: "Doe" },
     });
 

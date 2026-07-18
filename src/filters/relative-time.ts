@@ -1,14 +1,12 @@
 import { isNullOrUndefined } from "../shared/utils.ts";
 
-export type RelativeTimeFilterOptions = Intl.RelativeTimeFormatOptions;
-
 /** Creates a locale-aware relative time filter backed by Intl.RelativeTimeFormat. */
 export function relativeTimeFilter() {
   return function (
     input: number | string | null | undefined,
     unit: Intl.RelativeTimeFormatUnit = "day",
     locales?: Intl.LocalesArgument,
-    options?: RelativeTimeFilterOptions,
+    options?: Intl.RelativeTimeFormatOptions,
   ): string {
     const value = parseRelativeTimeInput(input);
 

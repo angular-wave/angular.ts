@@ -1,9 +1,12 @@
 import { assign, isObject, isString } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
-import type { TransitionOptions } from "../transition/interface.ts";
+import type {
+  InternalTransitionOptions,
+  TransitionOptions,
+} from "../transition/interface.ts";
 import type { StateDeclaration, StateOrName } from "./interface.ts";
-import type { StateRegistryProvider } from "./state-registry.ts";
+import type { StateRegistryRuntime } from "./state-registry.ts";
 import type { StateObject } from "./state-object.ts";
 
 function stateNameString(state: StateOrName): string {
@@ -47,13 +50,13 @@ function stateNameString(state: StateOrName): string {
  */
 export class TargetState {
   /** @internal */
-  _stateRegistry: StateRegistryProvider;
+  _stateRegistry: StateRegistryRuntime;
   /** @internal */
   _identifier: StateOrName;
   /** @internal */
   _params: RawParams;
   /** @internal */
-  _options: TransitionOptions;
+  _options: InternalTransitionOptions;
   /** @internal */
   _definition: StateObject | undefined;
 
@@ -63,19 +66,19 @@ export class TargetState {
    * Note: Do not construct a `TargetState` manually.
    * To create a `TargetState`, use the [[StateService.target]] factory method.
    *
-   * @param {StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+   * @param {StateRegistryRuntime} _stateRegistry The StateRegistry to use to look up the _definition
    * @param {StateOrName} _identifier An identifier for a state.
    *    Either a fully-qualified state name, or the object used to define the state.
    * @param {RawParams} _params Parameters for the target state
-   * @param {TransitionOptions} _options Transition options.
+   * @param {InternalTransitionOptions} _options Transition options.
    *
    * @internal
    */
   constructor(
-    _stateRegistry: StateRegistryProvider,
+    _stateRegistry: StateRegistryRuntime,
     _identifier: StateOrName,
     _params: RawParams,
-    _options: TransitionOptions,
+    _options: InternalTransitionOptions,
   ) {
     this._stateRegistry = _stateRegistry;
     this._identifier = _identifier;
@@ -195,7 +198,9 @@ export class TargetState {
    * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
    */
   withOptions(options: TransitionOptions, replace = false): TargetState {
-    const newOpts = replace ? options : assign({}, this._options, options);
+    const newOpts = (
+      replace ? options : assign({}, this._options, options)
+    ) as InternalTransitionOptions;
 
     return new TargetState(
       this._stateRegistry,

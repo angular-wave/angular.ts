@@ -13,6 +13,7 @@ import { Http } from "../../services/http/http.ts";
 import { addClass, removeClass } from "../../animations/class-mutation.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import type { ConnectionEvent } from "../../services/connection/connection-manager.ts";
+import type { StateRuntime } from "../../router/state/state-service.ts";
 import {
   callBackAfterFirst,
   directiveNormalize,
@@ -30,7 +31,7 @@ import {
   getRealtimeProtocolContent,
   isRealtimeProtocolMessage,
   type RealtimeProtocolMessage,
-  type SwapModeType,
+  SwapMode,
 } from "../realtime/protocol.ts";
 import { createRealtimeSwapHandler } from "../realtime/swap.ts";
 import {
@@ -44,9 +45,6 @@ export {
   SwapMode,
   type RealtimeProtocolEventDetail,
   type RealtimeProtocolMessage,
-  type SseProtocolEventDetail,
-  type SseProtocolMessage,
-  type SwapModeType,
 } from "../realtime/protocol.ts";
 
 type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
@@ -60,7 +58,7 @@ type HttpDirectiveElement = HTMLElement & {
 
 type HttpResponsePayload = ReadableStream<Uint8Array> | string | object;
 
-type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
+type HttpRequestOptionsWithHeaders = ng.HttpRequestOptions & {
   headers?: Record<string, string>;
 };
 
@@ -119,7 +117,7 @@ export function createHttpDirective(
     $log: ng.LogService,
     $parse: ng.ParseService,
     $interpolate: ng.InterpolateService,
-    $state: ng.StateService,
+    $state: StateRuntime,
     $sse: ng.SseService,
     $injector: ng.InjectorService,
     $stream: ng.StreamService,
@@ -289,7 +287,7 @@ export function createHttpDirective(
 
         async function handleStreamResponse(
           stream: ReadableStream<Uint8Array>,
-          swap: SwapModeType,
+          swap: SwapMode,
         ): Promise<void> {
           await $stream.consumeText(stream, {
             signal: destroyController.signal,
@@ -299,8 +297,8 @@ export function createHttpDirective(
           });
         }
 
-        function createRequestConfig(): RequestShortcutConfigWithHeaders {
-          const config: RequestShortcutConfigWithHeaders = {};
+        function createRequestConfig(): HttpRequestOptionsWithHeaders {
+          const config: HttpRequestOptionsWithHeaders = {};
 
           const enctype = readAttr("enctype");
 
@@ -346,7 +344,7 @@ export function createHttpDirective(
 
         function handleSseProtocolMessage(
           data: RealtimeProtocolMessage,
-          swap: SwapModeType,
+          swap: SwapMode,
           event: Event | MessageEvent,
           source: ng.SseConnection,
         ): void {
@@ -375,7 +373,7 @@ export function createHttpDirective(
             if ((element as HTMLButtonElement).disabled) return;
 
             if (tag === "form") event.preventDefault();
-            const swap = (readAttr("swap") ?? "innerHTML") as SwapModeType;
+            const swap = (readAttr("swap") ?? "innerHTML") as SwapMode;
 
             const url = readAttr(attrName);
 
@@ -402,7 +400,7 @@ export function createHttpDirective(
                 Http._OK <= res.status &&
                 res.status <= Http._MultipleChoices - 1
               ) {
-                const success = readAttr("success");
+                const success = readAttr("onSuccess");
 
                 if (isDefined(success)) {
                   $parse(success)(scope, { $res: html });
@@ -417,7 +415,7 @@ export function createHttpDirective(
                 Http._BadRequest <= res.status &&
                 res.status <= Http._ErrorMax
               ) {
-                const error = readAttr("error");
+                const error = readAttr("onError");
 
                 if (isDefined(error)) {
                   $parse(error)(scope, { $res: html });
@@ -434,14 +432,6 @@ export function createHttpDirective(
                 handleStreamResponse(html, swap).catch((error: unknown) => {
                   $log.error(`${attrName}: stream error`, error);
                 });
-              } else if (isObject(html)) {
-                const target = readAttr("target");
-
-                if (target) {
-                  $parse(target)._assign?.(scope, html);
-                } else {
-                  scope.$merge(html);
-                }
               } else if (isString(html)) {
                 handleSwapResponse(html, swap);
               }

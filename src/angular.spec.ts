@@ -171,6 +171,14 @@ describe("angular", () => {
       expect(window.angular.$injector).not.toBe(
         window.angular.subapps[0].$injector,
       );
+      expect(window.angular.subapps[0]._appContext).toBe(
+        window.angular._appContext,
+      );
+      expect(window.angular._appContext.roots.length).toBeGreaterThanOrEqual(2);
+      const roots = window.angular._appContext.roots;
+      expect(roots[roots.length - 2].rootScope).not.toBe(
+        roots[roots.length - 1].rootScope,
+      );
     });
 
     it("they should share save $eventBus", () => {
@@ -187,33 +195,75 @@ describe("angular", () => {
     });
   });
 
+  describe("AppContext root ownership", () => {
+    it("should attach bootstrap root metadata and remove it on destroy", () => {
+      const runtime = new Angular();
+      const root = createElementFromHTML("<div></div>");
+      const beforeCount = runtime._appContext.roots.length;
+
+      const injector = runtime.bootstrap(root, []);
+      const $rootScope = injector.get("$rootScope");
+      const record = runtime._appContext.getRootByElement(root);
+
+      expect(record).toBeDefined();
+      expect(record.rootScope).toBe($rootScope);
+      expect(record.scheduler).toBeDefined();
+      expect(record.injector).toBe(injector);
+      expect(record.rootElement).toBe(root);
+      expect(runtime._appContext.roots.length).toBe(beforeCount + 1);
+
+      $rootScope.$destroy();
+
+      expect(runtime._appContext.getRootByElement(root)).toBeUndefined();
+      expect(runtime._appContext.getRootByScope($rootScope)).toBeUndefined();
+      expect(runtime._appContext.roots.length).toBe(beforeCount);
+
+      dealoc(root);
+    });
+
+    it("should register standalone injector roots without DOM metadata", () => {
+      const runtime = new Angular();
+      const beforeCount = runtime._appContext.roots.length;
+      const injector = runtime.injector(["ng"]);
+      const $rootScope = injector.get("$rootScope");
+      const record = runtime._appContext.getRootByScope($rootScope);
+
+      expect(record).toBeDefined();
+      expect(record.rootScope).toBe($rootScope);
+      expect(record.rootElement).toBeUndefined();
+      expect(runtime._appContext.roots.length).toBe(beforeCount + 1);
+
+      $rootScope.$destroy();
+
+      expect(runtime._appContext.getRootByScope($rootScope)).toBeUndefined();
+      expect(runtime._appContext.roots.length).toBe(beforeCount);
+    });
+  });
+
   describe("AngularTS service", () => {
     it("should override services", () => {
-      injector = createInjector([
-        function ($provide) {
-          $provide.value("fake", "old");
-          $provide.value("fake", "new");
-        },
-      ]);
+      angular
+        .module("serviceOverride", [])
+        .value("fake", "old")
+        .value("fake", "new");
+      injector = createInjector(["serviceOverride"]);
       expect(injector.get("fake")).toEqual("new");
     });
 
     it("should inject dependencies specified by $inject and ignore function argument name", () => {
-      expect(
-        angular
-          .injector([
-            function ($provide) {
-              $provide.factory("svc1", () => "svc1");
-              $provide.factory("svc2", [
-                "svc1",
-                function (s) {
-                  return `svc2-${s}`;
-                },
-              ]);
-            },
-          ])
-          .get("svc2"),
-      ).toEqual("svc2-svc1");
+      angular
+        .module("annotatedServices", [])
+        .factory("svc1", () => "svc1")
+        .factory("svc2", [
+          "svc1",
+          function (s) {
+            return `svc2-${s}`;
+          },
+        ]);
+
+      expect(angular.injector(["annotatedServices"]).get("svc2")).toEqual(
+        "svc2-svc1",
+      );
     });
   });
 
@@ -503,7 +553,7 @@ describe("module loader", () => {
 
     const run = () => {};
 
-    otherModule.config(init);
+    otherModule._config(init);
 
     const myModule = angular.module("my", ["other"], config);
 
@@ -520,34 +570,42 @@ describe("module loader", () => {
         .directive("d", "dd")
         .component("c", "cc")
         .controller("ctrl", "ccc")
-        .config(init2)
+        ._config(init2)
         .constant("abc", 123)
         .run(run),
     ).toBe(myModule);
 
     expect(myModule._requires).toEqual(["other"]);
     expect(myModule._invokeQueue).toEqual([
-      ["$provide", "constant", jasmine.objectContaining(["abc", 123])],
-      ["$provide", "provider", jasmine.objectContaining(["sk", "sv"])],
-      ["$provide", "factory", jasmine.objectContaining(["fk", "fv"])],
-      ["$provide", "service", jasmine.objectContaining(["a", "aa"])],
-      ["$provide", "value", jasmine.objectContaining(["k", "v"])],
+      jasmine.objectContaining({ kind: "provider-registration" }),
+      jasmine.objectContaining({ kind: "provider-registration" }),
+      jasmine.objectContaining({ kind: "provider-registration" }),
+      jasmine.objectContaining({ kind: "provider-registration" }),
+      jasmine.objectContaining({ kind: "provider-registration" }),
       [
-        "$filterProvider",
+        myModule._filterRegistry,
         "register",
         jasmine.objectContaining(["f", filterFn]),
       ],
-      ["$compileProvider", "directive", jasmine.objectContaining(["d", "dd"])],
-      ["$compileProvider", "component", jasmine.objectContaining(["c", "cc"])],
       [
-        "$controllerProvider",
+        myModule._compileRegistry,
+        "directive",
+        jasmine.objectContaining(["d", "dd"]),
+      ],
+      [
+        myModule._compileRegistry,
+        "component",
+        jasmine.objectContaining(["c", "cc"]),
+      ],
+      [
+        myModule._controllerRegistry,
         "register",
         jasmine.objectContaining(["ctrl", "ccc"]),
       ],
     ]);
     expect(myModule._configBlocks).toEqual([
       ["$injector", "invoke", jasmine.objectContaining([config])],
-      ["$provide", "decorator", jasmine.objectContaining(["dk", "dv"])],
+      jasmine.objectContaining({ kind: "provider-registration" }),
       ["$injector", "invoke", jasmine.objectContaining([init2])],
     ]);
     expect(myModule._runBlocks).toEqual([run]);
@@ -575,12 +633,10 @@ describe("module loader", () => {
 
         return $delegate;
       })
-      .config(($provide) => {
-        $provide.decorator("theProvider", ($delegate) => {
-          $delegate.api += "-second";
+      .decorator("theProvider", ($delegate) => {
+        $delegate.api += "-second";
 
-          return $delegate;
-        });
+        return $delegate;
       })
       .decorator("theProvider", ($delegate) => {
         $delegate.api += "-third";

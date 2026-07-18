@@ -7,7 +7,7 @@ import { wait } from "../shared/test-utils.ts";
 describe("date filter", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService & {
+  let $rootScope: ng.Scope & {
     createdAt: Date;
     dateLocale?: Intl.LocalesArgument;
     dateOptions: Intl.DateTimeFormatOptions;
@@ -32,7 +32,7 @@ describe("date filter", () => {
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
-        _$rootScope_: ng.RootScopeService & {
+        _$rootScope_: ng.Scope & {
           createdAt: Date;
           dateLocale?: Intl.LocalesArgument;
           dateOptions: Intl.DateTimeFormatOptions;
@@ -140,7 +140,7 @@ describe("date filter", () => {
 
   it("should work when evaluating expression filters", () => {
     createInjector(["ng"]).invoke(
-      ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
+      ($rootScope: ng.Scope, $parse: ng.ParseService) => {
         $rootScope.createdAt = date;
         $rootScope.dateLocale = undefined;
         $rootScope.dateOptions = {

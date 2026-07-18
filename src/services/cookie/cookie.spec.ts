@@ -1,10 +1,10 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
-import { CookieProvider, CookieService } from "./cookie.ts";
+import { CookieService } from "./cookie.ts";
 
 describe("$cookie service", () => {
-  let $injector, $cookie, el, cookieProvider;
+  let $injector, $cookie, el;
 
   beforeEach(() => {
     el = document.createElement("div");
@@ -12,8 +12,12 @@ describe("$cookie service", () => {
     clearCookies();
     const angular = new Angular();
 
-    angular.module("default", []).config(($cookieProvider) => {
-      cookieProvider = $cookieProvider;
+    angular.module("default", []).config({
+      $cookie: {
+        defaults: {
+          path: "/",
+        },
+      },
     });
 
     // bootstrap the module that already provides $cookie
@@ -32,9 +36,8 @@ describe("$cookie service", () => {
     expect($cookie instanceof CookieService).toBeTrue();
   });
 
-  it("is available for configuration during config phase", () => {
-    expect(cookieProvider).toBeDefined();
-    expect(cookieProvider instanceof CookieProvider).toBeTrue();
+  it("applies typed module configuration", () => {
+    expect($cookie._defaults).toEqual({ path: "/" });
   });
 
   it("should set and get a raw cookie", () => {

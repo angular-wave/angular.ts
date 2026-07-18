@@ -7,14 +7,12 @@
     <script type="module" src="/src/auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("routerMotionDemo", []).config([
-          "$stateProvider",
-          ($stateProvider) => {
-            $stateProvider
-              .state({
-                name: "overview",
-                url: "/src/animations/router-view-transition-demo.html",
-                template: `
+        window.angular
+          .module("routerMotionDemo", [])
+          .router({
+            name: "overview",
+            url: "/src/animations/router-view-transition-demo.html",
+            template: `
                   <main class="route-view">
                     <p class="eyebrow">Overview</p>
                     <h1>Operational snapshot</h1>
@@ -26,11 +24,11 @@
                     </div>
                   </main>
                 `,
-              })
-              .state({
-                name: "activity",
-                url: "/activity",
-                template: `
+          })
+          .router({
+            name: "activity",
+            url: "/activity",
+            template: `
                   <main class="route-view">
                     <p class="eyebrow">Activity</p>
                     <h1>Recent changes</h1>
@@ -42,11 +40,11 @@
                     </div>
                   </main>
                 `,
-              })
-              .state({
-                name: "settings",
-                url: "/settings",
-                template: `
+          })
+          .router({
+            name: "settings",
+            url: "/settings",
+            template: `
                   <main class="route-view">
                     <p class="eyebrow">Settings</p>
                     <h1>Runtime controls</h1>
@@ -58,9 +56,7 @@
                     </div>
                   </main>
                 `,
-              });
-          },
-        ]);
+          });
       });
     </script>
     <style>
@@ -239,9 +235,9 @@
     <div class="shell">
       <nav aria-label="Demo views">
         <h1>Router motion</h1>
-        <a ng-sref="overview">Overview</a>
-        <a ng-sref="activity">Activity</a>
-        <a ng-sref="settings">Settings</a>
+        <a ng-state="'overview'">Overview</a>
+        <a ng-state="'activity'">Activity</a>
+        <a ng-state="'settings'">Settings</a>
       </nav>
       <section class="content">
         <ng-view></ng-view>

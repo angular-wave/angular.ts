@@ -25,23 +25,21 @@ describe("form", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular
+    const myModule = window.angular
       .module("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           throw new Error(exception);
         };
       });
+    myModule.directive("storeModelCtrl", () => ({
+      require: "ngModel",
+      link(scope, elm, ctrl) {
+        control = ctrl;
+      },
+    }));
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "myModule",
-      ($compileProvider) => {
-        $compileProvider.directive("storeModelCtrl", () => ({
-          require: "ngModel",
-          link(scope, elm, ctrl) {
-            control = ctrl;
-          },
-        }));
-      },
     ]);
 
     injector.invoke((_$compile_, $rootScope) => {

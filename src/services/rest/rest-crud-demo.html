@@ -162,25 +162,21 @@
         }
 
         async remove(item) {
-          const removed = await this.tasks.delete(item.id);
+          await this.tasks.delete(item.id);
 
-          if (removed && this.scope.selected?.id === item.id) {
+          if (this.scope.selected?.id === item.id) {
             this.clear();
           }
 
-          if (removed) {
-            const index = this.scope.taskList.findIndex(
-              (entry) => entry.id === item.id,
-            );
+          const index = this.scope.taskList.findIndex(
+            (entry) => entry.id === item.id,
+          );
 
-            if (index >= 0) {
-              this.scope.taskList.splice(index, 1);
-            }
+          if (index >= 0) {
+            this.scope.taskList.splice(index, 1);
           }
 
-          this.scope.notice = removed
-            ? `Deleted task #${item.id}`
-            : "Delete failed";
+          this.scope.notice = `Deleted task #${item.id}`;
         }
       }
 

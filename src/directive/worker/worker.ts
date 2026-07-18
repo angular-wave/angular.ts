@@ -1,14 +1,15 @@
-import { _exceptionHandler, _log, _parse } from "../../injection-tokens.ts";
+import { _injector, _log, _parse, _worker } from "../../injection-tokens.ts";
 import {
   callBackAfterFirst,
   directiveNormalize,
   isDefined,
+  shouldHandleViewRetentionPause,
   wait,
 } from "../../shared/utils.ts";
 import {
-  createWorkerConnection,
-  type WorkerConfig,
-  type WorkerConnection,
+  WorkerError,
+  type WorkerHandle,
+  type WorkerService,
 } from "../../services/worker/worker.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
 import {
@@ -17,15 +18,120 @@ import {
   setNormalizedAttr,
 } from "../../shared/dom.ts";
 
-ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
+interface ScopeWorkerQueueState {
+  _paused: boolean;
+  _flushing: boolean;
+  _pending: Array<() => void>;
+  _deregisterPause: () => void;
+  _deregisterResume: () => void;
+  _deregisterDestroy: () => void;
+}
+
+const workerDirectiveScopeStates = new WeakMap<
+  ng.Scope,
+  ScopeWorkerQueueState
+>();
+
+ngWorkerDirective.$inject = [_parse, _log, _worker, _injector];
+
+function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
+  let state = workerDirectiveScopeStates.get(scope);
+
+  if (state) return state;
+
+  let nextState!: ScopeWorkerQueueState;
+
+  const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+      return;
+    }
+
+    nextState._paused = true;
+  });
+
+  const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+      return;
+    }
+
+    if (!nextState._paused) {
+      return;
+    }
+
+    nextState._paused = false;
+    flushScopeWorkerQueue(nextState);
+  });
+
+  const deregisterDestroy = scope.$on("$destroy", () => {
+    nextState._pending.length = 0;
+    nextState._paused = false;
+    nextState._flushing = false;
+    nextState._deregisterPause();
+    nextState._deregisterResume();
+    nextState._deregisterDestroy();
+    workerDirectiveScopeStates.delete(scope);
+  });
+
+  state = nextState = {
+    _paused: false,
+    _flushing: false,
+    _pending: [],
+    _deregisterPause: deregisterPause,
+    _deregisterResume: deregisterResume,
+    _deregisterDestroy: deregisterDestroy,
+  };
+
+  workerDirectiveScopeStates.set(scope, state);
+
+  return state;
+}
+
+function queueScopeWorkerOperation(
+  scope: ng.Scope,
+  operation: () => void,
+): void {
+  const state = getScopeWorkerQueueState(scope);
+
+  if (state._paused) {
+    state._pending.push(operation);
+    flushScopeWorkerQueue(state);
+
+    return;
+  }
+
+  operation();
+}
+
+function flushScopeWorkerQueue(state: ScopeWorkerQueueState): void {
+  if (state._flushing || state._paused || state._pending.length === 0) {
+    return;
+  }
+
+  state._flushing = true;
+
+  queueMicrotask(() => {
+    state._flushing = false;
+
+    if (state._paused) {
+      return;
+    }
+
+    const pending = state._pending.splice(0);
+
+    for (let i = 0, l = pending.length; i < l; i++) {
+      pending[i]();
+    }
+  });
+}
 
 /**
- * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+ * Usage: <div ng-worker="workerName" data-params="{{ expression }}" on-result="callback($result)"></div>
  */
 export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
-  $exceptionHandler: ng.ExceptionHandlerService,
+  $worker: WorkerService,
+  $injector: ng.InjectorService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -34,12 +140,16 @@ export function ngWorkerDirective(
         getNormalizedAttr(element, name);
 
       const workerName = attr("ngWorker");
+      const handleName = attr("handle");
+      const workerSource = handleName ?? workerName;
 
-      if (!workerName) {
-        $log.warn("ngWorker: missing worker name");
+      if (!workerSource) {
+        $log.warn("ngWorker: missing worker script or data-handle");
 
         return;
       }
+
+      getScopeWorkerQueueState(scope);
 
       const eventName = attr("trigger") ?? getEventNameForElement(element);
 
@@ -92,71 +202,100 @@ export function ngWorkerDirective(
         );
       }
 
-      const worker = createWorkerConnection(workerName, {
-        logger: $log,
-        err: $exceptionHandler,
-        onMessage: (result: unknown) => {
+      const ownsWorker = !handleName;
+      const worker = handleName
+        ? resolveWorkerHandle($injector, handleName)
+        : $worker(workerSource);
+      const workerLabel = workerSource;
+      const requestMode = hasNormalizedAttr(element, "request");
+      const applyResult = (result: unknown): void => {
+        queueScopeWorkerOperation(scope, () => {
           const onResult = attr("onResult");
 
           if (isDefined(onResult)) {
             $parse(onResult)(scope, { $result: result });
-          } else {
-            handleSwap(String(result), attr("swap") ?? "innerHTML", element);
           }
-        },
-        onError: (err: ErrorEvent) => {
-          $log.error(`[ng-worker:${workerName}]`, err);
+        });
+      };
+      const applyError = (err: WorkerError): void => {
+        queueScopeWorkerOperation(scope, () => {
+          $log.error(`[ng-worker:${workerLabel}]`, err);
 
           const onError = attr("onError");
 
           if (isDefined(onError)) {
             $parse(onError)(scope, { $error: err });
-          } else {
-            element.textContent = "Error";
           }
-        },
-      });
-
-      element.addEventListener(eventName, () => {
-        void (async () => {
-          if (element.hasAttribute("disabled")) return;
-
-          if (hasNormalizedAttr(element, "delay")) {
-            await wait(parseInt(attr("delay") ?? "", 10) || 0);
-          }
-
-          if (throttled) return;
-
-          if (hasNormalizedAttr(element, "throttle")) {
-            throttled = true;
-            setNormalizedAttr(element, "throttled", true);
-            setTimeout(
-              () => {
-                setNormalizedAttr(element, "throttled", false);
-                throttled = false;
-              },
-              parseInt(attr("throttle") ?? "", 10),
-            );
-          }
-
-          let params: unknown;
-
-          try {
-            params = paramsFn?.(scope);
-          } catch (err) {
-            $log.error("ngWorker: failed to evaluate data-params", err);
-            params = undefined;
-          }
-
-          worker.post(params);
-        })();
-      });
-
-      if (intervalId) {
-        scope.$on("$destroy", () => {
-          clearInterval(intervalId);
         });
-      }
+      };
+      const disposeMessage = requestMode
+        ? () => undefined
+        : worker.onMessage(applyResult);
+      const disposeError = worker.onError(applyError);
+
+      const listener = () => {
+        queueScopeWorkerOperation(scope, () => {
+          void (async () => {
+            if (element.hasAttribute("disabled")) return;
+
+            if (hasNormalizedAttr(element, "delay")) {
+              await wait(parseInt(String(attr("delay")), 10) || 0);
+            }
+
+            if (throttled) return;
+
+            if (hasNormalizedAttr(element, "throttle")) {
+              throttled = true;
+              setNormalizedAttr(element, "throttled", true);
+              setTimeout(
+                () => {
+                  setNormalizedAttr(element, "throttled", false);
+                  throttled = false;
+                },
+                parseInt(String(attr("throttle")), 10) || 0,
+              );
+            }
+
+            let params: unknown;
+
+            try {
+              params = paramsFn?.(scope);
+            } catch (err) {
+              $log.error("ngWorker: failed to evaluate data-params", err);
+              params = undefined;
+            }
+
+            if (requestMode) {
+              try {
+                const result = await worker.request(params);
+
+                applyResult(result);
+              } catch (requestError) {
+                if (requestError !== worker.error) {
+                  applyError(normalizeWorkerError(requestError));
+                }
+              }
+            } else {
+              worker.post(params);
+            }
+          })();
+        });
+      };
+
+      scope.$on("$destroy", () => {
+        element.removeEventListener(eventName, listener);
+
+        if (intervalId !== undefined) {
+          clearInterval(intervalId);
+          intervalId = undefined;
+        }
+
+        if (ownsWorker) worker.terminate();
+        disposeMessage();
+        disposeError();
+      });
+
+      element.addEventListener(eventName, listener);
 
       if (eventName === "load") {
         element.dispatchEvent(new Event("load"));
@@ -165,45 +304,36 @@ export function ngWorkerDirective(
   };
 }
 
-/**
- * Swap result into DOM based on strategy
- */
-function handleSwap(result: string, swap: string, element: HTMLElement): void {
-  switch (swap) {
-    case "outerHTML": {
-      const parent = element.parentNode;
+function resolveWorkerHandle(
+  $injector: ng.InjectorService,
+  name: string,
+): WorkerHandle {
+  const handle: Partial<WorkerHandle> | undefined = $injector.get(name);
 
-      if (!parent) return;
-      const temp = document.createElement("div");
-
-      temp.innerHTML = result;
-
-      if (temp.firstChild) {
-        parent.replaceChild(temp.firstChild, element);
-      }
-      break;
-    }
-    case "textContent":
-      element.textContent = result;
-      break;
-    case "beforebegin":
-      element.insertAdjacentHTML("beforebegin", result);
-      break;
-    case "afterbegin":
-      element.insertAdjacentHTML("afterbegin", result);
-      break;
-    case "beforeend":
-      element.insertAdjacentHTML("beforeend", result);
-      break;
-    case "afterend":
-      element.insertAdjacentHTML("afterend", result);
-      break;
-    case "innerHTML":
-    default:
-      element.innerHTML = result;
-      break;
+  if (
+    !handle ||
+    typeof handle.post !== "function" ||
+    typeof handle.request !== "function" ||
+    typeof handle.onMessage !== "function" ||
+    typeof handle.onError !== "function" ||
+    typeof handle.terminate !== "function"
+  ) {
+    throw new Error(
+      `ngWorker: injectable '${name}' is not a WorkerHandle. Register it with module.worker().`,
+    );
   }
+
+  return handle as WorkerHandle;
 }
 
-export { createWorkerConnection };
-export type { WorkerConfig, WorkerConnection };
+function normalizeWorkerError(error: unknown): WorkerError {
+  return error instanceof WorkerError
+    ? error
+    : new WorkerError("request", "Worker request failed", { cause: error });
+}
+
+export type {
+  WorkerConfig,
+  WorkerHandle,
+  WorkerStatus,
+} from "../../services/worker/worker.ts";

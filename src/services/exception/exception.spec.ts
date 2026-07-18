@@ -1,106 +1,99 @@
 /// <reference types="jasmine" />
-import { ExceptionHandlerProvider } from "./exception.ts";
+import {
+  applyExceptionHandlerConfiguration,
+  createExceptionHandlerRuntimeState,
+  createExceptionHandlerService,
+  destroyExceptionHandlerRuntimeState,
+} from "./exception.ts";
 
-describe("ExceptionHandlerProvider", () => {
-  let provider: any;
+describe("$exceptionHandler runtime", () => {
+  it("rethrows values unchanged by default", () => {
+    const state = createExceptionHandlerRuntimeState();
+    const handler = createExceptionHandlerService(state);
+    const object = { id: 1 };
 
-  beforeEach(() => {
-    provider = new ExceptionHandlerProvider();
-  });
-
-  it("rethrows Error instances by default", () => {
-    const handler = provider.$get();
-
-    const error = new Error("fail");
-
-    expect(() => handler(error)).toThrowError("fail");
-  });
-
-  it("rethrows primitive values unchanged", () => {
-    const handler = provider.$get();
-
+    expect(() => handler(new Error("fail"))).toThrowError("fail");
     expect(() => handler("primitive")).toThrow("primitive");
     expect(() => handler(42)).toThrow(42);
-  });
-
-  it("rethrows the same object instance", () => {
-    const value = { foo: "bar" };
-
-    const handler = provider.$get();
 
     try {
-      handler(value);
+      handler(object);
       fail("Expected an exception to be thrown");
-    } catch (e) {
-      expect(e).toBe(value);
+    } catch (error) {
+      expect(error).toBe(object);
     }
-  });
-
-  it("rethrows null and undefined unchanged", () => {
-    const handler = provider.$get();
 
     try {
       handler(null);
       fail("Expected null to be thrown");
-    } catch (e) {
-      expect(e).toBe(null);
+    } catch (error) {
+      expect(error).toBe(null);
     }
 
     try {
       handler(undefined);
       fail("Expected undefined to be thrown");
-    } catch (e) {
-      expect(e).toBe(undefined);
+    } catch (error) {
+      expect(error).toBe(undefined);
     }
   });
 
-  it("delegates to the configured handler with the same value", () => {
-    const value = { id: 1 };
-
+  it("uses the latest configured handler through one stable service", () => {
+    const state = createExceptionHandlerRuntimeState();
+    const service = createExceptionHandlerService(state);
+    const first = new Error("first");
+    const second = new Error("second");
     let received: unknown;
 
-    provider.handler = (exception: any) => {
-      received = exception;
-      throw exception;
-    };
+    applyExceptionHandlerConfiguration(state, {
+      handler(exception): never {
+        received = exception;
+        throw first;
+      },
+    });
 
-    const handler = provider.$get();
+    expect(() => service("reported")).toThrow(first);
+    expect(received).toBe("reported");
 
-    try {
-      handler(value);
-      fail("Expected an exception to be thrown");
-    } catch (e) {
-      expect(e).toBe(value);
-    }
+    applyExceptionHandlerConfiguration(state, {
+      handler(): never {
+        throw second;
+      },
+    });
 
-    expect(received).toBe(value);
+    expect(createExceptionHandlerService(state)).toBe(service);
+    expect(() => service("ignored")).toThrow(second);
   });
 
-  it("uses the latest handler even if reconfigured after $get()", () => {
-    provider.handler = () => {
-      throw "first";
-    };
+  it("keeps the current handler when configuration omits it", () => {
+    const state = createExceptionHandlerRuntimeState();
+    const configured = new Error("configured");
 
-    const handler = provider.$get();
+    applyExceptionHandlerConfiguration(state, {
+      handler(): never {
+        throw configured;
+      },
+    });
+    applyExceptionHandlerConfiguration(state, {});
 
-    provider.handler = () => {
-      throw "second";
-    };
-
-    expect(() => handler("ignored")).toThrow("second");
+    expect(() => state.service("ignored")).toThrow(configured);
   });
 
-  it("$get returns a function", () => {
-    expect(typeof provider.$get()).toBe("function");
-  });
+  it("disposes idempotently and rejects later use", () => {
+    const state = createExceptionHandlerRuntimeState();
+    const service = createExceptionHandlerService(state);
 
-  it("$get returns a new wrapper function each time", () => {
-    const handler1 = provider.$get();
+    destroyExceptionHandlerRuntimeState(state);
+    destroyExceptionHandlerRuntimeState(state);
 
-    const handler2 = provider.$get();
-
-    expect(typeof handler1).toBe("function");
-    expect(typeof handler2).toBe("function");
-    expect(handler1).not.toBe(handler2);
+    expect(() => service("late")).toThrowError(
+      "Exception handler runtime has already been disposed.",
+    );
+    expect(() => createExceptionHandlerService(state)).toThrowError(
+      "Exception handler runtime has already been disposed.",
+    );
+    expect(() => applyExceptionHandlerConfiguration(state, {})).toThrowError(
+      "Exception handler runtime has already been disposed.",
+    );
   });
 });

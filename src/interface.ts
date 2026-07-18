@@ -2,94 +2,167 @@ import type {
   BoundTranscludeFn,
   ChildTranscludeOrLinkFn,
   CloneAttachFn,
-  PublicLinkFn,
+  LinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
 } from "./core/compile/compile.ts";
-
+import {
+  _anchorScroll,
+  _angular,
+  _animate,
+  _aria,
+  _compile,
+  _controller,
+  _cookie,
+  _document,
+  _element,
+  _eventBus,
+  _exceptionHandler,
+  _filter,
+  _htmlCanvas,
+  _http,
+  _httpParamSerializer,
+  _injector,
+  _interpolate,
+  _location,
+  _log,
+  _machine,
+  _parse,
+  _rest,
+  _rootElement,
+  _rootScope,
+  _sce,
+  _sceDelegate,
+  _scope,
+  _security,
+  _serviceWorker,
+  _sse,
+  _state,
+  _stateRegistry,
+  _stream,
+  _templateCache,
+  _templateRequest,
+  _transitions,
+  _wasm,
+  _webComponent,
+  _websocket,
+  _webTransport,
+  _window,
+  _workflow,
+  _worker,
+} from "./injection-tokens.ts";
 type Dynamic = ReturnType<typeof JSON.parse>;
 
 export type Constructor<T = unknown> = new (...args: Dynamic[]) => T;
 
+/**
+ * Public injectable contracts keyed by their canonical runtime token.
+ *
+ * Every single-dollar token exposed by [[PublicInjectionTokens]] must map to a
+ * named, documented contract here. Double-dollar framework internals are
+ * intentionally excluded.
+ */
+export interface InjectionTokenMap {
+  $angular: ng.AngularService;
+  $scope: ng.ScopeService;
+  $element: ng.ElementService;
+  $anchorScroll: ng.AnchorScrollService;
+  $animate: ng.AnimateService;
+  $aria: ng.AriaService;
+  $compile: ng.CompileService;
+  $controller: ng.ControllerService;
+  $cookie: ng.CookieService;
+  $document: ng.DocumentService;
+  $eventBus: ng.EventBusService;
+  $exceptionHandler: ng.ExceptionHandlerService;
+  $filter: ng.FilterService;
+  $htmlCanvas: ng.HtmlCanvasService;
+  $http: ng.HttpService;
+  $httpParamSerializer: ng.HttpParamSerializerService;
+  $injector: ng.InjectorService;
+  $interpolate: ng.InterpolateService;
+  $location: ng.LocationService;
+  $log: ng.LogService;
+  $machine: ng.MachineService;
+  $parse: ng.ParseService;
+  $rest: ng.RestFactory;
+  $rootElement: ng.RootElementService;
+  $rootScope: ng.RootScopeService;
+  $sce: ng.SceService;
+  $sceDelegate: ng.SceDelegateService;
+  $security: ng.SecurityPolicy;
+  $serviceWorker: ng.ServiceWorkerService;
+  $sse: ng.SseService;
+  $state: ng.StateService;
+  $stateRegistry: ng.StateRegistryService;
+  $stream: ng.StreamService;
+  $templateCache: ng.TemplateCacheService;
+  $templateRequest: ng.TemplateRequestService;
+  $transitions: ng.TransitionsService;
+  $wasm: ng.WasmService;
+  $webComponent: ng.WebComponentService;
+  $websocket: ng.WebSocketService;
+  $webTransport: ng.WebTransportService;
+  $window: ng.WindowService;
+  $workflow: ng.WorkflowService;
+  $worker: ng.WorkerService;
+}
+
 export const PublicInjectionTokens = {
-  $angular: "$angular",
-  $scope: "$scope",
-  $element: "$element",
-  $anchorScroll: "$anchorScroll",
-  $animate: "$animate",
-  $aria: "$aria",
-  $compile: "$compile",
-  $compileLifecycle: "$compileLifecycle",
-  $cookie: "$cookie",
-  $controller: "$controller",
-  $document: "$document",
-  $eventBus: "$eventBus",
-  $exceptionHandler: "$exceptionHandler",
-  $filter: "$filter",
-  $http: "$http",
-  $httpParamSerializer: "$httpParamSerializer",
-  $interpolate: "$interpolate",
-  $location: "$location",
-  $log: "$log",
-  $machine: "$machine",
-  $parse: "$parse",
-  $rest: "$rest",
-  $rootScope: "$rootScope",
-  $rootElement: "$rootElement",
-  $sce: "$sce",
-  $sceDelegate: "$sceDelegate",
-  $state: "$state",
-  $stateRegistry: "$stateRegistry",
-  $stream: "$stream",
-  $sse: "$sse",
-  $templateCache: "$templateCache",
-  $templateFactory: "$templateFactory",
-  $templateRequest: "$templateRequest",
-  $transitions: "$transitions",
-  $view: "$view",
-  $window: "$window",
-  $webComponent: "$webComponent",
-  $webTransport: "$webTransport",
-  $websocket: "$websocket",
-  $worker: "$worker",
-  $wasm: "$wasm",
-  $provide: "$provide",
-  $injector: "$injector",
-  $angularProvider: "$angularProvider",
-  $anchorScrollProvider: "$anchorScrollProvider",
-  $compileProvider: "$compileProvider",
-  $animateProvider: "$animateProvider",
-  $ariaProvider: "$ariaProvider",
-  $cookieProvider: "$cookieProvider",
-  $eventBusProvider: "$eventBusProvider",
-  $exceptionHandlerProvider: "$exceptionHandlerProvider",
-  $filterProvider: "$filterProvider",
-  $httpProvider: "$httpProvider",
-  $httpParamSerializerProvider: "$httpParamSerializerProvider",
-  $interpolateProvider: "$interpolateProvider",
-  $locationProvider: "$locationProvider",
-  $logProvider: "$logProvider",
-  $machineProvider: "$machineProvider",
-  $parseProvider: "$parseProvider",
-  $restProvider: "$restProvider",
-  $rootScopeProvider: "$rootScopeProvider",
-  $sceProvider: "$sceProvider",
-  $sceDelegateProvider: "$sceDelegateProvider",
-  $sseProvider: "$sseProvider",
-  $stateProvider: "$stateProvider",
-  $stateRegistryProvider: "$stateRegistryProvider",
-  $streamProvider: "$streamProvider",
-  $templateCacheProvider: "$templateCacheProvider",
-  $templateFactoryProvider: "$templateFactoryProvider",
-  $templateRequestProvider: "$templateRequestProvider",
-  $transitionsProvider: "$transitionsProvider",
-  $viewProvider: "$viewProvider",
-  $webComponentProvider: "$webComponentProvider",
-  $webTransportProvider: "$webTransportProvider",
-  $websocketProvider: "$websocketProvider",
-  $workerProvider: "$workerProvider",
-  $wasmProvider: "$wasmProvider",
-  $controllerProvider: "$controllerProvider",
+  $angular: _angular,
+  $scope: _scope,
+  $element: _element,
+  $anchorScroll: _anchorScroll,
+  $animate: _animate,
+  $aria: _aria,
+  $compile: _compile,
+  $cookie: _cookie,
+  $controller: _controller,
+  $document: _document,
+  $eventBus: _eventBus,
+  $exceptionHandler: _exceptionHandler,
+  $filter: _filter,
+  $htmlCanvas: _htmlCanvas,
+  $http: _http,
+  $httpParamSerializer: _httpParamSerializer,
+  $interpolate: _interpolate,
+  $location: _location,
+  $log: _log,
+  $machine: _machine,
+  $parse: _parse,
+  $rest: _rest,
+  $rootScope: _rootScope,
+  $rootElement: _rootElement,
+  $sce: _sce,
+  $sceDelegate: _sceDelegate,
+  $security: _security,
+  $serviceWorker: _serviceWorker,
+  $state: _state,
+  $stateRegistry: _stateRegistry,
+  $stream: _stream,
+  $sse: _sse,
+  $templateCache: _templateCache,
+  $templateRequest: _templateRequest,
+  $transitions: _transitions,
+  $window: _window,
+  $webComponent: _webComponent,
+  $webTransport: _webTransport,
+  $websocket: _websocket,
+  $worker: _worker,
+  $wasm: _wasm,
+  $workflow: _workflow,
+  $injector: _injector,
 } as const;
+
+type PublicInjectionTokenParity = [
+  Exclude<keyof InjectionTokenMap, keyof typeof PublicInjectionTokens>,
+  Exclude<keyof typeof PublicInjectionTokens, keyof InjectionTokenMap>,
+] extends [never, never]
+  ? true
+  : never;
+
+const publicInjectionTokenParity: PublicInjectionTokenParity = true;
+
+void publicInjectionTokenParity;
 
 /**
  * Configuration options for the AngularTS bootstrap process.
@@ -194,94 +267,17 @@ export interface ServiceProvider {
   $get: Injectable<(...args: Dynamic[]) => unknown>;
 }
 
-export interface AngularServiceProvider {
-  $get: (...args: Dynamic[]) => ng.AngularService;
-}
-
+/**
+ * A user-defined service recipe accepted by {@link ng.NgModule.provider}.
+ *
+ * Object recipes define an injectable `$get` factory directly. Injectable
+ * functions and classes are instantiated first and must produce an object with
+ * an injectable `$get` factory.
+ */
 export type ProviderDefinition =
-  | ServiceProvider
+  | { $get: Injectable<(...args: Dynamic[]) => unknown> }
   | Injectable<(...args: Dynamic[]) => unknown>
   | Injectable<Constructor>;
-
-/**
- * The API for registering different types of providers with the injector.
- *
- * This interface is used within AngularTS's `$provide` service to define
- * services, factories, constants, values, decorators, etc.
- */
-export interface Provider {
-  /**
-   * Register a directive
-   * @param name - The name of the directive.
-   * @param directive - An object with a `$get` property that defines how the service is created.
-   */
-  directive(name: string, directive: DirectiveFactory): Provider;
-
-  /**
-   * Register multiple directives
-   * @param obj
-   */
-  directive(obj: Record<string, DirectiveFactory>): Provider;
-
-  /**
-   * Register a service provider.
-   * @param name - The name of the service.
-   * @param provider - An object with a `$get` property that defines how the service is created.
-   */
-  provider(name: string, provider: ProviderDefinition): Provider;
-
-  /**
-   * Register multiple service providers
-   * @param obj
-   */
-  provider(obj: Record<string, ProviderDefinition>): Provider;
-
-  /**
-   * Register a factory function to create a service.
-   * @param name - The name of the service.
-   * @param factoryFn - A function (or annotated array) that returns the service instance.
-   */
-  factory(
-    name: string,
-    factoryFn: Injectable<(...args: Dynamic[]) => unknown>,
-  ): Provider;
-
-  /**
-   * Register a constructor function to create a service.
-   * @param name - The name of the service.
-   * @param constructor - A class or function to instantiate.
-   */
-  service(
-    name: string,
-    constructor:
-      | Injectable<Constructor>
-      | Injectable<(...args: Dynamic[]) => unknown>,
-  ): Provider;
-
-  /**
-   * Register a fixed value as a service.
-   * @param name - The name of the service.
-   * @param val - The value to use.
-   */
-  value(name: string, val: unknown): Provider;
-
-  /**
-   * Register a constant service, such as a string, a number, an array, an object or a function, with the $injector. Unlike value it can be injected into a module configuration function (see config) and it cannot be overridden by an Angular decorator.
-   * @param name - The name of the constant.
-   * @param val - The constant value.
-   */
-  constant(name: string, val: unknown): Provider;
-
-  /**
-   * Register a decorator function to modify or replace an existing service.
-   * @param name - The name of the service to decorate.
-   * @param fn - A function that takes `$delegate` and returns a decorated service.
-   */
-  decorator(
-    name: string,
-    fn: Injectable<(...args: Dynamic[]) => unknown>,
-  ): Provider;
-}
 
 /**
  * A controller constructor function used in AngularTS.
@@ -587,12 +583,10 @@ export type TranscludeFunctionObject = BoundTranscludeFn;
 export type CloneAttachFunction = CloneAttachFn;
 
 // This corresponds to the "publicLinkFn" returned by $compile.
-export type TemplateLinkingFunction = PublicLinkFn;
+export type TemplateLinkingFunction = LinkFn;
 
 export type TemplateLinkingFunctionOptions =
   CompileTemplateLinkingFunctionOptions;
-
-export type RootElementService = HTMLElement;
 
 export interface InvocationDetail {
   expr: string;

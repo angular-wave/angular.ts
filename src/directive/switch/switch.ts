@@ -8,7 +8,11 @@ import {
   getNormalizedAttr,
   removeElement,
 } from "../../shared/dom.ts";
-import { assertDefined, values } from "../../shared/utils.ts";
+import {
+  assertDefined,
+  shouldHandleViewRetentionPause,
+  values,
+} from "../../shared/utils.ts";
 
 interface NgSwitchBlock {
   /** @internal */
@@ -67,6 +71,9 @@ export function ngSwitchDirective(
         | undefined;
 
       const selectedElements: NgSwitchBlock[] = [];
+      let retainedScopePaused = false;
+      let queuedSwitchValue: unknown;
+      let hasQueuedSwitchValue = false;
 
       interface LeaveAnimation {
         element: Element;
@@ -77,7 +84,7 @@ export function ngSwitchDirective(
 
       const selectedScopes: ng.Scope[] = [];
 
-      scope.$watch(watchExpr, (value: unknown) => {
+      function applySwitchValue(value: unknown): void {
         let i;
 
         let ii;
@@ -183,6 +190,50 @@ export function ngSwitchDirective(
             },
           );
         }
+      }
+
+      function applyOrQueueSwitch(value: unknown): void {
+        if (retainedScopePaused) {
+          queuedSwitchValue = value;
+          hasQueuedSwitchValue = true;
+
+          return;
+        }
+
+        applySwitchValue(value);
+      }
+
+      function onPause(_event: ng.ScopeEvent, ...args: unknown[]): void {
+        if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+          return;
+        }
+
+        retainedScopePaused = true;
+      }
+
+      function onResume(_event: ng.ScopeEvent, ...args: unknown[]): void {
+        if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+          return;
+        }
+
+        retainedScopePaused = false;
+
+        if (hasQueuedSwitchValue) {
+          const nextValue = queuedSwitchValue;
+
+          queuedSwitchValue = undefined;
+          hasQueuedSwitchValue = false;
+          applySwitchValue(nextValue);
+        }
+      }
+
+      const removePauseHandler = scope.$on("$viewRetentionPause", onPause);
+      const removeResumeHandler = scope.$on("$viewRetentionResume", onResume);
+
+      scope.$watch(watchExpr, applyOrQueueSwitch);
+      scope.$on("$destroy", () => {
+        removePauseHandler();
+        removeResumeHandler();
       });
     },
   };

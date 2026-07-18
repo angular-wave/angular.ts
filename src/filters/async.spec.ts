@@ -6,7 +6,7 @@ import { wait } from "../shared/test-utils.ts";
 describe("async filter", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService;
+  let $rootScope: ng.Scope;
 
   let filter: ng.FilterService;
 
@@ -16,7 +16,7 @@ describe("async filter", () => {
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
-        _$rootScope_: ng.RootScopeService,
+        _$rootScope_: ng.Scope,
       ) => {
         $compile = _$compile_;
         filter = _$filter_;

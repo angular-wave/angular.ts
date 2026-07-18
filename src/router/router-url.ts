@@ -4,6 +4,7 @@ import { isDefined, isNull } from "../shared/utils.ts";
 import type { UrlMatcher } from "./url/url-matcher.ts";
 import type { RawParams } from "./params/interface.ts";
 import type { StateParams } from "./params/state-params.ts";
+import type { LocationConfig } from "../services/location/location.ts";
 
 /**
  * Owns URL reads, writes, and href formatting for the router runtime.
@@ -14,14 +15,14 @@ export class RouterUrlRuntime {
   /** @internal */
   _location!: ng.LocationService;
   /** @internal */
-  _locationProvider: ng.LocationProvider;
+  _locationConfig: LocationConfig;
   /** @internal */
   _baseHref!: string;
   /** @internal */
   _lastUrl!: string;
 
-  constructor($locationProvider: ng.LocationProvider) {
-    this._locationProvider = $locationProvider;
+  constructor(locationConfig: LocationConfig) {
+    this._locationConfig = locationConfig;
   }
 
   /** @internal */
@@ -97,10 +98,12 @@ export class RouterUrlRuntime {
     let url = urlMatcher._format(params);
 
     if (isNull(url)) return null;
-    const isHtml5 = this._locationProvider.html5ModeConf.enabled;
+    const html5Mode = this._locationConfig.html5Mode;
+    const isHtml5 =
+      typeof html5Mode === "boolean" ? html5Mode : (html5Mode?.enabled ?? true);
 
     if (!isHtml5) {
-      url = `#${this._locationProvider.hashPrefixConf}${url}`;
+      url = `#${this._locationConfig.hashPrefix ?? "!"}${url}`;
     }
     url = appendBasePath(url, isHtml5, options.absolute, this._getBaseHref());
 

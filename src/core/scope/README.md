@@ -5,10 +5,12 @@ observation, scope events, and scope teardown. The implementation in
 `scope.ts` is centered on JavaScript `Proxy` handlers: model objects remain raw
 data, and scope behavior is layered around them through cached proxies.
 
-The level-9 roadmap moves top-level reactivity ownership above `$rootScope`.
-See `src/core/scope/APPCONTEXT_IMPLEMENTATION_ROADMAP.md` for the primary
-AppContext refactor that keeps `$rootScope` as the UI scope root while making
-reactivity available to app-owned services and models without DOM ownership.
+Top-level reactivity ownership lives above `$rootScope`. See
+`src/core/app-context/README.md` for the app-owned reactivity contract and root
+ownership split.
+
+The scope-level model integration is complete: app-owned model properties
+become observable dependencies when DOM expressions read them.
 
 ## Responsibilities
 
@@ -28,9 +30,11 @@ reactivity available to app-owned services and models without DOM ownership.
 
 - `createScope(target?, context?)`: creates or reuses a scope proxy for a target
   object and `Scope` handler.
-- `RootScopeProvider`: creates the root scope and injects `$parse` and
-  `$exceptionHandler` into this module.
+- `createRootScopeService`: creates the root scope with `$parse` and
+  `$exceptionHandler` and registers it with `AppContext`.
 - `Scope`: the proxy handler class and public scope method implementation.
+- Composed scope trees retain their own parser and exception handler; child
+  scopes and AppContext models inherit dependencies from their owning runtime.
 - `getArrayMutationMeta(value)`: exposes metadata about the most recent array
   mutation for directives that need efficient list updates.
 - `isNonScope(target)`: tells whether a value should be excluded from scope

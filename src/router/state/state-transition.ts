@@ -1,17 +1,490 @@
 import { defaults } from "../../shared/common.ts";
-import { assign, isInstanceOf } from "../../shared/utils.ts";
+import {
+  assign,
+  isInstanceOf,
+  isObject,
+  isFunction,
+  isString,
+} from "../../shared/utils.ts";
 import { defaultTransOpts } from "../transition/transition-service.ts";
+import {
+  createTransitionErrorPolicyInvocationLocals,
+  createTransitionPolicyInvocationLocals,
+} from "../invocation-context.ts";
 import { RejectType, Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
-import type { TransitionOptions } from "../transition/interface.ts";
 import type {
+  InternalTransitionOptions,
+  TransitionOptions,
+} from "../transition/interface.ts";
+import type {
+  StateDeclaration,
   StateOrName,
+  StateTransitionFallbackTarget,
+  StateTransitionErrorPolicyContext,
+  StateErrorBoundaryPolicy,
   StateTransitionResult,
   TransitionPromise,
+  StateTransitionRetryPolicyContext,
+  StateRetryPolicy,
 } from "./interface.ts";
-import type { StateProvider } from "./state-service.ts";
+import type { StateRuntime } from "./state-service.ts";
+
+interface EffectiveTransitionFallback {
+  state: StateDeclaration;
+  target: StateTransitionFallbackTarget;
+}
+
+interface EffectiveTransitionErrorBoundaryPolicy {
+  state: StateDeclaration;
+  policy: RedirectToBoundaryPolicy;
+}
+
+type RedirectToObject = {
+  state?: string;
+  params?: RawParams;
+};
+
+type RedirectToBoundaryPolicy =
+  | StateErrorBoundaryPolicy
+  | RedirectToObject
+  | TargetState
+  | string
+  | undefined;
+
+function isRedirectToObject(value: unknown): value is RedirectToObject {
+  return (
+    isObject(value) &&
+    (Object.hasOwn(value, "state") || Object.hasOwn(value, "params"))
+  );
+}
+
+interface EffectiveTransitionRetryPolicy {
+  state: StateDeclaration;
+  policy: boolean | number | StateRetryPolicy;
+}
+
+function normalizeRetryPolicy(value: boolean | number): number | undefined {
+  if (value === true) return 2;
+  if (value === false) return 0;
+
+  if (!Number.isFinite(value) || value < 1) return 0;
+
+  return Math.trunc(value);
+}
+
+function toRetryContext(
+  transition: Transition,
+  policyState: StateDeclaration,
+  attempt: number,
+  error: unknown,
+): StateTransitionRetryPolicyContext {
+  return {
+    operation: "retry",
+    attempt,
+    transition,
+    from: transition.from(),
+    to: transition.to(),
+    state: policyState,
+    error,
+  };
+}
+
+function toErrorContext(
+  transition: Transition,
+  policyState: StateDeclaration,
+  error: unknown,
+): StateTransitionErrorPolicyContext {
+  return {
+    operation: "error",
+    transition,
+    from: transition.from(),
+    to: transition.to(),
+    state: policyState,
+    error,
+  };
+}
+
+function getTransitionFallback(
+  transition: Transition,
+): EffectiveTransitionFallback | undefined {
+  const path = transition._treeChanges.to;
+
+  let effective: EffectiveTransitionFallback | undefined =
+    transition._routerState._fallbackTo !== undefined
+      ? {
+          state: transition.to(),
+          target: transition._routerState._fallbackTo,
+        }
+      : undefined;
+
+  for (let i = 0; i < path.length; i++) {
+    const state = path[i].state.self;
+    const target = state.policy?.transition?.fallbackTo;
+
+    if (target !== undefined) {
+      effective = {
+        state,
+        target,
+      };
+    }
+  }
+
+  return effective;
+}
+
+function buildFallbackTarget(
+  stateService: StateRuntime,
+  transition: Transition,
+  target: StateTransitionFallbackTarget,
+): TargetState | undefined {
+  if (isString(target)) {
+    return stateService.target(
+      target,
+      transition.params(),
+      transition._options,
+    );
+  }
+
+  if (isFallbackTarget(target)) {
+    return stateService.target(
+      target.state ?? transition.to().name,
+      target.params ?? transition.params(),
+      transition._options,
+    );
+  }
+
+  return undefined;
+}
+
+function buildErrorBoundaryTarget(
+  stateService: StateRuntime,
+  transition: Transition,
+  policyState: StateDeclaration,
+  policy: RedirectToBoundaryPolicy,
+  error: unknown,
+): Promise<TargetState | undefined> {
+  if (isString(policy)) {
+    return Promise.resolve(
+      buildFallbackTarget(stateService, transition, policy),
+    );
+  }
+
+  if (isRedirectToObject(policy)) {
+    const targetState = policy.state ?? transition.to().name;
+    const targetParams = policy.params ?? transition.params();
+
+    return Promise.resolve(
+      buildFallbackTarget(stateService, transition, {
+        state: targetState,
+        params: targetParams,
+      }),
+    );
+  }
+
+  if (isInstanceOf(policy, TargetState)) {
+    return Promise.resolve(policy);
+  }
+
+  if (!isFunction(policy)) {
+    return Promise.resolve(undefined);
+  }
+
+  const context = toErrorContext(transition, policyState, error);
+  const value = stateService._routerState._injector?.invoke(
+    policy,
+    undefined,
+    createTransitionErrorPolicyInvocationLocals(context),
+    "route error boundary policy",
+  );
+
+  return Promise.resolve(value).then((result: unknown) => {
+    if (isInstanceOf(result, TargetState)) {
+      return result;
+    }
+
+    if (isString(result)) {
+      return stateService.target(
+        result,
+        transition.params(),
+        transition._options,
+      );
+    }
+
+    if (isRedirectToObject(result)) {
+      const targetState = result.state ?? transition.to().name;
+      const targetParams = result.params ?? transition.params();
+
+      return stateService.target(
+        targetState,
+        targetParams,
+        transition._options,
+      );
+    }
+
+    throw new Error(
+      "Route error boundary policy must return TargetState, redirect target, or undefined.",
+    );
+  });
+}
+
+function isFallbackTarget(
+  target: StateTransitionFallbackTarget,
+): target is Exclude<StateTransitionFallbackTarget, string> {
+  return isObject(target) && ("state" in target || "params" in target);
+}
+
+function getTransitionErrorBoundaryPolicy(
+  transition: Transition,
+): EffectiveTransitionErrorBoundaryPolicy | undefined {
+  const path = transition._treeChanges.to;
+
+  const routerPolicy =
+    transition._routerState._error ?? transition._routerState._errorBoundary;
+
+  let effective: EffectiveTransitionErrorBoundaryPolicy | undefined =
+    routerPolicy !== undefined
+      ? {
+          state: transition.to(),
+          policy: routerPolicy,
+        }
+      : undefined;
+
+  for (let i = 0; i < path.length; i++) {
+    const state = path[i].state.self;
+    const policy =
+      state.policy?.transition?.error ??
+      state.policy?.transition?.errorBoundary;
+
+    if (policy !== undefined) {
+      effective = {
+        state,
+        policy,
+      };
+    }
+  }
+
+  return effective;
+}
+
+async function runFallbackTransition(
+  stateService: StateRuntime,
+  trans: Transition,
+  error: unknown,
+): Promise<StateTransitionResult | undefined> {
+  if (isInstanceOf(error, Rejection) && error.type !== RejectType._ERROR) {
+    return undefined;
+  }
+
+  const fallback = getTransitionFallback(trans);
+
+  if (!fallback) {
+    return undefined;
+  }
+
+  const fallbackTarget = buildFallbackTarget(
+    stateService,
+    trans,
+    fallback.target,
+  );
+
+  if (!fallbackTarget?.valid()) {
+    stateService._recordPolicyDiagnostic({
+      _kind: "fallback",
+      _decision: "skipped",
+      _from: trans.from().name,
+      _to: trans.to().name,
+      _policyState: fallback.state.name,
+      _reason: "invalid-target",
+    });
+
+    return undefined;
+  }
+
+  if (fallbackTarget.name() === trans.to().name) {
+    stateService._recordPolicyDiagnostic({
+      _kind: "fallback",
+      _decision: "skipped",
+      _from: trans.from().name,
+      _to: trans.to().name,
+      _policyState: fallback.state.name,
+      _target: fallbackTarget.name() as string,
+      _reason: "same-target",
+    });
+
+    return undefined;
+  }
+
+  stateService._recordPolicyDiagnostic({
+    _kind: "fallback",
+    _decision: "redirected",
+    _from: trans.from().name,
+    _to: trans.to().name,
+    _policyState: fallback.state.name,
+    _target: fallbackTarget.name() as string,
+  });
+
+  const redirected = trans.redirect(fallbackTarget);
+
+  return runRedirectTransition(stateService, redirected);
+}
+
+async function runErrorBoundaryTransition(
+  stateService: StateRuntime,
+  trans: Transition,
+  error: unknown,
+): Promise<StateTransitionResult | undefined> {
+  if (isInstanceOf(error, Rejection) && error.type !== RejectType._ERROR) {
+    return undefined;
+  }
+
+  const errorBoundaryPolicy = getTransitionErrorBoundaryPolicy(trans);
+
+  if (!errorBoundaryPolicy) {
+    return undefined;
+  }
+
+  const boundaryTarget = await buildErrorBoundaryTarget(
+    stateService,
+    trans,
+    errorBoundaryPolicy.state,
+    errorBoundaryPolicy.policy,
+    error,
+  );
+
+  if (!boundaryTarget?.valid()) {
+    return undefined;
+  }
+
+  if (boundaryTarget.name() === trans.to().name) {
+    return undefined;
+  }
+
+  const redirected = trans.redirect(boundaryTarget);
+
+  return runRedirectTransition(stateService, redirected);
+}
+
+export function getTransitionRetryPolicy(
+  transition: Transition,
+): EffectiveTransitionRetryPolicy | undefined {
+  const path = transition._treeChanges.to;
+
+  let effective: EffectiveTransitionRetryPolicy | undefined =
+    transition._routerState._retry !== undefined
+      ? {
+          state: transition.to(),
+          policy: transition._routerState._retry,
+        }
+      : undefined;
+
+  for (let i = 0; i < path.length; i++) {
+    const state = path[i].state.self;
+    const policy = state.policy?.transition?.retry;
+
+    if (policy !== undefined) {
+      effective = {
+        state,
+        policy,
+      };
+    }
+  }
+
+  return effective;
+}
+
+export function getTransitionRetryPolicyFromStateName(
+  stateProvider: StateRuntime,
+  stateName: StateOrName,
+): EffectiveTransitionRetryPolicy | undefined {
+  if (!stateName) return undefined;
+
+  const stateNameString = isString(stateName)
+    ? stateName
+    : isObject(stateName) && isString(stateName.name)
+      ? stateName.name
+      : "";
+
+  if (!stateNameString) return undefined;
+
+  const tokens = stateNameString.split(".");
+
+  for (let i = tokens.length; i > 0; i--) {
+    const candidateName = tokens.slice(0, i).join(".");
+    const state = stateProvider._stateRegistry.get(candidateName);
+
+    if (!state) continue;
+
+    const policy = state.policy?.transition?.retry;
+
+    if (policy !== undefined) {
+      return {
+        state,
+        policy,
+      };
+    }
+  }
+
+  const routerRetryPolicy = stateProvider._routerState._retry;
+
+  if (routerRetryPolicy !== undefined) {
+    return {
+      state: stateProvider._stateRegistry._root.self,
+      policy: routerRetryPolicy,
+    };
+  }
+
+  return undefined;
+}
+
+async function shouldRetryTransition(
+  stateService: StateRuntime,
+  transition: Transition,
+  retryPolicy: EffectiveTransitionRetryPolicy,
+  attempt: number,
+  error: unknown,
+): Promise<boolean> {
+  let decision: unknown = retryPolicy.policy;
+
+  if (typeof decision !== "boolean" && typeof decision !== "number") {
+    if (isFunction(retryPolicy.policy)) {
+      const context = toRetryContext(
+        transition,
+        retryPolicy.state,
+        attempt,
+        error,
+      );
+      const result = stateService._routerState._injector?.invoke(
+        retryPolicy.policy,
+        undefined,
+        createTransitionPolicyInvocationLocals(context),
+        "route retry policy",
+      );
+
+      decision = await Promise.resolve(result);
+    }
+  }
+
+  if (typeof decision !== "boolean" && typeof decision !== "number") {
+    throw new Error("Route retry policy must return boolean or number.");
+  }
+
+  const maxAttempts = normalizeRetryPolicy(decision);
+  const allowed = !!maxAttempts && attempt < maxAttempts;
+
+  stateService._recordPolicyDiagnostic({
+    _kind: "retry",
+    _decision: allowed ? "retry" : "blocked",
+    _from: transition.from().name,
+    _to: transition.to().name,
+    _policyState: retryPolicy.state.name,
+    _attempt: attempt,
+  });
+
+  return allowed;
+}
 
 /**
  * Attaches a catch handler to silence unhandled rejection warnings,
@@ -38,25 +511,25 @@ export async function silentRejection(reason: unknown): Promise<never> {
 /** @internal */
 
 export function transitionToState(
-  stateService: StateProvider,
+  stateService: StateRuntime,
   to: StateOrName,
   toParams: RawParams = {},
   options: TransitionOptions = {},
-): TransitionPromise | Promise<StateTransitionResult> {
+): TransitionPromise {
   const getCurrent = () => stateService._routerState._transition;
 
   const transitionOptions = assign(
-    defaults(options, defaultTransOpts) as TransitionOptions,
+    defaults(options, defaultTransOpts) as InternalTransitionOptions,
     { current: getCurrent },
-  ) as TransitionOptions;
+  ) as InternalTransitionOptions;
 
   const ref = stateService.target(to, toParams, transitionOptions);
 
   const currentPath = stateService.getCurrentPath();
 
-  if (!ref.exists()) return stateService._loadLazyTargetState(ref);
-
-  if (!ref.valid()) return silentRejection(ref.error());
+  if (!ref.exists()) {
+    return stateService._loadLazyTargetState(ref) as TransitionPromise;
+  }
 
   /**
    * Special handling for Ignored, Aborted, and Redirected transitions.
@@ -78,29 +551,141 @@ export function transitionToState(
 }
 
 async function runTransitionTo(
-  stateService: StateProvider,
+  stateService: StateRuntime,
   trans: Transition,
 ): Promise<StateTransitionResult> {
-  try {
-    return await trans.run();
-  } catch (error) {
-    return handleTransitionRejection(stateService, trans, error);
+  const resumeFromLoading = (
+    transitionToResume: Transition,
+  ): Promise<StateTransitionResult> | undefined => {
+    const loadingFor = transitionToResume._options._loadingFor;
+
+    if (!loadingFor) return undefined;
+
+    const resumeOptions = {
+      ...(loadingFor.options as Record<string, unknown>),
+      _loadingFor: undefined,
+      _skipLoadingPolicy: true,
+    } as typeof loadingFor.options;
+
+    const resumeTarget = stateService.target(
+      loadingFor.identifier,
+      loadingFor.params,
+      resumeOptions,
+    );
+
+    const resumeTransition = stateService._transitionService.create(
+      stateService.getCurrentPath(),
+      resumeTarget,
+    );
+
+    return runTransitionTo(stateService, resumeTransition);
+  };
+
+  let attempt = 1;
+  let transition = trans;
+
+  for (;;) {
+    try {
+      const result = await transition.run();
+      const resumed = resumeFromLoading(transition);
+
+      if (resumed) {
+        return await resumed;
+      }
+
+      return result;
+    } catch (error) {
+      const retryPolicy = getTransitionRetryPolicy(transition);
+
+      if (
+        !retryPolicy ||
+        !isInstanceOf(error, Rejection) ||
+        error.type !== RejectType._ERROR ||
+        stateService._routerState._lastStartedTransition !== transition
+      ) {
+        const errorBoundaryTransition = await runErrorBoundaryTransition(
+          stateService,
+          transition,
+          error,
+        );
+
+        if (errorBoundaryTransition) {
+          return errorBoundaryTransition;
+        }
+
+        const fallbackTransition = await runFallbackTransition(
+          stateService,
+          transition,
+          error,
+        );
+
+        if (fallbackTransition) {
+          return fallbackTransition;
+        }
+
+        return handleTransitionRejection(stateService, transition, error);
+      }
+
+      let isRetryAllowed: boolean;
+
+      try {
+        isRetryAllowed = await shouldRetryTransition(
+          stateService,
+          transition,
+          retryPolicy,
+          attempt,
+          error,
+        );
+      } catch (retryPolicyError) {
+        return handleTransitionRejection(
+          stateService,
+          transition,
+          retryPolicyError,
+        );
+      }
+
+      if (!isRetryAllowed) {
+        const errorBoundaryTransition = await runErrorBoundaryTransition(
+          stateService,
+          transition,
+          error,
+        );
+
+        if (errorBoundaryTransition) {
+          return errorBoundaryTransition;
+        }
+
+        const fallbackTransition = await runFallbackTransition(
+          stateService,
+          transition,
+          error,
+        );
+
+        if (fallbackTransition) {
+          return fallbackTransition;
+        }
+
+        return handleTransitionRejection(stateService, transition, error);
+      }
+
+      attempt += 1;
+      transition = stateService._transitionService.create(
+        stateService.getCurrentPath(),
+        transition._targetState,
+      );
+    }
   }
 }
 
 async function runRedirectTransition(
-  stateService: StateProvider,
+  stateService: StateRuntime,
   redirect: Transition,
 ): Promise<StateTransitionResult> {
-  try {
-    return await redirect.run();
-  } catch (reason) {
-    return handleTransitionRejection(stateService, redirect, reason);
-  }
+  return runTransitionTo(stateService, redirect);
 }
 
 async function handleTransitionRejection(
-  stateService: StateProvider,
+  stateService: StateRuntime,
   trans: Transition,
   error: unknown,
 ): Promise<StateTransitionResult> {
@@ -139,7 +724,7 @@ async function handleTransitionRejection(
     }
   }
 
-  stateService.defaultErrorHandler()(error);
+  stateService._defaultErrorHandler(error);
 
   return silentRejection(error);
 }

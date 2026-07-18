@@ -1,4 +1,3 @@
-import { _log } from "../../injection-tokens.ts";
 import {
   isRealtimeProtocolMessage,
   type RealtimeProtocolMessage,
@@ -17,42 +16,10 @@ export type WebTransportBufferInput =
   | ArrayBufferView
   | Uint8Array;
 
-export interface WebTransportCertificateHash {
-  algorithm: "sha-256" | "SHA-256";
-  value: BufferSource;
-}
-
-export interface WebTransportOptions {
-  allowPooling?: boolean;
-  congestionControl?: "default" | "throughput" | "low-latency";
-  requireUnreliable?: boolean;
-  serverCertificateHashes?: WebTransportCertificateHash[];
-}
-
-export interface NativeWebTransport {
-  readonly ready: Promise<void>;
-  readonly closed: Promise<unknown>;
-  readonly datagrams: {
-    readonly readable: ReadableStream<Uint8Array>;
-    readonly writable: WritableStream<Uint8Array>;
-  };
-  readonly incomingUnidirectionalStreams?: ReadableStream<
-    ReadableStream<Uint8Array>
-  >;
-  close(closeInfo?: { closeCode?: number; reason?: string }): void;
-  createBidirectionalStream(): Promise<{
-    readable: ReadableStream<Uint8Array>;
-    writable: WritableStream<Uint8Array>;
-  }>;
-  createUnidirectionalStream(): Promise<
-    WritableStream<Uint8Array> | { writable: WritableStream<Uint8Array> }
-  >;
-}
-
-type NativeWebTransportConstructor = new (
+type WebTransportConstructor = new (
   url: string,
   options?: WebTransportOptions,
-) => NativeWebTransport;
+) => WebTransport;
 
 /** Event emitted for each incoming WebTransport datagram. */
 export interface WebTransportDatagramEvent<T = unknown> {
@@ -119,7 +86,7 @@ export interface WebTransportConnection {
   /** Resolves or rejects when the managed connection closes permanently. */
   closed: Promise<void>;
   /** Current browser-native WebTransport instance. Replaced after reconnects. */
-  transport: NativeWebTransport;
+  transport: WebTransport;
   /** Send one unreliable datagram. */
   sendDatagram(data: WebTransportBufferInput): Promise<void>;
   /** Send UTF-8 text as one unreliable datagram. */
@@ -127,12 +94,9 @@ export interface WebTransportConnection {
   /** Send data on a client-opened reliable unidirectional stream. */
   sendStream(data: WebTransportBufferInput): Promise<void>;
   /** Open a reliable bidirectional stream. */
-  createBidirectionalStream(): Promise<{
-    readable: ReadableStream<Uint8Array>;
-    writable: WritableStream<Uint8Array>;
-  }>;
+  createBidirectionalStream(): Promise<WebTransportBidirectionalStream>;
   /** Close the WebTransport session. */
-  close(closeInfo?: { closeCode?: number; reason?: string }): void;
+  close(closeInfo?: WebTransportCloseInfo): void;
 }
 
 /** Factory function exposed as `$webTransport`. */
@@ -141,15 +105,57 @@ export type WebTransportService = (
   config?: WebTransportConfig,
 ) => WebTransportConnection;
 
+/** @internal */
+export interface WebTransportRuntimeConfiguration {
+  defaults: WebTransportConfig;
+  readonly connections: Set<WebTransportConnection>;
+  destroyed: boolean;
+}
+
+/** @internal */
+export function createWebTransportRuntimeConfiguration(): WebTransportRuntimeConfiguration {
+  return {
+    defaults: {},
+    connections: new Set(),
+    destroyed: false,
+  };
+}
+
+/** @internal */
+export function applyWebTransportConfiguration(
+  configuration: WebTransportRuntimeConfiguration,
+  config: { defaults?: WebTransportConfig },
+): void {
+  if (config.defaults !== undefined) {
+    configuration.defaults = {
+      ...configuration.defaults,
+      ...config.defaults,
+    };
+  }
+}
+
+/** @internal */
+export function destroyWebTransportRuntimeConfiguration(
+  configuration: WebTransportRuntimeConfiguration,
+): void {
+  if (configuration.destroyed) return;
+
+  configuration.destroyed = true;
+
+  for (const connection of configuration.connections) connection.close();
+
+  configuration.connections.clear();
+}
+
 class ManagedWebTransportConnection implements WebTransportConnection {
   static $nonscope = true;
 
   ready!: Promise<WebTransportConnection>;
   closed: Promise<void>;
-  transport!: NativeWebTransport;
+  transport!: WebTransport;
 
   private readonly _url: string;
-  private readonly _TransportCtor: NativeWebTransportConstructor;
+  private readonly _TransportCtor: WebTransportConstructor;
   private readonly _transportOptions: WebTransportOptions;
   private readonly _config: WebTransportConfig;
   private readonly _log: LogService;
@@ -163,7 +169,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
 
   constructor(
     url: string,
-    TransportCtor: NativeWebTransportConstructor,
+    TransportCtor: WebTransportConstructor,
     transportOptions: WebTransportOptions,
     config: WebTransportConfig,
     log: LogService,
@@ -199,9 +205,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     await this.transport.ready;
     const stream = await this.transport.createUnidirectionalStream();
 
-    const writable = "writable" in stream ? stream.writable : stream;
-
-    const writer = writable.getWriter();
+    const writer = stream.getWriter();
 
     try {
       await writer.write(this._toBytes(data));
@@ -211,16 +215,15 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
-  async createBidirectionalStream(): Promise<{
-    readable: ReadableStream<Uint8Array>;
-    writable: WritableStream<Uint8Array>;
-  }> {
+  async createBidirectionalStream(): Promise<WebTransportBidirectionalStream> {
     await this.transport.ready;
 
     return this.transport.createBidirectionalStream();
   }
 
-  close(closeInfo?: { closeCode?: number; reason?: string }): void {
+  close(closeInfo?: WebTransportCloseInfo): void {
+    if (this._closing || this._closedSettled) return;
+
     this._closing = true;
     this._clearReconnectTimer();
 
@@ -232,7 +235,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   }
 
   private _open(attempt = 0, previousError?: unknown): void {
-    let transport: NativeWebTransport;
+    let transport: WebTransport;
 
     try {
       transport = new this._TransportCtor(this._url, this._transportOptions);
@@ -378,10 +381,11 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     this._reconnectTimer = undefined;
   }
 
-  private async _readDatagrams(transport: NativeWebTransport): Promise<void> {
+  private async _readDatagrams(transport: WebTransport): Promise<void> {
     if (!this._config.onDatagram && !this._config.onProtocolMessage) return;
 
-    const reader = transport.datagrams.readable.getReader();
+    const reader =
+      transport.datagrams.readable.getReader() as ReadableStreamDefaultReader<Uint8Array>;
 
     try {
       for (;;) {
@@ -448,75 +452,79 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   }
 }
 
-/** Provider for the `$webTransport` service. */
-export class WebTransportProvider {
-  /** Default options merged into every `$webTransport` call. */
-  defaults: WebTransportConfig = {};
+/** @internal */
+export function createWebTransportService(
+  log: LogService,
+  configuration: WebTransportRuntimeConfiguration,
+  getWebTransportConstructor: () => WebTransportConstructor | undefined,
+  baseUrl: string,
+): WebTransportService {
+  return (url: string, config: WebTransportConfig = {}) => {
+    if (configuration.destroyed) {
+      throw new Error(
+        "Cannot create a WebTransport connection after runtime teardown",
+      );
+    }
 
-  /**
-   * Returns a factory that opens browser-native WebTransport sessions.
-   */
-  $get = [
-    _log,
-    (log: ng.LogService): WebTransportService => {
-      return (url: string, config: WebTransportConfig = {}) => {
-        validateWebTransportUrl(url);
+    validateWebTransportUrl(url, baseUrl);
 
-        const WebTransportCtor = (
-          globalThis as typeof globalThis & {
-            WebTransport?: NativeWebTransportConstructor;
-          }
-        ).WebTransport;
+    const WebTransportCtor = getWebTransportConstructor();
 
-        if (!isFunction(WebTransportCtor)) {
-          throw new Error("WebTransport API is not available in this browser");
-        }
+    if (!isFunction(WebTransportCtor)) {
+      throw new Error("WebTransport API is not available in this browser");
+    }
 
-        const mergedConfig = { ...this.defaults, ...config };
+    const mergedConfig = { ...configuration.defaults, ...config };
 
-        const {
-          onOpen,
-          onClose,
-          onError,
-          onDatagram,
-          onProtocolMessage,
-          transformDatagram,
-          reconnect,
-          retryDelay,
-          maxRetries,
-          onReconnect,
-          ...transportOptions
-        } = mergedConfig;
+    const {
+      onOpen,
+      onClose,
+      onError,
+      onDatagram,
+      onProtocolMessage,
+      transformDatagram,
+      reconnect,
+      retryDelay,
+      maxRetries,
+      onReconnect,
+      ...transportOptions
+    } = mergedConfig;
 
-        return new ManagedWebTransportConnection(
-          url,
-          WebTransportCtor,
-          transportOptions,
-          {
-            onOpen,
-            onClose,
-            onError,
-            onDatagram,
-            onProtocolMessage,
-            transformDatagram,
-            reconnect,
-            retryDelay,
-            maxRetries,
-            onReconnect,
-          },
-          log,
-        );
-      };
-    },
-  ];
+    const connection = new ManagedWebTransportConnection(
+      url,
+      WebTransportCtor,
+      transportOptions,
+      {
+        onOpen,
+        onClose,
+        onError,
+        onDatagram,
+        onProtocolMessage,
+        transformDatagram,
+        reconnect,
+        retryDelay,
+        maxRetries,
+        onReconnect,
+      },
+      log,
+    );
+    const release = (): void => {
+      configuration.connections.delete(connection);
+    };
+
+    configuration.connections.add(connection);
+    void connection.closed.then(release, release);
+
+    return connection;
+  };
 }
 
-function validateWebTransportUrl(url: string): void {
+function validateWebTransportUrl(url: string, baseUrl: string): void {
   if (!isString(url) || !url) {
     throw new Error("WebTransport URL required");
   }
 
-  const parsed = new URL(url, window.location.href);
+  const parsed = new URL(url, baseUrl);
 
   if (parsed.protocol !== "https:") {
     throw new Error("WebTransport URL must use https");

@@ -409,6 +409,24 @@ describe("validators", () => {
     });
   });
 
+  it("ignores optional validators when ngModel is absent", () => {
+    expect(() =>
+      $compile('<div required maxlength="2"></div>')($rootScope),
+    ).not.toThrow();
+  });
+
+  it("revalidates when the native required attribute is removed", async () => {
+    inputElm = $compile('<input ng-model="value" required />')($rootScope);
+    const ctrl = getController(inputElm, "ngModel");
+    spyOn(ctrl, "$validate").and.callThrough();
+
+    inputElm.removeAttribute("required");
+    await wait();
+
+    expect(ctrl.$validate).toHaveBeenCalled();
+    expect(ctrl.$error.required).not.toBeTrue();
+  });
+
   describe("minlength", () => {
     it("should invalidate values that are shorter than the given minlength", async () => {
       inputElm = $compile(

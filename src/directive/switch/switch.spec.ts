@@ -2,7 +2,7 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { wait, waitUntil } from "../../shared/test-utils.ts";
 
 describe("ngSwitch", () => {
   let $scope;
@@ -238,6 +238,116 @@ describe("ngSwitch", () => {
     expect(element.children.length).toBe(1);
   });
 
+  it("should defer switch DOM scheduling while retention is paused", async () => {
+    let trackSwitchFrames = false;
+    let switchFrameCalls = 0;
+
+    spyOn(window, "requestAnimationFrame").and.callFake(
+      (callback: () => void): number => {
+        if (trackSwitchFrames) {
+          switchFrameCalls += 1;
+        }
+
+        setTimeout(() => callback(0));
+
+        return 999;
+      },
+    );
+
+    trackSwitchFrames = true;
+
+    element = $compile(
+      '<div ng-switch="mode">' +
+        '<div ng-switch-when="one" animate>one</div>' +
+        '<div ng-switch-when="two" animate>two</div>' +
+        '<div ng-switch-when="three" animate>three</div>' +
+        "</div>",
+    )($scope);
+
+    $scope.mode = "one";
+    await waitUntil(
+      () => element.textContent === "one",
+      1000,
+      "Timed out waiting for initial switch case",
+    );
+    expect(element.textContent).toBe("one");
+    const callsAfterOne = switchFrameCalls;
+
+    $scope.mode = "two";
+    await waitUntil(
+      () => element.textContent === "two",
+      1000,
+      "Timed out waiting for active switch case",
+    );
+
+    expect(switchFrameCalls).toBeGreaterThan(callsAfterOne);
+    const callsDuringActiveSwitch = switchFrameCalls;
+
+    $scope.$broadcast("$viewRetentionPause", {
+      _pause: "schedulers",
+    });
+    trackSwitchFrames = false;
+
+    $scope.mode = "three";
+    await wait();
+
+    expect(switchFrameCalls).toBe(callsDuringActiveSwitch);
+    expect(element.textContent).toBe("two");
+
+    $scope.$broadcast("$viewRetentionResume", {
+      _pause: "background",
+    });
+    await wait();
+
+    expect(element.textContent).toBe("two");
+
+    $scope.$broadcast("$viewRetentionResume", {
+      _pause: "schedulers",
+    });
+    trackSwitchFrames = true;
+    await waitUntil(
+      () => element.textContent === "three",
+      1000,
+      "Timed out waiting for resumed switch case",
+    );
+
+    expect(element.textContent).toBe("three");
+  });
+
+  it("does not defer switch scheduling for unrelated retention mode", async () => {
+    element = $compile(
+      '<div ng-switch="mode">' +
+        '<div ng-switch-when="one" animate>one</div>' +
+        '<div ng-switch-when="two" animate>two</div>' +
+        "</div>",
+    )($scope);
+
+    $scope.mode = "one";
+    await waitUntil(
+      () => element.textContent === "one",
+      1000,
+      "Timed out waiting for first switch case",
+    );
+    expect(element.textContent).toBe("one");
+
+    $scope.mode = "two";
+    await waitUntil(
+      () => element.textContent === "two",
+      1000,
+      "Timed out waiting for second switch case",
+    );
+
+    $scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    $scope.mode = "one";
+    await waitUntil(
+      () => element.textContent === "one",
+      1000,
+      "Timed out waiting for background-retained switch case",
+    );
+
+    expect(element.textContent).toBe("one");
+  });
+
   it("should handle changes to the switch value in a digest loop with multiple value matches", async () => {
     const scope = $scope.$new();
 
@@ -432,13 +542,11 @@ describe("ngSwitch", () => {
 //   describe("behavior", () => {
 //     it("should destroy the previous leave animation if a new one takes place", () => {
 //       module("ngAnimate");
-//       module(($animateProvider) => {
-//         $animateProvider.register(".long-leave", () => ({
+//       module.animation(".long-leave", () => ({
 //           leave(element, done) {
 //             // do nothing at all
 //           },
 //         }));
-//       });
 //       () => {
 //         // inejct $compile, $scope, $animate, $templateCache
 //         let item;
@@ -530,13 +638,11 @@ describe("ngSwitch", () => {
 //     }));
 
 //     it("should work with svg elements when the svg container is transcluded", () => {
-//       module(($compileProvider) => {
-//         $compileProvider.directive("svgContainer", () => ({
+//       module.directive("svgContainer", () => ({
 //           template: "<svg ng-transclude></svg>",
 //           replace: true,
 //           transclude: true,
 //         }));
-//       });
 //       inject(($compile, $rootScope) => {
 //         element = $compile(
 //           '<svg-container ng-switch="inc"><circle ng-switch-when="one"></circle>' +

@@ -1,4 +1,3 @@
-import { _injector } from "../../injection-tokens.ts";
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,
@@ -93,140 +92,29 @@ function unwrapController(
   };
 }
 
-export class ControllerProvider {
-  /** @internal */
-  _controllers: Map<string, InjectableController>;
-  $get: [string, ($injector: ng.InjectorService) => ControllerService];
-
-  constructor() {
-    this._controllers = new Map();
-    this.$get = [
-      _injector,
-      ($injector): ControllerService => {
-        return (expression, locals, later, ident) => {
-          let instance: ControllerInstance;
-
-          let constructorName: string | undefined;
-
-          let identifier = ident && isString(ident) ? ident : null;
-
-          later = later === true;
-
-          if (isString(expression)) {
-            const match = CNTRL_REG.exec(expression);
-
-            if (!match) {
-              throw $controllerError(
-                "ctrlfmt",
-                "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.",
-                expression,
-              );
-            }
-
-            const [, matchedConstructorName, , matchedIdentifier] = match;
-
-            constructorName = matchedConstructorName;
-            identifier = (identifier ?? matchedIdentifier) || null;
-
-            const lookedUp = this._controllers.get(constructorName);
-
-            if (!lookedUp) {
-              throw $controllerError(
-                "ctrlreg",
-                "The controller with the name '{0}' is not registered.",
-                constructorName,
-              );
-            }
-
-            expression = lookedUp;
-            assertArgFn(expression, constructorName, true);
-          }
-
-          const injectable = expression as InjectableController;
-
-          const meta = unwrapController(injectable, constructorName);
-
-          if (later) {
-            instance = createObject(
-              meta.prototype ?? null,
-            ) as ControllerInstance;
-            const exportName = constructorName ?? meta.name;
-
-            if (identifier) {
-              instance.$controllerIdentifier = identifier;
-              ControllerProvider._addIdentifier(
-                locals,
-                identifier,
-                instance,
-                exportName,
-              );
-            }
-
-            if (instance.constructor?.$scopename && locals?.$scope) {
-              (locals.$scope as Record<string, unknown>).$scopename =
-                instance.constructor.$scopename;
-            }
-
-            return () => {
-              const result = $injector.invoke(
-                injectable,
-                instance,
-                locals,
-                constructorName,
-              );
-
-              if (
-                result !== instance &&
-                (isObject(result) || isFunction(result))
-              ) {
-                instance = result as ControllerInstance;
-
-                if (identifier) {
-                  instance.$controllerIdentifier = identifier;
-                  ControllerProvider._addIdentifier(
-                    locals,
-                    identifier,
-                    instance,
-                    exportName,
-                  );
-                }
-              }
-
-              return instance;
-            };
-          }
-
-          instance = $injector.instantiate(
-            injectable as unknown as Parameters<
-              typeof $injector.instantiate
-            >[0],
-            locals,
-            constructorName,
-          ) as ControllerInstance;
-
-          if (identifier) {
-            ControllerProvider._addIdentifier(
-              locals,
-              identifier,
-              instance,
-              constructorName ?? meta.name,
-            );
-          }
-
-          return instance;
-        };
-      },
-    ];
-  }
+/** @internal */
+export class ControllerRegistry {
+  private readonly _controllers = new Map<string, InjectableController>();
+  private _destroyed = false;
 
   has(name: string): boolean {
+    this.assertActive();
+
     return this._controllers.has(name);
+  }
+
+  get(name: string): InjectableController | undefined {
+    this.assertActive();
+
+    return this._controllers.get(name);
   }
 
   register(
     name: string | Record<string, unknown>,
     constructor?: unknown,
   ): void {
+    this.assertActive();
+
     if (isString(name)) {
       assertNotHasOwnProperty(name, "controller");
       this._controllers.set(name, normalizeControllerDef(constructor, name));
@@ -245,25 +133,131 @@ export class ControllerProvider {
     }
   }
 
-  /** @internal */
-  static _addIdentifier(
-    locals: ControllerLocals | undefined,
-    identifier: string,
-    instance: object,
-    name: string,
-  ): void {
-    if (!(locals && isObject(locals.$scope))) {
-      throw $controllerError(
-        "noscp",
-        "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.",
-        name,
-        identifier,
-      );
+  destroy(): void {
+    if (this._destroyed) return;
+
+    this._destroyed = true;
+    this._controllers.clear();
+  }
+
+  private assertActive(): void {
+    if (this._destroyed) {
+      throw new Error("Controller registry has already been disposed.");
+    }
+  }
+}
+
+function addIdentifier(
+  locals: ControllerLocals | undefined,
+  identifier: string,
+  instance: object,
+  name: string,
+): void {
+  if (!(locals && isObject(locals.$scope))) {
+    throw $controllerError(
+      "noscp",
+      "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.",
+      name,
+      identifier,
+    );
+  }
+
+  const scope = locals.$scope as Record<string, unknown>;
+
+  scope[identifier] = instance;
+  scope.$controllerIdentifier = identifier;
+}
+
+/** @internal */
+export function createControllerService(
+  registry: ControllerRegistry,
+  $injector: ng.InjectorService,
+): ControllerService {
+  return (expression, locals, later, ident) => {
+    let instance: ControllerInstance;
+    let constructorName: string | undefined;
+    let identifier = ident && isString(ident) ? ident : null;
+
+    later = later === true;
+
+    if (isString(expression)) {
+      const match = CNTRL_REG.exec(expression);
+
+      if (!match) {
+        throw $controllerError(
+          "ctrlfmt",
+          "Badly formed controller string '{0}'. Must match `__name__ as __id__` or `__name__`.",
+          expression,
+        );
+      }
+
+      const [, matchedConstructorName, , matchedIdentifier] = match;
+
+      constructorName = matchedConstructorName;
+      identifier = (identifier ?? matchedIdentifier) || null;
+
+      const lookedUp = registry.get(constructorName);
+
+      if (!lookedUp) {
+        throw $controllerError(
+          "ctrlreg",
+          "The controller with the name '{0}' is not registered.",
+          constructorName,
+        );
+      }
+
+      expression = lookedUp;
+      assertArgFn(expression, constructorName, true);
     }
 
-    const scope = locals.$scope as Record<string, unknown>;
+    const injectable = expression as InjectableController;
+    const meta = unwrapController(injectable, constructorName);
 
-    scope[identifier] = instance;
-    scope.$controllerIdentifier = identifier;
-  }
+    if (later) {
+      instance = createObject(meta.prototype ?? null) as ControllerInstance;
+      const exportName = constructorName ?? meta.name;
+
+      if (identifier) {
+        instance.$controllerIdentifier = identifier;
+        addIdentifier(locals, identifier, instance, exportName);
+      }
+
+      if (instance.constructor?.$scopename && locals?.$scope) {
+        (locals.$scope as Record<string, unknown>).$scopename =
+          instance.constructor.$scopename;
+      }
+
+      return () => {
+        const result = $injector.invoke(
+          injectable,
+          instance,
+          locals,
+          constructorName,
+        );
+
+        if (result !== instance && (isObject(result) || isFunction(result))) {
+          instance = result as ControllerInstance;
+
+          if (identifier) {
+            instance.$controllerIdentifier = identifier;
+            addIdentifier(locals, identifier, instance, exportName);
+          }
+        }
+
+        return instance;
+      };
+    }
+
+    instance = $injector.instantiate(
+      injectable as unknown as Parameters<typeof $injector.instantiate>[0],
+      locals,
+      constructorName,
+    ) as ControllerInstance;
+
+    if (identifier) {
+      addIdentifier(locals, identifier, instance, constructorName ?? meta.name);
+    }
+
+    return instance;
+  };
 }

@@ -3,8 +3,7 @@
  *
  * Globs can be used in specific APIs including:
  *
- * - [[StateService.is]]
- * - [[StateService.includes]]
+ * - [[StateService.matches]]
  * - The first argument to Hook Registration functions like [[TransitionService.onStart]]
  *    - [[HookMatchCriteria]] and [[HookMatchCriterion]]
  *

@@ -10,15 +10,56 @@ import {
   isFunction,
   isInstanceOf,
   isObject,
+  isPromiseLike,
   isString,
   keys,
 } from "../../shared/utils.ts";
+import type {
+  PolicyContext,
+  PolicyDecision,
+} from "../../core/policy/policy.ts";
+import { normalizePolicyDecision } from "../../core/policy/policy.ts";
 
-export type MachineMode = string;
+export type MachineState = string;
 
 export type MachineEventMap = Record<string, unknown>;
 
 export type MachineNoEvents = Record<never, never>;
+
+/** Labeled type contract carried by a machine definition and instance. */
+export interface MachineContract {
+  data: object;
+  events: object;
+  state: MachineState;
+}
+
+type DefaultMachineContract = {
+  data: object;
+  events: MachineEventMap;
+  state: MachineState;
+};
+
+type MachineContractOf<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+> = {
+  data: TData;
+  events: TEvents;
+  state: TState;
+};
+
+type MachineInstance<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState = MachineState,
+> = Machine<MachineContractOf<TData, TEvents, TState>>;
+
+type MachineConfiguration<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState = MachineState,
+> = MachineConfig<MachineContractOf<TData, TEvents, TState>>;
 
 type MachineEventName<TEvents extends object> = Extract<keyof TEvents, string>;
 
@@ -29,328 +70,591 @@ type MachineSendPayload<
   ? [payload?: TEvents[TType]]
   : [payload: TEvents[TType]];
 
-type MachineTransitionTable<
+/** @inline */
+type MachineReadonlyMachine<
   TData extends object,
   TEvents extends object,
+  TState extends MachineState = MachineState,
+> = Omit<
+  Pick<
+    MachineInstance<TData, TEvents, TState>,
+    "state" | "data" | "can" | "matches" | "snapshot"
+  >,
+  "data"
+> & {
+  readonly data: Readonly<TData>;
+};
+
+/** @inline */
+interface MachineTransitionPolicyContext<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> extends PolicyContext<"machine.transition"> {
+  readonly machineId?: string;
+  readonly type: string;
+  readonly from: TState;
+  readonly to: TState;
+  readonly payload: TPayload;
+  readonly data: Readonly<TData>;
+  readonly machine: MachineReadonlyMachine<TData, TEvents, TState>;
+}
+
+/** @inline */
+type MachineTransitionPolicy<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TState extends MachineState = MachineState,
+> = (
+  context: string extends keyof TEvents
+    ? MachineTransitionPolicyContext<
+        TData,
+        TEvents,
+        TEvents extends Record<string, infer TPayload> ? TPayload : unknown,
+        TState
+      >
+    : {
+        [TType in MachineEventName<TEvents>]: MachineTransitionPolicyContext<
+          TData,
+          TEvents,
+          TEvents[TType],
+          TState
+        > & {
+          readonly type: TType;
+        };
+      }[MachineEventName<TEvents>],
+) => PolicyDecision<"allow" | "deny"> | "allow" | "deny";
+
+/** @inline */
+interface MachineEventTransitionContext<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> {
+  readonly type: string;
+  readonly from: TState;
+  readonly to: TState;
+  readonly payload: TPayload;
+  readonly data: TData;
+  readonly machine: MachineInstance<TData, TEvents, TState>;
+}
+
+/** @inline */
+type MachineEventTransitionGuardContext<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> = Omit<
+  MachineEventTransitionContext<TData, TEvents, TPayload, TState>,
+  "data" | "machine"
+> & {
+  readonly data: Readonly<TData>;
+  readonly machine: MachineReadonlyMachine<TData, TEvents, TState>;
+};
+
+/** @inline */
+type MachineEventTransitionGuard<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> = (
+  context: MachineEventTransitionGuardContext<TData, TEvents, TPayload, TState>,
+) => boolean;
+
+/** @inline */
+type MachineEventTransitionUpdate<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> = (
+  context: MachineEventTransitionContext<TData, TEvents, TPayload, TState>,
+) => void;
+
+/** @inline */
+type MachineEventTransitionHook<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+> = (
+  context: MachineEventTransitionContext<TData, TEvents, TPayload, TState>,
+) => void;
+
+/** @inline */
+type MachineEventTransitionConfig<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TPayload = unknown,
+  TState extends MachineState = MachineState,
+  TFrom extends TState = TState,
+> = {
+  guard?: MachineEventTransitionGuard<TData, TEvents, TPayload, TState>;
+  before?: MachineEventTransitionHook<TData, TEvents, TPayload, TState>;
+  after?: MachineEventTransitionHook<TData, TEvents, TPayload, TState>;
+  denied?: MachineEventTransitionHook<TData, TEvents, TPayload, TState>;
+} & (
+  | {
+      to:
+        | TState
+        | ((
+            context: MachineEventTransitionGuardContext<
+              TData,
+              TEvents,
+              TPayload,
+              TState
+            >,
+          ) => TState);
+      update?: MachineEventTransitionUpdate<TData, TEvents, TPayload, TState>;
+    }
+  | {
+      to?: TFrom;
+      update: MachineEventTransitionUpdate<TData, TEvents, TPayload, TState>;
+    }
+);
+
+/** @inline */
+type MachineStateTransitionMap<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+  TFrom extends TState,
 > = string extends keyof TEvents
   ? Partial<
       Record<
         string,
-        MachineTransitionDefinition<TData, TEvents[string], TEvents>
+        MachineEventTransitionConfig<
+          TData,
+          TEvents,
+          TEvents[string],
+          TState,
+          TFrom
+        >
       >
     >
   : Partial<{
-      [TType in MachineEventName<TEvents>]: MachineTransitionDefinition<
+      [TType in MachineEventName<TEvents>]: MachineEventTransitionConfig<
         TData,
+        TEvents,
         TEvents[TType],
-        TEvents
+        TState,
+        TFrom
       >;
     }>;
 
-export type MachineTransitionResult = MachineMode | false | undefined;
-
-export type MachineTransition<
-  TData extends object = Record<string, unknown>,
-  TPayload = unknown,
-  TEvents extends object = MachineNoEvents,
-> = (
-  data: TData,
-  payload: TPayload,
-  machine: Machine<TData, TEvents>,
-) => MachineTransitionResult;
-
-export type MachineGuard<
-  TData extends object = Record<string, unknown>,
-  TPayload = unknown,
-  TEvents extends object = MachineNoEvents,
-> = (
-  data: TData,
-  payload: TPayload,
-  machine: Machine<TData, TEvents>,
-) => boolean;
-
-export interface MachineTransitionDescriptor<
-  TData extends object = Record<string, unknown>,
-  TPayload = unknown,
-  TEvents extends object = MachineNoEvents,
+export interface MachineStateDefinition<
+  TContract extends MachineContract = DefaultMachineContract,
+  TFrom extends TContract["state"] = TContract["state"],
 > {
-  guard?: MachineGuard<TData, TPayload, TEvents>;
-  target: MachineTransition<TData, TPayload, TEvents>;
+  on?: MachineStateTransitionMap<
+    TContract["data"],
+    TContract["events"],
+    TContract["state"],
+    TFrom
+  >;
 }
 
-export type MachineTransitionDefinition<
-  TData extends object = Record<string, unknown>,
-  TPayload = unknown,
-  TEvents extends object = MachineNoEvents,
-> =
-  | MachineTransition<TData, TPayload, TEvents>
-  | MachineTransitionDescriptor<TData, TPayload, TEvents>;
+export type MachineStateMap<
+  TContract extends MachineContract = DefaultMachineContract,
+> = {
+  [TFrom in TContract["state"]]: MachineStateDefinition<TContract, TFrom>;
+};
 
-export type MachineTransitionMap<
-  TData extends object,
-  TEvents extends object = MachineNoEvents,
-> = Partial<
-  Record<MachineMode, MachineTransitionTable<TData, TEvents> | undefined>
+/** @inline */
+type MachineEventNamesFromStates<TStates extends object> = {
+  [TState in keyof TStates]: TStates[TState] extends { on?: infer TOn }
+    ? Extract<keyof TOn, string>
+    : never;
+}[keyof TStates];
+
+/** @inline */
+type MachineEventsFromStates<TStates extends object> = Record<
+  MachineEventNamesFromStates<TStates>,
+  unknown
 >;
 
-export interface MachineTransitionContext<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-  TPayload = unknown,
-> {
-  type: string;
-  from: MachineMode;
-  to: MachineMode;
-  payload: TPayload;
-  data: TData;
-  machine: Machine<TData, TEvents>;
-}
-
-type MachineTransitionContextUnion<
-  TData extends object,
-  TEvents extends object,
-> = string extends keyof TEvents
-  ? MachineTransitionContext<TData, TEvents, TEvents[string]>
-  : {
-      [TType in MachineEventName<TEvents>]: MachineTransitionContext<
+type InferredMachineConfig<TData extends object, TStates extends object> = Omit<
+  MachineConfig<
+    MachineContractOf<
+      TData,
+      MachineEventsFromStates<TStates>,
+      Extract<keyof TStates, string>
+    >
+  >,
+  "data" | "initial" | "states"
+> & {
+  initial: Extract<keyof TStates, string>;
+  states: TStates &
+    MachineStateMap<
+      MachineContractOf<
         TData,
-        TEvents,
-        TEvents[TType]
-      > & {
-        type: TType;
-      };
-    }[MachineEventName<TEvents>];
+        MachineEventsFromStates<TStates>,
+        Extract<keyof TStates, string>
+      >
+    >;
+};
 
-export type MachineTransitionHook<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-> = (context: MachineTransitionContextUnion<TData, TEvents>) => void;
+type MachineEmptyData = Record<never, never>;
 
-export type MachineModeHooks<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-> = Partial<Record<MachineMode, MachineTransitionHook<TData, TEvents>>>;
+type MachineDataConfig<TData extends object> = keyof TData extends never
+  ? { data?: TData }
+  : { data: TData };
 
-export interface MachineHooks<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
-> {
-  enter?: MachineModeHooks<TData, TEvents>;
-  exit?: MachineModeHooks<TData, TEvents>;
-  transition?: MachineTransitionHook<TData, TEvents>;
+export type MachineConfig<
+  TContract extends MachineContract = DefaultMachineContract,
+> = {
+  id?: string;
+  initial: TContract["state"];
+  states: MachineStateMap<TContract>;
+  hooks?: MachineHooks<
+    TContract["data"],
+    TContract["events"],
+    TContract["state"]
+  >;
+  policy?: MachineTransitionPolicy<
+    TContract["data"],
+    TContract["events"],
+    TContract["state"]
+  >;
+  meta?: Readonly<Record<string, unknown>>;
+} & MachineDataConfig<TContract["data"]>;
+
+export type MachineDataOf<TMachine> = TMachine extends {
+  data: infer TData extends object;
 }
+  ? TData
+  : TMachine extends MachineConfig<infer TContract>
+    ? TContract["data"]
+    : never;
 
-export interface MachineConfig<
+export type MachineEventsOf<TMachine> =
+  TMachine extends Machine<infer TContract>
+    ? TContract["events"]
+    : TMachine extends MachineConfig<infer TContract>
+      ? TContract["events"]
+      : MachineEventMap;
+
+export type MachineEventNamesOf<TMachine> = Extract<
+  keyof MachineEventsOf<TMachine>,
+  string
+>;
+
+export type MachineStatesOf<TMachine> =
+  TMachine extends MachineConfig<infer TContract>
+    ? TContract["state"]
+    : TMachine extends Machine<infer TContract>
+      ? TContract["state"]
+      : TMachine extends { states: infer TStates }
+        ? Extract<keyof TStates, string>
+        : MachineState;
+
+/** @inline */
+type MachineGlobalTransitionHook<
   TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
+  TEvents extends object = MachineEventMap,
+  TState extends MachineState = MachineState,
+> = (
+  context: string extends keyof TEvents
+    ? MachineEventTransitionContext<TData, TEvents, TEvents[string], TState>
+    : {
+        [TType in MachineEventName<TEvents>]: MachineEventTransitionContext<
+          TData,
+          TEvents,
+          TEvents[TType],
+          TState
+        > & {
+          type: TType;
+        };
+      }[MachineEventName<TEvents>],
+) => void;
+
+/** @inline */
+type MachineStateHooks<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TState extends MachineState = MachineState,
+> = Partial<
+  Record<TState, MachineGlobalTransitionHook<TData, TEvents, TState>>
+>;
+
+/** @inline */
+interface MachineHooks<
+  TData extends object = Record<string, unknown>,
+  TEvents extends object = MachineEventMap,
+  TState extends MachineState = MachineState,
 > {
-  initial: MachineMode;
-  data: TData;
-  transitions: MachineTransitionMap<TData, TEvents>;
-  hooks?: MachineHooks<TData, TEvents>;
+  enter?: MachineStateHooks<TData, TEvents, TState>;
+  exit?: MachineStateHooks<TData, TEvents, TState>;
+  transition?: MachineGlobalTransitionHook<TData, TEvents, TState>;
 }
 
 export interface MachineSnapshot<
-  TData extends object = Record<string, unknown>,
+  TContract extends MachineContract = DefaultMachineContract,
 > {
-  current: MachineMode;
-  data: TData;
+  readonly state: TContract["state"];
+  readonly data: TContract["data"];
 }
 
+export type MachineSendStatus =
+  | "transitioned"
+  | "updated"
+  | "missing-transition"
+  | "guard-denied"
+  | "policy-denied"
+  | "invalid-event";
+
+type MachineSendResultBase<TState extends MachineState = MachineState> = {
+  readonly type: string;
+  readonly from: TState;
+  readonly to: TState;
+};
+
+export type MachineSendResult<TState extends MachineState = MachineState> =
+  MachineSendResultBase<TState> &
+    (
+      | {
+          readonly ok: true;
+          readonly status: Extract<
+            MachineSendStatus,
+            "transitioned" | "updated"
+          >;
+        }
+      | {
+          readonly ok: false;
+          readonly status: Exclude<
+            MachineSendStatus,
+            "transitioned" | "updated"
+          >;
+          readonly reason?: string;
+        }
+    );
+
 export interface Machine<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
+  TContract extends MachineContract = DefaultMachineContract,
 > {
-  current: MachineMode;
-  data: TData;
-  send<TType extends MachineEventName<TEvents>>(
+  readonly state: TContract["state"];
+  readonly data: TContract["data"];
+  send<TType extends MachineEventName<TContract["events"]>>(
     type: TType,
-    ...payload: MachineSendPayload<TEvents, TType>
-  ): boolean;
-  can<TType extends MachineEventName<TEvents>>(
+    ...payload: MachineSendPayload<TContract["events"], TType>
+  ): MachineSendResult<TContract["state"]>;
+  can<TType extends MachineEventName<TContract["events"]>>(
     type: TType,
-    payload?: TEvents[TType],
+    ...payload: MachineSendPayload<TContract["events"], TType>
   ): boolean;
-  matches(mode: MachineMode): boolean;
-  snapshot(): MachineSnapshot<TData>;
-  restore(snapshot: MachineSnapshot<TData>): void;
+  matches(state: TContract["state"]): boolean;
+  snapshot(): MachineSnapshot<TContract>;
+  restore(snapshot: unknown): void;
 }
 
 export interface MachineService {
   <
-    TData extends object = Record<string, unknown>,
-    TEvents extends object = MachineNoEvents,
+    TData extends object,
+    const TStates extends Record<
+      string,
+      MachineStateDefinition<
+        MachineContractOf<TData, MachineEventMap, MachineState>
+      >
+    >,
   >(
-    config: MachineConfig<TData, TEvents>,
-  ): Machine<TData, TEvents>;
+    config: { data: TData } & InferredMachineConfig<TData, TStates>,
+  ): Machine<
+    MachineContractOf<
+      TData,
+      MachineEventsFromStates<TStates>,
+      Extract<keyof TStates, string>
+    >
+  >;
   <
-    TData extends object = Record<string, unknown>,
-    TEvents extends object = MachineNoEvents,
+    const TStates extends Record<
+      string,
+      MachineStateDefinition<
+        MachineContractOf<MachineEmptyData, MachineEventMap, MachineState>
+      >
+    >,
   >(
-    scope: ng.Scope,
-    config: MachineConfig<TData, TEvents>,
-  ): Machine<TData, TEvents>;
+    config: { data?: undefined } & InferredMachineConfig<
+      MachineEmptyData,
+      TStates
+    >,
+  ): Machine<
+    MachineContractOf<
+      MachineEmptyData,
+      MachineEventsFromStates<TStates>,
+      Extract<keyof TStates, string>
+    >
+  >;
+  <TContract extends MachineContract = DefaultMachineContract>(
+    config: MachineConfig<TContract>,
+  ): Machine<TContract>;
 }
 
-type MachineTarget<TData extends object, TEvents extends object> = Machine<
-  TData,
-  TEvents
-> &
-  ScopeProxyBindable;
-
-interface MachineArgs<TData extends object, TEvents extends object> {
-  _scope?: ng.Scope;
-  _config: MachineConfig<TData, TEvents>;
-}
-
-interface MachineBinding<TData extends object, TEvents extends object> {
-  _handler: Scope;
-  _proxy: Machine<TData, TEvents>;
-}
-
-interface ResolvedMachineTransition<
+type MachineTarget<
   TData extends object,
   TEvents extends object,
+  TState extends MachineState,
+> = MachineInstance<TData, TEvents, TState> & ScopeProxyBindable;
+
+type ResolvedMachineConfiguration<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState = MachineState,
+> = Omit<MachineConfiguration<TData, TEvents, TState>, "data"> & {
+  data: TData;
+};
+
+interface MachineArgs<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
 > {
-  _guard?: MachineGuard<TData, unknown, TEvents>;
-  _target: MachineTransition<TData, unknown, TEvents>;
+  _scope?: ng.Scope;
+  _config: MachineConfiguration<TData, TEvents, TState>;
 }
 
-/**
- * Provides reactive mode machines backed by AngularTS scope proxies.
- */
-export class MachineProvider {
-  $get = (): MachineService => createMachine as MachineService;
+interface MachineBinding<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+> {
+  _handler: Scope;
+  _proxy: MachineInstance<TData, TEvents, TState>;
 }
 
-export function defineMachine<
-  TData extends object = Record<string, unknown>,
-  TEvents extends object = MachineNoEvents,
->(config: MachineConfig<TData, TEvents>): MachineConfig<TData, TEvents> {
-  return config;
+interface ResolvedMachineStateTransition<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+> {
+  _to?:
+    | TState
+    | ((
+        context: MachineEventTransitionGuardContext<
+          TData,
+          TEvents,
+          unknown,
+          TState
+        >,
+      ) => TState);
+  _guard?: MachineEventTransitionGuard<TData, TEvents, unknown, TState>;
+  _before?: MachineEventTransitionHook<TData, TEvents, unknown, TState>;
+  _update?: MachineEventTransitionUpdate<TData, TEvents, unknown, TState>;
+  _after?: MachineEventTransitionHook<TData, TEvents, unknown, TState>;
+  _denied?: MachineEventTransitionHook<TData, TEvents, unknown, TState>;
+}
+
+/** @internal */
+export function createMachineService(): MachineService {
+  return createMachine as MachineService;
 }
 
 function createMachine<
   TData extends object,
-  TEvents extends object = MachineNoEvents,
+  TEvents extends object = MachineEventMap,
+  TState extends MachineState = MachineState,
 >(
-  scopeOrConfig: ng.Scope | MachineConfig<TData, TEvents>,
-  maybeConfig?: MachineConfig<TData, TEvents>,
-): Machine<TData, TEvents> {
-  const { _scope: scope, _config: config } = normalizeMachineArgs(
+  scopeOrConfig: ng.Scope | MachineConfiguration<TData, TEvents, TState>,
+  maybeConfig?: MachineConfiguration<TData, TEvents, TState>,
+): MachineInstance<TData, TEvents, TState> {
+  const { _scope: scope, _config: typedConfig } = normalizeMachineArgs(
     scopeOrConfig,
     maybeConfig,
   );
 
+  const config = {
+    ...typedConfig,
+    data: defaultMachineData(typedConfig.data),
+  } as unknown as ResolvedMachineConfiguration<TData, TEvents, TState>;
+
   assertMachineConfig(config);
-
   const rawData = config.data;
-  let activeBinding: MachineBinding<TData, TEvents> | undefined;
-  const bindings = new Map<number, MachineBinding<TData, TEvents>>();
+  let currentState: TState = config.initial;
+  let activeBinding: MachineBinding<TData, TEvents, TState> | undefined;
+  const bindings = new Map<number, MachineBinding<TData, TEvents, TState>>();
 
-  const machineTarget: MachineTarget<TData, TEvents> = {
-    current: config.initial,
-    data: rawData,
-    send(type: string, payload?: unknown): boolean {
+  const machineTarget: MachineTarget<TData, TEvents, TState> = {
+    get state() {
+      return currentState;
+    },
+    get data() {
+      return rawData;
+    },
+    send(type: string, payload?: unknown): MachineSendResult<TState> {
       if (!isString(type)) {
-        return false;
+        return createSendResult("invalid-event", "", false);
       }
 
-      const transition = getTransition(machineTarget.current, config, type);
-
-      if (!transition) {
-        return false;
-      }
-
-      const binding = getActiveBinding();
-
-      return batch(binding?._handler, () => {
-        let transitionStarted = false;
-
-        try {
-          const activeMachine = getActiveMachine();
-
-          if (!canRunTransition(transition, payload, activeMachine)) {
-            return false;
-          }
-
-          const from = machineTarget.current;
-
-          transitionStarted = true;
-
-          const nextMode = transition._target(
-            activeMachine.data,
-            payload,
-            activeMachine,
-          );
-          const to = isNonEmptyString(nextMode) ? nextMode : from;
-          const context: MachineTransitionContext<TData, TEvents> = {
-            type,
-            from,
-            to,
-            payload,
-            data: activeMachine.data,
-            machine: activeMachine,
-          };
-          const hookContext = context as MachineTransitionContextUnion<
-            TData,
-            TEvents
-          >;
-
-          if (from !== to) {
-            getModeHook(config.hooks?.exit, from)?.(hookContext);
-          }
-
-          if (isNonEmptyString(nextMode)) {
-            machineTarget.current = nextMode;
-          } else {
-            machineTarget.current = from;
-          }
-
-          if (from !== to) {
-            getModeHook(config.hooks?.enter, to)?.(hookContext);
-          }
-
-          getTransitionHook(config.hooks)?.(hookContext);
-
-          return true;
-        } finally {
-          if (transitionStarted) {
-            scheduleMachineBindings();
-          }
-        }
-      });
+      return dispatchMachineStateTransition(type, payload, config);
     },
     can(type: string, payload?: unknown): boolean {
       if (!isString(type)) {
         return false;
       }
 
-      const transition = getTransition(machineTarget.current, config, type);
+      const transition = getStateTransition(currentState, config, type);
 
-      return (
-        !!transition &&
-        canRunTransition(transition, payload, getActiveMachine())
+      if (!transition) {
+        return false;
+      }
+
+      const activeMachine = getActiveMachine();
+      const from = currentState;
+      const to = resolveMachineTransitionTarget(
+        transition,
+        type,
+        from,
+        payload,
+        activeMachine,
+        config,
+      );
+      const context = createStateTransitionContext(
+        type,
+        from,
+        to,
+        payload,
+        activeMachine,
+      );
+
+      if (!canRunStateTransition(transition, context)) {
+        return false;
+      }
+
+      return !isMachinePolicyDenied(
+        checkMachineTransitionPolicy(
+          config,
+          createTransitionPolicyContext(
+            config,
+            type,
+            from,
+            context.to,
+            payload,
+            activeMachine,
+          ),
+        ),
       );
     },
-    matches(mode: MachineMode): boolean {
-      return machineTarget.current === mode;
+    matches(state: TState): boolean {
+      return currentState === state;
     },
-    snapshot(): MachineSnapshot<TData> {
+    snapshot(): MachineSnapshot<MachineContractOf<TData, TEvents, TState>> {
       return {
-        current: machineTarget.current,
+        state: currentState,
         data: cloneMachineData(rawData),
       };
     },
-    restore(snapshot: MachineSnapshot<TData>): void {
-      assertMachineSnapshot(snapshot);
+    restore(snapshot: unknown): void {
+      assertMachineSnapshot(snapshot, config);
 
       const binding = getActiveBinding();
 
       batch(binding?._handler, () => {
         const previousDataKeys = collectMachineDataKeys(rawData);
 
-        machineTarget.current = snapshot.current;
+        currentState = snapshot.state;
         restoreMachineData(rawData, snapshot.data);
         scheduleMachineBindings(previousDataKeys);
       });
@@ -358,7 +662,7 @@ function createMachine<
   };
 
   Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
-    value(handler: Scope, proxy: Machine<TData, TEvents>) {
+    value(handler: Scope, proxy: MachineInstance<TData, TEvents, TState>) {
       let binding = bindings.get(handler.$id);
 
       if (!binding) {
@@ -374,19 +678,21 @@ function createMachine<
   });
 
   if (scope?.$handler) {
-    return createScope(machineTarget, scope.$handler as Scope) as Machine<
-      TData,
-      TEvents
-    >;
+    return createScope(
+      machineTarget,
+      scope.$handler as Scope,
+    ) as unknown as MachineInstance<TData, TEvents, TState>;
   }
 
-  return machineTarget;
+  return machineTarget as MachineInstance<TData, TEvents, TState>;
 
-  function getActiveMachine(): Machine<TData, TEvents> {
+  function getActiveMachine(): MachineInstance<TData, TEvents, TState> {
     return getActiveBinding()?._proxy ?? machineTarget;
   }
 
-  function getActiveBinding(): MachineBinding<TData, TEvents> | undefined {
+  function getActiveBinding():
+    | MachineBinding<TData, TEvents, TState>
+    | undefined {
     if (activeBinding && !activeBinding._handler._destroyed) {
       return activeBinding;
     }
@@ -420,7 +726,7 @@ function createMachine<
         continue;
       }
 
-      binding._handler._scheduleWatchKeys(["current", "data"]);
+      binding._handler._scheduleWatchKeys(["state", "data"]);
       binding._handler._checkListenersForAllKeys(rawData as never);
 
       if (dataKeys.length > 0) {
@@ -428,6 +734,236 @@ function createMachine<
       }
     }
   }
+
+  function dispatchMachineStateTransition(
+    type: string,
+    payload: unknown,
+    stateConfig: MachineConfiguration<TData, TEvents, TState>,
+  ): MachineSendResult<TState> {
+    const transition = getStateTransition(currentState, stateConfig, type);
+
+    if (!transition) {
+      return createSendResult("missing-transition", type, false);
+    }
+
+    const binding = getActiveBinding();
+
+    return batch(binding?._handler, () => {
+      let transitionStarted = false;
+
+      try {
+        const activeMachine = getActiveMachine();
+        const from = machineTarget.state;
+        const to = resolveMachineTransitionTarget(
+          transition,
+          type,
+          from,
+          payload,
+          activeMachine,
+          stateConfig,
+        );
+        const context = createStateTransitionContext(
+          type,
+          from,
+          to,
+          payload,
+          activeMachine,
+        );
+
+        if (!canRunStateTransition(transition, context)) {
+          transitionStarted = !!transition._denied;
+          transition._denied?.(context);
+
+          return createSendResult("guard-denied", type, false, from, from);
+        }
+
+        const policyDecision = checkMachineTransitionPolicy(
+          stateConfig,
+          createTransitionPolicyContext(
+            stateConfig,
+            type,
+            from,
+            context.to,
+            payload,
+            activeMachine,
+          ),
+        );
+
+        if (isMachinePolicyDenied(policyDecision)) {
+          return createSendResult(
+            "policy-denied",
+            type,
+            false,
+            from,
+            from,
+            policyDecision.reason,
+          );
+        }
+
+        transitionStarted = true;
+
+        transition._before?.(context);
+        transition._update?.(context);
+
+        const hookContext = context as Parameters<
+          MachineGlobalTransitionHook<TData, TEvents, TState>
+        >[0];
+
+        if (from !== to) {
+          getModeHook(stateConfig.hooks?.exit, from)?.(hookContext);
+        }
+
+        currentState = to;
+
+        if (from !== to) {
+          getModeHook(stateConfig.hooks?.enter, to)?.(hookContext);
+        }
+
+        transition._after?.(context);
+        getTransitionHook(stateConfig.hooks)?.(hookContext);
+
+        return createSendResult(
+          from === to ? "updated" : "transitioned",
+          type,
+          true,
+          from,
+          to,
+        );
+      } finally {
+        if (transitionStarted) {
+          scheduleMachineBindings();
+        }
+      }
+    });
+  }
+
+  function createStateTransitionContext(
+    type: string,
+    from: TState,
+    to: TState,
+    payload: unknown,
+    activeMachine: MachineInstance<TData, TEvents, TState>,
+  ): MachineEventTransitionContext<TData, TEvents, unknown, TState> {
+    return {
+      type,
+      from,
+      to,
+      payload,
+      data: activeMachine.data,
+      machine: activeMachine,
+    };
+  }
+
+  function resolveMachineTransitionTarget(
+    transition: ResolvedMachineStateTransition<TData, TEvents, TState>,
+    type: string,
+    from: TState,
+    payload: unknown,
+    activeMachine: MachineInstance<TData, TEvents, TState>,
+    stateConfig: MachineConfiguration<TData, TEvents, TState>,
+  ): TState {
+    const to = isFunction(transition._to)
+      ? transition._to(
+          createStateTransitionContext(
+            type,
+            from,
+            from,
+            payload,
+            activeMachine,
+          ),
+        )
+      : (transition._to ?? from);
+
+    if (!isNonEmptyString(to)) {
+      throw new Error(
+        "$machine transition target resolver must return a non-empty state.",
+      );
+    }
+
+    if (!hasOwn(stateConfig.states, to)) {
+      throw new Error(
+        `$machine transition target '${to}' is not a configured state.`,
+      );
+    }
+
+    return to;
+  }
+
+  function createSendResult(
+    status: MachineSendStatus,
+    type: string,
+    ok: boolean,
+    from: TState = currentState,
+    to: TState = from,
+    reason?: string,
+  ): MachineSendResult<TState> {
+    return {
+      ok,
+      status,
+      type,
+      from,
+      to,
+      ...(reason === undefined ? {} : { reason }),
+    } as MachineSendResult<TState>;
+  }
+}
+
+const ALLOW_MACHINE_TRANSITION: PolicyDecision<"allow" | "deny"> = {
+  type: "allow",
+};
+
+function createTransitionPolicyContext<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  config: MachineConfiguration<TData, TEvents, TState>,
+  type: string,
+  from: TState,
+  to: TState,
+  payload: unknown,
+  activeMachine: MachineInstance<TData, TEvents, TState>,
+): MachineTransitionPolicyContext<TData, TEvents, unknown, TState> {
+  return {
+    operation: "machine.transition",
+    machineId: config.id,
+    type,
+    from,
+    to,
+    payload,
+    data: activeMachine.data,
+    machine: activeMachine,
+    meta: config.meta,
+  };
+}
+
+function checkMachineTransitionPolicy<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  config: MachineConfiguration<TData, TEvents, TState>,
+  context: MachineTransitionPolicyContext<TData, TEvents, unknown, TState>,
+): PolicyDecision<"allow" | "deny"> {
+  if (!config.policy) {
+    return ALLOW_MACHINE_TRANSITION;
+  }
+
+  const decision = config.policy(
+    context as Parameters<MachineTransitionPolicy<TData, TEvents, TState>>[0],
+  );
+
+  if (isPromiseLike(decision)) {
+    throw new Error("$machine policy must return a synchronous decision.");
+  }
+
+  return normalizePolicyDecision(decision);
+}
+
+function isMachinePolicyDenied(
+  decision: PolicyDecision<"allow" | "deny">,
+): boolean {
+  return decision.type === "deny";
 }
 
 function collectMachineDataKeys(value: object): string[] {
@@ -485,6 +1021,16 @@ function collectNativeCollectionKeys(value: object, keySet: Set<string>): void {
 
 function cloneMachineData<TData extends object>(data: TData): TData {
   return structuredClone(data);
+}
+
+function defaultMachineData<TData extends object>(
+  data: TData | undefined,
+): TData {
+  if (data === undefined) {
+    return {} as TData;
+  }
+
+  return data;
 }
 
 function restoreMachineData<TData extends object>(
@@ -577,79 +1123,127 @@ function setMachineDataProperty(
   target[key] = value;
 }
 
-function getTransition<TData extends object, TEvents extends object>(
-  mode: MachineMode,
-  config: MachineConfig<TData, TEvents>,
+function getStateTransition<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  currentState: TState,
+  config: MachineConfiguration<TData, TEvents, TState>,
   type: string,
-): ResolvedMachineTransition<TData, TEvents> | undefined {
-  if (!hasOwn(config.transitions, mode)) {
+): ResolvedMachineStateTransition<TData, TEvents, TState> | undefined {
+  if (!hasOwn(config.states, currentState)) {
     return undefined;
   }
 
-  const transitions = config.transitions[mode];
+  const stateDefinition = config.states[currentState];
 
-  if (!isObject(transitions) || !hasOwn(transitions, type)) {
+  if (
+    !isObject(stateDefinition) ||
+    !isObject(stateDefinition.on) ||
+    !hasOwn(stateDefinition.on, type)
+  ) {
     return undefined;
   }
 
-  const transition = (transitions as Record<string, unknown>)[type];
+  const transition = (stateDefinition.on as Record<string, unknown>)[type];
 
-  return resolveMachineTransition<TData, TEvents>(transition);
+  return resolveMachineStateTransition<TData, TEvents, TState>(transition);
 }
 
-function resolveMachineTransition<TData extends object, TEvents extends object>(
+function resolveMachineStateTransition<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
   transition: unknown,
-): ResolvedMachineTransition<TData, TEvents> | undefined {
-  if (isFunction(transition)) {
-    return {
-      _target: transition as MachineTransition<TData, unknown, TEvents>,
-    };
-  }
-
-  if (!isPlainObject(transition) || !hasOwn(transition, "target")) {
+): ResolvedMachineStateTransition<TData, TEvents, TState> | undefined {
+  if (!isPlainObject(transition)) {
     return undefined;
   }
 
   const descriptor = transition as Partial<
-    MachineTransitionDescriptor<TData, unknown, TEvents>
+    MachineEventTransitionConfig<TData, TEvents, unknown, TState>
   >;
+  const hasTo = hasOwn(transition, "to");
+  const hasUpdate = hasOwn(transition, "update");
 
-  if (!isFunction(descriptor.target)) {
+  if (hasTo && !isNonEmptyString(descriptor.to) && !isFunction(descriptor.to)) {
+    return undefined;
+  }
+
+  if (!hasTo && !isFunction(descriptor.update)) {
+    return undefined;
+  }
+
+  if (hasUpdate && !isFunction(descriptor.update)) {
+    return undefined;
+  }
+
+  if (descriptor.guard !== undefined && !isFunction(descriptor.guard)) {
+    return undefined;
+  }
+
+  if (descriptor.before !== undefined && !isFunction(descriptor.before)) {
+    return undefined;
+  }
+
+  if (descriptor.after !== undefined && !isFunction(descriptor.after)) {
+    return undefined;
+  }
+
+  if (descriptor.denied !== undefined && !isFunction(descriptor.denied)) {
     return undefined;
   }
 
   return {
+    _to:
+      isNonEmptyString(descriptor.to) || isFunction(descriptor.to)
+        ? descriptor.to
+        : undefined,
     _guard: isFunction(descriptor.guard) ? descriptor.guard : undefined,
-    _target: descriptor.target,
+    _before: isFunction(descriptor.before) ? descriptor.before : undefined,
+    _update: isFunction(descriptor.update) ? descriptor.update : undefined,
+    _after: isFunction(descriptor.after) ? descriptor.after : undefined,
+    _denied: isFunction(descriptor.denied) ? descriptor.denied : undefined,
   };
 }
 
-function canRunTransition<TData extends object, TEvents extends object>(
-  transition: ResolvedMachineTransition<TData, TEvents>,
-  payload: unknown,
-  machine: Machine<TData, TEvents>,
+function canRunStateTransition<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  transition: ResolvedMachineStateTransition<TData, TEvents, TState>,
+  context: MachineEventTransitionContext<TData, TEvents, unknown, TState>,
 ): boolean {
-  return transition._guard
-    ? transition._guard(machine.data, payload, machine)
-    : true;
+  return transition._guard ? transition._guard(context) : true;
 }
 
-function getModeHook<TData extends object, TEvents extends object>(
-  hooks: MachineModeHooks<TData, TEvents> | undefined,
-  mode: MachineMode,
-): MachineTransitionHook<TData, TEvents> | undefined {
-  if (!hooks || !hasOwn(hooks, mode)) {
+function getModeHook<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  hooks: MachineStateHooks<TData, TEvents, TState> | undefined,
+  state: TState,
+): MachineGlobalTransitionHook<TData, TEvents, TState> | undefined {
+  if (!hooks || !hasOwn(hooks, state)) {
     return undefined;
   }
 
-  const hook = hooks[mode];
+  const hook = hooks[state];
 
   return isFunction(hook) ? hook : undefined;
 }
 
-function getTransitionHook<TData extends object, TEvents extends object>(
-  hooks: MachineHooks<TData, TEvents> | undefined,
-): MachineTransitionHook<TData, TEvents> | undefined {
+function getTransitionHook<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  hooks: MachineHooks<TData, TEvents, TState> | undefined,
+): MachineGlobalTransitionHook<TData, TEvents, TState> | undefined {
   if (!hooks || !hasOwn(hooks, "transition")) {
     return undefined;
   }
@@ -665,10 +1259,14 @@ function batch<T>(scope: Scope | undefined, fn: () => T): T {
   return scope.$batch(fn);
 }
 
-function normalizeMachineArgs<TData extends object, TEvents extends object>(
-  scopeOrConfig: ng.Scope | MachineConfig<TData, TEvents>,
-  maybeConfig?: MachineConfig<TData, TEvents>,
-): MachineArgs<TData, TEvents> {
+function normalizeMachineArgs<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  scopeOrConfig: ng.Scope | MachineConfiguration<TData, TEvents, TState>,
+  maybeConfig?: MachineConfiguration<TData, TEvents, TState>,
+): MachineArgs<TData, TEvents, TState> {
   if (maybeConfig) {
     return {
       _scope: scopeOrConfig as ng.Scope,
@@ -677,51 +1275,72 @@ function normalizeMachineArgs<TData extends object, TEvents extends object>(
   }
 
   return {
-    _config: scopeOrConfig as MachineConfig<TData, TEvents>,
+    _config: scopeOrConfig as MachineConfiguration<TData, TEvents, TState>,
   };
 }
 
-function assertMachineConfig<TData extends object, TEvents extends object>(
-  config: MachineConfig<TData, TEvents>,
-): void {
+function assertMachineConfig<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(config: MachineConfiguration<TData, TEvents, TState>): void {
   if (!isObject(config)) {
     throw new Error("$machine requires a config object.");
   }
 
   if (!isString(config.initial) || !config.initial) {
-    throw new Error("$machine requires a non-empty initial mode.");
+    throw new Error("$machine requires a non-empty initial state.");
   }
 
   if (!isObject(config.data)) {
     throw new Error("$machine requires a data object.");
   }
 
-  if (!isObject(config.transitions)) {
-    throw new Error("$machine requires a transitions object.");
+  if (!isObject(config.states)) {
+    throw new Error("$machine requires a states object.");
+  }
+
+  if (!hasOwn(config.states, config.initial)) {
+    throw new Error("$machine initial state must exist in states.");
   }
 
   assertMachineHooks(config.hooks);
 }
 
-function assertMachineSnapshot(snapshot: unknown): void {
+function assertMachineSnapshot<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(
+  snapshot: unknown,
+  config: MachineConfiguration<TData, TEvents, TState>,
+): asserts snapshot is MachineSnapshot<
+  MachineContractOf<TData, TEvents, TState>
+> {
   if (!snapshot || !isObject(snapshot)) {
     throw new Error("$machine restore requires a snapshot object.");
   }
 
   const candidate = snapshot as Partial<MachineSnapshot>;
 
-  if (!isString(candidate.current) || !candidate.current) {
-    throw new Error("$machine restore requires a non-empty current mode.");
+  if (!isString(candidate.state) || !candidate.state) {
+    throw new Error("$machine restore requires a non-empty state.");
   }
 
   if (!isObject(candidate.data)) {
     throw new Error("$machine restore requires a data object.");
   }
+
+  if (!hasOwn(config.states, candidate.state)) {
+    throw new Error("$machine restore state must exist in states.");
+  }
 }
 
-function assertMachineHooks<TData extends object, TEvents extends object>(
-  hooks: MachineHooks<TData, TEvents> | undefined,
-): void {
+function assertMachineHooks<
+  TData extends object,
+  TEvents extends object,
+  TState extends MachineState,
+>(hooks: MachineHooks<TData, TEvents, TState> | undefined): void {
   if (hooks === undefined) {
     return;
   }

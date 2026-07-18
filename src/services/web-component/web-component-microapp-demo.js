@@ -28,15 +28,13 @@ class InventoryStore {
 
 /** @type {import("../../runtime/web-component.ts").AngularElementOptions<InventoryScope>} */
 const inventoryMicroapp = {
-  ngModule: {
-    directives: {
-      ngClass: classDirective,
-      ngClick: ngClickDirective,
-      ngRepeat: ngRepeatDirective,
-    },
-    services: {
-      inventoryStore: InventoryStore,
-    },
+  directives: {
+    ngClass: classDirective,
+    ngClick: ngClickDirective,
+    ngRepeat: ngRepeatDirective,
+  },
+  services: {
+    inventoryStore: InventoryStore,
   },
   component: {
     shadow: true,

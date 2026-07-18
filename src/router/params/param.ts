@@ -144,25 +144,25 @@ function getType(
 }
 
 /**
- * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+ * Returns false, true, or the replacement value for an optional URL parameter.
  * @param {ParamDeclaration} config
  * @param {boolean} isOptional
- * @param {boolean | string} defaultPolicy
+ * @param {boolean | string} defaultSquash
  */
-function getSquashPolicy(
+function resolveSquash(
   config: ParamDeclaration,
   isOptional: boolean,
-  defaultPolicy: boolean | string,
+  defaultSquash: boolean | string,
 ): boolean | string {
   const { squash } = config;
 
   if (!isOptional || squash === false) return false;
 
-  if (!isDefined(squash)) return defaultPolicy;
+  if (!isDefined(squash)) return defaultSquash;
 
   if (squash === true || isString(squash)) return squash;
   throw new Error(
-    `Invalid squash policy: '${String(squash)}'. Valid policies: false, true, or arbitrary string`,
+    `Invalid squash value: '${String(squash)}'. Expected false, true, or a replacement string.`,
   );
 }
 
@@ -274,10 +274,10 @@ export class Param {
 
     const raw = !!config.raw;
 
-    const squash = getSquashPolicy(
+    const squash = resolveSquash(
       config,
       isOptional,
-      urlConfig._getDefaultSquashPolicy(),
+      urlConfig._getDefaultSquash(),
     );
 
     const replace = getReplace(config, arrayMode, isOptional, squash);
@@ -310,7 +310,7 @@ export class Param {
    * default value, which may be the result of an injectable function.
    * @param {undefined} [value]
    */
-  value(value?: unknown): unknown {
+  value(value?: unknown, source: "model" | "url" = "model"): unknown {
     for (let i = 0; i < this.replace.length; i++) {
       const tuple = this.replace[i];
 
@@ -322,7 +322,9 @@ export class Param {
 
     return isUndefined(value)
       ? this._getDefaultValue()
-      : this.type.$normalize(value);
+      : source === "url"
+        ? this.type.decode(value)
+        : this.type.$normalize(value);
   }
 
   /** @internal */
@@ -372,7 +374,7 @@ export class Param {
 
     if (!this.type.is(normalized)) return false;
     // The value was of the correct type, but when encoded, did not match the ParamType's regexp
-    const encoded = normalized; // this.type.encode(normalized);
+    const encoded = this.type.encode(normalized);
 
     return !(isString(encoded) && !this.type.pattern.exec(encoded));
   }

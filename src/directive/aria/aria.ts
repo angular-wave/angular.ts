@@ -1,13 +1,96 @@
 import { _aria, _parse } from "../../injection-tokens.ts";
-import { directiveNormalize, extend, stringify } from "../../shared/utils.ts";
+import { directiveNormalize, stringify } from "../../shared/utils.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
 
+type AriaDiagnosticCode =
+  | "aria-missing-accessible-name"
+  | "aria-missing-reference"
+  | "aria-positive-tabindex"
+  | "aria-hidden-interactive";
+
+interface AriaDiagnostic {
+  code: AriaDiagnosticCode;
+  message: string;
+  source: string;
+  element: HTMLElement;
+}
+
+type AriaAttributeName =
+  | "aria-activedescendant"
+  | "aria-atomic"
+  | "aria-autocomplete"
+  | "aria-braillelabel"
+  | "aria-brailleroledescription"
+  | "aria-busy"
+  | "aria-checked"
+  | "aria-colcount"
+  | "aria-colindex"
+  | "aria-colindextext"
+  | "aria-colspan"
+  | "aria-controls"
+  | "aria-current"
+  | "aria-describedby"
+  | "aria-description"
+  | "aria-details"
+  | "aria-disabled"
+  | "aria-dropeffect"
+  | "aria-errormessage"
+  | "aria-expanded"
+  | "aria-flowto"
+  | "aria-grabbed"
+  | "aria-haspopup"
+  | "aria-hidden"
+  | "aria-invalid"
+  | "aria-keyshortcuts"
+  | "aria-label"
+  | "aria-labelledby"
+  | "aria-level"
+  | "aria-live"
+  | "aria-modal"
+  | "aria-multiline"
+  | "aria-multiselectable"
+  | "aria-orientation"
+  | "aria-owns"
+  | "aria-placeholder"
+  | "aria-posinset"
+  | "aria-pressed"
+  | "aria-readonly"
+  | "aria-relevant"
+  | "aria-required"
+  | "aria-roledescription"
+  | "aria-rowcount"
+  | "aria-rowindex"
+  | "aria-rowindextext"
+  | "aria-rowspan"
+  | "aria-selected"
+  | "aria-setsize"
+  | "aria-sort"
+  | "aria-valuemax"
+  | "aria-valuemin"
+  | "aria-valuenow"
+  | "aria-valuetext";
+
+type ManagedAriaAttributeName = Extract<
+  AriaAttributeName,
+  | "aria-hidden"
+  | "aria-current"
+  | "aria-checked"
+  | "aria-readonly"
+  | "aria-disabled"
+  | "aria-required"
+  | "aria-invalid"
+>;
+
 export interface AriaService {
-  config(key: string | number): boolean | undefined;
+  config<K extends keyof AriaConfig>(key: K): AriaConfig[K];
+  /** @internal */
+  _diagnoseInteractive(element: HTMLElement, source: string): void;
+  /** @internal */
+  _diagnostics(): readonly AriaDiagnostic[];
   /** @internal */
   _watchExpr(
-    attrName: string | number,
-    ariaAttr: string,
+    attrName: string,
+    ariaAttr: ManagedAriaAttributeName,
     nativeAriaNodeNamesParam: string[],
     negate: boolean,
   ): (scope: ng.Scope, elem: HTMLElement) => void;
@@ -15,7 +98,7 @@ export interface AriaService {
 
 const ARIA_DISABLE_ATTR = "ngAriaDisable";
 
-interface AriaConfig {
+export interface AriaConfig {
   ariaHidden: boolean;
   ariaChecked: boolean;
   ariaReadonly: boolean;
@@ -23,14 +106,20 @@ interface AriaConfig {
   ariaRequired: boolean;
   ariaInvalid: boolean;
   ariaValue: boolean;
+  ariaCurrent: boolean;
+  ariaCurrentToken:
+    | "page"
+    | "step"
+    | "location"
+    | "date"
+    | "time"
+    | "true"
+    | "false";
   tabindex: boolean;
   bindKeydown: boolean;
   bindRoleForClick: boolean;
-}
-
-export interface AriaProvider {
-  config: (newConfig: Partial<AriaConfig>) => void;
-  $get: ng.Injectable<() => AriaService>;
+  bindRoleForState: boolean;
+  diagnostics: boolean;
 }
 
 type AriaNgModelController = Omit<
@@ -59,6 +148,14 @@ const nativeAriaNodeNames = [
   "SUMMARY",
 ];
 
+const ARIA_REFERENCE_ATTRS = [
+  "aria-controls",
+  "aria-describedby",
+  "aria-details",
+  "aria-errormessage",
+  "aria-labelledby",
+];
+
 const isNodeOneOf = function (
   elem: HTMLElement,
   nodeTypeArray: string[],
@@ -66,82 +163,247 @@ const isNodeOneOf = function (
   return nodeTypeArray.includes(elem.nodeName);
 };
 
-/**
- * Used for configuring the ARIA attributes injected and managed by ngAria.
- *
- * ```js
- * angular.module('myApp', ['ngAria'], function config($ariaProvider) {
- *   $ariaProvider.config({
- *     ariaValue: true,
- *     tabindex: false
- *   });
- * });
- *```
- *
- * ## Dependencies
- * Requires the {@link ngAria} module to be installed.
- *
- */
-export function AriaProvider(this: AriaProvider): void {
-  let config: AriaConfig = {
-    ariaHidden: true,
-    ariaChecked: true,
-    ariaReadonly: true,
-    ariaDisabled: true,
-    ariaRequired: true,
-    ariaInvalid: true,
-    ariaValue: true,
-    tabindex: true,
-    bindKeydown: true,
-    bindRoleForClick: true,
+const DEFAULT_ARIA_CONFIG: AriaConfig = {
+  ariaHidden: true,
+  ariaChecked: true,
+  ariaReadonly: true,
+  ariaDisabled: true,
+  ariaRequired: true,
+  ariaInvalid: true,
+  ariaValue: true,
+  ariaCurrent: true,
+  ariaCurrentToken: "page",
+  tabindex: true,
+  bindKeydown: true,
+  bindRoleForClick: true,
+  bindRoleForState: true,
+  diagnostics: false,
+};
+
+/** @internal */
+export interface AriaRuntimeState {
+  readonly config: AriaConfig;
+  destroyed: boolean;
+}
+
+/** @internal */
+export function createAriaRuntimeState(): AriaRuntimeState {
+  return {
+    config: { ...DEFAULT_ARIA_CONFIG },
+    destroyed: false,
   };
+}
 
-  this.config = function (newConfig: Partial<AriaConfig>) {
-    config = extend(config, newConfig);
-  };
+/** @internal */
+export function applyAriaConfiguration(
+  state: AriaRuntimeState,
+  config: Partial<AriaConfig>,
+): void {
+  if (state.destroyed) {
+    throw new Error("ARIA runtime has already been disposed.");
+  }
 
-  this.$get = [
-    function (): AriaService {
-      /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
-      function watchExpr(
-        attrName: string,
-        ariaAttr: string,
-        nativeAriaNodeNamesParam: string[],
-        negate: boolean,
-      ): (scope: ng.Scope, elem: HTMLElement) => void {
-        return function (scope: ng.Scope, elem: HTMLElement) {
-          if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR)) return;
+  Object.assign(state.config, config);
+}
 
-          const ariaCamelName = directiveNormalize(
-            ariaAttr,
-          ) as keyof AriaConfig;
+/** @internal */
+export function destroyAriaRuntimeState(state: AriaRuntimeState): void {
+  if (state.destroyed) return;
 
-          if (
-            config[ariaCamelName] &&
-            !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
-            !hasNormalizedAttr(elem, ariaCamelName)
-          ) {
-            scope.$watch(
-              getNormalizedAttr(elem, attrName) ?? "",
-              (boolVal: unknown) => {
-                // ensure boolean value
-                boolVal = negate ? !boolVal : !!boolVal;
-                elem.setAttribute(ariaAttr, String(boolVal));
-              },
-            );
-          }
-        };
+  state.destroyed = true;
+}
+
+/** @internal */
+export function createAriaService(
+  state: AriaRuntimeState,
+  $log: ng.LogService,
+): AriaService {
+  if (state.destroyed) {
+    throw new Error("ARIA runtime has already been disposed.");
+  }
+
+  const config = state.config;
+
+  const diagnostics: AriaDiagnostic[] = [];
+  const seenDiagnostics = new Set<string>();
+
+  function findReferencedElement(
+    element: HTMLElement,
+    id: string,
+  ): HTMLElement | null {
+    let current: HTMLElement | null = element;
+
+    while (current) {
+      if (current.id === id) {
+        return current;
       }
 
-      return {
-        /** Reads the current ARIA provider configuration value by key. */
-        config(key: string | number) {
-          return config[key as keyof AriaConfig];
-        },
-        _watchExpr: watchExpr,
-      };
+      const candidates = Array.from(
+        current.querySelectorAll<HTMLElement>("[id]"),
+      );
+      const found = candidates.find((candidate) => candidate.id === id);
+
+      if (found) {
+        return found;
+      }
+
+      current = current.parentElement;
+    }
+
+    return element.ownerDocument.getElementById(id);
+  }
+
+  function hasAccessibleName(element: HTMLElement): boolean {
+    if (element.getAttribute("aria-label")?.trim()) {
+      return true;
+    }
+
+    const labelledBy = element.getAttribute("aria-labelledby");
+
+    if (labelledBy) {
+      const hasReferencedName = labelledBy
+        .split(/\s+/)
+        .filter(Boolean)
+        .some((id) => {
+          const label = findReferencedElement(element, id);
+
+          if (!label) {
+            return false;
+          }
+
+          return Boolean(
+            (label.getAttribute("aria-label") ?? "").trim() ||
+            label.textContent.trim(),
+          );
+        });
+
+      if (hasReferencedName) {
+        return true;
+      }
+    }
+
+    return Boolean(element.textContent.trim());
+  }
+
+  function reportDiagnostic(
+    element: HTMLElement,
+    source: string,
+    code: AriaDiagnosticCode,
+    message: string,
+  ): void {
+    if (!config.diagnostics) {
+      return;
+    }
+
+    const key = `${code}:${source}:${message}`;
+
+    if (seenDiagnostics.has(key)) {
+      return;
+    }
+
+    seenDiagnostics.add(key);
+    diagnostics.push({ code, message, source, element });
+    $log.warn(message, element);
+  }
+
+  function diagnoseAriaReferences(element: HTMLElement, source: string): void {
+    ARIA_REFERENCE_ATTRS.forEach((attr) => {
+      const rawValue = element.getAttribute(attr);
+
+      if (!rawValue) {
+        return;
+      }
+
+      rawValue
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((id) => {
+          if (!findReferencedElement(element, id)) {
+            reportDiagnostic(
+              element,
+              source,
+              "aria-missing-reference",
+              `$aria: ${source} references missing ${attr} target "${id}".`,
+            );
+          }
+        });
+    });
+  }
+
+  function diagnoseInteractive(element: HTMLElement, source: string): void {
+    const tabindex = element.getAttribute("tabindex");
+    const parsedTabindex = tabindex === null ? 0 : Number(tabindex);
+
+    if (Number.isFinite(parsedTabindex) && parsedTabindex > 0) {
+      reportDiagnostic(
+        element,
+        source,
+        "aria-positive-tabindex",
+        `$aria: ${source} uses positive tabindex "${String(tabindex)}". Prefer tabindex="0" and DOM order.`,
+      );
+    }
+
+    if (element.getAttribute("aria-hidden") === "true") {
+      reportDiagnostic(
+        element,
+        source,
+        "aria-hidden-interactive",
+        `$aria: ${source} is interactive but hidden from the accessibility tree.`,
+      );
+    }
+
+    if (!hasAccessibleName(element)) {
+      reportDiagnostic(
+        element,
+        source,
+        "aria-missing-accessible-name",
+        `$aria: ${source} creates an interactive element without an accessible name.`,
+      );
+    }
+
+    diagnoseAriaReferences(element, source);
+  }
+
+  /** Builds a watcher that mirrors an Angular expression into an ARIA attribute. */
+  function watchExpr(
+    attrName: string,
+    ariaAttr: ManagedAriaAttributeName,
+    nativeAriaNodeNamesParam: string[],
+    negate: boolean,
+  ): (scope: ng.Scope, elem: HTMLElement) => void {
+    return function (scope: ng.Scope, elem: HTMLElement) {
+      if (hasNormalizedAttr(elem, ARIA_DISABLE_ATTR)) return;
+
+      const ariaCamelName = directiveNormalize(ariaAttr) as keyof AriaConfig;
+
+      if (
+        config[ariaCamelName] &&
+        !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
+        !hasNormalizedAttr(elem, ariaCamelName)
+      ) {
+        scope.$watch(
+          getNormalizedAttr(elem, attrName) ?? "",
+          (boolVal: unknown) => {
+            // ensure boolean value
+            boolVal = negate ? !boolVal : !!boolVal;
+            elem.setAttribute(ariaAttr, String(boolVal));
+          },
+        );
+      }
+    };
+  }
+
+  return {
+    /** Reads the current ARIA runtime configuration value by key. */
+    config<K extends keyof AriaConfig>(key: K): AriaConfig[K] {
+      return config[key];
     },
-  ];
+    _diagnoseInteractive: diagnoseInteractive,
+    _diagnostics() {
+      return diagnostics;
+    },
+    _watchExpr: watchExpr,
+  };
 }
 
 ngDisabledAriaDirective.$inject = [_aria];
@@ -215,29 +477,29 @@ export function ngClickAriaDirective(
             !hasNormalizedAttr(linkElem, "ngKeypress") &&
             !hasNormalizedAttr(linkElem, "ngKeyup")
           ) {
-            linkElem.addEventListener(
-              "keydown",
-              /** Handles keyboard activation for synthetic button semantics. */
-              (event) => {
-                const keyCode = parseInt(event.key, 10);
+            /** Handles keyboard activation for synthetic button semantics. */
+            linkElem.addEventListener("keydown", (event) => {
+              const isActivationKey =
+                event.key === "Enter" || event.key === " ";
 
-                if (keyCode === 13 || keyCode === 32) {
-                  // If the event is triggered on a non-interactive element ...
-                  if (
-                    !nativeAriaNodeNames.includes(
-                      (event.target as Node).nodeName,
-                    ) &&
-                    !(event.target as HTMLElement).isContentEditable
-                  ) {
-                    // ... prevent the default browser behavior (e.g. scrolling when pressing spacebar)
-                    // See https://github.com/angular/angular.ts/issues/16664
-                    event.preventDefault();
-                  }
-                  fn(scope, { $event: event });
+              if (isActivationKey) {
+                // If the event is triggered on a non-interactive element ...
+                if (
+                  !nativeAriaNodeNames.includes(
+                    (event.target as Node).nodeName,
+                  ) &&
+                  !(event.target as HTMLElement).isContentEditable
+                ) {
+                  // ... prevent the default browser behavior (e.g. scrolling when pressing spacebar)
+                  // See https://github.com/angular/angular.ts/issues/16664
+                  event.preventDefault();
                 }
-              },
-            );
+                fn(scope, { $event: event });
+              }
+            });
           }
+
+          $aria._diagnoseInteractive(linkElem, "ng-click");
         }
       };
     },
@@ -315,12 +577,12 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
   /** Determines whether an ARIA attribute should be attached to an element. */
   function shouldAttachAttr(
     attr: string,
-    normalizedAttr: string,
+    normalizedAttr: keyof AriaConfig,
     elem: HTMLElement,
     allowNonAriaNodes: boolean,
   ): boolean {
     return (
-      $aria.config(normalizedAttr) === true &&
+      $aria.config(normalizedAttr) &&
       !elem.getAttribute(attr) &&
       (allowNonAriaNodes || !isNodeOneOf(elem, nativeAriaNodeNames)) &&
       (elem.getAttribute("type") !== "hidden" || elem.nodeName !== "INPUT")
@@ -447,6 +709,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
               if (needsTabIndex) {
                 elem.setAttribute("tabindex", "0");
               }
+              $aria._diagnoseInteractive(elem, "ng-model");
               break;
             case "range":
               if (shouldAttachRole(shape, elem)) {
@@ -508,6 +771,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
               if (needsTabIndex) {
                 elem.setAttribute("tabindex", "0");
               }
+              $aria._diagnoseInteractive(elem, "ng-model");
               break;
           }
 
@@ -553,6 +817,10 @@ export function ngDblclickAriaDirective($aria: AriaService): ng.Directive {
         !isNodeOneOf(elem, nativeAriaNodeNames)
       ) {
         elem.setAttribute("tabindex", "0");
+      }
+
+      if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
+        $aria._diagnoseInteractive(elem, "ng-dblclick");
       }
     },
   };

@@ -1,34 +1,43 @@
-import {
-  _compileProvider,
-  _injector,
-  _routerProvider,
-} from "../../injection-tokens.ts";
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { annotate } from "../../core/di/di.ts";
-import type { CompileProvider } from "../../core/compile/compile.ts";
-import type { ResolveContext } from "../resolve/resolve-context.ts";
-import {
-  assertDefined,
-  deleteProperty,
-  hasOwn,
-  isString,
-  keys,
-} from "../../shared/utils.ts";
-import type { InjectorService } from "../../core/di/internal-injector.ts";
+import type { CompileRegistry } from "../../core/compile/compile.ts";
+import { deleteProperty, hasOwn, isString, keys } from "../../shared/utils.ts";
 import type {
   BuiltStateDeclaration,
+  InternalStateDeclaration,
   StateDeclarationInput,
   StateDeclaration,
   StateOrName,
   StateRegistryListener,
   StateStore,
 } from "./interface.ts";
-import type { RouterProvider } from "../router.ts";
+import type { RouterRuntimeState } from "../router.ts";
 
 function stateOrNameToString(stateOrName: StateOrName): string {
   return isString(stateOrName) ? stateOrName : stateOrName.name;
+}
+
+/**
+ * Public `$stateRegistry` contract for dynamic route registration.
+ *
+ * Module-owned static routes should normally use [[NgModule.router]]. Use this
+ * service when routes must be added or removed at runtime.
+ */
+export interface StateRegistryService {
+  onStatesChanged(
+    listener: (
+      event: "registered" | "deregistered",
+      states: StateDeclaration[],
+    ) => void,
+  ): () => void;
+  root(): StateDeclaration;
+  register(stateDefinition: StateDeclaration): StateDeclaration;
+  deregister(stateOrName: StateOrName): StateDeclaration[];
+  getAll(): StateDeclaration[];
+  get(): StateDeclaration[];
+  get(stateOrName: StateOrName, base?: StateOrName): StateDeclaration | null;
 }
 
 /**
@@ -37,13 +46,11 @@ function stateOrNameToString(stateOrName: StateOrName): string {
  * This API is found at `$stateRegistry`.
  *
  */
-export class StateRegistryProvider {
-  /* @ignore */ static $inject = [_routerProvider, _compileProvider];
-
+export class StateRegistryRuntime implements StateRegistryService {
   /** @internal */
   _states: StateStore;
   /** @internal */
-  _routerState: RouterProvider;
+  _routerState: RouterRuntimeState;
   /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
@@ -57,7 +64,10 @@ export class StateRegistryProvider {
   /** @internal */
   _root!: StateObject;
 
-  constructor(routerState: RouterProvider, compileProvider: CompileProvider) {
+  constructor(
+    routerState: RouterRuntimeState,
+    compileRegistry: CompileRegistry,
+  ) {
     this._states = {};
 
     this._routerState = routerState;
@@ -71,38 +81,32 @@ export class StateRegistryProvider {
     this._builder = new StateBuilder(
       this._matcher,
       routerState,
-      compileProvider,
+      compileRegistry,
     );
 
     this._queue = [];
 
     this.registerRoot();
 
-    routerState._currentState = this.root();
+    routerState._currentState = this._root;
     routerState._current = routerState._currentState.self;
   }
 
-  $get = [
-    _injector,
-    /**
-     * @param {InjectorService} $injector
-     * @returns {StateRegistryProvider}
-     */
-    ($injector: InjectorService) => {
-      this._$injector = $injector;
-      this._builder._$injector = $injector;
-      this._annotateDeferredResolvables($injector.strictDi);
+  /** @internal */
+  _initRuntime($injector: ng.InjectorService): this {
+    this._$injector = $injector;
+    this._builder._$injector = $injector;
+    this._annotateDeferredResolvables($injector.strictDi);
 
-      return this;
-    },
-  ];
+    return this;
+  }
 
   /** @internal */
   _annotateDeferredResolvables(strictDi: boolean | undefined): void {
-    const states = this.getAll();
+    const states = this._getAllBuilt();
 
     states.forEach((state) => {
-      const { resolvables } = state._state();
+      const { resolvables } = state;
 
       resolvables.forEach((resolvable) => {
         if (resolvable.deps === "deferred") {
@@ -176,12 +180,10 @@ export class StateRegistryProvider {
    *
    * Gets the root of the state tree.
    * The root state is implicitly created by ng-router.
-   * Note: this returns the internal [[StateObject]] representation, not a [[StateDeclaration]]
-   *
-   * @return the root [[StateObject]]
+   * @return the public root state declaration
    */
-  root(): StateObject {
-    return this._root;
+  root(): StateDeclaration {
+    return this._root.self;
   }
 
   /**
@@ -192,12 +194,10 @@ export class StateRegistryProvider {
    * Note: a state will be queued if the state's parent isn't yet registered.
    *
    * @param {StateDeclarationInput} stateDefinition the definition of the state to register.
-   * @returns the internal [[StateObject]] object.
-   *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
-   *          If the state was only queued, then the object is not fully built.
+   * @returns the registered public state declaration.
    */
-  register(stateDefinition: StateDeclarationInput): StateObject {
-    return this._register(stateDefinition);
+  register(stateDefinition: StateDeclarationInput): StateDeclaration {
+    return this._register(stateDefinition).self;
   }
 
   /** @internal */
@@ -325,13 +325,7 @@ export class StateRegistryProvider {
    */
   /** @internal */
   _deregisterTree(state: BuiltStateDeclaration): BuiltStateDeclaration[] {
-    const allDeclarations = this.getAll();
-
-    const all: BuiltStateDeclaration[] = [];
-
-    allDeclarations.forEach((declaration) => {
-      all.push(declaration._state());
-    });
+    const all = this._getAllBuilt();
 
     const children: BuiltStateDeclaration[] = [];
 
@@ -370,17 +364,19 @@ export class StateRegistryProvider {
    * If the state has children, they are are also removed from the registry.
    *
    * @param {StateOrName} stateOrName the state's name or object representation
-   * @returns {BuiltStateDeclaration[]} a list of removed states
+   * @returns {StateDeclaration[]} a list of removed state declarations
    */
-  deregister(stateOrName: StateOrName): BuiltStateDeclaration[] {
-    const state = this.get(stateOrName) as BuiltStateDeclaration | null;
+  deregister(stateOrName: StateOrName): StateDeclaration[] {
+    const stateDeclaration = this.get(
+      stateOrName,
+    ) as InternalStateDeclaration | null;
 
-    if (!state) {
+    if (!stateDeclaration) {
       throw new Error(
         `Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`,
       );
     }
-    const deregisteredStates = this._deregisterTree(state._state());
+    const deregisteredStates = this._deregisterTree(stateDeclaration._state());
 
     const deregisteredDeclarations: StateDeclaration[] = [];
 
@@ -390,22 +386,27 @@ export class StateRegistryProvider {
 
     this._notifyListeners("deregistered", deregisteredDeclarations);
 
-    return deregisteredStates;
+    return deregisteredDeclarations;
   }
 
-  /**
-   * @return {ng.BuiltStateDeclaration[]}
-   */
-  getAll(): BuiltStateDeclaration[] {
+  /** @internal */
+  _getAllBuilt(): BuiltStateDeclaration[] {
     const stateNames = keys(this._states);
 
     const states: BuiltStateDeclaration[] = [];
 
     stateNames.forEach((name) => {
-      states.push(this._states[name].self as BuiltStateDeclaration);
+      states.push(this._states[name] as BuiltStateDeclaration);
     });
 
     return states;
+  }
+
+  /**
+   * @return {StateDeclaration[]}
+   */
+  getAll(): StateDeclaration[] {
+    return this._getAllBuilt().map((state) => state.self);
   }
 
   /**
@@ -414,6 +415,8 @@ export class StateRegistryProvider {
    * @param {StateOrName} [base]
    * @returns {StateDeclaration | StateDeclaration[] | null}
    */
+  get(): StateDeclaration[];
+  get(stateOrName: StateOrName, base?: StateOrName): StateDeclaration | null;
   get(
     stateOrName?: StateOrName,
     base?: StateOrName,
@@ -437,18 +440,4 @@ export class StateRegistryProvider {
 
     return found?.self ?? null;
   }
-}
-
-export function getLocals(ctx: ResolveContext): Record<string, unknown> {
-  const tokens = ctx.getTokens();
-
-  const locals: Record<string, unknown> = {};
-
-  tokens.forEach((key) => {
-    if (isString(key)) {
-      locals[key] = assertDefined(ctx.getResolvable(key)).data;
-    }
-  });
-
-  return locals;
 }

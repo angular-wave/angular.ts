@@ -7,31 +7,30 @@
     <script type="module" src="../auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("router", []).config([
-          "$stateProvider",
-          "$locationProvider",
-          ($stateProvider, $locationProvider) => {
-            $locationProvider.html5ModeConf = {
-              enabled: true,
-              requireBase: false,
-              rewriteLinks: false,
-            };
-            $stateProvider
-              .state({
-                name: "home",
-                url: "/src/router/router-test.html",
-                template: `
+        window.angular
+          .module("router", [])
+          .config({
+            $location: {
+              html5Mode: {
+                enabled: true,
+                requireBase: false,
+                rewriteLinks: false,
+              },
+            },
+          })
+          .router({
+            name: "home",
+            url: "/src/router/router-test.html",
+            template: `
                 <h1>Home</h1>
-                <a ng-sref="page1">Page 1</a>
+                <a ng-state="'page1'">Page 1</a>
               `,
-              })
-              .state({
-                name: "page1",
-                url: "/page1",
-                template: "<h3>Its the NG-Router hello world app!</h3>",
-              });
-          },
-        ]);
+          })
+          .router({
+            name: "page1",
+            url: "/page1",
+            template: "<h3>Its the NG-Router hello world app!</h3>",
+          });
       });
     </script>
   </head>

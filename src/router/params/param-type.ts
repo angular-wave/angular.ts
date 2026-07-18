@@ -9,7 +9,8 @@ import type { ParamTypeDefinition } from "./interface.ts";
 
 type ArrayUnaryMethod = "encode" | "decode" | "is" | "$normalize";
 
-type ParamTypeConfig = Partial<ParamTypeDefinition> & Record<string, unknown>;
+export type ParamTypeConfig = Partial<ParamTypeDefinition> &
+  Record<string, unknown>;
 
 const emptyParamTypeDefinition: ParamTypeConfig = {};
 
@@ -103,10 +104,10 @@ export class ParamType {
    * e.g.:
    * - urlmatcher pattern "/path?{queryParam[]:int}"
    * - url: "/path?queryParam=1&queryParam=2
-   * - $stateParams.queryParam will be [1, 2]
+   * - `$state.params.queryParam` will be `[1, 2]`
    * if `mode` is "auto", then
-   * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
-   * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
+   * - url: "/path?queryParam=1 will create `$state.params.queryParam: 1`
+   * - url: "/path?queryParam=1&queryParam=2 will create `$state.params.queryParam: [1, 2]`
    * @param {boolean |'auto'} mode
    */
   $asArray(mode: false): this;
@@ -123,7 +124,7 @@ export class ParamType {
  * @param {ParamType & Record<string, unknown>} type
  * @param {boolean | 'auto'} mode
  */
-class ArrayParamType extends ParamType {
+export class ArrayParamType extends ParamType {
   /** @internal */
   _type: ParamType & Record<string, unknown>;
   /** @internal */

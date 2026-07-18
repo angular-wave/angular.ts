@@ -5,7 +5,7 @@ import { wait } from "../../shared/test-utils.ts";
 
 describe("$templateCache", () => {
   let templateCache: any,
-    templateCacheProvider: any,
+    configuredCache: any,
     el: any,
     $compile: any,
     $scope: any;
@@ -15,9 +15,11 @@ describe("$templateCache", () => {
     el.innerHTML = "";
     const angular = new Angular();
 
-    angular.module("default", []).config(($templateCacheProvider) => {
-      templateCacheProvider = $templateCacheProvider;
-      templateCacheProvider.cache.set("test", "hello");
+    configuredCache = new Map([["test", "hello"]]);
+    angular.module("default", []).config({
+      $templateCache: {
+        cache: configuredCache,
+      },
     });
     angular
       .bootstrap(el, ["default"])
@@ -32,13 +34,9 @@ describe("$templateCache", () => {
     dealoc(el);
   });
 
-  it("should be available as provider", () => {
-    expect(templateCacheProvider).toBeDefined();
-  });
-
   it("should be available as a service", () => {
     expect(templateCache).toBeDefined();
-    expect(templateCache).toEqual(templateCacheProvider.cache);
+    expect(templateCache).toBe(configuredCache);
     expect(templateCache instanceof Map).toBeTrue();
     expect(templateCache.get("test")).toEqual("hello");
   });
@@ -69,13 +67,13 @@ describe("$templateCache", () => {
   it("can be swapped for localStorage", async () => {
     dealoc(el);
     window.angular = new Angular();
-    window.angular
-      .module("customStorage", [])
-      .config(($templateCacheProvider) => {
-        templateCacheProvider = $templateCacheProvider;
-        templateCacheProvider.cache = new LocalStorageMap();
-        templateCacheProvider.cache.set("test", "hello");
-      });
+    configuredCache = new LocalStorageMap();
+    configuredCache.set("test", "hello");
+    window.angular.module("customStorage", []).config({
+      $templateCache: {
+        cache: configuredCache,
+      },
+    });
     window.angular
       .bootstrap(el, ["customStorage"])
       .invoke((_$templateCache_: any, _$compile_: any, _$rootScope_: any) => {

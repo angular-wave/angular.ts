@@ -1,4 +1,3 @@
-import { _log } from "../../injection-tokens.ts";
 import { entries } from "../../shared/utils.ts";
 import {
   ConnectionManager,
@@ -15,9 +14,6 @@ export interface SseConfig extends ConnectionConfig {
 
   /** Optional query parameters appended to the URL */
   params?: Record<string, unknown>;
-
-  /** Custom headers (EventSource doesn't natively support headers) */
-  headers?: Record<string, string>;
 }
 
 /**
@@ -33,7 +29,7 @@ export interface SseConnection {
    * @remarks
    * Any previous event listeners are preserved; reconnects use the original configuration.
    */
-  connect(): void;
+  reconnect(): void;
 }
 
 /**
@@ -45,16 +41,17 @@ export interface SseConnection {
  */
 export type SseService = (url: string, config?: SseConfig) => SseConnection;
 
-export class SseProvider {
-  defaults: ng.SseConfig;
-  /** @internal */
-  _$log!: LogService;
+/** @internal */
+export interface SseRuntimeConfiguration {
+  defaults: SseConfig;
+  readonly connections: Set<SseConnection>;
+  destroyed: boolean;
+}
 
-  /**
-   * Creates the SSE provider with default reconnect and message parsing behavior.
-   */
-  constructor() {
-    this.defaults = {
+/** @internal */
+export function createSseRuntimeConfiguration(): SseRuntimeConfiguration {
+  return {
+    defaults: {
       retryDelay: 1000,
       maxRetries: Infinity,
       heartbeatTimeout: 15000,
@@ -65,60 +62,99 @@ export class SseProvider {
           return data;
         }
       },
+    },
+    connections: new Set(),
+    destroyed: false,
+  };
+}
+
+/** @internal */
+export function applySseConfiguration(
+  configuration: SseRuntimeConfiguration,
+  config: { defaults?: SseConfig },
+): void {
+  if (config.defaults !== undefined) {
+    configuration.defaults = {
+      ...configuration.defaults,
+      ...config.defaults,
     };
   }
+}
 
-  /**
-   * Returns the `$sse` connection factory bound to the configured defaults.
-   */
-  $get = [
-    _log,
-    (log: ng.LogService): SseService => {
-      this._$log = log;
+/** @internal */
+export function destroySseRuntimeConfiguration(
+  configuration: SseRuntimeConfiguration,
+): void {
+  if (configuration.destroyed) return;
 
-      return (url: string, config: SseConfig = {}): SseConnection => {
-        const mergedConfig = { ...this.defaults, ...config };
+  configuration.destroyed = true;
 
-        const finalUrl = SseProvider._buildUrl(url, mergedConfig.params);
+  for (const connection of configuration.connections) connection.close();
 
-        return new ConnectionManager(
-          () =>
-            new EventSource(finalUrl, {
-              withCredentials: !!mergedConfig.withCredentials,
-            }),
-          {
-            ...mergedConfig,
-            onMessage: (data: unknown, event: Event) => {
-              // Cast Event -> MessageEvent safely
-              mergedConfig.onMessage?.(data, event as MessageEvent);
-            },
-          },
-          this._$log,
-        );
-      };
-    },
-  ];
+  configuration.connections.clear();
+}
 
-  /**
-   * Builds a URL with serialized query parameters.
-   */
-  /** @internal */
-  private static _buildUrl(
-    url: string,
-    params?: Record<string, unknown>,
-  ): string {
-    if (!params) return url;
-    const query = entries(params)
-      .map(
-        ([k, v]) =>
-          `${encodeURIComponent(k)}=${encodeURIComponent(
-            serializeQueryValue(v),
-          )}`,
-      )
-      .join("&");
+/** @internal */
+export function createSseService(
+  log: LogService,
+  configuration: SseRuntimeConfiguration,
+  getEventSourceConstructor: () => typeof EventSource,
+): SseService {
+  return (url: string, config: SseConfig = {}): SseConnection => {
+    if (configuration.destroyed) {
+      throw new Error("Cannot create an SSE connection after runtime teardown");
+    }
 
-    return url + (url.includes("?") ? "&" : "?") + query;
-  }
+    const mergedConfig = { ...configuration.defaults, ...config };
+    const finalUrl = buildUrl(url, mergedConfig.params);
+    const manager = new ConnectionManager(
+      () => {
+        const EventSourceConstructor = getEventSourceConstructor();
+
+        return new EventSourceConstructor(finalUrl, {
+          withCredentials: !!mergedConfig.withCredentials,
+        });
+      },
+      {
+        ...mergedConfig,
+        onMessage: (data: unknown, event: Event) => {
+          mergedConfig.onMessage?.(data, event as MessageEvent);
+        },
+      },
+      log,
+    );
+    let closed = false;
+    const connection: SseConnection = {
+      reconnect() {
+        manager.reconnect();
+      },
+      close() {
+        if (closed) return;
+
+        closed = true;
+        configuration.connections.delete(connection);
+        manager.close();
+      },
+    };
+
+    configuration.connections.add(connection);
+
+    return connection;
+  };
+}
+
+function buildUrl(url: string, params?: Record<string, unknown>): string {
+  if (!params) return url;
+  const query = entries(params)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(
+          serializeQueryValue(value),
+        )}`,
+    )
+    .join("&");
+
+  return url + (url.includes("?") ? "&" : "?") + query;
 }
 
 function serializeQueryValue(value: unknown): string {
